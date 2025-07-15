@@ -62,6 +62,7 @@ class IndexDeliveryNotes extends OrgAction
             $model     = __('Goods Out');
         }
 
+        $todo = $this->bucket == 'unassigned';
 
         return Inertia::render(
             'Org/Dispatching/DeliveryNotes',
@@ -81,6 +82,7 @@ class IndexDeliveryNotes extends OrgAction
                     'actions'       => $actions
                 ],
                 'data'        => DeliveryNotesResource::collection($deliveryNotes),
+                "todo"        => $todo,
                 'picking_session_route' => [
                     'name' => 'grp.models.warehouse.picking_session.store',
                     'parameters' => [

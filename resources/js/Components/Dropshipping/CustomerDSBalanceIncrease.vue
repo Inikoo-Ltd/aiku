@@ -122,7 +122,7 @@ const onSubmitIncrease = () => {
                     :maxFractionDigits="2"
                     locale="en-US"
                     :min="0"
-                    prefix="-"
+                    xprefix="-"
                     fluid
                 />
             </div>

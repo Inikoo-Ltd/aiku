@@ -23,13 +23,13 @@ import { notify } from "@kyvg/vue3-notification"
 const props = defineProps<{
     data: TableTS,
     tab?: string
+    HasPickTableDeliveryNote?: Array<Number>
 }>()
 
 const locale = useLocaleStore();
 const layout = inject('layout', layoutStructure)
 
 function deliveryNoteRoute(deliveryNote: DeliveryNote) {
-     console.log(route().current())
     switch (route().current()) {
         case "shops.show.orders.show":
             return route(
@@ -49,8 +49,8 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
                 [route().params["organisation"], route().params["warehouse"], deliveryNote.slug])
         case "grp.org.shops.show.ordering.delivery-notes.index":
             return route(
-                    "grp.org.shops.show.ordering.delivery-notes.show",
-                    [route().params["organisation"], route().params["shop"], deliveryNote.slug])
+                "grp.org.shops.show.ordering.delivery-notes.show",
+                [route().params["organisation"], route().params["shop"], deliveryNote.slug])
         case "grp.org.shops.show.ordering.orders.index":
             return route(
                 "grp.org.shops.show.ordering.show.delivery-note.show",
@@ -69,7 +69,7 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
                 [route().params["organisation"], route().params["shop"], route().params["customer"], deliveryNote.slug])
         case "grp.overview.ordering.delivery_notes.index":
             return route(
-               "grp.org.shops.show.crm.customers.show.delivery_notes.show",
+                "grp.org.shops.show.crm.customers.show.delivery_notes.show",
                 [deliveryNote.organisation_slug, deliveryNote.shop_slug, deliveryNote.customer_slug, deliveryNote.slug])
         default:
             return route(
@@ -85,9 +85,9 @@ function customerRoute(deliveryNote: DeliveryNote) {
     }
 
     switch (route().current()) {
-         case "grp.overview.ordering.delivery_notes.index":
+        case "grp.overview.ordering.delivery_notes.index":
             return route(
-               "grp.org.shops.show.crm.customers.show",
+                "grp.org.shops.show.crm.customers.show",
                 [deliveryNote.organisation_slug, deliveryNote.shop_slug, deliveryNote.customer_slug])
         case "grp.org.warehouses.show.dispatching.delivery-notes":
             return route(
@@ -113,7 +113,7 @@ const onClickPick = () => {
         route(isModalPick.value.employee_pick_route.name, isModalPick.value.employee_pick_route.parameters),
         {
 
-        }, 
+        },
         {
             onStart: () => {
                 isLoadingPick.value = true
@@ -135,55 +135,54 @@ const onClickPick = () => {
         }
     )
 }
+
+const selectedDeliveryNotes = defineModel<number[]>('selectedDeliveryNotes')
+
+const onChangeCheked = (checked: boolean, item: DeliveryNote) => {
+    if (!selectedDeliveryNotes.value) return
+
+    if (checked) {
+        if (!selectedDeliveryNotes.value.includes(item.id)) {
+            selectedDeliveryNotes.value.push(item.id)
+        }
+    } else {
+        selectedDeliveryNotes.value = selectedDeliveryNotes.value.filter(id => id !== item.id)
+    }
+}
+
+
+
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5">
+    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="true" @onChecked="(item) => onChangeCheked(true, item)"
+        @onUnchecked="(item) => onChangeCheked(false, item)" checkboxKey='id'>
         <template #cell(status)="{ item: deliveryNote }">
-            <!-- {{deliveryNote.state_icon}} -->
             <Icon :data="deliveryNote.state_icon" />
-            <!-- <Link :href="deliveryNoteRoute(deliveryNote)" class="primaryLink">
-                {{ deliveryNote["reference"] }}
-            </Link> -->
         </template>
 
         <template #cell(reference)="{ item: deliveryNote }">
             <Link :href="deliveryNoteRoute(deliveryNote)" class="primaryLink">
-                {{ deliveryNote["reference"] }}
+            {{ deliveryNote["reference"] }}
             </Link>
         </template>
 
         <template #cell(date)="{ item }">
-            {{ useFormatTime(item.date, {
-                formatTime: 'EEE, do MMM yy, HH:mm',
-            }) }}
+            {{ useFormatTime(item.date) }}
         </template>
-        
-        <template #cell(effective_weight)="{ item: deliveryNote }">
-            {{ deliveryNote.effective_weight }} kg
-        </template>
-        
+
         <template #cell(customer_name)="{ item: deliveryNote }">
             <Link :href="customerRoute(deliveryNote)" class="secondaryLink">
-                {{ deliveryNote["customer_name"] }}
+            {{ deliveryNote["customer_name"] }}
             </Link>
         </template>
-        
+
         <template #cell(action)="{ item: deliveryNote }">
-            <Button
-                @click="() => isModalPick = deliveryNote"
-                type="secondary"
-                :label="trans('Pick')"
-                size="xs"
-            />
+            <Button @click="() => isModalPick = deliveryNote" type="secondary" :label="trans('Pick')" size="xs" />
         </template>
     </Table>
 
-    <Modal
-        :isOpen="!!isModalPick"
-        @close="isModalPick = null, isErrorPicker = null"
-        width="w-full max-w-lg"
-    >
+    <Modal :isOpen="!!isModalPick" @close="isModalPick = null, isErrorPicker = null" width="w-full max-w-lg">
         <div class="sm:flex sm:items-start w-full">
             <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                 <DialogTitle as="h3" class="text-base font-semibold">
@@ -191,26 +190,18 @@ const onClickPick = () => {
                 </DialogTitle>
                 <div class="mt-2">
                     <p class="text-sm text-gray-500">
-                        {{ trans("This action will pick the delivery note") }} <strong>{{ isModalPick?.reference }}</strong> {{ trans('with') }} {{ isModalPick?.number_items }} {{ trans('items') }}
+                        {{ trans("This action will pick the delivery note") }} <strong>{{ isModalPick?.reference
+                            }}</strong>
+                        {{ trans('with') }} {{ isModalPick?.number_items }} {{ trans('items') }}
                     </p>
-                </div>                
-                
+                </div>
+
 
                 <div class="mt-5 sm:flex sm:flex-row-reverse gap-x-2">
-                    <Button
-                        :loading="isLoadingPick"
-                        @click="() => onClickPick()"
-                        :label="trans('Yes')"
-                        full
-                    />
+                    <Button :loading="isLoadingPick" @click="() => onClickPick()" :label="trans('Yes')" full />
 
-                    <Button
-                        type="tertiary"
-                        icccon="far fa-arrow-left"
-                        :label="trans('cancel')"
-                        
-                        @click="() => (isModalPick = null)"
-                    />
+                    <Button type="tertiary" icccon="far fa-arrow-left" :label="trans('cancel')"
+                        @click="() => (isModalPick = null)" />
                 </div>
 
                 <p v-if="isErrorPicker" class="mt-2 text-xs text-red-500 italic">

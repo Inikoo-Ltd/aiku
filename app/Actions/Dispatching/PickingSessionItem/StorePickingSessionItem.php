@@ -33,13 +33,24 @@ class StorePickingSessionItem extends OrgAction
         data_set($modelData, 'warehouse_id', $pickingSession->warehouse_id);
 
         $orgStock = OrgStock::find(Arr::get($modelData, 'org_stock_id'));
+        $deliveryNoteItemIds = Arr::pull($modelData, 'delivery_note_item_ids');
+        $location = $orgStock->locationOrgStocks->where('picking_priority', 1)->first();
 
-        data_set($modelData, 'location_id', $orgStock->locationOrgStocks->where('picking_priority', 1)->first()->id);
+        if(!$location) {
+            $location = $orgStock->locationOrgStocks->where('picking_priority', 2)->first();
+        }
+        
+        data_set($modelData, 'location_id', $location->id);
         data_set($modelData, 'org_stock_family_id', $orgStock->org_stock_family_id);
         data_set($modelData, 'stock_id', $orgStock->stock_id);
         data_set($modelData, 'stock_family_id', $orgStock->stock->stock_family_id);
 
         $pickingSessionItem = $pickingSession->pickingSessionItem()->create($modelData);
+
+        $pickingSessionItem->deliveryNoteItems()->attach($deliveryNoteItemIds, [
+            'organisation_id' => $pickingSession->organisation_id,
+            'group_id' => $pickingSession->group_id
+        ]);
 
         return $pickingSessionItem;
     }
@@ -49,6 +60,7 @@ class StorePickingSessionItem extends OrgAction
         $rules = [
             'org_stock_id'  => ['required', 'nullable', 'exists:org_stocks,id'],
             'quantity_required'  => ['required', 'numeric'],
+            'delivery_note_item_ids' => ['required', 'array']
         ];
 
         return $rules;

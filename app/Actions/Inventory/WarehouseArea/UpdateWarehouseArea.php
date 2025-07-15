@@ -79,10 +79,10 @@ class UpdateWarehouseArea extends OrgAction
         return $this->handle($warehouseArea, $this->validatedData);
     }
 
-    public function asController(Warehouse $warehouse, WarehouseArea $warehouseArea, ActionRequest $request): WarehouseArea
+    public function asController(WarehouseArea $warehouseArea, ActionRequest $request): WarehouseArea
     {
         $this->warehouseArea = $warehouseArea;
-        $this->initialisation($warehouseArea->organisation, $request);
+        $this->initialisationFromWarehouse($warehouseArea->warehouse, $request);
 
         return $this->handle($warehouseArea, $this->validatedData);
     }
