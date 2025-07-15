@@ -34,7 +34,7 @@ class GetShopifyProductFromPortfolio
             ]);
 
             if (Arr::get($response, 'errors')) {
-                Sentry::captureMessage('Error in GetShopifyProductFromPortfolio: '.Arr::get($response, 'errors'));
+                Sentry::captureMessage('Error in GetShopifyProductFromPortfolio: >'.$portfolio->platform_handle.'<');
 
                 return null;
             }
