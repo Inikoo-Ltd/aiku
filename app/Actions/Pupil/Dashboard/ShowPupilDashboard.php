@@ -60,7 +60,7 @@ class ShowPupilDashboard
         }
 
         // TODO: We need open it for all shops: fulfilment and dropships
-        $query = Shop::where('type', ShopTypeEnum::DROPSHIPPING)
+        $query = Shop::where('slug', 'awd')
             ->where('state', ShopStateEnum::OPEN)
             ->get();
 
