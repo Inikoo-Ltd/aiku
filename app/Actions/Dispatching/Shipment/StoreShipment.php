@@ -57,6 +57,9 @@ class StoreShipment extends OrgAction
                 'itd' => CallApiItdShipping::run($parent, $shipper),
                 default => [
                     'status' => 'error',
+                    'errorData' => [
+                        'message' => 'Unsupported API Shipper ' . $shipper->name,
+                    ],
                 ]
             };
 
@@ -68,7 +71,6 @@ class StoreShipment extends OrgAction
                     $shipmentData['errorData']
                 );
             }
-
         }
         $shipment = $shipper->shipments()->create($modelData);
 
@@ -98,6 +100,4 @@ class StoreShipment extends OrgAction
 
         return $this->handle($parent, $shipper, $this->validatedData);
     }
-
-
 }
