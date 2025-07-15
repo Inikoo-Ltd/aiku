@@ -54,7 +54,7 @@ class PortfoliosCsvOrExcelExport implements FromQuery, WithMapping, WithHeadings
             $row->item?->unit,
             $row->item?->price, // unit price
             $row->item_name,
-            '', // TODO: unit RRP
+            $row->customer_price, // unit RRP check this is correct or not
             '', // TODO: unit net weight
             $row->item?->gross_weight,
             '', // TODO: unit dimensions
