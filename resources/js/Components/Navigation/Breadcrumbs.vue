@@ -82,7 +82,7 @@ const isLoading = ref<string | boolean>(false)
 </script>
 
 <template>
-    <nav class="overflow-y-hidden py-4 md:py-0 flex text-gray-600 h-6 border-b border-gray-200 text-sm" aria-label="Breadcrumb">
+    <nav class="overflow-y-hidden py-4 md:py-0 flex text-gray-600 h-10 xl:h-6 border-b border-gray-200 text-sm" aria-label="Breadcrumb">
         <!-- Breadcrumb -->
         <TransitionGroup name="list-to-down" tag="ol" class="w-full mx-auto px-4 flex">
             <li v-for="(breadcrumb, breadcrumbIdx) in breadcrumbs" :key="breadcrumbIdx"
@@ -211,12 +211,12 @@ const isLoading = ref<string | boolean>(false)
 
         <div v-if="props.navigation?.previous || props.navigation?.next" class="h-full flex justify-end items-center pr-2 space-x-2 text-sm text-gray-700 font-semibold">
             <!-- Button: Previous -->
-            <div class="flex justify-center items-center w-8">
+            <div class="flex justify-center items-center w-12 xl:w-8 h-full">
                 <Link v-if="props.navigation.previous"
                     @start="() => isLoading = 'bcBack'"
                     @finish="() => isLoading = false"
                     :href="isLoading === 'bcBack' ? '' : props.navigation?.previous?.url ? props.navigation?.previous?.url : props.navigation?.previous?.route?.name ? route(props.navigation.previous?.route.name, props.navigation.previous?.route.parameters) + urlParameter : '#'"
-                    class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer hover:text-indigo-900"
+                    class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer hover:text-indigo-500"
                     :title="props.navigation.previous?.label"
                 >
                     <LoadingIcon v-if="isLoading === 'bcBack'" />
@@ -226,11 +226,11 @@ const isLoading = ref<string | boolean>(false)
             </div>
 
             <!-- Button: Next -->
-            <div class="flex justify-center items-center w-8">
+            <div class="flex justify-center items-center w-12 xl:w-8 h-full">
                 <Link v-if="props.navigation.next"
                     @start="() => isLoading = 'bcNext'"
                     @finish="() => isLoading = false"
-                    class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer hover:text-indigo-900"
+                    class="rounded w-full h-full flex items-center justify-center opacity-70 hover:opacity-100 cursor-pointer hover:text-indigo-500"
                     :title="props.navigation.next?.label"
                     :href="isLoading === 'bcNext' ? '' : props.navigation?.next?.url ? props.navigation?.next?.url : props.navigation?.next?.route?.name ? route(props.navigation.next?.route.name, props.navigation.next?.route.parameters) + urlParameter : '#'"
                 >
