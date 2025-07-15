@@ -20,6 +20,7 @@ class CaptureAcquisitionSource
         $response = $next($request);
 
         $allowedRoutes = [
+            'retina.register',
             'retina.register_standalone',
             'retina.register_from_google',
         ];
