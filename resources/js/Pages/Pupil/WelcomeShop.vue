@@ -12,7 +12,7 @@ const props = defineProps<{
 console.log('data', props.data)
 
 const openWebsite = (url: string) => {
-    window.open(url, '_blank');
+    window.open(url);
 };
 </script>
 

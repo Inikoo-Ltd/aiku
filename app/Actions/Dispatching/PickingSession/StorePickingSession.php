@@ -15,6 +15,7 @@ use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Models\Inventory\PickingSession;
 use App\Models\Inventory\Warehouse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules\Enum;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -30,29 +31,32 @@ class StorePickingSession extends OrgAction
      */
     public function handle(Warehouse $warehouse, array $modelData): PickingSession
     {
-        $deliveryNoteIds = Arr::pull($modelData, 'delivery_notes');
-        $reference = 'PS-'. $warehouse->pickingSessions()->max('id') + 1;
+        $pickingSession =  DB::transaction(function () use ($warehouse, $modelData) {
+            $deliveryNoteIds = Arr::pull($modelData, 'delivery_notes');
+            $reference = 'PS-'. $warehouse->pickingSessions()->max('id') + 1;
+    
+            data_set($modelData, 'group_id', $warehouse->group_id);
+            data_set($modelData, 'organisation_id', $warehouse->organisation_id);
+            data_set($modelData, 'reference', $reference);
+            data_set($modelData, 'user_id', request()->user()->id);
+            data_set($modelData, 'start_at', now());
+    
+            $pickingSession = $warehouse->pickingSessions()->create($modelData);
+    
+            $pickingSession->deliveryNotes()->attach($deliveryNoteIds, [
+                'organisation_id' => $pickingSession->organisation_id,
+                'group_id' => $pickingSession->group_id
+            ]);
 
-        data_set($modelData, 'group_id', $warehouse->group_id);
-        data_set($modelData, 'organisation_id', $warehouse->organisation_id);
-        data_set($modelData, 'reference', $reference);
-        data_set($modelData, 'user_id', request()->user()->id);
-        data_set($modelData, 'start_at', now());
+            $pickingSession->refresh();
+    
+            $mergedItems = $this->getMergedDeliveryNoteItems($pickingSession);
+            foreach ($mergedItems as $item) {
+                StorePickingSessionItem::dispatch($pickingSession, $item);
+            }
+            return $pickingSession;
+        });
 
-        $pickingSession = $warehouse->pickingSessions()->create($modelData);
-
-        $pickingSession->deliveryNotes()->attach($deliveryNoteIds, [
-            'organisation_id' => $pickingSession->organisation_id,
-            'group_id' => $pickingSession->group_id
-        ]);
-
-        $pickingSession->refresh();
-
-        $mergedItems = $this->getMergedDeliveryNoteItems($pickingSession);
-
-        foreach ($mergedItems as $item) {
-            StorePickingSessionItem::dispatch($pickingSession, $item);
-        }
         return $pickingSession;
     }
 
@@ -68,12 +72,12 @@ class StorePickingSession extends OrgAction
                 $orgStockId = $item->org_stock_id;
 
                 if (isset($mergedItems[$orgStockId])) {
-                    $mergedItems[$orgStockId]['quantity_required'] += $item->quantity;
+                    $mergedItems[$orgStockId]['quantity_required'] += $item->quantity_required;
                     $mergedItems[$orgStockId]['delivery_note_item_ids'][] = $item->id;
                 } else {
                     $mergedItems[$orgStockId] = [
-                        'org_stock_id' => $orgStockId->id,
-                        'quantity_required' => $item->quantity,
+                        'org_stock_id' => $orgStockId,
+                        'quantity_required' => $item->quantity_required,
                         'delivery_note_item_ids' => [$item->id]
                     ];
                 }
