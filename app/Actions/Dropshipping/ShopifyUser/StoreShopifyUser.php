@@ -76,6 +76,12 @@ class StoreShopifyUser extends RetinaAction
 
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
+        if (str_contains($this->get('name'), ' ')) {
+            $validator->errors()->add('name', __('Shop name cannot contain spaces'));
+
+            return;
+        }
+
         $shopifyShopUrl = 'https://'.$this->get('name');
 
         $response = Http::get($shopifyShopUrl);
@@ -94,7 +100,13 @@ class StoreShopifyUser extends RetinaAction
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255', 'ends_with:.'.config('shopify-app.myshopify_domain'), Rule::unique('shopify_users', 'name')->whereNotNull('customer_id')]
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                'ends_with:.'.config('shopify-app.myshopify_domain'),
+                Rule::unique('shopify_users', 'name')->whereNotNull('customer_id')
+            ]
         ];
     }
 
