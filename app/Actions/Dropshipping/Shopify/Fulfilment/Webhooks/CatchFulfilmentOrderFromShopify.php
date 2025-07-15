@@ -40,7 +40,7 @@ class CatchFulfilmentOrderFromShopify extends OrgAction
                 return;
             }
 
-            $response = $client->request('GET', "/admin/api/2024-07/orders/$orderId/fulfillment_orders.json");
+            $response = $client->request('GET', "/admin/api/2025-07/orders/$orderId/fulfillment_orders.json");
 
             foreach (Arr::get($response, 'body')['fulfillment_orders'] as $fulfilment) {
                 $fulfilmentOrder = array_replace($fulfilment['container'], [

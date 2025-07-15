@@ -82,15 +82,17 @@ class Portfolio extends Model implements Auditable
         'data'       => 'array',
         'settings'   => 'array',
         'errors_response'   => 'array',
+        'platform_product_availabilities'   => 'array',
         'status'     => 'boolean',
         'added_at'   => 'datetime',
-        'removed_at' => 'datetime',
+        'removed_at' => 'datetime'
     ];
 
     protected $attributes = [
         'data'     => '{}',
         'settings' => '{}',
         'errors_response' => '{}',
+        'platform_product_availabilities' => '{}'
     ];
 
     protected $guarded = [];

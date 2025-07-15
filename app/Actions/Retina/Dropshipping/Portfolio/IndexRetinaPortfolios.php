@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithPlatformStatusCheck;
+use App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Dropshipping\RetinaPortfoliosTabsEnum;
@@ -293,7 +294,7 @@ class IndexRetinaPortfolios extends RetinaAction
                 'platform_user_id'         => $platformUser?->id,
                 'platform_data'            => PlatformsResource::make($this->customerSalesChannel->platform)->toArray(request()),
                 'products'                 => DropshippingPortfoliosResource::collection($portfolios),
-                'is_platform_connected'    => $this->checkStatus($this->customerSalesChannel) === 'connected',
+                'is_platform_connected'    => $this->customerSalesChannel->connection_status === CustomerSalesChannelConnectionStatusEnum::CONNECTED,
                 'customer_sales_channel'   => CustomerSalesChannelsResourceTOFIX::make($this->customerSalesChannel)->toArray(request()),
                 'manual_channels'          => CustomerSalesChannelsResourceTOFIX::collection($manualChannels)
             ]
