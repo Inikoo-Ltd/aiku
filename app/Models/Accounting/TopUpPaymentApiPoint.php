@@ -47,6 +47,7 @@ class TopUpPaymentApiPoint extends Model
         'data'         => 'array',
         'processed_at' => 'datetime',
         'state'        => TopUpPaymentApiPointStateEnum::class,
+        'amount'       => 'decimal:2',
     ];
 
     protected $attributes = [

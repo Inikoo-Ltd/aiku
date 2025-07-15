@@ -39,9 +39,9 @@ class GetRetinaPaymentAccountShopCheckoutComData
         );
 
         $toPayByOther = $paymentAmounts['by_other'];
-        $toPayByOther = intval($toPayByOther * 100);
 
 
+        $toPayByOther = (int)round((float)$toPayByOther * 100);
 
         $paymentSessionRequest            = new PaymentSessionsRequest();
         $paymentSessionRequest->amount    = $toPayByOther;
