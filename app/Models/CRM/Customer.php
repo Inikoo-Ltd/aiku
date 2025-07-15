@@ -23,6 +23,8 @@ use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\SubscriptionEvent;
+use App\Models\CRM\CustomerAcquisitionSource;
+use App\Models\CRM\OfflineConversion;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\AmazonUser;
 use App\Models\Dropshipping\CustomerClient;
@@ -256,7 +258,7 @@ class Customer extends Model implements HasMedia, Auditable
     {
         return SlugOptions::create()
             ->generateSlugsFrom(function () {
-                return $this->reference.'-'.$this->shop->slug;
+                return $this->reference . '-' . $this->shop->slug;
             })
             ->saveSlugsTo('slug')
             ->slugsShouldBeNoLongerThan(128)
@@ -489,5 +491,22 @@ class Customer extends Model implements HasMedia, Auditable
     public function exclusiveProducts(): HasMany
     {
         return $this->hasMany(Product::class, 'exclusive_for_customer_id');
+    }
+
+    public function acquisitionSources(): HasMany
+    {
+        return $this->hasMany(CustomerAcquisitionSource::class);
+    }
+
+    public function activeAcquisitionSources(): HasMany
+    {
+        return $this->hasMany(CustomerAcquisitionSource::class)
+            ->where('is_active', true)
+            ->where('expires_at', '>', now());
+    }
+
+    public function offlineConversions(): HasMany
+    {
+        return $this->hasMany(OfflineConversion::class);
     }
 }
