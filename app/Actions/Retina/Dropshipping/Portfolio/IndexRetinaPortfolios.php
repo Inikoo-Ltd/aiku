@@ -84,12 +84,10 @@ class IndexRetinaPortfolios extends RetinaAction
     public function getStateFilter(): AllowedFilter
     {
         return AllowedFilter::callback('status', function ($query, $value) {
-            $query->join('products', function ($join) {
-                $join->on('portfolios.item_id', '=', 'products.id')
-                    ->where('portfolios.item_type', 'Product');
+            $query->whereHas('item', function ($subQuery) use ($value) {
+                $subQuery->where('item_type', 'Product')
+                        ->whereIn('status', (array)$value);
             });
-
-            $query->whereIn('products.status', (array)$value);
         });
     }
 
