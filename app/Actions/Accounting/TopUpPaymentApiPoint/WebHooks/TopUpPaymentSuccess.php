@@ -13,6 +13,7 @@ use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Accounting\TopUp\StoreTopUp;
 use App\Actions\Accounting\TopUpPaymentApiPoint\UpdateTopUpPaymentApiPoint;
 use App\Actions\Accounting\WithCheckoutCom;
+use App\Actions\Retina\Dropshipping\Orders\FindUnpaidOrderAndPayWithBalance;
 use App\Actions\RetinaWebhookAction;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
@@ -79,6 +80,10 @@ class TopUpPaymentSuccess extends RetinaWebhookAction
             'type'       => CreditTransactionTypeEnum::TOP_UP,
         ];
 
+        
+        FindUnpaidOrderAndPayWithBalance::run($topUpPaymentApiPoint->customer, [
+            'amount' => $amount
+        ]);
 
         UpdateTopUpPaymentApiPoint::run(
             $topUpPaymentApiPoint,
