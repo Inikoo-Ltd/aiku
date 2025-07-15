@@ -34,5 +34,46 @@ trait WithInitShopifyClient
         }
     }
 
+    public function checkConnection(): bool
+    {
+        try {
+            $client = $this->getShopifyClient();
 
+            if (!$client) {
+                return false;
+            }
+
+            $response = $client->request(
+                'GET',
+                '/admin/api/2025-07/shop.json'
+            );
+
+            return $response['status'] === 200;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    public function checkPortfolioAvailability(int|null $productId): bool
+    {
+        try {
+            $client = $this->getShopifyClient();
+            if (!$client || !$productId) {
+                return false;
+            }
+
+            $response = $client->request(
+                'GET',
+                '/admin/api/2025-07/products/' . $productId . '.json'
+            );
+
+            if ($response['status'] !== 200 || !isset($response['body']['product']['status'])) {
+                return false;
+            }
+
+            return $response['body']['product']['status'] === 'active';
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
 }
