@@ -21,19 +21,18 @@ trait CalculatesPaymentWithBalance
     {
         $toPay = (float) max($totalAmount, 0.0);
 
-        $decimalPart = $toPay - floor($toPay);
+        $toPay=round($toPay, 2);
 
-        $payFloatWithBalance = min($decimalPart, $balance);
+        $payFloatWithBalance = min($toPay, $balance);
 
-        $remainingBalance = $balance - $payFloatWithBalance;
-        $payIntWithBalance = min(floor($toPay), floor($remainingBalance));
 
-        $toPayByBalance = round($payFloatWithBalance + $payIntWithBalance, 2);
-        $toPayByOther = round($toPay - $toPayByBalance, 2);
+
+        $remainingBalance = $toPay - $payFloatWithBalance;
+
 
         return [
-            'by_balance' => $toPayByBalance,
-            'by_other' => $toPayByOther,
+            'by_balance' => $payFloatWithBalance,
+            'by_other' => $remainingBalance,
             'total' => $toPay
         ];
     }
