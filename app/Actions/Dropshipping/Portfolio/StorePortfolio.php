@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\Portfolio;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePortfolios;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydratePortfolios;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
+use App\Actions\Dropshipping\Shopify\Product\GetShopifyProductFromPortfolio;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePortfolios;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePortfolios;
@@ -19,6 +20,7 @@ use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
+use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Fulfilment\StoredItem;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
@@ -72,6 +74,14 @@ class StorePortfolio extends OrgAction
 
             return $portfolio;
         });
+
+
+        $platformProductAvailabilities = match ($customerSalesChannel->user?->getMorphClass()) {
+            ShopifyUser::class->getMorphClass() => GetShopifyProductFromPortfolio::run($customerSalesChannel->user, ),
+            default => [],
+        };
+
+        data_set($modelData, 'platform_product_availabilities', $platformProductAvailabilities);
 
 
         GroupHydratePortfolios::dispatch($customerSalesChannel->group)->delay($this->hydratorsDelay);
