@@ -523,4 +523,38 @@ trait WithWooCommerceApiRequest
     {
         return $this->makeWooCommerceRequest('GET', 'webhooks');
     }
+
+    public function checkConnection(): bool
+    {
+        try {
+            if (!$this->woocommerceApiUrl || !$this->woocommerceConsumerKey || !$this->woocommerceConsumerSecret) {
+                $this->initWooCommerceApi();
+            }
+
+            $response = $this->makeWooCommerceRequest('GET', 'system_status');
+
+            return !empty($response);
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Check if a product exists and is available in WooCommerce
+     *
+     * @param int $productId Product ID to check
+     *
+     * @return bool Whether the product exists and is available
+     */
+    public function checkPortfolioAvailability(int $productId): bool
+    {
+        try {
+            $product = $this->getWooCommerceProduct($productId, false);
+            return !empty($product) && isset($product['status']) && $product['status'] === 'publish';
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+
 }
