@@ -42,9 +42,6 @@ class GetRetinaPaymentAccountShopCheckoutComData
         $toPayByOther = intval($toPayByOther * 100);
 
 
-        if ($toPayByOther == 0) {
-            abort(404);
-        }
 
         $paymentSessionRequest            = new PaymentSessionsRequest();
         $paymentSessionRequest->amount    = $toPayByOther;
