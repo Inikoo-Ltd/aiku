@@ -56,6 +56,10 @@ class GetRetinaPaymentAccountShopCheckoutComData
         $paymentSessionRequest->success_url           = $this->getSuccessUrl($orderPaymentApiPoint);
         $paymentSessionRequest->failure_url           = $this->getFailureUrl($orderPaymentApiPoint);
 
+        $paymentSessionRequest->disabled_payment_methods = [
+            'applepay',
+        ];
+
 
         $billingAddress = $order->billingAddress;
 
