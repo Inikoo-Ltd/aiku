@@ -10,8 +10,6 @@ import { initialiseRetinaApp } from "@/Composables/initialiseRetinaApp"
 import { useLayoutStore } from "@/Stores/retinaLayout"
 import Notification from '@/Components/Utils/Notification.vue'
 import { faNarwhal, faCircle as falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faTimesCircle, faExternalLink, faSeedling, faSkull } from '@fal'
-import { faSearch, faBell } from '@far'
-import { faExclamationTriangle as fadExclamationTriangle } from '@fad'
 import { onMounted, provide, ref, watch } from 'vue'
 import { useLocaleStore } from "@/Stores/locale"
 import RetinaLayoutFulfilment from "./RetinaLayoutFulfilment.vue"
@@ -22,7 +20,8 @@ import { usePage } from "@inertiajs/vue3"
 import IrisHeader from "@/Layouts/Iris/Header.vue"
 import IrisFooter from "@/Layouts/Iris/Footer.vue"
 import { isArray } from "lodash-es"
-library.add(fadExclamationTriangle, faCheckCircle, faNarwhal, falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faSearch, faBell)
+
+import { confetti } from '@tsparticles/confetti'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExclamationTriangle, faCheckCircle as fasCheckCircle, faInfoCircle, faTrashAlt, faCopy } from "@fal"
@@ -30,7 +29,12 @@ import { faExclamationTriangle as fasExclamationTriangle, faCheckCircle, faExcla
 import Modal from "@/Components/Utils/Modal.vue"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import { faSearch, faBell, faPlus } from '@far'
+import { faExclamationTriangle as fadExclamationTriangle } from '@fad'
+
 library.add(fasExclamationTriangle, faExclamationTriangle, faTimesCircle, faExternalLink, faSeedling, faSkull, fasCheckCircle, faExclamationCircle, faInfo, faCircle, faInfoCircle, faTrashAlt, faCopy)
+library.add(fadExclamationTriangle, faCheckCircle, faNarwhal, falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faSearch, faBell, faPlus)
+
 
 
 provide('layout', useLayoutStore())
@@ -49,6 +53,53 @@ watch(() => usePage().props?.flash?.notification, (notif) => {
         text: notif.description,
         type: notif.status,
     })
+}, {
+    deep: true,
+    immediate: true
+})
+
+
+// Flash: Confetti
+const defaults = {
+    spread: 360,
+    ticks: 50,
+    gravity: 0,
+    decay: 0.94,
+    startVelocity: 30,
+    shapes: ["star"],
+    zIndex: 100,
+};
+
+const shootConfetti = () => {
+    // console.log('1x')
+    confetti('retina-confetti', {
+        ...defaults,
+        particleCount: 40,
+        scalar: 1.2,
+        shapes: ["star"],
+    });
+
+    confetti('retina-confetti', {
+        ...defaults,
+        particleCount: 10,
+        scalar: 0.75,
+        shapes: ["circle"],
+    });
+}
+
+const shootMultipleConfetti = () => {
+    setTimeout(() => {
+        setTimeout(() => shootConfetti(), 0)
+        setTimeout(() => shootConfetti(), 100)
+        setTimeout(() => shootConfetti(), 200)
+        setTimeout(() => shootConfetti(), 300)
+    }, 500);
+}
+watch(() => usePage().props?.flash?.confetti, (newVal) => {
+    console.log('confettixx ret', newVal)
+    if (!newVal) return
+    
+    shootMultipleConfetti()
 }, {
     deep: true,
     immediate: true
@@ -78,7 +129,7 @@ interface Modal {
 const selectedModal = ref<Modal | null>(null)
 const isModalOpen = ref(false)
 watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
-    // console.log('modal ret', modal)
+    console.log('modal ret', modal)
     if (!modal) return
 
     selectedModal.value = modal
@@ -343,5 +394,9 @@ const getBgColorDependsOnStatus = (status: string) => {
 // Hide Checkout Apple Pay
 #flow-container #googlepayAccordionContainer {
     display: none !important;
+}
+
+#retina-confetti {
+    pointer-events: none;
 }
 </style>

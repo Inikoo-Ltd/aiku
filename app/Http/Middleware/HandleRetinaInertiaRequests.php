@@ -64,6 +64,7 @@ class HandleRetinaInertiaRequests extends Middleware
                     'notification'  => fn () => $request->session()->get('notification'),
                     'modal'         => fn () => $request->session()->get('modal'),
                     'gtm'           => fn () => $request->session()->get('gtm'),
+                    'confetti'      => fn () => $request->session()->get('confetti')
                 ],
                 'ziggy'    => [
                     'location' => $request->url(),

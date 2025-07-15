@@ -20,7 +20,7 @@ trait WithRetinaOrderPlacedRedirection
             $notification = [
                 'status'  => 'success',
                 'title'   => __('Success!'),
-                'description' => __('Your order bas been submitted.'),
+                'description' => __('Your order has been submitted.'),
             ];
 
             if ($arr['order']->shop->type == ShopTypeEnum::DROPSHIPPING) {
@@ -31,7 +31,7 @@ trait WithRetinaOrderPlacedRedirection
                         'order'                => $arr['order']->slug
                     ]
                 )
-                    ->with('notification', $notification)
+                    ->with('modal', $notification)
                     ->with('gtm', [
                         'key'               => 'retina_dropshipping_order_placed',
                         'event'             => 'purchaseSuccess',
@@ -42,6 +42,9 @@ trait WithRetinaOrderPlacedRedirection
                                 'currency'          => $arr['order']->shop->currency->code,
                             ]
                         ]
+                    ])
+                    ->with('confetti', [
+                        'key' => 'dropshipping_order_placed' . $arr['order']->id,
                     ]);
             } else {
                 return Redirect::route(
