@@ -331,36 +331,71 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
                                 :readonly="itemValue.is_handled || itemValue.quantity_required == itemValue.quantity_picked"
                             >
                                 <template #save="{ isProcessing, isDirty, onSaveViaForm }">
-                                    <ButtonWithLink
-                                        v-tooltip="trans('Pick all required quantity in this location')"
-                                        icon="fal fa-clipboard-list-check"
-                                        :disabled="itemValue.is_handled || itemValue.quantity_required == itemValue.quantity_picked"
-                                        :label="locale.number(itemValue.quantity_to_pick ?? 0 )"
-                                        size="xs"
-                                        type="secondary"
-                                        :loading="isProcessing"
-                                        class="py-0"
-                                        :routeTarget="itemValue.picking_all_route"
-                                        :bind-to-link="{
-                                            preserveScroll: true,
-                                            preserveState: true,
-                                        }"
-                                        :body="{
-                                            location_org_stock_id: findLocation(itemValue.locations, proxyItem.hehe).id
-                                        }"
-                                        isWithError
-                                    />
-
-                                    <ButtonWithLink
-                                        class="ml-8"
-                                        v-if="!itemValue.is_handled"
-                                        type="negative"
-                                        tooltip="Set as not picked"
-                                        icon="fal fa-debug"
-                                        size="xs"
-                                        :routeTarget="itemValue.not_picking_route"
-                                        :bindToLink="{preserveScroll: true}"
-                                    />
+                                    <div class="hidden lg:flex gap-x-8 w-fit">
+                                        <ButtonWithLink
+                                            v-tooltip="trans('Pick all required quantity in this location')"
+                                            icon="fal fa-clipboard-list-check"
+                                            :disabled="itemValue.is_handled || itemValue.quantity_required == itemValue.quantity_picked"
+                                            :label="locale.number(itemValue.quantity_to_pick ?? 0 )"
+                                            size="xs"
+                                            type="secondary"
+                                            :loading="isProcessing"
+                                            class="py-0"
+                                            :routeTarget="itemValue.picking_all_route"
+                                            :bind-to-link="{
+                                                preserveScroll: true,
+                                                preserveState: true,
+                                            }"
+                                            :body="{
+                                                location_org_stock_id: findLocation(itemValue.locations, proxyItem.hehe).id
+                                            }"
+                                            isWithError
+                                        />
+                                        <ButtonWithLink
+                                            class="xml-8"
+                                            v-if="!itemValue.is_handled"
+                                            type="negative"
+                                            tooltip="Set as not picked"
+                                            icon="fal fa-debug"
+                                            size="xs"
+                                            :routeTarget="itemValue.not_picking_route"
+                                            :bindToLink="{preserveScroll: true}"
+                                        />
+                                    </div>
+                                    
+                                    <div class="lg:hidden space-y-1">
+                                        <ButtonWithLink
+                                            v-tooltip="trans('Pick all required quantity in this location')"
+                                            icon="fal fa-clipboard-list-check"
+                                            :disabled="itemValue.is_handled || itemValue.quantity_required == itemValue.quantity_picked"
+                                            :label="locale.number(itemValue.quantity_to_pick ?? 0 )"
+                                            xsize="md"
+                                            type="secondary"
+                                            :loading="isProcessing"
+                                            class="py-0"
+                                            :routeTarget="itemValue.picking_all_route"
+                                            :bind-to-link="{
+                                                preserveScroll: true,
+                                                preserveState: true,
+                                            }"
+                                            :body="{
+                                                location_org_stock_id: findLocation(itemValue.locations, proxyItem.hehe).id
+                                            }"
+                                            isWithError
+                                            full
+                                        />
+                                        <ButtonWithLink
+                                            class=""
+                                            v-if="!itemValue.is_handled"
+                                            type="negative"
+                                            tooltip="Set as not picked"
+                                            icon="fal fa-debug"
+                                            xsize="md"
+                                            :routeTarget="itemValue.not_picking_route"
+                                            :bindToLink="{preserveScroll: true}"
+                                            full
+                                        />
+                                    </div>
                                 </template>
                             </NumberWithButtonSave>
 
