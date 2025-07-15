@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Dispatching\PickingSession\StorePickingSession;
+use App\Actions\Dispatching\PickingSession\UpdatePickingSession;
 use App\Actions\Dispatching\Shipper\StoreShipper;
 use App\Actions\Dispatching\Shipper\UpdateShipper;
 use App\Actions\Fulfilment\Pallet\UpdatePalletLocation;
@@ -29,7 +30,7 @@ Route::name('warehouse.')->prefix('warehouse/{warehouse:id}')->group(function ()
     Route::patch('location/{pallet:id}', [UpdatePalletLocation::class, 'inWarehouse'])->name('pallets.location.update');
     Route::delete('', DeleteWarehouse::class)->name('delete');
     Route::post('picking-session', StorePickingSession::class)->name('picking_session.store');
-    Route::post('picking-session/{pickingSession:id}', StorePickingSession::class)->name('picking_session.update')->withoutScopedBindings();
+    Route::patch('picking-session/{pickingSession:id}', UpdatePickingSession::class)->name('picking_session.update')->withoutScopedBindings();
 });
 Route::post('organisation/{organisation:id}/shipper', StoreShipper::class)->name('shipper.store');
 Route::patch('organisation/{organisation:id}/shipper/{shipper}', UpdateShipper::class)->name('shipper.update');
