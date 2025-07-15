@@ -103,9 +103,7 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
     public function rules(): array
     {
         return [
-            'cko-payment-session-id' => ['sometimes', 'string'],
-            'cko-session-id'         => ['sometimes', 'string'],
-            'cko-payment-id'         => ['sometimes', 'string'],
+            'cko-payment-id'         => ['required', 'string'],
         ];
     }
 
