@@ -12,7 +12,7 @@ const props = defineProps<{
 console.log('data', props.data)
 
 const openWebsite = (url: string) => {
-    window.open(url, '_blank');
+    window.open(url);
 };
 </script>
 
@@ -30,7 +30,7 @@ const openWebsite = (url: string) => {
                 <img class="w-full h-1/2 object-cover" src="https://i.ibb.co.com/CxTbCRf/undraw-factory-4d61.png" :alt="`${props.shop}`">
             </div>
 
-            <div class="mt-10 flex flex-col items-center justify-center gap-x-6">
+            <div class="mt-10 flex flex-col items-center justify-center gap-x-6">{{props.shopUrl}}
                 <Button @click="openWebsite(props.shopUrl)" size="l" :label="`Open ${props.shop}`" />
             </div>
         </div>
