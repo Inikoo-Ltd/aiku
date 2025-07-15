@@ -194,7 +194,7 @@ const onClickPlusButton = () => {
 				v-if="!noUndoButton"
 				@click.stop="() => (keyIconUndo++, form.reset('quantity'))"
 				v-tooltip="trans('Reset value')"
-				class="relative flex items-center justify-center px-1 py-1.5"
+				class="relative flex items-center justify-center px-2.5 lg:px-1 py-2.5 lg:py-1.5"
 				:class="
 					form.isDirty
 						? 'cursor-pointer hover:text-gray-800 disabled:text-gray-400 hover:bg-gray-200 rounded'
@@ -221,7 +221,7 @@ const onClickPlusButton = () => {
 				<!-- Button: Minus -->
 				<div
 					@click.stop="() => props.readonly || form.processing ? null : onClickMinusButton()"
-					class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 rounded px-1 py-1.5 text-xs justify-self-center"
+					class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 rounded px-2.5 lg:px-1 py-2.5 lg:py-1.5 text-xs justify-self-center"
 					:class="[
 						props.readonly || form.processing ? 'text-gray-400 ' : 'cursor-pointer text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 '
 					]"	
@@ -248,8 +248,8 @@ const onClickPlusButton = () => {
 						:max="max || undefined"
 						style="width: 100%"
 						:disabled="props.readonly || form.processing"
+						inputClass="!p-1 md:!p-0"
 						:inputStyle="{
-							padding: '0px',
 							width: bindToTarget?.fluid ? undefined : '50px',
 							color: props.readonly ? '#6b7280' : colorTheme ?? '#374151',
 							border: 'none',
@@ -262,7 +262,7 @@ const onClickPlusButton = () => {
 				<!-- Button: Plus -->
 				<div
 					@click.stop="() => props.readonly || form.processing ? null : onClickPlusButton()"
-					class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 rounded px-1 py-1.5 text-xs justify-self-center"
+					class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 rounded px-2.5 lg:px-1 py-2.5 lg:py-1.5 text-xs justify-self-center"
 					:class="[
 						props.readonly || form.processing ? 'text-gray-400 ' : 'cursor-pointer text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 '
 					]"	
