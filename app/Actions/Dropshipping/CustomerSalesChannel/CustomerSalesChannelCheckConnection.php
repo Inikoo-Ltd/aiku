@@ -17,10 +17,11 @@ class CustomerSalesChannelCheckConnection extends OrgAction
 {
     use AsCommand;
 
-    public string $commandSignature = 'channel:check-connection {customerSalesChannel}';
+    public string $commandSignature = 'check:channel-connection {customerSalesChannel}';
 
     public function handle(CustomerSalesChannel $customerSalesChannel): bool
     {
+        // TODO: Ebay, Magento, Amazon
         return (bool) $customerSalesChannel->user?->checkConnection();
     }
 

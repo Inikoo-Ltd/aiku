@@ -538,4 +538,23 @@ trait WithWooCommerceApiRequest
             return false;
         }
     }
+
+    /**
+     * Check if a product exists and is available in WooCommerce
+     *
+     * @param int $productId Product ID to check
+     *
+     * @return bool Whether the product exists and is available
+     */
+    public function checkPortfolioAvailability(int $productId): bool
+    {
+        try {
+            $product = $this->getWooCommerceProduct($productId, false);
+            return !empty($product) && isset($product['status']) && $product['status'] === 'publish';
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+
 }
