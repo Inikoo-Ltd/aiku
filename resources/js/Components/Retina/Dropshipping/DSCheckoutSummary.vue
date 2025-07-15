@@ -159,23 +159,24 @@ const isModalShippingAddress = ref(false)
             <!-- Section: Shipment -->
             <div v-if="summary.order_properties?.shipments?.length" class="flex itemcen gap-x-1 py-0.5">
 				<FontAwesomeIcon v-tooltip="trans('Shipments')" icon='fal fa-shipping-fast' class='text-gray-400 mt-1' fixed-width aria-hidden='true' />
-				<div class="group w-full">
-					<div class="leading-4 text-base flex justify-between w-full py-1">
+				<div class="group w-full overflow-x-auto border border-gray-200 rounded">
+					<!-- <div class="leading-4 text-base flex justify-between w-full py-1">
 						<div>{{ trans("Tracking numbers") }}</div>
-					</div>
+					</div> -->
 
-					<div v-if="summary.order_properties?.shipments" class="mt-2 overflow-x-auto">
-						<table class="min-w-full divide-y divide-gray-200 border border-gray-200 rounded">
+					<!-- <div class="xmt-2 xoverflow-x-auto qwezxc"> -->
+						<table class="min-w-full divide-y divide-gray-200 ">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th scope="col" class="px-2.5 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         {{ trans("Shipper") }}
                                     </th>
-                                    <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th scope="col" class="px-2.5 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         {{ trans("Tracking Number") }}
                                     </th>
                                 </tr>
                             </thead>
+
                             <tbody class="bg-white divide-y divide-gray-200">
                                 <tr v-for="(shipment, shipmentIdx) in summary.order_properties?.shipments" :key="shipmentIdx">
                                     <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
@@ -187,7 +188,7 @@ const isModalShippingAddress = ref(false)
                                                 <a 
                                                     :href="trackingItem.url" 
                                                     target="_blank" 
-                                                    class="text-blue-600 hover:text-blue-800 hover:underline"
+                                                    class="cursor-pointer text-blue-600 hover:text-blue-800 hover:underline"
                                                     v-tooltip="trans('Click to track shipment')"
                                                 >
                                                     {{ trackingItem.tracking }}
@@ -204,12 +205,9 @@ const isModalShippingAddress = ref(false)
                                 </tr>
                             </tbody>
                         </table>
-					</div>
-
+					<!-- </div> -->
 				</div>
 			</div>
-
-
 
         </div>
 

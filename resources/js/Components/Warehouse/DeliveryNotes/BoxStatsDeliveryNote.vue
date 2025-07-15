@@ -392,7 +392,7 @@ const onPrintShipment = async (ship) => {
 			<!-- Section: Parcels -->
 			<div v-if="['packed', 'dispatched', 'finalised'].includes(deliveryNote?.state)" class="flex gap-x-1 py-0.5"
 				:class="listError.box_stats_parcel ? 'errorShake' : ''">
-				<FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='text-gray-400' fixed-width
+				<FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='mt-1 text-gray-400' fixed-width
 					aria-hidden='true' />
 				<div class="group w-full">
 					<div class="leading-4 text-base flex justify-between w-full py-1">
