@@ -8,9 +8,8 @@
 import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { Product } from "@/types/product"
-
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { inject, onMounted, ref } from "vue"
+import { inject, onMounted, ref, computed } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
@@ -18,13 +17,11 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@/Components/Image.vue"
 import { debounce, get, set } from "lodash-es"
 import ConditionIcon from "@/Components/Utils/ConditionIcon.vue"
-
 import { faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar as falStar, faTrashAlt, faExclamationCircle} from "@fal"
 import { faStar, faFilter } from "@fas"
 import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
 import { faCheck } from "@far"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { computed } from "vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 library.add( fadExclamationTriangle, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle )
 
@@ -45,11 +42,6 @@ const props = defineProps<{
     platform_data: PlatformData
 	platform_user_id: number
 	is_platform_connected: boolean
-	customerSalesChannel: {
-		id: number
-		slug: string
-		name: string
-	}
 	progressToUploadToShopify: {}
 	isPlatformManual?: boolean
 }>()
@@ -148,7 +140,6 @@ const onClickOutOfStock = (query: string) => {
 		xx = query
 	}
 	
-	console.log('xx', xx)
 	router.reload(
         {
             data: { [`${props.tab}_filter[status]`]: xx },  // Sent to url parameter (?tab=showcase, ?tab=menu)
@@ -262,7 +253,6 @@ const onClickOutOfStock = (query: string) => {
 			<div class="flex justify-center">
 				<template v-if="is_platform_connected">
 					<FontAwesomeIcon v-if="(product.platform_product_id)" v-tooltip="trans('Uploaded to platform')" icon="far fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-					<!-- <FontAwesomeIcon v-if="(product.upload_warning)" v-tooltip="product.upload_warning"  icon="fa fa-exclamation-circle" class="text-yellow-500" fixed-width aria-hidden="true" /> -->
 					<ConditionIcon v-else-if="get(progressToUploadToShopify, [product.id], null)" :state="get(progressToUploadToShopify, [product.id], undefined)" class="text-xl mx-auto" />
 					<span v-if="(product.upload_warning)" class="text-red-500 text-xs text-center italic">
 						{{ product.upload_warning }}
@@ -303,8 +293,7 @@ const onClickOutOfStock = (query: string) => {
 
 				
 				<ButtonWithLink
-					v-if="item.status"
-					v-tooltip="trans('Set to inactive')"
+					v-tooltip="trans('Delete product')"
 					type="negative"
 					icon="fal fa-skull"
 					:routeTarget="item.update_portfolio"
@@ -317,31 +306,7 @@ const onClickOutOfStock = (query: string) => {
 					}"
 				/>
 
-				<ButtonWithLink
-					v-else
-					v-tooltip="trans('Set to active')"
-					type="positive"
-					icon="fal fa-seedling"
-					:routeTarget="item.update_portfolio"
-					:body="{
-						'status': true,
-					}"
-					size="xs"
-					:bindToLink="{
-						preserveScroll: true,
-					}"
-				/>
 
-				<!-- <ButtonWithLink
-					v-tooltip="trans('Remove product')"
-					type="negative"
-					icon="fal fa-times"
-					:routeTarget="item.delete_portfolio"
-					size="xs"
-					:bindToLink="{
-						preserveScroll: true,
-					}"
-				/> -->
 			</div>
 		</template>
 	</Table>

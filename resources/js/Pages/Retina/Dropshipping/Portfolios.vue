@@ -17,7 +17,6 @@ import AddPortfoliosWithUpload from "@/Components/Dropshipping/AddPortfoliosWith
 import AddPortfolios from "@/Components/Dropshipping/AddPortfolios.vue";
 import {Message, Popover} from "primevue"
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
-import type {Component} from 'vue';
 import {faSyncAlt} from "@fas";
 import {
     faBracketsCurly,
@@ -31,8 +30,6 @@ import {
     faDownload
 } from "@fal";
 import axios from "axios"
-import {useTabChange} from "@/Composables/tab-change"
-import Tabs from "@/Components/Navigation/Tabs.vue"
 import {Table as TableTS} from "@/types/Table"
 import { CustomerSalesChannel } from "@/types/customer-sales-channel"
 
@@ -81,8 +78,8 @@ const props = defineProps<{
     }
     manual_channels: object
     count_product_not_synced: number
-    active: {}
-    inactive: {}
+
+   // inactive: {}
     product_count: number
 }>();
 
@@ -242,16 +239,7 @@ const bulkUpload = () => {
 const progressToUploadToShopify = ref<{ [key: number]: string }>({})
 
 
-const currentTab = ref(props.tabs.current);
-const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 
-const component = computed(() => {
-    const components: Component = {
-        active: RetinaTablePortfolios,
-        inactive: RetinaTablePortfolios,
-    };
-    return components[currentTab.value];
-});
 </script>
 
 <template>
@@ -272,7 +260,7 @@ const component = computed(() => {
 
         <template v-if="props.product_count" #other>
             <div class="rounded-md ">
-                <a :href="downloadUrl('csv')" target="_blank" rel="noopener">
+                <a :href="downloadUrl('csv') as string" target="_blank" rel="noopener">
                     <Button
                         :icon="faDownload"
                         label="CSV"
@@ -411,19 +399,7 @@ const component = computed(() => {
                 </div>
             </div>
 
-            <!-- <div class="w-full sm:w-fit h-fit">
-                <Button
-                    v-if="routes.bulk_upload"
-                    @click="() => bulkUpload()"
-                    icon="fas fa-upload"
-                    :label="trans('Upload all')"
-                    size="xxs"
-                    :routeTarget="routes.bulk_upload"
-                    type="green"
-                    full
-                    :disabled="isLoadingBulkDeleteUpload"
-                />
-            </div> -->
+
         </div>
     </Message>
 
@@ -458,36 +434,18 @@ const component = computed(() => {
     </div>
 
     <div v-else class="overflow-x-auto">
-        <Tabs
-            :current="currentTab"
-            :navigation="tabs.navigation"
-            @update:tab="handleTabUpdate"
-        />
 
-        <component
-            :is="component"
-            :data="props[currentTab as keyof typeof props]"
-            :tab="currentTab"
-            :selectedData
-            :platform_data
-            :platform_user_id
-            :is_platform_connected
-            :customerSalesChannel="customer_sales_channel"
-            :progressToUploadToShopify
-            :isPlatformManual
-        />
 
-        <!-- <RetinaTablePortfolios
+        <RetinaTablePortfolios
             :data="props.products"
             :tab="'products'"
             :selectedData
             :platform_data
             :platform_user_id
             :is_platform_connected
-            :customerSalesChannel="customer_sales_channel"
             :progressToUploadToShopify
             :isPlatformManual
-        /> -->
+        />
     </div>
 
     <Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false"

@@ -9,6 +9,7 @@
 namespace App\Http\Resources\CRM;
 
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -27,12 +28,16 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $platform_name
  * @property mixed $connection_status
  */
-class RetinaCustomerSalesChannelsResource extends JsonResource
+class RetinaCustomerSalesChannelResource extends JsonResource
 {
     use GetPlatformLogo;
 
     public function toArray($request): array
     {
+        /** @var CustomerSalesChannel $customerSalesChannels */
+        $customerSalesChannels = $this;
+
+
         return [
             'slug'                    => $this->slug,
             'id'                      => $this->id,
@@ -46,9 +51,16 @@ class RetinaCustomerSalesChannelsResource extends JsonResource
             'amount'                  => $this->total_amount,
             'platform_code'           => $this->platform_code,
             'platform_name'           => $this->platform_name,
-            'platform_image'          => $this->getPlatformLogo($this->platform_code),
+            'platform_image'          => $this->getPlatformLogo($customerSalesChannels->platform->code),
             'connection'              => $this->connection_status,
 
+            'reconnect_route'                     => [
+                'name'       => 'retina.dropshipping.customer_sales_channels.reconnect',
+                'parameters' => [
+                    'customerSalesChannel' => $this->slug
+                ],
+                'method'     => 'get',
+            ],
 
             'delete_route' => [
                 'method'     => 'delete',
