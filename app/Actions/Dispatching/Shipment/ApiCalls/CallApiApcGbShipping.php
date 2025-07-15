@@ -49,7 +49,7 @@ class CallApiApcGbShipping extends OrgAction
     public function getHeaders(Shipper $shipper): array
     {
         return [
-            'remote-user'  => 'Basic '.$this->getAccessToken($shipper),
+            'remote-user'  => 'Basic ' . $this->getAccessToken($shipper),
             'Content-Type' => 'application/json',
         ];
     }
@@ -79,7 +79,7 @@ class CallApiApcGbShipping extends OrgAction
             $postalCode = Arr::get($parentResource, 'to_address.postal_code');
         } else {
             $postalCode = 'INT';
-            $address2   = trim($address2.' '.trim(Arr::get($shipTo, 'sorting_code').' '.Arr::get($shipTo, 'postal_code')));
+            $address2   = trim($address2 . ' ' . trim(Arr::get($shipTo, 'sorting_code') . ' ' . Arr::get($shipTo, 'postal_code')));
         }
 
         $items = [];
@@ -148,11 +148,13 @@ class CallApiApcGbShipping extends OrgAction
             }
         }
 
-        if (!preg_match('/^(BT51|IV(\d\s|20|25|30|31|32|33|34|35|36|37|63)|AB(41|51|52)|PA79)/', $postalCode)
+        if (
+            !preg_match('/^(BT51|IV(\d\s|20|25|30|31|32|33|34|35|36|37|63)|AB(41|51|52)|PA79)/', $postalCode)
             && preg_match(
                 '/^((JE|GG|IM|KW|HS|ZE|IV)\d+)|AB(30|33|34|35|36|37|38)|AB[4-5]\d|DD[89]|FK(16)|PA(20|36|4\d|6\d|7\d)|PH((15|16|17|18|19)|[2-5]\d)|KA(27|28)/',
                 $postalCode
-            )) {
+            )
+        ) {
             $productCode = 'TDAY';
         }
 
@@ -185,7 +187,7 @@ class CallApiApcGbShipping extends OrgAction
         ];
 
 
-        $response    = Http::withHeaders($this->getHeaders($shipper))->post($this->getBaseUrl().$url, $params);
+        $response    = Http::withHeaders($this->getHeaders($shipper))->post($this->getBaseUrl() . $url, $params);
         $apiResponse = $response->json();
         $statusCode  = $response->status();
 
@@ -193,6 +195,11 @@ class CallApiApcGbShipping extends OrgAction
             'api_response' => $apiResponse,
         ];
         $errorData = [];
+
+        $dataFlat = array_filter(Arr::flatten($apiResponse));
+        if (in_array('DutyItems', $dataFlat)) {
+            $errorData['address'][] = 'Address must be in United Kingdom';
+        }
 
         if ($statusCode == 200 && Arr::get($apiResponse, 'Orders.Messages.Code') == 'SUCCESS') {
             $status                      = 'success';
@@ -220,14 +227,14 @@ class CallApiApcGbShipping extends OrgAction
 
                         if (count($fieldParts) > 1) {
                             if (Str::contains($fieldParts[0], 'Delivery')) {
-                                $errorData['address'][] = Str::headline($fieldParts[1]).' '.$error['ErrorMessage'].',';
+                                $errorData['address'][] = Str::headline($fieldParts[1]) . ' ' . $error['ErrorMessage'] . ',';
                                 continue;
                             }
-                            $errorData[strtolower($fieldParts[0])] .= Str::headline($fieldParts[1]).' '.$error['ErrorMessage'].',';
+                            $errorData[strtolower($fieldParts[0])] .= Str::headline($fieldParts[1]) . ' ' . $error['ErrorMessage'] . ',';
                             continue;
                         }
 
-                        $errorData['others'][] = Str::headline($error['FieldName']).' '.$error['ErrorMessage'].',';
+                        $errorData['others'][] = Str::headline($error['FieldName']) . ' ' . $error['ErrorMessage'] . ',';
                     }
                 }
 
@@ -250,10 +257,8 @@ class CallApiApcGbShipping extends OrgAction
      */
     public function getLabel(string $labelID, Shipper $shipper): string
     {
-        $apiResponse = Http::withHeaders($this->getHeaders($shipper))->get($this->getBaseUrl().'/api/3.0/Orders/'.$labelID.'.json')->json();
+        $apiResponse = Http::withHeaders($this->getHeaders($shipper))->get($this->getBaseUrl() . '/api/3.0/Orders/' . $labelID . '.json')->json();
 
         return Arr::get($apiResponse, 'Orders.Order.Label.Content', '');
     }
-
-
 }
