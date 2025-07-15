@@ -148,8 +148,9 @@ class DropshippingPortfoliosResource extends JsonResource
             'type'                      => $this->item_type,
             'created_at'                => $this->created_at,
             'updated_at'                => $this->updated_at,
-            'platform_product_id' => $this->platform_product_id,
+            'platform_product_id'       => $this->platform_product_id,
             'upload_warning'            => $this->upload_warning,
+            'is_code_exist'             => false,  // TODO: true if code exists in Shopify/platforms
             'category' => $category,
             'platform' => $this->platform->type,
             'delete_portfolio' => [

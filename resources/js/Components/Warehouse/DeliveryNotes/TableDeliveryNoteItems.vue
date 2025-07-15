@@ -228,15 +228,20 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
                     
                         <div v-tooltip="trans('Total picked quantity in this location')" class="text-gray-500 whitespace-nowrap">
                             <FontAwesomeIcon icon="fal fa-hand-holding-box" class="mr text-gray-500" fixed-width aria-hidden="true" />
-                            {{ picking.quantity_picked }}
+                            <FractionDisplay v-if="picking.quantity_picked_fractional" :fractionData="picking.quantity_picked_fractional" />
+                            <span v-else>
+                                {{ picking.quantity_picked }}
+                            </span>
                         </div>
                     </div>
                     
                     <div v-if="picking.type === 'not-pick'" v-tooltip="trans('Quantity not gonna be picked')" class="text-red-500 w-fit mr-auto">
                         <FontAwesomeIcon icon="fas fa-skull" class="" fixed-width aria-hidden="true" />
-                        {{ picking.quantity_picked }}
+                        <FractionDisplay v-if="picking.quantity_picked_fractional" :fractionData="picking.quantity_picked_fractional" />
+                        <span v-else>
+                            {{ picking.quantity_picked }}
+                        </span>
                     </div>
-                    <!-- <pre>{{ picking }}</pre> -->
 
                     <ButtonWithLink
                         v-if="!item.is_packed"
@@ -254,7 +259,7 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
             </div>
 
             <div v-else class="text-xs text-gray-400 italic">
-                No item picked yet
+                {{ trans("No item picked yet") }}
             </div>
         </template>
 
