@@ -154,7 +154,9 @@ const onClickPick = () => {
         </template>
 
         <template #cell(date)="{ item }">
-            {{ useFormatTime(item.date) }}
+            {{ useFormatTime(item.date, {
+                formatTime: 'EEE, do MMM yy, HH:mm',
+            }) }}
         </template>
         
         <template #cell(customer_name)="{ item: deliveryNote }">
