@@ -32,7 +32,7 @@ class WarehouseAreaResource extends JsonResource
             'slug'                   => $this->slug,
             'code'                   => $this->code,
             'name'                   => $this->name,
-            'picking_position'       => $this->picking_position,
+            'picking_position'       => (float) $this->picking_position,
             'number_locations'       => $this->number_locations,
             'stock_value'            => $this->stock_value,
             'number_empty_locations' => $this->number_empty_locations,
