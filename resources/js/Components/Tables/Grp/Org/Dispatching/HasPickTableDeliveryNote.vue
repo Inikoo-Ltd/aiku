@@ -155,8 +155,9 @@ const onChangeCheked = (checked: boolean, item: DeliveryNote) => {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="true" @onChecked="(item) => onChangeCheked(true, item)"
-        @onUnchecked="(item) => onChangeCheked(false, item)" checkboxKey='id'>
+    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="layout.app.environment !== 'production'"
+        @onChecked="(item) => onChangeCheked(true, item)" @onUnchecked="(item) => onChangeCheked(false, item)"
+        checkboxKey='id' :isChecked="(item) => selectedDeliveryNotes.includes(item.id)">
         <template #cell(status)="{ item: deliveryNote }">
             <Icon :data="deliveryNote.state_icon" />
         </template>
@@ -191,7 +192,7 @@ const onChangeCheked = (checked: boolean, item: DeliveryNote) => {
                 <div class="mt-2">
                     <p class="text-sm text-gray-500">
                         {{ trans("This action will pick the delivery note") }} <strong>{{ isModalPick?.reference
-                            }}</strong>
+                        }}</strong>
                         {{ trans('with') }} {{ isModalPick?.number_items }} {{ trans('items') }}
                     </p>
                 </div>
