@@ -523,4 +523,19 @@ trait WithWooCommerceApiRequest
     {
         return $this->makeWooCommerceRequest('GET', 'webhooks');
     }
+
+    public function checkConnection(): bool
+    {
+        try {
+            if (!$this->woocommerceApiUrl || !$this->woocommerceConsumerKey || !$this->woocommerceConsumerSecret) {
+                $this->initWooCommerceApi();
+            }
+
+            $response = $this->makeWooCommerceRequest('GET', 'system_status');
+
+            return !empty($response);
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
 }

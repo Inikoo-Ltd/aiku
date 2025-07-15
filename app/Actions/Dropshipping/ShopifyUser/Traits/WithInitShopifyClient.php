@@ -34,5 +34,23 @@ trait WithInitShopifyClient
         }
     }
 
+    public function checkConnection(): bool
+    {
+        try {
+            $client = $this->getShopifyClient();
 
+            if (!$client) {
+                return false;
+            }
+
+            $response = $client->request(
+                'GET',
+                '/admin/api/2024-07/shop.json'
+            );
+
+            return $response['status'] === 200;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
 }
