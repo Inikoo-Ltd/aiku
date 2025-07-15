@@ -79,6 +79,10 @@ class ShowPupilDashboard
 
         $render_page = 'Intro';
 
+        if ($shopifyUser->customer) {
+            $render_page = 'Dashboard/PupilWelcome';
+        }
+
         //        if ($shopifyUser?->customer?->shop?->name) {
         //            $render_page = 'WelcomeShop';
         //        } else {
@@ -87,7 +91,8 @@ class ShowPupilDashboard
 
         return Inertia::render($render_page, [
             'shop'    => $shopifyUser?->customer?->shop?->name,
-            'shopUrl' => $this->getShopUrl($shopifyUser?->customer?->shop, $shopifyUser),
+            // 'shopUrl' => $this->getShopUrl($shopifyUser?->customer?->shop, $shopifyUser),
+            'shopUrl' => 'https://' . $shopifyUser?->customer?->shop?->website?->domain . '/app/login?ref=/app/dropshipping/channels/' . $shopifyUser?->customerSalesChannel?->slug,
             'user'    => $shopifyUser,
             // 'showIntro'             => !Arr::get($shopifyUser?->settings, 'webhooks'),
             'shops'   => $query->map(function (Shop $shop) {
