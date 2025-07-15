@@ -1,11 +1,5 @@
 <?php
 
-/*
- * Author: Peter Murphy <peter@grp.org>
- * Created: Mon, 15 Jul 2025 10:00:00 GMT
- * Copyright (c) 2025, GRP
- */
-
 namespace App\Actions\CRM\CustomerAcquisitionSource;
 
 use App\Actions\OrgAction;
