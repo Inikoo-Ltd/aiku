@@ -28,14 +28,9 @@ export default function RootLayout() {
           value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
         >
           <Stack>
-            <Stack.Screen
-              name="manual-login"
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="scanner-login"
-              options={{ headerShown: false }}
-            />
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen name="manual-login" options={{ headerShown: false }} />
+            <Stack.Screen name="scanner-login" options={{ headerShown: false }}/>
             <Stack.Screen name="(drawer-setup)" options={{ headerShown: false }} />
             <Stack.Screen name="show-location" options={{ headerShown: true }} />
             <Stack.Screen name="show-area" options={{ header: () => <DrawerHeader title="Area Detail" /> }}/>
@@ -44,6 +39,7 @@ export default function RootLayout() {
             <Stack.Screen name="show-stored-item" options={{ header: () => <DrawerHeader title="SKU Detail" /> }}/>
             <Stack.Screen name="(show-delivery)" options={{ headerShown: false }} />
             <Stack.Screen name="(show-return)" options={{ headerShown: false }} />
+            <Stack.Screen name="scanner" options={{ headerShown: false }} />
             <Stack.Screen name="+not-found" />
           </Stack>
           <StatusBar style="auto" />

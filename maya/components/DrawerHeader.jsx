@@ -26,9 +26,11 @@ export default function DrawerHeader({ title }) {
 
   const handleLeftPress = () => {
     if (isDrawerAvailable) {
-      navigation.dispatch(DrawerActions.toggleDrawer()); // ✅ Opens drawer
+      navigation.dispatch(DrawerActions.toggleDrawer());
     } else if (canGoBack) {
-      router.push('(drawer-setup)/home'); // ✅ Go back in stack
+      router.push('(drawer-setup)/home'); 
+    }else { 
+      router.push('(drawer-setup)/home'); 
     }
   };
 
