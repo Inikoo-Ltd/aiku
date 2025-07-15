@@ -73,7 +73,7 @@ class PickingSessionItem extends Model
         return $this->belongsTo(Warehouse::class);
     }
 
-    public function deliveryNotes(): BelongsToMany
+    public function deliveryNoteItems(): BelongsToMany
     {
         return $this->belongsToMany(
             DeliveryNoteItem::class,
