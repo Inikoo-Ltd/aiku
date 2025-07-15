@@ -33,7 +33,7 @@ class ShowRetinaTopUpDashboard extends RetinaAction
 
         $count = $unpaidOrders->count();
 
-        $total = $unpaidOrders->sum(function ($order) {
+        $amount = $unpaidOrders->sum(function ($order) {
             return $order->total_amount - $order->payment_amount;
         });
 
@@ -43,7 +43,7 @@ class ShowRetinaTopUpDashboard extends RetinaAction
         {
             $unpaidOrdersData = [
                 'count'  => $count,
-                'total'  => $total,
+                'total'  => $amount,
             ];
         }
 
@@ -61,7 +61,7 @@ class ShowRetinaTopUpDashboard extends RetinaAction
             ],
             'unpaid_orders' => [
                 'count'  => $count,
-                'total'  => $total,
+                'amount'  => $amount,
             ],
             'amount_shortcuts' => $unpaidOrdersData,
             'topUpData'  => $this->getTopUpData($customer),
