@@ -27,12 +27,12 @@ class CalculateDeliveryNotePercentage extends OrgAction
 
         // Picking percentage: picked vs required
         if ($pickingRequired > 0) {
-            $pickingPercentage = ($pickingPicked / $pickingRequired) * 100;
+            $pickingPercentage = min(($pickingPicked / $pickingRequired) * 100, 100);
         }
 
         // Packing percentage: packed vs picked
         if ($pickingPicked > 0) {
-            $packingPercentage = ($packingPacked / $pickingPicked) * 100;
+            $packingPercentage = min(($packingPacked / $pickingPicked) * 100, 100);
         }
 
         // Optionally round them
