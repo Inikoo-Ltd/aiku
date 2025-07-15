@@ -82,7 +82,7 @@ class CheckoutComOrderPaymentFailure extends RetinaWebhookAction
 
         if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
             return Redirect::route('retina.dropshipping.checkout.show', [$orderPaymentApiPoint->order->slug])->with(
-                'notification',
+                'modal',
                 $notification
             );
         } else {
