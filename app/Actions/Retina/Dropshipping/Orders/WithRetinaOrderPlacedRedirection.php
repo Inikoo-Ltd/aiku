@@ -71,7 +71,7 @@ trait WithRetinaOrderPlacedRedirection
                 'description' => __('You do not have enough balance to pay for this order.'),
             ]);
         } else {
-            return Redirect::back()->with('notification', [
+            return Redirect::back()->with('modal', [
                 'status'  => 'error',
                 'title'   => __('Error!'),
                 'description' => __('An error occurred while processing your order: ').$arr['reason'],

@@ -45,14 +45,16 @@ const layout = useLayoutStore()
 
 // Flash: Notification
 watch(() => usePage().props?.flash?.notification, (notif) => {
-    // console.log('notif ret', notif)
+    console.log('notif ret', notif)
     if (!notif) return
 
     notify({
         title: notif.title,
-        text: notif.description,
+        text: notif.description ?? notif.message,
         type: notif.status,
     })
+    // setTimeout(() => {
+    // }, 500)
 }, {
     deep: true,
     immediate: true
@@ -260,7 +262,7 @@ const getBgColorDependsOnStatus = (status: string) => {
         <slot />
     </div>
 
-    <Modal :isOpen="isModalOpen" @onClose="isModalOpen = false" width="w-full max-w-lg">
+    <Modal :isOpen="isModalOpen" aonClose="isModalOpen = false" width="w-full max-w-lg">
         <div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
             <div class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full"
                 :class="getTextColorDependsOnStatus(selectedModal?.status)"
@@ -317,6 +319,32 @@ const getBgColorDependsOnStatus = (status: string) => {
 // * {
 //     --color-primary: v-bind('layout.app.theme[0]');
 // }
+
+/* For Notification */
+.custom-style-notification {
+    @apply mt-2 bg-white rounded-md mr-3;
+
+    .notification-title {
+        @apply font-bold
+    }
+
+    .notification-content {
+        @apply text-sm
+    }
+
+    &.success {
+        @apply bg-lime-50 border-l-8 border border-lime-300 text-lime-600
+    }
+    &.warning {
+        @apply bg-yellow-50 border-l-8 border border-yellow-400  text-amber-600
+    }
+    &.info {
+        @apply bg-gray-100 border-l-8 border border-slate-500  text-slate-500
+    }
+    &.error {
+        @apply bg-red-400 border-l-8 border border-red-600 text-white
+    }
+}
 
 /* Navigation: Aiku */
 .navigationActive {
