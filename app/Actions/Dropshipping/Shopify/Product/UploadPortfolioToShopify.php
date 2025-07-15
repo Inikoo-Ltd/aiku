@@ -147,7 +147,7 @@ class UploadPortfolioToShopify extends RetinaAction
         $client         = $shopifyUser->getShopifyClient();
         try {
             // Make API request to create product in Shopify
-            $response = $client->request('POST', '/admin/api/2024-07/products.json', $body);
+            $response = $client->request('POST', '/admin/api/2025-07/products.json', $body);
 
             if ($response['errors']) {
                 // Log API errors in model
