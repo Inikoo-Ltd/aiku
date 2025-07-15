@@ -17,6 +17,9 @@ use App\Enums\UI\CRM\CustomerPlatformTabsEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Dropshipping\TiktokUser;
+use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -48,6 +51,19 @@ class ShowCustomerSalesChannel extends OrgAction
 
         $actions = [];
 
+        $name = $customerSalesChannel->customer->name;
+        if (in_array($customerSalesChannel->platform->type, [
+            PlatformTypeEnum::SHOPIFY,
+            PlatformTypeEnum::WOOCOMMERCE,
+            PlatformTypeEnum::TIKTOK
+        ])) {
+            /** @var ShopifyUser|WooCommerceUser|TiktokUser $platformUser */
+            $platformUser = $customerSalesChannel->user;
+            if ($platformUser) {
+                $name = $platformUser->name;
+            }
+        }
+
 
         return Inertia::render(
             'Org/Dropshipping/PlatformInCustomer',
@@ -70,12 +86,7 @@ class ShowCustomerSalesChannel extends OrgAction
 
                 'showcase' => [
                     'stats' => [
-                        'name'                    => match ($customerSalesChannel->platform->type) {
-                            PlatformTypeEnum::SHOPIFY => $customerSalesChannel->customer->shopifyUser->name,
-                            PlatformTypeEnum::WOOCOMMERCE => $customerSalesChannel->customer->wooCommerceUser->name,
-                            PlatformTypeEnum::TIKTOK => $customerSalesChannel->customer->tiktokUser->name,
-                            default => $customerSalesChannel->customer->name,
-                        },
+                        'name'                    => $name,
                         'number_orders'           => $customerSalesChannel->number_orders,
                         'number_customer_clients' => $customerSalesChannel->number_customer_clients,
                         'number_portfolios'       => $customerSalesChannel->number_portfolios
