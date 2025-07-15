@@ -11,9 +11,9 @@ import { Column, DataTable, IconField, InputIcon, InputText } from 'primevue'
 import { inject, onMounted, ref } from 'vue'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faSearch } from "@fal"
+import { faSearch, faRepeatAlt, faClone } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-library.add(faSearch)
+library.add(faSearch, faRepeatAlt, faClone)
 
 const model = defineModel<{}[]>()
 const props = defineProps<{
@@ -165,9 +165,25 @@ const valueTableFilter = ref({})
 <!--        </Column>-->
 
         <Column field="name" >
-             <template #header>
+            <template #header>
                 <div v-tooltip="'Name'" class="whitespace-nowrap truncate font-semibold">
-                Name
+                    Name
+                </div>
+            </template>
+
+            <template #body="{ data }">
+                <div>
+                    <div class="whitespace-nowrap xtext-right w-full">
+                        {{ data.name }}
+                    </div>
+
+                    <div v-if="data.is_code_exist" class="text-xs text-amber-500">
+                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
+                        <span class="pr-2">This product has same code in the platform:</span>
+                        <Button label="Replace " icon="fal fa-repeat-alt" type="tertiary" size="xxs" />
+                        <span class="px-2 text-gray-500">or</span>
+                        <Button label="Duplicate" icon="fal fa-clone" type="tertiary" size="xxs" />
+                    </div>
                 </div>
             </template>
         </Column>
