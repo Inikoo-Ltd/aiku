@@ -38,9 +38,6 @@ class ShowRetinaCatalogue extends RetinaAction
 
     public function htmlResponse(Shop $shop, ActionRequest $request): Response
     {
-
-
-
         return Inertia::render(
             'Catalogue/RetinaCatalogue',
             [
@@ -59,7 +56,7 @@ class ShowRetinaCatalogue extends RetinaAction
                 ],
 
 
-                'stats'       => [
+                'stats' => [
                     [
                         'label' => __('Departments'),
                         'route' => [
@@ -74,7 +71,7 @@ class ShowRetinaCatalogue extends RetinaAction
                         'value' => $shop->stats->number_current_departments,
 
 
-                        'metaRight'  => [
+                        'metaRight' => [
                             'tooltip' => __('Sub Departments'),
                             'icon'    => [
                                 'icon'  => 'fal fa-folder-tree',
@@ -82,9 +79,10 @@ class ShowRetinaCatalogue extends RetinaAction
                             ],
                             'count'   => $shop->stats->number_current_sub_departments,
                         ],
-                        'metas' => [
+                        'metas'     => [
 
                             [
+                                'hide'    => $shop->stats->number_departments_state_discontinuing==0,
                                 'tooltip' => __('Active departments'),
                                 "icon"    => [
                                     "tooltip" => "active",
@@ -92,7 +90,7 @@ class ShowRetinaCatalogue extends RetinaAction
                                     "class"   => "text-green-500"
                                 ],
                                 'count'   => $shop->stats->number_departments_state_active,
-                                'route' => [
+                                'route'   => [
                                     // 'name'       => 'grp.org.shops.show.catalogue.departments.index',
                                     // 'parameters' => [
                                     //     'organisation' => $shop->organisation->slug,
@@ -103,13 +101,69 @@ class ShowRetinaCatalogue extends RetinaAction
                             ],
 
                             [
+                                'hide'    => $shop->stats->number_departments_state_discontinuing==0,
                                 'tooltip' => __('Discontinuing'),
                                 'icon'    => [
                                     'icon'  => 'fas fa-times-circle',
                                     'class' => 'text-amber-500'
                                 ],
                                 'count'   => $shop->stats->number_departments_state_discontinuing,
-                                'route' => [
+                                'route'   => [
+                                    // 'name'       => 'grp.org.shops.show.catalogue.departments.index',
+                                    // 'parameters' => [
+                                    //     'organisation' => $shop->organisation->slug,
+                                    //     'shop'         => $shop->slug,
+                                    //     'index_elements[state]' => 'discontinuing'
+                                    // ]
+                                ],
+                            ],
+                        ]
+                    ],
+                    [
+                        'label' => __('Sub-Departments'),
+                        'route' => [
+                            // 'name'       => 'grp.org.shops.show.catalogue.departments.index',
+                            // 'parameters' => [
+                            //     'organisation' => $shop->organisation->slug,
+                            //     'shop'         => $shop->slug
+                            // ]
+                        ],
+                        'icon'  => 'fal fa-folder-tree',
+                        "color" => "#690000",
+                        'value' => $shop->stats->number_current_sub_departments,
+
+
+
+                        'metas'     => [
+
+                            [
+                                'hide'    => $shop->stats->number_departments_state_discontinuing==0,
+                                'tooltip' => __('Active departments'),
+                                "icon"    => [
+                                    "tooltip" => "active",
+                                    "icon"    => "fas fa-check-circle",
+                                    "class"   => "text-green-500"
+                                ],
+                                'count'   => $shop->stats->number_departments_state_active,
+                                'route'   => [
+                                    // 'name'       => 'grp.org.shops.show.catalogue.departments.index',
+                                    // 'parameters' => [
+                                    //     'organisation' => $shop->organisation->slug,
+                                    //     'shop'         => $shop->slug,
+                                    //     'index_elements[state]' => 'active'
+                                    // ]
+                                ],
+                            ],
+
+                            [
+                                'hide'    => $shop->stats->number_departments_state_discontinuing==0,
+                                'tooltip' => __('Discontinuing'),
+                                'icon'    => [
+                                    'icon'  => 'fas fa-times-circle',
+                                    'class' => 'text-amber-500'
+                                ],
+                                'count'   => $shop->stats->number_departments_state_discontinuing,
+                                'route'   => [
                                     // 'name'       => 'grp.org.shops.show.catalogue.departments.index',
                                     // 'parameters' => [
                                     //     'organisation' => $shop->organisation->slug,
@@ -141,7 +195,7 @@ class ShowRetinaCatalogue extends RetinaAction
                                     "class"   => "text-green-500"
                                 ],
                                 'count'   => $shop->stats->number_families_state_active,
-                                'route' => [
+                                'route'   => [
                                     // 'name'       => 'grp.org.shops.show.catalogue.families.index',
                                     // 'parameters' => [
                                     //     'organisation' => $shop->organisation->slug,
@@ -157,7 +211,7 @@ class ShowRetinaCatalogue extends RetinaAction
                                     'class' => 'text-amber-500'
                                 ],
                                 'count'   => $shop->stats->number_families_state_discontinuing,
-                                'route' => [
+                                'route'   => [
                                     // 'name'       => 'grp.org.shops.show.catalogue.families.index',
                                     // 'parameters' => [
                                     //     'organisation' => $shop->organisation->slug,
@@ -170,26 +224,19 @@ class ShowRetinaCatalogue extends RetinaAction
                         ]
                     ],
                     [
-                        'label' => __('Current Products'),
-                        'route' => [
+                        'label'     => __('Products'),
+                        'route'     => [
                             // 'name'       => 'grp.org.shops.show.catalogue.products.current_products.index',        // TODO
                             // 'parameters' => [
                             //     'organisation' => $shop->organisation->slug,
                             //     'shop'         => $shop->slug
                             // ]
                         ],
-                        'icon'  => 'fal fa-cube',
-                        "color" => "#38bdf8",
-                        'value' => $shop->stats->number_current_products,
-                        'metaRight'  => [
-                            'tooltip' => __('Variants'),
-                            'icon'    => [
-                                'icon'  => 'fal fa-cubes',
-                                'class' => ''
-                            ],
-                            'count'   => $shop->stats->number_current_product_variants,
-                        ],
-                        'metas' => [
+                        'icon'      => 'fal fa-cube',
+                        "color"     => "#38bdf8",
+                        'value'     => $shop->stats->number_current_products,
+
+                        'metas'     => [
 
                             [
                                 "icon"    => [
@@ -199,7 +246,7 @@ class ShowRetinaCatalogue extends RetinaAction
                                 ],
                                 "count"   => $shop->stats->number_products_state_active,
                                 "tooltip" => "Active",
-                                'route' => [
+                                'route'   => [
                                     // 'name'       => 'grp.org.shops.show.catalogue.products.current_products.index',
                                     // 'parameters' => [
                                     //     'organisation' => $shop->organisation->slug,
@@ -248,7 +295,6 @@ class ShowRetinaCatalogue extends RetinaAction
 
     public function getBreadcrumbs(): array
     {
-
         return
             array_merge(
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
@@ -264,6 +310,5 @@ class ShowRetinaCatalogue extends RetinaAction
                     ]
                 ]
             );
-
     }
 }

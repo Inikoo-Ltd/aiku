@@ -31,6 +31,7 @@ const locale = inject('locale', aikuLocaleStructure)
 
 <template>
     <Link
+
         :href="stat.route?.name ? route(stat.route.name, stat.route.parameters) : ''"
         :style="{
             color: stat.color,
@@ -94,6 +95,7 @@ const locale = inject('locale', aikuLocaleStructure)
                 :class="meta.route?.name ? 'hover:underline' : ''"
                 v-tooltip="capitalize(meta.tooltip) || capitalize(meta.icon?.tooltip)"
             >
+                <template v-if="!meta?.hide">
                 <LoadingIcon v-if="isLoadingMeta == idxMeta" class="md:opacity-50 group-hover/sub:opacity-100" />
                 <span v-else-if="meta.logo_icon" v-html="ChannelLogo(meta.logo_icon)" class="flex items-center min-w-6 w-min max-w-10 min-h-4 h-auto max-h-7" />
                 <Icon v-else-if="meta.icon" :data="meta.icon" class="" :class="meta.route?.name ? 'md:opacity-50 group-hover/sub:opacity-100' : 'md:opacity-50'" />
@@ -101,6 +103,7 @@ const locale = inject('locale', aikuLocaleStructure)
                 <div class="group-hover/sub:text-gray-700">
                     {{ locale.number(meta.count) }}
                 </div>
+                </template>
             </component>
         </div>
         <div v-else class="mt-3">
