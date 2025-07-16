@@ -63,16 +63,16 @@ const links = ref([
                         {{trans('Product Catalogue')}}
                     </div>
 
-                    <div class="grid grid-cols-2 gap-2">
+                    <div class="grid grid-cols-2 gap-2 md:max-w-lg">
                         <StatsBox
                             v-for="stat in props.data.stats"
                             :stat
                         />
                     </div>
-                    <div class="font-semibold w-fit text-lg mb-2">
+                    <div class="mt-6 font-semibold w-fit text-lg mb-2">
                         {{trans('Content & Blog')}}
                     </div>
-                    <div class="grid grid-cols-2 gap-2">
+                    <div class="grid grid-cols-2 gap-2 md:max-w-lg">
                         <StatsBox
                             v-for="stat in props.data.content_blog_stats"
                             :stat
