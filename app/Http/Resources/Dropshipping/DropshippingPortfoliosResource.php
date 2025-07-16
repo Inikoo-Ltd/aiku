@@ -157,7 +157,7 @@ class DropshippingPortfoliosResource extends JsonResource
             'updated_at'                => $this->updated_at,
             'platform_product_id'       => $this->platform_product_id,
             'upload_warning'            => $this->upload_warning,
-            'is_code_exist'             => ! blank($this->platform_product_availabilities),
+            'is_code_exist'             =>  false, // ! blank($this->platform_product_availabilities), (we will use later when its ready)
             'product_availability'      => [
                 'options' => Arr::get($this->platform_product_availabilities, 'options'),
                 'name' => Arr::get($this->platform_product_availabilities, 'title'),
