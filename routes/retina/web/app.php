@@ -28,6 +28,10 @@ Route::middleware(["retina-auth:retina", 'retina-prepare-account'])->group(funct
         ->name("top_up.")
         ->group(__DIR__."/top_up.php");
 
+    Route::prefix("catalogue")
+        ->name("catalogue.")
+        ->group(__DIR__."/catalogue.php");
+
     Route::prefix("/")
         ->name("ecom.")
         ->group(__DIR__."/ecom.php");

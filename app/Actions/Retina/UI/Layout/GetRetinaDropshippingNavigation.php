@@ -35,6 +35,17 @@ class GetRetinaDropshippingNavigation
 
                 ]
             ];
+            $groupNavigation['catalogue'] = [
+                'label'   => __('Catalogue'),
+                'icon'    => ['fal', 'fa-tachometer-alt'],
+                'root'    => 'retina.catalogue.',
+                'route'   => [
+                    'name' => 'retina.catalogue.dashboard'
+                ],
+                'topMenu' => [
+
+                ]
+            ];
         }
 
 

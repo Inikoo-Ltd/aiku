@@ -9,6 +9,7 @@
 namespace App\Actions\Retina\Dropshipping\Catalogue;
 
 use App\Actions\OrgAction;
+use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Actions\UI\WithInertia;
 use App\Http\Resources\Catalogue\DepartmentResource;
@@ -441,9 +442,22 @@ class ShowRetinaCatalogue extends RetinaAction
 
     public function getBreadcrumbs(): array
     {
-        return [
 
+        return
+            array_merge(
+                ShowRetinaDashboard::make()->getBreadcrumbs(),
+                [
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'route' => [
+                                'name' => 'retina.top_up.dashboard'
+                            ],
+                            'label' => __('Top Up dashboard'),
+                        ]
+                    ]
+                ]
+            );
 
-        ];
     }
 }
