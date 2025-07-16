@@ -40,6 +40,13 @@ class UpdatePortfolio extends OrgAction
             );
         }
 
+        if (Arr::exists($modelData, 'options')) {
+            $currentProductAvailability = $portfolio->platform_product_availabilities;
+            data_set($modelData, 'platform_product_availabilities', array_merge($currentProductAvailability, [
+                'options' => Arr::pull($modelData, 'options'),
+            ]));
+        }
+
         if (Arr::exists($modelData, 'customer_price')) {
             $price = $portfolio->item->price ?? 0;
 
@@ -101,7 +108,8 @@ class UpdatePortfolio extends OrgAction
             'customer_description'  => ['sometimes', 'string', 'nullable'],
             'platform_product_id'   => 'sometimes|string',
             'platform_handle'       => 'sometimes|string',
-            'errors_response'       => 'sometimes|array'
+            'errors_response'       => 'sometimes|array',
+            'options'               => 'sometimes|string'
         ];
 
         if (!$this->strict) {
