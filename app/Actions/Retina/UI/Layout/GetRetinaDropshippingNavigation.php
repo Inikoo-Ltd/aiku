@@ -64,17 +64,17 @@ class GetRetinaDropshippingNavigation
                         [
                             'label' => __('Families'),
                             'icon'  => ['far', 'fa-folder'],
-                            'root'  => 'retina.catalogue.',
+                            'root'  => 'retina.catalogue.families.',
                             'route' => [
-                                // 'name' => 'retina.top_up.index'
+                                'name' => 'retina.catalogue.families.index'
                             ]
                         ],
                         [
                             'label' => __('Products'),
                             'icon'  => ['far', 'fa-cube'],
-                            'root'  => 'retina.catalogue.',
+                            'root'  => 'retina.catalogue.products.',
                             'route' => [
-                                // 'name' => 'retina.top_up.index'
+                                'name' => 'retina.catalogue.products.index'
                             ]
                         ],
                         [

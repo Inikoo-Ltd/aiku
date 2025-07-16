@@ -57,14 +57,7 @@ class IndexRetinaDepartments extends RetinaAction
         }
 
         $queryBuilder = QueryBuilder::for(ProductCategory::class);
-        foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
-            $queryBuilder->whereElementGroup(
-                key: $key,
-                allowedElements: array_keys($elementGroup['elements']),
-                engine: $elementGroup['engine'],
-                prefix: $prefix
-            );
-        }
+        $queryBuilder->where('product_categories.state', ProductCategoryStateEnum::ACTIVE);
 
 
         $queryBuilder->leftJoin('shops', 'product_categories.shop_id', 'shops.id');
@@ -122,13 +115,6 @@ class IndexRetinaDepartments extends RetinaAction
                     ->pageName($prefix.'Page');
             }
 
-            foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
-                $table->elementGroup(
-                    key: $key,
-                    label: $elementGroup['label'],
-                    elements: $elementGroup['elements']
-                );
-            }
 
             $table
                 ->defaultSort('code')
@@ -206,32 +192,6 @@ class IndexRetinaDepartments extends RetinaAction
             ];
         }
 
-        $routes = null;
-        if ($this->parent instanceof Collection) {
-            $routes = [
-                'dataList'     => [
-                    'name'       => 'grp.json.shop.catalogue.departments',
-                    'parameters' => [
-                        'shop'  => $this->parent->shop->slug,
-                        'scope' => $this->parent->slug
-                    ]
-                ],
-                'submitAttach' => [
-                    'name'       => 'grp.models.collection.attach-models',
-                    'parameters' => [
-                        'collection' => $this->parent->id
-                    ]
-                ],
-                'detach'       => [
-                    'name'       => 'grp.models.collection.detach-models',
-                    'parameters' => [
-                        'collection' => $this->parent->id
-                    ],
-                    'method'     => 'delete'
-                ]
-            ];
-        }
-
         return Inertia::render(
             'Catalogue/RetinaDepartments',
             [
@@ -247,7 +207,6 @@ class IndexRetinaDepartments extends RetinaAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                 ],
-                'routes'                              => $routes,
                 'data'                                => DepartmentsResource::collection($departments),
             ]
         )->table($this->tableStructure(parent: $this->parent));
@@ -286,22 +245,5 @@ class IndexRetinaDepartments extends RetinaAction
 
             default => []
         };
-    }
-
-    protected function getElementGroups($parent): array
-    {
-        return
-            [
-                'state' => [
-                    'label'    => __('State'),
-                    'elements' => array_merge_recursive(
-                        ProductCategoryStateEnum::labels(),
-                        ProductCategoryStateEnum::countDepartments($parent)
-                    ),
-                    'engine'   => function ($query, $elements) {
-                        $query->whereIn('product_categories.state', $elements);
-                    }
-                ]
-            ];
     }
 }
