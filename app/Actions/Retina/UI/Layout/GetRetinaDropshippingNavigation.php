@@ -43,7 +43,49 @@ class GetRetinaDropshippingNavigation
                     'name' => 'retina.catalogue.dashboard'
                 ],
                 'topMenu' => [
-
+                    'subSections' => 
+                    [
+                        [
+                            'label' => __(''),
+                            'icon'  => ['far', 'fa-books'],
+                            'root'  => 'retina.catalogue.',
+                            'route' => [
+                                'name' => 'retina.catalogue.dashboard'
+                            ]
+                        ],
+                        [
+                            'label' => __('Departments'),
+                            'icon'  => ['far', 'fa-folder-tree'],
+                            'root'  => 'retina.catalogue.departments.',
+                            'route' => [
+                                'name' => 'retina.catalogue.departments.index'
+                            ]
+                        ],
+                        [
+                            'label' => __('Families'),
+                            'icon'  => ['far', 'fa-folder'],
+                            'root'  => 'retina.catalogue.',
+                            'route' => [
+                                // 'name' => 'retina.top_up.index'
+                            ]
+                        ],
+                        [
+                            'label' => __('Products'),
+                            'icon'  => ['far', 'fa-cube'],
+                            'root'  => 'retina.catalogue.',
+                            'route' => [
+                                // 'name' => 'retina.top_up.index'
+                            ]
+                        ],
+                        [
+                            'label' => __('Collections'),
+                            'icon'  => ['far', 'fa-album-collection'],
+                            'root'  => 'retina.catalogue.',
+                            'route' => [
+                                // 'name' => 'retina.top_up.index'
+                            ]
+                        ],
+                    ]
                 ]
             ];
         }

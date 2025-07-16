@@ -451,7 +451,7 @@ class ShowRetinaCatalogue extends RetinaAction
                         'type'   => 'simple',
                         'simple' => [
                             'route' => [
-                                'name' => 'retina.top_up.dashboard'
+                                'name' => 'retina.catalogue.dashboard'
                             ],
                             'label' => __('Top Up dashboard'),
                         ]

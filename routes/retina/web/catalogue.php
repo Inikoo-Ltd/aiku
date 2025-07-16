@@ -7,6 +7,11 @@
  */
 
 use App\Actions\Retina\Dropshipping\Catalogue\ShowRetinaCatalogue;
+use App\Actions\Retina\Dropshipping\ProductCategory\UI\IndexRetinaDepartments;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/dashboard', ShowRetinaCatalogue::class)->name('dashboard');
+
+Route::prefix('departments')->as('departments.')->group(function () {
+    Route::get('/', IndexRetinaDepartments::class)->name('index');
+});
