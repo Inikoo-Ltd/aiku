@@ -11,6 +11,8 @@ namespace App\Actions\Ordering\Order;
 use App\Actions\Comms\Email\SendNewOrderEmailToCustomer;
 use App\Actions\Comms\Email\SendNewOrderEmailToSubscribers;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
+use App\Actions\CRM\CustomerAcquisitionSource\StoreCustomerAcquisitionSource;
+use App\Actions\CRM\OfflineConversion\StoreOfflineConversion;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBasket;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
@@ -78,6 +80,18 @@ class SubmitOrder extends OrgAction
         if ($order->pay_status == OrderPayStatusEnum::PAID) {
             SendOrderToWarehouse::make()->action($order, []);
         }
+
+        StoreOfflineConversion::dispatch($order->customer, [
+            'order_id' => $order->id,
+            'platform_source' => $order->platform->name,
+            'external_order_id' => $order?->platform_order_id,
+            'advertising_platform' => $order?->advertising_platform,
+            'revenue' => $order->total_amount ?? $order->net_amount,
+            'currency' => $order->currency->code ?? 'USD',
+            'grp_exchange' => $order->grp_exchange,
+            'org_exchange' => $order->org_exchange,
+            'conversion_date' => $order->submitted_at ?? $order->created_at,
+        ]);
 
 
         return $order;
