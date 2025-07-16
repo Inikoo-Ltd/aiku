@@ -57,11 +57,7 @@ class StorePoll extends OrgAction
                 );
             }
         } else if ($poll->type == PollTypeEnum::OPTION_REFERRAL_SOURCES) {
-            foreach ($options as $index => $option) {
-                $option = PollOptionReferralSourcesEnum::tryFrom($option['value']);
-                if (!$option) {
-                    continue;
-                }
+            foreach (PollOptionReferralSourcesEnum::cases() as $option) {
                 StorePollOption::make()->action(
                     $poll,
                     [

@@ -16,6 +16,7 @@ use App\Actions\CRM\PollOption\UpdatePollOption;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\CRM\Poll\PollOptionReferralSourcesEnum;
 use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Models\CRM\Poll;
 use App\Models\CRM\PollOption;
@@ -54,17 +55,36 @@ class UpdatePoll extends OrgAction
                         ]
                     );
                     $oldOptions = $oldOptions->reject(
-                        fn (PollOption $pollOption) => $pollOption->id == $option['id']
+                        fn(PollOption $pollOption) => $pollOption->id == $option['id']
                     );
                 } else {
                     StorePollOption::make()->action(
                         $poll,
                         [
-                            'value' => $poll->shop->id.$poll->id.$index,
+                            'value' => $poll->shop->id . $poll->id . $index,
                             'label' => $option['label'],
                         ]
                     );
                 }
+            }
+            if (!empty($oldOptions)) {
+                foreach ($oldOptions as $oldOption) {
+                    DeletePollOptions::run(
+                        $oldOption,
+                        true
+                    );
+                }
+            }
+        } else if ($poll->type == PollTypeEnum::OPTION_REFERRAL_SOURCES) {
+            $oldOptions = $poll->pollOptions;
+            foreach (PollOptionReferralSourcesEnum::cases() as $option) {
+                StorePollOption::make()->action(
+                    $poll,
+                    [
+                        'value' => $option->value,
+                        'label' => $option->label(),
+                    ]
+                );
             }
             if (!empty($oldOptions)) {
                 foreach ($oldOptions as $oldOption) {
@@ -165,5 +185,4 @@ class UpdatePoll extends OrgAction
 
         return $this->handle($poll, $this->validatedData);
     }
-
 }

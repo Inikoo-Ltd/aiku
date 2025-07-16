@@ -62,6 +62,8 @@ class ShowPoll extends OrgAction
             unset($navigations[PollsTabsEnum::POLL_OPTIONS->value]);
         }
 
+        $this->tab = PollsTabsEnum::POLL_OPTIONS->value; // TODO: remove this
+
         $renderData = [
             'title'       => __('Poll details'),
             'breadcrumbs' => $this->getBreadcrumbs(

@@ -53,7 +53,6 @@ class IndexPollOptions extends OrgAction
         $selectFields = [
             'poll_options.id',
             'poll_options.slug',
-            'poll_options.name',
             'poll_options.label',
             'poll_option_stats.number_customers',
         ];
