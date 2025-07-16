@@ -18,6 +18,7 @@ use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Facades\DB;
@@ -34,12 +35,6 @@ class PayRetinaOrderWithBalance extends RetinaAction
      */
     public function handle(Order $order): array
     {
-        $warning = $this->getWarnings($order);
-
-        if ($warning) {
-            return $warning;
-        }
-
         if ($order->payment_amount == $order->total_amount) {
             return [
                 'success' => false,
@@ -92,7 +87,11 @@ class PayRetinaOrderWithBalance extends RetinaAction
             ];
             StoreCreditTransaction::make()->action($customer, $creditTransactionData);
 
-            return SubmitOrder::run($order);
+            if($order->state == OrderStateEnum::CREATING) {
+                return SubmitOrder::run($order);
+            }
+
+            return $order;
         });
 
         return [

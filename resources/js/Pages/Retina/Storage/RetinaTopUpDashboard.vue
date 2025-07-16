@@ -15,12 +15,13 @@ import { notify } from '@kyvg/vue3-notification'
 import InputNumber from 'primevue/inputnumber'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import FlashNotification from "@/Components/UI/FlashNotification.vue"
+import { Message } from "primevue"
 
 library.add(faCheckCircle, faInfoCircle, faExclamationTriangle, faSeedling, faShare, faSpellCheck, faCheck, faTimes, faSignOutAlt, faTruck, faCheckDouble, faCross)
 
 ChartJS.register(ArcElement, Tooltip, Legend, Colors)
 
-defineProps<{
+const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
     currency: {
@@ -36,6 +37,10 @@ defineProps<{
         }
     }
     balance?: string  // 0.00
+    unpaid_orders: {
+        count: number
+        amount: number
+    }
 }>()
 
 const locale = inject('locale', {})
@@ -91,6 +96,40 @@ const isCustom = ref(false)
     </PageHeading>
     
     <FlashNotification :notification="usePage().props.flash.notification" />
+
+    <Message v-if="unpaid_orders.count" severity="error" class="my-3 mx-3">
+        <!-- <template #icon>
+        </template> -->
+        
+        <div  class="ml-2 font-normal flex flex-col items-center sm:flex-row justify-between w-full">
+            <div>
+                <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true" />
+                <div class="ml-2 inline items-center gap-x-2">
+                    {{ trans("You have unpaid orders with total amount: :amount", {
+                        amount: locale.currencyFormat(props.currency.code, props.unpaid_orders.amount)
+                    }) }}
+                </div>
+            </div>
+
+            <div class="w-full sm:w-fit h-fit">
+                <Button
+                    @click="() => {
+                        isModalTopUpOpen = true,
+                        isCustom = true,
+                        amount = props.unpaid_orders.amount
+                    }"
+                    icon="fas fa-plus"
+                    :label="trans('Top up :amount', {
+                        amount: locale.currencyFormat(props.currency.code, props.unpaid_orders.amount)
+                    })"
+                    zsize="xxs"
+                    xtype="secondary"
+                    class="xml-2"
+                    full
+                />
+            </div>
+        </div>
+    </Message>
 
     <div class="px-4 py-5 md:px-6 lg:px-8 ">
 
