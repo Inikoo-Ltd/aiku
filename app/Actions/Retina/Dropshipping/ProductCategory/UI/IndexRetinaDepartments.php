@@ -233,7 +233,7 @@ class IndexRetinaDepartments extends RetinaAction
         }
 
         return Inertia::render(
-            'Org/Catalogue/Departments',
+            'Catalogue/RetinaDepartments',
             [
                 'breadcrumbs'                         => $this->getBreadcrumbs(
                     $request->route()->getName(),
