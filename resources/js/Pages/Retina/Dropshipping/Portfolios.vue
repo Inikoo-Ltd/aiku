@@ -390,7 +390,7 @@ const progressToUploadToShopify = ref<{ [key: number]: string }>({})
     </Message>
 
     <!-- Section: Alert if there is product not synced -->
-    <Message v-if="count_product_not_synced > 0 && !isPlatformManual" severity="warn" class="m-4 ">
+    <Message v-if="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual" severity="warn" class="m-4 ">
         <div class="ml-2 font-normal flex flex-col items-center sm:flex-row justify-between w-full">
             <div>
                 <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true"/>
