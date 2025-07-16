@@ -130,7 +130,7 @@ class ShowWebsite extends OrgAction
                         'website'      => $website->slug
                     ]
                 ],
-                'icon'  => 'fal fa-folder-tree',
+                'icon'  => 'fal fa-columns',
                 "color" => "#b45309",
                 'value' => $website->webStats->number_webpages_sub_type_content,
             ],
@@ -144,7 +144,7 @@ class ShowWebsite extends OrgAction
                         'website'      => $website->slug
                     ]
                 ],
-                'icon'  => 'fal fa-folder-tree',
+                'icon'  => 'fal fa-newspaper',
                 "color" => "#f59e0b",
                 'value' => $website->webStats->number_webpages_sub_type_blog,
             ],
