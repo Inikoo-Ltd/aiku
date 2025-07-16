@@ -43,62 +43,11 @@ class ShowRetinaCatalogue extends RetinaAction
 
     public function htmlResponse(Shop $shop, ActionRequest $request): Response
     {
-        $timesUpdate = ['1d', '1w', '1m', '1y', 'all'];
 
-        $topFamily     = [];
-        $topDepartment = [];
-        $topProduct    = [];
-
-        foreach ($timesUpdate as $timeUpdate) {
-            $family = $shop->stats->{'top'.$timeUpdate.'Family'};
-
-            $topFamily[$timeUpdate] = $family ? FamilyResource::make($family) : null;
-
-            $department                 = $shop->stats->{'top'.$timeUpdate.'Department'};
-            $topDepartment[$timeUpdate] = $department ? DepartmentResource::make($department) : null;
-
-            $product                 = $shop->stats->{'top'.$timeUpdate.'Product'};
-            $topProduct[$timeUpdate] = $product ? ProductResource::make($product) : null;
-        }
-
-        $totalProducts = $shop->stats->number_products;
-
-        $productsWithZeroQuantity = $shop->products()
-            ->where('available_quantity', 0)
-            ->count();
-
-        $percentageWithZeroQuantity = ($totalProducts > 0)
-            ? round(($productsWithZeroQuantity / $totalProducts) * 100, 2)
-            : 0;
-
-
-        //        $departmentsData = [
-        //            [
-        //                'label' => __('Departments'),
-        //                'icon'  => 'fal fa-folder-tree',
-        //                'value' => $shop->stats->number_departments,
-        //            ],
-        //            [
-        //                'label' => __('Current Departments'),
-        //                'icon'  => 'fal fa-folder-tree',
-        //                'value' => $shop->stats->number_current_departments,
-        //            ],
-        //            [
-        //                'label' => __('Discontinuing Departments'),
-        //                'icon'  => 'fal fa-folder-tree',
-        //                'value' => $shop->stats->number_departments_state_discontinuing,
-        //            ],
-        //            [
-        //                'label' => __('Departments In Process'),
-        //                'icon'  => 'fal fa-folder-tree',
-        //                'value' => $shop->stats->number_departments_state_in_process,
-        //            ],
-        //
-        //        ];
 
 
         return Inertia::render(
-            'Catalouge/RetinaCatalouge',
+            'Catalogue/RetinaCatalogue',
             [
                 'title'       => __('catalogue'),
                 'breadcrumbs' => $this->getBreadcrumbs(
@@ -114,23 +63,7 @@ class ShowRetinaCatalogue extends RetinaAction
 
                 ],
 
-                'top_selling' => [
-                    'family'     => [
-                        'label' => __('Top Family'),
-                        'icon'  => 'fal fa-folder',
-                        'value' => $topFamily
-                    ],
-                    'department' => [
-                        'label' => __('Top Department'),
-                        'icon'  => 'fal fa-folder-tree',
-                        'value' => $topDepartment
-                    ],
-                    'product'    => [
-                        'label' => __('Top Product'),
-                        'icon'  => 'fal fa-folder-tree',
-                        'value' => $topProduct
-                    ],
-                ],
+
                 'stats'       => [
                     [
                         'label' => __('Departments'),
@@ -190,38 +123,6 @@ class ShowRetinaCatalogue extends RetinaAction
                                     // ]
                                 ],
                             ],
-                            [
-                                'tooltip' => __('Discontinued Departments'),
-                                'icon'    => [
-                                    'icon'  => 'fas fa-times-circle',
-                                    'class' => 'text-red-500'
-                                ],
-                                'count'   => $shop->stats->number_departments_state_discontinued,
-                                'route' => [
-                                    // 'name'       => 'grp.org.shops.show.catalogue.departments.index',
-                                    // 'parameters' => [
-                                    //     'organisation' => $shop->organisation->slug,
-                                    //     'shop'         => $shop->slug,
-                                    //     'index_elements[state]' => 'discontinued'
-                                    // ]
-                                ],
-                            ],
-                            [
-                                'tooltip' => __('In process'),
-                                'icon'    => [
-                                    'icon'  => 'fal fa-seedling',
-                                    'class' => 'text-green-500 animate-pulse'
-                                ],
-                                'count'   => $shop->stats->number_departments_state_in_process,
-                                'route' => [
-                                    // 'name'       => 'grp.org.shops.show.catalogue.departments.index',
-                                    // 'parameters' => [
-                                    //     'organisation' => $shop->organisation->slug,
-                                    //     'shop'         => $shop->slug,
-                                    //     'index_elements[state]' => 'in_process'
-                                    // ]
-                                ],
-                            ],
                         ]
                     ],
                     [
@@ -270,38 +171,7 @@ class ShowRetinaCatalogue extends RetinaAction
                                     // ]
                                 ],
                             ],
-                            [
-                                'tooltip' => __('Discontinued families'),
-                                'icon'    => [
-                                    'icon'  => 'fas fa-times-circle',
-                                    'class' => 'text-red-500'
-                                ],
-                                'count'   => $shop->stats->number_families_state_discontinued,
-                                'route' => [
-                                    // 'name'       => 'grp.org.shops.show.catalogue.families.index',
-                                    // 'parameters' => [
-                                    //     'organisation' => $shop->organisation->slug,
-                                    //     'shop'         => $shop->slug,
-                                    //     'index_elements[state]' => 'discontinued'
-                                    // ]
-                                ],
-                            ],
-                            [
-                                'tooltip' => __('Families in process'),
-                                'icon'    => [
-                                    'icon'  => 'fal fa-seedling',
-                                    'class' => 'text-green-500 animate-pulse'
-                                ],
-                                'count'   => $shop->stats->number_families_state_in_process,
-                                'route' => [
-                                    // 'name'       => 'grp.org.shops.show.catalogue.families.index',
-                                    // 'parameters' => [
-                                    //     'organisation' => $shop->organisation->slug,
-                                    //     'shop'         => $shop->slug,
-                                    //     'index_elements[state]' => 'in_process'
-                                    // ]
-                                ],
-                            ],
+
                         ]
                     ],
                     [
@@ -351,37 +221,7 @@ class ShowRetinaCatalogue extends RetinaAction
                                 "count"   => $shop->stats->number_products_state_discontinuing,
                                 "tooltip" => "Discontinuing"
                             ],
-                            [
-                                "icon"    => [
-                                    "tooltip" => "discontinued",
-                                    "icon"    => "fas fa-times-circle",
-                                    "class"   => "text-red-500"
-                                ],
-                                "count"   => $shop->stats->number_products_state_discontinued,
-                                "tooltip" => "Discontinued",
-                                'route' => [
-                                    // 'name'       => 'grp.org.shops.show.catalogue.products.discontinued_products.index',
-                                    // 'parameters' => [
-                                    //     'organisation' => $shop->organisation->slug,
-                                    //     'shop'         => $shop->slug,
-                                    // ]
-                                ],
-                            ],
-                            [
-                                "tooltip" => "Products In Process",
-                                "icon"    => [
-                                    'icon'  => 'fal fa-seedling',
-                                    'class' => 'text-green-500 animate-pulse'
-                                ],
-                                "count"   => $shop->stats->number_products_state_in_process,
-                                'route' => [
-                                    // 'name'       => 'grp.org.shops.show.catalogue.products.in_process_products.index',
-                                    // 'parameters' => [
-                                    //     'organisation' => $shop->organisation->slug,
-                                    //     'shop'         => $shop->slug,
-                                    // ]
-                                ],
-                            ],
+
                         ]
                     ],
                     [
@@ -397,36 +237,7 @@ class ShowRetinaCatalogue extends RetinaAction
                         "color" => "#4f46e5",
                         'value' => $shop->stats->number_collections,
                     ],
-                    [
-                        'label' => __('Stray Families'),
-                        'is_negative' => true,
-                        'route' => [
-                            // 'name'       => 'grp.org.shops.show.catalogue.families.no_department.index',
-                            // 'parameters' => [
-                            //     'organisation' => $shop->organisation->slug,
-                            //     'shop'         => $shop->slug
-                            // ]
-                        ],
-                        'icon'  => 'fal fa-folder',
-                        "xcolor" => "#ff0000",
-                        "backgroundColor" => "#ff000011",
-                        'value' => $shop->stats->number_families_no_department,
-                    ],
-                    [
-                        'label' => __('Orphan Products'),
-                        'is_negative' => true,
-                        'route' => [
-                            // 'name'       => 'grp.org.shops.show.catalogue.products.orphan_products.index',
-                            // 'parameters' => [
-                            //     'organisation' => $shop->organisation->slug,
-                            //     'shop'         => $shop->slug
-                            // ]
-                        ],
-                        'icon'  => 'fal fa-cube',
-                        "xcolor" => "#ff0000",
-                        "backgroundColor" => "#ff000011",
-                        'value' => $shop->stats->number_products_no_family,
-                    ],
+
                 ]
 
             ]
@@ -453,7 +264,7 @@ class ShowRetinaCatalogue extends RetinaAction
                             'route' => [
                                 'name' => 'retina.catalogue.dashboard'
                             ],
-                            'label' => __('Top Up dashboard'),
+                            'label' => __('Catalogue'),
                         ]
                     ]
                 ]
