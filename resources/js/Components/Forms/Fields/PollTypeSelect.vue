@@ -9,8 +9,14 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 
 library.add(faInfoCircle, faFacebook, faLinkedin, faGoogle, faTwitter)
 
-defineProps<{
-    form?: any
+const props = defineProps<{
+    form?: {
+        [key: string]: {
+            type: {}[]
+            poll_options: []
+            poll_option_referral_sources: {}[]
+        }
+    }
     fieldName: string
     options: {
         id: number
@@ -43,8 +49,8 @@ defineProps<{
             </div>
 
             <div class="xborder-t xborder-gray-300 xpt-3 ">
-
                 
+                <!-- Section: normal option -->
                 <div v-if="form[fieldName].type === 'option'" class="border-t border-gray-300 pt-3 grid gap-y-2">
                     <div v-for="(opt, optIdx) in form[fieldName].poll_options" class="flex gap-x-2 items-center">
                         <InputText
@@ -66,6 +72,23 @@ defineProps<{
                         @click="form[fieldName].poll_options.push({ label: `Option ${form[fieldName].poll_options.length + 1}` })"
                     />
                 </div>
+
+                <!-- Section: option referral -->
+                <div v-if="form[fieldName].type === 'option_referral_sources'" class="border-t border-gray-300 pt-3 grid grid-cols-2 gap-2">
+                    <div v-for="(opt, optIdx) in form[fieldName].poll_option_referral_sources" class="flex gap-x-2 items-center">
+                        <InputText
+                            fluid
+                            v-model="opt.label"
+                            :placeholder="trans('Input label for this option')"
+                            disabled
+                        />
+
+                        <!-- <div @click="form[fieldName].poll_options.splice(optIdx, 1)" class="group cursor-pointer text-red-400 hover:text-red-600">
+                            <FontAwesomeIcon icon="fal fa-trash-alt" class="" fixed-width aria-hidden="true" />
+                        </div> -->
+                    </div>
+                </div>
+<!-- <pre>{{ form[fieldName] }}</pre> -->
             </div>
         </div>
     </div>

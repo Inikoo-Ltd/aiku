@@ -37,6 +37,7 @@ class CreatePoll extends OrgAction
                 'value' => $enum->value
             ];
         }, PollOptionReferralSourcesEnum::cases());
+        
         return Inertia::render(
             'CreateModel',
             [

@@ -29,6 +29,7 @@ const props = defineProps<{
         options?: { id: number, label: string }[]
         poll_replies?: { answer?: string, idx?: number }[]
     }
+    showcase: {}
 
 
 }>();
@@ -67,6 +68,10 @@ const stats = [
         </template>
     </PageHeading>
 
+    <div class="max-w-2xl mx-auto px-4 pt-4 italic text-sm text-gray-400">
+        {{ trans("Preview how it looks in registration form") }}
+    </div>
+
     <div class="w-full max-w-xl mx-auto my-8" :class="data.in_registration ? 'opacity-60' : ''">
 
         <div class="block text-sm font-medium text-gray-700">
@@ -76,23 +81,33 @@ const stats = [
 
         <div class="mt-2">
             <Select
-            v-if="data.type === 'option'"
-            xv-model="form.poll_replies[idx].answer"
-            :modelValue="'ewewqewqeq'"
-            xupdate:model-value="(e) => form.clearErrors(`poll_replies.${idx}`)"
-            :options="data.options"
-            optionLabel="label"
-            optionValue="id"
-            :placeholder="`Please Choose One`"
-            class="w-full" />
+                v-if="data.type === 'option'"
+                xv-model="form.poll_replies[idx].answer"
+                :modelValue="'ewewqewqeq'"
+                xupdate:model-value="(e) => form.clearErrors(`poll_replies.${idx}`)"
+                :options="data.options"
+                optionLabel="label"
+                optionValue="id"
+                :placeholder="`Please Choose One`"
+                class="w-full" />
+            <Select
+                v-else-if="data.type === 'option_referral_sources'"
+                xv-model="form.poll_replies[idx].answer"
+                :modelValue="'ewewqewqeq'"
+                xupdate:model-value="(e) => form.clearErrors(`poll_replies.${idx}`)"
+                :options="data.options"
+                optionLabel="label"
+                optionValue="id"
+                :placeholder="`Please Choose One`"
+                class="w-full" />
             <Textarea
-            v-else
-            :modelValue="'hehehehe'"
-            xupdate:model-value="(e) => form.clearErrors(`poll_replies.${idx}`)"
-            rows="5"
-            cols="30"
-            placeholder="Your answer…"
-            class="w-full border rounded-md p-2" />
+                v-else
+                :modelValue="'hehehehe'"
+                xupdate:model-value="(e) => form.clearErrors(`poll_replies.${idx}`)"
+                rows="5"
+                cols="30"
+                placeholder="Your answer…"
+                class="w-full border rounded-md p-2" />
         </div>
     </div>
 
@@ -102,12 +117,14 @@ const stats = [
         <div class="px-6 xpb-24 xpt-16 xsm:pb-32 xsm:pt-20 lg:px-8 xlg:pt-32">
             <div class="xmx-auto max-w-2xl lg:mr-0 lg:max-w-lg">
                 <dl class="mt-16 grid max-w-xl grid-cols-1 gap-8 sm:mt-20 sm:grid-cols-2 xl:mt-16">
-                    <div v-for="stat in stats" :key="stat.id" class="flex flex-col gap-y-3 border-l border-gray-900/10 pl-6">
+                    <div v-for="stat in stats" :key="stat.id" class="flex flex-col  border-l border-gray-900/10 pl-6">
                         <dt class="text-sm/6 text-gray-600">{{ stat.name }}</dt>
-                        <dd class="order-first text-2xl font-semibold tracking-tight">{{ stat.value }}</dd>
+                        <dd class="text-2xl font-semibold tracking-tight">{{ stat.value }}</dd>
                     </div>
                 </dl>
             </div>
         </div>
     </div>
+
+    {{ showcase }}
 </template>
