@@ -186,25 +186,30 @@ class ShowRetinaDropshippingOrder extends RetinaAction
             ];
         }
 
-        $invoiceData = null;
-        $invoice     = $order->invoices->first();
+        $invoicesData = [];
 
-        if ($invoice) {
-            $routeShow     = [
+        foreach ($order->invoices as $invoice) {
+            $routeShow = [
                 'name'       => 'retina.dropshipping.invoices.show',
                 'parameters' => [
                     'invoice' => $invoice->slug,
-                ]
+                ],
             ];
+            $routeDownload = [
+                'name'       => 'retina.dropshipping.invoices.pdf',
+                'parameters' => [
+                    'invoice' => $invoice->slug,
+                ],
+            ];
+
             $routeDownload = null;
 
-
-            $invoiceData = [
+            $invoicesData[] = [
                 'reference' => $invoice->reference,
                 'routes'    => [
                     'show'     => $routeShow,
-                    'download' => $routeDownload
-                ]
+                    'download' => $routeDownload,
+                ],
             ];
         }
 
@@ -250,7 +255,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                 ]
             ),
             'customer_channel' => $customerChannel,
-            'invoice'          => $invoiceData,
+            'invoices'          => $invoicesData,
             'order_properties' => [
                 'weight'    => NaturalLanguage::make()->weight($order->estimated_weight),
                 'shipments' => $shipments,

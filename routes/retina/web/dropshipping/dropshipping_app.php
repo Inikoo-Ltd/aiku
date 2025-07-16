@@ -22,6 +22,7 @@ use App\Actions\Fulfilment\Pallet\DownloadDropshippingClientTemplate;
 use App\Actions\Ordering\Order\DownloadOrderTransactionsTemplate;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\CreateMitSavedCard;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\ShowRetinaMitSavedCardsDashboard;
+use App\Actions\Retina\Billing\RetinaPdfInvoice;
 use App\Actions\Retina\Billing\UI\IndexRetinaDropshippingInvoices;
 use App\Actions\Retina\Billing\UI\ShowRetinaDropshippingInvoice;
 use App\Actions\Retina\Dropshipping\ApiToken\UI\ShowRetinaApiDropshippingDashboard;
@@ -125,6 +126,7 @@ Route::prefix('tiktok')->name('tiktok.')->group(function () {
 Route::prefix('invoices')->name('invoices.')->group(function () {
     Route::get('', IndexRetinaDropshippingInvoices::class)->name('index');
     Route::get('{invoice}', ShowRetinaDropshippingInvoice::class)->name('show');
+    Route::get('{invoice}/pdf', RetinaPdfInvoice::class)->name('pdf');
 });
 
 Route::prefix('saved-credit-cards')->name('mit_saved_cards.')->group(function () {

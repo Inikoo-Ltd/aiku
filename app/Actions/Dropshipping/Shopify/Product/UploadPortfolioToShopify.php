@@ -121,7 +121,6 @@ class UploadPortfolioToShopify extends RetinaAction
                     $shopifyProduct = $this->storeShopifyProduct($shopifyUser, $portfolio, $body);
                 }
 
-
                 // Update inventory levels in Shopify
                 UpdateShopifyProductInventoryLevels::dispatch($product, $shopifyUser, $shopifyProduct);
 

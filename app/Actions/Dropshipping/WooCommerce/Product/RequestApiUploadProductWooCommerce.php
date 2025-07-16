@@ -60,7 +60,15 @@ class RequestApiUploadProductWooCommerce extends RetinaAction
                 'status' => $this->mapProductStateToWooCommerce($product->status->value)
             ];
 
+            $existingProduct = null;
+            if ($portfolio->platform_product_id) {
+                $existingProduct = $wooCommerceUser->getWooCommerceProduct($portfolio->platform_product_id);
+            }
+
             $result = $wooCommerceUser->createWooCommerceProduct($wooCommerceProduct);
+            if ($existingProduct) {
+                $result = $existingProduct;
+            }
 
             $portfolio = UpdatePortfolio::run($portfolio, [
                 'platform_product_id' => Arr::get($result, 'id')
