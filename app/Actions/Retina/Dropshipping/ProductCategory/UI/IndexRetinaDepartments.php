@@ -57,7 +57,7 @@ class IndexRetinaDepartments extends RetinaAction
         }
 
         $queryBuilder = QueryBuilder::for(ProductCategory::class);
-        $queryBuilder->where('product_categories.state', ProductCategoryStateEnum::ACTIVE);
+        $queryBuilder->whereIn('product_categories.state', [ProductCategoryStateEnum::ACTIVE->value, ProductCategoryStateEnum::DISCONTINUED->value]);
 
 
         $queryBuilder->leftJoin('shops', 'product_categories.shop_id', 'shops.id');

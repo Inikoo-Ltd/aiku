@@ -43,7 +43,7 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
         }
 
         $queryBuilder = QueryBuilder::for(Product::class);
-        $queryBuilder->where('products.state', ProductStateEnum::ACTIVE);
+        $queryBuilder->whereIn('products.state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUED->value]);
         $queryBuilder->where('products.is_main', true);
         $queryBuilder->where('products.shop_id', $shop->id);
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
