@@ -80,9 +80,9 @@ class GetRetinaDropshippingNavigation
                         [
                             'label' => __('Collections'),
                             'icon'  => ['far', 'fa-album-collection'],
-                            'root'  => 'retina.catalogue.',
+                            'root'  => 'retina.catalogue.collections.',
                             'route' => [
-                                // 'name' => 'retina.top_up.index'
+                                'name' => 'retina.catalogue.collections.index'
                             ]
                         ],
                     ]

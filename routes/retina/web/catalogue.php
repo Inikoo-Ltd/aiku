@@ -6,7 +6,9 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
+
 use App\Actions\Retina\Dropshipping\Catalogue\ShowRetinaCatalogue;
+use App\Actions\Retina\Dropshipping\Collection\UI\IndexRetinaCollections;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInCatalogue;
 use App\Actions\Retina\Dropshipping\ProductCategory\UI\IndexRetinaDepartments;
 use App\Actions\Retina\Dropshipping\ProductCategory\UI\IndexRetinaFamilies;
@@ -24,4 +26,8 @@ Route::prefix('families')->as('families.')->group(function () {
 
 Route::prefix('products')->as('products.')->group(function () {
     Route::get('/', IndexRetinaProductsInCatalogue::class)->name('index');
+});
+
+Route::prefix('collections')->as('collections.')->group(function () {
+    Route::get('/', IndexRetinaCollections::class)->name('index');
 });
