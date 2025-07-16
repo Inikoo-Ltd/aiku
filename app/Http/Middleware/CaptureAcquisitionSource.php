@@ -19,18 +19,24 @@ class CaptureAcquisitionSource
     {
         $response = $next($request);
 
+        $routeName = $request->route()?->getName();
+
+        if (Auth::check()) {
+            return $response;
+        }
+
+        if (!$routeName || $response->getStatusCode() !== 200 || !$request->isMethod('GET')) {
+            return $response;
+        }
+
         $allowedRoutes = [
             'retina.register',
             'retina.register_standalone',
             'retina.register_from_google',
         ];
 
-        $routeName = $request->route() ? $request->route()->getName() : null;
-
-        if ($routeName && in_array($routeName, $allowedRoutes)) {
-            if ($response->getStatusCode() === 200 && $request->isMethod('GET')) {
-                $this->captureTrackingData($request);
-            }
+        if (in_array($routeName, $allowedRoutes) || str_contains($routeName, 'iris.iris_webpage')) {
+            $this->captureTrackingData($request);
         }
 
         return $response;

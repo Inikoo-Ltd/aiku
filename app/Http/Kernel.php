@@ -180,7 +180,8 @@ class Kernel extends HttpKernel
             HandleIrisInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             LogWebUserRequestMiddleware::class,
-            InspectorOctaneMiddleware::class
+            InspectorOctaneMiddleware::class,
+            CaptureAcquisitionSource::class
         ],
         'retina'      => [
             DisableSSR::class,
