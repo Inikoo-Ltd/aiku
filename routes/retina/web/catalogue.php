@@ -6,8 +6,8 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-use App\Actions\Catalogue\Product\UI\IndexRetinaProductsInCatalogue;
 use App\Actions\Retina\Dropshipping\Catalogue\ShowRetinaCatalogue;
+use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInCatalogue;
 use App\Actions\Retina\Dropshipping\ProductCategory\UI\IndexRetinaDepartments;
 use App\Actions\Retina\Dropshipping\ProductCategory\UI\IndexRetinaFamilies;
 use Illuminate\Support\Facades\Route;
