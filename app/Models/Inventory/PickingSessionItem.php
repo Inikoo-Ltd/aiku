@@ -37,7 +37,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property string|null $quantity_picked
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, DeliveryNoteItem> $deliveryNotes
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, DeliveryNoteItem> $deliveryNoteItems
  * @property-read Group $group
  * @property-read \App\Models\Inventory\Location $location
  * @property-read \App\Models\Inventory\OrgStock|null $orgStock

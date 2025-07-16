@@ -18,6 +18,7 @@ use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Osiset\ShopifyApp\Objects\Values\ShopDomain;
 
 class RepairCustomerSalesChannelsConnectionStatus
 {

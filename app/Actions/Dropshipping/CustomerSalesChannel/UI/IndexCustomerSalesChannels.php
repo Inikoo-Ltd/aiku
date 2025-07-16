@@ -13,7 +13,7 @@ use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Http\Resources\CRM\CustomerSalesChannelsResourceTOFIX;
+use App\Http\Resources\CRM\CustomerSalesChannelsResourcePro;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -111,7 +111,7 @@ class IndexCustomerSalesChannels extends OrgAction
                     'actions'       => $actions
 
                 ],
-                'data'        => CustomerSalesChannelsResourceTOFIX::collection($platforms),
+                'data'        => CustomerSalesChannelsResourcePro::collection($platforms),
             ]
         )->table($this->tableStructure());
     }

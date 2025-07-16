@@ -64,70 +64,76 @@ class DropshippingPortfoliosResource extends JsonResource
         $amazonUploadRoute = [];
         $magentoUploadRoute = [];
 
-        if ($this->platform->type == PlatformTypeEnum::SHOPIFY) {
-            $shopifyUploadRoute = [
-                'platform_upload_portfolio' => [
-                    'method' => 'post',
-                    'name'       => 'retina.models.dropshipping.shopify.single_upload',
-                    'parameters' => [
-                        'shopifyUser' => $this->customerSalesChannel->user->id,
-                        'portfolio' => $this->id
-                    ]
-                ],
-            ];
+
+        if ($this->platform->type != PlatformTypeEnum::MANUAL && $this->customerSalesChannel->user) {
+            if ($this->platform->type == PlatformTypeEnum::SHOPIFY) {
+                $shopifyUploadRoute = [
+                    'platform_upload_portfolio' => [
+                        'method' => 'post',
+                        'name'       => 'retina.models.dropshipping.shopify.single_upload',
+                        'parameters' => [
+                            'shopifyUser' => $this->customerSalesChannel->user->id,
+                            'portfolio' => $this->id
+                        ]
+                    ],
+                ];
+            }
+
+            if ($this->platform->type == PlatformTypeEnum::WOOCOMMERCE) {
+                $wooUploadRoute = [
+                    'platform_upload_portfolio' => [
+                        'method' => 'post',
+                        'name'       => 'retina.models.dropshipping.woo.single_upload',
+                        'parameters' => [
+                            'wooCommerceUser' => $this->customerSalesChannel->user->id,
+                            'portfolio' => $this->id
+                        ]
+                    ],
+                ];
+            }
+
+            if ($this->platform->type == PlatformTypeEnum::EBAY) {
+                $ebayUploadRoute = [
+                    'platform_upload_portfolio' => [
+                        'method' => 'post',
+                        'name'       => 'retina.models.dropshipping.ebay.single_upload',
+                        'parameters' => [
+                            'ebayUser' => $this->customerSalesChannel->user->id,
+                            'portfolio' => $this->id
+                        ]
+                    ],
+                ];
+            }
+
+            if ($this->platform->type == PlatformTypeEnum::AMAZON) {
+                $amazonUploadRoute = [
+                    'platform_upload_portfolio' => [
+                        'method' => 'post',
+                        'name'       => 'retina.models.dropshipping.amazon.single_upload',
+                        'parameters' => [
+                            'amazonUser' => $this->customerSalesChannel->user->id,
+                            'portfolio' => $this->id
+                        ]
+                    ],
+                ];
+            }
+
+            if ($this->platform->type == PlatformTypeEnum::MAGENTO) {
+                $magentoUploadRoute = [
+                    'platform_upload_portfolio' => [
+                        'method' => 'post',
+                        'name'       => 'retina.models.dropshipping.magento.single_upload',
+                        'parameters' => [
+                            'magentoUser' => $this->customerSalesChannel->user->id,
+                            'portfolio' => $this->id
+                        ]
+                    ],
+                ];
+            }
         }
 
-        if ($this->platform->type == PlatformTypeEnum::WOOCOMMERCE) {
-            $wooUploadRoute = [
-                'platform_upload_portfolio' => [
-                    'method' => 'post',
-                    'name'       => 'retina.models.dropshipping.woo.single_upload',
-                    'parameters' => [
-                        'wooCommerceUser' => $this->customerSalesChannel->user->id,
-                        'portfolio' => $this->id
-                    ]
-                ],
-            ];
-        }
 
-        if ($this->platform->type == PlatformTypeEnum::EBAY) {
-            $ebayUploadRoute = [
-                'platform_upload_portfolio' => [
-                    'method' => 'post',
-                    'name'       => 'retina.models.dropshipping.ebay.single_upload',
-                    'parameters' => [
-                        'ebayUser' => $this->customerSalesChannel->user->id,
-                        'portfolio' => $this->id
-                    ]
-                ],
-            ];
-        }
 
-        if ($this->platform->type == PlatformTypeEnum::AMAZON) {
-            $amazonUploadRoute = [
-                'platform_upload_portfolio' => [
-                    'method' => 'post',
-                    'name'       => 'retina.models.dropshipping.amazon.single_upload',
-                    'parameters' => [
-                        'amazonUser' => $this->customerSalesChannel->user->id,
-                        'portfolio' => $this->id
-                    ]
-                ],
-            ];
-        }
-
-        if ($this->platform->type == PlatformTypeEnum::MAGENTO) {
-            $magentoUploadRoute = [
-                'platform_upload_portfolio' => [
-                    'method' => 'post',
-                    'name'       => 'retina.models.dropshipping.magento.single_upload',
-                    'parameters' => [
-                        'magentoUser' => $this->customerSalesChannel->user->id,
-                        'portfolio' => $this->id
-                    ]
-                ],
-            ];
-        }
 
         return [
             'id'                        => $this->id,

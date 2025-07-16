@@ -23,7 +23,7 @@ class ReconnectRetinaCustomerSalesChannel extends RetinaAction
 {
     use WithActionUpdate;
 
-    public function handle(CustomerSalesChannel $customerSalesChannel): string
+    public function handle(CustomerSalesChannel $customerSalesChannel): ?string
     {
         /** @var MagentoUser|ShopifyUser|WooCommerceUser $platformUser */
         $platformUser = $customerSalesChannel->user;
@@ -34,7 +34,6 @@ class ReconnectRetinaCustomerSalesChannel extends RetinaAction
             ]),
             PlatformTypeEnum::WOOCOMMERCE => ReAuthorizeRetinaWooCommerceUser::run($platformUser),
             PlatformTypeEnum::MAGENTO => ReAuthorizeMagentoUser::run($platformUser),
-            // TODO: Need the other platforms
             default => null
         };
     }

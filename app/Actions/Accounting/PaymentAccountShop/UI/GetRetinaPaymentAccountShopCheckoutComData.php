@@ -39,12 +39,9 @@ class GetRetinaPaymentAccountShopCheckoutComData
         );
 
         $toPayByOther = $paymentAmounts['by_other'];
-        $toPayByOther = intval($toPayByOther * 100);
 
 
-        if ($toPayByOther == 0) {
-            abort(404);
-        }
+        $toPayByOther = (int)round((float)$toPayByOther * 100);
 
         $paymentSessionRequest            = new PaymentSessionsRequest();
         $paymentSessionRequest->amount    = $toPayByOther;
@@ -62,6 +59,7 @@ class GetRetinaPaymentAccountShopCheckoutComData
         $paymentSessionRequest->disabled_payment_methods = [
             'applepay',
         ];
+
 
         $billingAddress = $order->billingAddress;
 

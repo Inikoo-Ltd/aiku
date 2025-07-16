@@ -27,6 +27,11 @@ class GetShopifyProductFromPortfolio
      */
     public function handle(ShopifyUser $shopifyUser, Portfolio $portfolio)
     {
+
+        if(!$portfolio->platform_handle){
+            return null;
+        }
+
         try {
             $response = $shopifyUser->getShopifyClient()->request('GET', '/admin/api/2025-04/products.json', [
                 'handle' => $portfolio->platform_handle,
@@ -34,7 +39,7 @@ class GetShopifyProductFromPortfolio
             ]);
 
             if (Arr::get($response, 'errors')) {
-                Sentry::captureMessage('Error in GetShopifyProductFromPortfolio: '.Arr::get($response, 'errors'));
+                Sentry::captureMessage('Error in GetShopifyProductFromPortfolio: >'.$portfolio->platform_handle.'<');
 
                 return null;
             }

@@ -104,11 +104,11 @@ class IndexOrders extends OrgAction
         $query->leftJoin('customers', 'orders.customer_id', '=', 'customers.id');
         $query->leftJoin('customer_clients', 'orders.customer_client_id', '=', 'customer_clients.id');
 
-        $query->leftJoin('model_has_payments', function ($join) {
-            $join->on('orders.id', '=', 'model_has_payments.model_id')
-                ->where('model_has_payments.model_type', '=', 'Order');
-        })
-            ->leftJoin('payments', 'model_has_payments.payment_id', '=', 'payments.id');
+        //        $query->leftJoin('model_has_payments', function ($join) {
+        //            $join->on('orders.id', '=', 'model_has_payments.model_id')
+        //                ->where('model_has_payments.model_type', '=', 'Order');
+        //        })
+        //  $query->leftJoin('payments', 'model_has_payments.payment_id', '=', 'payments.id');
 
         $query->leftJoin('currencies', 'orders.currency_id', '=', 'currencies.id');
         $query->leftJoin('organisations', 'orders.organisation_id', '=', 'organisations.id');
@@ -235,8 +235,8 @@ class IndexOrders extends OrgAction
             'customers.slug as customer_slug',
             'customer_clients.name as client_name',
             'customer_clients.ulid as client_ulid',
-            'payments.state as payment_state',
-            'payments.status as payment_status',
+            //'payments.state as payment_state',
+            //'payments.status as payment_status',
             'currencies.code as currency_code',
             'currencies.id as currency_id',
             'shops.name as shop_name',
