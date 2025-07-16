@@ -43,7 +43,7 @@ trait WithRetinaRegistration
         $trackingData = request()->session()->get('acquisition_tracking_data');
         if ($trackingData) {
             try {
-                StoreCustomerAcquisitionSource::make()->action($customer, $trackingData);
+                StoreCustomerAcquisitionSource::dispatch($customer, $trackingData);
                 request()->session()->forget('acquisition_tracking_data');
             } catch (\Exception $e) {
                 // Log error but don't fail the registration/login process
