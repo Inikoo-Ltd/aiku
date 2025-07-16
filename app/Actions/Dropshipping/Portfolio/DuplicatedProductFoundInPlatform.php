@@ -27,11 +27,12 @@ class DuplicatedProductFoundInPlatform extends OrgAction
             $platformProductAvailabilities = GetShopifyProductFromPortfolio::run($customerSalesChannel->user, $portfolio);
         }
 
-        $options = [
-            'options' => PortfolioPlatformAvailabilityOptionEnum::USE_EXISTING->value
-        ];
-
-        data_set($modelData, 'platform_product_availabilities', array_merge($platformProductAvailabilities, $options));
+        if (! blank($platformProductAvailabilities)) {
+            $options = [
+                'options' => PortfolioPlatformAvailabilityOptionEnum::USE_EXISTING->value
+            ];
+            data_set($modelData, 'platform_product_availabilities', array_merge($platformProductAvailabilities, $options));
+        }
 
         $this->update($portfolio, $modelData);
     }
