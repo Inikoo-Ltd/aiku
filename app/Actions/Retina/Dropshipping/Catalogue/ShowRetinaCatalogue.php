@@ -97,7 +97,7 @@ class ShowRetinaCatalogue extends RetinaAction
 
 
         return Inertia::render(
-            'XXX',
+            'Catalouge/RetinaCatalouge',
             [
                 'title'       => __('catalogue'),
                 'breadcrumbs' => $this->getBreadcrumbs(
