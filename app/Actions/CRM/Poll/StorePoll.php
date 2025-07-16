@@ -13,6 +13,7 @@ use App\Actions\CRM\Poll\Hydrate\PollHydrateCustomers;
 use App\Actions\CRM\PollOption\StorePollOption;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
+use App\Enums\CRM\Poll\PollOptionReferralSourcesEnum;
 use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Poll;
@@ -23,6 +24,7 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\RequiredIf;
 use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Validation\Validator;
 
 class StorePoll extends OrgAction
 {
@@ -51,6 +53,16 @@ class StorePoll extends OrgAction
                     [
                         'value' => $shop->id . $poll->id . $index,
                         'label' => $option['label'],
+                    ]
+                );
+            }
+        } else if ($poll->type == PollTypeEnum::OPTION_REFERRAL_SOURCES) {
+            foreach (PollOptionReferralSourcesEnum::cases() as $index => $option) {
+                StorePollOption::make()->action(
+                    $poll,
+                    [
+                        'value' => $option->value,
+                        'label' => $option->label(),
                     ]
                 );
             }
@@ -130,6 +142,18 @@ class StorePoll extends OrgAction
         $this->initialisationFromShop($shop, $request);
         return $this->handle($shop, $this->validatedData);
     }
+
+    public function afterValidator(Validator $validator): void
+    {
+        $type = Arr::pull($modelData, 'type.type');
+
+        if ($type == PollTypeEnum::OPTION_REFERRAL_SOURCES->value) {
+            if (Poll::where('shop_id', $this->shop->id)->where('type', PollTypeEnum::OPTION_REFERRAL_SOURCES)->exists()) {
+                $validator->errors()->add('type.type', 'A poll of type "Option Referral Sources" already exists for this shop.');
+            }
+        }
+    }
+
     public function htmlResponse(Poll $poll): RedirectResponse
     {
         return Redirect::route('grp.org.shops.show.crm.polls.index', [
@@ -150,5 +174,4 @@ class StorePoll extends OrgAction
 
         return $this->handle($shop, $this->validatedData);
     }
-
 }
