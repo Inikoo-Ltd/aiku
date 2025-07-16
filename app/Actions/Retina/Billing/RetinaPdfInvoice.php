@@ -6,8 +6,9 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Accounting\Invoice;
+namespace App\Actions\Retina\Billing;
 
+use App\Actions\Accounting\Invoice\PdfInvoice;
 use App\Actions\OrgAction;
 use App\Models\Accounting\Invoice;
 use Lorisleiva\Actions\ActionRequest;
