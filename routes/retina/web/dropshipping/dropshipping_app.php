@@ -8,6 +8,7 @@
  *
 */
 
+use App\Actions\Accounting\Invoice\RetinaPdfInvoice;
 use App\Actions\Dropshipping\Amazon\AuthorizeRetinaAmazonUser;
 use App\Actions\Dropshipping\Amazon\CallbackRetinaAmazonUser;
 use App\Actions\Dropshipping\Ebay\AuthorizeRetinaEbayUser;
@@ -125,6 +126,7 @@ Route::prefix('tiktok')->name('tiktok.')->group(function () {
 Route::prefix('invoices')->name('invoices.')->group(function () {
     Route::get('', IndexRetinaDropshippingInvoices::class)->name('index');
     Route::get('{invoice}', ShowRetinaDropshippingInvoice::class)->name('show');
+    Route::get('{invoice}/pdf', RetinaPdfInvoice::class)->name('pdf');
 });
 
 Route::prefix('saved-credit-cards')->name('mit_saved_cards.')->group(function () {
