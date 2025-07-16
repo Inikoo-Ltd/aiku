@@ -10,6 +10,7 @@ namespace App\Actions\Retina\Accounting\MitSavedCard\UI;
 
 use App\Actions\Accounting\MitSavedCard\StoreMitSavedCard;
 use App\Actions\Accounting\WithCheckoutCom;
+use App\Actions\Retina\Dropshipping\Orders\FindUnpaidOrderAndPayWithMitSavedCard;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
@@ -71,6 +72,7 @@ class CreateMitSavedCard extends RetinaAction
 
         try {
             $paymentSession = $paymentSessionClient->createPaymentSessions($paymentSessionRequest);
+            FindUnpaidOrderAndPayWithMitSavedCard::run($this->customer, $mitSavedCard);
         } catch (Exception $e) {
             $paymentSession = [
                 'error' => $e->getMessage(),
