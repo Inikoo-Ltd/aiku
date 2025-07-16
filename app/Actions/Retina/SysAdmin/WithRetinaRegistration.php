@@ -11,6 +11,7 @@ namespace App\Actions\Retina\SysAdmin;
 use App\Actions\CRM\Customer\RegisterCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\RegisterFulfilmentCustomer;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\CRM\Poll\PollOptionReferralSourcesEnum;
 use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Models\CRM\Poll;
 use App\Models\CRM\PollOption;
@@ -59,7 +60,7 @@ trait WithRetinaRegistration
 
             if (!$pollId || !$pollType) {
                 $validator->errors()->add(
-                    'poll_replies.'.$key,
+                    'poll_replies.' . $key,
                     "Poll reply not valid"
                 );
                 continue;
@@ -71,7 +72,7 @@ trait WithRetinaRegistration
 
             if (!$pollAnswer && $poll->in_registration_required) {
                 $validator->errors()->add(
-                    'poll_replies.'.$key,
+                    'poll_replies.' . $key,
                     "The answer is required for this poll!"
                 );
                 continue;
@@ -81,7 +82,7 @@ trait WithRetinaRegistration
 
             if (!$poll) {
                 $validator->errors()->add(
-                    'poll_replies.'.$key,
+                    'poll_replies.' . $key,
                     "The poll does not exist!"
                 );
                 continue;
@@ -95,15 +96,42 @@ trait WithRetinaRegistration
 
                 if (!in_array((int)$pollAnswer, $pollOptions, true)) {
                     $validator->errors()->add(
-                        'poll_replies.'.$key,
+                        'poll_replies.' . $key,
                         "The answer option does not exist!"
                     );
                 }
             } elseif ($pollType === PollTypeEnum::OPEN_QUESTION->value && !is_string($pollAnswer)) {
                 $validator->errors()->add(
-                    'poll_replies.'.$key,
+                    'poll_replies.' . $key,
                     "The answer must be a string!"
                 );
+            }
+        }
+
+        $url = $request->url();
+        $pollReferalAuto = PollOptionReferralSourcesEnum::detectFromUrl($url);
+
+        if (!$pollReferalAuto) {
+            $url = $request->header('referer');
+            $pollReferalAuto = PollOptionReferralSourcesEnum::detectFromUrl($url);
+        }
+
+        if ($pollReferalAuto) {
+            $autoPoll = Poll::where('shop_id', $this->shop->id)
+                ->where('type', PollTypeEnum::OPTION_REFERRAL_SOURCES)
+                ->first();
+
+            if ($autoPoll) {
+                $pollOption = PollOption::where('shop_id', $this->shop->id)
+                    ->where('value', $pollReferalAuto->value)->first() ?? null;
+                if ($pollOption) {
+                    $pollReply = [
+                        'id'     => $autoPoll->id,
+                        'type'   => PollTypeEnum::OPTION_REFERRAL_SOURCES->value,
+                        'answer' => $pollOption->id,
+                    ];
+                    $pollReplies[] = $pollReply;
+                }
             }
         }
     }
@@ -139,11 +167,11 @@ trait WithRetinaRegistration
             'is_opt_in'       => ['required', 'boolean'],
             'poll_replies'    => ['sometimes', 'array'],
             'password'        =>
-                [
-                    'required',
-                    'required',
-                    app()->isLocal() || app()->environment('testing') ? null : Password::min(8)
-                ],
+            [
+                'required',
+                'required',
+                app()->isLocal() || app()->environment('testing') ? null : Password::min(8)
+            ],
         ];
 
         if ($this->shop->type == ShopTypeEnum::FULFILMENT) {
@@ -152,5 +180,4 @@ trait WithRetinaRegistration
 
         return $rules;
     }
-
 }

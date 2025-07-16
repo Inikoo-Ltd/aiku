@@ -40,6 +40,13 @@ class StorePoll extends OrgAction
         data_forget($modelData, 'type');
         data_set($modelData, 'type', $type);
 
+        if ($type == PollTypeEnum::OPTION_REFERRAL_SOURCES->value) {
+            $modelData['in_registration'] = true;
+            $modelData['in_registration_required'] = true;
+            $modelData['in_iris'] = true;
+            $modelData['in_iris_required'] = true;
+        }
+
         /** @var \App\Models\CRM\Poll $poll */
         $poll = $shop->polls()->create($modelData);
         $poll->stats()->create([

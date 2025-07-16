@@ -15,6 +15,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Helpers\Country\UI\GetAddressData;
+use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Http\Resources\CRM\PollsResource;
 use App\Models\CRM\Poll;
 use Illuminate\Http\RedirectResponse;
@@ -24,7 +25,7 @@ class ShowStandAloneRegistration extends IrisAction
     public function handle(ActionRequest $request): Response|RedirectResponse
     {
         $shop = $this->shop;
-        $polls = Poll::where('shop_id', $shop->id)->where('in_registration', true)->get();
+        $polls = Poll::where('shop_id', $shop->id)->where('type', '!=', PollTypeEnum::OPTION_REFERRAL_SOURCES)->where('in_registration', true)->get();
         $pollsResource = PollsResource::collection($polls)->toArray($request);
 
 
@@ -49,6 +50,4 @@ class ShowStandAloneRegistration extends IrisAction
 
         return $this->handle($request);
     }
-
-
 }
