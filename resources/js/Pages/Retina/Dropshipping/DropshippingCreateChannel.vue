@@ -433,6 +433,7 @@ const isModalEbayDuplicate = ref(false)
                         :label="trans('Connect')"
                         type="primary"
                         full
+                        iconRight="fal fa-external-link-alt"
                         @click="onSubmitAmazon"
                     />
 
@@ -477,11 +478,11 @@ const isModalEbayDuplicate = ref(false)
         <div class="h-fit">
             <div class="mb-4">
                 <div class="text-center font-semibold text-xl">
-                    {{ trans("Select your store name") }}
+                    {{ trans("Enter your Shopify store name") }}
                 </div>
 
-                <div class="text-center text-xs text-gray-500">
-                    {{ trans("This is the url that your store can be accessed") }}
+                <div class="text-center text-xs text-gray-500 w-9/12 mx-auto">
+                    {{ trans("This is the store name that you already have in Shopify. You can it in Shopify Settings") }}
                 </div>
             </div>
 
@@ -503,7 +504,7 @@ const isModalEbayDuplicate = ref(false)
                 </div>
             </Transition>
 
-            <Button @click="() => onCreateStoreShopify()" full label="Create" :loading="!!isLoading" class="mt-6"/>
+            <Button @click="() => onCreateStoreShopify()" full :label="trans('Connect')" :loading="!!isLoading" class="mt-6" />
         </div>
     </Modal>
 
@@ -512,7 +513,7 @@ const isModalEbayDuplicate = ref(false)
         <div class="">
             <div class="mb-4">
                 <div class="text-center font-semibold text-xl">
-                    {{ trans("Create manual platform") }}
+                    {{ trans("Create platform manual") }}
                 </div>
 
                 <div class="text-center text-xs text-gray-500">
