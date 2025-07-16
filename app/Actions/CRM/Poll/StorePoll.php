@@ -57,7 +57,11 @@ class StorePoll extends OrgAction
                 );
             }
         } else if ($poll->type == PollTypeEnum::OPTION_REFERRAL_SOURCES) {
-            foreach (PollOptionReferralSourcesEnum::cases() as $index => $option) {
+            foreach ($options as $index => $option) {
+                $option = PollOptionReferralSourcesEnum::tryFrom($option['value']);
+                if (!$option) {
+                    continue;
+                }
                 StorePollOption::make()->action(
                     $poll,
                     [
@@ -145,7 +149,7 @@ class StorePoll extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        $type = Arr::pull($modelData, 'type.type');
+        $type = $this->get('type.type');
 
         if ($type == PollTypeEnum::OPTION_REFERRAL_SOURCES->value) {
             if (Poll::where('shop_id', $this->shop->id)->where('type', PollTypeEnum::OPTION_REFERRAL_SOURCES)->exists()) {

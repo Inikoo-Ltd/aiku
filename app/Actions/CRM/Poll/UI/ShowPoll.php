@@ -13,6 +13,7 @@ namespace App\Actions\CRM\Poll\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Traits\WithCustomersSubNavigation;
+use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Http\Resources\CRM\PollResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Poll;
@@ -36,7 +37,7 @@ class ShowPoll extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, Poll $poll, ActionRequest $request): Poll
     {
         $this->parent = $shop;
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($shop, $request)->withTab(PollsTabsEnum::values());
 
         return $this->handle($poll);
     }
@@ -55,35 +56,63 @@ class ShowPoll extends OrgAction
             ]
         ];
 
-        return Inertia::render(
-            'CRM/Poll',
-            [
-                'title'       => __('Poll details'),
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->getName(),
-                    $request->route()->originalParameters()
-                ),
-                'pageHead'    => [
-                    'title'   => $poll->name,
-                    'model'   => __('Poll'),
-                    'icon'    => [
-                        'icon'  => ['fal', 'fa-poll'],
-                        'title' => __('poll')
-                    ],
-                    'iconRight' => $poll->in_registration ? [
-                        'icon'  => ['fal', 'fa-eye'],
-                        'class' => 'text-green-500 animate-pulse',
-                        'tooltip' => __('Visible in registration form'),
-                    ] : [
-                        'icon'  => ['fal', 'fa-eye-slash'],
-                        'class' => 'text-gray-400',
-                        'tooltip' => __('Not visible in registration form'),
-                    ],
-                    'actions' => $actions,
+        $navigations = PollsTabsEnum::navigation();
+
+        if ($poll->type == PollTypeEnum::OPEN_QUESTION) {
+            unset($navigations[PollsTabsEnum::POLL_OPTIONS->value]);
+        }
+
+        $renderData = [
+            'title'       => __('Poll details'),
+            'breadcrumbs' => $this->getBreadcrumbs(
+                $request->route()->getName(),
+                $request->route()->originalParameters()
+            ),
+            'pageHead'    => [
+                'title'   => $poll->name,
+                'model'   => __('Poll'),
+                'icon'    => [
+                    'icon'  => ['fal', 'fa-poll'],
+                    'title' => __('poll')
                 ],
-                'data'        => PollResource::make($poll)->toarray($request),
-            ]
-        );
+                'iconRight' => $poll->in_registration ? [
+                    'icon'  => ['fal', 'fa-eye'],
+                    'class' => 'text-green-500 animate-pulse',
+                    'tooltip' => __('Visible in registration form'),
+                ] : [
+                    'icon'  => ['fal', 'fa-eye-slash'],
+                    'class' => 'text-gray-400',
+                    'tooltip' => __('Not visible in registration form'),
+                ],
+                'actions' => $actions,
+            ],
+            'tabs'        => [
+                'current'    => $this->tab,
+                'navigation' => $navigations,
+            ],
+
+            'data'        => PollResource::make($poll)->toarray($request),
+
+            PollsTabsEnum::SHOWCASE->value => $this->tab == PollsTabsEnum::SHOWCASE->value ?
+                fn() => GetPollShowcase::run($poll)
+                : Inertia::lazy(fn() => GetPollShowcase::run($poll)),
+        ];
+
+        if ($poll->type != PollTypeEnum::OPEN_QUESTION) {
+            $renderData[PollsTabsEnum::POLL_OPTIONS->value] = $this->tab == PollsTabsEnum::POLL_OPTIONS->value ?
+                fn() => IndexPollOptions::run($poll, PollsTabsEnum::POLL_OPTIONS->value)
+                : Inertia::lazy(fn() => IndexPollOptions::run($poll, PollsTabsEnum::POLL_OPTIONS->value));
+        }
+
+        $response = Inertia::render('CRM/Poll', $renderData);
+
+        if ($poll->type != PollTypeEnum::OPEN_QUESTION) {
+            $response->table(
+                IndexPollOptions::make()->tableStructure($poll, [], PollsTabsEnum::POLL_OPTIONS->value)
+            );
+        }
+
+        return $response;
     }
 
     public function jsonResponse(Poll $poll): PollResource
