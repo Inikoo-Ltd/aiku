@@ -7,7 +7,7 @@
  * copyright 2025
 */
 
-namespace App\Actions\Retina\Dropshipping\Product;
+namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\Dropshipping\Portfolio\StoreMultiplePortfolios;
 use App\Actions\RetinaAction;
@@ -34,7 +34,7 @@ class StoreRetinaPortfoliosFromProductCategory extends RetinaAction
         });
 
         $data = $products->pluck('id')->all();
-        
+
         DB::transaction(function () use ($customerSalesChannel, $data) {
             StoreMultiplePortfolios::run($customerSalesChannel, $data);
         });

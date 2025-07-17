@@ -53,6 +53,7 @@ use App\Actions\Retina\Dropshipping\Orders\Transaction\UpdateRetinaTransaction;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrder;
 use App\Actions\Retina\Dropshipping\Portfolio\BatchDeleteRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Portfolio\DeleteRetinaPortfolio;
+use App\Actions\Retina\Dropshipping\Portfolio\StoreRetinaPortfoliosFromProductCategory;
 use App\Actions\Retina\Dropshipping\Portfolio\UpdateRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Product\StoreRetinaProductManual;
 use App\Actions\Retina\Ecom\Basket\RetinaDeleteBasketTransaction;
@@ -230,6 +231,7 @@ Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customer
     Route::post('upload', ImportRetinaClients::class)->name('clients.upload');
     Route::post('products', StoreRetinaProductManual::class)->name('customer.product.store')->withoutScopedBindings();
     Route::post('portfolio-clone-manual/{targetCustomerSalesChannel:id}', CloneMultipleManualPortfolios::class)->name('portfolio.clone_manual')->withoutScopedBindings();
+    Route::post('product-category/{productCategory:id}/store', StoreRetinaPortfoliosFromProductCategory::class)->name('portfolio.store_from_product_category')->withoutScopedBindings();
     Route::delete('delete', RetinaDeleteCustomerSalesChannel::class)->name('delete');
     Route::delete('products/{portfolio:id}', DeleteRetinaPortfolio::class)->name('product.delete')->withoutScopedBindings();
     Route::post('portfolio-batch-delete', BatchDeleteRetinaPortfolio::class)->name('portfolio.batch.delete');
