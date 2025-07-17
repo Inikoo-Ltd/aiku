@@ -40,7 +40,7 @@ class ProductsWebpageResource extends JsonResource
         } else {
             $webImages = $this->web_images;
         }
-        
+
         return [
             'id'          => $this->id,
             'slug'        => $this->slug,
