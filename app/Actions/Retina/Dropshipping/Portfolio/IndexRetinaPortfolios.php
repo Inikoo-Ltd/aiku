@@ -144,9 +144,25 @@ class IndexRetinaPortfolios extends RetinaAction
                     ]
                 ],
                 PlatformTypeEnum::WOOCOMMERCE => [
-                    'name'       => 'retina.models.dropshipping.woo.batch_upload',
-                    'parameters' => [
-                        'wooCommerceUser' => $platformUser->id
+                    [
+                        'duplicate' => [
+                            'name'       => 'retina.models.dropshipping.woo.batch_upload',
+                            'parameters' => [
+                                'wooCommerceUser' => $platformUser->id
+                            ]
+                        ],
+                        'brave' => [
+                            'name'       => 'retina.models.dropshipping.woo.batch_brave',
+                            'parameters' => [
+                                'wooCommerceUser' => $platformUser->id
+                            ]
+                        ],
+                        'use_existing' => [
+                            'name'       => 'retina.models.dropshipping.woo.batch_sync',
+                            'parameters' => [
+                                'wooCommerceUser' => $platformUser->id
+                            ]
+                        ]
                     ]
                 ],
                 PlatformTypeEnum::EBAY => [

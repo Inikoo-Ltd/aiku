@@ -21,7 +21,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
 
-class RequestApiUploadProductWooCommerce extends RetinaAction
+class UploadPortfolioWooCommerce extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
@@ -60,15 +60,7 @@ class RequestApiUploadProductWooCommerce extends RetinaAction
                 'status' => $this->mapProductStateToWooCommerce($product->status->value)
             ];
 
-            $existingProduct = null;
-            if ($portfolio->platform_product_id) {
-                $existingProduct = $wooCommerceUser->getWooCommerceProduct($portfolio->platform_product_id);
-            }
-
             $result = $wooCommerceUser->createWooCommerceProduct($wooCommerceProduct);
-            if ($existingProduct) {
-                $result = $existingProduct;
-            }
 
             $portfolio = UpdatePortfolio::run($portfolio, [
                 'platform_product_id' => Arr::get($result, 'id')
