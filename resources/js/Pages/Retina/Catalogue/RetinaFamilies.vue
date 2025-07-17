@@ -9,19 +9,12 @@ import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
-import Table from '@/Components/Table/Table.vue'
-import RetinaTableDepartements from '@/Components/Tables/Retina/RetinaTableDepartements.vue'
+import RetinaTableFamilies from '@/Components/Tables/Retina/RetinaTableFamilies.vue'
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
     title: string
-    tabs: {
-        current: string
-        navigation: {}
-    },
     data: {},
-    index?: {}
-    sales?: {}
 }>()
 
 </script>
@@ -29,6 +22,6 @@ const props = defineProps<{
 <template>
     <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead"/>
-    <RetinaTableDepartements :data="data" ></RetinaTableDepartements>
+    <RetinaTableFamilies :data="data" ></RetinaTableFamilies>
 </template>
 

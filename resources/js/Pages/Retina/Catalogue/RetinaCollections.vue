@@ -9,7 +9,6 @@ import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
-import Table from '@/Components/Table/Table.vue'
 import RetinaTableDepartements from '@/Components/Tables/Retina/RetinaTableDepartements.vue'
 
 const props = defineProps<{

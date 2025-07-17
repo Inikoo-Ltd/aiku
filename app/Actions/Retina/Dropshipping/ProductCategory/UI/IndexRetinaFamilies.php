@@ -198,7 +198,7 @@ class IndexRetinaFamilies extends RetinaAction
 
 
         return Inertia::render(
-            'Org/Catalogue/Families',
+            'Catalogue/RetinaFamilies',
             [
                 'breadcrumbs'                         => $this->getBreadcrumbs(
                     $this->parent,

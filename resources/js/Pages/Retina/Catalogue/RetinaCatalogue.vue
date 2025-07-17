@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3'
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCubes, faSeedling } from "@fal"
+import { faCubes, faSeedling, faBooks, faFolderTree, faAlbumCollection } from "@fal"
 import { faFireAlt } from "@fad"
 import { faCheckCircle, faTimesCircle } from "@fas"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -16,7 +16,8 @@ import { PageHeading as PageHeadingTS } from '@/types/PageHeading'
 import { routeType } from '@/types/route'
 import StatsBox from '@/Components/Stats/StatsBox.vue'
 
-library.add(faCheckCircle, faTimesCircle, faCubes, faSeedling, faFireAlt)
+
+library.add(faCheckCircle, faTimesCircle, faCubes, faSeedling, faFireAlt, faBooks, faFolderTree, faAlbumCollection)
 
 const props = defineProps<{
     pageHead: PageHeadingTS
@@ -68,21 +69,12 @@ const props = defineProps<{
 
 
 <template>
-
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
-
     <div class="p-6">
         <dl class="grid grid-cols-1 gap-2 lg:gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            <StatsBox
-                v-for="stat in stats"
-                :stat="stat"
-            >
+            <StatsBox v-for="stat in stats" :stat="stat">
             </StatsBox>
         </dl>
     </div>
-    
-
-
 </template>
-
