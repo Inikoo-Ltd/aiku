@@ -122,6 +122,7 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
             if ($bucket != 'discontinued') {
                 $table->column(key: 'available_quantity', label: __('stock'), canBeHidden: false, sortable: true, searchable: true);
             }
+              $table->column(key: 'actions', label: __('Actions'), canBeHidden: false, sortable: false, searchable: false);
         };
     }
 

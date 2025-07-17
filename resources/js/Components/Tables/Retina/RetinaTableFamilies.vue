@@ -9,11 +9,13 @@ import Table from "@/Components/Table/Table.vue"
 import Icon from "@/Components/Icon.vue"
 import { routeType } from "@/types/route"
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCheck } from "@fal";
 import Tag from "@/Components/Tag.vue";
 import { Link } from "@inertiajs/vue3";
+import { faYinYang, faDotCircle, faCheck, faPlus} from "@fal";
+import Button from "@/Components/Elements/Buttons/Button.vue";
+import RetinaButtonAddPortofolio from "@/Components/Iris/Products/RetinaButtonAddPortofolio.vue";
 
-library.add(faCheck)
+library.add(faCheck,faYinYang, faDotCircle)
 
 const props = defineProps<{
     data: object
@@ -26,7 +28,7 @@ const props = defineProps<{
     isCheckBox?: boolean
 }>()
 
-console.log(props)
+
 
 const emits = defineEmits<{
     (e: "selectedRow", value: {}): void
@@ -92,6 +94,10 @@ function familyRoute(family): string {
             <!-- <Link v-if="family.sub_department_slug" :href="subDepartmentRoute(family)" class="secondaryLink"> -->
             {{ family["sub_department_code"] }}
             <!--       </Link> -->
+        </template>
+
+         <template #cell(actions)="{ item: family }">
+           <RetinaButtonAddPortofolio />
         </template>
     </Table>
 </template>

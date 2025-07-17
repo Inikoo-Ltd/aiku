@@ -30,6 +30,8 @@ class ProductResource extends JsonResource
             'price'           => $product->price,
             'currency_code'   => $product->currency->code,
             'description'     => $product->description,
+            'description_title'     => $product->description_title,
+            'description_extra'     => $product->description_extra,
             'state'           => $product->state,
             'created_at'      => $product->created_at,
             'updated_at'      => $product->updated_at,
