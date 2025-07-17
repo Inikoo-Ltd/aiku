@@ -119,7 +119,7 @@ trait IsOrder
 
                 $deliveryNotesData[] = [
                     'reference' => $deliveryNote->reference,
-                    'state'     => $deliveryNote->state->stateIcon()[$this->state->value],
+                    'state'     => $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
                     'shipments' => $shipmentsData,
                 ];
             }
