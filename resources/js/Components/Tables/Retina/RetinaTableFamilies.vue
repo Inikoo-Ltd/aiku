@@ -10,6 +10,7 @@ import Icon from "@/Components/Icon.vue"
 import { routeType } from "@/types/route"
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheck } from "@fal";
+import Tag from "@/Components/Tag.vue";
 
 library.add(faCheck)
 
@@ -34,44 +35,42 @@ const emits = defineEmits<{
 </script>
 
 <template>
-    <Table
-        :resource="data"
-        :name="tab"
-        class="mt-5"
-        :isCheckBox="isCheckBox"
-        @onSelectRow="(item) => (console.log('qqqq', item), emits('selectedRow', item))"
-    >
+    <Table :resource="data" :name="tab">
         <template #cell(state)="{ item: family }">
-            <Icon :data="family.state" />
+            <Tag :label="family.state.tooltip" v-tooltip="family.state.tooltip">
+                <template #label>
+                    <Icon :data="family.state" /> <span :class="family.state.class">{{ family.state.tooltip }}</span>
+                </template>
+            </Tag>
         </template>
         <template #cell(code)="{ item: family }">
-           <!--  <Link :href="familyRoute(family)" class="primaryLink"> -->
-                {{ family["code"] }}
+            <!--  <Link :href="familyRoute(family)" class="primaryLink"> -->
+            {{ family["code"] }}
             <!-- </Link> -->
         </template>
         <template #cell(shop_code)="{ item: family }">
-           <!--  <Link :href="shopRoute(family)" class="secondaryLink"> -->
-                {{ family["shop_code"] }}
-          <!--   </Link> -->
+            <!--  <Link :href="shopRoute(family)" class="secondaryLink"> -->
+            {{ family["shop_code"] }}
+            <!--   </Link> -->
         </template>
         <template #cell(current_products)="{ item: family }">
-      <!--       <Link :href="productRoute(family)" class="primaryLink"> -->
-                {{ family["current_products"] }}
-           <!--  </Link> -->
+            <!--       <Link :href="productRoute(family)" class="primaryLink"> -->
+            {{ family["current_products"] }}
+            <!--  </Link> -->
         </template>
 
         <!-- Column: Department code -->
         <template #cell(department_code)="{ item: family }">
-           <!--  <Link v-if="family.department_slug" :href="departmentRoute(family)" class="secondaryLink"> -->
-                {{ family["department_code"] }}
+            <!--  <Link v-if="family.department_slug" :href="departmentRoute(family)" class="secondaryLink"> -->
+            {{ family["department_code"] }}
             <!-- </Link> -->
         </template>
 
         <!-- Column: Department name -->
         <template #cell(department_name)="{ item: family }">
             <!-- <Link v-if="family.department_slug" :href="departmentRoute(family)" class="secondaryLink"> -->
-                {{ family["department_name"] }}
-           <!--  </Link> -->
+            {{ family["department_name"] }}
+            <!--  </Link> -->
         </template>
 
         <template #cell(product_categories)="{ item: family }">
@@ -81,8 +80,8 @@ const emits = defineEmits<{
         </template>
         <template #cell(sub_department_name)="{ item: family }">
             <!-- <Link v-if="family.sub_department_slug" :href="subDepartmentRoute(family)" class="secondaryLink"> -->
-                {{ family["sub_department_code"] }}
-      <!--       </Link> -->
+            {{ family["sub_department_code"] }}
+            <!--       </Link> -->
         </template>
     </Table>
 </template>
