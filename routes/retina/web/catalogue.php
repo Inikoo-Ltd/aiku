@@ -8,11 +8,14 @@
 
 use App\Actions\Retina\Dropshipping\Catalogue\ShowRetinaCatalogue;
 use App\Actions\Retina\Dropshipping\Collection\UI\IndexRetinaCollections;
+use App\Actions\Retina\Dropshipping\Collection\UI\ShowRetinaCollection;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInCatalogue;
+use App\Actions\Retina\Dropshipping\Product\UI\ShowRetinaCatalogueProduct;
 use App\Actions\Retina\Dropshipping\ProductCategory\UI\IndexRetinaDepartments;
 use App\Actions\Retina\Dropshipping\ProductCategory\UI\IndexRetinaFamilies;
 use App\Actions\Retina\Dropshipping\ProductCategory\UI\IndexRetinaSubDepartments;
 use App\Actions\Retina\Dropshipping\ProductCategory\UI\ShowRetinaDepartment;
+use App\Actions\Retina\Dropshipping\ProductCategory\UI\ShowRetinaFamily;
 use App\Actions\Retina\Dropshipping\ProductCategory\UI\ShowRetinaSubDepartment;
 use Illuminate\Support\Facades\Route;
 
@@ -30,12 +33,15 @@ Route::prefix('sub-departments')->as('sub_departments.')->group(function () {
 
 Route::prefix('families')->as('families.')->group(function () {
     Route::get('/', IndexRetinaFamilies::class)->name('index');
+    Route::get('{family}', ShowRetinaFamily::class)->name('show');
 });
 
 Route::prefix('products')->as('products.')->group(function () {
     Route::get('/', IndexRetinaProductsInCatalogue::class)->name('index');
+    Route::get('{product}', ShowRetinaCatalogueProduct::class)->name('show');
 });
 
 Route::prefix('collections')->as('collections.')->group(function () {
     Route::get('/', IndexRetinaCollections::class)->name('index');
+    Route::get('{collection}', ShowRetinaCollection::class)->name('show');
 });
