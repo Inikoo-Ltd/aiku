@@ -23,6 +23,7 @@ use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
+use Spatie\Browsershot\Browsershot;
 
 class CallApiDpdGbShipping extends OrgAction
 {
@@ -49,8 +50,10 @@ class CallApiDpdGbShipping extends OrgAction
 
     public function getHeaders(Shipper $shipper, string $accept = 'application/json'): array
     {
-        if (empty($this->geoSession) ||
-            Carbon::now()->timestamp - $this->geoSessionDate > 43200) {
+        if (
+            empty($this->geoSession) ||
+            Carbon::now()->timestamp - $this->geoSessionDate > 43200
+        ) {
             $this->login($shipper);
         }
 
@@ -85,7 +88,6 @@ class CallApiDpdGbShipping extends OrgAction
         $this->geoSession = Arr::get($apiResponse, 'data.geoSession', '');
         $this->geoSessionDate = Carbon::now()->timestamp;
         $this->accountNumber = $accountNumber;
-
     }
 
 
@@ -122,7 +124,7 @@ class CallApiDpdGbShipping extends OrgAction
 
         $params = '';
         foreach ($data as $key => $value) {
-            $params .= $key.'='.urlencode($value).'&';
+            $params .= $key . '=' . urlencode($value) . '&';
         }
         $params = trim($params, '&');
 
@@ -163,10 +165,22 @@ class CallApiDpdGbShipping extends OrgAction
             $trackingNumber = Arr::get($apiResponse, 'data.consignmentDetail.0.consignmentNumber');
             $shipmentId = Arr::get($apiResponse, 'data.shipmentId');
 
-            $modelData['tracking'] = $trackingNumber;
-            $modelData['label'] = $this->getLabel($shipmentId, $shipper, 'text/html');
-            $modelData['label_type'] = ShipmentLabelTypeEnum::HTML;
-            $modelData['number_parcels'] = count($parcels);
+            try {
+                $html = $this->getLabel($shipmentId, $shipper, 'text/html');
+                $modelData['tracking'] = $trackingNumber;
+                $htmlContent = base64_decode($html);
+                $pdfContent = Browsershot::html($htmlContent)
+                    ->setOption('no-stop-slow-scripts', true)
+                    ->setOption('timeout', 5000)
+                    ->margins(10, 10, 10, 10)
+                    ->pdf();
+                $modelData['label'] = base64_encode($pdfContent);
+                $modelData['label_type'] = ShipmentLabelTypeEnum::PDF;
+                $modelData['number_parcels'] = count($parcels);
+            } catch (\Exception $e) {
+                Sentry::captureException($e);
+                $errorData['label'] = 'Failed to generate label: ' . $e->getMessage();
+            }
         } else {
             $status = 'fail';
             $errors = Arr::get($apiResponse, 'error', []);
