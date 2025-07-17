@@ -57,8 +57,9 @@ class IndexPollOptions extends OrgAction
             'poll_option_stats.number_customers',
         ];
 
-        // Add purchase and revenue columns if parent type is referral sources
-        if ($parent->type === 'referral_sources') {
+        $groupByFields = ['poll_options.id', 'poll_option_stats.id'];
+
+        if ($parent->type === PollTypeEnum::OPTION_REFERRAL_SOURCES) {
             $queryBuilder->leftJoin('shops', 'shops.id', '=', 'poll_options.shop_id');
             $queryBuilder->leftJoin('currencies', 'currencies.id', '=', 'shops.currency_id');
             $selectFields = array_merge($selectFields, [
@@ -66,12 +67,13 @@ class IndexPollOptions extends OrgAction
                 'poll_option_stats.total_customer_revenue',
                 'currencies.code as currency_code',
             ]);
+            $groupByFields[] = 'currencies.code';
         }
 
         $queryBuilder
             ->defaultSort('poll_options.id')
             ->select($selectFields)
-            ->groupBy('poll_options.id', 'poll_option_stats.id');
+            ->groupBy($groupByFields);
 
         $allowedSorts = ['label', 'number_customers'];
         if ($parent->type === 'referral_sources') {
@@ -107,7 +109,7 @@ class IndexPollOptions extends OrgAction
             if ($parent->type == PollTypeEnum::OPTION_REFERRAL_SOURCES) {
                 $table
                     ->column(key: 'number_customer_purchases', label: __('Purchases'), canBeHidden: false, sortable: true)
-                    ->column(key: 'total_customer_revenue', label: __('Total Revenue'), canBeHidden: false, sortable: true);
+                    ->column(key: 'total_customer_revenue', label: __('Total Revenue'), canBeHidden: false, sortable: true, type: 'currency');
             }
         };
     }

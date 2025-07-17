@@ -12,6 +12,11 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faTrashAlt } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { useFormatTime } from "@/Composables/useFormatTime";
+import TablePollOptions from "@/Components/Tables/Grp/Org/CRM/TablePollOptions.vue";
+import type { Component } from "vue";
+import { computed, ref } from "vue";
+import { useTabChange } from "@/Composables/tab-change";
+import Tabs from "@/Components/Navigation/Tabs.vue";
 
 library.add(faTrashAlt);
 
@@ -19,6 +24,10 @@ library.add(faTrashAlt);
 const props = defineProps<{
     title: string
     pageHead: TSPageHeading
+    tabs: {
+        current: string
+        navigation: {}
+    }
     data: {
         id: number
         label: string
@@ -40,6 +49,23 @@ const stats = [
     { id: 1, name: trans("Created at"), value: useFormatTime(props.data?.created_at) },
     { id: 2, name: trans("Type"), value: props.data.type }
 ];
+
+
+let currentTab = ref(props.tabs.current);
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
+
+const component = computed(() => {
+    const components: Record<string, Component> = {
+        poll_options: TablePollOptions
+    };
+
+    if (currentTab.value === 'poll_options' && !props.poll_options) {
+        return null;
+    }
+
+    return components[currentTab.value];
+});
+
 </script>
 
 
@@ -126,7 +152,15 @@ const stats = [
             </div>
         </div>
     </div>
+    <hr class="my-5 border border-gray-200" />
 
-    {{ showcase }}
-    {{ poll_options }}
+    <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
+    <component
+        :is="component"
+        :data="props[currentTab as keyof typeof props]"
+        :tab="currentTab"
+        :handleTabUpdate
+        />
+    <!-- {{ showcase }}
+    {{ poll_options }} -->
 </template>

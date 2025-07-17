@@ -14,6 +14,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Traits\WithCustomersSubNavigation;
 use App\Enums\CRM\Poll\PollTypeEnum;
+use App\Http\Resources\CRM\PollOptionsResource;
 use App\Http\Resources\CRM\PollResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Poll;
@@ -102,8 +103,8 @@ class ShowPoll extends OrgAction
 
         if ($poll->type != PollTypeEnum::OPEN_QUESTION) {
             $renderData[PollsTabsEnum::POLL_OPTIONS->value] = $this->tab == PollsTabsEnum::POLL_OPTIONS->value ?
-                fn() => IndexPollOptions::run($poll, PollsTabsEnum::POLL_OPTIONS->value)
-                : Inertia::lazy(fn() => IndexPollOptions::run($poll, PollsTabsEnum::POLL_OPTIONS->value));
+                fn() => PollOptionsResource::collection(IndexPollOptions::run($poll, PollsTabsEnum::POLL_OPTIONS->value))
+                : Inertia::lazy(fn() => PollOptionsResource::collection(IndexPollOptions::run($poll, PollsTabsEnum::POLL_OPTIONS->value)));
         }
 
         $response = Inertia::render('CRM/Poll', $renderData);

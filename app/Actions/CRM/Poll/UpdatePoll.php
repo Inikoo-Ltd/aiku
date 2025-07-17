@@ -47,9 +47,8 @@ class UpdatePoll extends OrgAction
         if ($poll->type == PollTypeEnum::OPTION && $options) {
             $oldOptions = $poll->pollOptions;
             foreach ($options as $index => $option) {
-                $value = $poll->shop->id . $poll->id . $index;
                 $id = Arr::pull($option, 'id');
-                $optionExist = $oldOptions->where('value', $value)->first() ?? $oldOptions->where('id', $id)->first();
+                $optionExist = $oldOptions->where('label', $option['label'])->first() ?? $oldOptions->where('id', $id)->first();
                 if ($optionExist) {
                     UpdatePollOption::make()->action(
                         $optionExist,
@@ -98,6 +97,16 @@ class UpdatePoll extends OrgAction
                         'label' => $option->label(),
                     ]
                 );
+            }
+        } else {
+            $oldOptions = $poll->pollOptions;
+            if (!empty($oldOptions)) {
+                foreach ($oldOptions as $oldOption) {
+                    DeletePollOptions::run(
+                        $oldOption,
+                        true
+                    );
+                }
             }
         }
 
