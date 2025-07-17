@@ -3,6 +3,7 @@
 
 namespace App\Models\CRM;
 
+use App\Enums\CRM\Poll\OfflineConversionUploadStatusEnum;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -62,13 +63,9 @@ class OfflineConversion extends Model
         'within_attribution_window' => 'boolean',
         'uploaded_to_platform' => 'boolean',
         'upload_response' => 'array',
+        'upload_status' => OfflineConversionUploadStatusEnum::class,
         'data' => 'array',
     ];
-
-    public const UPLOAD_STATUS_PENDING = 'pending';
-    public const UPLOAD_STATUS_UPLOADED = 'uploaded';
-    public const UPLOAD_STATUS_FAILED = 'failed';
-    public const UPLOAD_STATUS_SKIPPED = 'skipped';
 
     public function customer(): BelongsTo
     {
@@ -87,7 +84,7 @@ class OfflineConversion extends Model
 
     public function scopePendingUpload(Builder $query): Builder
     {
-        return $query->where('upload_status', self::UPLOAD_STATUS_PENDING)
+        return $query->where('upload_status', OfflineConversionUploadStatusEnum::PENDING)
             ->where('uploaded_to_platform', false)
             ->where('within_attribution_window', true);
     }
@@ -102,28 +99,28 @@ class OfflineConversion extends Model
         return $query->where('within_attribution_window', true);
     }
 
-    public function markAsUploaded(array $response = null): void
+    public function markAsUploaded(?array $response = null): void
     {
         $this->update([
             'uploaded_to_platform' => true,
             'uploaded_at' => now(),
-            'upload_status' => self::UPLOAD_STATUS_UPLOADED,
+            'upload_status' => OfflineConversionUploadStatusEnum::UPLOADED,
             'upload_response' => $response,
         ]);
     }
 
-    public function markUploadFailed(array $response = null): void
+    public function markUploadFailed(?array $response = null): void
     {
         $this->update([
-            'upload_status' => self::UPLOAD_STATUS_FAILED,
+            'upload_status' => OfflineConversionUploadStatusEnum::FAILED,
             'upload_response' => $response,
         ]);
     }
 
-    public function markUploadSkipped(string $reason = null): void
+    public function markUploadSkipped(?string $reason = null): void
     {
         $this->update([
-            'upload_status' => self::UPLOAD_STATUS_SKIPPED,
+            'upload_status' => OfflineConversionUploadStatusEnum::SKIPPED,
             'upload_response' => $reason ? ['reason' => $reason] : null,
         ]);
     }
@@ -135,7 +132,7 @@ class OfflineConversion extends Model
     {
         return $this->within_attribution_window
             && !$this->uploaded_to_platform
-            && $this->upload_status === self::UPLOAD_STATUS_PENDING
+            && $this->upload_status === OfflineConversionUploadStatusEnum::PENDING
             && !empty($this->advertising_platform)
             && !empty($this->tracking_id);
     }
