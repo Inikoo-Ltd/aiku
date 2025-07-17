@@ -56,12 +56,8 @@ class StorePortfolio extends OrgAction
         data_set($modelData, 'customer_description', $item->description);
         data_set($modelData, 'selling_price', $rrp);
         data_set($modelData, 'customer_price', $rrp);
-
         data_set($modelData, 'barcode', $item->barcode);
-
-        data_set($modelData, 'sku', $this->getSKU());
-
-
+        data_set($modelData, 'sku', $this->getSKU($item));
 
         data_set(
             $modelData,
@@ -99,14 +95,12 @@ class StorePortfolio extends OrgAction
 
             $skuArray = [];
             foreach ($product->orgStocks as $orgStock) {
-
                 $stock = $orgStock->stock;
-                if($stock){
+                if ($stock) {
                     $skuArray[] = $stock->slug;
-                }else{
+                } else {
                     $skuArray[] = $orgStock->slug;
                 }
-
             }
             if (!empty($skuArray)) {
                 $sku = implode('-', $skuArray);
@@ -115,7 +109,7 @@ class StorePortfolio extends OrgAction
             }
 
             return $sku;
-        }else{
+        } else {
             return $item->reference;
         }
     }
