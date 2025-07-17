@@ -19,7 +19,7 @@ import {Message, Popover} from "primevue"
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
 import {faSyncAlt} from "@fas";
 import {
-    faBracketsCurly,
+    faBracketsCurly, faPawClaws,
     faFileExcel,
     faImage,
     faArrowLeft,
@@ -33,7 +33,7 @@ import axios from "axios"
 import {Table as TableTS} from "@/types/Table"
 import { CustomerSalesChannel } from "@/types/customer-sales-channel"
 
-library.add(faFileExcel, faBracketsCurly, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
+library.add(faFileExcel, faBracketsCurly, faSyncAlt, faPawClaws, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
 
 
 const props = defineProps<{
@@ -53,6 +53,8 @@ const props = defineProps<{
     products: TableTS
     routes: {
         syncAllRoute: routeType
+        batch_sync: routeType
+        duplicate: routeType
         addPortfolioRoute: routeType
         bulk_upload: routeType
         itemRoute: routeType
@@ -380,7 +382,7 @@ const progressToUploadToShopify = ref<{ [key: number]: string }>({})
                     v-if="customer_sales_channel?.reconnect_route?.name"
                     @click="() => onClickReconnect(customer_sales_channel)"
                     iconRight="fal fa-external-link"
-                    :label="trans('Reconnect')"
+                    :label="trans('Connect')"
                     zsize="xxs"
                     type="secondary"
                     full
@@ -399,7 +401,35 @@ const progressToUploadToShopify = ref<{ [key: number]: string }>({})
                 </div>
             </div>
 
+            <div class="w-full sm:w-fit h-fit space-x-2">
+                <ButtonWithLink
+                    v-if="routes.duplicate?.name"
+                    :routeTarget="routes.duplicate"
+                    v-tooltip="trans('This will only create new products to the :platform that not exist in :platform', { platform: props.platform_data.name })"
+                    aclick="() => onClickReconnect(customer_sales_channel)"
+                    icon="far fa-plus"
+                    :label="trans('Create new')"
+                    type="tertiary"
+                />
 
+                <ButtonWithLink
+                    v-if="routes.batch_sync?.name"
+                    :routeTarget="routes.batch_sync"
+                    v-tooltip="trans('This will only sync existing products to the :platform (will not create new)', { platform: props.platform_data.name })"
+                    icon="fas fa-sync-alt"
+                    :label="trans('Use existing')"
+                    type="tertiary"
+                />
+
+                <Button
+                    @click="() => bulkUpload()"
+                    v-tooltip="trans('This will create new products (if not exist in :platform) and will sync the products if exist in :platform', { platform: props.platform_data.name })"
+                    icon="fal fa-paw-claws"
+                    :label="trans('Brave mode')"
+                    type="tertiary"
+                    :loading="isLoadingBulkDeleteUpload"
+                />
+            </div>
         </div>
     </Message>
 
