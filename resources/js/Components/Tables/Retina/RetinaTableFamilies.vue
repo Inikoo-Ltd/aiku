@@ -32,6 +32,15 @@ const emits = defineEmits<{
 }>()
 
 
+function familyRoute(family): string {
+  const current = route().current()
+  if (current === "retina.catalogue.families.index") {
+    return route("retina.catalogue.family.show", [family.slug])
+  }
+  return route("retina.catalogue.family.show", [family.slug])
+}
+
+
 </script>
 
 <template>
@@ -44,9 +53,9 @@ const emits = defineEmits<{
             </Tag>
         </template>
         <template #cell(code)="{ item: family }">
-            <!--  <Link :href="familyRoute(family)" class="primaryLink"> -->
+         <!--     <Link :href="familyRoute(family)" class="primaryLink"> -->
             {{ family["code"] }}
-            <!-- </Link> -->
+          <!--   </Link> -->
         </template>
         <template #cell(shop_code)="{ item: family }">
             <!--  <Link :href="shopRoute(family)" class="secondaryLink"> -->
