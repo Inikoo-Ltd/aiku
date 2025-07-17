@@ -45,7 +45,7 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
         }
 
         $queryBuilder = QueryBuilder::for(Product::class);
-        $queryBuilder->whereIn('products.state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUED->value]);
+        $queryBuilder->whereIn('products.state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value]);
         $queryBuilder->where('products.is_main', true);
         if($parent instanceof Shop) {
             $shop = $parent;

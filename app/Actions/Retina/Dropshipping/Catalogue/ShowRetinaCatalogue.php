@@ -60,11 +60,9 @@ class ShowRetinaCatalogue extends RetinaAction
                     [
                         'label' => __('Departments'),
                         'route' => [
-                            // 'name'       => 'grp.org.shops.show.catalogue.departments.index',
-                            // 'parameters' => [
-                            //     'organisation' => $shop->organisation->slug,
-                            //     'shop'         => $shop->slug
-                            // ]
+                            'name'       => 'retina.catalogue.departments.index',
+                            'parameters' => [
+                            ]
                         ],
                         'icon'  => 'fal fa-folder-tree',
                         "color" => "#a3e635",
@@ -91,7 +89,7 @@ class ShowRetinaCatalogue extends RetinaAction
                                 ],
                                 'count'   => $shop->stats->number_departments_state_active,
                                 'route'   => [
-                                    // 'name'       => 'grp.org.shops.show.catalogue.departments.index',
+                                    // 'name'       => 'retina.catalogue.sub_departments.index',
                                     // 'parameters' => [
                                     //     'organisation' => $shop->organisation->slug,
                                     //     'shop'         => $shop->slug,
@@ -122,11 +120,11 @@ class ShowRetinaCatalogue extends RetinaAction
                     [
                         'label' => __('Sub-Departments'),
                         'route' => [
-                            // 'name'       => 'grp.org.shops.show.catalogue.departments.index',
-                            // 'parameters' => [
-                            //     'organisation' => $shop->organisation->slug,
-                            //     'shop'         => $shop->slug
-                            // ]
+                            'name'       => 'retina.catalogue.sub_departments.index',
+                            'parameters' => [
+                                'organisation' => $shop->organisation->slug,
+                                'shop'         => $shop->slug
+                            ]
                         ],
                         'icon'  => 'fal fa-folder-tree',
                         "color" => "#690000",
@@ -177,11 +175,9 @@ class ShowRetinaCatalogue extends RetinaAction
                     [
                         'label' => __('Families'),
                         'route' => [
-                            // 'name'       => 'grp.org.shops.show.catalogue.families.index',        // TODO
-                            // 'parameters' => [
-                            //     'organisation' => $shop->organisation->slug,
-                            //     'shop'         => $shop->slug
-                            // ]
+                            'name'       => 'retina.catalogue.families.index',        // TODO
+                            'parameters' => [
+                            ]
                         ],
                         'icon'  => 'fal fa-folder',
                         "color" => "#e879f9",
@@ -226,11 +222,9 @@ class ShowRetinaCatalogue extends RetinaAction
                     [
                         'label'     => __('Products'),
                         'route'     => [
-                            // 'name'       => 'grp.org.shops.show.catalogue.products.current_products.index',        // TODO
-                            // 'parameters' => [
-                            //     'organisation' => $shop->organisation->slug,
-                            //     'shop'         => $shop->slug
-                            // ]
+                            'name'       => 'retina.catalogue.products.index',        // TODO
+                            'parameters' => [
+                            ]
                         ],
                         'icon'      => 'fal fa-cube',
                         "color"     => "#38bdf8",
@@ -269,11 +263,11 @@ class ShowRetinaCatalogue extends RetinaAction
                     [
                         'label' => __('Collections'),
                         'route' => [
-                            // 'name'       => 'grp.org.shops.show.catalogue.collections.index',        // TODO
-                            // 'parameters' => [
-                            //     'organisation' => $shop->organisation->slug,
-                            //     'shop'         => $shop->slug
-                            // ]
+                            'name'       => 'retina.catalogue.collections.index',        // TODO
+                            'parameters' => [
+                                'organisation' => $shop->organisation->slug,
+                                'shop'         => $shop->slug
+                            ]
                         ],
                         'icon'  => 'fal fa-album-collection',
                         "color" => "#4f46e5",

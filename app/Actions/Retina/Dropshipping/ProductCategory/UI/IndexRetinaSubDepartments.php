@@ -71,7 +71,7 @@ class IndexRetinaSubDepartments extends RetinaAction
         } else {
             $queryBuilder->where('product_categories.shop_id', $parent->id);
         }
-        $queryBuilder->whereIn('product_categories.state', [ProductCategoryStateEnum::ACTIVE->value, ProductCategoryStateEnum::DISCONTINUED->value]);
+        $queryBuilder->whereIn('product_categories.state', [ProductCategoryStateEnum::ACTIVE->value, ProductCategoryStateEnum::DISCONTINUING->value]);
 
         return $queryBuilder
             ->defaultSort('product_categories.code')
