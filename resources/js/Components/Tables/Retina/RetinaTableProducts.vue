@@ -18,6 +18,7 @@ import Icon from "@/Components/Icon.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import Tag from "@/Components/Tag.vue"
 import { Link } from "@inertiajs/vue3"
+import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
 library.add(fadExclamationTriangle, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle)
 
 
@@ -89,6 +90,10 @@ const layout = inject('layout', retinaLayoutStructure)
             <div>
                 {{ locale.currencyFormat(item.currency_code, item.customer_price) }}
             </div>
+        </template>
+
+         <template #cell(actions)="{ item }">
+           <ButtonAddPortfolio :product="{...item, stock : item.available_quantity}" :productHasPortfolio="[]" />
         </template>
 
     </Table>

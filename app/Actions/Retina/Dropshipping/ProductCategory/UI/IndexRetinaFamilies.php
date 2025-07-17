@@ -139,10 +139,12 @@ class IndexRetinaFamilies extends RetinaAction
                     ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'sub_department_name', label: __('sub department'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'department_name', label: __('Department'), canBeHidden: false, sortable: true, searchable: true);
+                     
 
                 if (class_basename($parent) != 'Collection') {
                     $table->column(key: 'number_current_products', label: __('current products'), canBeHidden: false, sortable: true, searchable: true);
                 }
+                  /*  $table->column(key: 'actions', label: __('actions'), canBeHidden: false, sortable: true, searchable: false); */
         };
     }
 

@@ -1,18 +1,12 @@
 <script setup lang="ts">
-import { ref, inject } from 'vue'
+import { inject } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faDollarSign, faImage, faUnlink, faGlobe } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { trans } from 'laravel-vue-i18n'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import { router } from '@inertiajs/vue3'
 
 import Image from '@/Components/Image.vue'
-import Button from '@/Components/Elements/Buttons/Button.vue'
-import Icon from "@/Components/Icon.vue"
-import { notify } from '@kyvg/vue3-notification'
-import Modal from '@/Components/Utils/Modal.vue'
-import CollectionSelector from '@/Components/Departement&Family/CollectionSelector.vue'
 import { routeType } from '@/types/route'
 
 library.add(faDollarSign, faImage, faUnlink, faGlobe)
