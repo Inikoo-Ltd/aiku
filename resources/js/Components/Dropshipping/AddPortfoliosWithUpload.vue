@@ -62,14 +62,16 @@ const onSubmitAddPortfolios = async (idProduct: number[]) => {
         },
         onSuccess: () => {
             router.reload({only: ['pageHead', 'products']})
+            emits('onDone')
+
             // notify({
             //     title: trans("Success!"),
             //     text: trans("Successfully added portfolios"),
             //     type: "success"
             // })
-			props.step.current = 1
+			// props.step.current = 1
             // isOpenModalPortfolios.value = false
-            idxSubmitSuccess.value += 1
+            // idxSubmitSuccess.value += 1
         },
         onFinish: () => isLoadingSubmit.value = false
     })
