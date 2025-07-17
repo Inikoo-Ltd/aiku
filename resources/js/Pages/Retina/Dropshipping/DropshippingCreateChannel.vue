@@ -316,8 +316,8 @@ const isModalEbayDuplicate = ref(false)
 
                 <!-- Button: Connect -->
                 <div class="relative w-full">
-                    <Button @click="() => isModalOpen = 'shopify'" label="Connect" type="primary" full/>
-<!--                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>-->
+<!--                    <Button @click="() => isModalOpen = 'shopify'" label="Connect" type="primary" full/>-->
+                    <Button :label="trans('Coming soon')" type="tertiary" disabled full/>
                 </div>
             </div>
 

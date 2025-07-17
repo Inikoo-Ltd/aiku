@@ -301,7 +301,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
                 'step' => [
                     'current' => match ($this->customerSalesChannel->platform->type) {
-                        PlatformTypeEnum::SHOPIFY, PlatformTypeEnum::WOOCOMMERCE => $this->customerSalesChannel->portfolios()->whereNull('platform_product_id')->count() === 0 ? 0 : 1,
+                        // PlatformTypeEnum::SHOPIFY, PlatformTypeEnum::WOOCOMMERCE => $this->customerSalesChannel->portfolios()->whereNull('platform_product_id')->count() === 0 ? 0 : 1,
                         default => 0
                     }
                 ],
