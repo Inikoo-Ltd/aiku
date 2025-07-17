@@ -158,9 +158,11 @@ const isModalShippingAddress = ref(false)
                 </dd>
             </div>
 
-            <div v-if="summary?.delivery_notes" class="mt-4 border rounded-lg p-4 bg-white shadow-sm">
+            <div v-if="summary?.delivery_notes" class="mt-4 border rounded-lg p-4 pt-3 bg-white shadow-sm">
+                <div class="text-xs font-medium text-gray-800 mb-4 border-b py-2">Delivery Notes</div>
+
                 <div v-for="(note, index) in summary?.delivery_notes" :key="index"
-                    class="mb-4 border-b pb-4 last:border-b-0 last:pb-0">
+                    class="mb-4  border-b pb-4 last:border-b-0 last:pb-0">
                     <div class="flex items-center gap-2">
                         <FontAwesomeIcon :icon="faTruck" class="text-blue-500" fixed-width />
                         <h2 class="text-sm font-medium text-gray-800">
