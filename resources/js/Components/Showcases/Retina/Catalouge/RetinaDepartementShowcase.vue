@@ -10,7 +10,6 @@ library.add(faAlbumCollection);
 
 const props = defineProps<{
     data: {
-        has_webpage ?: boolean;
         department: {
             data: {
                 name: string;
@@ -38,13 +37,11 @@ const props = defineProps<{
     };
 }>();
 
-
-
 </script>
 
 <template>
     <div class="px-4 pb-8 m-5">
-        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 gap-4 mt-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-8 gap-4 mt-4">
             <!-- Sidebar -->
             <div class="col-span-1 md:col-span-1 lg:col-span-2">
                 <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200">

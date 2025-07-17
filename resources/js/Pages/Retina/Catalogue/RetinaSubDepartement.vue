@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3'
+import { Head } from '@inertiajs/vue3'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import {
     faBullhorn,
@@ -15,7 +15,7 @@ import {
 } from '@fal'
 
 import PageHeading from '@/Components/Headings/PageHeading.vue'
-import { computed, defineAsyncComponent, ref } from "vue"
+import { computed, ref } from "vue"
 import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import Tabs from "@/Components/Navigation/Tabs.vue"
@@ -23,6 +23,8 @@ import { faDiagramNext } from "@fortawesome/free-solid-svg-icons"
 import { capitalize } from "@/Composables/capitalize"
 import SubDepartmentShowcase from "@/Components/Shop/SubDepartmentShowcase.vue"
 import RetinaTableProducts from '@/Components/Tables/Retina/RetinaTableProducts.vue'
+import RetinaTableFamilies from '@/Components/Tables/Retina/RetinaTableFamilies.vue'
+import RetinaTableCollections from '@/Components/Tables/Retina/RetinaTableCollections.vue'
 
 library.add(
     faFolder,
@@ -47,6 +49,8 @@ const props = defineProps<{
     showcase: {}
     customers: {}
     products: {}
+    families: {}
+    collections: {}
 }>()
 
 let currentTab = ref(props.tabs.current)
@@ -56,6 +60,8 @@ const component: Component = computed(() => {
     const components = {
         showcase: SubDepartmentShowcase,
         products: RetinaTableProducts,
+        families: RetinaTableFamilies,
+        collections: RetinaTableCollections,
     }
     return components[currentTab.value]
 

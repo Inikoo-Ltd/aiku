@@ -54,9 +54,9 @@ const props = defineProps<{
     families?: object;
     collections?: object
     sub_departments?: object;
+    showcase?: object;
 }>();
 
-console.log("props", props);
 let currentTab = ref(props.tabs.current);
 const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab);
 
@@ -70,7 +70,6 @@ const component = computed(() => {
     };
     return components[currentTab.value];
 });
-
 
 </script>
 
