@@ -44,7 +44,6 @@ class RepairShopifyUserWebhooksStatus
                 } else {
                     $command->info('No webhooks for '.$customerSalesChannel->name.' '.$customerSalesChannel->id.' '.$customerSalesChannel->platform_user_id);
                     StoreWebhooksToShopify::run($customerSalesChannel->user);
-                    exit();
                 }
             }
         }
