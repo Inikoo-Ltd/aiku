@@ -52,7 +52,11 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                 'button' => [
                     'label' => __('Connect your store'),
                     'route_target' => [
-                        'name' => 'retina.dropshipping.customer_sales_channels.index',
+                        'name'       => 'retina.dropshipping.customer_sales_channels.reconnect',
+                        'parameters' => [
+                            'customerSalesChannel' => $customerSalesChannel->slug
+                        ],
+                        'method'     => 'get',
                     ],
                 ],
                 'icon' => 'fal fa-link',
