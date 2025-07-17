@@ -330,6 +330,43 @@ use Illuminate\Database\Eloquent\Relations\HasOneThrough;
  * @property int $baskets_updated_pq3
  * @property int $baskets_updated_pq4
  * @property int $baskets_updated_pq5
+ * @property int $visitors_all
+ * @property int $visitors_1y
+ * @property int $visitors_1q
+ * @property int $visitors_1m
+ * @property int $visitors_1w
+ * @property int $visitors_3d
+ * @property int $visitors_ytd
+ * @property int $visitors_qtd
+ * @property int $visitors_mtd
+ * @property int $visitors_wtd
+ * @property int $visitors_tdy
+ * @property int $visitors_lm
+ * @property int $visitors_lw
+ * @property int $visitors_ld
+ * @property int $visitors_1y_ly
+ * @property int $visitors_1q_ly
+ * @property int $visitors_1m_ly
+ * @property int $visitors_1w_ly
+ * @property int $visitors_3d_ly
+ * @property int $visitors_ytd_ly
+ * @property int $visitors_qtd_ly
+ * @property int $visitors_mtd_ly
+ * @property int $visitors_wtd_ly
+ * @property int $visitors_tdy_ly
+ * @property int $visitors_lm_ly
+ * @property int $visitors_lw_ly
+ * @property int $visitors_ld_ly
+ * @property int $visitors_py1
+ * @property int $visitors_py2
+ * @property int $visitors_py3
+ * @property int $visitors_py4
+ * @property int $visitors_py5
+ * @property int $visitors_pq1
+ * @property int $visitors_pq2
+ * @property int $visitors_pq3
+ * @property int $visitors_pq4
+ * @property int $visitors_pq5
  * @property-read Group|null $group
  * @property-read Organisation|null $organisation
  * @property-read \App\Models\Catalogue\Shop $shop
