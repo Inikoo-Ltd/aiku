@@ -54,7 +54,6 @@ class ShowRetinaDepartment extends RetinaAction
 
     public function htmlResponse(ProductCategory $department, ActionRequest $request): Response
     {
-
         return Inertia::render(
             'Catalogue/RetinaDepartement',
             [
@@ -78,7 +77,7 @@ class ShowRetinaDepartment extends RetinaAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => DepartmentTabsEnum::navigation()
+                    'navigation' => RetinaDepartmentTabsEnum::navigation()
                 ],
 
                 RetinaDepartmentTabsEnum::SHOWCASE->value => $this->tab == RetinaDepartmentTabsEnum::SHOWCASE->value ?
@@ -203,18 +202,18 @@ class ShowRetinaDepartment extends RetinaAction
 
         return match ($routeName) {
 
-            'retina.catalogue.department.show' =>
+            'retina.catalogue.departments.show' =>
             array_merge(
                 ShowRetinaCatalogue::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     $department,
                     [
                         'index' => [
-                            'name'       => 'retina.catalogue.department.index',
+                            'name'       => 'retina.catalogue.departments.index',
                             'parameters' => $routeParameters
                         ],
                         'model' => [
-                            'name'       => 'retina.catalogue.department.show',
+                            'name'       => 'retina.catalogue.departments.show',
                             'parameters' => $routeParameters
                         ]
                     ],
@@ -247,7 +246,7 @@ class ShowRetinaDepartment extends RetinaAction
 
         return match ($routeName) {
 
-            'retina.catalogue.department.show' => [
+            'retina.catalogue.departments.show' => [
                 'label' => $department->name,
                 'route' => [
                     'name'       => $routeName,

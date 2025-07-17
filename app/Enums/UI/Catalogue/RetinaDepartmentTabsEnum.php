@@ -32,27 +32,23 @@ enum RetinaDepartmentTabsEnum: string
             ],
             RetinaDepartmentTabsEnum::SUB_DEPARTMENTS => [
                 'title' => __('sub departments'),
-                'icon'  => 'fal fa-database',
+                'icon'  => 'fal fa-dot-circle',
                 'type'  => 'icon',
-                'align' => 'right',
             ],
             RetinaDepartmentTabsEnum::FAMILIES => [
                 'title' => __('families'),
-                'icon'  => 'fal fa-database',
+                'icon'  => 'fal fa-folder',
                 'type'  => 'icon',
-                'align' => 'right',
             ],
             RetinaDepartmentTabsEnum::PRODUCTS => [
                 'title' => __('products'),
-                'icon'  => 'fal fa-database',
+                'icon'  => 'fal fa-cube',
                 'type'  => 'icon',
-                'align' => 'right',
             ],
             RetinaDepartmentTabsEnum::COLLECTIONS => [
                 'title' => __('collections'),
-                'icon'  => 'fal fa-database',
+                'icon'  => 'fal fa-album-collection',
                 'type'  => 'icon',
-                'align' => 'right',
             ],
 
         };

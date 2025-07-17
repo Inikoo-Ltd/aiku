@@ -66,7 +66,7 @@ class IndexRetinaSubDepartments extends RetinaAction
 
         $queryBuilder = QueryBuilder::for(ProductCategory::class);
 
-        if ($this->parent instanceof ProductCategory && $parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
+        if ($parent instanceof ProductCategory && $parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $queryBuilder->where('product_categories.department_id', $parent->id);
         } else {
             $queryBuilder->where('product_categories.shop_id', $parent->id);
