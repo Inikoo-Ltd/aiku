@@ -293,7 +293,7 @@ const onClickOutOfStock = (query: string) => {
 
 				
 				<ButtonWithLink
-					v-tooltip="trans('Delete product')"
+					v-tooltip="trans('Unselect product')"
 					type="negative"
 					icon="fal fa-skull"
 					:routeTarget="item.update_portfolio"

@@ -264,10 +264,18 @@ class ShowPalletDelivery extends OrgAction
                         'palletDelivery' => $palletDelivery->id
                     ]
                 ],
+                'export_excel_route' =>  [
+                    'name'       => 'grp.org.fulfilments.show.operations.pallet-deliveries.export',
+                    'parameters' => [
+                        'organisation' => $palletDelivery->organisation->slug,
+                        'fulfilment'   => $palletDelivery->fulfilment->slug,
+                        'palletDelivery' => $palletDelivery->slug
+                    ]
+                ],
 
                 'upload_spreadsheet' => [
                     'event'           => 'action-progress',
-                    'channel'         => 'grp.personal.'.$this->organisation->id,
+                    'channel'         => 'grp.personal.' . $this->organisation->id,
                     'required_fields' => ['type', 'customer_reference', 'notes', 'stored_item_reference', 'quantity', 'stored_item_name'],
                     'template'        => [
                         'label' => 'Download template (.xlsx)',
@@ -432,7 +440,7 @@ class ShowPalletDelivery extends OrgAction
                                 'price_total' => $palletDelivery->net_amount
                             ],
                             [
-                                'label'       => __('Tax').' '.$palletDelivery->taxCategory->rate * 100 .'%',
+                                'label'       => __('Tax') . ' ' . $palletDelivery->taxCategory->rate * 100 . '%',
                                 'information' => '',
                                 'price_total' => $palletDelivery->tax_amount
                             ],
@@ -479,7 +487,7 @@ class ShowPalletDelivery extends OrgAction
                     ],
                     'upload_spreadsheet'    => [
                         'event'           => 'action-progress',
-                        'channel'         => 'grp.personal.'.$this->organisation->id,
+                        'channel'         => 'grp.personal.' . $this->organisation->id,
                         'required_fields' => ['pallet_customer_reference', 'pallet_notes', 'pallet_type'],
                         'template'        => [
                             'label' => 'Download template (.xlsx)',
@@ -535,8 +543,8 @@ class ShowPalletDelivery extends OrgAction
                     ],
                     'upload_spreadsheet'    => [
                         'event'           => 'action-progress',
-                        'channel'         => 'grp.personal.'.$this->organisation->id,
-                        'required_fields' => ['pallet_type', 'pallet_customer_reference', 'pallet_notes', 'sku_reference', 'sku_quantity', 'sku_name' ],
+                        'channel'         => 'grp.personal.' . $this->organisation->id,
+                        'required_fields' => ['pallet_type', 'pallet_customer_reference', 'pallet_notes', 'sku_reference', 'sku_quantity', 'sku_name'],
                         'template'        => [
                             'label' => 'Download template (.xlsx)',
                         ],
@@ -567,20 +575,20 @@ class ShowPalletDelivery extends OrgAction
                 ],
 
                 PalletDeliveryTabsEnum::PALLETS->value => $this->tab == PalletDeliveryTabsEnum::PALLETS->value ?
-                    fn () => PalletsResource::collection(IndexPalletsInDelivery::run($palletDelivery, PalletDeliveryTabsEnum::PALLETS->value))
-                    : Inertia::lazy(fn () => PalletsResource::collection(IndexPalletsInDelivery::run($palletDelivery, PalletDeliveryTabsEnum::PALLETS->value))),
+                    fn() => PalletsResource::collection(IndexPalletsInDelivery::run($palletDelivery, PalletDeliveryTabsEnum::PALLETS->value))
+                    : Inertia::lazy(fn() => PalletsResource::collection(IndexPalletsInDelivery::run($palletDelivery, PalletDeliveryTabsEnum::PALLETS->value))),
 
                 PalletDeliveryTabsEnum::SERVICES->value => $this->tab == PalletDeliveryTabsEnum::SERVICES->value ?
-                    fn () => FulfilmentTransactionsResource::collection(IndexServiceInPalletDelivery::run($palletDelivery, PalletDeliveryTabsEnum::SERVICES->value))
-                    : Inertia::lazy(fn () => FulfilmentTransactionsResource::collection(IndexServiceInPalletDelivery::run($palletDelivery, PalletDeliveryTabsEnum::SERVICES->value))),
+                    fn() => FulfilmentTransactionsResource::collection(IndexServiceInPalletDelivery::run($palletDelivery, PalletDeliveryTabsEnum::SERVICES->value))
+                    : Inertia::lazy(fn() => FulfilmentTransactionsResource::collection(IndexServiceInPalletDelivery::run($palletDelivery, PalletDeliveryTabsEnum::SERVICES->value))),
 
                 PalletDeliveryTabsEnum::PHYSICAL_GOODS->value => $this->tab == PalletDeliveryTabsEnum::PHYSICAL_GOODS->value ?
-                    fn () => FulfilmentTransactionsResource::collection(IndexPhysicalGoodInPalletDelivery::run($palletDelivery, PalletDeliveryTabsEnum::PHYSICAL_GOODS->value))
-                    : Inertia::lazy(fn () => FulfilmentTransactionsResource::collection(IndexPhysicalGoodInPalletDelivery::run($palletDelivery, PalletDeliveryTabsEnum::PHYSICAL_GOODS->value))),
+                    fn() => FulfilmentTransactionsResource::collection(IndexPhysicalGoodInPalletDelivery::run($palletDelivery, PalletDeliveryTabsEnum::PHYSICAL_GOODS->value))
+                    : Inertia::lazy(fn() => FulfilmentTransactionsResource::collection(IndexPhysicalGoodInPalletDelivery::run($palletDelivery, PalletDeliveryTabsEnum::PHYSICAL_GOODS->value))),
 
                 PalletDeliveryTabsEnum::ATTACHMENTS->value => $this->tab == PalletDeliveryTabsEnum::ATTACHMENTS->value ?
-                    fn () => AttachmentsResource::collection(IndexAttachments::run($palletDelivery, PalletDeliveryTabsEnum::ATTACHMENTS->value))
-                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($palletDelivery, PalletDeliveryTabsEnum::ATTACHMENTS->value))),
+                    fn() => AttachmentsResource::collection(IndexAttachments::run($palletDelivery, PalletDeliveryTabsEnum::ATTACHMENTS->value))
+                    : Inertia::lazy(fn() => AttachmentsResource::collection(IndexAttachments::run($palletDelivery, PalletDeliveryTabsEnum::ATTACHMENTS->value))),
 
             ]
         )->table(
