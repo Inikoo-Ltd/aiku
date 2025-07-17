@@ -37,7 +37,6 @@ return new class extends Migration
             $table->string('tracking_id')->nullable(); // gclid, fbp, etc.
             $table->timestamp('conversion_date');
             $table->timestamp('attribution_date')->nullable(); // Original click/visit date
-            $table->boolean('within_attribution_window')->default(true);
 
             // Upload Status to Ad Platforms
             $table->boolean('uploaded_to_platform')->default(false);

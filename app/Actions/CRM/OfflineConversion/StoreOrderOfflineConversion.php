@@ -12,6 +12,11 @@ class StoreOrderOfflineConversion extends OrgAction
 {
     public function handle(Order $order): void
     {
+
+        if ($order->platform_order_id === null || $order->platform_order_id === '') {
+            return;
+        }
+
         $conversionDate = $order->submitted_at ?? $order->created_at ?? now();
 
         $acquisitionSource = CustomerAcquisitionSource::where('customer_id', $order->customer->id)
