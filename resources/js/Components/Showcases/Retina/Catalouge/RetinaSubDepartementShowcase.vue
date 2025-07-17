@@ -3,9 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faImage } from "@far";
 import { faAlbumCollection } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
-
 import Image from "@/Components/Image.vue";
-
 library.add(faAlbumCollection);
 
 const props = defineProps<{
