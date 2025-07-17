@@ -2,6 +2,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Collection\UI;
 
+use App\Actions\Retina\Dropshipping\Catalogue\ShowRetinaCatalogue;
 use App\Actions\RetinaAction;
 use App\Http\Resources\Catalogue\CollectionsResource;
 use App\InertiaTable\InertiaTable;
@@ -111,11 +112,9 @@ class IndexRetinaCollections extends RetinaAction
 
             $table
                 ->column(key: 'state_icon', label: '', canBeHidden: false, type: 'icon');
-            $table->column(key: 'parents', label: __('Parents'), canBeHidden: false);
 
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'webpage', label: __('Webpage'), canBeHidden: false);
             $table->column(key: 'number_families', label: __('Families'), canBeHidden: false, sortable: true);
             $table->column(key: 'number_products', label: __('Products'), canBeHidden: false, sortable: true);
             $table->column(key: 'actions', label: '', searchable: true);
@@ -141,7 +140,7 @@ class IndexRetinaCollections extends RetinaAction
         $iconRight = null;
 
         return Inertia::render(
-            'Org/Catalogue/Collections',
+            'Catalogue/RetinaCollections',
             [
                 'breadcrumbs'    => $this->getBreadcrumbs(
                     $request->route()->getName(),

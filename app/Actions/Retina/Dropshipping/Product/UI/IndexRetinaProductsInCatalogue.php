@@ -145,7 +145,7 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
 
 
         return Inertia::render(
-            'Org/Catalogue/Products',
+            'Catalogue/RetinaProducts',
             [
                 'breadcrumbs'                  => $this->getBreadcrumbs(
                     $request->route()->getName(),
