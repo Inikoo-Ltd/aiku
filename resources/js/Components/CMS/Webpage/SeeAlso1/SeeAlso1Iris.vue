@@ -34,7 +34,7 @@ const emits = defineEmits<{
 
 
 const layout: any = inject("layout", {})
-const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
+const bKeys = Blueprint(props.webpageData)?.blueprint?.map(b => b?.key?.join("-")) || []
 
 const slidesPerView = computed(() => {
   const perRow = props.fieldValue?.settings?.per_row ?? {}
@@ -48,6 +48,18 @@ const slidesPerView = computed(() => {
 // Refs untuk custom navigation
 const prevEl = ref(null)
 const nextEl = ref(null)
+
+const compSwiperOptions = computed(() => {
+    if (props.fieldValue?.settings?.products_data?.type == 'custom') {
+        return props.fieldValue?.settings?.products_data?.products
+    } else if (props.fieldValue?.settings?.products_data?.type == 'current-family') {
+        return props.fieldValue?.settings?.products_data?.current_family?.option || []
+    } else if (props.fieldValue?.settings?.products_data?.type == 'other-family') {
+        return props.fieldValue?.settings?.products_data?.other_family?.option || []
+    } else {
+        return props.fieldValue?.settings?.products_data?.top_sellers || []
+    }
+})
 </script>
 
 <template>
@@ -65,8 +77,8 @@ const nextEl = ref(null)
 
 
     <!-- Carousel with custom navigation -->
-    <div class="relative px-4 py-6" @click="() => {
-      sendMessageToParent('activeBlock', indexBlock)
+    <div v-if="compSwiperOptions?.length" class="relative px-4 py-6" @click="() => {
+      `sendMessageToParent('activeBlock', indexBlock)`
       sendMessageToParent('activeChildBlock', bKeys[0])
     }">
       <!-- Tombol Navigasi Custom -->
@@ -78,10 +90,9 @@ const nextEl = ref(null)
       </button>
 
       <!-- Swiper -->
-      
       <Swiper :modules="[Navigation]" :slides-per-view="slidesPerView" :space-between="20"
         :navigation="{ prevEl, nextEl }" pagination>
-        <SwiperSlide v-for="(product, index) in  fieldValue?.settings.products_data.type== 'custom' ? fieldValue?.settings?.products_data?.products : fieldValue?.settings?.products_data?.top_sellers" :key="index"
+        <SwiperSlide v-for="(product, index) in  compSwiperOptions" :key="product.slug"
           class="h-full">
           <div class="h-full">
             <div v-if="product" class="h-full flex flex-col">
