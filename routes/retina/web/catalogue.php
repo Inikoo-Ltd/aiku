@@ -12,12 +12,17 @@ use App\Actions\Retina\Dropshipping\Collection\UI\IndexRetinaCollections;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInCatalogue;
 use App\Actions\Retina\Dropshipping\ProductCategory\UI\IndexRetinaDepartments;
 use App\Actions\Retina\Dropshipping\ProductCategory\UI\IndexRetinaFamilies;
+use App\Actions\Retina\Dropshipping\ProductCategory\UI\IndexRetinaSubDepartments;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/dashboard', ShowRetinaCatalogue::class)->name('dashboard');
 
 Route::prefix('departments')->as('departments.')->group(function () {
     Route::get('/', IndexRetinaDepartments::class)->name('index');
+});
+
+Route::prefix('sub-departments')->as('sub_departments.')->group(function () {
+    Route::get('/', IndexRetinaSubDepartments::class)->name('index');
 });
 
 Route::prefix('families')->as('families.')->group(function () {

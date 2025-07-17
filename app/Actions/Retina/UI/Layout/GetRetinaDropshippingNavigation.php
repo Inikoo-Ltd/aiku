@@ -62,6 +62,14 @@ class GetRetinaDropshippingNavigation
                             ]
                         ],
                         [
+                            'label' => __('Sub Departments'),
+                            'icon'  => ['far', 'fa-dot-circle'],
+                            'root'  => 'retina.catalogue.sub_departments.',
+                            'route' => [
+                                'name' => 'retina.catalogue.sub_departments.index'
+                            ]
+                        ],
+                        [
                             'label' => __('Families'),
                             'icon'  => ['far', 'fa-folder'],
                             'root'  => 'retina.catalogue.families.',
