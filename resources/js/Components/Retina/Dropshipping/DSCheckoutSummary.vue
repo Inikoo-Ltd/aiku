@@ -76,7 +76,7 @@ const isModalShippingAddress = ref(false)
                 <FontAwesomeIcon icon='fal fa-user' class='text-gray-400' fixed-width aria-hidden='true' />
             </div>
             <dd class="text-sm text-gray-500">#{{ summary?.customer_client.reference ?? summary?.customer_client?.name
-                }}</dd>
+            }}</dd>
             </Link>
 
             <!-- Field: Contact name -->
@@ -158,45 +158,56 @@ const isModalShippingAddress = ref(false)
                 </dd>
             </div>
 
-            <div v-if="summary?.delivery_notes" class="mt-4 border rounded-lg p-4 pt-3 bg-white shadow-sm">
-                <div class="text-xs font-medium text-gray-800 mb-4 border-b py-2">Delivery Notes</div>
+            <div v-if="summary?.delivery_notes?.length" class="mt-4 border rounded-lg p-4 pt-3 bg-white shadow-sm">
+                <!-- Section Title -->
+                <div class="flex items-center gap-2 border-b border-gray-200 pb-2 mb-3">
+                    <FontAwesomeIcon :icon="faTruck" class="text-blue-500" fixed-width />
+                    <div class="text-sm font-semibold text-gray-800">
+                        {{ trans('Delivery Notes') }}
+                    </div>
+                </div>
 
-                <div v-for="(note, index) in summary?.delivery_notes" :key="index"
-                    class="mb-4  border-b pb-4 last:border-b-0 last:pb-0">
-                    <div class="flex items-center gap-2">
-                        <FontAwesomeIcon :icon="faTruck" class="text-blue-500" fixed-width />
-                        <h2 class="text-sm font-medium text-gray-800">
-                            {{ note?.reference }}
-                        </h2>
-                        <span class="ml-auto text-xs px-2 py-0.5 ">
-                            <Icon :data="note?.state"/>
+                <!-- Delivery Note Items -->
+                <div v-for="(note, index) in summary.delivery_notes" :key="index"
+                    class="mb-3 pb-3 border-b border-dashed last:border-0 last:mb-0 last:pb-0">
+
+                    <div class="flex items-center gap-2 text-sm text-gray-700 mb-1">
+                        <span class="font-medium">Ref:</span>
+                        <span>{{ note?.reference }}</span>
+                        <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+                            <Icon :data="note?.state" />
                         </span>
                     </div>
 
+                    <!-- Shipments -->
                     <div v-if="note?.shipments?.length > 0" class="mt-1 text-xs text-gray-600">
                         <p class="text-gray-700 font-medium mb-1">Shipments:</p>
-                        <ul class="list-disc pl-4">
-                            <li v-for="(shipment, i) in note?.shipments" :key="i">
-                                <section v-if="shipment?.tracking_urls?.length"
-                                    v-for="(tracking, j) in shipment?.tracking_urls" :key="j">
-                                    <a :href="tracking?.url" target="_blank"
-                                        class="text-blue-600 hover:text-blue-800 hover:underline"
-                                        v-tooltip="trans('Click to track shipment')">
-                                        {{ tracking?.url || trans('No Tracking provided') }}
-                                    </a>
-                                </section>
-                                <div v-else class="text-gray-400 italic text-xs">
-                                    {{ trans('No Tracking available') }}
-                                </div>
+                        <ul class="list-disc pl-4 space-y-1">
+                            <li v-for="(shipment, i) in note.shipments" :key="i">
+                                <template v-if="shipment?.tracking_urls?.length">
+                                    <div v-for="(tracking, j) in shipment.tracking_urls" :key="j">
+                                        <a :href="tracking?.url" target="_blank" rel="noopener noreferrer"
+                                            class="text-blue-600 hover:text-blue-800 hover:underline"
+                                            v-tooltip="trans('Click to track shipment')">
+                                            {{ tracking?.url || trans('No Tracking provided') }}
+                                        </a>
+                                    </div>
+                                </template>
+                                <template v-else>
+                                    <div class="text-gray-400 italic">
+                                        {{ trans('No Tracking available') }}
+                                    </div>
+                                </template>
                             </li>
-
                         </ul>
                     </div>
-                    <div v-else class="mt-1 text-xs italic text-gray-500">
+
+                    <div v-else class="mt-1 text-xs italic text-gray-400">
                         {{ trans('No shipments') }}
                     </div>
                 </div>
             </div>
+
 
             <!-- Section: Shipment -->
             <!--  <div v-if="summary.order_properties?.shipments?.length" class="flex itemcen gap-x-1 py-0.5">
