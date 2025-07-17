@@ -36,7 +36,7 @@ class RepairShopifyUserWebhooksStatus
 
 
         /** @var CustomerSalesChannel $customerSalesChannel */
-        foreach (CustomerSalesChannel::where('platform_id', $platform->id)->where('id', 36240)->where('status', CustomerSalesChannelStatusEnum::OPEN)->get() as $customerSalesChannel) {
+        foreach (CustomerSalesChannel::where('platform_id', $platform->id)->where('status', CustomerSalesChannelStatusEnum::OPEN)->get() as $customerSalesChannel) {
             $hasWebhooks = $this->hasCredentials($customerSalesChannel);
             if (!$hasWebhooks) {
                 if (!$customerSalesChannel->user) {
