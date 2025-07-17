@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\Shopify\Webhook;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\ShopifyUser;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Route;
 
@@ -49,18 +50,15 @@ class StoreWebhooksToShopify extends OrgAction
             ];
         }
 
-    //    DB::transaction(function () use ($webhooks, $shopifyUser) {
+        DB::transaction(function () use ($webhooks, $shopifyUser) {
 
             DeleteWebhooksFromShopify::run($shopifyUser);
-
-
 
             $webhooksData = [];
             foreach ($webhooks as $webhook) {
                 $webhook = $shopifyUser->api()->getRestClient()->request('POST', 'admin/api/2024-07/webhooks.json', $webhook);
-                dd($webhook);
-                if (!$webhook['errors'] && is_array($webhook['body']['webhook']['container'])) {
-                    $webhooksData[] = $webhook['body']['webhook']['container'];
+                if (! blank(Arr::get($webhook, 'body.webhook'))) {
+                    $webhooksData[] = Arr::get($webhook, 'body.webhook');
                 }
             }
 
@@ -69,7 +67,7 @@ class StoreWebhooksToShopify extends OrgAction
                     'webhooks' => $webhooksData
                 ]
             ]);
-     //   });
+        });
     }
 
 

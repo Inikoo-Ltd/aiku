@@ -10,9 +10,7 @@ namespace App\Actions\Maintenance\Dropshipping;
 
 use App\Actions\Dropshipping\CustomerSalesChannel\WithExternalPlatforms;
 use App\Actions\Dropshipping\Shopify\Webhook\StoreWebhooksToShopify;
-use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -38,7 +36,7 @@ class RepairShopifyUserWebhooksStatus
 
 
         /** @var CustomerSalesChannel $customerSalesChannel */
-        foreach (CustomerSalesChannel::where('platform_id', $platform->id)->where('id', 36544)->where('status', CustomerSalesChannelStatusEnum::OPEN)->get() as $customerSalesChannel) {
+        foreach (CustomerSalesChannel::where('platform_id', $platform->id)->where('id', 36240)->where('status', CustomerSalesChannelStatusEnum::OPEN)->get() as $customerSalesChannel) {
             $hasWebhooks = $this->hasCredentials($customerSalesChannel);
             if (!$hasWebhooks) {
                 if (!$customerSalesChannel->user) {
