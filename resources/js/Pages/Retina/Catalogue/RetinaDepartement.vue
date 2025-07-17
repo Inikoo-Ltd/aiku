@@ -24,6 +24,8 @@ import RetinaTableProducts from "@/Components/Tables/Retina/RetinaTableProducts.
 import RetinaTableFamilies from "@/Components/Tables/Retina/RetinaTableFamilies.vue";
 import { capitalize } from "@/Composables/capitalize";
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import RetinaTableCollections from "@/Components/Tables/Retina/RetinaTableCollections.vue";
+import TableSubDepartments from "@/Components/Tables/Retina/RetinaTableSubDepartements.vue";
 
 library.add(
     faFolder,
@@ -52,6 +54,7 @@ const props = defineProps<{
     families?: object;
 }>();
 
+console.log("props", props);
 let currentTab = ref(props.tabs.current);
 const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab);
 
@@ -60,6 +63,8 @@ const component = computed(() => {
         showcase: RetinaDepartmentShowcase,
         products: RetinaTableProducts,
         families: RetinaTableFamilies,
+        collections : RetinaTableCollections,
+        sub_departments: TableSubDepartments,
     };
     return components[currentTab.value];
 });

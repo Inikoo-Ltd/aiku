@@ -23,9 +23,9 @@ defineProps<{
 function departmentRoute(department: Department): string {
   const current = route().current()
   if (current === "retina.catalogue.sub_departments.index") {
-    return route("retina.catalogue.department.show", [department.slug])
+    return route("retina.catalogue.departments.show", [department.slug])
   }
-  return route("retina.catalogue.department.show", [department.slug])
+  return route("retina.catalogue.departments.show", [department.slug])
 }
 
 

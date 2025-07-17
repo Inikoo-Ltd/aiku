@@ -16,6 +16,14 @@ const props = defineProps<{
 }>()
 
 
+function familyRoute(family): string {
+  const current = route().current()
+  if (current === "retina.catalogue.families.index") {
+    return route("retina.catalogue.family.show", [family.slug])
+  }
+  return route("retina.catalogue.family.show", [family.slug])
+}
+
 </script>
 
 <template>
