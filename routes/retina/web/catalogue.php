@@ -6,13 +6,13 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-use App\Actions\Catalogue\ProductCategory\UI\ShowRetinaDepartment;
 use App\Actions\Retina\Dropshipping\Catalogue\ShowRetinaCatalogue;
 use App\Actions\Retina\Dropshipping\Collection\UI\IndexRetinaCollections;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInCatalogue;
 use App\Actions\Retina\Dropshipping\ProductCategory\UI\IndexRetinaDepartments;
 use App\Actions\Retina\Dropshipping\ProductCategory\UI\IndexRetinaFamilies;
 use App\Actions\Retina\Dropshipping\ProductCategory\UI\IndexRetinaSubDepartments;
+use App\Actions\Retina\Dropshipping\ProductCategory\UI\ShowRetinaDepartment;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/dashboard', ShowRetinaCatalogue::class)->name('dashboard');

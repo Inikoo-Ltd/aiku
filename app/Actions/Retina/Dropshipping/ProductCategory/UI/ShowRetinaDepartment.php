@@ -6,8 +6,9 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Catalogue\ProductCategory\UI;
+namespace App\Actions\Retina\Dropshipping\ProductCategory\UI;
 
+use App\Actions\Catalogue\ProductCategory\UI\GetProductCategoryShowcase;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Catalogue\WithDepartmentSubNavigation;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
