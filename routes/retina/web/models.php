@@ -54,6 +54,7 @@ use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrder;
 use App\Actions\Retina\Dropshipping\Portfolio\BatchDeleteRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Portfolio\DeleteRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Portfolio\StoreRetinaPortfoliosFromProductCategory;
+use App\Actions\Retina\Dropshipping\Portfolio\StoreRetinaPortfoliosFromProductCategoryToAllChannels;
 use App\Actions\Retina\Dropshipping\Portfolio\UpdateRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Product\StoreRetinaProductManual;
 use App\Actions\Retina\Ecom\Basket\RetinaDeleteBasketTransaction;
@@ -293,6 +294,8 @@ Route::name('top-up.')->prefix('top-up')->group(function () {
 
 Route::delete('portfolio/{portfolio:id}', DeleteRetinaPortfolio::class)->name('portfolio.delete');
 Route::patch('portfolio/{portfolio:id}', UpdateRetinaPortfolio::class)->name('portfolio.update');
+
+Route::post('portfolio/product-category/{productCategory:id}/store', StoreRetinaPortfoliosFromProductCategoryToAllChannels::class)->name('portfolio.store_from_product_category')->withoutScopedBindings();
 
 Route::name('mit_saved_card.')->prefix('mit-saved-card')->group(function () {
     Route::delete('{mitSavedCard:id}/delete', DeleteMitSavedCard::class)->name('delete');
