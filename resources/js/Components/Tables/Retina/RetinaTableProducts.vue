@@ -40,10 +40,10 @@ const layout = inject('layout', retinaLayoutStructure)
             </div>
         </template>
 
-        <template #cell(state)="{ item: department }">
-            <Tag :label="department.state.tooltip" v-tooltip="department.state.tooltip">
+        <template #cell(state)="{ item: product }">
+            <Tag :label="product.state.tooltip" v-tooltip="product.state.tooltip">
                 <template #label>
-                    <Icon :data="department.state" /> <span :class="department.state.class">{{ department.state.tooltip }}</span>
+                    <Icon :data="product.state" /> <span :class="product.state.class">{{ product.state.tooltip }}</span>
                 </template>
             </Tag>
         </template>
@@ -55,7 +55,8 @@ const layout = inject('layout', retinaLayoutStructure)
         </template>
 
         <!-- Column: Stock -->
-        <template #cell(quantity_left)="{ item }">
+        <template #cell(quantity_left)="{ item }"> 
+       
             <div>
                 {{ locale.number(item.quantity_left) }}
             </div>

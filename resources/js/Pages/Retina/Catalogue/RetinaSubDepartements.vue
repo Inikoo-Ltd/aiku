@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { Head } from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
-import TableSubDepartments from "@/Components/Tables/Grp/Org/Catalogue/TableSubDepartments.vue";
+import TableSubDepartments from "@/Components/Tables/Retina/RetinaTableSubDepartements.vue";
 import { capitalize } from "@/Composables/capitalize";
 import { faSeedling } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";

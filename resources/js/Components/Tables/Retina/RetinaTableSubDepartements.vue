@@ -21,8 +21,11 @@ const props = defineProps<{
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(state)="{ item: SubDepartment }">
-            <Icon :data="SubDepartment.state">
-            </Icon>
+             <Tag :label="SubDepartment.state.label" v-tooltip="SubDepartment.state.label">
+                <template #label>
+                    <Icon :data="SubDepartment.state" /> <span :class="SubDepartment.state.class">{{ SubDepartment.state.label }}</span>
+                </template>
+            </Tag>
         </template>
         <template #cell(code)="{ item: SubDepartment }">
        <!--      <Link :href="subDepartmentRoute(SubDepartment)" class="primaryLink"> -->

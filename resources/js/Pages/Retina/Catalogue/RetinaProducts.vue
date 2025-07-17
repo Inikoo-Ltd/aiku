@@ -53,14 +53,6 @@ const downloadUrl = (type: string) => {
 const _popover = ref()
 const _clone_popover = ref()
 
-
-
-
-
-
-
-
-
 </script>
 
 <template>
