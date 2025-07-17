@@ -11,6 +11,7 @@ import { routeType } from "@/types/route"
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheck } from "@fal";
 import Tag from "@/Components/Tag.vue";
+import { Link } from "@inertiajs/vue3";
 
 library.add(faCheck)
 
@@ -35,9 +36,9 @@ const emits = defineEmits<{
 function familyRoute(family): string {
   const current = route().current()
   if (current === "retina.catalogue.families.index") {
-    return route("retina.catalogue.family.show", [family.slug])
+    return route("retina.catalogue.families.show", [family.slug])
   }
-  return route("retina.catalogue.family.show", [family.slug])
+  return route("retina.catalogue.families.show", [family.slug])
 }
 
 
@@ -53,9 +54,9 @@ function familyRoute(family): string {
             </Tag>
         </template>
         <template #cell(code)="{ item: family }">
-         <!--     <Link :href="familyRoute(family)" class="primaryLink"> -->
+             <Link :href="familyRoute(family)" class="primaryLink">
             {{ family["code"] }}
-          <!--   </Link> -->
+            </Link>
         </template>
         <template #cell(shop_code)="{ item: family }">
             <!--  <Link :href="shopRoute(family)" class="secondaryLink"> -->

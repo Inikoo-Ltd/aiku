@@ -17,6 +17,7 @@ import { faCheck } from "@far"
 import Icon from "@/Components/Icon.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import Tag from "@/Components/Tag.vue"
+import { Link } from "@inertiajs/vue3"
 library.add(fadExclamationTriangle, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle)
 
 
@@ -26,6 +27,13 @@ const props = defineProps<{
 
 }>()
 
+function productRoute(family): string {
+    const current = route().current()
+    if (current === "retina.catalogue.products.index") {
+        return route("retina.catalogue.products.show", [family.slug])
+    }
+    return route("retina.catalogue.products.show", [family.slug])
+}
 
 const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', retinaLayoutStructure)
@@ -49,14 +57,14 @@ const layout = inject('layout', retinaLayoutStructure)
         </template>
 
         <template #cell(code)="{ item: product }">
-            <!-- 	<Link :href="portfolioRoute(product)" class="primaryLink whitespace-nowrap"> -->
+            <Link :href="productRoute(product)" class="primaryLink whitespace-nowrap">
             {{ product["code"] }}
-            <!-- 	</Link> -->
+            </Link>
         </template>
 
         <!-- Column: Stock -->
-        <template #cell(quantity_left)="{ item }"> 
-       
+        <template #cell(quantity_left)="{ item }">
+
             <div>
                 {{ locale.number(item.quantity_left) }}
             </div>

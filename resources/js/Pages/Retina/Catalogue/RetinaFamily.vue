@@ -20,7 +20,8 @@ import { useTabChange } from "@/Composables/tab-change"
 import ModelDetails from "@/Components/ModelDetails.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { capitalize } from "@/Composables/capitalize"
-import FamilyShowcase from "@/Components/Showcases/Grp/FamilyShowcase.vue"
+import RetinaFamilyShowcase from "@/Components/Showcases/Retina/Catalouge/RetinaFamilyShowcase.vue"
+import RetinaTableProducts from "@/Components/Tables/Retina/RetinaTableProducts.vue"
 
 library.add(
     faFolder,
@@ -42,24 +43,27 @@ const props = defineProps<{
         navigation: object
     }
     showcase: object
+    products: object
+
+
 }>()
 
 const currentTab = ref(props.tabs.current)
-
-
 const handleTabUpdate = (tabSlug: string) => {
     useTabChange(tabSlug, currentTab)
 }
 
 const component = computed(() => {
     const components = {
-        showcase: FamilyShowcase,
+        showcase: RetinaFamilyShowcase,
+        products: RetinaTableProducts,
     }
     return components[currentTab.value] ?? ModelDetails
 })
 </script>
 
 <template>
+
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
     </PageHeading>

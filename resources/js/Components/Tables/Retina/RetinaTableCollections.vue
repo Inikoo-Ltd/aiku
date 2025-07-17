@@ -25,6 +25,14 @@ const props = defineProps<{
 }>();
 
 
+function collectionRoute(collection): string {
+    const current = route().current()
+    if (current === 'retina.catalogue.collections.index') {
+        return route('retina.catalogue.collections.show', [collection.slug])
+    }
+    return route('retina.catalogue.collections.show', [collection.slug])
+}
+
 
 </script>
 
@@ -40,9 +48,9 @@ const props = defineProps<{
         </template>
         <template #cell(code)="{ item: collection }">
 
-            <!--  <Link :href="collectionRoute(collection) as string" class="primaryLink"> -->
+            <Link :href="collectionRoute(collection) as string" class="primaryLink">
             {{ collection["code"] }}
-            <!--  </Link> -->
+            </Link>
         </template>
 
 

@@ -50,7 +50,7 @@ class ShowRetinaCollection extends RetinaAction
         $container  = null;
 
         return Inertia::render(
-            'Org/Catalogue/Collection',
+            'Catalogue/RetinaCollection',
             [
                 'title'       => __('collection'),
                 'breadcrumbs' => $this->getBreadcrumbs(
