@@ -250,7 +250,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
 
                 $deliveryNotesData[] = [
                     'reference' => $deliveryNote->reference,
-                    'state'     => $deliveryNote->state,
+                    'state'     => $deliveryNote->state->stateIcon()[$this->state->value],
                     'shipments' => $shipmentsData,
                 ];
             }
