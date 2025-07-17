@@ -40,6 +40,7 @@ class ProductsWebpageResource extends JsonResource
         } else {
             $webImages = $this->web_images;
         }
+
         return [
             'id'          => $this->id,
             'slug'        => $this->slug,
@@ -56,7 +57,8 @@ class ProductsWebpageResource extends JsonResource
             'unit'        => $this->unit,
             'status'      => $this->status,
             'rrp'         => $this->rrp,
-            'web_images'  => $webImages
+            'web_images'  => $webImages,
+            'url'         => $this->webpage->url
         ];
     }
 }
