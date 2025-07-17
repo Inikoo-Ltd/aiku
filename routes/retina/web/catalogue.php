@@ -6,7 +6,7 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-
+use App\Actions\Catalogue\ProductCategory\UI\ShowRetinaDepartment;
 use App\Actions\Retina\Dropshipping\Catalogue\ShowRetinaCatalogue;
 use App\Actions\Retina\Dropshipping\Collection\UI\IndexRetinaCollections;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInCatalogue;
@@ -19,6 +19,7 @@ Route::get('/dashboard', ShowRetinaCatalogue::class)->name('dashboard');
 
 Route::prefix('departments')->as('departments.')->group(function () {
     Route::get('/', IndexRetinaDepartments::class)->name('index');
+    Route::get('{department}', ShowRetinaDepartment::class)->name('show');
 });
 
 Route::prefix('sub-departments')->as('sub_departments.')->group(function () {

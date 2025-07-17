@@ -7,6 +7,7 @@ use App\Actions\RetinaAction;
 use App\Http\Resources\Catalogue\CollectionsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Collection;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Services\QueryBuilder;
 use Closure;
@@ -19,7 +20,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaCollections extends RetinaAction
 {
-    public function handle(Shop $shop, $prefix = null): LengthAwarePaginator
+    public function handle(Shop|ProductCategory $parent, $prefix = null): LengthAwarePaginator
     {
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
@@ -33,7 +34,16 @@ class IndexRetinaCollections extends RetinaAction
         });
 
         $queryBuilder = QueryBuilder::for(Collection::class);
-        $queryBuilder->where('collections.shop_id', $shop->id);
+        if($parent instanceof Shop) {
+            $queryBuilder->where('collections.shop_id', $parent->id);
+        } elseif($parent instanceof ProductCategory){
+            $queryBuilder->join('model_has_collections', function ($join) {
+                $join->on('model_has_collections.collection_id', '=', 'collections.id');
+            });
+            $queryBuilder->where('model_has_collections.model_id', $parent->id);
+            $queryBuilder->where('model_has_collections.model_type', 'ProductCategory');
+        }
+        
         $queryBuilder->leftjoin('collection_stats', 'collections.id', 'collection_stats.collection_id');
 
 
@@ -165,7 +175,7 @@ class IndexRetinaCollections extends RetinaAction
     {
         $this->initialisation($request);
 
-        return $this->handle(shop: $this->shop);
+        return $this->handle(parent: $this->shop);
     }
 
 

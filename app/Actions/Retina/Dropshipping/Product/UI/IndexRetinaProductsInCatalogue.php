@@ -12,10 +12,12 @@ use App\Actions\Retina\Dropshipping\Catalogue\ShowRetinaCatalogue;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\ProductsTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -29,7 +31,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaProductsInCatalogue extends RetinaAction
 {
-    public function handle(Shop $shop, $prefix = null): LengthAwarePaginator
+    public function handle(Shop|ProductCategory $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -45,7 +47,20 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->whereIn('products.state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUED->value]);
         $queryBuilder->where('products.is_main', true);
-        $queryBuilder->where('products.shop_id', $shop->id);
+        if($parent instanceof Shop) {
+            $shop = $parent;
+            $queryBuilder->where('products.shop_id', $parent->id);
+        } elseif ($parent instanceof ProductCategory) {
+            $shop = $parent->shop;
+            if ($parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
+                $queryBuilder->where('products.department_id', $parent->id);
+            } elseif ($parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                $queryBuilder->where('products.sub_department_id', $parent->id);
+            } elseif ($parent->type == ProductCategoryTypeEnum::FAMILY) {
+                $queryBuilder->where('products.family_id', $parent->id);
+            }
+        }
+
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
 
 
@@ -96,19 +111,6 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(
                     [
-                        'title' => match ($bucket) {
-                            'in_process' => __("There is no products in process"),
-                            'discontinued' => __('There is no discontinued products'),
-                            default => __("No products found"),
-                        },
-
-
-                        'count' => match ($bucket) {
-                            'current' => $shop->stats->number_current_products,
-                            'in_process' => $shop->stats->number_products_state_in_process,
-                            'discontinued' => $shop->stats->number_products_state_discontinued,
-                            default => $shop->stats->number_products,
-                        }
 
                     ]
                 );
@@ -170,7 +172,7 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
     {
         $this->initialisation($request);
 
-        return $this->handle(shop: $this->shop);
+        return $this->handle(parent: $this->shop);
     }
 
 
