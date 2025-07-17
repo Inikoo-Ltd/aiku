@@ -80,7 +80,10 @@ class SubmitOrder extends OrgAction
             SendOrderToWarehouse::make()->action($order, []);
         }
 
-        CustomerSalesChannelsHydrateOrders::dispatch($order->customerSalesChannel);
+        $customerSalesChannel = $order->customerSalesChannel;
+        if ($customerSalesChannel) {
+            CustomerSalesChannelsHydrateOrders::dispatch($customerSalesChannel);
+        }
 
         return $order;
     }
