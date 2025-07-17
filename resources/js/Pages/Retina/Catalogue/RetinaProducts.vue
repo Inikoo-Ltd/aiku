@@ -24,6 +24,7 @@ import {
     faDownload
 } from "@fal";
 import { Table as TableTS } from "@/types/Table"
+import RetinaTableProducts from "@/Components/Tables/Retina/RetinaTableProducts.vue";
 
 library.add(faFileExcel, faBracketsCurly, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
 
@@ -31,52 +32,9 @@ library.add(faFileExcel, faBracketsCurly, faImage, faSyncAlt, faBox, faArrowLeft
 const props = defineProps<{
     title: string
     pageHead: PageHeadingTypes
-    tabs: TSTabs
-    download_route: any
-    content?: {
-        portfolio_empty?: {
-            title?: string,
-            description?: string,
-            separation?: string,
-            sync_button?: string,
-            add_button?: string
-        }
-    }
-    products: TableTS
-    routes: {
-        syncAllRoute: routeType
-        addPortfolioRoute: routeType
-        bulk_upload: routeType
-        itemRoute: routeType
-        updatePortfolioRoute: routeType
-        batchDeletePortfolioRoute: routeType
-        clonePortfolioRoute: routeType
-    }
-    platform_user_id: number
-    step: {
-        current: number
-    }
-    platform_data: {
-        id: number
-        code: string  // 'manual' | 'shopify' | 'ebay' | 'amazon'
-        name: string
-        type: string
-    }
-    is_platform_connected: boolean
-    customer_sales_channel: {
-        id: number
-        slug: string
-        name: string
-    }
-    manual_channels: object
-    count_product_not_synced: number
-
-    // inactive: {}
-    product_count: number
+    data : {}
 }>();
 
-const isPlatformManual = computed(() => props.platform_data.type === 'manual');
-const isOpenModalPortfolios = ref(false);
 
 
 const isLoadingClone = ref(false);
@@ -109,14 +67,13 @@ const _clone_popover = ref()
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template v-if="props.product_count" #other>
+       <!--  <template v-if="props.product_count" #other>
             <div class="rounded-md ">
                 <a :href="downloadUrl('csv') as string" target="_blank" rel="noopener">
                     <Button :icon="faDownload" label="CSV" type="tertiary" class="rounded-r-none" />
                 </a>
 
 
-                <!-- Section: Download button -->
                 <Button @click="(e) => _popover?.toggle(e)" v-tooltip="trans('Open another options')"
                     :icon="faEllipsisV" xloading="!!isLoadingSpecificChannel.length"
                     class="!px-2 border-l-0 rounded-l-none h-full" type="tertiary" key="" />
@@ -147,7 +104,6 @@ const _clone_popover = ref()
                 :icon="'fas fa-plus'" />
 
             <div class="rounded-md" v-if="manual_channels?.data?.length">
-                <!-- Section: Download button -->
                 <Button @click="(e) => _clone_popover?.toggle(e)" v-tooltip="trans('Open another options')"
                     :icon="faEllipsisV" xloading="!!isLoadingSpecificChannel.length" class="!px-2 h-full"
                     type="tertiary" key="" />
@@ -167,10 +123,8 @@ const _clone_popover = ref()
                     </div>
                 </Popover>
             </div>
-        </template>
+        </template> -->
     </PageHeading>
 
-    <RetinaTablePortfolios :data="props.products" :tab="'products'" :selectedData :platform_data :platform_user_id
-        :is_platform_connected :progressToUploadToShopify :isPlatformManual />
-    </div>
+    <RetinaTableProducts :data="data"/>
 </template>
