@@ -3,7 +3,7 @@
 
 namespace App\Models\CRM;
 
-use App\Enums\CRM\Poll\OfflineConversionUploadStatusEnum;
+use App\Enums\CRM\OfflineConversion\OfflineConversionUploadStatusEnum;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;

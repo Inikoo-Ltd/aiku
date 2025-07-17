@@ -3,7 +3,7 @@
 namespace App\Actions\CRM\OfflineConversion;
 
 use App\Actions\OrgAction;
-use App\Enums\CRM\Poll\OfflineConversionUploadStatusEnum;
+use App\Enums\CRM\OfflineConversion\OfflineConversionUploadStatusEnum;
 use App\Models\CRM\CustomerAcquisitionSource;
 use App\Models\CRM\OfflineConversion;
 use App\Models\Ordering\Order;
@@ -13,7 +13,7 @@ class StoreOrderOfflineConversion extends OrgAction
     public function handle(Order $order): void
     {
 
-        if ($order->platform_order_id === null || $order->platform_order_id === '') {
+        if (!$order->platform_order_id) {
             return;
         }
 
