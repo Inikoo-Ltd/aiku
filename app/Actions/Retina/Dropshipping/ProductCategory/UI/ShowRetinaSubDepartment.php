@@ -220,7 +220,7 @@ class ShowRetinaSubDepartment extends RetinaAction
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
-                        'department'   => $subDepartment->slug
+                        'subDepartment'   => $subDepartment->slug
                     ]
                 ]
             ],
