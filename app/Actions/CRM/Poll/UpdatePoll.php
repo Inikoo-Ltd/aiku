@@ -47,15 +47,18 @@ class UpdatePoll extends OrgAction
         if ($poll->type == PollTypeEnum::OPTION && $options) {
             $oldOptions = $poll->pollOptions;
             foreach ($options as $index => $option) {
-                if (isset($option['id'])) {
+                $value = $poll->shop->id . $poll->id . $index;
+                $id = Arr::pull($option, 'id');
+                $optionExist = $oldOptions->where('value', $value)->first() ?? $oldOptions->where('id', $id)->first();
+                if ($optionExist) {
                     UpdatePollOption::make()->action(
-                        PollOption::findOrFail($option['id']),
+                        $optionExist,
                         [
                             'label' => $option['label'],
                         ]
                     );
                     $oldOptions = $oldOptions->reject(
-                        fn(PollOption $pollOption) => $pollOption->id == $option['id']
+                        fn(PollOption $pollOption) => $pollOption->id == $optionExist->id
                     );
                 } else {
                     StorePollOption::make()->action(
@@ -76,7 +79,17 @@ class UpdatePoll extends OrgAction
                 }
             }
         } else if ($poll->type == PollTypeEnum::OPTION_REFERRAL_SOURCES) {
-            $oldOptions = $poll->pollOptions;
+            $oldOptions = $poll->pollOptions->whereIn('value', PollOptionReferralSourcesEnum::values());
+
+            if (!empty($oldOptions)) {
+                foreach ($oldOptions as $oldOption) {
+                    DeletePollOptions::run(
+                        $oldOption,
+                        true
+                    );
+                }
+            }
+
             foreach (PollOptionReferralSourcesEnum::cases() as $option) {
                 StorePollOption::make()->action(
                     $poll,
@@ -85,14 +98,6 @@ class UpdatePoll extends OrgAction
                         'label' => $option->label(),
                     ]
                 );
-            }
-            if (!empty($oldOptions)) {
-                foreach ($oldOptions as $oldOption) {
-                    DeletePollOptions::run(
-                        $oldOption,
-                        true
-                    );
-                }
             }
         }
 

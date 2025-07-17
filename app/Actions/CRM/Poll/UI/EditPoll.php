@@ -47,9 +47,9 @@ class EditPoll extends OrgAction
     public function htmlResponse(Poll $poll, ActionRequest $request): Response
     {
         $optionsPool = [];
-        $options     = $poll->pollOptions;
+        $options     = $poll->pollOptions->whereNotIn('value', PollOptionReferralSourcesEnum::values());
         if ($options->isNotEmpty()) {
-            $optionsPool = PollOptionsResource::collection($poll->pollOptions)->toArray($request);
+            $optionsPool = PollOptionsResource::collection($options)->toArray($request);
         }
 
         $poll_option_referral_sources = array_map(function ($enum) {
@@ -58,7 +58,7 @@ class EditPoll extends OrgAction
                 'value' => $enum->value
             ];
         }, PollOptionReferralSourcesEnum::cases());
-        
+
         return Inertia::render(
             'EditModel',
             [
@@ -147,7 +147,7 @@ class EditPoll extends OrgAction
         return ShowPoll::make()->getBreadcrumbs(
             routeName: preg_replace('/edit$/', 'show', $routeName),
             routeParameters: $routeParameters,
-            suffix: '('.__('Editing').')'
+            suffix: '(' . __('Editing') . ')'
         );
     }
 }
