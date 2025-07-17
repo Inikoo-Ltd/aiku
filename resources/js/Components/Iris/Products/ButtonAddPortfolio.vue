@@ -44,11 +44,11 @@ const props = withDefaults(defineProps<{
     productHasPortfolio: () => [],
     routeToAllPortfolios : {
         name: 'iris.models.all_channels.portfolio.store',
-        params: {}
+        parameters: {}
     },
     routeToSpecificChannel : {
         name: 'iris.models.multi_channels.portfolio.store',
-        params: {}
+        parameters: {}
     }
 })
 
@@ -64,7 +64,7 @@ const isLoadingAllPortfolios = ref(false)
 const onAddToAllPortfolios = (product: ProductResource) => {
     // Section: Submit
     router.post(
-        route(props.routeToAllPortfolios.name, props.routeToAllPortfolios.params),
+        route(props.routeToAllPortfolios.name, props.routeToAllPortfolios.parameters),
         {
             item_id: [product.id]
         },
@@ -110,7 +110,7 @@ const onAddPortfoliosSpecificChannel = (product: ProductResource, channel: any) 
     console.log(`Adding product with ID ${product.id} to portfolio for channel ID ${channelId}`)
 
     router.post(
-        route(props.routeToSpecificChannel.name, props.routeToSpecificChannel.params),
+        route(props.routeToSpecificChannel.name, props.routeToSpecificChannel.parameters),
         {
             customer_sales_channel_ids: [channelId],
             item_id: [product.id]

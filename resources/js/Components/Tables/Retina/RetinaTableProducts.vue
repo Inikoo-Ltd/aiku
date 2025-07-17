@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import Table from "@/Components/Table/Table.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { inject } from "vue"
+import { inject, ref, onMounted } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import Image from "@/Components/Image.vue"
 import { faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar as falStar, faTrashAlt, faExclamationCircle } from "@fal"
@@ -18,6 +18,8 @@ import Icon from "@/Components/Icon.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import Tag from "@/Components/Tag.vue"
 import { Link } from "@inertiajs/vue3"
+import { notify } from "@kyvg/vue3-notification"
+import axios from "axios"
 import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
 library.add(fadExclamationTriangle, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle)
 
@@ -38,6 +40,40 @@ function productRoute(family): string {
 
 const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', retinaLayoutStructure)
+
+const productHasPortfolio = ref({
+    isLoading: false,
+    list: []
+});
+
+const fetchProductHasPortfolio = async () => {
+    console.log("Fetching product portfolio for channels...");
+    productHasPortfolio.value.isLoading = true;
+    try {
+        const apiUrl = route('retina.json.dropshipping.product_category.channels_list')
+
+        if (!apiUrl) {
+            throw new Error("Invalid model_type or missing route configuration");
+        }
+
+        const response = await axios.get(apiUrl);
+        productHasPortfolio.value.list = response.data || [];
+    } catch (error) {
+        console.error(error);
+        notify({
+            title: "Error",
+            text: "Failed to load product portfolio.",
+            type: "error"
+        });
+    } finally {
+        productHasPortfolio.value.isLoading = false;
+    }
+};
+
+onMounted(() => {
+        fetchProductHasPortfolio();
+});
+
 </script>
 
 <template>
@@ -93,7 +129,13 @@ const layout = inject('layout', retinaLayoutStructure)
         </template>
 
          <template #cell(actions)="{ item }">
-           <ButtonAddPortfolio :product="{...item, stock : item.available_quantity}" :productHasPortfolio="[]" />
+            {{ productHasPortfolio.list }}
+           <ButtonAddPortfolio 
+           :product="item" 
+           :productHasPortfolio="productHasPortfolio.list[item.id]"
+           :routeToAllPortfolios="{name : 'retina.models.portfolio.store_to_all_channels', parameters : null}"
+           :routeToSpecificChannel="{name : 'retina.models.portfolio.store_to_multi_channels', parameters : null}"
+           />
         </template>
 
     </Table>

@@ -51,7 +51,7 @@ class HandleRetinaInertiaRequests extends Middleware
 
 
         $customerSalesChannels = [];
-        if ($webUser && $request->get('shop_type') == ShopTypeEnum::DROPSHIPPING->value) {
+        if ($webUser) {
             $channels = DB::table('customer_sales_channels')
                 ->leftJoin('platforms', 'customer_sales_channels.platform_id', '=', 'platforms.id')
                 ->select('customer_sales_channels.id', 'customer_sales_channels.name as customer_sales_channel_name', 'platform_id', 'platforms.slug', 'platforms.code', 'platforms.name')
