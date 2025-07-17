@@ -49,14 +49,16 @@ class StoreWebhooksToShopify extends OrgAction
             ];
         }
 
-        DB::transaction(function () use ($webhooks, $shopifyUser) {
+    //    DB::transaction(function () use ($webhooks, $shopifyUser) {
 
             DeleteWebhooksFromShopify::run($shopifyUser);
+
+
 
             $webhooksData = [];
             foreach ($webhooks as $webhook) {
                 $webhook = $shopifyUser->api()->getRestClient()->request('POST', 'admin/api/2024-07/webhooks.json', $webhook);
-
+                dd($webhook);
                 if (!$webhook['errors'] && is_array($webhook['body']['webhook']['container'])) {
                     $webhooksData[] = $webhook['body']['webhook']['container'];
                 }
@@ -67,7 +69,7 @@ class StoreWebhooksToShopify extends OrgAction
                     'webhooks' => $webhooksData
                 ]
             ]);
-        });
+     //   });
     }
 
 
