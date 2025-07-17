@@ -6,6 +6,7 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
+use App\Actions\Catalogue\Product\Json\GetRetinaPortfoliosInProductCategory;
 use App\Actions\Fulfilment\PalletReturn\Json\GetPalletsInReturnPalletWholePallets;
 use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfolioZipImages;
 use App\Actions\Retina\Fulfilment\PalletDelivery\Json\GetRetinaFulfilmentPhysicalGoods;
@@ -23,4 +24,6 @@ Route::get('/{order}/recent-uploads', \App\Actions\Ordering\Order\UI\IndexRecent
 Route::get('/{order:id}/get-checkout-com-token-to_pay-order', GetCheckoutComTokenToPayOrder::class)->name('get_checkout_com_token_to_pay_order');
 
 Route::get('dropshipping/{customerSalesChannel:id}/portfolio-images-zip', DownloadPortfolioZipImages::class)->name('dropshipping.customer_sales_channel.portfolio_images_zip');
+
+Route::get('dropshipping/{productCategory:id}/channels_list', GetRetinaPortfoliosInProductCategory::class)->name('dropshipping.product_category.channels_list');
 ;
