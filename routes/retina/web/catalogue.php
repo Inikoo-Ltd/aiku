@@ -13,6 +13,7 @@ use App\Actions\Retina\Dropshipping\ProductCategory\UI\IndexRetinaDepartments;
 use App\Actions\Retina\Dropshipping\ProductCategory\UI\IndexRetinaFamilies;
 use App\Actions\Retina\Dropshipping\ProductCategory\UI\IndexRetinaSubDepartments;
 use App\Actions\Retina\Dropshipping\ProductCategory\UI\ShowRetinaDepartment;
+use App\Actions\Retina\Dropshipping\ProductCategory\UI\ShowRetinaSubDepartment;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/dashboard', ShowRetinaCatalogue::class)->name('dashboard');
@@ -24,6 +25,7 @@ Route::prefix('departments')->as('departments.')->group(function () {
 
 Route::prefix('sub-departments')->as('sub_departments.')->group(function () {
     Route::get('/', IndexRetinaSubDepartments::class)->name('index');
+    Route::get('{subDepartment}', ShowRetinaSubDepartment::class)->name('show');
 });
 
 Route::prefix('families')->as('families.')->group(function () {

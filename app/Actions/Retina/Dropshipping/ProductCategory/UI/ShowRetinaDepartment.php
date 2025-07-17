@@ -9,30 +9,19 @@
 namespace App\Actions\Retina\Dropshipping\ProductCategory\UI;
 
 use App\Actions\Catalogue\ProductCategory\UI\GetProductCategoryShowcase;
-use App\Actions\Catalogue\Shop\UI\ShowShop;
-use App\Actions\Catalogue\WithDepartmentSubNavigation;
-use App\Actions\CRM\Customer\UI\IndexCustomers;
-use App\Actions\Helpers\History\UI\IndexHistory;
-use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Catalogue\ShowRetinaCatalogue;
 use App\Actions\Retina\Dropshipping\Collection\UI\IndexRetinaCollections;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInCatalogue;
 use App\Actions\Retina\Dropshipping\ProductCategory\UI\IndexRetinaFamilies;
 use App\Actions\Retina\Dropshipping\ProductCategory\UI\IndexRetinaSubDepartments;
 use App\Actions\RetinaAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
-use App\Enums\UI\Catalogue\DepartmentTabsEnum;
 use App\Enums\UI\Catalogue\RetinaDepartmentTabsEnum;
 use App\Http\Resources\Catalogue\CollectionsResource;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\Catalogue\FamiliesResource;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\Http\Resources\Catalogue\SubDepartmentsResource;
-use App\Http\Resources\CRM\CustomersResource;
-use App\Http\Resources\History\HistoryResource;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Catalogue\Shop;
-use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -48,7 +37,7 @@ class ShowRetinaDepartment extends RetinaAction
     public function asController(ProductCategory $department, ActionRequest $request): ProductCategory
     {
 
-        $this->initialisation($request)->withTab(DepartmentTabsEnum::values());
+        $this->initialisation($request)->withTab(RetinaDepartmentTabsEnum::values());
         return $this->handle($department);
     }
 
