@@ -105,7 +105,7 @@ class IndexRetinaFamilies extends RetinaAction
             ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
             ->leftjoin('product_categories as departments', 'departments.id', 'product_categories.department_id')
             ->leftjoin('product_categories as sub_departments', 'sub_departments.id', 'product_categories.sub_department_id')
-            ->allowedSorts(['code', 'name', 'shop_code', 'department_code', 'number_current_products', 'sub_department_name', 'department_name'])
+            ->allowedSorts(['code', 'name', 'state', 'shop_code', 'department_code', 'number_current_products', 'sub_department_name', 'department_name'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -132,7 +132,7 @@ class IndexRetinaFamilies extends RetinaAction
                     }
                 )
                 ->withGlobalSearch()
-                ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
+                ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon', sortable: true)
                 ->withModelOperations($modelOperations);
 
                 $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)

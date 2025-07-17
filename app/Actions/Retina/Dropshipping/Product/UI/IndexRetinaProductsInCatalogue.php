@@ -70,6 +70,7 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
             'code',
             'name',
             'shop_slug',
+            'state',
             'department_slug',
             'family_slug',
             'price',
@@ -111,7 +112,7 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
 
                     ]
                 );
-            $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
+            $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon', sortable: true)
                 ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'units', label: __('units'), canBeHidden: false, sortable: true, searchable: true)

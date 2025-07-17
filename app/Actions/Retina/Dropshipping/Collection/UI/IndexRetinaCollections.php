@@ -86,7 +86,7 @@ class IndexRetinaCollections extends RetinaAction
 
         return $queryBuilder
             ->allowedFilters([$globalSearch])
-            ->allowedSorts(['code', 'name', 'number_parents', 'number_families', 'number_products'])
+            ->allowedSorts(['code', 'name', 'number_parents', 'number_families', 'number_products', 'state'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -111,7 +111,7 @@ class IndexRetinaCollections extends RetinaAction
                 );
 
             $table
-                ->column(key: 'state_icon', label: '', canBeHidden: false, type: 'icon');
+                ->column(key: 'state', label: '', canBeHidden: false, type: 'icon', sortable: true);
 
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);

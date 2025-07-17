@@ -92,7 +92,7 @@ class IndexRetinaSubDepartments extends RetinaAction
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
             ->where('product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
             ->leftjoin('product_categories as departments', 'departments.id', 'product_categories.department_id')
-            ->allowedSorts(['code', 'name', 'shop_code', 'department_code'])
+            ->allowedSorts(['code', 'state', 'name', 'shop_code', 'department_code'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -114,7 +114,7 @@ class IndexRetinaSubDepartments extends RetinaAction
                 ->withEmptyState([]
                 )
                 ->withGlobalSearch()
-                ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
+                ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon', sortable: true)
                 ->withModelOperations($modelOperations);
 
 
