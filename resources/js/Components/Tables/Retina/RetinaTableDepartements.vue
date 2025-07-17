@@ -11,6 +11,7 @@ import Icon from "@/Components/Icon.vue";
 import { faSeedling } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import Tag from "@/Components/Tag.vue";
+import { Department } from "@/types/department";
 
 library.add(faSeedling);
 
@@ -18,6 +19,14 @@ defineProps<{
   data: {}
   tab?: string
 }>();
+
+function departmentRoute(department: Department): string {
+  const current = route().current()
+  if (current === "retina.catalogue.sub_departments.index") {
+    return route("retina.catalogue.sub_departments.index.show", [department.slug])
+  }
+  return route("retina.catalogue.departments.show", [department.slug])
+}
 
 
 </script>
@@ -32,9 +41,9 @@ defineProps<{
       </Tag>
     </template>
     <template #cell(code)="{ item: department }">
-      <!--   <Link :href="departmentRoute(department) as string" class="primaryLink"> -->
-      {{ department["code"] }}
-      <!--    </Link> -->
+      <Link :href="departmentRoute(department)" class="primaryLink">
+        {{ department["code"] }}
+      </Link>
     </template>
     <template #cell(number_current_families)="{ item: department }">
       <!--  <Link :href="familyRoute(department) as string" class="secondaryLink"> -->
