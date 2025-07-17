@@ -216,27 +216,34 @@ defineExpose({
                 <template #item="{ element, index }">
                   <div v-if="showWebpage(element)" class="bg-white border border-gray-200 rounded"
                     @contextmenu="e => openContextMenu(e, element)">
-                    <div class="flex justify-between items-center px-3 py-2 cursor-pointer hover:bg-gray-100"
-                      :class="openedBlockSideEditor === index ? 'bg-theme text-white' : ''">
-                      <div class="flex items-center gap-2 w-full"
-                        @click="() => getEditPermissions(element.web_block.layout.data) && (openedBlockSideEditor = openedBlockSideEditor === index ? null : index)">
+                    <div class="flex justify-between items-center px-3 py-2 "
+                      v-tooltip="getEditPermissions(element.web_block.layout.data) ? '' : trans('This block is reserved by system. Not editable.')"
+                      :class="[
+                        openedBlockSideEditor === index ? 'bg-theme text-white' : '',
+                        getEditPermissions(element.web_block.layout.data) ? 'cursor-pointer hover:bg-gray-100' : 'cursor-not-allowed'
+                      ]">
+                      <button class="flex items-center gap-2 w-full"
+                        @click="() => openedBlockSideEditor = openedBlockSideEditor === index ? null : index"
+                        :disabled="!getEditPermissions(element.web_block.layout.data)"
+                      >
                         <FontAwesomeIcon icon="fal fa-bars" class="handle text-sm text-gray-400 cursor-grab" />
                         <span class="text-sm font-medium capitalize truncate">
                           {{ element.name || element.type }}
                         </span>
                         <LoadingIcon v-if="isLoadingBlock === element.id" />
-                      </div>
+                      </button>
 
                       <div class="flex items-center gap-1">
                         <button v-if="getHiddenPermissions(element.web_block.layout.data)"
+                          v-tooltip="trans('Toggle visibility: hide/show the block from the page')"
                           @click.stop.prevent="setShowBlock($event, element)"
-                          class="px-1 text-theme hover:text-opacity-80 text-xs">
+                          class="px-1 py-0.5 text-theme hover:text-opacity-80 text-xs bg-white/50 rounded">
                           <FontAwesomeIcon :icon="element.show ? 'fal fa-eye' : 'fal fa-eye-slash'" fixed-width />
                         </button>
 
                         <button v-if="getDeletePermissions(element.web_block.layout.data)"
                           @click="e => isLoadingDeleteBlock !== element.id && confirmDelete(e, element)"
-                          class="px-1 text-theme hover:text-opacity-80 text-xs">
+                          class="px-1 py-0.5 text-theme hover:text-opacity-80 text-xs bg-white/50 rounded">
                           <LoadingIcon v-if="isLoadingDeleteBlock === element.id" />
                           <FontAwesomeIcon v-else icon="fal fa-trash-alt" class="text-red-500" fixed-width />
                         </button>
