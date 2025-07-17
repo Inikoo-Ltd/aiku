@@ -11,26 +11,32 @@ namespace App\Actions\Catalogue\Shop\UI;
 use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
+use App\Actions\Retina\UI\Layout\GetPlatformLogo;
+use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Actions\Traits\WithDashboard;
 use App\Actions\UI\WithInertia;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
-use App\Enums\CRM\Customer\CustomerStatusEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Catalogue\ShopTabsEnum;
 use App\Http\Resources\Catalogue\ShopResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Models\Catalogue\Shop;
+use App\Models\Dropshipping\Platform;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
 
 class ShowShop extends OrgAction
 {
     use WithDashboard;
-    use AsAction;
     use WithInertia;
+    use WithCatalogueAuthorisation;
+    use GetPlatformLogo;
 
 
     public function handle(Shop $shop): Shop
@@ -38,25 +44,79 @@ class ShowShop extends OrgAction
         return $shop;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit   = $request->user()->authTo("products.{$this->shop->id}.edit");
-        $this->canDelete = $request->user()->authTo("products.{$this->shop->id}.edit");
-
-        return $request->user()->authTo([
-            "web.$this->shop->id.view",
-            "group-webmaster.view",
-            "products.{$this->shop->id}.view",
-            "accounting.{$this->shop->organisation_id}.view"
-        ]);
-    }
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
     {
-
         $this->initialisationFromShop($shop, $request)->withTab(ShopTabsEnum::values());
 
         return $this->handle($shop);
+    }
+
+    protected function getOrdersWidgetData(Shop $shop): array
+    {
+        if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
+            return $this->getDropshippingOrdersWidgetData($shop);
+        } else {
+            return $this->getEcomOrdersWidgetData($shop);
+        }
+    }
+
+    protected function getDropshippingOrdersWidgetData(Shop $shop): array
+    {
+        $platformsData = [];
+        foreach (Platform::all() as $platform) {
+            $platformsData[$platform->id] = [
+                'label'             => $platform->name,
+                'logo'              => $this->getPlatformLogo($platform->code),
+                'number_orders'     => 0,
+                'amount'            => 0,
+                'percentage_orders' => percentage(0, 1),
+                'percentage_amount' => percentage(0, 1)
+            ];
+        }
+
+
+        $platformOrdersDatum =
+            DB::table('orders')->selectRaw('platform_id,sum(net_amount) as net_amount, count(*) as number_orders')->where('shop_id', $shop->id)->where('submitted_at', '>=', Carbon::now()->subDays(7))->where('state', '!=', OrderStateEnum::CANCELLED)->groupBy(
+                'platform_id'
+            )->get();
+
+        $totalOrders = 0;
+        $totalAmount = 0;
+        foreach ($platformOrdersDatum as $platformOrdersData) {
+            $platformsData[$platformOrdersData->platform_id]['amount']        = $platformOrdersData->net_amount;
+            $platformsData[$platformOrdersData->platform_id]['number_orders'] = $platformOrdersData->number_orders;
+            $totalOrders                                                      += $platformOrdersData->number_orders;
+            $totalAmount                                                      += $platformOrdersData->net_amount;
+        }
+
+        foreach ($platformsData as $key => $platformData) {
+            $platformsData[$key]['percentage_orders'] = percentage($platformData['number_orders'], $totalOrders);
+            $platformsData[$key]['percentage_amount'] = percentage($platformData['amount'], $totalAmount);
+        }
+
+        return [
+            'type'          => 'dropshipping_orders',
+            'platformsData' => $platformsData,
+
+        ];
+    }
+
+    protected function getEcomOrdersWidgetData(Shop $shop): array
+    {
+        return [
+            'value'       => $shop->orderingIntervals->orders_1w,
+            'description' => __('Last Orders (1w)'),
+            'type'        => 'number',
+            'route'       => [
+                'name'       => 'grp.org.shops.show.ordering.orders.index',
+                'parameters' => [
+                    'organisation'           => $shop->organisation->slug,
+                    'shop'                   => $shop->slug,
+                    'orders_elements[state]' => 'submitted'
+                ]
+            ]
+        ];
     }
 
     private function getDashboard(Shop $shop): array
@@ -66,85 +126,37 @@ class ShowShop extends OrgAction
                 'widgets' => [
                     'column_count' => 4,
                     'components'   => [
-
-                        $this->getWidget(
-                            data: [
-                                'value'       => $shop->orderingStats->number_invoices,
-                                'description' => __('invoices'),
-                                'type'        => 'number',
-                                'route'       => [
-                                    'name'       => 'grp.org.shops.show.dashboard.invoices.index',
-                                    'parameters' => [
-                                        $shop->organisation->slug,
-                                        $shop->slug
-                                    ]
-                                ]
-                            ],
-                            visual: [
-                                'label'       => __('Paid'),
-                                'type'        => 'MeterGroup',
-                                'value'       => $shop->orderingStats->number_invoices - $shop->orderingStats->number_unpaid_invoices,
-                                'max'         => $shop->orderingStats->number_invoices,
-                                'color'       => 'bg-blue-500',
-                                'right_label' => [
-                                    'label' => __('Unpaid').' '.$shop->orderingStats->number_unpaid_invoices,
-                                    'route' => [
-                                        'name'       => 'grp.org.shops.show.dashboard.invoices.unpaid.index',
-                                        'parameters' => [
-                                            $shop->organisation->slug,
-                                            $shop->slug
-                                        ]
-                                    ]
-                                ]
-
-
-                            ],
-                        ),
-
                         $this->getWidget(
                             data: [
                                 'value'       => $shop->crmStats->number_customers_state_active,
-                                'description' => __('Active Customers'),
+                                'description' => __('Visitors'),
                                 'type'        => 'number',
                                 'route'       => [
                                     'name'       => 'grp.org.shops.show.crm.customers.index',
                                     'parameters' => [
-                                        'organisation'     => $shop->organisation->slug,
-                                        'shop'       => $shop->slug,
-                                        'tab' => 'customers',
+                                        'organisation'              => $shop->organisation->slug,
+                                        'shop'                      => $shop->slug,
+                                        'tab'                       => 'customers',
                                         'customers_elements[state]' => CustomerStateEnum::ACTIVE->value
                                     ]
                                 ]
                             ],
                             visual: [
-                                'label' => __('Pending Approval Customers'),
+                                'label' => __('New Customers'),
                                 'type'  => 'number_with_label',
-                                'value' => $shop->crmStats->number_customers_status_pending_approval,
+                                'value' => $shop->orderingIntervals->registrations_1w,
                                 'route' => [
                                     'name'       => 'grp.org.shops.show.crm.customers.index',
                                     'parameters' => [
-                                        'organisation'     => $shop->organisation->slug,
-                                        'shop'       => $shop->slug,
-                                        'tab' => 'customers',
-                                        'customers_elements[status]' => CustomerStatusEnum::PENDING_APPROVAL->value
+                                        'organisation'               => $shop->organisation->slug,
+                                        'shop'                       => $shop->slug,
+                                        'tab'                        => 'customers',
                                     ]
                                 ]
                             ],
                         ),
                         $this->getWidget(
-                            data: [
-                                'value'       => $shop->orderingStats->number_orders_state_submitted,
-                                'description' => __('New Orders'),
-                                'type'        => 'number',
-                                'route'       => [
-                                    'name'       => 'grp.org.shops.show.ordering.orders.index',
-                                    'parameters' => [
-                                        'organisation'           => $shop->organisation->slug,
-                                        'shop'                   => $shop->slug,
-                                        'orders_elements[state]' => 'submitted'
-                                    ]
-                                ]
-                            ],
+                            data: $this->getOrdersWidgetData($shop),
                         ),
 
 

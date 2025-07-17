@@ -40,6 +40,21 @@ class GetPalletDeliveryActions
                 ]
             ]
         ];
+        $excelButton = [
+            'type'    => 'button',
+            'style'   => 'save',
+            'key'     => 'export-spreadsheet',
+            'label'   => __('Export'),
+            'tooltip' => __('export pallets'),
+            'route'   => [
+                'name'       => 'grp.org.fulfilments.show.operations.pallet-deliveries.export',
+                'parameters' => [
+                    'organisation' => $palletDelivery->organisation->slug,
+                    'fulfilment'   => $palletDelivery->fulfilment->slug,
+                    'palletDelivery' => $palletDelivery->slug
+                ]
+            ]
+        ];
 
         if ($canEdit) {
             $actions = match ($palletDelivery->state) {
@@ -56,7 +71,7 @@ class GetPalletDeliveryActions
                 PalletDeliveryStateEnum::IN_PROCESS,
                 PalletDeliveryStateEnum::SUBMITTED
             ])) {
-                $actions = array_merge($actions, [$pdfButton]);
+                $actions = array_merge($actions, [$pdfButton, $excelButton]);
             } else {
                 $actions = array_merge([
                     [
