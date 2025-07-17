@@ -7,7 +7,7 @@
  * copyright 2025
 */
 
-namespace App\Actions\Iris\Portfolio;
+namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\RetinaAction;
