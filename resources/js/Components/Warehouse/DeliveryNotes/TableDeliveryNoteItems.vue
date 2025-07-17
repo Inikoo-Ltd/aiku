@@ -296,7 +296,7 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
                                             selectedItemProxy = proxyItem;
                                         }"
                                         v-tooltip="`Other ${itemValue.locations?.length - 1} locations`"
-                                        class="cursor-pointer hover:bg-gray-200 ml-1 whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-gray-300 rounded px-1">
+                                        class="cursor-pointer hover:bg-orange-50 ml-1 whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-orange-300 rounded px-1">
                                         <FontAwesomeIcon icon="fal fa-list-ol" class="mr-1" fixed-width aria-hidden="true" />
                                         {{ itemValue.locations?.length - 1 }}
                                     </span>
@@ -309,7 +309,7 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
                         <div class="flex items-center flex-nowrap gap-x-2">
                             <!-- Button: input number (picking) -->
                             <NumberWithButtonSave
-                                v-if="findLocation(itemValue.locations, proxyItem.hehe).quantity > 0"
+                                v-if="!itemValue.is_handled && findLocation(itemValue.locations, proxyItem.hehe).quantity > 0"
                                 :key="findLocation(itemValue.locations, proxyItem.hehe).location_code"
                                 noUndoButton
                                 @onError="(error: any) => {
@@ -341,7 +341,6 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
                                             v-tooltip="trans('Pick all required quantity in this location')"
                                             icon="fal fa-clipboard-list-check"
                                             :disabled="itemValue.is_handled || itemValue.quantity_required == itemValue.quantity_picked"
-                                            :label="locale.number(itemValue.quantity_to_pick ?? 0 )"
                                             size="xs"
                                             type="secondary"
                                             :loading="isProcessing"
@@ -355,17 +354,14 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
                                                 location_org_stock_id: findLocation(itemValue.locations, proxyItem.hehe).id
                                             }"
                                             isWithError
-                                        />
-                                        <ButtonWithLink
-                                            class="xml-8"
-                                            v-if="!itemValue.is_handled"
-                                            type="negative"
-                                            tooltip="Set as not picked"
-                                            icon="fal fa-debug"
-                                            size="xs"
-                                            :routeTarget="itemValue.not_picking_route"
-                                            :bindToLink="{preserveScroll: true}"
-                                        />
+                                        >
+                                            <template #label>
+                                                <div>
+                                                    <FractionDisplay v-if="itemValue.quantity_to_pick_fractional" :fractionData="itemValue.quantity_to_pick_fractional" />
+                                                    <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0 ) }}</span>
+                                                </div>
+                                            </template>
+                                        </ButtonWithLink>
                                     </div>
                                     
                                     <div class="lg:hidden space-y-1">
@@ -373,7 +369,6 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
                                             v-tooltip="trans('Pick all required quantity in this location')"
                                             icon="fal fa-clipboard-list-check"
                                             :disabled="itemValue.is_handled || itemValue.quantity_required == itemValue.quantity_picked"
-                                            :label="locale.number(itemValue.quantity_to_pick ?? 0 )"
                                             xsize="md"
                                             type="secondary"
                                             :loading="isProcessing"
@@ -388,21 +383,40 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
                                             }"
                                             isWithError
                                             full
-                                        />
-                                        <ButtonWithLink
-                                            class=""
-                                            v-if="!itemValue.is_handled"
-                                            type="negative"
-                                            tooltip="Set as not picked"
-                                            icon="fal fa-debug"
-                                            xsize="md"
-                                            :routeTarget="itemValue.not_picking_route"
-                                            :bindToLink="{preserveScroll: true}"
-                                            full
-                                        />
+                                        >
+                                            <template #label>
+                                                <div>
+                                                    <FractionDisplay v-if="itemValue.quantity_to_pick_fractional" :fractionData="itemValue.quantity_to_pick_fractional" />
+                                                    <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0 ) }}</span>
+                                                </div>
+                                            </template>
+                                        </ButtonWithLink>
                                     </div>
                                 </template>
                             </NumberWithButtonSave>
+
+                            
+                            <div class="md:hidden">
+                                <ButtonWithLink
+                                    v-if="!itemValue.is_handled"
+                                    type="negative"
+                                    tooltip="Set as not picked"
+                                    icon="fal fa-debug"
+                                    size="lg"
+                                    :routeTarget="itemValue.not_picking_route"
+                                    :bindToLink="{preserveScroll: true}"
+                                />
+                            </div>
+                            <div class="hidden md:block">
+                                <ButtonWithLink
+                                    v-if="!itemValue.is_handled"
+                                    type="negative"
+                                    tooltip="Set as not picked"
+                                    icon="fal fa-debug"
+                                    :routeTarget="itemValue.not_picking_route"
+                                    :bindToLink="{preserveScroll: true}"
+                                />
+                            </div>
 
                             <!-- Section: Errors list -->
                             <div v-if="proxyItem.errors?.length">

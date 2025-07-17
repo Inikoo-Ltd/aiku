@@ -55,6 +55,7 @@ class DeliveryNoteItemsResource extends JsonResource
             'state_icon'                   => $this->state->stateIcon()[$this->state->value],
             'quantity_required'            => $this->quantity_required,
             'quantity_to_pick'             => max(0, $this->quantity_required - $this->quantity_picked),
+            'quantity_to_pick_fractional'  => divideWithRemainder(findSmallestFactors(max(0, $this->quantity_required - $this->quantity_picked))),
             'quantity_picked'              => $this->quantity_picked,
             'quantity_picked_fractional'   => divideWithRemainder(findSmallestFactors($this->quantity_picked)),
             'quantity_not_picked'          => $this->quantity_not_picked,
