@@ -56,7 +56,7 @@ class ShowRetinaDepartment extends RetinaAction
     {
 
         return Inertia::render(
-            'Org/Catalogue/Department',
+            'Catalogue/RetinaDepartement',
             [
                 'title'       => __('department'),
                 'breadcrumbs' => $this->getBreadcrumbs(
