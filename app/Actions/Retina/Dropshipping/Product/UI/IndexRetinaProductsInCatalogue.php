@@ -75,6 +75,8 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
                 'products.created_at',
                 'products.updated_at',
                 'products.slug',
+                'products.gross_weight',
+                'products.rrp',
                 'available_quantity',
                 'units',
             ])
@@ -90,7 +92,10 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
             'family_slug',
             'price',
             'units',
-            'available_quantity'
+            'available_quantity',
+            'gross_weight',
+            'rrp',
+            'price'
         ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -117,11 +122,10 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon', sortable: true)
                 ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'units', label: __('units'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: true);
-            if ($bucket != 'discontinued') {
-                $table->column(key: 'available_quantity', label: __('stock'), canBeHidden: false, sortable: true, searchable: true);
-            }
+                ->column(key: 'available_quantity', label: __('stock'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'gross_weight', label: __('weight'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'rrp', label: __('rrp'), canBeHidden: false, sortable: true, searchable: true);
               $table->column(key: 'actions', label: __('Actions'), canBeHidden: false, sortable: false, searchable: false);
         };
     }
