@@ -43,7 +43,7 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
 
         $deliveryNote = $order->deliveryNotes->first();
         $shipments    = $deliveryNote?->shipments ? RetinaShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null;
-
+        $invoices     = $order->invoices ?? null;
 
         // Create an email-client compatible HTML block with order information
         $orderHtmlBlock = '
@@ -101,6 +101,14 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
                                         </td>
                                         <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; text-align: right; border-top: 1px solid #eee; margin: 0; padding: 8px 0;" valign="top" align="right">
                                             <span class="fallback-text">' . $order->currency->code . ' ' . number_format($order->total_amount, 2) . '</span>
+                                        </td>
+                                    </tr>
+                                    <tr style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
+                                        <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; border-top: 1px solid #eee; margin: 0; padding: 8px 0;" valign="top">
+                                            <strong><span class="fallback-text">Invoice Infromation:</span></strong>
+                                        </td>
+                                        <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; text-align: right; border-top: 1px solid #eee; margin: 0; padding: 8px 0;" valign="top" align="right">
+                                            ' . ($invoices ? $this->generateInvoicePdfHtml($invoices) : '<span class="fallback-text">No invoice information available</span>') . '
                                         </td>
                                     </tr>
                                     <tr style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
@@ -181,5 +189,18 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
         }
 
         return $html ?: '<span class="fallback-text">No tracking information available</span>';
+    }
+    
+    private function generateInvoicePdfHtml($invoices): string
+    {
+        $html = '';
+
+        foreach ($invoices as $invoice) {
+            $url = $this->getPdfInvoiceLink($invoice);
+            $html .= '<a href="' . $url . '" target="_blank" style="color: #3498DB; text-decoration: underline;"><span class="fallback-text">' . $invoice->reference . '</span></a></div>';
+
+        }
+
+        return $html ?: '<span class="fallback-text">No invoice available</span>';
     }
 }
