@@ -16,12 +16,12 @@ import {
 
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import { computed, ref } from "vue";
-import DepartmentShowcase from "@/Components/Showcases/Grp/DepartementShowcase.vue";
+import RetinaDepartmentShowcase from "@/Components/Showcases/Retina/Catalouge/RetinaDepartementShowcase.vue";
 import { useTabChange } from "@/Composables/tab-change";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import { faDiagramNext } from "@fortawesome/free-solid-svg-icons";
-import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue";
-import TableFamilies from "@/Components/Tables/Grp/Org/Catalogue/TableFamilies.vue";
+import RetinaTableProducts from "@/Components/Tables/Retina/RetinaTableProducts.vue";
+import RetinaTableFamilies from "@/Components/Tables/Retina/RetinaTableFamilies.vue";
 import { capitalize } from "@/Composables/capitalize";
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 
@@ -57,12 +57,11 @@ const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab);
 
 const component = computed(() => {
     const components = {
-        showcase: DepartmentShowcase,
-        products: TableProducts,
-        families: TableFamilies,
+        showcase: RetinaDepartmentShowcase,
+        products: RetinaTableProducts,
+        families: RetinaTableFamilies,
     };
     return components[currentTab.value];
-
 });
 
 
