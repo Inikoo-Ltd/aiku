@@ -52,6 +52,8 @@ const props = defineProps<{
     }
     products?: object
     families?: object;
+    collections?: object
+    sub_departments?: object;
 }>();
 
 console.log("props", props);
