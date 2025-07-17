@@ -156,7 +156,7 @@ const checkNumber = (event: KeyboardEvent) => {
                 <div class="group flex justify-center items-center absolute inset-y-0 gap-x-1"
                     :class="align === 'right' ? 'left-0' : 'right-0'"
                 >
-                    <Transition name="spin-to-down">
+                    <Transition name="spin-to-right">
                         <FontAwesomeIcon v-if="isRecentlyCopied" icon='fal fa-check' class='text-green-500 px-3 h-full text-xxs leading-none ' fixed-width aria-hidden='true' />
                         <FontAwesomeIcon v-else @click="() => onClickCopyButton(modelValue)" icon="fal fa-copy" class="px-3 h-full text-xxs leading-none opacity-20 group-hover:opacity-75 group-active:opacity-100 cursor-pointer" fixed-width aria-hidden="true" />
                     </Transition>
@@ -187,7 +187,7 @@ const checkNumber = (event: KeyboardEvent) => {
         <div class="absolute inset-y-0 align-middle flex items-center"
             :class="align === 'right' ? 'left-0' : 'right-0'"
         >
-            <Transition name="spin-to-down">
+            <Transition name="spin-to-right">
                 <div v-if="isLoading" class="px-1">
                     <FontAwesomeIcon icon='fad fa-spinner-third' class='animate-spin text-xl' fixed-width aria-hidden='true' />
                 </div>
