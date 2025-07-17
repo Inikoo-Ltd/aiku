@@ -46,6 +46,7 @@ export const iframeToParent = (data: any) => {
 
 // Send data to parent window
 export const sendMessageToParent = (key: string, value: any) => {
+    if (typeof value === 'undefined') return
     const serializableValue = JSON.parse(JSON.stringify(value));
     window.parent.postMessage({ key, value: serializableValue }, '*');
 }

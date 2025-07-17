@@ -1,4 +1,5 @@
-export const blueprint = (data: object) => {
+export const blueprint = (data?: object) => {
+    // console.log('SeeAlso1 Blueprint data:', data)
 	return {
 		blueprint: [
         {
@@ -16,7 +17,9 @@ export const blueprint = (data: object) => {
                     label: "Show Products",
                     type: "select_product",
                     props_data : {
-                        productCategory : data.product_category_id
+                        productCategory : data?.product_category_id,
+                        shop: data?.shop,
+                        family: data?.family,
                     }
                 },
             ],
