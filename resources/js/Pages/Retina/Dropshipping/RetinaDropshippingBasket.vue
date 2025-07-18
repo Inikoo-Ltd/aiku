@@ -48,9 +48,17 @@ library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCar
 const props = defineProps<{
     title: string
     tabs: TSTabs
-    data?: {
+    data: {
         data: {
-            
+            id: number
+            slug: string
+            reference: string
+            state: string
+            public_notes?: string
+            shipping_notes?: string
+            customer_notes?: string
+            created_at: string
+            updated_at: string
         }
     }
     pageHead: PageHeadingTypes
@@ -293,44 +301,60 @@ console.log('basket ds', props)
     </div>
 
     <div v-if="total_products > 0" class="flex justify-end px-6 gap-x-4">
-        <div class="w-72">
-            <div class="text-sm text-gray-500">
-                <FontAwesomeIcon icon="fal fa-truck" class="text-gray-400" fixed-width aria-hidden="true" />
-                {{ trans("Delivery instructions") }}
-                <FontAwesomeIcon v-tooltip="trans('To be printed in shipping label')" icon="fal fa-info-circle" class="text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
-                :
+        <div class="grid grid-cols-3 gap-x-4 w-full">
+            <div class="">
+                <div class="text-sm text-gray-500">
+                    <FontAwesomeIcon style="color: rgb(148, 219, 132)" icon="fal fa-sticky-note" class="xopacity-70" fixed-width aria-hidden="true" />
+                    {{ trans("Notes from staff") }}
+                    <!-- <FontAwesomeIcon v-tooltip="trans('To be printed in shipping label')" icon="fal fa-info-circle" class="text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" /> -->
+                    :
+                </div>
+                <PureTextarea
+                    :modelValue="props.data.data.public_notes || ''"
+                    @update:modelValue="() => debounceDeliveryInstructions()"
+                    :placeholder="trans('No notes from staff')"
+                    rows="4"
+                    disabled
+                    xloading="isLoadingNote.includes('shipping_notes')"
+                    xisSuccess="recentlySuccessNote.includes('shipping_notes')"
+                    xisError="recentlyErrorNote"
+                />
             </div>
-            <PureTextarea
-                v-model="deliveryInstructions"
-                @update:modelValue="() => debounceDeliveryInstructions()"
-                :placeholder="trans('Add if needed')"
-                xkeydown.enter="() => onSubmitNote(closed)"
-                rows="4"
-                :disabled="!is_in_basket"
-                :loading="isLoadingNote.includes('shipping_notes')"
-                :isSuccess="recentlySuccessNote.includes('shipping_notes')"
-                :isError="recentlyErrorNote"
-                xclass="mb-2"
-            />
-        </div>
-
-        <div class="w-72">
-            <div class="text-sm text-gray-500">
-                <FontAwesomeIcon icon="fal fa-sticky-note" style="color: rgb(255, 125, 189)" fixed-width aria-hidden="true" />
-                {{ trans("Other instructions") }}:
+            
+            <div class="">
+                <div class="text-sm text-gray-500">
+                    <FontAwesomeIcon icon="fal fa-truck" class="text-[#38bdf8]" fixed-width aria-hidden="true" />
+                    {{ trans("Delivery instructions") }}
+                    <FontAwesomeIcon v-tooltip="trans('To be printed in shipping label')" icon="fal fa-info-circle" class="text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
+                    :
+                </div>
+                <PureTextarea
+                    v-model="deliveryInstructions"
+                    @update:modelValue="() => debounceDeliveryInstructions()"
+                    :placeholder="trans('Add if needed')"
+                    rows="4"
+                    :disabled="!is_in_basket"
+                    :loading="isLoadingNote.includes('shipping_notes')"
+                    :isSuccess="recentlySuccessNote.includes('shipping_notes')"
+                    :isError="recentlyErrorNote"
+                />
             </div>
-            <PureTextarea
-                v-model="noteToSubmit"
-                @update:modelValue="() => debounceSubmitNote()"
-                :placeholder="trans('Add if needed')"
-                xkeydown.enter="() => onSubmitNote(closed)"
-                rows="4"
-                :disabled="!is_in_basket"
-                :loading="isLoadingNote.includes('customer_notes')"
-                :isSuccess="recentlySuccessNote.includes('customer_notes')"
-                :isError="recentlyErrorNote"
-                xclass="mb-2"
-            />
+            <div class="">
+                <div class="text-sm text-gray-500">
+                    <FontAwesomeIcon icon="fal fa-sticky-note" style="color: rgb(255, 125, 189)" fixed-width aria-hidden="true" />
+                    {{ trans("Other instructions") }}:
+                </div>
+                <PureTextarea
+                    v-model="noteToSubmit"
+                    @update:modelValue="() => debounceSubmitNote()"
+                    :placeholder="trans('Add if needed')"
+                    rows="4"
+                    :disabled="!is_in_basket"
+                    :loading="isLoadingNote.includes('customer_notes')"
+                    :isSuccess="recentlySuccessNote.includes('customer_notes')"
+                    :isError="recentlyErrorNote"
+                />
+            </div>
         </div>
 
 

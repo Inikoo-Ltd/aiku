@@ -15,6 +15,7 @@ import { notify } from '@kyvg/vue3-notification'
 import { PDRNotes } from '@/types/Pallet'
 // import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { useBasicColor } from '@/Composables/useColors'
+import InformationIcon from '../Utils/InformationIcon.vue'
 library.add(faPencil, faStickyNote, faTrash, faPlus, faLock, faTimes)
 
 // const layout = inject('layout', layoutStructure)
@@ -71,6 +72,7 @@ const fallbackColor = '#374151'  // Color
                 >
                     <FontAwesomeIcon icon='fas fa-sticky-note' class='' fixed-width aria-hidden='true' />
                     {{ noteData.label }}
+                    <InformationIcon v-if="noteData.information" :information="noteData.information" />
                 </div>
 
                 <!-- Section: Actions -->
@@ -105,7 +107,7 @@ const fallbackColor = '#374151'  // Color
         <!-- Section: Note -->
         <p @dblclick="noteData.editable ? isModalOpen = true : false"
             v-tooltip="noteData.editable ? trans('Double click to edit') : false"
-            class="h-full mx-auto items-center px-4 rounded-md pt-4 pb-2 text-xxs break-words"
+            class="h-full max-h-32 mx-auto items-center px-4 rounded-md pt-4 pb-2 text-xxs break-words"
             :class="noteData.editable ? 'cursor-pointer' : ''"
             :style="{
                 backgroundColor: useBasicColor(noteData.bgColor) + '11' || noteData.bgColor ? `${noteData.bgColor}11` : fallbackBgColor,
