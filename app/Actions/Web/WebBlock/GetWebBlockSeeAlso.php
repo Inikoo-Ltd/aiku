@@ -74,7 +74,7 @@ class GetWebBlockSeeAlso
                 'name' => $family->name,
                 'option' => ProductsWebpageResource::collection($family->getProducts()->sortByDesc('id')->take(6))->resolve()
             ];
-            
+
         }
 
         $topProducts = ProductsWebpageResource::collection(GetTopProductsInProductCategory::run($family))->resolve();

@@ -7,9 +7,10 @@ import { Link } from "@inertiajs/vue3"
 import { AddressManagement } from "@/types/PureComponent/Address"
 import Modal from "@/Components/Utils/Modal.vue"
 import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
+import Icon from "@/Components/Icon.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faIdCardAlt, faWeight } from "@fal"
+import { faIdCardAlt, faTruck, faWeight } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 library.add(faIdCardAlt, faWeight)
 
@@ -38,9 +39,11 @@ defineProps<{
                 image: string
             }
         }
+        delivery_notes: Array<any>
     }
     balance?: string
     address_management?: AddressManagement
+
 }>()
 
 const locale = inject('locale', {})
@@ -56,12 +59,11 @@ const isModalShippingAddress = ref(false)
             <!-- Field: Platform -->
             <div v-if="summary?.customer_channel?.status" class="pl-1 flex items-center w-full flex-none gap-x-2">
                 <div v-tooltip="trans('Platform')" class="flex-none">
-                    <FontAwesomeIcon
-                        icon="fal fa-parachute-box"
-                        class="text-gray-400" fixed-width />
+                    <FontAwesomeIcon icon="fal fa-parachute-box" class="text-gray-400" fixed-width />
                 </div>
                 <div class="flex items-center gap-x-2">
-                    <img v-tooltip="summary?.customer_channel?.platform?.name" :src="summary?.customer_channel?.platform?.image" alt="" class="h-6">
+                    <img v-tooltip="summary?.customer_channel?.platform?.name"
+                        :src="summary?.customer_channel?.platform?.image" alt="" class="h-6">
                 </div>
             </div>
 
@@ -70,10 +72,11 @@ const isModalShippingAddress = ref(false)
             <Link v-if="summary?.customer_client.ulid" as="a" v-tooltip="trans('Client')"
                 :href="route('retina.dropshipping.customer_sales_channels.client.show', [summary.customer_channel?.slug, summary?.customer_client.ulid])"
                 class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
-                <div class="flex-none">
-                    <FontAwesomeIcon icon='fal fa-user' class='text-gray-400' fixed-width aria-hidden='true' />
-                </div>
-                <dd class="text-sm text-gray-500">#{{ summary?.customer_client.reference ?? summary?.customer_client?.name }}</dd>
+            <div class="flex-none">
+                <FontAwesomeIcon icon='fal fa-user' class='text-gray-400' fixed-width aria-hidden='true' />
+            </div>
+            <dd class="text-sm text-gray-500">#{{ summary?.customer_client.reference ?? summary?.customer_client?.name
+            }}</dd>
             </Link>
 
             <!-- Field: Contact name -->
@@ -118,10 +121,10 @@ const isModalShippingAddress = ref(false)
                 <div class="flex-none">
                     <FontAwesomeIcon icon='fal fa-shipping-fast' class='text-gray-400' fixed-width aria-hidden='true' />
                 </div>
-                <dd class="w-full text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50"
-                    >
+                <dd class="w-full text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
                     <div v-html="summary?.customer?.addresses?.delivery?.formatted_address"></div>
-                    <div v-if="address_management" @click="isModalShippingAddress = true" class="underline cursor-pointer hover:text-gray-700">
+                    <div v-if="address_management" @click="isModalShippingAddress = true"
+                        class="underline cursor-pointer hover:text-gray-700">
                         {{ trans("Edit") }}
                         <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true" />
                     </div>
@@ -153,66 +156,114 @@ const isModalShippingAddress = ref(false)
                 <dd class="xtext-gray-500" v-tooltip="trans('Estimated weight of all products (in kilograms)')">
                     {{ summary.order_properties?.weight }}
                 </dd>
-
             </div>
 
+            <div v-if="summary?.delivery_notes?.length" class="mt-4 border rounded-lg p-4 pt-3 bg-white shadow-sm">
+                <!-- Section Title -->
+                <div class="flex items-center gap-2 border-b border-gray-200 pb-2 mb-3">
+                    <FontAwesomeIcon :icon="faTruck" class="text-blue-500" fixed-width />
+                    <div class="text-sm font-semibold text-gray-800">
+                        {{ trans('Delivery Notes') }}
+                    </div>
+                </div>
+
+                <!-- Delivery Note Items -->
+                <div v-for="(note, index) in summary.delivery_notes" :key="index"
+                    class="mb-3 pb-3 border-b border-dashed last:border-0 last:mb-0 last:pb-0">
+
+                    <div class="flex items-center gap-2 text-sm text-gray-700 mb-1">
+                        <span class="font-medium">Ref:</span>
+                        <span>{{ note?.reference }}</span>
+                        <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+                            <Icon :data="note?.state" />
+                        </span>
+                    </div>
+
+                    <!-- Shipments -->
+                    <div v-if="note?.shipments?.length > 0" class="mt-1 text-xs text-gray-600">
+                        <p class="text-gray-700 font-medium mb-1">Shipments:</p>
+                        <ul class="list-disc pl-4 space-y-1">
+                            <li v-for="(shipment, i) in note.shipments" :key="i">
+                                <template v-if="shipment?.tracking_urls?.length">
+                                    <div v-for="(tracking, j) in shipment.tracking_urls" :key="j">
+                                        <a :href="tracking?.url" target="_blank" rel="noopener noreferrer"
+                                            class="text-blue-600 hover:text-blue-800 hover:underline"
+                                            v-tooltip="trans('Click to track shipment')">
+                                            {{ tracking?.url || trans('No Tracking provided') }}
+                                        </a>
+                                    </div>
+                                </template>
+                                <template v-else>
+                                    <div class="text-gray-400 italic">
+                                        {{ trans('No Tracking available') }}
+                                    </div>
+                                </template>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div v-else class="mt-1 text-xs italic text-gray-400">
+                        {{ trans('No shipments') }}
+                    </div>
+                </div>
+            </div>
+
+
             <!-- Section: Shipment -->
-            <div v-if="summary.order_properties?.shipments?.length" class="flex itemcen gap-x-1 py-0.5">
-				<FontAwesomeIcon v-tooltip="trans('Shipments')" icon='fal fa-shipping-fast' class='text-gray-400 mt-1' fixed-width aria-hidden='true' />
-				<div class="group w-full overflow-x-auto border border-gray-200 rounded">
-					<!-- <div class="leading-4 text-base flex justify-between w-full py-1">
-						<div>{{ trans("Tracking numbers") }}</div>
-					</div> -->
+            <!--  <div v-if="summary.order_properties?.shipments?.length" class="flex itemcen gap-x-1 py-0.5">
+                <FontAwesomeIcon v-tooltip="trans('Shipments')" icon='fal fa-shipping-fast' class='text-gray-400 mt-1'
+                    fixed-width aria-hidden='true' />
+                <div class="group w-full overflow-x-auto border border-gray-200 rounded">
 
-					<!-- <div class="xmt-2 xoverflow-x-auto qwezxc"> -->
-						<table class="min-w-full divide-y divide-gray-200 ">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th scope="col" class="px-2.5 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        {{ trans("Shipper") }}
-                                    </th>
-                                    <th scope="col" class="px-2.5 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        {{ trans("Tracking Number") }}
-                                    </th>
-                                </tr>
-                            </thead>
+                    <table class="min-w-full divide-y divide-gray-200 ">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col"
+                                    class="px-2.5 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    {{ trans("Shipper") }}
+                                </th>
+                                <th scope="col"
+                                    class="px-2.5 py-1.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    {{ trans("Tracking Number") }}
+                                </th>
+                            </tr>
+                        </thead>
 
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                <tr v-for="(shipment, shipmentIdx) in summary.order_properties?.shipments" :key="shipmentIdx">
-                                    <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
-                                        {{ shipment.name }}
-                                    </td>
-                                    <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
-                                        <div v-if="shipment.tracking_urls && shipment.tracking_urls.length > 0">
-                                            <div v-for="(trackingItem, trackingIdx) in shipment.tracking_urls" :key="trackingIdx" class="mb-1 last:mb-0">
-                                                <a 
-                                                    :href="trackingItem.url" 
-                                                    target="_blank" 
-                                                    class="cursor-pointer text-blue-600 hover:text-blue-800 hover:underline"
-                                                    v-tooltip="trans('Click to track shipment')"
-                                                >
-                                                    {{ trackingItem.tracking }}
-                                                </a>
-                                            </div>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr v-for="(shipment, shipmentIdx) in summary.order_properties?.shipments"
+                                :key="shipmentIdx">
+                                <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                                    {{ shipment.name }}
+                                </td>
+                                <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                                    <div v-if="shipment.tracking_urls && shipment.tracking_urls.length > 0">
+                                        <div v-for="(trackingItem, trackingIdx) in shipment.tracking_urls"
+                                            :key="trackingIdx" class="mb-1 last:mb-0">
+                                            <a :href="trackingItem.url" target="_blank"
+                                                class="cursor-pointer text-blue-600 hover:text-blue-800 hover:underline"
+                                                v-tooltip="trans('Click to track shipment')">
+                                                {{ trackingItem.tracking }}
+                                            </a>
                                         </div>
-                                        <div v-else-if="shipment.tracking">
-                                            {{ shipment.tracking }}
-                                        </div>
-                                        <div v-else>
-                                            {{ trans("No tracking information") }}
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-					<!-- </div> -->
-				</div>
-			</div>
-
+                                    </div>
+                                    <div v-else-if="shipment.tracking">
+                                        {{ shipment.tracking }}
+                                    </div>
+                                    <div v-else>
+                                        {{ trans("No tracking information") }}
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+ -->
         </div>
 
         <div class="col-span-2 md:col-span-3 pt-3 md:pt-0 md:pl-3">
-            <div v-if="balance" class="border-b border-gray-200 pb-0.5 flex justify-between pl-1.5 pr-4 mb-1.5 xtext-amber-600">
+            <div v-if="balance"
+                class="border-b border-gray-200 pb-0.5 flex justify-between pl-1.5 pr-4 mb-1.5 xtext-amber-600">
                 <div class="">{{ trans("Current balance") }}:</div>
                 <div class="">
                     {{ locale.currencyFormat(summary.order_summary?.currency?.data?.code, balance ?? 0) }}
@@ -220,24 +271,20 @@ const isModalShippingAddress = ref(false)
             </div>
 
             <div class="border border-gray-200 p-2 rounded">
-                <OrderSummary
-                    :order_summary="summary.order_summary"
-                    :currency_code="summary.order_summary?.currency?.data?.code"
-                />
+                <OrderSummary :order_summary="summary.order_summary"
+                    :currency_code="summary.order_summary?.currency?.data?.code" />
             </div>
         </div>
 
 
 
         <!-- Section: Delivery address -->
-        <Modal v-if="address_management" :isOpen="isModalShippingAddress" @onClose="() => (isModalShippingAddress = false)" width="w-full max-w-4xl">
-            <AddressEditModal
-                :addresses="address_management.addresses"
-                :address="summary?.customer?.addresses?.delivery"
-                :updateRoute="address_management.address_update_route"
+        <Modal v-if="address_management" :isOpen="isModalShippingAddress"
+            @onClose="() => (isModalShippingAddress = false)" width="w-full max-w-4xl">
+            <AddressEditModal :addresses="address_management.addresses"
+                :address="summary?.customer?.addresses?.delivery" :updateRoute="address_management.address_update_route"
                 :address_modal_title="address_management.address_modal_title"
-                @onDone="() => (isModalShippingAddress = false)"
-            />
+                @onDone="() => (isModalShippingAddress = false)" />
         </Modal>
     </div>
 </template>
