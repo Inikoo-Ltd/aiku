@@ -21,7 +21,7 @@ const props = defineProps<{
     loading?: boolean
     isSuccess?: boolean
     isError?: boolean
-    rows?:Number|null
+    rows?: number|string
     inputName?: string
 }>()
 

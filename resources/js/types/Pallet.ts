@@ -199,6 +199,7 @@ export interface PDRNotes {
     textColor?: string
     color?: string
     lockMessage?: string
+    information?: string
     field: string  // customer_notes, public_notes, internal_notes
 }
 

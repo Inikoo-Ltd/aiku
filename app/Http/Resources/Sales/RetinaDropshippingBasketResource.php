@@ -19,13 +19,15 @@ class RetinaDropshippingBasketResource extends JsonResource
         $order          = $this;
 
         return [
-            'id'            => $order->id,
-            'reference'     => $order->reference,
-            'slug'          => $order->slug,
-            'state'         => $order->state->value,
-            'state_label'   => $order->state->labels()[$order->state->value],
-            'state_icon'    => $order->state->stateIcon()[$order->state->value],
-            'public_notes'  => $order->public_notes,
+            'id'                        => $order->id,
+            'reference'                 => $order->reference,
+            'slug'                      => $order->slug,
+            'state'                     => $order->state->value,
+            'state_label'               => $order->state->labels()[$order->state->value],
+            'state_icon'                => $order->state->stateIcon()[$order->state->value],
+            'customer_notes'            => $order->customer_notes,
+            'shipping_notes'            => $order->shipping_notes,
+            'public_notes'              => $order->public_notes,
         ];
     }
 }
