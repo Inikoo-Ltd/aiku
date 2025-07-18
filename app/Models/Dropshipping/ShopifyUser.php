@@ -72,6 +72,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property int|null $platform_id
  * @property int|null $customer_sales_channel_id
+ * @property string|null $shopify_shop_id
+ * @property string|null $shopify_fulfilment_service_id
+ * @property string|null $shopify_location_id
  * @property WebUserTypeEnum $state
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, \Osiset\ShopifyApp\Storage\Models\Charge> $charges

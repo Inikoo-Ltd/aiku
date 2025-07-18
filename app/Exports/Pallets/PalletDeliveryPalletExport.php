@@ -8,11 +8,8 @@
 
 namespace App\Exports\Pallets;
 
-use App\Enums\Fulfilment\Pallet\PalletStateEnum;
-use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletDelivery;
-use App\Models\Fulfilment\PalletStoredItem;
 use Maatwebsite\Excel\Concerns\Exportable;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
