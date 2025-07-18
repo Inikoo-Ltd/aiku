@@ -37,6 +37,18 @@ class ShowRetinaCatalogueProduct extends RetinaAction
 
         $title = $product->code;
 
+        $actions[] = [
+            'type'  => 'button',
+            'style' => 'create',
+            'label' => __('Portofolio'),
+            'key'   => 'portofolio',
+            'route' => [
+                'method'     => 'post',
+                'name'       => 'grp.models.refund.finalise',
+                'parameters' => []
+            ]
+        ];
+
         return Inertia::render(
             'Dropshipping/Product/Product',
             [
@@ -52,6 +64,7 @@ class ShowRetinaCatalogueProduct extends RetinaAction
                         'title' => $title
                     ],
                     'model' => __('Product'),
+                    'actions'       => $actions,
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,

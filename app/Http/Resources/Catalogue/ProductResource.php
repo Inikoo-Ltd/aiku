@@ -36,7 +36,8 @@ class ProductResource extends JsonResource
             'created_at'      => $product->created_at,
             'updated_at'      => $product->updated_at,
             'images'          => ImageResource::collection($product->images),
-            'image_thumbnail' => $product->imageSources(720, 480)
+            'image_thumbnail' => $product->imageSources(720, 480),
+            'stock'                     => $product->available_quantity,
         ];
     }
 }

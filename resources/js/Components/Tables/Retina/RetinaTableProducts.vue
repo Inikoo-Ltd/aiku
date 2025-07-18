@@ -18,9 +18,6 @@ import Icon from "@/Components/Icon.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import Tag from "@/Components/Tag.vue"
 import { Link } from "@inertiajs/vue3"
-import { notify } from "@kyvg/vue3-notification"
-import axios from "axios"
-import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
 library.add(fadExclamationTriangle, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle)
 
 
@@ -41,38 +38,8 @@ function productRoute(family): string {
 const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', retinaLayoutStructure)
 
-const productHasPortfolio = ref({
-    isLoading: false,
-    list: []
-});
 
-const fetchProductHasPortfolio = async () => {
-    console.log("Fetching product portfolio for channels...");
-    productHasPortfolio.value.isLoading = true;
-    try {
-        const apiUrl = route('retina.json.dropshipping.product_category.channels_list')
 
-        if (!apiUrl) {
-            throw new Error("Invalid model_type or missing route configuration");
-        }
-
-        const response = await axios.get(apiUrl);
-        productHasPortfolio.value.list = response.data || [];
-    } catch (error) {
-        console.error(error);
-        notify({
-            title: "Error",
-            text: "Failed to load product portfolio.",
-            type: "error"
-        });
-    } finally {
-        productHasPortfolio.value.isLoading = false;
-    }
-};
-
-onMounted(() => {
-        fetchProductHasPortfolio();
-});
 
 </script>
 
@@ -81,7 +48,7 @@ onMounted(() => {
 
         <template #cell(image)="{ item: product }">
             <div class="overflow-hidden w-10 h-10">
-                <Image :src="product.image" :alt="product.name" />
+                <Image :src="product.images.thumbnail" :alt="product.name" />
             </div>
         </template>
 
@@ -126,16 +93,6 @@ onMounted(() => {
             <div>
                 {{ locale.currencyFormat(item.currency_code, item.customer_price) }}
             </div>
-        </template>
-
-         <template #cell(actions)="{ item }">
-            {{ productHasPortfolio.list }}
-           <ButtonAddPortfolio 
-           :product="item" 
-           :productHasPortfolio="productHasPortfolio.list[item.id]"
-           :routeToAllPortfolios="{name : 'retina.models.portfolio.store_to_all_channels', parameters : null}"
-           :routeToSpecificChannel="{name : 'retina.models.portfolio.store_to_multi_channels', parameters : null}"
-           />
         </template>
 
     </Table>
