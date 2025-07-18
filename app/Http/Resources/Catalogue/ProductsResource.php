@@ -77,7 +77,8 @@ class ProductsResource extends JsonResource
             'customers_invoiced_all'    => $this->customers_invoiced_all,
             'invoices_all'              => $this->invoices_all,
             'sales_all'                 => $this->sales_all,
-            'currency_code'             => $this->currency_code
+            'currency_code'             => $this->currency_code,    
+            'stock'                     => $this->available_quantity,
         ];
     }
 }
