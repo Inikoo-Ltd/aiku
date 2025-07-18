@@ -161,7 +161,7 @@ console.log(props)
                         v-html="data?.product?.data?.description_extra ?? '-'"></dd>
                 </div>
 
-                <ProductContentsIris :product="props.data.product" :setting="{
+                <ProductContentsIris :product="props.data.product.data" :setting="{
                     product_specs: true, faqs: false
                 }" :styleData="{}" :full-width="true" />
             </dl>

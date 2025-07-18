@@ -68,7 +68,7 @@ const openDisclosureId = ref<number | null>(null)
                 <template v-for="content in faqContents" :key="content.id">
                     <div class="relative hover:bg-gray-50 rounded transition">
                         <div @click="openDisclosureId = openDisclosureId === content.id ? null : content.id"  :style="getStyles(styleData?.title)"
-                            class="w-full sm:w-7/12 mb-1 border-b border-gray-400 font-bold text-gray-800 py-1 flex justify-between items-center cursor-pointer">
+                            class="w-full mb-1 border-b border-gray-400 font-bold text-gray-800 py-1 flex justify-between items-center cursor-pointer"  :class="fullWidth ? 'w-full' : 'sm:w-7/12'">
                             <div v-html="content.title"></div>
                             <div class="flex items-center gap-4">
                                 <FontAwesomeIcon :icon="faChevronDown"
