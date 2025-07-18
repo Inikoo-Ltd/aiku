@@ -93,6 +93,7 @@ class UpdateOrder extends OrgAction
 
             'in_warehouse_at'     => ['sometimes', 'date'],
             'delivery_address_id' => ['sometimes', Rule::exists('addresses', 'id')],
+            'customer_notes'      => ['sometimes', 'nullable', 'string', 'max:4000'],
             'public_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
             'internal_notes'      => ['sometimes', 'nullable', 'string', 'max:4000'],
             'state'               => ['sometimes', Rule::enum(OrderStateEnum::class)],

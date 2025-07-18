@@ -137,7 +137,7 @@ const currentAction = ref(null);
 
 
 
-const noteToSubmit = ref(props.data.data.public_notes)
+const noteToSubmit = ref(props.data.data.customer_notes)
 const recentlySuccessNote = ref(false)
 const recentlyErrorNote = ref(false)
 const isLoadingNote = ref(false)
@@ -145,7 +145,7 @@ const onSubmitNote = async () => {
     try {
         isLoadingNote.value = true
         await axios.patch(route(props.routes.update_route.name, props.routes.update_route.parameters), {
-            public_notes: noteToSubmit.value
+            customer_notes: noteToSubmit.value
         })
 
 

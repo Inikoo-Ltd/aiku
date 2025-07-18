@@ -38,7 +38,7 @@ class UpdateRetinaOrder extends RetinaAction
     public function rules(): array
     {
         return [
-            'public_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'customer_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
         ];
     }
 
