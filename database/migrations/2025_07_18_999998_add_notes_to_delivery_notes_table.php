@@ -1,0 +1,38 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        Schema::table('delivery_notes', function (Blueprint $table) {
+            $table->text('customer_notes')->nullable();
+            $table->text('public_notes')->nullable();
+            $table->text('internal_notes')->nullable();
+            $table->text('shipping_notes')->nullable();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        Schema::table('delivery_notes', function (Blueprint $table) {
+            $table->dropColumn('customer_notes');
+            $table->dropColumn('public_notes');
+            $table->dropColumn('internal_notes');
+            $table->dropColumn('shipping_notes');
+        });
+    }
+};
