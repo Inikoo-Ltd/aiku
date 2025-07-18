@@ -68,6 +68,28 @@ class ShowRetinaDepartment extends RetinaAction
                     'current'    => $this->tab,
                     'navigation' => RetinaDepartmentTabsEnum::navigation()
                 ],
+                'actions' => [
+                        [
+                            'route' => [
+                                'name' => 'retina.models.portfolio.store_to_multi_channels',
+                                'parameters' => [
+                                    'family' => $department->id
+                                ]
+                            ],
+                            'type' => 'button',
+                            'style' => 'create',
+                            'label' => __('to Portfolio'),
+                        ]
+                        ],
+                "data" => [
+                    'showcase' => $department->id,
+                    'products' => ProductsResource::collection(
+                        IndexRetinaProductsInCatalogue::run(
+                            parent: $department,
+                            prefix: RetinaDepartmentTabsEnum::PRODUCTS->value
+                        )
+                    ),
+                ],
 
                 RetinaDepartmentTabsEnum::SHOWCASE->value => $this->tab == RetinaDepartmentTabsEnum::SHOWCASE->value ?
                     fn () => GetProductCategoryShowcase::run($department)
