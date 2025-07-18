@@ -99,7 +99,7 @@ const fallbackColor = '#374151'  // Color
 
                 <!-- Icon: Lock -->
                 <div v-else v-tooltip="noteData.lockMessage || trans('This note is not editable')" class="h-5 flex items-center cursor-not-allowed">
-                    <FontAwesomeIcon icon='fas fa-lock' class='text-gray-400' fixed-width aria-hidden='true' />
+                    <FontAwesomeIcon icon='fas fa-lock' class='text-black/50' fixed-width aria-hidden='true' />
                 </div>
             </div>
         </div>
