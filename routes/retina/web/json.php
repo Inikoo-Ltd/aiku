@@ -29,5 +29,5 @@ Route::get('dropshipping/{customerSalesChannel:id}/portfolio-images-zip', Downlo
 
 Route::get('dropshipping/{product:id}/channels_list', GetRetinaPortfoliosInProduct::class)->name('dropshipping.product.channels_list');
 
-Route::get('customer/{customer:id}/product-category/{productCategory:id}/channels', GetRetinaCustomerProductCategorySalesChannelIds::class)->name('product_category.channel_ids.index');
+Route::get('product-category/{productCategory:id}/channels', GetRetinaCustomerProductCategorySalesChannelIds::class)->name('product_category.channel_ids.index');
 
