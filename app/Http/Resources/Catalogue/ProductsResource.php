@@ -9,6 +9,7 @@
 namespace App\Http\Resources\Catalogue;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Http\Resources\Helpers\ImageResource;
 
 /**
  * @property string $slug
@@ -72,10 +73,15 @@ class ProductsResource extends JsonResource
             'current_historic_asset_id' => $this->current_historic_asset_id,
             'asset_id'                  => $this->asset_id,
             'available_quantity'        => $this->available_quantity,
+            'gross_weight'              => $this->gross_weight,
+            'rrp'                       => $this->rrp,
             'customers_invoiced_all'    => $this->customers_invoiced_all,
             'invoices_all'              => $this->invoices_all,
             'sales_all'                 => $this->sales_all,
-            'currency_code'             => $this->currency_code
+            'currency_code'             => $this->currency_code,    
+            'stock'                     => $this->available_quantity,
+            'images'                    => ImageResource::collection($this->images),
+            'image_thumbnail'           => $this->imageSources(720, 480),
         ];
     }
 }

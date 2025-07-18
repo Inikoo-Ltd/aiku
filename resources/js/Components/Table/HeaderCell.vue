@@ -48,6 +48,7 @@ const isCellNumber = () => {
 </script>
 
 <template>
+
     <!-- <pre>{{ cell?.icon }}</pre> -->
     <th v-show="!cell?.hidden" class="font-normal"
         :class="[
@@ -64,8 +65,8 @@ const isCellNumber = () => {
                     <!-- Label: object -->
                     <div v-if="typeof cell?.label === 'object'">
                         <FontAwesomeIcon
-                            v-if="cell?.icon || cell?.label.type === 'icon'"
-                            :icon="cell?.icon || cell?.label.data"
+                            v-if="cell?.icon || cell?.type === 'icon'"
+                            :icon="cell?.icon || cell?.label.data || cell?.label"
                             v-tooltip="capitalize(cell?.label.tooltip)"
                             aria-hidden="true"
                             size="lg"

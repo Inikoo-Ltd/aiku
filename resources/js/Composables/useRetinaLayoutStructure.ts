@@ -58,6 +58,7 @@ export const retinaLayoutStructure = {
         email: string,
         username: string,
         notifications: Notification[]
+        customerSalesChannels : any
     },
     
 }

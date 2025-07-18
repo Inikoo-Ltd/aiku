@@ -13,6 +13,7 @@ import { faEllipsisV } from '@fas'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { ChannelLogo } from '@/Composables/Icon/ChannelLogoSvg'
+import { routeType } from '@/types/route'
 
 
 interface ProductResource {
@@ -36,8 +37,19 @@ interface ProductResource {
 const props = withDefaults(defineProps<{
     product: ProductResource
     productHasPortfolio?: number[]
+    routeToAllPortfolios?: routeType
+    routeToSpecificChannel?: routeType
+
 }>(), {
-    productHasPortfolio: () => []
+    productHasPortfolio: () => [],
+    routeToAllPortfolios : {
+        name: 'iris.models.all_channels.portfolio.store',
+        parameters: {}
+    },
+    routeToSpecificChannel : {
+        name: 'iris.models.multi_channels.portfolio.store',
+        parameters: {}
+    }
 })
 
 const emits = defineEmits<{
@@ -52,7 +64,7 @@ const isLoadingAllPortfolios = ref(false)
 const onAddToAllPortfolios = (product: ProductResource) => {
     // Section: Submit
     router.post(
-        route('iris.models.all_channels.portfolio.store'),
+        route(props.routeToAllPortfolios.name, props.routeToAllPortfolios.parameters),
         {
             item_id: [product.id]
         },
@@ -98,7 +110,7 @@ const onAddPortfoliosSpecificChannel = (product: ProductResource, channel: any) 
     console.log(`Adding product with ID ${product.id} to portfolio for channel ID ${channelId}`)
 
     router.post(
-        route('iris.models.multi_channels.portfolio.store'),
+        route(props.routeToSpecificChannel.name, props.routeToSpecificChannel.parameters),
         {
             customer_sales_channel_ids: [channelId],
             item_id: [product.id]
