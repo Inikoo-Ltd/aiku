@@ -39,6 +39,7 @@ class UpdateRetinaOrder extends RetinaAction
     {
         return [
             'customer_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'delivery_instructions' => ['sometimes', 'nullable', 'string', 'max:4000'],
         ];
     }
 
