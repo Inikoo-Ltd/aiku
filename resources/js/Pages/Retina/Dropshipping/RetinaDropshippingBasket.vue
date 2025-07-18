@@ -138,7 +138,7 @@ const currentAction = ref(null);
 
 
 const noteToSubmit = ref(props?.data?.data?.customer_notes || '')
-const deliveryInstructions = ref(props?.data?.data?.delivery_instructions || '')
+const deliveryInstructions = ref(props?.data?.data?.shipping_notes || '')
 const recentlySuccessNote = ref<string[]>([])
 const recentlyErrorNote = ref(false)
 const isLoadingNote = ref<string[]>([])
@@ -169,7 +169,7 @@ const onSubmitNote = async (key_in_db: string, value: string) => {
     }
 }
 const debounceSubmitNote = debounce(() => onSubmitNote('customer_notes', noteToSubmit.value), 800)
-const debounceDeliveryInstructions = debounce(() => onSubmitNote('delivery_instructions', deliveryInstructions.value), 800)
+const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes', deliveryInstructions.value), 800)
 
 
 
@@ -307,8 +307,8 @@ console.log('basket ds', props)
                 xkeydown.enter="() => onSubmitNote(closed)"
                 rows="4"
                 :disabled="!is_in_basket"
-                :loading="isLoadingNote.includes('delivery_instructions')"
-                :isSuccess="recentlySuccessNote.includes('delivery_instructions')"
+                :loading="isLoadingNote.includes('shipping_notes')"
+                :isSuccess="recentlySuccessNote.includes('shipping_notes')"
                 :isError="recentlyErrorNote"
                 xclass="mb-2"
             />
