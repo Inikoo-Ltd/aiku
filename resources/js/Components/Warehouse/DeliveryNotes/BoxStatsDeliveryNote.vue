@@ -80,7 +80,7 @@ const props = defineProps<{
 		state: string
 	}
 	platform: {
-		logo : String
+		logo: String
 		name: String
 	}
 	updateRoute: routeType
@@ -166,22 +166,22 @@ const listError = inject('listError', {})
 
 const base64ToPdf = (base: string) => {
 	// Convert base64 to byte array
-	const byteCharacters = atob(base);
-	const byteNumbers = Array.from(byteCharacters, char => char.charCodeAt(0));
-	const byteArray = new Uint8Array(byteNumbers);
+	const byteCharacters = atob(base)
+	const byteNumbers = Array.from(byteCharacters, char => char.charCodeAt(0))
+	const byteArray = new Uint8Array(byteNumbers)
 
 	// Create a Blob and generate object URL
-	const blob = new Blob([byteArray], { type: 'application/pdf' });
-	const blobUrl = URL.createObjectURL(blob);
+	const blob = new Blob([byteArray], { type: 'application/pdf' })
+	const blobUrl = URL.createObjectURL(blob)
 
 	// Create a temporary link to trigger download
-	const link = document.createElement('a');
-	link.href = blobUrl;
-	link.download = 'file.pdf';
-	link.click();
+	const link = document.createElement('a')
+	link.href = blobUrl
+	link.download = 'file.pdf'
+	link.click()
 
 	// Clean up the object URL
-	URL.revokeObjectURL(blobUrl);
+	URL.revokeObjectURL(blobUrl)
 }
 
 // Section: Print Shipment
@@ -224,10 +224,24 @@ const onPrintShipment = async (ship) => {
 <template>
 	<div class="grid grid-cols-2 lg:grid-cols-4 xdivide-x xdivide-gray-300 border-b border-gray-200">
 		<BoxStatPallet class="py-2 px-3 border-r border-gray-200" icon="fal fa-user">
+
+
+			<div v-if="boxStats?.order" class="text-sm mt-1 flex items-center w-full flex-none justify-between">
+				<Link :href="route(boxStats?.order?.route?.name, boxStats?.order?.route?.parameters)"
+					class="flex items-center gap-3 gap-x-1.5 primaryLink cursor-pointer">
+				<dt class="flex-none">
+					<FontAwesomeIcon icon='fal fa-shopping-cart' fixed-width aria-hidden='true' class="text-gray-500" />
+				</dt>
+				<dd class="text-gray-500 " v-tooltip="trans('Order')">
+					{{ boxStats?.order?.reference }}
+				</dd>
+				</Link>
+			</div>
+
 			<!-- Field: Reference Number -->
 			<Link as="a" v-if="boxStats?.customer.reference"
 				:href="route(boxStats?.customer.route.name, boxStats?.customer.route.parameters)"
-				class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
+				class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer secondaryLink">
 			<dt v-tooltip="'Company name'" class="flex-none">
 				<FontAwesomeIcon icon="fal fa-id-card-alt" class="text-gray-400" fixed-width aria-hidden="true" />
 			</dt>
@@ -284,6 +298,10 @@ const onPrintShipment = async (ship) => {
 				</span>
 			</div>
 
+
+		</BoxStatPallet>
+		<BoxStatPallet class="py-2 px-3 border-r border-gray-200" icon="fal fa-user">
+
 			<!-- Field: Address + Customer (icons di luar box) -->
 			<div v-if="boxStats?.delivery_address" class="w-full space-y-3 text-sm text-gray-700 mt-2">
 
@@ -295,30 +313,36 @@ const onPrintShipment = async (ship) => {
 
 
 
-					<FontAwesomeIcon icon="fal fa-shipping-fast" class="text-gray-400 text-base mt-[2px]" fixed-width />
+					<!-- <FontAwesomeIcon icon="fal fa-shipping-fast" class="text-gray-400 text-base mt-[2px]" fixed-width /> -->
 
 					<!-- Box konten -->
-					<div class="flex-1 bg-gray-50 border border-gray-300 rounded-lg p-2 space-y-0.5">
-						<p class="font-medium">Shipping Info</p>
+					<div class="flex-1 xbg-gray-50 xborder border-gray-300 rounded-lg xp-2 space-y-0.5">
+						<p class="xfont-medium">Shipping Info</p>
+
+						<div class="border border-gray-300 p-4 rounded-lg">
+
+							<div v-if="boxStats.customer_client" class="mb-3">
+								<div class="xtext-xs text-gray-600 leading-snug">
+									<div><strong>Name:</strong> {{ boxStats.customer_client.contact_name ||
+										boxStats.customer_client.name }}
+									</div>
+									<div v-if="boxStats.customer_client.email"><strong>Email:</strong> {{
+										boxStats.customer_client.email }}
+									</div>
+									<div v-if="boxStats.customer_client.phone"><strong>Phone:</strong> {{
+										boxStats.customer_client.phone }}
+									</div>
+								</div>
 
 
-                        <div v-if="boxStats.customer_client" class="mb-3">
-                            <div class="text-xs text-gray-600 leading-snug">
-                                <div><strong>Name:</strong> {{ boxStats.customer_client.contact_name || boxStats.customer_client.name }}
-                                </div>
-                                <div v-if="boxStats.customer_client.email"><strong>Email:</strong> {{ boxStats.customer_client.email }}
-                                </div>
-                                <div v-if="boxStats.customer_client.phone"><strong>Phone:</strong> {{ boxStats.customer_client.phone }}
-                                </div>
-                            </div>
-
-
-                        </div>
+							</div>
 
 
 
-						<div v-html="boxStats.delivery_address.formatted_address"
-							class="text-xs text-gray-600 leading-snug"></div>
+							<div v-html="boxStats.delivery_address.formatted_address"
+								class="xtext-xs text-gray-600 leading-snug"></div>
+						</div>
+
 					</div>
 				</div>
 			</div>
@@ -329,7 +353,7 @@ const onPrintShipment = async (ship) => {
 		<BoxStatPallet class="py-2.5 pl-2.5 pr-3 border-r border-gray-200" icon="fal fa-user">
 			<template v-if="boxStats?.picker?.contact_name">
 				<div v-tooltip="trans('Picker name')"
-					class="border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
+					class=" text-sm border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
 					<dt class="flex-none">
 						{{ trans("Picker") }}:
 					</dt>
@@ -339,54 +363,41 @@ const onPrintShipment = async (ship) => {
 				</div>
 				<div class="border-t border-gray-300 w-full" />
 			</template>
-			<template v-if="boxStats?.order">
-				<div class="mt-1 flex items-center w-full flex-none justify-between">
-					<Link :href="route(boxStats?.order?.route?.name, boxStats?.order?.route?.parameters)"
-						class="flex items-center gap-3 gap-x-1.5 primaryLink cursor-pointer">
+
+			<div class="text-sm">
+				<!-- Current State -->
+				<div xv-tooltip="trans('Current progress')" class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
 					<dt class="flex-none">
-						<FontAwesomeIcon icon='fal fa-shopping-cart' fixed-width aria-hidden='true'
-							class="text-gray-500" />
+						<!-- <FontAwesomeIcon
+							icon="fal fa-weight"
+							fixed-width
+							aria-hidden="true"
+							class="text-gray-500" /> -->
+						<Icon :data="boxStats?.state_icon" />
 					</dt>
-					<dd class="text-gray-500 " v-tooltip="trans('Order')">
-						{{ boxStats?.order?.reference }}
+					<dd class="text-gray-500">
+						{{ boxStats.state_label }}
 					</dd>
-					</Link>
 				</div>
-			</template>
-			<!-- Current State -->
-			<div xv-tooltip="trans('Current progress')" class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
-				<dt class="flex-none">
-					<!-- <FontAwesomeIcon
-						icon="fal fa-weight"
-						fixed-width
-						aria-hidden="true"
-						class="text-gray-500" /> -->
-					<Icon :data="boxStats?.state_icon" />
-				</dt>
-				<dd class="text-gray-500">
-					{{ boxStats.state_label }}
-				</dd>
-			</div>
-
-			<!-- Weight -->
-			<div v-tooltip="trans('Estimated weight of all products')"
-				class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
-				<dt class="flex-none">
-					<FontAwesomeIcon icon="fal fa-weight" fixed-width aria-hidden="true" class="text-gray-500" />
-				</dt>
-				<dd class="text-gray-500">
-					{{ locale.number(boxStats?.products.estimated_weight) || '-' }} kilograms
-				</dd>
-			</div>
-
-			<!-- Total Items -->
-			<div v-tooltip="trans('Total items')" class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
-				<dt class="flex-none">
-					<FontAwesomeIcon icon="fal fa-cube" fixed-width aria-hidden="true" class="text-gray-500" />
-				</dt>
-				<dd class="text-gray-500">
-					{{ locale.number(boxStats.products?.number_items || 0) }} items
-				</dd>
+				<!-- Weight -->
+				<div v-tooltip="trans('Estimated weight of all products')"
+					class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
+					<dt class="flex-none">
+						<FontAwesomeIcon icon="fal fa-weight" fixed-width aria-hidden="true" class="text-gray-500" />
+					</dt>
+					<dd class="text-gray-500">
+						{{ locale.number(boxStats?.products.estimated_weight) || '-' }} kilograms
+					</dd>
+				</div>
+				<!-- Total Items -->
+				<div v-tooltip="trans('Total items')" class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
+					<dt class="flex-none">
+						<FontAwesomeIcon icon="fal fa-cube" fixed-width aria-hidden="true" class="text-gray-500" />
+					</dt>
+					<dd class="text-gray-500">
+						{{ locale.number(boxStats.products?.number_items || 0) }} items
+					</dd>
+				</div>
 			</div>
 
 			<!-- Section: Parcels -->
@@ -394,8 +405,8 @@ const onPrintShipment = async (ship) => {
 				:class="listError.box_stats_parcel ? 'errorShake' : ''">
 				<FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='mt-1 text-gray-400' fixed-width
 					aria-hidden='true' />
-				<div class="group w-full">
-					<div class="leading-4 text-base flex justify-between w-full py-1">
+				<div class=" text-sm group w-full">
+					<div class="leading-4 xtext-base flex justify-between w-full py-1">
 						<div>{{ trans("Parcels") }} ({{ boxStats?.parcels?.length ?? 0 }})</div>
 
 						<!-- Can't edit Parcels if Shipment has set AND already dispatched-->
@@ -420,9 +431,9 @@ const onPrintShipment = async (ship) => {
 						</template>
 					</div>
 
-					<ul v-if="boxStats?.parcels?.length" class="list-disc pl-4">
+					<ul v-if="boxStats?.parcels?.length" class="list-disc pl-4 ">
 						<li v-for="(parcel, parcelIdx) in boxStats?.parcels" :key="parcelIdx"
-							class="text-sm tabular-nums">
+							class="xtext-sm tabular-nums">
 							<span class="truncate">
 								{{ parcel.weight }} kg
 							</span>
@@ -442,14 +453,14 @@ const onPrintShipment = async (ship) => {
 				<FontAwesomeIcon v-tooltip="trans('Shipments')" icon='fal fa-shipping-fast' class='text-gray-400'
 					fixed-width aria-hidden='true' />
 				<div class="group w-full">
-					<div class="leading-4 text-base flex justify-between w-full py-1">
+					<div class="leading-4 xtext-base flex justify-between w-full py-1">
 						<div>{{ trans("Shipments") }} ({{ boxStats.shipments?.length ?? 0 }})</div>
 
 					</div>
 
 					<ul v-if="boxStats.shipments" class="list-disc pl-4">
 						<li v-for="(sments, shipmentIdx) in boxStats.shipments" :key="shipmentIdx"
-							class="hover:bg-gray-100 text-sm tabular-nums">
+							class="hover:bg-gray-100 xtext-sm tabular-nums">
 							<div class="flex justify-between">
 								<a v-if="sments.combined_label_url" v-tooltip="trans('Click to open file')"
 									target="_blank" :href="sments.combined_label_url" class="">
@@ -539,7 +550,7 @@ const onPrintShipment = async (ship) => {
 					</div>
 
 					<!--  -->
-					<div class="grid gap-y-1 max-h-64 overflow-y-auto pr-2">
+					<div class="text-sm grid gap-y-1 max-h-64 overflow-y-auto pr-2">
 						<!-- {{parcelsCopy.length}} xx {{ boxStats.parcels.length }} -->
 						<TransitionGroup v-if="parcelsCopy?.length" name="list">
 							<div v-for="(parcel, parcelIndex) in parcelsCopy" :key="parcelIndex"
