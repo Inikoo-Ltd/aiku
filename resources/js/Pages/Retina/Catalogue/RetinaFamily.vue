@@ -22,6 +22,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import { capitalize } from "@/Composables/capitalize"
 import RetinaFamilyShowcase from "@/Components/Showcases/Retina/Catalouge/RetinaFamilyShowcase.vue"
 import RetinaTableProducts from "@/Components/Tables/Retina/RetinaTableProducts.vue"
+import ButtonAddCategoryToPortfolio from "@/Components/Iris/Products/ButtonAddCategoryToPortfolio.vue"
 
 library.add(
     faFolder,
@@ -44,6 +45,7 @@ const props = defineProps<{
     }
     showcase: object
     products: object
+    data: object
 
 
 }>()
@@ -60,12 +62,18 @@ const component = computed(() => {
     }
     return components[currentTab.value] ?? ModelDetails
 })
+console.log("RetinaFamily.vue", props.data)
 </script>
 
 <template>
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
+        <template #button-to-portfolio>
+            <ButtonAddCategoryToPortfolio :products="data.products.data" :categoryId="data.showcase"
+                :routeGetCategoryChannels="{ name: 'retina.json.product_category.channel_ids.index', parameters: { productCategory: data.showcase } }"
+                :routeAddPortfolios="{ name: 'retina.models.portfolio.store_to_multi_channels', parameters: { productCategory: data.showcase } }" />
+        </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
     <component :is="component" :data="props[currentTab]" :tab="currentTab" />

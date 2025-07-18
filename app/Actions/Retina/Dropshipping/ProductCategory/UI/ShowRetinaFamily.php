@@ -56,10 +56,32 @@ class ShowRetinaFamily extends RetinaAction
                         'title' => __('family')
                     ],
                     'iconRight' => $family->state->stateIcon()[$family->state->value],
+                    'actions' => [
+                        [
+                            'route' => [
+                                'name' => 'retina.models.portfolio.store_to_multi_channels',
+                                'parameters' => [
+                                    'family' => $family->id
+                                ]
+                            ],
+                            'type' => 'button',
+                            'style' => 'create',
+                            'label' => __('to Portfolio'),
+                        ]
+                    ]
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => RetinaFamilyTabsEnum::navigation()
+                ],
+                "data" => [
+                    'showcase' => $family->id,
+                    'products' => ProductsResource::collection(
+                        IndexRetinaProductsInCatalogue::run(
+                            parent: $family,
+                            prefix: RetinaFamilyTabsEnum::PRODUCTS->value
+                        )
+                    ),
                 ],
 
                 RetinaFamilyTabsEnum::SHOWCASE->value => $this->tab == RetinaFamilyTabsEnum::SHOWCASE->value ?
