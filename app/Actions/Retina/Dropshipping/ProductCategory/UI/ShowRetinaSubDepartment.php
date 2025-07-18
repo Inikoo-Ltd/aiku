@@ -84,10 +84,7 @@ class ShowRetinaSubDepartment extends RetinaAction
                 "data" => [
                     'showcase' => $subDepartment->id,
                     'products' => ProductsResource::collection(
-                        IndexRetinaProductsInCatalogue::run(
-                            parent: $subDepartment,
-                            prefix: RetinaSubDepartmentTabsEnum::PRODUCTS->value
-                        )
+                        IndexRetinaProductsInCatalogue::run($subDepartment)
                     ),
                 ],
 
