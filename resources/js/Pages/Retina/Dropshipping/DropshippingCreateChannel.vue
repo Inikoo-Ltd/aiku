@@ -393,9 +393,9 @@ const isModalEbayDuplicate = ref(false)
                 </div>
 
                 <div class="w-full flex justify-end">
-
+                    
                     <Button
-                        v-if="layout?.app?.environment === 'local'"
+                        v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
                         :label="trans('Connect')"
                         xtype="primary"
                         :type="total_channels?.ebay ? 'tertiary' : 'primary'"
