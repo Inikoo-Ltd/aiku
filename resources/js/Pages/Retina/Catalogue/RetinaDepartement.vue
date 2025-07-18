@@ -82,7 +82,6 @@ const component = computed(() => {
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-         <PageHeading :data="pageHead">
          <template #button-to-portfolio>
             <ButtonAddCategoryToPortfolio :products="data.products.data" :categoryId="data.showcase"
                 :routeGetCategoryChannels="{ name: 'retina.json.product_category.channel_ids.index', parameters: { productCategory: data.showcase } }"
