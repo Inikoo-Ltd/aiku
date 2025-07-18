@@ -50,8 +50,7 @@ class ShowIrisWebpage
                 webpage: $webpage,
                 parentPaths: $parentPaths
             ),
-            'meta'           => $webpage->seo_data,
-            'script_website' => Arr::get($webpage->website->settings, 'script_website.header'),
+            'webpage'        => $webpage,
             'web_blocks'     => $webBlocks,
         ];
     }

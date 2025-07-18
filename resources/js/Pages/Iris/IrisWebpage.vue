@@ -20,8 +20,8 @@ const props = defineProps<{
     image: string,
     structured_data: JSON
   },
+  webpage : any
   web_blocks: any,
-  script_website : any
 }>()
 defineOptions({ layout: LayoutIris })
 library.add(faCheck, faPlus, faMinus)
@@ -67,7 +67,7 @@ onMounted(() => {
   // Inject structured data as script
   const script = document.createElement('script')
   script.type = 'application/ld+json'
-  let structuredData = props.meta.structured_data
+  let structuredData = props.webpage.structured_data
 
   if (typeof structuredData !== 'string') {
     try {
@@ -97,20 +97,22 @@ onBeforeUnmount(() => {
 
 const layout: any = inject("layout", {});
 
+console.log(props)
+
 </script>
 
 <template>
  <Head>
-  <title>{{ meta.meta_title }}</title>
-    <meta name="description" :content="meta.meta_description" />
+  <title>{{ webpage.title }}</title>
+    <meta name="description" :content="webpage.description" />
     <meta property="og:type" content="website" />
-    <meta property="og:title" :content="meta.meta_title" />
-    <meta property="og:description" :content="meta.meta_description" />
+    <meta property="og:title" :content="webpage.title" />
+    <meta property="og:description" :content="webpage.description" />
     <meta property="og:url" :content="currentUrl" />
-    <meta property="og:image" :content="meta?.image?.png" />
-    <meta property="og:image:alt" :content="meta.meta_title" />
+    <meta property="og:image" :content="webpage?.image?.png" />
+    <meta property="og:image:alt" :content="webpage.title" />
     <meta property="og:locale" content="en_US" />
-    <meta property="og:site_name" :content="meta.meta_title" />>
+    <meta property="og:site_name" :content="webpage.title" />>
 </Head>
 
 
