@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Webpage\Iris;
 
+use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
@@ -42,7 +43,10 @@ class ShowIrisWebpage
             webBlocks: Arr::get($webPageLayout, 'web_blocks', []),
             isLoggedIn: auth()->check()
         );
-
+        $webpageImg = [];
+        if($webpage->seoImage) {
+            $webpageImg = GetImgProxyUrl::run($webpage->seoImage->extension('png'));
+        }
 
         return [
             'status'         => 'ok',
@@ -51,6 +55,7 @@ class ShowIrisWebpage
                 parentPaths: $parentPaths
             ),
             'webpage'        => $webpage,
+            'webpage_img'    => $webpageImg,
             'web_blocks'     => $webBlocks,
         ];
     }
