@@ -45,7 +45,7 @@ class ShowIrisWebpage
         );
         $webpageImg = [];
         if($webpage->seoImage) {
-            $webpageImg = GetImgProxyUrl::run($webpage->seoImage->extension('png'));
+            $webpageImg = $webpage->imageSources(1200, 1200, 'seoImage');
         }
 
         return [
