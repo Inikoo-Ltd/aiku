@@ -9,6 +9,7 @@
 namespace App\Enums;
 
 use App\Models\Catalogue\Collection;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\PalletDelivery;
@@ -17,7 +18,7 @@ use App\Models\SysAdmin\User;
 
 trait HasTabsWithQuantity
 {
-    public static function navigation(PalletReturn|PalletDelivery|Collection|Pallet|FulfilmentCustomer|User $parent): array
+    public static function navigation(PalletReturn|PalletDelivery|Collection|Pallet|FulfilmentCustomer|User|ProductCategory $parent): array
     {
         return collect(self::cases())->mapWithKeys(function ($case) use ($parent) {
             return  [$case->value => $case->blueprint($parent)];

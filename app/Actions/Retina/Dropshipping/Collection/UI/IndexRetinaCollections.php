@@ -4,6 +4,7 @@ namespace App\Actions\Retina\Dropshipping\Collection\UI;
 
 use App\Actions\Retina\Dropshipping\Catalogue\ShowRetinaCatalogue;
 use App\Actions\RetinaAction;
+use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Http\Resources\Catalogue\CollectionsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Collection;
@@ -34,6 +35,7 @@ class IndexRetinaCollections extends RetinaAction
         });
 
         $queryBuilder = QueryBuilder::for(Collection::class);
+        $queryBuilder->where('collections.state', CollectionStateEnum::ACTIVE);
         if($parent instanceof Shop) {
             $queryBuilder->where('collections.shop_id', $parent->id);
         } elseif($parent instanceof ProductCategory){

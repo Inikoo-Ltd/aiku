@@ -66,7 +66,7 @@ class ShowRetinaDepartment extends RetinaAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => RetinaDepartmentTabsEnum::navigation()
+                    'navigation' => RetinaDepartmentTabsEnum::navigation($department)
                 ],
                 'actions' => [
                         [

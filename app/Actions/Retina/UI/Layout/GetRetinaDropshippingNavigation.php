@@ -70,6 +70,14 @@ class GetRetinaDropshippingNavigation
                             ]
                         ],
                         [
+                            'label' => __('Collections'),
+                            'icon'  => ['far', 'fa-album-collection'],
+                            'root'  => 'retina.catalogue.collections.',
+                            'route' => [
+                                'name' => 'retina.catalogue.collections.index'
+                            ]
+                        ],
+                        [
                             'label' => __('Families'),
                             'icon'  => ['far', 'fa-folder'],
                             'root'  => 'retina.catalogue.families.',
@@ -83,14 +91,6 @@ class GetRetinaDropshippingNavigation
                             'root'  => 'retina.catalogue.products.',
                             'route' => [
                                 'name' => 'retina.catalogue.products.index'
-                            ]
-                        ],
-                        [
-                            'label' => __('Collections'),
-                            'icon'  => ['far', 'fa-album-collection'],
-                            'root'  => 'retina.catalogue.collections.',
-                            'route' => [
-                                'name' => 'retina.catalogue.collections.index'
                             ]
                         ],
                     ]

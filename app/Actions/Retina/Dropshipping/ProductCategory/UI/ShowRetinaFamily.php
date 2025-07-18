@@ -72,7 +72,7 @@ class ShowRetinaFamily extends RetinaAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => RetinaFamilyTabsEnum::navigation()
+                    'navigation' => RetinaFamilyTabsEnum::navigation($family)
                 ],
                 "data" => [
                     'showcase' => $family->id,

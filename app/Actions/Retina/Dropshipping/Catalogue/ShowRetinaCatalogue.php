@@ -128,7 +128,7 @@ class ShowRetinaCatalogue extends RetinaAction
                         ],
                         'icon'  => 'fal fa-folder-tree',
                         "color" => "#690000",
-                        'value' => $shop->stats->number_current_sub_departments,
+                        'value' => $shop->stats->number_sub_departments,
 
 
 

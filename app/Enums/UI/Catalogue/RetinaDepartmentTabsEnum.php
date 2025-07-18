@@ -10,43 +10,50 @@ namespace App\Enums\UI\Catalogue;
 
 use App\Enums\EnumHelperTrait;
 use App\Enums\HasTabs;
+use App\Enums\HasTabsWithQuantity;
+use App\Models\Catalogue\ProductCategory;
 
 enum RetinaDepartmentTabsEnum: string
 {
     use EnumHelperTrait;
-    use HasTabs;
+    use HasTabsWithQuantity;
 
     case SHOWCASE = 'showcase';
     case SUB_DEPARTMENTS = 'sub_departments';
+    case COLLECTIONS = 'collections';
     case FAMILIES = 'families';
     case PRODUCTS = 'products';
-    case COLLECTIONS = 'collections';
 
 
-    public function blueprint(): array
+    public function blueprint(ProductCategory $parent): array
     {
+        $subDepartments = $parent->stats->number_sub_departments_state_active + $parent->stats->number_sub_departments_state_discontinuing;
+        $families = $parent->stats->number_families_state_active + $parent->stats->number_families_state_discontinuing;
+        $products = $parent->stats->number_products_state_active + $parent->stats->number_products_state_discontinuing;
+        $collection = $parent->stats->number_collections_state_active;
+        
         return match ($this) {
             RetinaDepartmentTabsEnum::SHOWCASE => [
                 'title' => __('overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
             RetinaDepartmentTabsEnum::SUB_DEPARTMENTS => [
-                'title' => __('sub departments'),
+                'title' => __('sub departments'). " ({$subDepartments})",
                 'icon'  => 'fal fa-dot-circle',
                 'type'  => 'icon',
             ],
             RetinaDepartmentTabsEnum::FAMILIES => [
-                'title' => __('families'),
+                'title' => __('families'). " ({$families})",
                 'icon'  => 'fal fa-folder',
                 'type'  => 'icon',
             ],
             RetinaDepartmentTabsEnum::PRODUCTS => [
-                'title' => __('products'),
+                'title' => __('products'). " ({$products})",
                 'icon'  => 'fal fa-cube',
                 'type'  => 'icon',
             ],
             RetinaDepartmentTabsEnum::COLLECTIONS => [
-                'title' => __('collections'),
+                'title' => __('collections'). " ({$collection})",
                 'icon'  => 'fal fa-album-collection',
                 'type'  => 'icon',
             ],

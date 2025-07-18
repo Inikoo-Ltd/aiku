@@ -10,25 +10,29 @@ namespace App\Enums\UI\Catalogue;
 
 use App\Enums\EnumHelperTrait;
 use App\Enums\HasTabs;
+use App\Enums\HasTabsWithQuantity;
+use App\Models\Catalogue\ProductCategory;
 
 enum RetinaFamilyTabsEnum: string
 {
     use EnumHelperTrait;
-    use HasTabs;
+    use HasTabsWithQuantity;
 
     case SHOWCASE = 'showcase';
     case PRODUCTS = 'products';
 
 
-    public function blueprint(): array
+    public function blueprint(ProductCategory $parent): array
     {
+        $products = $parent->stats->number_products_state_active + $parent->stats->number_products_state_discontinuing;
+
         return match ($this) {
             RetinaFamilyTabsEnum::SHOWCASE => [
                 'title' => __('overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
             RetinaFamilyTabsEnum::PRODUCTS => [
-                'title' => __('products'),
+                'title' => __('products'). " ({$products})",
                 'icon'  => 'fal fa-cube',
                 'type'  => 'icon',
             ],
