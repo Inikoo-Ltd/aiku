@@ -14,14 +14,9 @@ import { getIrisComponent } from '@/Composables/getIrisComponents'
 
 
 const props = defineProps<{
-  meta: {
-    meta_title: string,
-    meta_description: string,
-    image: string,
-    structured_data: JSON
-  },
   webpage : any
   web_blocks: any,
+  webpage_img : any,
 }>()
 defineOptions({ layout: LayoutIris })
 library.add(faCheck, faPlus, faMinus)
@@ -109,7 +104,7 @@ console.log(props)
     <meta property="og:title" :content="webpage.title" />
     <meta property="og:description" :content="webpage.description" />
     <meta property="og:url" :content="currentUrl" />
-    <meta property="og:image" :content="webpage?.image?.png" />
+    <meta property="og:image" :content="webpage_img.png" />
     <meta property="og:image:alt" :content="webpage.title" />
     <meta property="og:locale" content="en_US" />
     <meta property="og:site_name" :content="webpage.title" />>
