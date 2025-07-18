@@ -13,7 +13,7 @@ import Tag from "@/Components/Tag.vue";
 import { Link } from "@inertiajs/vue3";
 import { faYinYang, faDotCircle, faCheck, faPlus} from "@fal";
 import Button from "@/Components/Elements/Buttons/Button.vue";
-import RetinaButtonAddPortofolio from "@/Components/Iris/Products/RetinaButtonAddPortofolio.vue";
+
 
 library.add(faCheck,faYinYang, faDotCircle)
 
