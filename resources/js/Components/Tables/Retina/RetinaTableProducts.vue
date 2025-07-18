@@ -47,7 +47,7 @@ console.log("RetinaTableProducts.vue", layout)
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(image)="{ item: product }">
             <div class="overflow-hidden w-10 h-10">
-                <Image :src="product.images[0].thumbnail" :alt="product.name" />
+                <Image :src="product?.images[0]?.thumbnail" :alt="product.name" />
             </div>
         </template>
 

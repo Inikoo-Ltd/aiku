@@ -125,9 +125,8 @@ class IndexRetinaCollections extends RetinaAction
 
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'number_families', label: __('Families'), canBeHidden: false, sortable: true);
-            $table->column(key: 'number_products', label: __('Products'), canBeHidden: false, sortable: true);
-            $table->column(key: 'actions', label: '', searchable: true);
+            $table->column(key: 'number_families', label: __('Families'), canBeHidden: false, sortable: false);
+            $table->column(key: 'number_products', label: __('Products'), canBeHidden: false, sortable: false);
         };
     }
 

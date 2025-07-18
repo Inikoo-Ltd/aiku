@@ -142,7 +142,7 @@ class IndexRetinaFamilies extends RetinaAction
                      
 
                 if (class_basename($parent) != 'Collection') {
-                    $table->column(key: 'number_current_products', label: __('current products'), canBeHidden: false, sortable: true, searchable: true);
+                    $table->column(key: 'number_current_products', label: __('current products'), canBeHidden: false, sortable: false, searchable: false);
                 }
                   /*  $table->column(key: 'actions', label: __('actions'), canBeHidden: false, sortable: true, searchable: false); */
         };

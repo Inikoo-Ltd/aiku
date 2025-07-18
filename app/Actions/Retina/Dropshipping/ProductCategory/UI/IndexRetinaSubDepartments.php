@@ -111,7 +111,7 @@ class IndexRetinaSubDepartments extends RetinaAction
 
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_families', label: __('families'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'number_families', label: __('families'), canBeHidden: false, sortable: false, searchable: false);
         };
     }
 
