@@ -69,8 +69,24 @@ class StoreRetinaPortfolioToMultiChannels extends RetinaAction
         ];
     }
 
+    public function prepareForValidation(ActionRequest $request): void
+    {
+        if ($this->productCategory) {
+            $this->set('item_id', $this->productCategory->getProducts()->pluck('id')->toArray());
+        }
+    }
+
     public function asController(ActionRequest $request): void
     {
+        $this->initialisation($request);
+
+        $this->handle($this->customer, $this->validatedData);
+    }
+
+    
+    public function inProductCategory(ProductCategory $productCategory, ActionRequest $request): void
+    {
+        $this->productCategory = $productCategory;
         $this->initialisation($request);
 
         $this->handle($this->customer, $this->validatedData);

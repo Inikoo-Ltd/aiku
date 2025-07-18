@@ -301,7 +301,7 @@ Route::patch('portfolio/{portfolio:id}', UpdateRetinaPortfolio::class)->name('po
 
 Route::post('portfolio/product-category/{productCategory:id}/store', StoreRetinaPortfoliosFromProductCategoryToAllChannels::class)->name('portfolio.store_from_product_category')->withoutScopedBindings();
 Route::post('portfolio/all-channels/store', StoreRetinaPortfolioToAllChannels::class)->name('portfolio.store_to_all_channels');
-Route::post('portfolio/multi-channels/store', StoreRetinaPortfolioToMultiChannels::class)->name('portfolio.store_to_multi_channels');
+Route::post('portfolio/product-category/{productCategory:id}/multi-channels/store', [StoreRetinaPortfolioToMultiChannels::class, 'inProductCategory'])->name('portfolio.store_to_multi_channels');
 
 Route::name('mit_saved_card.')->prefix('mit-saved-card')->group(function () {
     Route::delete('{mitSavedCard:id}/delete', DeleteMitSavedCard::class)->name('delete');
