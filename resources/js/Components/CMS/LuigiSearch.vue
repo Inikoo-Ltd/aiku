@@ -2,6 +2,7 @@
 import { computed, inject, onMounted, ref, onBeforeMount } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
+import { router } from "@inertiajs/vue3"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch } from "@far"
@@ -159,6 +160,12 @@ onBeforeMount(() => {
 onMounted(() => {
     importStyleCSS()
 })
+
+const visitSearchPage = () => {
+    if (inputValue.value) {
+        router.get(`/search?q=${encodeURIComponent(inputValue.value)}`)
+    }
+}
 </script>
 
 <template>
@@ -170,6 +177,7 @@ onMounted(() => {
             id="inputLuigi"
             xstyle="height: 35px"
             :placeholder="trans('Search')"
+            @keydown.enter="() => visitSearchPage()"
         />
         <FontAwesomeIcon icon="far fa-search" class="text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" fixed-width aria-hidden="true" />
     </div>
