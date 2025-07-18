@@ -55,6 +55,7 @@ class IndexRetinaBaskets extends RetinaAction
                 'orders.id',
                 'orders.reference',
                 'orders.slug',
+                'orders.state',
                 'orders.customer_client_id',
                 'orders.total_amount',
                 'customer_clients.name as client_name',
@@ -137,6 +138,7 @@ class IndexRetinaBaskets extends RetinaAction
             $table->column(key: 'client_name', label: __('client'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'number_item_transactions', label: __('items'), canBeHidden: false, sortable: true);
             $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, sortable: true, align: 'right');
+            $table->column(key: 'actions', label: '', canBeHidden: false, sortable: false);
         };
     }
 

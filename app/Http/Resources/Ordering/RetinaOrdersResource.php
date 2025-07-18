@@ -10,6 +10,7 @@
 
 namespace App\Http\Resources\Ordering;
 
+use App\Enums\Ordering\Order\OrderStateEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -51,12 +52,13 @@ class RetinaOrdersResource extends JsonResource
             'client_ulid'            => $this->client_ulid,
             'created_at'             => $this->created_at,
             'number_item_transactions'                  => $this->number_item_transactions ?? 0,
-            'delete_route' => [
-                'name' => 'retina.dropshipping.customer_sales_channels.basket.index',
+            'delete_route'              => $this->state === OrderStateEnum::CREATING ? [
+                'name' => 'retina.models.order.delete_basket',
                 'parameters' => [
                     'order' => $this->id
-                ]
-            ]
+                ],
+                'method' => 'delete'
+            ] : null
         ];
     }
 }

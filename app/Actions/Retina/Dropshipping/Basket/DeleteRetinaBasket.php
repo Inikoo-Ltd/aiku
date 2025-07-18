@@ -13,11 +13,13 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateOrders;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\RetinaAction;
 use App\Models\Ordering\Order;
+use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Support\Facades\Redirect;
 
 class DeleteRetinaBasket extends RetinaAction
 {
-    public function handle(Order $order): void
+    public function handle(Order $order): RedirectResponse
     {
         $customerSalesChannel = $order->customerSalesChannel;
 
@@ -25,17 +27,32 @@ class DeleteRetinaBasket extends RetinaAction
             $order->transactions()->delete();
         }
 
+        $xxx = $order;
         $order->delete();
 
         CustomerSalesChannelsHydrateOrders::dispatch($customerSalesChannel);
         CustomerHydrateBasket::dispatch($customerSalesChannel->customer);
         CustomerHydrateOrders::dispatch($customerSalesChannel->customer);
+
+        return Redirect::route(
+            'retina.dropshipping.customer_sales_channels.basket.index',
+            [
+                'customerSalesChannel' => $customerSalesChannel->slug,
+            ]
+        )
+            ->with('notification', [
+                'status'  => 'info',
+                'title'   => __('Success!'),
+                'description' => __('Your :order has been deleted.', [
+                    'order' => $xxx->reference
+                ]),
+            ]);
     }
 
-    public function asController(Order $order, ActionRequest $request)
+    public function asController(Order $order, ActionRequest $request): RedirectResponse
     {
         $this->initialisation($request);
 
-        $this->handle($order);
+        return $this->handle($order);
     }
 }
