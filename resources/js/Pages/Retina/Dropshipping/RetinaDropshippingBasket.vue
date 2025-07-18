@@ -302,11 +302,12 @@ console.log('basket ds', props)
 
     <div v-if="total_products > 0" class="flex justify-end px-6 gap-x-4">
         <div class="grid grid-cols-3 gap-x-4 w-full">
-            <div class="">
+            <div></div>
+            <!-- Input text: notes from staff  -->
+            <!-- <div class="">
                 <div class="text-sm text-gray-500">
                     <FontAwesomeIcon style="color: rgb(148, 219, 132)" icon="fal fa-sticky-note" class="xopacity-70" fixed-width aria-hidden="true" />
                     {{ trans("Notes from staff") }}
-                    <!-- <FontAwesomeIcon v-tooltip="trans('To be printed in shipping label')" icon="fal fa-info-circle" class="text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" /> -->
                     :
                 </div>
                 <PureTextarea
@@ -319,8 +320,9 @@ console.log('basket ds', props)
                     xisSuccess="recentlySuccessNote.includes('shipping_notes')"
                     xisError="recentlyErrorNote"
                 />
-            </div>
+            </div> -->
             
+            <!-- Input text: Delivery instructions -->
             <div class="">
                 <div class="text-sm text-gray-500">
                     <FontAwesomeIcon icon="fal fa-truck" class="text-[#38bdf8]" fixed-width aria-hidden="true" />
@@ -339,6 +341,8 @@ console.log('basket ds', props)
                     :isError="recentlyErrorNote"
                 />
             </div>
+
+            <!-- Input text: Other instructions -->
             <div class="">
                 <div class="text-sm text-gray-500">
                     <FontAwesomeIcon icon="fal fa-sticky-note" style="color: rgb(255, 125, 189)" fixed-width aria-hidden="true" />
