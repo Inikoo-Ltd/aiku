@@ -11,11 +11,11 @@ namespace App\Actions\Dropshipping\WooCommerce\Product;
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
-use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Sentry;
 
-class SynchronisePortfolioToWooCommerce extends RetinaAction
+class UploadPortfolioWooCommerceBraveMode extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
@@ -23,15 +23,16 @@ class SynchronisePortfolioToWooCommerce extends RetinaAction
     /**
      * @throws \Exception
      */
-    public function handle(WooCommerceUser $wooCommerceUser, Portfolio $portfolio): void
+    public function handle(WooCommerceUser $wooCommerceUser, Portfolio $portfolio)
     {
-        UploadPortfolioWooCommerceBraveMode::dispatch($wooCommerceUser, $portfolio);
-    }
+        try {
+            $result = SyncExistingPortfolioWooCommerce::run($wooCommerceUser, $portfolio);
 
-    public function asController(WooCommerceUser $wooCommerceUser, Portfolio $portfolio, ActionRequest $request): void
-    {
-        $this->initialisation($request);
-
-        $this->handle($wooCommerceUser, $portfolio);
+            if (! $result) {
+                UploadPortfolioWooCommerce::run($wooCommerceUser, $portfolio);
+            }
+        } catch (\Exception $e) {
+            Sentry::captureMessage("Failed to upload product due to: " . $e->getMessage());
+        }
     }
 }

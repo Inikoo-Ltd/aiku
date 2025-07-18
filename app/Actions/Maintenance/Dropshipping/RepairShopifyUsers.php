@@ -79,7 +79,7 @@ class RepairShopifyUsers
             $state .= " ($strippedName) ".$otherShopifyUsers ? ' 🐦‍🔥' : '';
 
             if ($shopifyUser->customerSalesChannel) {
-                DeleteCustomerSalesChannel::run($shopifyUser->customerSalesChannel);
+                //DeleteCustomerSalesChannel::run($shopifyUser->customerSalesChannel);
             }
         } else {
             $name = preg_replace('/\.myshopify\.com$/', '', $strippedName);
@@ -99,7 +99,7 @@ class RepairShopifyUsers
                     $channel .= ' ⚠️ '.$shopifyUser->customerSalesChannel->status->value;
 
                     // delete the shopifyUser
-                    DeleteShopifyUser::run($shopifyUser);
+                    //DeleteShopifyUser::run($shopifyUser);
                 }
             }
         }

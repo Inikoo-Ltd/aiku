@@ -2,43 +2,57 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sat, 12 Jul 2025 20:47:59 British Summer Time, Sheffield, UK
+ * Created: Wed, 16 Jul 2025 17:36:41 British Summer Time, Sheffield, UK
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Maintenance\Dropshipping;
+namespace App\Actions\Dropshipping\CustomerSalesChannel;
 
-use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
-use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Support\Arr;
-use Lorisleiva\Actions\Concerns\AsAction;
 
-class RepairCustomerSalesChannelsConnectionStatus
+trait WithExternalPlatforms
 {
-    use AsAction;
-    use WithActionUpdate;
-
-
-    public function handle(CustomerSalesChannel $customerSalesChannel): void
+    public function hasCredentials(CustomerSalesChannel $customerSalesChannel): bool
     {
-        $connectionStatus = $this->getConnectionStatus($customerSalesChannel);
+        $credentialsOk = true;
+        $platformUser  = $customerSalesChannel->user;
 
-        $customerSalesChannel->update([
-            'connection_status' => $connectionStatus
-        ]);
+        if ($platformUser instanceof ShopifyUser) {
+            $settings = $platformUser->settings ?? [];
+            if (empty($settings) || !Arr::exists($settings, 'webhooks') || empty(Arr::get($settings, 'webhooks', []))) {
+                $credentialsOk = false;
+            }
+        } elseif ($platformUser instanceof WooCommerceUser) {
+            $settings = $platformUser->settings ?? [];
+
+            if (empty($settings['credentials']) || empty($settings['webhooks'])) {
+                $credentialsOk = false;
+            }
+        } elseif ($platformUser instanceof EbayUser) {
+            $settings = $platformUser->settings ?? [];
+
+            if (empty($settings['credentials'])) {
+                $credentialsOk = false;
+            }
+        }
+
+        return $credentialsOk;
     }
 
-
-    public function getConnectionStatus(CustomerSalesChannel $customerSalesChannel): CustomerSalesChannelConnectionStatusEnum
+    public function getShopifyConnectionStatus(CustomerSalesChannel $customerSalesChannel): array
     {
+        $error = '';
         if ($customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
-            return CustomerSalesChannelConnectionStatusEnum::NO_APPLICABLE;
+            return [
+                CustomerSalesChannelConnectionStatusEnum::NO_APPLICABLE,
+                ''
+            ];
         } else {
             $connectionStatus = $customerSalesChannel->connection_status;
             if (!$connectionStatus) {
@@ -46,11 +60,20 @@ class RepairCustomerSalesChannelsConnectionStatus
             }
 
             if (!$customerSalesChannel->user) {
-                return CustomerSalesChannelConnectionStatusEnum::ERROR;
+                return [
+                    CustomerSalesChannelConnectionStatusEnum::ERROR,
+                    'No platform User'
+                ];
             }
 
             if (!$this->hasCredentials($customerSalesChannel)) {
-                return CustomerSalesChannelConnectionStatusEnum::ERROR;
+
+
+
+                return [
+                    CustomerSalesChannelConnectionStatusEnum::ERROR,
+                    'No webhooks configured'
+                ];
             }
 
             $platform = $customerSalesChannel->platform;
@@ -58,23 +81,26 @@ class RepairCustomerSalesChannelsConnectionStatus
                 /** @var ShopifyUser $shopifyUser */
                 $shopifyUser = $customerSalesChannel->user;
 
-                $isConnectedToShopify = $this->checkIfConnectedToShopify($shopifyUser);
+                list($isConnectedToShopify, $error) = $this->checkIfConnectedToShopify($shopifyUser);
                 if ($isConnectedToShopify != null) {
                     $connectionStatus = $isConnectedToShopify;
                 }
             }
 
-            return $connectionStatus;
+            return [$connectionStatus, $error];
         }
     }
 
 
-    public function checkIfConnectedToShopify(ShopifyUser $shopifyUser): ?CustomerSalesChannelConnectionStatusEnum
+    public function checkIfConnectedToShopify(ShopifyUser $shopifyUser): array
     {
         $client = $shopifyUser->getShopifyClient();
 
         if (!$client) {
-            return CustomerSalesChannelConnectionStatusEnum::ERROR;
+            return [
+                CustomerSalesChannelConnectionStatusEnum::ERROR,
+                'No shopify client'
+            ];
         }
 
         try {
@@ -142,9 +168,6 @@ class RepairCustomerSalesChannelsConnectionStatus
                             ]
                         ]
                     ];
-
-
-
                 } elseif ($response['status'] == '401') {
                     $errorData = [
                         'datetime' => now(),
@@ -159,9 +182,6 @@ class RepairCustomerSalesChannelsConnectionStatus
                         ]
                     ];
                 } else {
-
-
-
                     dd($response['status'], $response['errors'], $response['body']);
                 }
 
@@ -173,13 +193,15 @@ class RepairCustomerSalesChannelsConnectionStatus
                 ]);
 
 
-                return null;
+                return [null, $errorData['data']['latest_error']['msg']];
+
             }
 
             if (!isset($response['body'])) {
                 dd($response);
 
-                return null;
+                return [null, 'No body response'];
+
             }
 
 
@@ -195,63 +217,24 @@ class RepairCustomerSalesChannelsConnectionStatus
 
                 $this->update($shopifyUser, [
                     'status' => true,
-                    'data' => [
+                    'data'   => [
                         'shopify_shop' => $shopifyShopData,
                         'latest_error' => null
                     ]
                 ]);
 
-                return CustomerSalesChannelConnectionStatusEnum::CONNECTED;
+                return [CustomerSalesChannelConnectionStatusEnum::CONNECTED, ''];
             }
 
-            return CustomerSalesChannelConnectionStatusEnum::DISCONNECTED;
+            return [CustomerSalesChannelConnectionStatusEnum::DISCONNECTED, ''];
         } catch (\Exception $e) {
             print "ERROR\n";
             print_r($e->getMessage());
 
-            return null;
+            return [null, $e->getMessage()];
+            ;
         }
     }
 
-    public function hasCredentials(CustomerSalesChannel $customerSalesChannel): bool
-    {
-        $credentialsOk = true;
-        $platformUser  = $customerSalesChannel->user;
-
-        if ($platformUser instanceof ShopifyUser) {
-            $settings = $platformUser->settings ?? [];
-            if (empty($settings) || !Arr::exists($settings, 'webhooks') || empty(Arr::get($settings, 'webhooks', []))) {
-                $credentialsOk = false;
-            }
-        } elseif ($platformUser instanceof WooCommerceUser) {
-            $settings = $platformUser->settings ?? [];
-
-            if (empty($settings['credentials']) || empty($settings['webhooks'])) {
-                $credentialsOk = false;
-            }
-        } elseif ($platformUser instanceof EbayUser) {
-            $settings = $platformUser->settings ?? [];
-
-            if (empty($settings['credentials'])) {
-                $credentialsOk = false;
-            }
-        }
-
-        return $credentialsOk;
-    }
-
-    public function getCommandSignature(): string
-    {
-        return 'repair:customer_sales_channels_connection_status';
-    }
-
-    public function asCommand(): void
-    {
-        $platform = Platform::where('type', PlatformTypeEnum::SHOPIFY)->firstOrFail();
-
-        foreach (CustomerSalesChannel::where('platform_id', $platform->id)->get() as $customerSalesChannel) {
-            $this->handle($customerSalesChannel);
-        }
-    }
 
 }

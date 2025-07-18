@@ -156,6 +156,19 @@ watch(() => props.idxSubmitSuccess, (newVal, oldVal) => {
         </slot>
 
         <div class="relative isolate">
+            <div class="flex justify-end items-center gap-2 mb-4">
+                <Button
+                    @click="() => emits('submit', selectedProduct)"
+                    :disabled="selectedProduct.length < 1"
+                    v-tooltip="selectedProduct.length < 1 ? trans('Select at least one product') : ''"
+                    :label="submitLabel ?? `${trans('Add')} ${selectedProduct.length}`"
+                    type="primary"
+                    xfull
+                    icon="fas fa-plus"
+                    :loading="isLoadingSubmit"
+                />
+            </div>
+
             <div v-if="isLoadingSubmit" class="flex justify-center items-center text-7xl text-white absolute z-10 inset-0 bg-black/40">
                 <LoadingIcon />
             </div>

@@ -438,7 +438,7 @@ watch(pickingView, (val) => {
                 </dd>
             </div>
             <div class="w-full mt-2">
-                <Button @click="delivery_note_state.value === 'queued' ? onUpdatePicker() : onSetToQueue()"
+                <Button @click="onUpdatePicker()"
                     :label="delivery_note_state.value === 'queued' ? trans('Change picker') : trans('Set Picker')"
                     :iconRight="['fas', 'fa-arrow-right']" full :loading="isLoadingToQueue" :disabled="!selectedPicker"
                     v-tooltip="selectedPicker ? '' : trans('Select picker before set to queue')">

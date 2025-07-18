@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9f58863c20be66fbaaa689e9359feed6",
+    "content-hash": "cb84dfed9673cf6d3beeaa2284ff47fa",
     "packages": [
         {
             "name": "adawolfa/isdoc",

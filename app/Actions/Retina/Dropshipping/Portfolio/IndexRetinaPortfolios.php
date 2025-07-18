@@ -134,6 +134,7 @@ class IndexRetinaPortfolios extends RetinaAction
         /** @var ShopifyUser|WooCommerceUser|AmazonUser|MagentoUser $platformUser */
         $platformUser = $this->customerSalesChannel->user;
 
+        // Button: Brave mode
         $bulkUploadRoute = false;
         if ($platformUser) {
             $bulkUploadRoute = match ($this->customerSalesChannel->platform->type) {
@@ -144,7 +145,7 @@ class IndexRetinaPortfolios extends RetinaAction
                     ]
                 ],
                 PlatformTypeEnum::WOOCOMMERCE => [
-                    'name'       => 'retina.models.dropshipping.woo.batch_upload',
+                    'name'       => 'retina.models.dropshipping.woo.batch_brave',
                     'parameters' => [
                         'wooCommerceUser' => $platformUser->id
                     ]
@@ -171,6 +172,34 @@ class IndexRetinaPortfolios extends RetinaAction
             };
         }
 
+        // Button: Create new product to platform
+        $duplicateRoute = false;
+        if ($platformUser) {
+            $duplicateRoute = match ($this->customerSalesChannel->platform->type) {
+                PlatformTypeEnum::WOOCOMMERCE => [
+                    'name'       => 'retina.models.dropshipping.woo.batch_upload',
+                    'parameters' => [
+                        'wooCommerceUser' => $platformUser->id
+                    ]
+                ],
+                default => false
+            };
+        }
+
+        // Button: Sync all to platform
+        $batchSyncRoute = false;
+        if ($platformUser) {
+            $batchSyncRoute = match ($this->customerSalesChannel->platform->type) {
+                PlatformTypeEnum::WOOCOMMERCE => [
+                    'name'       => 'retina.models.dropshipping.woo.batch_sync',
+                    'parameters' => [
+                        'wooCommerceUser' => $platformUser->id
+                    ]
+                ],
+                default => false
+            };
+        };
+
 
         return Inertia::render(
             'Dropshipping/Portfolios',
@@ -187,6 +216,8 @@ class IndexRetinaPortfolios extends RetinaAction
                 ],
                 'routes'         => [
                     'bulk_upload'               => $bulkUploadRoute,
+                    'batch_sync'                => $batchSyncRoute,
+                    'duplicate'                 => $duplicateRoute,
                     'itemRoute'                 => [
                         'name'       => 'retina.dropshipping.customer_sales_channels.filtered_products.index',
                         'parameters' => [
@@ -270,7 +301,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
                 'step' => [
                     'current' => match ($this->customerSalesChannel->platform->type) {
-                        PlatformTypeEnum::SHOPIFY, PlatformTypeEnum::WOOCOMMERCE => $this->customerSalesChannel->portfolios()->whereNull('platform_product_id')->count() === 0 ? 0 : 1,
+                        // PlatformTypeEnum::SHOPIFY, PlatformTypeEnum::WOOCOMMERCE => $this->customerSalesChannel->portfolios()->whereNull('platform_product_id')->count() === 0 ? 0 : 1,
                         default => 0
                     }
                 ],

@@ -56,6 +56,8 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $upload_warning
  * @property string|null $status_reason
  * @property array<array-key, mixed>|null $platform_product_availabilities
+ * @property string|null $sku
+ * @property string|null $barcode
  * @property PortfolioTypeEnum $type
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Customer $customer
