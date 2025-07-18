@@ -21,11 +21,11 @@ import { useTabChange } from "@/Composables/tab-change"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { faDiagramNext } from "@fortawesome/free-solid-svg-icons"
 import { capitalize } from "@/Composables/capitalize"
-import SubDepartmentShowcase from "@/Components/Shop/SubDepartmentShowcase.vue"
+import RetinaSubDepartementShowcase from '@/Components/Showcases/Retina/Catalouge/RetinaSubDepartementShowcase.vue'
 import RetinaTableProducts from '@/Components/Tables/Retina/RetinaTableProducts.vue'
 import RetinaTableFamilies from '@/Components/Tables/Retina/RetinaTableFamilies.vue'
 import RetinaTableCollections from '@/Components/Tables/Retina/RetinaTableCollections.vue'
-import TableSubDepartments from '@/Components/Tables/Retina/RetinaTableSubDepartements.vue'
+
 
 library.add(
     faFolder,
@@ -63,7 +63,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const component: Component = computed(() => {
     const components = {
-        showcase: SubDepartmentShowcase,
+        showcase: RetinaSubDepartementShowcase,
         products: RetinaTableProducts,
         families: RetinaTableFamilies,
         collections: RetinaTableCollections,
