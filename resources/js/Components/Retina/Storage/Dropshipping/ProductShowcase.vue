@@ -23,6 +23,7 @@ import { Image as ImageTS } from "@/types/Image"
 import { routeType } from "@/types/route"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { trans } from "laravel-vue-i18n"
+import ProductContentsIris from "@/Components/CMS/Webpage/Product1/ProductContentIris.vue"
 library.add(faCircle, faTrash)
 
 const props = defineProps<{
@@ -108,7 +109,7 @@ const product = ref({
 //     selectedImage.value = index
 // }
 
-
+console.log(props)
 </script>
 
 
@@ -116,14 +117,14 @@ const product = ref({
     <div class="flex flex-col md:grid md:grid-cols-4 gap-x-4 gap-y-4 p-4">
         <div class="md:p-5 space-y-5 md:col-span-2">
             <div class="h-auto w-full aspect-square rounded-lg shadow">
-            <ImageProducts v-if="data.product.data.images?.length" :images="data.product.data.images">
-					<template #image-thumbnail="{ image, index }">
-						<div class="aspect-square w-full overflow-hidden group relative">
-							<Image :src="image.thumbnail" :alt="`Thumbnail ${index + 1}`"
-								class="block w-full h-full object-cover rounded-md border" />
-						</div>
-					</template>
-				</ImageProducts>
+                <ImageProducts v-if="data.product.data.images?.length" :images="data.product.data.images">
+                    <template #image-thumbnail="{ image, index }">
+                        <div class="aspect-square w-full overflow-hidden group relative">
+                            <Image :src="image.thumbnail" :alt="`Thumbnail ${index + 1}`"
+                                class="block w-full h-full object-cover rounded-md border" />
+                        </div>
+                    </template>
+                </ImageProducts>
             </div>
         </div>
 
@@ -144,15 +145,25 @@ const product = ref({
 
                 <div class="flex flex-col">
                     <dt class="text-sm text-gray-500">{{ trans("Price") }}</dt>
-                    <dd class="text-sm font-medium">{{ locale.currencyFormat(data?.product?.data?.currency_code, data?.product?.data?.price) }}</dd>
+                    <dd class="text-sm font-medium">{{ locale.currencyFormat(data?.product?.data?.currency_code,
+                        data?.product?.data?.price) }}</dd>
                 </div>
 
                 <div class="flex flex-col">
                     <dt class="text-sm text-gray-500">{{ trans("Description") }}</dt>
-                    <dd v-if="data?.product?.data?.description_title" class="text-sm font-medium bg-gray-100 px-3 py-2 rounded shadow" v-html="data?.product?.data?.description_title"></dd>
-                    <dd class="text-sm font-medium bg-gray-100 px-3 py-2 rounded shadow" v-html="data?.product?.data?.description ?? '-'"></dd>
-                    <dd v-if="data?.product?.data?.description_extra" class="text-sm font-medium bg-gray-100 px-3 py-2 rounded shadow" v-html="data?.product?.data?.description_extra ?? '-'"></dd>
+                    <dd v-if="data?.product?.data?.description_title"
+                        class="text-sm font-medium bg-gray-100 px-3 py-2 rounded shadow"
+                        v-html="data?.product?.data?.description_title"></dd>
+                    <dd class="text-sm font-medium bg-gray-100 px-3 py-2 rounded shadow"
+                        v-html="data?.product?.data?.description ?? '-'"></dd>
+                    <dd v-if="data?.product?.data?.description_extra"
+                        class="text-sm font-medium bg-gray-100 px-3 py-2 rounded shadow"
+                        v-html="data?.product?.data?.description_extra ?? '-'"></dd>
                 </div>
+
+                <ProductContentsIris :product="props.data.product" :setting="{
+                    product_specs: true, faqs: false
+                }" :styleData="{}" :full-width="true" />
             </dl>
         </section>
     </div>
