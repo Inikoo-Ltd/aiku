@@ -38,7 +38,7 @@ function productRoute(family): string {
 const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', retinaLayoutStructure)
 
-
+console.log("RetinaTableProducts.vue", layout)
 
 
 </script>
@@ -52,11 +52,7 @@ const layout = inject('layout', retinaLayoutStructure)
         </template>
 
         <template #cell(state)="{ item: product }">
-            <Tag :label="product.state.tooltip" v-tooltip="product.state.tooltip">
-                <template #label>
-                    <Icon :data="product.state" /> <span :class="product.state.class">{{ product.state.tooltip }}</span>
-                </template>
-            </Tag>
+             <Icon :data="product.state" />
         </template>
 
         <template #cell(code)="{ item: product }">
@@ -75,22 +71,23 @@ const layout = inject('layout', retinaLayoutStructure)
 
         <!-- Column: Weight -->
         <template #cell(weight)="{ item }">
-            <div>
-                {{ locale.number(item.weight / 1000) }} kg
+            <div class="flex justify-end">
+                {{ item.gross_weight }} g
             </div>
         </template>
 
         <!-- Column: Price -->
         <template #cell(price)="{ item }">
-            <div>
-                {{ locale.currencyFormat(item.currency_code, item.price) }}
+            <div class="flex justify-end">
+
+                {{ locale.currencyFormat(layout?.retina?.currency.code, item.price) }}
             </div>
         </template>
 
         <!-- Column: RPP -->
-        <template #cell(customer_price)="{ item }">
-            <div>
-                {{ locale.currencyFormat(item.currency_code, item.customer_price) }}
+        <template #cell(rrp)="{ item }">
+         <div class="flex justify-end">
+                {{ locale.currencyFormat(layout?.retina?.currency.code, item.rrp) }}
             </div>
         </template>
 

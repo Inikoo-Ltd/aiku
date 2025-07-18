@@ -49,11 +49,7 @@ function familyRoute(family): string {
 <template>
     <Table :resource="data" :name="tab">
         <template #cell(state)="{ item: family }">
-            <Tag :label="family.state.tooltip" v-tooltip="family.state.tooltip">
-                <template #label>
-                    <Icon :data="family.state" /> <span :class="family.state.class">{{ family.state.tooltip }}</span>
-                </template>
-            </Tag>
+            <Icon :data="family.state" />
         </template>
         <template #cell(code)="{ item: family }">
              <Link :href="familyRoute(family)" class="primaryLink">

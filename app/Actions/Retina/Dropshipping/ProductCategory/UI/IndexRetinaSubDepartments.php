@@ -109,15 +109,6 @@ class IndexRetinaSubDepartments extends RetinaAction
 
             $buttonLabel = __('New Sub-department');
 
-            $table
-                ->defaultSort('code')
-                ->withEmptyState([]
-                )
-                ->withGlobalSearch()
-                ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon', sortable: true)
-                ->withModelOperations($modelOperations);
-
-
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_families', label: __('families'), canBeHidden: false, sortable: true, searchable: true);

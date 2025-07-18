@@ -116,32 +116,6 @@ class IndexRetinaDepartments extends RetinaAction
             }
 
 
-            $table
-                ->defaultSort('code')
-                ->withGlobalSearch()
-                ->withEmptyState(
-                    match (class_basename($parent)) {
-                        'Shop' => [
-                            'title'       => __("No departments found"),
-                            'description' => $canEdit ? __('Get started by creating a new department. ✨')
-                                : null,
-                            'count'       => $parent->stats->number_departments,
-                            'action'      => $canEdit ? [
-                                'type'    => 'button',
-                                'style'   => 'create',
-                                'tooltip' => __('new department'),
-                                'label'   => __('department'),
-                                'route'   => [
-                                    'name'       => 'grp.org.shops.show.departments.create',
-                                    'parameters' => [$parent->organisation->slug, $parent->slug]
-                                ]
-                            ] : null
-                        ],
-                        default => null
-                    }
-                )
-                ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon', sortable: true);
-
 
                 $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
