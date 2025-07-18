@@ -51,6 +51,12 @@ class RetinaOrdersResource extends JsonResource
             'client_ulid'            => $this->client_ulid,
             'created_at'             => $this->created_at,
             'number_item_transactions'                  => $this->number_item_transactions ?? 0,
+            'delete_route' => [
+                'name' => 'retina.dropshipping.customer_sales_channels.basket.index',
+                'parameters' => [
+                    'order' => $this->id
+                ]
+            ]
         ];
     }
 }
