@@ -10,6 +10,7 @@ use App\Actions\Helpers\RedirectAssetLink;
 use App\Actions\Helpers\RedirectCollectionsInProductCategoryLink;
 use App\Actions\Helpers\RedirectCustomersInShopFromDashboard;
 use App\Actions\Helpers\RedirectDeletedInvoicesInShopLink;
+use App\Actions\Helpers\RedirectDeliveryNotesLink;
 use App\Actions\Helpers\RedirectInvoicesInCustomerLink;
 use App\Actions\Helpers\RedirectInvoicesInShopFromDashboard;
 use App\Actions\Helpers\RedirectInvoicesInShopLink;
@@ -24,6 +25,8 @@ Route::get('redirect-asset/{asset:id}', RedirectAssetLink::class)->name('redirec
 Route::get('redirect-deleted-invoices-in-shop/{shop:id}', RedirectDeletedInvoicesInShopLink::class)->name('redirect_deleted_invoices_in_shop');
 Route::get('redirect-refunds-in-shop/{invoice:id}', RedirectInvoicesInShopLink::class)->name('redirect_invoices_in_shop');
 Route::get('redirect-invoice-in-customer/{invoice:id}', RedirectInvoicesInCustomerLink::class)->name('redirect_invoices_in_customer');
+
+Route::get('redirect-delivery-note/{deliveryNote:id}', RedirectDeliveryNotesLink::class)->name('redirect_delivery_notes');
 
 
 Route::get('redirect-invoices-from-dashboard/{shop:id}', RedirectInvoicesInShopFromDashboard::class)->name('redirect_invoices_from_dashboard');

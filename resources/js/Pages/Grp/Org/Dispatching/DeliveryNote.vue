@@ -85,7 +85,6 @@ const props = defineProps<{
     shipments: {
         submit_route: routeType
         fetch_route: routeType
-        delete_route: routeType
     }
     address: {
         delivery: {
@@ -124,30 +123,6 @@ const selectedPicker = ref(props.box_stats.picker);
 const disable = ref(props.box_stats.state);
 const isLoading = ref<{ [key: string]: boolean }>({});
 const isLoadingToQueue = ref(false);
-const onSetToQueue = () => {
-    router.patch(
-        route(props.routes.set_queue.name, {
-            ...props.routes.set_queue.parameters,
-            user: selectedPicker.value.id
-        }),
-        {},
-        {
-            onError: (error) => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: error.message,
-                    type: "error"
-                });
-            },
-            onSuccess: () => {
-                isModalToQueue.value = false;
-            },
-            onStart: () => isLoadingToQueue.value = true,
-            onFinish: () => isLoadingToQueue.value = false,
-            preserveScroll: true
-        }
-    );
-};
 const onUpdatePicker = () => {
     router.patch(
         route(props.routes.update.name, props.routes.update.parameters),
@@ -196,8 +171,6 @@ const onOpenModalTrackingNumber = async () => {
     }
     isLoadingData.value = false;
 };
-
-
 const onSubmitShipment = () => {
     formTrackingNumber
         .transform((data) => ({

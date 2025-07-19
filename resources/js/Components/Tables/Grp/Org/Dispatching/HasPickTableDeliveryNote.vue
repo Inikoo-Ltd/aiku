@@ -45,7 +45,7 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
                 [deliveryNote.shop_id, deliveryNote.slug])
         case "grp.org.warehouses.show.dispatching.delivery-notes":
             return route(
-                "grp.org.warehouses.show.dispatching.delivery-notes.show",
+                "grp.org.warehouses.show.dispatching.delivery_notes.show",
                 [route().params["organisation"], route().params["warehouse"], deliveryNote.slug])
         case "grp.org.shops.show.ordering.delivery-notes.index":
             return route(
@@ -73,7 +73,7 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
                 [deliveryNote.organisation_slug, deliveryNote.shop_slug, deliveryNote.customer_slug, deliveryNote.slug])
         default:
             return route(
-                "grp.org.warehouses.show.dispatching.delivery-notes.show",
+                "grp.org.warehouses.show.dispatching.delivery_notes.show",
                 [route().params["organisation"], route().params["warehouse"], deliveryNote.slug]);
     }
 }

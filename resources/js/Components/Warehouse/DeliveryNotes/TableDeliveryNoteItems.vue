@@ -45,7 +45,7 @@ const locale = inject("locale", aikuLocaleStructure);
 function orgStockRoute(deliveryNoteItem: DeliverNoteItem) {
     // console.log(route().current())
     switch (route().current()) {
-        case "grp.org.warehouses.show.dispatching.delivery-notes.show":
+        case "grp.org.warehouses.show.dispatching.delivery_notes.show":
         // return route(
         //     "grp.org.shops.show.discounts.campaigns.show",
         //     [route().params["organisation"], , route().params["shop"], route().params["customer"], deliveryNote.slug])
@@ -93,7 +93,7 @@ const generateLocationRoute = (location: any) => {
         return "#";
     }
 
-    if (route().current() === "grp.org.warehouses.show.dispatching.delivery-notes.show") {
+    if (route().current() === "grp.org.warehouses.show.dispatching.delivery_notes.show") {
         return route(
             "grp.org.warehouses.show.infrastructure.locations.show",
             [
@@ -102,7 +102,7 @@ const generateLocationRoute = (location: any) => {
                 location.location_slug
             ]
         );
-    } else if (route().current() === "grp.org.warehouses.show.dispatching.delivery-notes.show") {
+    } else if (route().current() === "grp.org.warehouses.show.dispatching.delivery_notes.show") {
         return route(
             "grp.org.warehouses.show.infrastructure.locations.show",
             [

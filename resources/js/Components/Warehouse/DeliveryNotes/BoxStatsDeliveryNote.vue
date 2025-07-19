@@ -1,19 +1,17 @@
 <script setup lang="ts">
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
+import ShipmentSection from "@/Components/Warehouse/DeliveryNotes/ShipmentSection.vue"
 import { trans } from "laravel-vue-i18n"
-import NeedToPay from "@/Components/Utils/NeedToPay.vue"
 import { Address } from "@/types/PureComponent/Address"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube } from "@fal"
+import { faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faBarcodeRead } from "@fal"
 import { faCubes } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import { Link, router } from "@inertiajs/vue3"
-import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import { inject, ref, toRaw } from "vue"
 import { routeType } from "@/types/route"
-import { set, values } from 'lodash-es'
+import { set } from 'lodash-es'
 import { notify } from "@kyvg/vue3-notification"
 import { useTruncate } from "@/Composables/useTruncate"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
@@ -22,10 +20,9 @@ import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { Fieldset, InputNumber } from "primevue"
 import Icon from "@/Components/Icon.vue"
-import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import axios from "axios"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
-library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes)
+library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes, faBarcodeRead)
 
 const props = defineProps<{
 	boxStats: {
@@ -66,10 +63,15 @@ const props = defineProps<{
 			label_type?: string
 			combined_label_url?: string
 			is_printable?: boolean
+            formatted_tracking_urls: {
+				url: string
+				tracking: string
+			}[]
 		}[]
-	}
-	shipments: {
-		delete_route: routeType
+        platform?: {
+            logo: string
+            name: string
+        }
 	}
 	routes: {
 		pickers_list: routeType
@@ -79,10 +81,7 @@ const props = defineProps<{
 	deliveryNote: {
 		state: string
 	}
-	platform: {
-		logo: String
-		name: String
-	}
+
 	updateRoute: routeType
 }>()
 
@@ -129,101 +128,16 @@ const onSubmitParcels = () => {
 		})
 }
 
-// Section: Shipment
-const isDeleteShipment = ref<number | null>(null)
-const onDeleteShipment = (idShipment: number) => {
-	router.delete(route(props.shipments.delete_route.name, {
-		...props.shipments.delete_route.parameters,
-		shipment: idShipment,
-	}),
-		{
-			preserveScroll: true,
-			onStart: () => {
-				isDeleteShipment.value = idShipment
-			},
-			onSuccess: () => {
-				notify({
-					title: trans("Success!"),
-					text: trans("Shipment has deleted."),
-					type: "success",
-				})
-			},
-			onError: (errors) => {
-				notify({
-					title: trans("Something went wrong."),
-					text: trans("Failed to delete shipment. Please try again or contact administrator."),
-					type: "error",
-				})
-			},
-			onFinish: () => {
-				isDeleteShipment.value = null
-				isLoadingSubmitParcels.value = false
-			},
-		})
-}
-
 const listError = inject('listError', {})
 
-const base64ToPdf = (base: string) => {
-	// Convert base64 to byte array
-	const byteCharacters = atob(base)
-	const byteNumbers = Array.from(byteCharacters, char => char.charCodeAt(0))
-	const byteArray = new Uint8Array(byteNumbers)
 
-	// Create a Blob and generate object URL
-	const blob = new Blob([byteArray], { type: 'application/pdf' })
-	const blobUrl = URL.createObjectURL(blob)
-
-	// Create a temporary link to trigger download
-	const link = document.createElement('a')
-	link.href = blobUrl
-	link.download = 'file.pdf'
-	link.click()
-
-	// Clean up the object URL
-	URL.revokeObjectURL(blobUrl)
-}
-
-// Section: Print Shipment
-const isLoadingPrint = ref(false)
-const onPrintShipment = async (ship) => {
-	isLoadingPrint.value = true
-	try {
-		const response = await axios.post(
-			route(
-				'grp.models.printing.shipment.label',
-				{
-					shipment: ship.id
-				}
-			)
-		)
-
-		if (response.data.state === 'queued') {
-			notify({
-				title: trans("Got it!"),
-				text: trans("Your shipment label is queued for printing."),
-				type: "info",
-			})
-		} else if (response.data.state === 'error') {
-			throw new Error(response.data.message || 'Failed to print shipment label.')
-		}
-
-		console.log('respopo', response.data)
-	} catch (error: any) {
-		notify({
-			title: trans('Something went wrong'),
-			text: error.response?.data?.message || error.message || 'Failed to print shipment label.',
-			type: 'error'
-		})
-	} finally {
-		isLoadingPrint.value = false
-	}
-}
 </script>
 
 <template>
-	<div class="grid grid-cols-2 lg:grid-cols-4 xdivide-x xdivide-gray-300 border-b border-gray-200">
-		<BoxStatPallet class="py-2 px-3 border-r border-gray-200" icon="fal fa-user">
+	<div class="grid grid-cols-2 lg:grid-cols-3 xdivide-x xdivide-gray-300 border-b border-gray-200">
+
+
+        <BoxStatPallet class="py-2 px-3 border-r border-gray-200" icon="fal fa-user">
 
 
 			<div v-if="boxStats?.order" class="text-sm mt-1 flex items-center w-full flex-none justify-between">
@@ -286,17 +200,16 @@ const onPrintShipment = async (ship) => {
 			</div>
 
 			<!-- Field: Channel -->
-			<!-- Field: Platform -->
-			<div v-if="boxStats?.platform?.name" class="pl-1 flex items-center w-full gap-x-2">
-				<dt v-tooltip="'Phone'" class="flex-none">
+			<dl v-if="boxStats?.platform?.name" class="pl-1 flex items-center w-full gap-x-2">
+				<dt class="flex-none">
 					<div class="block w-full rounded h-[18px]">
-						<img :src="boxStats?.platform?.logo" alt="image" class="w-full h-full object-contain rounded" />
+						<img :src="boxStats?.platform?.logo"  :alt="boxStats?.platform?.name" class="w-full h-full object-contain rounded" />
 					</div>
 				</dt>
-				<span v-tooltip="'Click to make a phone call'" class="text-sm text-gray-500 hover:text-gray-700">
+				<dt class="text-sm text-gray-500 hover:text-gray-700">
 					{{ boxStats?.platform?.name }}
-				</span>
-			</div>
+				</dt>
+			</dl>
 
 
 		</BoxStatPallet>
@@ -348,8 +261,6 @@ const onPrintShipment = async (ship) => {
 			</div>
 
 		</BoxStatPallet>
-
-		<!-- Box: 2 -->
 		<BoxStatPallet class="py-2.5 pl-2.5 pr-3 border-r border-gray-200" icon="fal fa-user">
 			<template v-if="boxStats?.picker?.contact_name">
 				<div v-tooltip="trans('Picker name')"
@@ -448,80 +359,7 @@ const onPrintShipment = async (ship) => {
 			</div>
 
 			<!-- Section: Shipments -->
-			<div v-if="boxStats.shipments?.length" class="flex gap-x-1 py-0.5"
-				xxclass="listError.box_stats_parcel ? 'errorShake' : ''">
-				<FontAwesomeIcon v-tooltip="trans('Shipments')" icon='fal fa-shipping-fast' class='text-gray-400'
-					fixed-width aria-hidden='true' />
-				<div class="group w-full">
-					<div class="leading-4 xtext-base flex justify-between w-full py-1">
-						<div>{{ trans("Shipments") }} ({{ boxStats.shipments?.length ?? 0 }})</div>
-
-					</div>
-
-					<ul v-if="boxStats.shipments" class="list-disc pl-4">
-						<li v-for="(sments, shipmentIdx) in boxStats.shipments" :key="shipmentIdx"
-							class="hover:bg-gray-100 xtext-sm tabular-nums">
-							<div class="flex justify-between">
-								<a v-if="sments.combined_label_url" v-tooltip="trans('Click to open file')"
-									target="_blank" :href="sments.combined_label_url" class="">
-									{{ sments.name }}
-									<FontAwesomeIcon icon="fal fa-external-link"
-										class="text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
-								</a>
-
-								<div v-else-if="sments.label && sments.label_type === 'pdf'"
-									v-tooltip="trans('Click to download file')" @click="base64ToPdf(sments.label)"
-									class="group cursor-pointer">
-									<span class="truncate">
-										{{ sments.name }}
-									</span>
-									<span v-if="sments.tracking" class="text-gray-400">
-										({{ useTruncate(sments.tracking, 14) }})
-									</span>
-									<FontAwesomeIcon icon="fal fa-external-link"
-										class="text-gray-400 group-hover:text-gray-700" fixed-width
-										aria-hidden="true" />
-								</div>
-
-								<div v-else>
-									<span class="truncate">
-										{{ sments.name }}
-									</span>
-									<span v-if="sments.tracking" class="text-gray-400">
-										({{ useTruncate(sments.tracking, 14) }})
-									</span>
-								</div>
-
-								<div v-if="isDeleteShipment === sments.id" class="px-1">
-									<LoadingIcon />
-								</div>
-								<!-- <div v-else @click="() => onDeleteShipment(sments.id)" v-tooltip="trans('Remove shipment')" class="cursor-pointer px-1">
-									<FontAwesomeIcon icon="fal fa-times" class="text-red-400 hover:text-red-600" fixed-width aria-hidden="true" />
-								</div> -->
-								<ModalConfirmationDelete v-else :routeDelete="{
-									name: props.shipments.delete_route.name,
-									parameters: {
-										...props.shipments.delete_route.parameters,
-										shipment: sments.id,
-									}
-								}" :title="trans('Are you sure you want to delete this shipment (:ship)?', { ship: sments.name })"
-									isFullLoading>
-									<template #default="{ isOpenModal, changeModel }">
-										<div @click="changeModel">
-											<FontAwesomeIcon icon="fal fa-times" class="text-red-400 hover:text-red-600"
-												fixed-width aria-hidden="true" />
-										</div>
-									</template>
-								</ModalConfirmationDelete>
-							</div>
-
-							<Button v-if="sments.is_printable" @click="() => onPrintShipment(sments)" size="xs"
-								icon="fal fa-print" label="Print label" type="tertiary" :loading="isLoadingPrint" />
-						</li>
-					</ul>
-
-				</div>
-			</div>
+			<ShipmentSection :shipments="boxStats.shipments" />
 
 		</BoxStatPallet>
 
@@ -588,7 +426,7 @@ const onPrintShipment = async (ship) => {
 
 										<template #content="{ close: closed }">
 											<div class="w-[350px]">
-												
+
 											</div>
 										</template>
 									</Popover> -->

@@ -44,7 +44,7 @@ Route::get('/delivery-notes/finalised/shop/{shopType}', [IndexDeliveryNotes::cla
 Route::get('/delivery-notes/dispatched', [IndexDeliveryNotes::class, 'dispatched'])->name('dispatched.delivery-notes');
 Route::get('/delivery-notes/dispatched/shop/{shopType}', [IndexDeliveryNotes::class, 'dispatchedShopTypes'])->name('dispatched.delivery-notes.shop');
 
-Route::get('/delivery-notes/{deliveryNote}', [ShowDeliveryNote::class, 'inWarehouse'])->name('delivery-notes.show');
+Route::get('/delivery-notes/{deliveryNote}', [ShowDeliveryNote::class, 'inWarehouse'])->name('delivery_notes.show');
 
 Route::get('returns', IndexWarehousePalletReturns::class)->name('pallet-returns.index');
 Route::get('returns/confirmed', [IndexWarehousePalletReturns::class, 'inWarehouseConfirmed'])->name('pallet-returns.confirmed.index');

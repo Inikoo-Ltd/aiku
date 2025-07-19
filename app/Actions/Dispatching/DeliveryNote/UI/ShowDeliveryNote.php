@@ -627,7 +627,7 @@ class ShowDeliveryNote extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.warehouses.show.dispatching.delivery-notes.show',
+            'grp.org.warehouses.show.dispatching.delivery_notes.show',
             => array_merge(
                 ShowWarehouse::make()->getBreadcrumbs(
                     Arr::only($routeParameters, ['organisation', 'warehouse'])
@@ -640,7 +640,7 @@ class ShowDeliveryNote extends OrgAction
                             'parameters' => Arr::only($routeParameters, ['organisation', 'warehouse'])
                         ],
                         'model' => [
-                            'name'       => 'grp.org.warehouses.show.dispatching.delivery-notes.show',
+                            'name'       => 'grp.org.warehouses.show.dispatching.delivery_notes.show',
                             'parameters' => Arr::only($routeParameters, ['organisation', 'warehouse', 'deliveryNote'])
                         ]
                     ],
@@ -775,7 +775,7 @@ class ShowDeliveryNote extends OrgAction
 
                 ]
             ],
-            'grp.org.warehouses.show.dispatching.delivery-notes.show' => [
+            'grp.org.warehouses.show.dispatching.delivery_notes.show' => [
                 'label' => $deliveryNote->reference,
                 'route' => [
                     'name'       => $routeName,
