@@ -76,7 +76,7 @@ trait IsOrder
                 'reference' => $invoice->reference,
                 'routes'    => [
                     'show'     => $routeShow,
-                    'download' => $routeDownload || null,
+                    'download' => $routeDownload,
                 ]
             ];
         }
@@ -136,7 +136,7 @@ trait IsOrder
             'customer_channel' => $customerChannel,
             'invoice'          => $invoiceData,
             'order_properties' => [
-                'weight'    => NaturalLanguage::make()->weight($order->estimated_weight),
+                'weight' => NaturalLanguage::make()->weight($order->estimated_weight),
             ],
             'delivery_notes'   => $deliveryNotesData,
             'products'         => [
