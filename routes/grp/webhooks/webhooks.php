@@ -10,7 +10,6 @@ use App\Actions\Comms\Notifications\GetSnsNotification;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Webhooks\CatchFulfilmentOrderFromShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\CustomerDataRedactWebhookShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\CustomerDataRequestWebhookShopify;
-use App\Actions\Dropshipping\Shopify\Webhook\DeleteProductWebhooksShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\ShopRedactWebhookShopify;
 use App\Actions\Dropshipping\ShopifyUser\DeleteShopifyUser;
 use App\Actions\Dropshipping\Tiktok\Webhooks\HandleOrderIncomingTiktok;
@@ -21,6 +20,14 @@ use App\Actions\Dropshipping\WooCommerce\Webhook\DeleteProductWebhooksWooCommerc
 Route::name('webhooks.')->group(function () {
     Route::post('sns', GetSnsNotification::class)->name('sns');
 });
+
+Route::prefix('shopify/{shopifyUser:id}')->name('webhooks.shopify.')->group(function () {
+    Route::post('fulfillment_order_notification', CatchFulfilmentOrderFromShopify::class)->name('fulfillment_order_notification');
+
+
+
+});
+
 
 Route::prefix('shopify-user/{shopifyUser:id}')->name('webhooks.shopify.')->group(function () {
     Route::prefix('products')->as('products.')->group(function () {

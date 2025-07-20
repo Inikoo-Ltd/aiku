@@ -67,9 +67,6 @@ trait WithExternalPlatforms
             }
 
             if (!$this->hasCredentials($customerSalesChannel)) {
-
-
-
                 return [
                     CustomerSalesChannelConnectionStatusEnum::ERROR,
                     'No webhooks configured'
@@ -88,6 +85,101 @@ trait WithExternalPlatforms
             }
 
             return [$connectionStatus, $error];
+        }
+    }
+
+    public function getShopifyShopData(CustomerSalesChannel $customerSalesChannel): ?array
+    {
+        /** @var ShopifyUser $shopifyUser */
+        $shopifyUser = $customerSalesChannel->user;
+
+        if (!$shopifyUser) {
+            return null;
+        }
+
+        $client = $shopifyUser->getShopifyClient();
+
+        if (!$client) {
+            return null;
+        }
+
+        try {
+            // GraphQL query to get shop data
+            $query = <<<'QUERY'
+            {
+              shop {
+                id
+                name
+                email
+                url
+                myshopifyDomain
+                description
+                fulfillmentServices{
+                    id
+                    serviceName
+                    inventoryManagement
+                    type
+                    location{
+                        id
+                        name
+                        createdAt
+                        isActive
+                        fulfillsOnlineOrders
+                        address{
+                            phone
+                            address_line_1: address1
+                            address_line_2: address2
+                            locality: city
+                            administrative_area: province
+                            postal_code: zip
+                            country_code: countryCode
+                        }
+                    }
+                }
+                billingAddress {
+                    company_name: company
+                    address_line_1: address1
+                    address_line_2: address2
+                    locality: city
+                    administrative_area: province
+                    postal_code: zip
+                    country_code: countryCodeV2
+                }
+              }
+            }
+            QUERY;
+
+
+
+            $response = $client->request('POST', '/admin/api/2025-07/graphql.json', [
+                'json' => [
+                    'query' => $query
+                ]
+            ]);
+
+
+            if (!empty($response['errors']) || !isset($response['body'])) {
+                return null;
+            }
+
+
+            $body = $response['body']->toArray();
+
+
+            if ($shopifyShopData = Arr::get($body, 'data.shop')) {
+                // Extract company_name from billingAddress and add it at the same level as url
+                if (isset($shopifyShopData['billingAddress']) && isset($shopifyShopData['billingAddress']['company_name'])) {
+                    $shopifyShopData['company_name'] = $shopifyShopData['billingAddress']['company_name'];
+                    unset($shopifyShopData['billingAddress']['company_name']);
+                }
+
+
+                return $shopifyShopData;
+            }
+
+            return [CustomerSalesChannelConnectionStatusEnum::DISCONNECTED, ''];
+        } catch (\Exception $e) {
+            return null;
         }
     }
 
@@ -194,14 +286,12 @@ trait WithExternalPlatforms
 
 
                 return [null, $errorData['data']['latest_error']['msg']];
-
             }
 
             if (!isset($response['body'])) {
                 dd($response);
 
                 return [null, 'No body response'];
-
             }
 
 
