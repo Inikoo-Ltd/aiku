@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\Shopify\Webhook;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\ShopifyUser;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Route;
 
@@ -56,9 +57,8 @@ class StoreWebhooksToShopify extends OrgAction
             $webhooksData = [];
             foreach ($webhooks as $webhook) {
                 $webhook = $shopifyUser->api()->getRestClient()->request('POST', 'admin/api/2024-07/webhooks.json', $webhook);
-
-                if (!$webhook['errors'] && is_array($webhook['body']['webhook']['container'])) {
-                    $webhooksData[] = $webhook['body']['webhook']['container'];
+                if (! blank(Arr::get($webhook, 'body.webhook'))) {
+                    $webhooksData[] = Arr::get($webhook, 'body.webhook');
                 }
             }
 

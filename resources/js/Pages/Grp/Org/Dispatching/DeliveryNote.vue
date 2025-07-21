@@ -35,11 +35,8 @@ import { notify } from "@kyvg/vue3-notification";
 import axios from "axios";
 import { get, set } from 'lodash-es';
 import PureInput from "@/Components/Pure/PureInput.vue";
-import DeliveryAddressManagementModal from "@/Components/Utils/DeliveryAddressManagementModal.vue"
-import AddressManagementSingle from "@/Components/Utils/AddressManagementSingle.vue"
 import ToggleSwitch from 'primevue/toggleswitch';
 import PureAddress from "@/Components/Pure/PureAddress.vue"
-import SimpleBoxStatDeliveryNote from "@/Components/Warehouse/DeliveryNotes/SimpleBoxStatDeliveryNote.vue";
 
 
 library.add(faSmileWink,faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck);
@@ -88,7 +85,6 @@ const props = defineProps<{
     shipments: {
         submit_route: routeType
         fetch_route: routeType
-        delete_route: routeType
     }
     address: {
         delivery: {
@@ -127,30 +123,6 @@ const selectedPicker = ref(props.box_stats.picker);
 const disable = ref(props.box_stats.state);
 const isLoading = ref<{ [key: string]: boolean }>({});
 const isLoadingToQueue = ref(false);
-const onSetToQueue = () => {
-    router.patch(
-        route(props.routes.set_queue.name, {
-            ...props.routes.set_queue.parameters,
-            user: selectedPicker.value.id
-        }),
-        {},
-        {
-            onError: (error) => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: error.message,
-                    type: "error"
-                });
-            },
-            onSuccess: () => {
-                isModalToQueue.value = false;
-            },
-            onStart: () => isLoadingToQueue.value = true,
-            onFinish: () => isLoadingToQueue.value = false,
-            preserveScroll: true
-        }
-    );
-};
 const onUpdatePicker = () => {
     router.patch(
         route(props.routes.update.name, props.routes.update.parameters),
@@ -199,8 +171,6 @@ const onOpenModalTrackingNumber = async () => {
     }
     isLoadingData.value = false;
 };
-
-
 const onSubmitShipment = () => {
     formTrackingNumber
         .transform((data) => ({
@@ -316,9 +286,7 @@ watch(pickingView, (val) => {
                 </div>
             </div>
 
-            <a :href="route('grp.org.warehouses.show.dispatching.delivery-notes.pdf', {
-                organisation: route().params.organisation,
-                warehouse: warehouse.slug,
+            <a :href="route('grp.pdfs.delivery-notes', {
                 deliveryNote: route().params.deliveryNote,
             })" as="a" target="_blank" class="flex items-center"
                 v-tooltip="trans('Download PDF of this Delivery Note')">
@@ -347,10 +315,6 @@ watch(pickingView, (val) => {
             <Button @click="isModalToQueue = true" :label="action.label" :icon="action.icon" type="tertiary" />
         </template>
 
-        <!--   <template #other>
-           <ToggleSwitch v-model="pickingView" />
-        </template>
- -->
 
     </PageHeading>
 
@@ -376,8 +340,6 @@ watch(pickingView, (val) => {
             :format-time="'MMMM d yyyy, HH:mm'" />
     </div>
 
-   <!--  <SimpleBoxStatDeliveryNote v-if="box_stats && pickingView" :boxStats="box_stats" :routes
-        :deliveryNote="delivery_note" :updateRoute="routes.update" :shipments /> -->
 
       <BoxStatsDeliveryNote
         v-if="box_stats && pickingView"
@@ -438,7 +400,7 @@ watch(pickingView, (val) => {
                 </dd>
             </div>
             <div class="w-full mt-2">
-                <Button @click="delivery_note_state.value === 'queued' ? onUpdatePicker() : onSetToQueue()"
+                <Button @click="onUpdatePicker()"
                     :label="delivery_note_state.value === 'queued' ? trans('Change picker') : trans('Set Picker')"
                     :iconRight="['fas', 'fa-arrow-right']" full :loading="isLoadingToQueue" :disabled="!selectedPicker"
                     v-tooltip="selectedPicker ? '' : trans('Select picker before set to queue')">

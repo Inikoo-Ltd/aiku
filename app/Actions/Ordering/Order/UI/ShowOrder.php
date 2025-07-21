@@ -211,10 +211,8 @@ class ShowOrder extends OrgAction
                     ])
                 ],
                 'deliveryNotePdfRoute' => [
-                    'name'       => 'grp.org.warehouses.show.dispatching.delivery-notes.pdf',
+                    'name'       => 'grp.pdfs.delivery-notes',
                     'parameters' => [
-                        'organisation' => $order->organisation->slug,
-                        'warehouse'    => $firstDeliveryNote->warehouse->slug,
                         'deliveryNote' => $firstDeliveryNote->slug,
                     ],
                 ]

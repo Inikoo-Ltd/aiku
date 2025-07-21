@@ -12,7 +12,6 @@ use App\Actions\Dispatching\Shipment\ApiCalls\CallApiApcGbShipping;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiDpdGbShipping;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiGlsSKShipping;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiItdShipping;
-use App\Actions\Dispatching\Shipment\ApiCalls\DpdGbCallShipperApi;
 use App\Actions\Dispatching\Shipment\ApiCalls\PostmenCallShipperApi;
 use App\Actions\Dispatching\Shipment\ApiCalls\WhistlGbCallShipperApi;
 use App\Actions\Dispatching\Shipment\Hydrators\ShipmentHydrateUniversalSearch;
@@ -30,6 +29,9 @@ class StoreShipment extends OrgAction
     use AsAction;
     use WithAttributes;
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper, array $modelData): Shipment
     {
         data_set($modelData, 'group_id', $parent->group_id);
@@ -50,8 +52,8 @@ class StoreShipment extends OrgAction
             $shipmentData = match ($shipper->api_shipper) {
                 'apc-gb' => CallApiApcGbShipping::run($parent, $shipper),
                 'gls-sk' => CallApiGlsSKShipping::run($parent, $shipper),
-                'dpd-gb' => DpdGbCallShipperApi::run($parent, $shipper),
-                'dpd-sk' => CallApiDpdGbShipping::run($parent, $shipper),
+                // 'dpd-gb' => DpdGbCallShipperApi::run($parent, $shipper),
+                'dpd-gb' => CallApiDpdGbShipping::run($parent, $shipper),
                 'pst-mn' => PostmenCallShipperApi::run($parent, $shipper),
                 'whl-gb' => WhistlGbCallShipperApi::run($parent, $shipper),
                 'itd' => CallApiItdShipping::run($parent, $shipper),
@@ -63,7 +65,6 @@ class StoreShipment extends OrgAction
                 ]
             };
 
-
             if ($shipmentData['status'] == 'success') {
                 $modelData = array_merge($modelData, $shipmentData['modelData']);
             } else {
@@ -72,13 +73,9 @@ class StoreShipment extends OrgAction
                 );
             }
         }
+        /** @var Shipment $shipment */
         $shipment = $shipper->shipments()->create($modelData);
-
-
-
         $shipment->refresh();
-
-
         $parent->shipments()->attach($shipment->id);
 
         ShipmentHydrateUniversalSearch::dispatch($shipment);
@@ -94,6 +91,9 @@ class StoreShipment extends OrgAction
         ];
     }
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function action(DeliveryNote|PalletReturn $parent, Shipper $shipper, array $modelData): Shipment
     {
         $this->initialisation($parent->organisation, $modelData);

@@ -38,6 +38,7 @@ const props = defineProps<{
 }>()
 const emits = defineEmits<{
     (e: 'optionsList', value: any[]): void
+    (e: 'selectedObject', value: any[]): void
 }>()
 
 const layout = inject('layout', layoutStructure)
@@ -141,7 +142,14 @@ const onOpen = () => {
 <template>
     <!-- <pre>{{ options }}</pre> -->
     <!-- <div class="relative w-full text-gray-600 rounded-sm"> -->
-    <Multiselect ref="_multiselectRef" v-model="model" :options="optionsList.length ? optionsList : (initOptions || [])"
+        <!-- {{ model }} -->
+        <!-- <pre>{{ optionsList.length ? optionsList : (initOptions || []) }}</pre> -->
+    <Multiselect ref="_multiselectRef"
+        v-model="model"
+        @update:modelValue="(e) => {
+            emits('selectedObject', optionsList.find(opt => (opt[valueProp ?? 'id'] === e)))
+        }"
+        :options="optionsList.length ? optionsList : (initOptions || [])"
         :classes="{
                 placeholder: 'pointer-events-none absolute top-1/2 z-10 -translate-y-1/2 select-none text-sm text-left w-full pl-4 font-light text-gray-400 opacity-1',
                 ...classes,
@@ -152,12 +160,14 @@ const onOpen = () => {
         clearOnSearch autofocus :caret="isComponentLoading ? false : true"
         :loading="isLoading || isComponentLoading === 'fetchProduct'"
         :placeholder="placeholder || trans('Select option')" :resolve-on-load="true" :min-chars="1"
-        @open="() => onOpen()" @search-change="(ee) => onSearchQuery(ee)">
+        @open="() => onOpen()" @search-change="(ee) => onSearchQuery(ee)"
+    >
 
         <template #singlelabel="{ value }">
             <!-- {{ $attrs }} -->
             <slot name="singlelabel" :value>
                 <div class="w-full text-left pl-4">{{ value[labelProp || 'name'] }} <span
+                        v-if="value.code"
                         class="text-sm text-gray-400">({{ value.code }})</span></div>
             </slot>
         </template>

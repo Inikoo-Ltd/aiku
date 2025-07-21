@@ -21,7 +21,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
 
-class RequestApiUploadProductWooCommerce extends RetinaAction
+class UploadPortfolioWooCommerce extends RetinaAction
 {
     use AsAction;
     use WithAttributes;

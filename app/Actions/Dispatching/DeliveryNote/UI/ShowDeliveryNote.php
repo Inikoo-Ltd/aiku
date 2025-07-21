@@ -446,28 +446,6 @@ class ShowDeliveryNote extends OrgAction
     {
         $actions = $this->getActions($deliveryNote, $request);
 
-        $actions = array_merge(
-            // [
-            //     [
-            //         'type'    => 'button',
-            //         'style'   => 'tertiary',
-            //         'icon'    => ['fal', 'fa-pdf'],
-            //         'key'     => 'pdf-delivery-note',
-            //         'label'   => __('pdf delivery note'),
-            //         'tooltip' => __('pdf delivery note'),
-            //         'route'   => [
-            //             'name'       => 'grp.org.warehouses.show.dispatching.delivery-notes.pdf',
-            //             'parameters' => [
-            //                 'organisation' => $deliveryNote->organisation->slug,
-            //                 'warehouse'    => $deliveryNote->warehouse->slug,
-            //                 'deliveryNote' => $deliveryNote->slug,
-            //             ],
-            //         ]
-            //     ],
-            // ],
-            $actions,
-        );
-
         $props = [
             'title'         => __('delivery note'),
             'breadcrumbs'   => $this->getBreadcrumbs(
@@ -649,7 +627,7 @@ class ShowDeliveryNote extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.warehouses.show.dispatching.delivery-notes.show',
+            'grp.org.warehouses.show.dispatching.delivery_notes.show',
             => array_merge(
                 ShowWarehouse::make()->getBreadcrumbs(
                     Arr::only($routeParameters, ['organisation', 'warehouse'])
@@ -662,7 +640,7 @@ class ShowDeliveryNote extends OrgAction
                             'parameters' => Arr::only($routeParameters, ['organisation', 'warehouse'])
                         ],
                         'model' => [
-                            'name'       => 'grp.org.warehouses.show.dispatching.delivery-notes.show',
+                            'name'       => 'grp.org.warehouses.show.dispatching.delivery_notes.show',
                             'parameters' => Arr::only($routeParameters, ['organisation', 'warehouse', 'deliveryNote'])
                         ]
                     ],
@@ -797,7 +775,7 @@ class ShowDeliveryNote extends OrgAction
 
                 ]
             ],
-            'grp.org.warehouses.show.dispatching.delivery-notes.show' => [
+            'grp.org.warehouses.show.dispatching.delivery_notes.show' => [
                 'label' => $deliveryNote->reference,
                 'route' => [
                     'name'       => $routeName,

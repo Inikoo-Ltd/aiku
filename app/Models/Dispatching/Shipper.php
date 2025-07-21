@@ -8,7 +8,6 @@
 
 namespace App\Models\Dispatching;
 
-use App\Actions\Dispatching\Shipment\Itd\Traits\WithItdAuthorization;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasUniversalSearch;
@@ -71,7 +70,6 @@ class Shipper extends Model implements Auditable
     use HasUniversalSearch;
     use HasHistory;
     use HasFactory;
-    use WithItdAuthorization;
 
     protected $casts = [
         'data'            => 'array',

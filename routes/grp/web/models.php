@@ -72,6 +72,7 @@ use App\Actions\CRM\Prospect\ImportShopProspects;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\CRM\WebUser\UpdateWebUser;
 use App\Actions\Dispatching\Printer\PrintShipmentLabel;
+use App\Actions\Dispatching\Shipment\DeleteShipment;
 use App\Actions\Dispatching\Shipment\DetachShipmentFromPalletReturn;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInFulfilment;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInWarehouse;
@@ -842,6 +843,10 @@ Route::name('poll.')->prefix('poll')->group(function () {
 });
 
 Route::post('website/{website:id}/break-cache', BreakWebsiteCache::class)->name('website.break_cache')->withoutScopedBindings();
+
+
+
+Route::delete('/shipment/{shipment:id}', DeleteShipment::class)->name('shipment.delete');
 
 
 require __DIR__."/models/inventory/warehouse.php";

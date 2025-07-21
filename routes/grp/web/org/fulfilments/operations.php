@@ -25,6 +25,7 @@ use App\Actions\Fulfilment\Pallet\UI\ShowPallet;
 use App\Actions\Fulfilment\PalletDelivery\UI\EditPalletDelivery;
 use App\Actions\Fulfilment\PalletDelivery\UI\IndexPalletDeliveries;
 use App\Actions\Fulfilment\PalletDelivery\UI\ShowPalletDelivery;
+use App\Actions\Fulfilment\PalletReturn\ExportPalletDeliveryPallet;
 use App\Actions\Fulfilment\PalletReturn\UI\IndexPalletReturns;
 use App\Actions\Fulfilment\PalletReturn\UI\ShowPalletReturn;
 use App\Actions\Fulfilment\PalletReturn\UI\ShowStoredItemReturn;
@@ -68,6 +69,7 @@ Route::get('/pallets/{pallet}/edit', [EditPallet::class, 'inFulfilment'])->name(
 Route::get('deliveries', IndexPalletDeliveries::class)->name('pallet-deliveries.index');
 Route::get('deliveries/{palletDelivery}', ShowPalletDelivery::class)->name('pallet-deliveries.show');
 Route::get('deliveries/{palletDelivery}/edit', EditPalletDelivery::class)->name('pallet-deliveries.edit');
+Route::get('deliveries/{palletDelivery}/pallet-export', ExportPalletDeliveryPallet::class)->name('pallet-deliveries.export');
 
 Route::get('returns', IndexPalletReturns::class)->name('pallet-returns.index');
 Route::get('returns/confirmed', [IndexPalletReturns::class, 'inFulfilmentConfirmed'])->name('pallet-returns.confirmed.index');

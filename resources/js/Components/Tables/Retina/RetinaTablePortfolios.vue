@@ -262,7 +262,7 @@ const onClickOutOfStock = (query: string) => {
 					</span>
 				</template>
 
-				<div v-else v-tooltip="trans('Your channel is not connected to the platform yet.')" class="text-center text-lg">
+				<div v-else-if="isPlatformManual" v-tooltip="trans('Your channel is not connected to the platform yet.')" class="text-center text-lg">
                     <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-red-500" fixed-width aria-hidden="true" />
                 </div>
 			</div>
@@ -293,7 +293,7 @@ const onClickOutOfStock = (query: string) => {
 
 				
 				<ButtonWithLink
-					v-tooltip="trans('Delete product')"
+					v-tooltip="trans('Unselect product')"
 					type="negative"
 					icon="fal fa-skull"
 					:routeTarget="item.update_portfolio"

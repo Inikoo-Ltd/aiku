@@ -96,6 +96,12 @@ class StoreShopifyUser extends RetinaAction
         $myShopifyDomain = config('shopify-app.my_shopify_domain');
         $shopifyShopUrl  = 'https://'.$this->get('name').'.'.$myShopifyDomain;
 
+        if (ShopifyUser::where('name', $this->get('name').'.'.$myShopifyDomain)
+            ->whereNotNull('customer_id')
+            ->exists()) {
+            $validator->errors()->add('name', __('Shopify shop :shop already exists, please use other name', ['shop' => $this->get('name')]));
+        }
+
         $response = Http::get($shopifyShopUrl);
         if (!$response->ok()) {
             $validator->errors()->add('name', __('Shopify shop :shop not found', ['shop' => $this->get('name')]));

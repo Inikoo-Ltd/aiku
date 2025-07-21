@@ -21,6 +21,7 @@ use App\Http\Resources\Accounting\PaymentsResource;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Dispatching\RetinaShipmentsResource;
+use App\Http\Resources\Dispatching\ShipmentsResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\NonProductItemsResource;
@@ -125,8 +126,8 @@ class ShowRetinaDropshippingOrder extends RetinaAction
 
 
                 RetinaOrderTabsEnum::TRANSACTIONS->value => $this->tab == RetinaOrderTabsEnum::TRANSACTIONS->value ?
-                    fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))
-                    : Inertia::lazy(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))),
+                    fn() => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))
+                    : Inertia::lazy(fn() => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))),
 
 
             ]
@@ -186,25 +187,25 @@ class ShowRetinaDropshippingOrder extends RetinaAction
             ];
         }
 
-        $invoiceData = null;
-        $invoice     = $order->invoices->first();
+        $invoicesData = [];
 
-        if ($invoice) {
-            $routeShow     = [
+        foreach ($order->invoices as $invoice) {
+            $routeShow = [
                 'name'       => 'retina.dropshipping.invoices.show',
                 'parameters' => [
                     'invoice' => $invoice->slug,
-                ]
+                ],
             ];
+
+
             $routeDownload = null;
 
-
-            $invoiceData = [
+            $invoicesData[] = [
                 'reference' => $invoice->reference,
                 'routes'    => [
                     'show'     => $routeShow,
-                    'download' => $routeDownload
-                ]
+                    'download' => $routeDownload,
+                ],
             ];
         }
 
@@ -227,8 +228,21 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                 ]
             );
         }
-        $deliveryNote = $order->deliveryNotes->first();
-        $shipments    = $deliveryNote?->shipments ? RetinaShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null;
+
+        $deliveryNotes     = $order->deliveryNotes;
+        $deliveryNotesData = [];
+
+        if ($deliveryNotes) {
+            foreach ($deliveryNotes as $deliveryNote) {
+                $deliveryNotesData[] = [
+                    'id'        => $deliveryNote->id,
+                    'reference' => $deliveryNote->reference,
+                    'state'     => $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
+                    'shipments' => $deliveryNote?->shipments ? RetinaShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null
+                ];
+            }
+        }
+
 
         return [
             'customer_client'  => $customerClientData,
@@ -250,11 +264,11 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                 ]
             ),
             'customer_channel' => $customerChannel,
-            'invoice'          => $invoiceData,
+            'invoices'         => $invoicesData,
             'order_properties' => [
                 'weight'    => NaturalLanguage::make()->weight($order->estimated_weight),
-                'shipments' => $shipments,
             ],
+            'delivery_notes'   => $deliveryNotesData,
             'products'         => [
                 'payment'          => [
                     'routes'       => [

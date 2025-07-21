@@ -5,11 +5,19 @@
   -->
 
 <script setup lang="ts">
-import Dashboard from '@/Components/DataDisplay/Dashboard/DashboardOld.vue'
+import DashboardOld from '@/Components/DataDisplay/Dashboard/DashboardOld.vue'
+import Dashboard from "@/Components/DataDisplay/Dashboard/Dashboard.vue"
+import StatsBox from '@/Components/Stats/StatsBox.vue'
 
 defineProps<{
     data: {
         dashboard_stats: {}
+        statsBox: {
+            title: string
+            value: string
+            icon: string
+            color: string
+        }[]
     }
     tab: string
 }>()
@@ -20,8 +28,17 @@ defineProps<{
 
 <template>
     <div>
-        <Dashboard class="p-4"
+        <DashboardOld class="p-4"
             :dashboard="data.dashboard_stats"
         />
+
+        <div class="flex justify-between gap-x-4 px-4">
+            <div class="w-full max-w-xl text-xl h-[700px] mt-4 xmd:grid grid-cols-1 gap-2 lg:gap-5 xsm:grid-cols-2">
+                <StatsBox
+                    v-for="(stat, idxStat) in data.statsBox"
+                    :stat="stat"
+                />
+            </div>
+        </div>
     </div>
 </template>

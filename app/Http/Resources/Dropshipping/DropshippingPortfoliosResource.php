@@ -12,6 +12,7 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 /**
  * @property string $slug
@@ -156,7 +157,14 @@ class DropshippingPortfoliosResource extends JsonResource
             'updated_at'                => $this->updated_at,
             'platform_product_id'       => $this->platform_product_id,
             'upload_warning'            => $this->upload_warning,
-            'is_code_exist'             => false,  // TODO: true if code exists in Shopify/platforms
+            'is_code_exist'             =>  false, // ! blank($this->platform_product_availabilities), (we will use later when its ready)
+            'product_availability'      => [
+                'options' => Arr::get($this->platform_product_availabilities, 'options'),
+                'name' => Arr::get($this->platform_product_availabilities, 'title'),
+                'handle' => Arr::get($this->platform_product_availabilities, 'handle'),
+                'sku' => Arr::get($this->platform_product_availabilities, 'variants.0.sku'),
+                'barcode' => Arr::get($this->platform_product_availabilities, 'variants.0.barcode'),
+            ],
             'category' => $category,
             'platform' => $this->platform->type,
             'delete_portfolio' => [

@@ -25,31 +25,36 @@ class GetShopifyProductFromPortfolio
     /**
      * @throws \Exception
      */
-    public function handle(ShopifyUser $shopifyUser, Portfolio $portfolio)
+    public function handle(ShopifyUser $shopifyUser, Portfolio $portfolio): ?array
     {
-
-        if(!$portfolio->platform_handle){
-            return null;
-        }
-
         try {
-            $response = $shopifyUser->getShopifyClient()->request('GET', '/admin/api/2025-04/products.json', [
+            $searchFields = [
                 'handle' => $portfolio->platform_handle,
-                'limit'  => 1
-            ]);
+                'title' => $portfolio->item_name,
+                'barcode' => $portfolio->item->barcode,
+                'sku' => $portfolio->item_code
+            ];
 
-            if (Arr::get($response, 'errors')) {
-                Sentry::captureMessage('Error in GetShopifyProductFromPortfolio: >'.$portfolio->platform_handle.'<');
+            $product = null;
+            foreach ($searchFields as $field => $value) {
+                if (empty($value)) {
+                    continue;
+                }
 
-                return null;
-            }
+                $response = $shopifyUser->getShopifyClient()->request('GET', '/admin/api/2025-04/products.json', [
+                    $field => $value,
+                    'limit' => 1
+                ]);
 
-            $products = Arr::get($response, 'body.products', []);
+                if (Arr::get($response, 'errors')) {
+                    continue;
+                }
 
-            if (empty($products)) {
-                $product = null;
-            } else {
-                $product = $products[0];
+                $products = Arr::get($response, 'body.products', []);
+                if (!empty($products)) {
+                    $product = Arr::get((array) Arr::first($products), 'container');
+                    break;
+                }
             }
 
             return $product;
