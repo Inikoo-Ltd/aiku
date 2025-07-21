@@ -32,6 +32,8 @@ class UpdateShopifyChannelShopData
             ]
         ];
 
+
+
         $fulfilmentServiceName = StoreFulfilmentService::make()->getFulfilmentServiceName($customerSalesChannel);
 
         // Extract shopID from the response and save it to shopify_shop_id
@@ -75,10 +77,13 @@ class UpdateShopifyChannelShopData
         // Display shop data in a nice way
         $shopData = $customerSalesChannel->user->data['shop'] ?? [];
 
+
         if (empty($shopData)) {
             $command->info("No shop data found.");
             return;
         }
+
+
 
         // Basic shop information
         $tableData = [
@@ -119,6 +124,7 @@ class UpdateShopifyChannelShopData
                 $serviceData = [
                     ['ID', $service['id'] ?? 'N/A'],
                     ['Name', $service['serviceName'] ?? 'N/A'],
+                    ['callbackUrl', $service['callbackUrl'] ?? 'N/A'],
                     ['Type', $service['type'] ?? 'N/A'],
                     ['Inventory Management', $service['inventoryManagement'] ? 'Yes' : 'No']
                 ];

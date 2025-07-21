@@ -118,6 +118,7 @@ trait WithExternalPlatforms
                     id
                     serviceName
                     inventoryManagement
+                    callbackUrl
                     type
                     location{
                         id
@@ -164,6 +165,7 @@ trait WithExternalPlatforms
 
 
             $body = $response['body']->toArray();
+
 
 
             if ($shopifyShopData = Arr::get($body, 'data.shop')) {
