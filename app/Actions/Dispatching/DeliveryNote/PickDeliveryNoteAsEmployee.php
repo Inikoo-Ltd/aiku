@@ -62,7 +62,7 @@ class PickDeliveryNoteAsEmployee extends OrgAction
     public function htmlResponse(DeliveryNote $deliveryNote): RedirectResponse
     {
         return Redirect::route(
-            'grp.org.warehouses.show.dispatching.delivery-notes.show',
+            'grp.org.warehouses.show.dispatching.delivery_notes.show',
             [
                 'organisation' => $deliveryNote->organisation->slug,
                 'warehouse'    => $deliveryNote->warehouse->slug,

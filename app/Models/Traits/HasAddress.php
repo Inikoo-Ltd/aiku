@@ -34,4 +34,5 @@ trait HasAddress
         $address = $this->addresses()->where('scope', '=', $scope)->first();
         return $address;
     }
+
 }

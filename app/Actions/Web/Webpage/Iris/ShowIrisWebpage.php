@@ -8,7 +8,6 @@
 
 namespace App\Actions\Web\Webpage\Iris;
 
-use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
@@ -44,8 +43,8 @@ class ShowIrisWebpage
             isLoggedIn: auth()->check()
         );
         $webpageImg = [];
-        if($webpage->seoImage) {
-            $webpageImg = GetImgProxyUrl::run($webpage->seoImage->extension('png'));
+        if ($webpage->seoImage) {
+            $webpageImg = $webpage->imageSources(1200, 1200, 'seoImage');
         }
 
         return [

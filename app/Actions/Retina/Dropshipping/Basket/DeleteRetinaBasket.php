@@ -23,7 +23,7 @@ class DeleteRetinaBasket extends RetinaAction
     {
         $customerSalesChannel = $order->customerSalesChannel;
 
-        if($order->transactions) {
+        if ($order->transactions) {
             $order->transactions()->delete();
         }
 

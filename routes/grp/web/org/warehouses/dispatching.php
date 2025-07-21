@@ -6,7 +6,6 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Actions\Dispatching\DeliveryNote\PdfDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotes;
 use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
 use App\Actions\Dispatching\GoodsOut\UI\IndexWarehousePalletReturns;
@@ -45,8 +44,7 @@ Route::get('/delivery-notes/finalised/shop/{shopType}', [IndexDeliveryNotes::cla
 Route::get('/delivery-notes/dispatched', [IndexDeliveryNotes::class, 'dispatched'])->name('dispatched.delivery-notes');
 Route::get('/delivery-notes/dispatched/shop/{shopType}', [IndexDeliveryNotes::class, 'dispatchedShopTypes'])->name('dispatched.delivery-notes.shop');
 
-Route::get('/delivery-notes/{deliveryNote}', [ShowDeliveryNote::class, 'inWarehouse'])->name('delivery-notes.show');
-Route::get('/delivery-notes/{deliveryNote}/pdf', PdfDeliveryNote::class)->name('delivery-notes.pdf');
+Route::get('/delivery-notes/{deliveryNote}', [ShowDeliveryNote::class, 'inWarehouse'])->name('delivery_notes.show');
 
 Route::get('returns', IndexWarehousePalletReturns::class)->name('pallet-returns.index');
 Route::get('returns/confirmed', [IndexWarehousePalletReturns::class, 'inWarehouseConfirmed'])->name('pallet-returns.confirmed.index');

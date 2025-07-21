@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Dispatching\DeliveryNote\CancelDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\CopyOrderNotesToDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\FinaliseDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\PickDeliveryNoteAsEmployee;
@@ -20,15 +21,14 @@ use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteDeliveryAddress;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPacking;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPicked;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPicking;
-use App\Actions\Dispatching\Shipment\DetachShipmentFromDeliveryNote;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInDeliveryNoteInWarehouse;
 use Illuminate\Support\Facades\Route;
 
 Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(function () {
     Route::patch('update', UpdateDeliveryNote::class)->name('update');
+    Route::patch('copy-notes', CopyOrderNotesToDeliveryNote::class)->name('copy_notes');
     Route::patch('update-address', UpdateDeliveryNoteDeliveryAddress::class)->name('update_address');
     Route::post('shipment-from-warehouse', CreateShipmentInDeliveryNoteInWarehouse::class)->name('shipment.store');
-    Route::delete('/detach-shipment/{shipment:id}', DetachShipmentFromDeliveryNote::class)->name('shipment.detach')->withoutScopedBindings();
     Route::patch('employee-pick', PickDeliveryNoteAsEmployee::class)->name('employee.pick');
     Route::name('state.')->prefix('state')->group(function () {
         Route::patch('in-queue/{user:id}', UpdateDeliveryNoteStateToInQueue::class)->name('in_queue')->withoutScopedBindings();
