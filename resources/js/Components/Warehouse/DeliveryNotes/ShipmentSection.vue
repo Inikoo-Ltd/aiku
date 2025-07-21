@@ -236,7 +236,7 @@ const xxxCopyAddress = ref({ ...props.address?.delivery })
 <template>
     <div class="flex gap-x-1 py-0.5">
         <div class="group w-full">
-            <div class="leading-4 xtext-base flex justify-between w-full py-1">
+            <div v-if="props.shipments_routes?.submit_route?.name" class="leading-4 xtext-base flex justify-between w-full py-1">
                 <div>{{ trans("Shipments") }}</div>
             </div>
 
@@ -310,7 +310,8 @@ const xxxCopyAddress = ref({ ...props.address?.delivery })
                 <!-- Button: Shipment -->
                 <Button
                     xv-if="['packed', 'finalised', 'dispatched'].includes(delivery_note_state.value) && !(box_stats?.shipments?.length)"
-                    v-if="!shipments.length"
+                    v-if="!shipments.length && props.shipments_routes?.submit_route?.name"
+                    :disabled="props.shipments_routes?.submit_route?.name ? false : true"
                     @click="() => (isModalShipment = true, onOpenModalTrackingNumber())"
                     xv-tooltip="box_stats.parcels?.length ? '' : trans('Please add at least one parcel')"
                     :label="trans('Shipment')"
@@ -318,6 +319,9 @@ const xxxCopyAddress = ref({ ...props.address?.delivery })
                     type="dashed"
                     size="xs"
                 />
+                <div v-else class="italic text-gray-400 text-xs">
+                    No shipment yet. Waiting for warehouse team to add shipment..
+                </div>
             </div>
         </div>
 

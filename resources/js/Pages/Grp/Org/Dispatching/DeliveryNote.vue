@@ -294,11 +294,11 @@ watch(pickingView, (val) => {
             </a>
 
             <!-- Button: Shipment -->
-            <Button
+            <!-- <Button
                 v-if="['packed', 'finalised', 'dispatched'].includes(delivery_note_state.value) && !(box_stats?.shipments?.length)"
                 @click="() => box_stats.parcels?.length ? (isModalShipment = true, onOpenModalTrackingNumber()) : set(listError, 'box_stats_parcel', true)"
                 v-tooltip="box_stats.parcels?.length ? '' : trans('Please add at least one parcel')"
-                :label="trans('Shipment')" icon="fal fa-shipping-fast" type="tertiary" />
+                :label="trans('Shipment')" icon="fal fa-shipping-fast" type="tertiary" /> -->
         </template>
 
         <template #button-to-queue="{ action }">
@@ -454,8 +454,10 @@ watch(pickingView, (val) => {
                 </div>
 
                 <div class="">
-                    <PureMultiselectInfiniteScroll v-model="formTrackingNumber.shipping_id"
-                        :fetchRoute="shipments.fetch_route" required :disabled="isLoadingButton == 'addTrackingNumber'"
+                    <PureMultiselectInfiniteScroll
+                        v-if="shipments?.fetch_route"
+                        v-model="formTrackingNumber.shipping_id"
+                        :fetchRoute="shipments?.fetch_route" required :disabled="isLoadingButton == 'addTrackingNumber'"
                         :placeholder="trans('Select shipping')" object @optionsList="(e) => optionShippingList = e">
                         <template #singlelabel="{ value }">
                             <div class="w-full text-left pl-4">
