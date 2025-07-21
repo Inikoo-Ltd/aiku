@@ -163,7 +163,7 @@ class IndexInvoices extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
 
             $table->betweenDates(['date']);
@@ -228,6 +228,15 @@ class IndexInvoices extends OrgAction
             $parameters = array_filter([
                 'organisation' => $this->organisation->slug,
                 'shop'         => $this->shop->slug,
+                'filter'       => $filter,
+                'bucket'       => $this->bucket,
+                'type'         => 'invoice',
+            ]);
+        } elseif ($this->parent instanceof InvoiceCategory) {
+            $route      = 'grp.org.accounting.invoice-categories.show.invoices.index.omega';
+            $parameters = array_filter([
+                'organisation' => $this->organisation->slug,
+                'invoiceCategory' => $this->parent->slug,
                 'filter'       => $filter,
                 'bucket'       => $this->bucket,
                 'type'         => 'invoice',
@@ -329,7 +338,7 @@ class IndexInvoices extends OrgAction
             ];
         } elseif ($this->parent instanceof Organisation) {
             $afterTitle = [
-                'label' => __('In organisation').': '.$this->parent->name
+                'label' => __('In organisation') . ': ' . $this->parent->name
             ];
         } elseif ($this->parent instanceof Shop) {
             $afterTitle = [
@@ -353,11 +362,11 @@ class IndexInvoices extends OrgAction
                 ],
 
                 InvoicesTabsEnum::INVOICES->value => $this->tab == InvoicesTabsEnum::INVOICES->value
-                    ? fn () => InvoicesResource::collection($invoices)
-                    : Inertia::lazy(fn () => InvoicesResource::collection($invoices)),
+                    ? fn() => InvoicesResource::collection($invoices)
+                    : Inertia::lazy(fn() => InvoicesResource::collection($invoices)),
                 InvoicesTabsEnum::REFUNDS->value  => $this->tab == InvoicesTabsEnum::REFUNDS->value
-                    ? fn () => RefundsResource::collection(IndexRefunds::run($this->parent, InvoicesTabsEnum::REFUNDS->value))
-                    : Inertia::lazy(fn () => RefundsResource::collection(IndexRefunds::run($this->parent, InvoicesTabsEnum::REFUNDS->value))),
+                    ? fn() => RefundsResource::collection(IndexRefunds::run($this->parent, InvoicesTabsEnum::REFUNDS->value))
+                    : Inertia::lazy(fn() => RefundsResource::collection(IndexRefunds::run($this->parent, InvoicesTabsEnum::REFUNDS->value))),
 
             ];
         } elseif ($this->parent instanceof FulfilmentCustomer) {
@@ -368,14 +377,14 @@ class IndexInvoices extends OrgAction
                 ],
 
                 InvoicesInFulfilmentCustomerTabsEnum::INVOICES->value   => $this->tab == InvoicesInFulfilmentCustomerTabsEnum::INVOICES->value
-                    ? fn () => InvoicesResource::collection($invoices)
-                    : Inertia::lazy(fn () => InvoicesResource::collection($invoices)),
+                    ? fn() => InvoicesResource::collection($invoices)
+                    : Inertia::lazy(fn() => InvoicesResource::collection($invoices)),
                 InvoicesInFulfilmentCustomerTabsEnum::REFUNDS->value    => $this->tab == InvoicesInFulfilmentCustomerTabsEnum::REFUNDS->value
-                    ? fn () => RefundsResource::collection(IndexRefunds::run($this->parent, InvoicesInFulfilmentCustomerTabsEnum::REFUNDS->value))
-                    : Inertia::lazy(fn () => RefundsResource::collection(IndexRefunds::run($this->parent, InvoicesInFulfilmentCustomerTabsEnum::REFUNDS->value))),
+                    ? fn() => RefundsResource::collection(IndexRefunds::run($this->parent, InvoicesInFulfilmentCustomerTabsEnum::REFUNDS->value))
+                    : Inertia::lazy(fn() => RefundsResource::collection(IndexRefunds::run($this->parent, InvoicesInFulfilmentCustomerTabsEnum::REFUNDS->value))),
                 InvoicesInFulfilmentCustomerTabsEnum::IN_PROCESS->value => $this->tab == InvoicesInFulfilmentCustomerTabsEnum::IN_PROCESS->value
-                    ? fn () => InvoicesResource::collection(IndexStandaloneInvoicesInProcess::run($this->parent, InvoicesInFulfilmentCustomerTabsEnum::IN_PROCESS->value))
-                    : Inertia::lazy(fn () => InvoicesResource::collection(IndexStandaloneInvoicesInProcess::run($this->parent, InvoicesInFulfilmentCustomerTabsEnum::IN_PROCESS->value))),
+                    ? fn() => InvoicesResource::collection(IndexStandaloneInvoicesInProcess::run($this->parent, InvoicesInFulfilmentCustomerTabsEnum::IN_PROCESS->value))
+                    : Inertia::lazy(fn() => InvoicesResource::collection(IndexStandaloneInvoicesInProcess::run($this->parent, InvoicesInFulfilmentCustomerTabsEnum::IN_PROCESS->value))),
 
             ];
         } else {
@@ -560,7 +569,7 @@ class IndexInvoices extends OrgAction
                         'name'       => $routeName,
                         'parameters' => $routeParameters
                     ],
-                    trim('('.__('All').') ')
+                    trim('(' . __('All') . ') ')
                 )
             ),
             'grp.org.accounting.unpaid_invoices.index' =>
@@ -571,7 +580,7 @@ class IndexInvoices extends OrgAction
                         'name'       => $routeName,
                         'parameters' => $routeParameters
                     ],
-                    trim('('.__('Unpaid').') ')
+                    trim('(' . __('Unpaid') . ') ')
                 )
             ),
 
@@ -583,7 +592,7 @@ class IndexInvoices extends OrgAction
                         'name'       => $routeName,
                         'parameters' => $routeParameters
                     ],
-                    trim('('.__('Unpaid').') ')
+                    trim('(' . __('Unpaid') . ') ')
                 ),
             ),
 
@@ -617,7 +626,7 @@ class IndexInvoices extends OrgAction
                         'name'       => $routeName,
                         'parameters' => $routeParameters
                     ],
-                    trim('('.__('Unpaid').') ')
+                    trim('(' . __('Unpaid') . ') ')
                 )
             ),
             'grp.org.accounting.invoices.paid_invoices.index' =>
@@ -628,7 +637,7 @@ class IndexInvoices extends OrgAction
                         'name'       => $routeName,
                         'parameters' => $routeParameters
                     ],
-                    trim('('.__('Paid').') ')
+                    trim('(' . __('Paid') . ') ')
                 )
             ),
             'grp.org.fulfilments.show.operations.invoices.all.index' =>
@@ -639,7 +648,7 @@ class IndexInvoices extends OrgAction
                         'name'       => $routeName,
                         'parameters' => $routeParameters
                     ],
-                    trim('('.__('All').') ')
+                    trim('(' . __('All') . ') ')
                 )
             ),
             'grp.org.fulfilments.show.operations.invoices.paid_invoices.index' =>
@@ -650,7 +659,7 @@ class IndexInvoices extends OrgAction
                         'name'       => $routeName,
                         'parameters' => $routeParameters
                     ],
-                    trim('('.__('Paid').') ')
+                    trim('(' . __('Paid') . ') ')
                 )
             ),
             'grp.org.fulfilments.show.operations.invoices.unpaid_invoices.index' =>
@@ -661,7 +670,7 @@ class IndexInvoices extends OrgAction
                         'name'       => $routeName,
                         'parameters' => $routeParameters
                     ],
-                    trim('('.__('Unpaid').') ')
+                    trim('(' . __('Unpaid') . ') ')
                 )
             ),
             'grp.org.shops.show.crm.customers.show.invoices.index' =>
