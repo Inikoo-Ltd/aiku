@@ -165,6 +165,12 @@ const isShowDummySlotName = false
             </div>
         </div>
 
+         <slot  name="export" :dataPageHead="{ ...props }">
+            <div class="flex flex-col items-end sm:flex-row flex-wrap justify-end sm:items-center gap-y-1 gap-x-2 rounded-md">
+               <ButtonExport :data="data.exports"/>
+            </div>
+        </slot>
+
         <!-- Section: Button and/or ButtonGroup -->
         <slot name="button" :dataPageHead="{ ...props }">
             <div class="flex flex-col items-end sm:flex-row flex-wrap justify-end sm:items-center gap-y-1 gap-x-2 rounded-md">
@@ -277,11 +283,7 @@ const isShowDummySlotName = false
             </div>
         </slot>
 
-         <slot name="export" :dataPageHead="{ ...props }">
-            <div class="flex flex-col items-end sm:flex-row flex-wrap justify-end sm:items-center gap-y-1 gap-x-2 rounded-md">
-               <ButtonExport :data="data.exports"/>
-            </div>
-        </slot>
+       
 
     </div>
     <hr class="border-gray-300" />
