@@ -26,16 +26,16 @@ class CopyOrderNotesToDeliveryNote extends OrgAction
         $internalNotes = '';
         $shippingNotes = '';
 
-        if(Arr::exists($modelData, 'customer_notes')) {
+        if(Arr::exists($modelData, 'customer_notes') && Arr::get($modelData, 'customer_notes') == true) {
             $customerNotes  = $order->customer_notes;
         }
-        if(Arr::exists($modelData, 'public_notes'))  {
+        if(Arr::exists($modelData, 'public_notes') && Arr::get($modelData, 'public_notes') == true)  {
             $publicNotes = $order->public_notes;
         }
-        if(Arr::exists($modelData, 'internal_notes'))  {
+        if(Arr::exists($modelData, 'internal_notes') && Arr::get($modelData, 'internal_notes') == true)  {
             $internalNotes = $order->internal_notes;
         }
-        if(Arr::exists($modelData, 'shipping_notes'))  {
+        if(Arr::exists($modelData, 'shipping_notes') && Arr::get($modelData, 'shipping_notes') == true)  {
             $shippingNotes = $order->shipping_notes;
         }
 
