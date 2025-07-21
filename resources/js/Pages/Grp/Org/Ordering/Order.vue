@@ -643,7 +643,7 @@ const last_payment = computed(() => {
                 </a>
             </div>
 
-            <div v-for="delivery_note in  box_stats.delivery_notes" >
+           <!--  <div v-for="delivery_note in  box_stats.delivery_notes" >
 
                 <dl>
                     <dt class="flex-none">
@@ -663,6 +663,58 @@ const last_payment = computed(() => {
                 </dl>
 
 
+            </div> -->
+            
+              <div v-if="box_stats?.delivery_notes?.length" class="mt-4 border rounded-lg p-4 pt-3 bg-white shadow-sm">
+                <!-- Section Title -->
+                <div class="flex items-center gap-2 border-b border-gray-200 pb-2 mb-3">
+                    <FontAwesomeIcon :icon="faTruck" class="text-blue-500" fixed-width />
+                    <div class="text-sm font-semibold text-gray-800">
+                        {{ trans('Delivery Notes') }}
+                    </div>
+                </div>
+
+                <!-- Delivery Note Items -->
+                <div v-for="(note, index) in box_stats?.delivery_notes" :key="index"
+                    class="mb-3 pb-3 border-b border-dashed last:border-0 last:mb-0 last:pb-0">
+
+                    <div class="flex items-center gap-2 text-sm text-gray-700 mb-1">
+                        <span class="font-medium">Ref:</span>
+                        <span>{{ note?.reference }}</span>
+                        <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+                            <Icon :data="note?.state" />
+                        </span>
+                    </div>
+
+                    <!-- Shipments -->
+                    <div v-if="note?.shipments?.length > 0" class="mt-1 text-xs text-gray-600">
+                        <p class="text-gray-700 font-medium mb-1">{{trans('Shipments')}}:</p>
+                        <ul class="list-disc pl-4 space-y-1">
+                            <li v-for="(shipment, i) in note.shipments" :key="i">
+                                <template v-if="shipment?.formatted_tracking_urls?.length">
+                                    <div v-for="trackingData in shipment.formatted_tracking_urls">
+
+                                        {{shipment.name}}
+                                        <a :href="trackingData.url" target="_blank" rel="noopener noreferrer"
+                                            class="secondaryLink"
+                                            v-tooltip="trans('Click to track shipment')">
+                                            {{ trackingData.tracking }}
+                                        </a>
+                                    </div>
+                                </template>
+                                <template v-else>
+                                    <div class="text-gray-400 italic">
+                                        {{ trans('No Tracking available') }}
+                                    </div>
+                                </template>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div v-else class="mt-1 text-xs italic text-gray-400">
+                        {{ trans('No shipments') }}
+                    </div>
+                </div>
             </div>
 
         </BoxStatPallet>
