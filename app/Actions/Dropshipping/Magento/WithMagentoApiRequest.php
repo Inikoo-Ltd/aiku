@@ -205,13 +205,11 @@ trait WithMagentoApiRequest
             ]
         ];
 
-        $result = $this->magentoApiRequest('post', "orders", $orderData);
-
         if (! blank($trackingData) && $status === 'complete') {
             $this->createShipment($orderId, $trackingData);
         }
 
-        return $result;
+        return $this->magentoApiRequest('post', "orders", $orderData);
     }
 
     /**
