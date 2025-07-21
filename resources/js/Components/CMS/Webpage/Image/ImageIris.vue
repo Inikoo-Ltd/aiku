@@ -54,6 +54,11 @@ const getHref = (index: number) => {
   return image?.link_data?.url || image?.link_data?.workshop_url || ''
 }
 
+const getTarget = (index: number) => {
+  const image = props.fieldValue?.value?.images?.[index]
+  return image?.link_data?.target || '_blank'
+}
+
 const getColumnWidthClass = (layoutType: string, index: number) => {
   const layout = props.fieldValue?.value?.layout_type || {}
   const hasMobile = !!layout.mobile
@@ -108,7 +113,7 @@ const getVal = (base: any, path?: string[]) => {
 </script>
 
 <template>
-  <div id="cta1">
+  <div id="Image">
     <section :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(fieldValue.container?.properties, screenType),
@@ -142,7 +147,8 @@ const getVal = (base: any, path?: string[]) => {
           class="flex flex-col group relative  hover:bg-white/40 h-full"
           :class="getColumnWidthClass(getVal(fieldValue?.value.layout_type), index - 1)">
           <template v-if="fieldValue?.value?.images?.[index - 1]?.source">
-            <a v-if="getHref(index - 1)" :href="getHref(index - 1)" target="_blank" rel="noopener noreferrer"
+           
+            <a v-if="getHref(index - 1)" :href="getHref(index - 1)" :target="getTarget(index - 1)" rel="noopener noreferrer"
               class="block w-full h-full">
               <Image :src="fieldValue?.value?.images?.[index - 1]?.source"
                 :alt="fieldValue?.value?.images?.[index - 1]?.properties?.alt || `image ${index}`" :imageCover="true"
