@@ -49,7 +49,7 @@ const props = defineProps<{
     }
 }>()
 
-console.log('SelectProducts.vue modelValue: 3232', props.modelValue)
+
 const emits = defineEmits<{
     (e: 'update:modelValue', value: keyof typeof props.modelValue): void
 }>()
