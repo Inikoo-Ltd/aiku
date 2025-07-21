@@ -34,6 +34,12 @@ const props = defineProps<{
 			phone: string
 			address: Address
 		}
+		customer_client?: {
+			name: string
+			contact_name?: string
+			email?: string
+			phone?: string
+		}
 		delivery_address: Address,
 		products: {
 			estimated_weight: number
@@ -135,232 +141,224 @@ const listError = inject('listError', {})
 
 <template>
 	<div class="grid grid-cols-2 lg:grid-cols-3 xdivide-x xdivide-gray-300 border-b border-gray-200">
-
-
+		<!-- Box: Order -->
         <BoxStatPallet class="py-2 px-3 border-r border-gray-200" icon="fal fa-user">
-
-
-			<div v-if="boxStats?.order" class="text-sm mt-1 flex items-center w-full flex-none justify-between">
-				<Link :href="route(boxStats?.order?.route?.name, boxStats?.order?.route?.parameters)"
-					class="flex items-center gap-3 gap-x-1.5 primaryLink cursor-pointer">
-				<dt class="flex-none">
-					<FontAwesomeIcon icon='fal fa-shopping-cart' fixed-width aria-hidden='true' class="text-gray-500" />
-				</dt>
-				<dd class="text-gray-500 " v-tooltip="trans('Order')">
-					{{ boxStats?.order?.reference }}
-				</dd>
-				</Link>
-			</div>
-
-			<!-- Field: Reference Number -->
-			<Link as="a" v-if="boxStats?.customer.reference"
-				:href="route(boxStats?.customer.route.name, boxStats?.customer.route.parameters)"
-				class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer secondaryLink">
-			<dt v-tooltip="'Company name'" class="flex-none">
-				<FontAwesomeIcon icon="fal fa-id-card-alt" class="text-gray-400" fixed-width aria-hidden="true" />
-			</dt>
-			<dd class="text-sm text-gray-500" v-tooltip="'Reference'">
-				#{{ boxStats?.customer.reference }}
-			</dd>
-			</Link>
-
-			<!-- Field: Contact name -->
-			<div v-if="boxStats?.customer.contact_name" class="pl-1 flex items-center w-full flex-none gap-x-2"
-				v-tooltip="trans('Contact name')">
-				<dt class="flex-none">
-					<FontAwesomeIcon icon="fal fa-user" class="text-gray-400" fixed-width aria-hidden="true" />
-				</dt>
-				<dd class="text-sm text-gray-500">{{ boxStats?.customer.contact_name }}</dd>
-			</div>
-
-			<!-- Field: Company name -->
-			<div v-if="boxStats?.customer.company_name" class="pl-1 flex items-center w-full flex-none gap-x-2"
-				v-tooltip="trans('Company name')">
-				<dt class="flex-none">
-					<FontAwesomeIcon icon="fal fa-building" class="text-gray-400" fixed-width aria-hidden="true" />
-				</dt>
-				<dd class="text-sm text-gray-500">{{ boxStats?.customer.company_name }}</dd>
-			</div>
-
-			<!-- Field: Email -->
-			<div v-if="boxStats?.customer.email" class="pl-1 flex items-center w-full flex-none gap-x-2">
-				<dt v-tooltip="'Email'" class="flex-none">
-					<FontAwesomeIcon icon="fal fa-envelope" class="text-gray-400" fixed-width aria-hidden="true" />
-				</dt>
-				<a :href="`mailto:${boxStats?.customer.email}`" v-tooltip="'Click to send email'"
-					class="text-sm text-gray-500 hover:text-gray-700 truncate">{{ boxStats?.customer.email }}</a>
-			</div>
-			<!-- Field: Phone -->
-			<div v-if="boxStats?.customer.phone" class="pl-1 flex items-center w-full flex-none gap-x-2">
-				<dt v-tooltip="'Phone'" class="flex-none">
-					<FontAwesomeIcon icon="fal fa-phone" class="text-gray-400" fixed-width aria-hidden="true" />
-				</dt>
-				<a :href="`tel:${boxStats?.customer.phone}`" v-tooltip="'Click to make a phone call'"
-					class="text-sm text-gray-500 hover:text-gray-700">{{ boxStats?.customer.phone }}</a>
-			</div>
-
-			<!-- Field: Channel -->
-			<dl v-if="boxStats?.platform?.name" class="pl-1 flex items-center w-full gap-x-2">
-				<dt class="flex-none">
-					<div class="block w-full rounded h-[18px]">
-						<img :src="boxStats?.platform?.logo"  :alt="boxStats?.platform?.name" class="w-full h-full object-contain rounded" />
+			<div class="text-xs md:text-sm">
+				<div class="font-semibold xmb-2 text-base">
+					{{ trans("Order") }}
+				</div>
+				
+				<div class="space-y-0.5 pl-1">
+					<!-- Field: Order reference -->
+					<Link v-if="boxStats?.order" :href="route(boxStats?.order?.route?.name, boxStats?.order?.route?.parameters)"
+						class="w-fit flex items-center gap-3 gap-x-1.5 primaryLink cursor-pointer">
+						<dt class="flex-none">
+							<FontAwesomeIcon icon='fal fa-shopping-cart' fixed-width aria-hidden='true' class="text-gray-500" />
+						</dt>
+						<dd class="text-gray-500 " v-tooltip="trans('Order')">
+							{{ boxStats?.order?.reference }}
+						</dd>
+					</Link>
+					<!-- Field: Reference Number -->
+					<Link as="a"
+						v-if="boxStats?.customer.reference"
+						:href="route(boxStats?.customer.route.name, boxStats?.customer.route.parameters)"
+						class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer secondaryLink">
+						<dt v-tooltip="'Company name'" class="flex-none">
+							<FontAwesomeIcon icon="fal fa-id-card-alt" class="text-gray-400" fixed-width aria-hidden="true" />
+						</dt>
+						<dd class="text-gray-500" v-tooltip="'Reference'">
+							#{{ boxStats?.customer.reference }}
+						</dd>
+					</Link>
+					<!-- Field: Contact name -->
+					<div v-if="boxStats?.customer.contact_name" class="pl-1 flex items-center w-full flex-none gap-x-2"
+						v-tooltip="trans('Contact name')">
+						<dt class="flex-none">
+							<FontAwesomeIcon icon="fal fa-user" class="text-gray-400" fixed-width aria-hidden="true" />
+						</dt>
+						<dd class="text-gray-500">{{ boxStats?.customer.contact_name }}</dd>
 					</div>
-				</dt>
-				<dt class="text-sm text-gray-500 hover:text-gray-700">
-					{{ boxStats?.platform?.name }}
-				</dt>
-			</dl>
-
-
+					<!-- Field: Company name -->
+					<div v-if="boxStats?.customer.company_name" class="pl-1 flex items-center w-full flex-none gap-x-2"
+						v-tooltip="trans('Company name')">
+						<dt class="flex-none">
+							<FontAwesomeIcon icon="fal fa-building" class="text-gray-400" fixed-width aria-hidden="true" />
+						</dt>
+						<dd class="text-gray-500">{{ boxStats?.customer.company_name }}</dd>
+					</div>
+					<!-- Field: Email -->
+					<div v-if="boxStats?.customer.email" class="pl-1 flex items-center w-full flex-none gap-x-2">
+						<dt v-tooltip="'Email'" class="flex-none">
+							<FontAwesomeIcon icon="fal fa-envelope" class="text-gray-400" fixed-width aria-hidden="true" />
+						</dt>
+						<a :href="`mailto:${boxStats?.customer.email}`" v-tooltip="'Click to send email'"
+							class="text-gray-500 hover:text-gray-700 truncate">{{ boxStats?.customer.email }}</a>
+					</div>
+					<!-- Field: Phone -->
+					<div v-if="boxStats?.customer.phone" class="pl-1 flex items-center w-full flex-none gap-x-2">
+						<dt v-tooltip="'Phone'" class="flex-none">
+							<FontAwesomeIcon icon="fal fa-phone" class="text-gray-400" fixed-width aria-hidden="true" />
+						</dt>
+						<a :href="`tel:${boxStats?.customer.phone}`" v-tooltip="'Click to make a phone call'"
+							class="text-gray-500 hover:text-gray-700">{{ boxStats?.customer.phone }}</a>
+					</div>
+					<!-- Field: Channel -->
+					<dl v-if="boxStats?.platform?.name" class="pl-1 flex items-center w-full gap-x-2">
+						<dt class="flex-none">
+							<div class="block w-full rounded h-[18px]">
+								<img :src="boxStats?.platform?.logo"  :alt="boxStats?.platform?.name" class="w-full h-full object-contain rounded" />
+							</div>
+						</dt>
+						<dt class="text-gray-500 hover:text-gray-700">
+							{{ boxStats?.platform?.name }}
+						</dt>
+					</dl>
+				</div>
+			</div>
 		</BoxStatPallet>
+
+		<!-- Box: Shipping -->
 		<BoxStatPallet class="py-2 px-3 border-r border-gray-200" icon="fal fa-user">
-
-			<!-- Field: Address + Customer (icons di luar box) -->
-			<div v-if="boxStats?.delivery_address" class="w-full space-y-3 text-sm text-gray-700 mt-2">
-
-
-
-				<!-- Shipping Address -->
-				<div class="flex items-start gap-x-2">
-
-
-
-
-					<!-- <FontAwesomeIcon icon="fal fa-shipping-fast" class="text-gray-400 text-base mt-[2px]" fixed-width /> -->
-
-					<!-- Box konten -->
-					<div class="flex-1 xbg-gray-50 xborder border-gray-300 rounded-lg xp-2 space-y-0.5">
-						<p class="xfont-medium">Shipping Info</p>
-
-						<div class="border border-gray-300 p-4 rounded-lg">
-
-							<div v-if="boxStats.customer_client" class="mb-3">
-								<div class="xtext-xs text-gray-600 leading-snug">
-									<div><strong>Name:</strong> {{ boxStats.customer_client.contact_name ||
-										boxStats.customer_client.name }}
-									</div>
-									<div v-if="boxStats.customer_client.email"><strong>Email:</strong> {{
-										boxStats.customer_client.email }}
-									</div>
-									<div v-if="boxStats.customer_client.phone"><strong>Phone:</strong> {{
-										boxStats.customer_client.phone }}
-									</div>
+			<div class="text-xs md:text-sm">
+				<div class="font-semibold xmb-2 text-base">
+					{{ trans("Shipping") }}
+				</div>
+				
+				<div v-if="boxStats?.delivery_address" class="space-y-0.5 pl-2">
+					<div class="border border-gray-300 p-4 rounded-lg">
+						<div v-if="boxStats.customer_client" class="mb-3">
+							<div class="xtext-xs text-gray-600 leading-snug">
+								<div>
+									<strong>Name:</strong> {{ boxStats.customer_client.contact_name || boxStats.customer_client.name }}
 								</div>
-
-
+								<div v-if="boxStats.customer_client.email">
+									<strong>Email:</strong> {{ boxStats.customer_client.email }}
+								</div>
+								<div v-if="boxStats.customer_client.phone">
+									<strong>Phone:</strong> {{ boxStats.customer_client.phone }}
+								</div>
 							</div>
-
-
-
-							<div v-html="boxStats.delivery_address.formatted_address"
-								class="xtext-xs text-gray-600 leading-snug"></div>
 						</div>
-
+						<div v-html="boxStats.delivery_address.formatted_address"
+							class="xtext-xs text-gray-600 leading-snug">
+						</div>
 					</div>
 				</div>
-			</div>
 
+				<div v-else class="text-gray-500 italic pl-2">
+					{{ trans("No shipping information available.") }}
+				</div>
+			</div>
 		</BoxStatPallet>
-		<BoxStatPallet class="py-2.5 pl-2.5 pr-3 border-r border-gray-200" icon="fal fa-user">
-			<template v-if="boxStats?.picker?.contact_name">
-				<div v-tooltip="trans('Picker name')"
-					class=" text-sm border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
-					<dt class="flex-none">
-						{{ trans("Picker") }}:
-					</dt>
-					<dd class="text-gray-500">
-						{{ boxStats?.picker?.contact_name }}
-					</dd>
-				</div>
-				<div class="border-t border-gray-300 w-full" />
-			</template>
 
-			<div class="text-sm">
-				<!-- Current State -->
-				<div xv-tooltip="trans('Current progress')" class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
-					<dt class="flex-none">
-						<!-- <FontAwesomeIcon
-							icon="fal fa-weight"
-							fixed-width
-							aria-hidden="true"
-							class="text-gray-500" /> -->
-						<Icon :data="boxStats?.state_icon" />
-					</dt>
-					<dd class="text-gray-500">
-						{{ boxStats.state_label }}
-					</dd>
+		<!-- Box: Delivery Note -->
+		<BoxStatPallet class="py-2.5 pl-2.5 pr-3 border-t md:border-t-0 border-r border-gray-200" icon="fal fa-user">
+			<div class="text-xs md:text-sm">
+				<div class="font-semibold xmb-2 text-base">
+					{{ trans("Delivery Note") }}
 				</div>
-				<!-- Weight -->
-				<div v-tooltip="trans('Estimated weight of all products')"
-					class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
-					<dt class="flex-none">
-						<FontAwesomeIcon icon="fal fa-weight" fixed-width aria-hidden="true" class="text-gray-500" />
-					</dt>
-					<dd class="text-gray-500">
-						{{ locale.number(boxStats?.products.estimated_weight) || '-' }} kilograms
-					</dd>
-				</div>
-				<!-- Total Items -->
-				<div v-tooltip="trans('Total items')" class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
-					<dt class="flex-none">
-						<FontAwesomeIcon icon="fal fa-cube" fixed-width aria-hidden="true" class="text-gray-500" />
-					</dt>
-					<dd class="text-gray-500">
-						{{ locale.number(boxStats.products?.number_items || 0) }} items
-					</dd>
-				</div>
-			</div>
-
-			<!-- Section: Parcels -->
-			<div v-if="['packed', 'dispatched', 'finalised'].includes(deliveryNote?.state)" class="flex gap-x-1 py-0.5"
-				:class="listError.box_stats_parcel ? 'errorShake' : ''">
-				<FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='mt-1 text-gray-400' fixed-width
-					aria-hidden='true' />
-				<div class=" text-sm group w-full">
-					<div class="leading-4 xtext-base flex justify-between w-full py-1">
-						<div>{{ trans("Parcels") }} ({{ boxStats?.parcels?.length ?? 0 }})</div>
-
-						<!-- Can't edit Parcels if Shipment has set AND already dispatched-->
-						<template v-if="!(boxStats?.shipments?.length > 1) && deliveryNote?.state === 'packed'">
-							<div v-if="boxStats?.parcels?.length"
-								@click="async () => (isModalParcels = true, parcelsCopy = [...props.boxStats?.parcels || []])"
-								class="cursor-pointer text-gray-400 hover:text-gray-600">
-								{{ trans("Edit") }}
-								<FontAwesomeIcon icon="fal fa-pencil" size="sm" class="text-gray-400" fixed-width
-									aria-hidden="true" />
-							</div>
-							<div v-else-if="!isLoadingSubmitParcels"
-								@click="async () => (parcelsCopy = [{ weight: 1, dimensions: [5, 5, 5] }], onSubmitParcels())"
-								class="cursor-pointer text-gray-400 hover:text-gray-600">
-								{{ trans("Add") }}
-								<FontAwesomeIcon icon="fas fa-plus" size="sm" class="text-gray-400" fixed-width
-									aria-hidden="true" />
-							</div>
-							<div v-else>
-								<LoadingIcon />
-							</div>
-						</template>
+				
+				<div class="space-y-0.5 pl-2">
+					<template v-if="boxStats?.picker?.contact_name">
+						<div v-tooltip="trans('Picker name')"
+							class=" border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
+							<dt class="flex-none">
+								{{ trans("Picker") }}:
+							</dt>
+							<dd class="text-gray-500">
+								{{ boxStats?.picker?.contact_name }}
+							</dd>
+						</div>
+						<div class="border-t border-gray-300 w-full" />
+					</template>
+		
+					<!-- Current State -->
+					<div xv-tooltip="trans('Current progress')" class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
+						<dt class="flex-none">
+							<!-- <FontAwesomeIcon
+								icon="fal fa-weight"
+								fixed-width
+								aria-hidden="true"
+								class="text-gray-500" /> -->
+							<Icon :data="boxStats?.state_icon" />
+						</dt>
+						<dd class="text-gray-500">
+							{{ boxStats.state_label }}
+						</dd>
 					</div>
 
-					<ul v-if="boxStats?.parcels?.length" class="list-disc pl-4 ">
-						<li v-for="(parcel, parcelIdx) in boxStats?.parcels" :key="parcelIdx"
-							class="xtext-sm tabular-nums">
-							<span class="truncate">
-								{{ parcel.weight }} kg
-							</span>
-
-							<span class="text-gray-500 truncate">
-								({{ parcel.dimensions?.[0] }}x{{ parcel.dimensions?.[1] }}x{{ parcel.dimensions?.[2] }}
-								cm)
-							</span>
-						</li>
-					</ul>
+					<!-- Total Items -->
+					<div class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
+						<dt class="flex-none">
+							<FontAwesomeIcon v-tooltip="trans('Total items')" icon="fal fa-cube" fixed-width aria-hidden="true" class="text-gray-500" />
+						</dt>
+						<dd class="text-gray-500">
+							{{ locale.number(boxStats.products?.number_items || 0) }} items
+						</dd>
+					</div>
+					
+					<!-- Weight -->
+					<div class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
+						<dt class="flex-none">
+							<FontAwesomeIcon v-tooltip="trans('Estimated weight of all items')" icon="fal fa-weight" fixed-width aria-hidden="true" class="text-gray-500" />
+						</dt>
+						<dd class="text-gray-500">
+							{{ locale.number(boxStats?.products.estimated_weight) || '-' }} kilograms
+						</dd>
+					</div>
+		
+					<!-- Section: Parcels -->
+					<div v-if="['packed', 'dispatched', 'finalised'].includes(deliveryNote?.state)" class="flex gap-x-1 py-0.5"
+						:class="listError.box_stats_parcel ? 'errorShake' : ''">
+						<FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='mt-1 text-gray-400' fixed-width
+							aria-hidden='true' />
+						<div class=" group w-full">
+							<div class="leading-4 xtext-base flex justify-between w-full py-1">
+								<div>{{ trans("Parcels") }} ({{ boxStats?.parcels?.length ?? 0 }})</div>
+		
+								<!-- Can't edit Parcels if Shipment has set AND already dispatched-->
+								<template v-if="!(boxStats?.shipments?.length > 1) && deliveryNote?.state === 'packed'">
+									<div v-if="boxStats?.parcels?.length"
+										@click="async () => (isModalParcels = true, parcelsCopy = [...props.boxStats?.parcels || []])"
+										class="cursor-pointer text-gray-400 hover:text-gray-600">
+										{{ trans("Edit") }}
+										<FontAwesomeIcon icon="fal fa-pencil" size="sm" class="text-gray-400" fixed-width
+											aria-hidden="true" />
+									</div>
+									<div v-else-if="!isLoadingSubmitParcels"
+										@click="async () => (parcelsCopy = [{ weight: 1, dimensions: [5, 5, 5] }], onSubmitParcels())"
+										class="cursor-pointer text-gray-400 hover:text-gray-600">
+										{{ trans("Add") }}
+										<FontAwesomeIcon icon="fas fa-plus" size="sm" class="text-gray-400" fixed-width
+											aria-hidden="true" />
+									</div>
+									<div v-else>
+										<LoadingIcon />
+									</div>
+								</template>
+							</div>
+		
+							<ul v-if="boxStats?.parcels?.length" class="list-disc pl-4 ">
+								<li v-for="(parcel, parcelIdx) in boxStats?.parcels" :key="parcelIdx"
+									class="xtabular-nums">
+									<span class="truncate">
+										{{ parcel.weight }} kg
+									</span>
+		
+									<span class="text-gray-500 truncate">
+										({{ parcel.dimensions?.[0] }}x{{ parcel.dimensions?.[1] }}x{{ parcel.dimensions?.[2] }}
+										cm)
+									</span>
+								</li>
+							</ul>
+						</div>
+					</div>
+		
+					<!-- Section: Shipments -->
+					<ShipmentSection :shipments="boxStats.shipments" />
 				</div>
 			</div>
-
-			<!-- Section: Shipments -->
-			<ShipmentSection :shipments="boxStats.shipments" />
-
 		</BoxStatPallet>
 
 		<!-- Modal: Parcels -->
@@ -388,7 +386,7 @@ const listError = inject('listError', {})
 					</div>
 
 					<!--  -->
-					<div class="text-sm grid gap-y-1 max-h-64 overflow-y-auto pr-2">
+					<div class="grid gap-y-1 max-h-64 overflow-y-auto pr-2">
 						<!-- {{parcelsCopy.length}} xx {{ boxStats.parcels.length }} -->
 						<TransitionGroup v-if="parcelsCopy?.length" name="list">
 							<div v-for="(parcel, parcelIndex) in parcelsCopy" :key="parcelIndex"
