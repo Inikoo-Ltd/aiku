@@ -513,7 +513,7 @@ class ShowDeliveryNote extends OrgAction
 
             'timelines' => $this->getTimeline($deliveryNote),
             'box_stats' => $this->getBoxStats($deliveryNote),
-
+            'notes'              => $this->getDeliveryNoteNotes($deliveryNote),
             'quick_pickers'       => $this->quickGetPickers(),
             'routes'              => [
                 'update'         => [
@@ -629,6 +629,45 @@ class ShowDeliveryNote extends OrgAction
         ];
     }
 
+    public function getDeliveryNoteNotes(DeliveryNote $deliveryNote): array
+    {
+        return [
+            "note_list" => [
+                [
+                    "label"    => __("Delivery Instructions"),
+                    "note"     => $deliveryNote->shipping_notes ?? '',
+                    "information" => __("This note will be printed in the shipping label. Both customer and staff can edit this note."),
+                    "editable" => true,
+                    "bgColor"  => "#38bdf8",
+                    "field"    => "shipping_notes"
+                ],
+                [
+                    "label"    => __("Customer"),
+                    "note"     => $deliveryNote->customer_notes ?? '',
+                    "information" => __("This note is from customer in the platform. Not editable."),
+                    "editable" => false,
+                    "bgColor"  => "#FF7DBD",
+                    "field"    => "customer_notes"
+                ],
+                [
+                    "label"    => __("Public"),
+                    "note"     => $deliveryNote->public_notes ?? '',
+                    "information" => __("This note will be visible to public, both staff and the customer can see."),
+                    "editable" => true,
+                    "bgColor"  => "#94DB84",
+                    "field"    => "public_notes"
+                ],
+                [
+                    "label"    => __("Private"),
+                    "note"     => $deliveryNote->internal_notes ?? '',
+                    "information" => __("This note is only visible to staff members. You can communicate each other about this delivery note."),
+                    "editable" => true,
+                    "bgColor"  => "#FCF4A3",
+                    "field"    => "internal_notes"
+                ]
+            ]
+        ];
+    }
 
     public function getBreadcrumbs(DeliveryNote $deliveryNote, string $routeName, array $routeParameters, string $suffix = ''): array
     {

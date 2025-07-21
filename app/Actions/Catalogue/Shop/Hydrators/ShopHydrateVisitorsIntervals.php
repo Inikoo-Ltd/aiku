@@ -31,8 +31,8 @@ class ShopHydrateVisitorsIntervals implements ShouldBeUnique
 
     public function handle(Shop $shop, ?array $intervals = null, ?array $doPreviousPeriods = null): void
     {
-        $website= $shop->website;
-        if(!$website){
+        $website = $shop->website;
+        if (!$website) {
             return;
         }
 

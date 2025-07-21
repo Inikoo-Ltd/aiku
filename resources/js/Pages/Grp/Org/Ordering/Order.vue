@@ -453,10 +453,10 @@ const last_payment = computed(() => {
     <!-- Section: Box Note -->
     <div class="relative">
         <Transition name="headlessui">
-            <div v-if="notes?.note_list?.some(item => !!(item?.note?.trim()))"
-                 class="p-2 grid sm:grid-cols-3 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
+            <div xv-if="notes?.note_list?.some(item => !!(item?.note?.trim()))"
+                class="p-2 grid grid-cols-2 sm:grid-cols-4 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
                 <BoxNote v-for="(note, index) in notes.note_list" :key="index + note.label" :noteData="note"
-                         :updateRoute="routes.updateOrderRoute" />
+                    :updateRoute="routes.updateOrderRoute" />
             </div>
         </Transition>
     </div>
@@ -645,19 +645,21 @@ const last_payment = computed(() => {
 
            <!--  <div v-for="delivery_note in  box_stats.delivery_notes" >
 
-                <dl>
+                <dl class="flex">
                     <dt class="flex-none">
                         <FontAwesomeIcon icon="fal fa-truck" fixed-width aria-hidden="true" class="text-gray-500" />
                     </dt>
-                    <dd class="text-gray-500 " >
+                    <dd class="text-gray-500 w-full" >
                         <Link
                             :href="route('grp.helpers.redirect_delivery_notes', delivery_note.id)"
                             class="primaryLink cursor-pointer">
                             {{ delivery_note.reference }}
                         </Link>
-                        <div>
-                            <ShipmentSection :shipments="delivery_note.shipments" />
 
+                        <div class="">
+                            <ShipmentSection
+                                :shipments="delivery_note.shipments"
+                            />
                         </div>
                     </dd>
                 </dl>

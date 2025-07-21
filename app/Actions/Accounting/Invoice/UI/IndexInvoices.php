@@ -362,11 +362,11 @@ class IndexInvoices extends OrgAction
                 ],
 
                 InvoicesTabsEnum::INVOICES->value => $this->tab == InvoicesTabsEnum::INVOICES->value
-                    ? fn() => InvoicesResource::collection($invoices)
-                    : Inertia::lazy(fn() => InvoicesResource::collection($invoices)),
+                    ? fn () => InvoicesResource::collection($invoices)
+                    : Inertia::lazy(fn () => InvoicesResource::collection($invoices)),
                 InvoicesTabsEnum::REFUNDS->value  => $this->tab == InvoicesTabsEnum::REFUNDS->value
-                    ? fn() => RefundsResource::collection(IndexRefunds::run($this->parent, InvoicesTabsEnum::REFUNDS->value))
-                    : Inertia::lazy(fn() => RefundsResource::collection(IndexRefunds::run($this->parent, InvoicesTabsEnum::REFUNDS->value))),
+                    ? fn () => RefundsResource::collection(IndexRefunds::run($this->parent, InvoicesTabsEnum::REFUNDS->value))
+                    : Inertia::lazy(fn () => RefundsResource::collection(IndexRefunds::run($this->parent, InvoicesTabsEnum::REFUNDS->value))),
 
             ];
         } elseif ($this->parent instanceof FulfilmentCustomer) {
@@ -377,14 +377,14 @@ class IndexInvoices extends OrgAction
                 ],
 
                 InvoicesInFulfilmentCustomerTabsEnum::INVOICES->value   => $this->tab == InvoicesInFulfilmentCustomerTabsEnum::INVOICES->value
-                    ? fn() => InvoicesResource::collection($invoices)
-                    : Inertia::lazy(fn() => InvoicesResource::collection($invoices)),
+                    ? fn () => InvoicesResource::collection($invoices)
+                    : Inertia::lazy(fn () => InvoicesResource::collection($invoices)),
                 InvoicesInFulfilmentCustomerTabsEnum::REFUNDS->value    => $this->tab == InvoicesInFulfilmentCustomerTabsEnum::REFUNDS->value
-                    ? fn() => RefundsResource::collection(IndexRefunds::run($this->parent, InvoicesInFulfilmentCustomerTabsEnum::REFUNDS->value))
-                    : Inertia::lazy(fn() => RefundsResource::collection(IndexRefunds::run($this->parent, InvoicesInFulfilmentCustomerTabsEnum::REFUNDS->value))),
+                    ? fn () => RefundsResource::collection(IndexRefunds::run($this->parent, InvoicesInFulfilmentCustomerTabsEnum::REFUNDS->value))
+                    : Inertia::lazy(fn () => RefundsResource::collection(IndexRefunds::run($this->parent, InvoicesInFulfilmentCustomerTabsEnum::REFUNDS->value))),
                 InvoicesInFulfilmentCustomerTabsEnum::IN_PROCESS->value => $this->tab == InvoicesInFulfilmentCustomerTabsEnum::IN_PROCESS->value
-                    ? fn() => InvoicesResource::collection(IndexStandaloneInvoicesInProcess::run($this->parent, InvoicesInFulfilmentCustomerTabsEnum::IN_PROCESS->value))
-                    : Inertia::lazy(fn() => InvoicesResource::collection(IndexStandaloneInvoicesInProcess::run($this->parent, InvoicesInFulfilmentCustomerTabsEnum::IN_PROCESS->value))),
+                    ? fn () => InvoicesResource::collection(IndexStandaloneInvoicesInProcess::run($this->parent, InvoicesInFulfilmentCustomerTabsEnum::IN_PROCESS->value))
+                    : Inertia::lazy(fn () => InvoicesResource::collection(IndexStandaloneInvoicesInProcess::run($this->parent, InvoicesInFulfilmentCustomerTabsEnum::IN_PROCESS->value))),
 
             ];
         } else {
