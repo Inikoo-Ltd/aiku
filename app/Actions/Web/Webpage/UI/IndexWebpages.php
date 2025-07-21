@@ -399,7 +399,8 @@ class IndexWebpages extends OrgAction
                 ),
                 'title'       => __('webpages'),
                 'pageHead'    => [
-                    'title'         => __('webpages'),
+                    'model'         => __('webpages'),
+                    'title'         => ucfirst($this->bucket),
                     'icon'          => [
                         'icon'  => ['fal', 'fa-browser'],
                         'title' => __('webpage')
