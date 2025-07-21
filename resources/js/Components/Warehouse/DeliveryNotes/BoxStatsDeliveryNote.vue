@@ -78,6 +78,14 @@ const props = defineProps<{
             logo: string
             name: string
         }
+		address: {
+
+		}
+		shipments_routes: {
+			submit_route: routeType
+			fetch_route: routeType
+			delete_route: routeType
+		}
 	}
 	routes: {
 		pickers_list: routeType
@@ -260,8 +268,8 @@ const listError = inject('listError', {})
 				</div>
 				
 				<div class="space-y-0.5 pl-2">
-					<template v-if="boxStats?.picker?.contact_name">
-						<div v-tooltip="trans('Picker name')"
+					<div v-if="boxStats?.picker?.contact_name">
+						<dl v-tooltip="trans('Picker name')"
 							class=" border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
 							<dt class="flex-none">
 								{{ trans("Picker") }}:
@@ -269,12 +277,12 @@ const listError = inject('listError', {})
 							<dd class="text-gray-500">
 								{{ boxStats?.picker?.contact_name }}
 							</dd>
-						</div>
-						<div class="border-t border-gray-300 w-full" />
-					</template>
+						</dl>
+						<div class="mt-2 border-t border-gray-300 w-full" />
+					</div>
 		
 					<!-- Current State -->
-					<div xv-tooltip="trans('Current progress')" class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
+					<dl xv-tooltip="trans('Current progress')" class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
 						<dt class="flex-none">
 							<!-- <FontAwesomeIcon
 								icon="fal fa-weight"
@@ -286,27 +294,27 @@ const listError = inject('listError', {})
 						<dd class="text-gray-500">
 							{{ boxStats.state_label }}
 						</dd>
-					</div>
+					</dl>
 
 					<!-- Total Items -->
-					<div class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
+					<dl class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
 						<dt class="flex-none">
 							<FontAwesomeIcon v-tooltip="trans('Total items')" icon="fal fa-cube" fixed-width aria-hidden="true" class="text-gray-500" />
 						</dt>
 						<dd class="text-gray-500">
 							{{ locale.number(boxStats.products?.number_items || 0) }} items
 						</dd>
-					</div>
+					</dl>
 					
 					<!-- Weight -->
-					<div class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
+					<dl class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
 						<dt class="flex-none">
 							<FontAwesomeIcon v-tooltip="trans('Estimated weight of all items')" icon="fal fa-weight" fixed-width aria-hidden="true" class="text-gray-500" />
 						</dt>
 						<dd class="text-gray-500">
 							{{ locale.number(boxStats?.products.estimated_weight) || '-' }} kilograms
 						</dd>
-					</div>
+					</dl>
 		
 					<!-- Section: Parcels -->
 					<div v-if="['packed', 'dispatched', 'finalised'].includes(deliveryNote?.state)" class="flex gap-x-1 py-0.5"
@@ -356,7 +364,14 @@ const listError = inject('listError', {})
 					</div>
 		
 					<!-- Section: Shipments -->
-					<ShipmentSection :shipments="boxStats.shipments" />
+					<dl v-if="['packed', 'finalised', 'dispatched'].includes(deliveryNote?.state)" class="flex items-xcenter w-fit pr-3 flex-none gap-x-1.5">
+						<dt class="flex-none mt-1">
+							<FontAwesomeIcon v-tooltip="trans('Shipment')" icon="fal fa-shipping-fast" fixed-width aria-hidden="true" class="text-gray-500" />
+						</dt>
+						<dd class="text-gray-500">
+							<ShipmentSection :shipments="boxStats.shipments" :shipments_routes="boxStats.shipments_routes" :address="boxStats.address" />
+						</dd>
+					</dl>
 				</div>
 			</div>
 		</BoxStatPallet>
