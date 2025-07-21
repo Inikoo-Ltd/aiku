@@ -13,9 +13,9 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('poll_stats', function (Blueprint $table) {
-            $table->unsignedInteger('number_customer_purchases')->default(0);
-            $table->decimal('total_customer_revenue', 16, 2)->default(0);
+        Schema::table('customers', function (Blueprint $table) {
+            $table->unsignedInteger('traffic_source_id')->nullable()->index();
+            $table->foreign('traffic_source_id')->references('id')->on('traffic_sources');
         });
     }
 
@@ -26,8 +26,9 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::table('poll_stats', function (Blueprint $table) {
-            $table->dropColumn(['number_customer_purchases', 'total_customer_revenue']);
+        Schema::table('customers', function (Blueprint $table) {
+            $table->dropForeign(['traffic_source_id']);
+            $table->dropColumn('traffic_source_id');
         });
     }
 };
