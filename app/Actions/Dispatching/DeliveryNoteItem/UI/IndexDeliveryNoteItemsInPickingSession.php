@@ -62,7 +62,7 @@ class IndexDeliveryNoteItemsInPickingSession extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(DeliveryNote $parent, $prefix = null): Closure
+    public function tableStructure(PickingSession $parent, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($parent, $prefix) {
             if ($prefix) {
