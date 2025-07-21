@@ -32,6 +32,19 @@ class DuplicatedProductFoundInPlatform extends OrgAction
                 'options' => PortfolioPlatformAvailabilityOptionEnum::USE_EXISTING->value
             ];
             data_set($modelData, 'platform_product_availabilities', array_merge($platformProductAvailabilities, $options));
+
+            // Extract product ID and variant ID if available
+            if (isset($platformProductAvailabilities['id'])) {
+                $modelData['platform_product_id'] = $platformProductAvailabilities['id'];
+            }
+
+            // Extract variant ID from the first variant if available
+            if (isset($platformProductAvailabilities['variants']) && !empty($platformProductAvailabilities['variants'])) {
+                $firstVariant = $platformProductAvailabilities['variants'][0];
+                if (isset($firstVariant['id'])) {
+                    $modelData['platform_product_variant_id'] = $firstVariant['id'];
+                }
+            }
         }
 
         $this->update($portfolio, $modelData);

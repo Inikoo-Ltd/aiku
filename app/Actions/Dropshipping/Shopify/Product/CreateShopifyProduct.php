@@ -17,6 +17,7 @@ use App\Models\Dropshipping\ShopifyUser;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 use Sentry;
 
@@ -48,24 +49,8 @@ class CreateShopifyProduct extends RetinaAction
 
         /** @var Product $product */
         $product = $portfolio->item;
-        $images  = [];
 
-        // Process images
-        foreach ($product->images as $image) {
-            $base64Image = null;
-            try {
-                $base64Image = $image->getBase64Image();
-            } catch (Exception) {
-                // Skip if image can't be processed
-            }
 
-            if ($base64Image) {
-                $images[] = [
-                    "alt" => $product->name ?? '',
-                    "src" => "data:image/jpeg;base64,".$base64Image
-                ];
-            }
-        }
 
         try {
             // GraphQL mutation to create a product
@@ -77,8 +62,18 @@ class CreateShopifyProduct extends RetinaAction
                   title
                   handle
                   descriptionHtml
-                  vendor
                   productType
+                  vendor
+                  options {
+                        id
+                        name
+                        position
+                        optionValues {
+                            id
+                            name
+                            hasVariants
+                        }
+                    }
                   variants(first: 10) {
                     edges {
                       node {
@@ -89,14 +84,6 @@ class CreateShopifyProduct extends RetinaAction
                         inventoryQuantity
                         weight
                         weightUnit
-                      }
-                    }
-                  }
-                  images(first: 10) {
-                    edges {
-                      node {
-                        id
-                        src
                       }
                     }
                   }
@@ -112,24 +99,11 @@ class CreateShopifyProduct extends RetinaAction
             // Prepare variables for the mutation
             $variables = [
                 'input' => [
-                    'title'           => $portfolio->customer_product_name,
-                    'handle'          => $portfolio->platform_handle,
-                    'descriptionHtml' => $portfolio->customer_description,
-                    'vendor'          => $product->shop->name,
+                    'title'           => $product->name,
+                    'handle'          => Str::slug($product->name),
+                    'descriptionHtml' => $product->description.' '.$product->description_extra,
                     'productType'     => $product->family?->name,
-                    'images'          => $images,
-                    'variants'        => [
-                        [
-                            'price'               => number_format($portfolio->customer_price, 2, '.', ''),
-                            'sku'                 => $product->code,
-                            'barcode'             => $product->barcode,
-                            'inventoryManagement' => 'SHOPIFY',
-                            'inventoryPolicy'     => 'DENY', // Don't allow orders when out of stock
-                            'weight'              => $product->marketing_weight,
-                            'weightUnit'          => 'GRAMS',
-                            'cost'                => $product->price,
-                        ]
-                    ]
+                    'vendor'          => $product->shop->name,
                 ]
             ];
 
@@ -138,8 +112,11 @@ class CreateShopifyProduct extends RetinaAction
                 $variables['input'] = array_merge($variables['input'], $productData);
             }
 
+
             // Make the GraphQL request
             $response = $client->request($mutation, $variables);
+
+
 
             if (!empty($response['errors']) || !isset($response['body'])) {
                 $errorMessage = 'Error in API response: '.json_encode($response['errors'] ?? []);
@@ -177,13 +154,30 @@ class CreateShopifyProduct extends RetinaAction
                 return null;
             }
 
+
+
             $data = $portfolio->data;
             data_set($data, 'shopify_product_debug', $createdProduct);
+
+
+
             UpdatePortfolio::run($portfolio, [
                 'platform_product_id' => Arr::get($createdProduct, 'id'),
-                'data'                => $data
+                'data' => $data
             ]);
 
+            StoreShopifyProductVariant::run($portfolio);
+
+
+            // Extract variant ID if available
+            $variantId = null;
+            if (isset($createdProduct['variants']['edges'][0]['node']['id'])) {
+                $variantId = $createdProduct['variants']['edges'][0]['node']['id'];
+            }
+
+            UpdatePortfolio::run($portfolio, [
+                'platform_product_variant_id' => $variantId,
+            ]);
 
             // Format the response to match the expected structure
             return $this->formatProductResponse($createdProduct);
@@ -240,12 +234,13 @@ class CreateShopifyProduct extends RetinaAction
 
     public function asCommand(Command $command): void
     {
-        $portfolio = Portfolio::find($command->argument('portfolio_id'));;
+        $portfolio = Portfolio::find($command->argument('portfolio_id'));
 
-        $customerSalesChannel = $portfolio->customer_sales_channel;
+        $customerSalesChannel = $portfolio->customerSalesChannel;
+
+
         $shopifyUser = $customerSalesChannel->user;
 
-        $this->handle($shopifyUser,$portfolio);
-
+        $this->handle($shopifyUser, $portfolio);
     }
 }
