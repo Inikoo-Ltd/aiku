@@ -645,19 +645,21 @@ const last_payment = computed(() => {
 
             <div v-for="delivery_note in  box_stats.delivery_notes" >
 
-                <dl>
+                <dl class="flex">
                     <dt class="flex-none">
                         <FontAwesomeIcon icon="fal fa-truck" fixed-width aria-hidden="true" class="text-gray-500" />
                     </dt>
-                    <dd class="text-gray-500 " >
+                    <dd class="text-gray-500 w-full" >
                         <Link
                             :href="route('grp.helpers.redirect_delivery_notes', delivery_note.id)"
                             class="primaryLink cursor-pointer">
                             {{ delivery_note.reference }}
                         </Link>
-                        <div>
-                            <ShipmentSection :shipments="delivery_note.shipments" />
 
+                        <div class="">
+                            <ShipmentSection
+                                :shipments="delivery_note.shipments"
+                            />
                         </div>
                     </dd>
                 </dl>
