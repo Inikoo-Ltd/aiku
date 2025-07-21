@@ -8,23 +8,19 @@
 
 namespace App\Http\Resources\Helpers;
 
+use App\Actions\Helpers\Address\GetFormattedAddress;
 use App\Http\Resources\HasSelfCall;
 use App\Models\Helpers\Address;
-use CommerceGuys\Addressing\Address as Adr;
-use CommerceGuys\Addressing\AddressFormat\AddressFormatRepository;
-use CommerceGuys\Addressing\Country\CountryRepository;
-use CommerceGuys\Addressing\Formatter\DefaultFormatter;
-use CommerceGuys\Addressing\Subdivision\SubdivisionRepository;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class AddressResource extends JsonResource
 {
     use HasSelfCall;
+
     public static $wrap = null;
 
     public function toArray($request): array
     {
-
         /** @var Address $address */
         $address = $this;
 
@@ -32,23 +28,6 @@ class AddressResource extends JsonResource
             return [];
         }
 
-
-        $addressFormatRepository = new AddressFormatRepository();
-        $countryRepository       = new CountryRepository();
-        $subdivisionRepository   = new SubdivisionRepository();
-        $formatter               = new DefaultFormatter($addressFormatRepository, $countryRepository, $subdivisionRepository);
-
-
-        $adr = new Adr();
-        $adr = $adr
-            ->withCountryCode($address->country_code ?? '')
-            ->withAdministrativeArea($address->administrative_area ?? '')
-            ->withDependentLocality($address->dependent_locality ?? '')
-            ->withLocality($address->locality ?? '')
-            ->withPostalCode($address->postal_code ?? '')
-            ->withSortingCode($address->sorting_code ?? '')
-            ->withAddressLine2($address->address_line_2 ?? '')
-            ->withAddressLine1($address->address_line_1 ?? '');
 
         return [
             'id'                  => $address->id,
@@ -68,12 +47,12 @@ class AddressResource extends JsonResource
                 'country',
                 CountryResource::make($address->country)
             ),
-            'formatted_address'   => $adr->getCountryCode() ? $formatter->format($adr) : null,
+            'formatted_address'   => GetFormattedAddress::run($address),
             'label'               => $address->whenPivotLoadedAs('pivot', 'model_has_addresses', function () {
                 return $this->pivot->label;
             }),
-            'can_edit'   => $address->can_edit   ?? null,
-            'can_delete' => $address->can_delete ?? null,
+            'can_edit'            => $address->can_edit ?? null,
+            'can_delete'          => $address->can_delete ?? null,
         ];
     }
 

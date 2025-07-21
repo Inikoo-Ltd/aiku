@@ -6,7 +6,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faTimes, faGripVertical } from '@fas'
 import axios from 'axios'
-import { set } from 'lodash'
+import { set } from 'lodash-es'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { trans } from 'laravel-vue-i18n'
 import Image from '@/Components/Image.vue'
@@ -49,7 +49,7 @@ const props = defineProps<{
     }
 }>()
 
-console.log('SelectProducts.vue modelValue: 3232', props.modelValue)
+
 const emits = defineEmits<{
     (e: 'update:modelValue', value: keyof typeof props.modelValue): void
 }>()
