@@ -636,10 +636,10 @@ class ShowDeliveryNote extends OrgAction
                 [
                     "label"    => __("Delivery Instructions"),
                     "note"     => $deliveryNote->shipping_notes ?? '',
-                    "information" => __("This note is from the customer. Will be printed in the shipping label."),
+                    "information" => __("This note will be printed in the shipping label. Both customer and staff can edit this note."),
                     "editable" => true,
                     "bgColor"  => "#38bdf8",
-                    "field"    => "customer_notes"
+                    "field"    => "shipping_notes"
                 ],
                 [
                     "label"    => __("Customer"),

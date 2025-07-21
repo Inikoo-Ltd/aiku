@@ -453,14 +453,10 @@ const last_payment = computed(() => {
     <!-- Section: Box Note -->
     <div class="relative">
         <Transition name="headlessui">
-            <div v-if="notes?.note_list?.some(item => !!(item?.note?.trim()))"
-<<<<<<< HEAD
-                class="p-2 grid sm:grid-cols-4 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
-=======
-                 class="p-2 grid sm:grid-cols-3 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
->>>>>>> main
+            <div xv-if="notes?.note_list?.some(item => !!(item?.note?.trim()))"
+                class="p-2 grid grid-cols-2 sm:grid-cols-4 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
                 <BoxNote v-for="(note, index) in notes.note_list" :key="index + note.label" :noteData="note"
-                         :updateRoute="routes.updateOrderRoute" />
+                    :updateRoute="routes.updateOrderRoute" />
             </div>
         </Transition>
     </div>

@@ -168,7 +168,7 @@ class ShowOrder extends OrgAction
                     "information" => __("This note is from the customer. Will be printed in the shipping label."),
                     "editable" => true,
                     "bgColor"  => "#38bdf8",
-                    "field"    => "customer_notes"
+                    "field"    => "shipping_notes"
                 ],
                 [
                     "label"    => __("Customer"),
