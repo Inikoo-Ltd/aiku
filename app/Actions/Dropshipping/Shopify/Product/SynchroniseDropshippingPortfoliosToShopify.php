@@ -39,7 +39,7 @@ class SynchroniseDropshippingPortfoliosToShopify extends RetinaAction
             ->get();
 
         foreach ($portfolios as $portfolio) {
-            UploadPortfolioToShopify::dispatch($shopifyUser, $portfolio);
+            CreateShopifyProduct::dispatch($shopifyUser, $portfolio);
         }
     }
 
