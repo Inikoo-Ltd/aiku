@@ -97,7 +97,7 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'SaveWebsitesSitemap',
         );
 
-        $schedule->command('schedule:platform-orders')->everyTenMinutes()->timezone('UTC')->sentryMonitor('GetPlatformOrders');
+        $schedule->command('schedule:platform-orders')->everyMinute()->timezone('UTC')->sentryMonitor('GetPlatformOrders');
 
     }
 
