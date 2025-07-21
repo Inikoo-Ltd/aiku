@@ -20,7 +20,7 @@ class RollbackDispatchedOrder extends OrgAction
     public function handle(Order $order)
     {
         if($order->invoices) {
-            $order->invoices->delete();
+            $order->invoices()->delete();
         }
 
         if($order->deliveryNotes) {
