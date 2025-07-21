@@ -37,6 +37,8 @@ import { Message } from 'primevue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
+import { debounce } from 'lodash-es'
+import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird)
 
 
@@ -220,6 +222,7 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes
 
     <div class="flex justify-end px-6 gap-x-4">
         <div class="grid grid-cols-3 gap-x-4 w-full">
+            <!-- Input text: notes from staff -->
             <div class="">
                 <div class="mb-2 text-sm text-gray-500">
                     <FontAwesomeIcon style="color: rgb(148, 219, 132)" icon="fal fa-sticky-note" class="xopacity-70" fixed-width aria-hidden="true" />

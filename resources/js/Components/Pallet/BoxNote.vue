@@ -157,7 +157,7 @@ const fallbackColor = '#374151'  // Color
                 <div class="text-xl font-semibold mb-2">
                     {{ noteData.label }} {{ trans("note") }}
                     <Button
-                        v-if="props.fetchRoute.name"
+                        v-if="props.fetchRoute?.name"
                         v-tooltip="trans('Duplicate note from Order (only :field)', { field: noteData.label })"
                         @click="() => onFetchNotes()"
                         label="Fetch from order"
