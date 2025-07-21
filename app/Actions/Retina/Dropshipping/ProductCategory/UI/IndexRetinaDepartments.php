@@ -180,6 +180,48 @@ class IndexRetinaDepartments extends RetinaAction
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
+                    'exports' => [
+                        [
+                            'routes' => [
+                                [
+                                    'label' => 'CSV',
+                                    'key'   => 'csf',
+                                    'icon' => ['fal', 'fa-file-csv'],
+                                    'popover' => false,
+                                    'route' => [
+                                        'name' => 'retina.json.dropshipping.customer_sales_channel.portfolio_images_zip',
+                                        'parameters' => [
+                                              'customerSalesChannel' => 'xxx',
+                                        ]
+                                    ],
+                                ],
+                                [
+                                    'label' => 'Excel',
+                                    'key'   => 'excel',
+                                    'icon' => ['fal', 'fa-file-excel'],
+                                    'inside_popover' => true,
+                                    'route' => [
+                                        'name' => 'retina.json.dropshipping.customer_sales_channel.portfolio_images_zip',
+                                        'parameters' => [
+                                              'customerSalesChannel' => 'xxx',
+                                        ]
+                                    ],
+                                ],
+                                [
+                                    'label' => 'images',
+                                    'key'   => 'images',
+                                    'icon' => ['fal', 'fa-images'],
+                                    'inside_popover' => true,
+                                    'route' => [
+                                        'name' => 'retina.json.dropshipping.customer_sales_channel.portfolio_images_zip',
+                                        'parameters' => [
+                                              'customerSalesChannel' => 'xxx',
+                                        ]
+                                    ],
+                                ]
+                            ]
+                        ]
+                    ]
                 ],
                 'data'                                => DepartmentsResource::collection($departments),
             ]

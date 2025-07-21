@@ -25,6 +25,7 @@ import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue"
 import ButtonWithLink from "../Elements/Buttons/ButtonWithLink.vue"
 import LoadingIcon from "../Utils/LoadingIcon.vue"
 import Icon from "../Icon.vue"
+import ButtonExport from "@/Components/ButtonExport.vue"
 
 library.add(faTruckCouch, faUpload, faFilePdf, faMapSigns, faNarwhal, faReceipt, faLayerPlus, faPallet, faWarehouse, faEmptySet, faMoneyBillWave)
 
@@ -276,6 +277,11 @@ const isShowDummySlotName = false
             </div>
         </slot>
 
+         <slot name="export" :dataPageHead="{ ...props }">
+            <div class="flex flex-col items-end sm:flex-row flex-wrap justify-end sm:items-center gap-y-1 gap-x-2 rounded-md">
+               <ButtonExport :data="data.exports"/>
+            </div>
+        </slot>
 
     </div>
     <hr class="border-gray-300" />

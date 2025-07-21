@@ -2,73 +2,74 @@
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { trans } from "laravel-vue-i18n";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { Popover } from "primevue"
-import { faSyncAlt } from "@fas";
-import { ref } from "vue";
+import { Popover } from "primevue";
+import { ref, computed } from "vue";
+import { route } from "ziggy-js";
+
 import {
-    faBracketsCurly, faPawClaws,
-    faFileExcel,
-    faImage,
-    faArrowLeft,
-    faArrowRight,
-    faUpload,
-    faBox,
-    faEllipsisV,
-    faDownload
+  faSyncAlt, faBracketsCurly, faPawClaws, faFileCsv, faFileExcel, faImages,
+  faImage, faArrowLeft, faArrowRight, faUpload, faBox,
+  faEllipsisV, faDownload, faTruck
 } from "@fal";
 
-library.add(faFileExcel, faBracketsCurly, faSyncAlt, faPawClaws, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
-
+library.add(faFileExcel, faBracketsCurly, faSyncAlt, faPawClaws, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload, faDownload, faTruck, faImages, faFileCsv);
 
 const props = defineProps<{
-    download_route: any
+  data?: any;
 }>();
 
-const downloadUrl = (type: string) => {
-    if (props.download_route?.[type]?.name) {
-        return route(props.download_route[type].name, props.download_route[type].parameters);
-    } else {
-        return ''
-    }
+const _popover = ref();
+
+const flatRoutes = computed(() => {
+  return props.data?.flatMap((item: any) => item.routes) || [];
+});
+
+const directRoutes = computed(() => flatRoutes.value.filter((r: any) => r.popover === false));
+const popoverRoutes = computed(() => flatRoutes.value.filter((r: any) => r.inside_popover));
+
+const downloadUrl = (routeObj: any) => {
+  if (!routeObj?.name) return "#";
+  return route(routeObj.name, routeObj.parameters || {});
 };
 
-const _popover = ref()
+
 </script>
 
 <template>
-    <div class="rounded-md ">
-        <a :href="downloadUrl('csv') as string" target="_blank" rel="noopener">
-            <Button :icon="faDownload" label="CSV" type="tertiary" class="rounded-r-none" />
-        </a>
+  <div class="rounded-md flex items-center">
+    <!-- Direct buttons -->
+    <template v-for="(item, index) in directRoutes" :key="index">
+      <a :href="downloadUrl(item.route)" target="_blank" rel="noopener">
+        <Button :icon="['fal', item.icon?.[1] || 'fa-download']" :label="item.label" type="tertiary"
+          :class="index === 0 ? 'rounded-r-none' : 'border-l-0 border-r-0 rounded-none'" />
+      </a>
+    </template>
 
-        <a :href="downloadUrl('images') as string" target="_blank" rel="noopener">
-            <Button :icon="faImage" label="Images" type="tertiary" class="border-l-0 border-r-0 rounded-none" />
-        </a>
+    <!-- Popover trigger -->
+    <template v-if="popoverRoutes.length">
+      <Button
+        @click="(e) => _popover?.toggle(e)"
+        v-tooltip="trans('Open other export options')"
+        :icon="faEllipsisV"
+        class="!px-2 border-l-0 rounded-l-none h-full"
+        type="tertiary"
+      />
 
-        <!-- Section: Download button -->
-        <Button @click="(e) => _popover?.toggle(e)" v-tooltip="trans('Open another options')" :icon="faEllipsisV"
-            xloading="!!isLoadingSpecificChannel.length" class="!px-2 border-l-0 rounded-l-none h-full" type="tertiary"
-            key="" />
+      <Popover ref="_popover">
+        <div class="w-64 relative">
+          <div class="text-sm mb-2">
+            {{ trans("Select another download file type") }}:
+          </div>
 
-        <Popover ref="_popover">
-            <div class="w-64 relative">
-                <div class="text-sm mb-2">
-                    {{ trans("Select another download file type") }}:
-                </div>
-
-                <div class="flex flex-col gap-y-2">
-                    <a :href="downloadUrl('xlsx') as string" target="_blank" rel="noopener">
-                        <Button :icon="faFileExcel" label="Excel" full :style="'tertiary'" />
-                    </a>
-                    <a :href="downloadUrl('json') as string" target="_blank" rel="noopener">
-                        <Button :icon="faBracketsCurly" label="JSON" full :style="'tertiary'" />
-                    </a>
-                    <a :href="downloadUrl('images') as string" target="_blank" rel="noopener">
-                        <Button :icon="faImage" :label="trans('Images')" full :style="'tertiary'" />
-                    </a>
-                </div>
-
-            </div>
-        </Popover>
-    </div>
+          <div class="flex flex-col gap-y-2">
+            <template v-for="(item, idx) in popoverRoutes" :key="idx">
+              <a :href="downloadUrl(item.route)" target="_blank" rel="noopener">
+                <Button :icon="['fal', item.icon?.[1] || 'fa-download']" :label="item.label" full type="tertiary" />
+              </a>
+            </template>
+          </div>
+        </div>
+      </Popover>
+    </template>
+  </div>
 </template>
