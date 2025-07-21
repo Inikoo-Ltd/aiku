@@ -29,8 +29,6 @@ class IndexPollOptions extends OrgAction
     use WithCustomersSubNavigation;
     use WithCRMAuthorisation;
 
-    private Poll $parent;
-
 
     public function handle(Poll $parent, $prefix = null): LengthAwarePaginator
     {

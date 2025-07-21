@@ -10,7 +10,7 @@ class GetPollShowcase
 {
     use AsObject;
 
-    public function handle(Poll $poll): array
+    public function handle(): array
     {
         return [];
     }

@@ -45,55 +45,32 @@ enum PollOptionReferralSourcesEnum: string
     {
         $url = strtolower($url);
 
-        // Google
-        if (str_contains($url, '?gad_source') || str_contains($url, 'gclid')) {
-            return self::GOOGLE_ADS;
-        }
-        if (str_contains($url, 'google')) {
-            return self::ORGANIC_GOOGLE;
-        }
+        $patterns = [
+            // Ads first (more specific)
+            'gad_source'    => self::GOOGLE_ADS,
+            'gclid'         => self::GOOGLE_ADS,
+            'msclkid'       => self::BING_ADS,
+            'fbclid'        => self::META_ADS,
+            'pp=0'          => self::PINTEREST_ADS,
+            'pp=1'          => self::PINTEREST_ADS,
+            'ttclid'        => self::TIKTOK_ADS,
+            'li_fat_id'     => self::LINKEDIN_ADS,
 
-        // Bing
-        if (str_contains($url, 'msclkid')) {
-            return self::BING_ADS;
-        }
-        if (str_contains($url, 'bing')) {
-            return self::ORGANIC_BING;
-        }
+            // Organic
+            'google'        => self::ORGANIC_GOOGLE,
+            'bing'          => self::ORGANIC_BING,
+            'facebook'      => self::ORGANIC_FACEBOOK,
+            'instagram'     => self::ORGANIC_INSTAGRAM,
+            'pin'           => self::ORGANIC_PINTEREST,
+            'pinterest'     => self::ORGANIC_PINTEREST,
+            'tiktok'        => self::ORGANIC_TIKTOK,
+            'linkedin'      => self::ORGANIC_LINKEDIN,
+        ];
 
-        // Meta (Facebook/Instagram)
-        if (str_contains($url, 'fbclid')) {
-            return self::META_ADS;
-        }
-        if (str_contains($url, 'facebook')) {
-            return self::ORGANIC_FACEBOOK;
-        }
-        if (str_contains($url, 'instagram')) {
-            return self::ORGANIC_INSTAGRAM;
-        }
-
-        // Pinterest
-        if (str_contains($url, 'pp=0') || str_contains($url, 'pp=1')) {
-            return self::PINTEREST_ADS;
-        }
-        if (str_contains($url, 'pin') || str_contains($url, 'pinterest')) {
-            return self::ORGANIC_PINTEREST;
-        }
-
-        // TikTok
-        if (str_contains($url, 'ttclid')) {
-            return self::TIKTOK_ADS;
-        }
-        if (str_contains($url, 'tiktok')) {
-            return self::ORGANIC_TIKTOK;
-        }
-
-        // LinkedIn
-        if (str_contains($url, 'li_fat_id')) {
-            return self::LINKEDIN_ADS;
-        }
-        if (str_contains($url, 'linkedin')) {
-            return self::ORGANIC_LINKEDIN;
+        foreach ($patterns as $needle => $source) {
+            if (str_contains($url, $needle)) {
+                return $source;
+            }
         }
 
         return null;
