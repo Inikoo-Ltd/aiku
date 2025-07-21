@@ -13,8 +13,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\Shipment;
 use Lorisleiva\Actions\ActionRequest;
-use App\Http\Resources\Dispatching\DeliveryNoteResource;
-use App\Models\Dispatching\DeliveryNote;
 
 class DeleteShipment extends OrgAction
 {
