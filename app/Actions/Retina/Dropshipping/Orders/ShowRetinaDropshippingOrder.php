@@ -21,7 +21,6 @@ use App\Http\Resources\Accounting\PaymentsResource;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Dispatching\RetinaShipmentsResource;
-use App\Http\Resources\Dispatching\ShipmentsResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\NonProductItemsResource;
@@ -123,11 +122,11 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                 'box_stats' => $this->getOrderBoxStats($order),
                 'currency'  => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'      => OrderResource::make($order),
-
+                'is_notes_editable' => false,  // TODO: make it dynamic, only disable on 'after' state
 
                 RetinaOrderTabsEnum::TRANSACTIONS->value => $this->tab == RetinaOrderTabsEnum::TRANSACTIONS->value ?
-                    fn() => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))
-                    : Inertia::lazy(fn() => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))),
+                    fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))
+                    : Inertia::lazy(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))),
 
 
             ]

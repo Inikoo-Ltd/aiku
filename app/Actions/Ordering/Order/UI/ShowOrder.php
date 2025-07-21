@@ -163,8 +163,17 @@ class ShowOrder extends OrgAction
         return [
             "note_list" => [
                 [
+                    "label"    => __("Delivery Instructions"),
+                    "note"     => $order->shipping_notes ?? '',
+                    "information" => __("This note is from the customer. Will be printed in the shipping label."),
+                    "editable" => true,
+                    "bgColor"  => "#38bdf8",
+                    "field"    => "shipping_notes"
+                ],
+                [
                     "label"    => __("Customer"),
                     "note"     => $order->customer_notes ?? '',
+                    "information" => __("This note is from customer in the platform. Not editable."),
                     "editable" => false,
                     "bgColor"  => "#FF7DBD",
                     "field"    => "customer_notes"
@@ -172,6 +181,7 @@ class ShowOrder extends OrgAction
                 [
                     "label"    => __("Public"),
                     "note"     => $order->public_notes ?? '',
+                    "information" => __("This note will be visible to public, both staff and the customer can see."),
                     "editable" => true,
                     "bgColor"  => "#94DB84",
                     "field"    => "public_notes"
@@ -179,6 +189,7 @@ class ShowOrder extends OrgAction
                 [
                     "label"    => __("Private"),
                     "note"     => $order->internal_notes ?? '',
+                    "information" => __("This note is only visible to staff members. You can communicate each other about the order."),
                     "editable" => true,
                     "bgColor"  => "#FCF4A3",
                     "field"    => "internal_notes"

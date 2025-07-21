@@ -453,10 +453,10 @@ const last_payment = computed(() => {
     <!-- Section: Box Note -->
     <div class="relative">
         <Transition name="headlessui">
-            <div v-if="notes?.note_list?.some(item => !!(item?.note?.trim()))"
-                 class="p-2 grid sm:grid-cols-3 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
+            <div xv-if="notes?.note_list?.some(item => !!(item?.note?.trim()))"
+                class="p-2 grid grid-cols-2 sm:grid-cols-4 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
                 <BoxNote v-for="(note, index) in notes.note_list" :key="index + note.label" :noteData="note"
-                         :updateRoute="routes.updateOrderRoute" />
+                    :updateRoute="routes.updateOrderRoute" />
             </div>
         </Transition>
     </div>
@@ -643,26 +643,80 @@ const last_payment = computed(() => {
                 </a>
             </div>
 
-            <div v-for="delivery_note in  box_stats.delivery_notes" >
+           <!--  <div v-for="delivery_note in  box_stats.delivery_notes" >
 
-                <dl>
+                <dl class="flex">
                     <dt class="flex-none">
                         <FontAwesomeIcon icon="fal fa-truck" fixed-width aria-hidden="true" class="text-gray-500" />
                     </dt>
-                    <dd class="text-gray-500 " >
+                    <dd class="text-gray-500 w-full" >
                         <Link
                             :href="route('grp.helpers.redirect_delivery_notes', delivery_note.id)"
                             class="primaryLink cursor-pointer">
                             {{ delivery_note.reference }}
                         </Link>
-                        <div>
-                            <ShipmentSection :shipments="delivery_note.shipments" />
 
+                        <div class="">
+                            <ShipmentSection
+                                :shipments="delivery_note.shipments"
+                            />
                         </div>
                     </dd>
                 </dl>
 
 
+            </div> -->
+            
+              <div v-if="box_stats?.delivery_notes?.length" class="mt-4 border rounded-lg p-4 pt-3 bg-white shadow-sm">
+                <!-- Section Title -->
+                <div class="flex items-center gap-2 border-b border-gray-200 pb-2 mb-3">
+                    <FontAwesomeIcon :icon="faTruck" class="text-blue-500" fixed-width />
+                    <div class="text-sm font-semibold text-gray-800">
+                        {{ trans('Delivery Notes') }}
+                    </div>
+                </div>
+
+                <!-- Delivery Note Items -->
+                <div v-for="(note, index) in box_stats?.delivery_notes" :key="index"
+                    class="mb-3 pb-3 border-b border-dashed last:border-0 last:mb-0 last:pb-0">
+
+                    <div class="flex items-center gap-2 text-sm text-gray-700 mb-1">
+                        <span class="font-medium">Ref:</span>
+                        <span>{{ note?.reference }}</span>
+                        <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+                            <Icon :data="note?.state" />
+                        </span>
+                    </div>
+
+                    <!-- Shipments -->
+                    <div v-if="note?.shipments?.length > 0" class="mt-1 text-xs text-gray-600">
+                        <p class="text-gray-700 font-medium mb-1">{{trans('Shipments')}}:</p>
+                        <ul class="list-disc pl-4 space-y-1">
+                            <li v-for="(shipment, i) in note.shipments" :key="i">
+                                <template v-if="shipment?.formatted_tracking_urls?.length">
+                                    <div v-for="trackingData in shipment.formatted_tracking_urls">
+
+                                        {{shipment.name}}
+                                        <a :href="trackingData.url" target="_blank" rel="noopener noreferrer"
+                                            class="secondaryLink"
+                                            v-tooltip="trans('Click to track shipment')">
+                                            {{ trackingData.tracking }}
+                                        </a>
+                                    </div>
+                                </template>
+                                <template v-else>
+                                    <div class="text-gray-400 italic">
+                                        {{ trans('No Tracking available') }}
+                                    </div>
+                                </template>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div v-else class="mt-1 text-xs italic text-gray-400">
+                        {{ trans('No shipments') }}
+                    </div>
+                </div>
             </div>
 
         </BoxStatPallet>

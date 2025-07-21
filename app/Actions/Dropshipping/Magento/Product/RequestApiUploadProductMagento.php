@@ -35,21 +35,25 @@ class RequestApiUploadProductMagento extends RetinaAction
             $product = $portfolio->item;
 
             $images = [];
-            if (app()->isProduction()) {
-                foreach ($product->images as $key => $image) {
-                    $images[] = [
-                        'media_type' => 'image',
-                        'label' => 'Product Image 1',
-                        'position' => $key + 1,
-                        'disabled' => false,
-                        'types' => $key === 0 ? ['image', 'small_image', 'thumbnail'] : ['image'],
-                        'content' => [
-                            'base64_encoded_data' => base64_encode(file_get_contents(GetImgProxyUrl::run($image->getImage()->extension('png')))),
-                            'type' => 'image/png',
-                            'name' => $image->file_name
-                        ]
-                    ];
-                }
+
+            foreach ($product->images as $key => $image) {
+                $imageUrl = match (app()->environment()) {
+                    'local' => Arr::get($product->web_images, 'main.gallery.png'),
+                    default => GetImgProxyUrl::run($image->getImage()->extension('png'))
+                };
+
+                $images[] = [
+                    'media_type' => 'image',
+                    'label' => 'Product Image 1',
+                    'position' => $key + 1,
+                    'disabled' => false,
+                    'types' => $key === 0 ? ['image', 'small_image', 'thumbnail'] : ['image'],
+                    'content' => [
+                        'base64_encoded_data' => base64_encode(file_get_contents($imageUrl)),
+                        'type' => 'image/png',
+                        'name' => $image->file_name
+                    ]
+                ];
             }
 
             $wooCommerceProduct = [
@@ -61,30 +65,18 @@ class RequestApiUploadProductMagento extends RetinaAction
                 'visibility' => 4, // 4 = catalog & search
                 'type_id' => 'simple',
                 'weight' => $product->gross_weight / 453.59237, // Change to lbs
-                'extension_attributes' => [
-                    'stock_item' => [
-                        'stock_id' => 1,
-                        'is_in_stock' => 1,
-                        'qty' => $product->available_quantity,
-                        'manage_stock' => 0,
-                        'use_config_manage_stock' => 0,
-                        'min_qty' => 0,
-                        'use_config_min_qty' => 1,
-                        'min_sale_qty' => 1,
-                        'use_config_min_sale_qty' => 1,
-                        'max_sale_qty' => 10000,
-                        'use_config_max_sale_qty' => 1,
-                        'is_qty_decimal' => 0,
-                        'backorders' => 0,
-                        'use_config_backorders' => 1,
-                        'notify_stock_qty' => 1,
-                        'use_config_notify_stock_qty' => 1
-                    ]
-                ],
                 'media_gallery_entries' => $images
             ];
 
             $result = $magentoUser->uploadProduct($wooCommerceProduct);
+            $magentoUser->updateSourceItemsBySku([
+                [
+                    'sku' => Arr::get($result, 'sku'),
+                    'source_code' => 'aw-source',
+                    'quantity' =>  $product->available_quantity,
+                    'status' => 1
+                ]
+            ]);
 
             $portfolio = UpdatePortfolio::run($portfolio, [
                 'platform_product_id' => Arr::get($result, 'id')
