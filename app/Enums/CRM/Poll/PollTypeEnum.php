@@ -22,6 +22,7 @@ enum PollTypeEnum: string
     {
         return match ($this) {
             self::OPEN_QUESTION => __('Open Question'),
+            self::OPTION_REFERRAL_SOURCES => __('Referral Sources'),
             self::OPTION        => __('Multiple Choice'),
         };
     }

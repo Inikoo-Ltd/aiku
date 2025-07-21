@@ -140,7 +140,7 @@ const component = computed(() => {
 
     <hr class="my-5 border border-gray-200" />
 
-    <div class="xmx-auto grid max-w-7xl lg:grid-cols-2">
+    <div class="xmx-auto grid max-w-7xl lg:grid-cols-2 mb-10">
         <div class="px-6 xpb-24 xpt-16 xsm:pb-32 xsm:pt-20 lg:px-8 xlg:pt-32">
             <div class="xmx-auto max-w-2xl lg:mr-0 lg:max-w-lg">
                 <dl class="mt-16 grid max-w-xl grid-cols-1 gap-8 sm:mt-20 sm:grid-cols-2 xl:mt-16">
@@ -152,15 +152,13 @@ const component = computed(() => {
             </div>
         </div>
     </div>
-    <hr class="my-5 border border-gray-200" />
-
-    <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component
-        :is="component"
-        :data="props[currentTab as keyof typeof props]"
-        :tab="currentTab"
-        :handleTabUpdate
-        />
-    <!-- {{ showcase }}
-    {{ poll_options }} -->
+    <template v-if="data.type !== 'open_question'">
+        <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
+        <component
+            :is="component"
+            :data="props[currentTab as keyof typeof props]"
+            :tab="currentTab"
+            :handleTabUpdate
+            />
+    </template>
 </template>

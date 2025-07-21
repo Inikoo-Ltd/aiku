@@ -18,16 +18,11 @@ enum PollsTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE          = 'showcase';
     case POLL_OPTIONS = 'poll_options';
 
     public function blueprint(): array
     {
         return match ($this) {
-            PollsTabsEnum::SHOWCASE => [
-                'title' => __('showcase'),
-                'icon'  => 'fas fa-info-circle',
-            ],
             PollsTabsEnum::POLL_OPTIONS => [
                 'title' => __('Poll Options'),
                 'icon'  => 'fal fa-list-ul',

@@ -94,9 +94,6 @@ class ShowPoll extends OrgAction
 
             'data'        => PollResource::make($poll)->toarray($request),
 
-            PollsTabsEnum::SHOWCASE->value => $this->tab == PollsTabsEnum::SHOWCASE->value ?
-                fn() => GetPollShowcase::run($poll)
-                : Inertia::lazy(fn() => GetPollShowcase::run($poll)),
         ];
 
         if ($poll->type != PollTypeEnum::OPEN_QUESTION) {
