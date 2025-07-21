@@ -18,7 +18,6 @@ return new class extends Migration
             $table->unsignedSmallInteger('shop_id')->index();
             $table->foreign('shop_id')->references('id')->on('shops');
             $table->string('name');
-            $table->string('type')->default('organic');
             $table->string('slug')->unique()->collation('und_ns');
             $table->timestampsTz();
         });
