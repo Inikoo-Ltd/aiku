@@ -16,11 +16,10 @@ use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\CRM\Customer\CustomerTradeStateEnum;
 use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Models\CRM\Customer;
-use App\Models\CRM\Poll;
-use App\Models\CRM\PollOption;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use App\Models\CRM\PollOption;
 
 class PollOptionHydrateCustomers implements ShouldBeUnique
 {
@@ -31,13 +30,14 @@ class PollOptionHydrateCustomers implements ShouldBeUnique
     {
         return $pollOption->id;
     }
+
     public function handle(PollOption $pollOption): void
     {
+
+        $pollReplies = $pollOption->pollReplies;
+
         $stats = [
-            'number_customers' => DB::table('poll_replies')
-                ->where('poll_option_id', $pollOption->id)
-                ->select(DB::raw('COUNT(DISTINCT poll_replies.customer_id) as count'))
-                ->first()->count ?? 0,
+            'number_customers' => $pollReplies->unique('customer_id')->count(),
         ];
 
         $stats = array_merge(
@@ -84,9 +84,21 @@ class PollOptionHydrateCustomers implements ShouldBeUnique
         );
 
         if ($pollOption->poll->type == PollTypeEnum::OPTION_REFERRAL_SOURCES) {
-            // TODO: calculate after #1908 finish
-            // for purchase & revenue
+            $customerIds = $pollReplies->pluck('customer_id')->unique();
+
+            $stats['number_customer_purchases'] = DB::table('orders')
+                ->whereIn('customer_id', $customerIds)
+                ->where('state', '!=', 'creating')
+                ->select(DB::raw('COUNT(DISTINCT id) as count'))
+                ->first()->count ?? 0;
+
+            $stats['total_customer_revenue'] = DB::table('orders')
+                ->whereIn('customer_id', $customerIds)
+                ->where('state', '!=', 'creating')
+                ->select(DB::raw('SUM(total_amount) as total'))
+                ->first()->total ?? 0;
         }
+
 
         $pollOption->stats()->update($stats);
     }

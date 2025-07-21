@@ -26,6 +26,11 @@ trait WithRetinaRegistration
 {
     public function handle(array $modelData): void
     {
+        $newPollReplies = $this->get('poll_replies');
+        if ($newPollReplies) {
+            $modelData['poll_replies'] = $newPollReplies;
+        }
+
         if ($this->shop->type == ShopTypeEnum::FULFILMENT) {
             RegisterFulfilmentCustomer::run(
                 $this->shop->fulfilment,
@@ -108,13 +113,8 @@ trait WithRetinaRegistration
             }
         }
 
-        $url = $request->url();
-        $pollReferalAuto = PollOptionReferralSourcesEnum::detectFromUrl($url);
-
-        if (!$pollReferalAuto) {
-            $url = $request->header('referer');
-            $pollReferalAuto = PollOptionReferralSourcesEnum::detectFromUrl($url);
-        }
+        // already set from middleware CaptureReferralSource
+        $pollReferalAuto = $request->session()->get('referral_source');
 
         if ($pollReferalAuto) {
             $autoPoll = Poll::where('shop_id', $this->shop->id)
@@ -133,7 +133,9 @@ trait WithRetinaRegistration
                     $pollReplies[] = $pollReply;
                 }
             }
+            $request->session()->forget('referral_source');
         }
+        $this->set('poll_replies', $pollReplies);
     }
 
     public function rules(): array

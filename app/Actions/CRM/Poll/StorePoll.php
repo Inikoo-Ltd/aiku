@@ -93,6 +93,7 @@ class StorePoll extends OrgAction
                     table: 'polls',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
+                        ['column' => 'deleted_at', 'value' => null],
                     ]
                 ),
             ],
@@ -105,6 +106,7 @@ class StorePoll extends OrgAction
                     table: 'polls',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
+                        ['column' => 'deleted_at', 'value' => null],
                     ]
                 ),
             ],

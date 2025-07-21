@@ -11,6 +11,7 @@ namespace App\Actions\Ordering\Order;
 use App\Actions\Comms\Email\SendNewOrderEmailToCustomer;
 use App\Actions\Comms\Email\SendNewOrderEmailToSubscribers;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateOptionReferralSource;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBasket;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
@@ -79,6 +80,7 @@ class SubmitOrder extends OrgAction
             SendOrderToWarehouse::make()->action($order, []);
         }
 
+        CustomerHydrateOptionReferralSource::dispatch($order->customer);
 
         return $order;
     }
