@@ -139,13 +139,7 @@ const isModalShippingAddress = ref(false)
                     <FontAwesomeIcon icon='fal fa-dollar-sign' fixed-width aria-hidden='true' class="text-gray-500" />
                 </dt>
 
-                <!-- <NeedToPay
-                     @click="onPayClick"
-                    :totalAmount="box_stats.products.payment.total_amount"
-                    :paidAmount="box_stats.products.payment.paid_amount"
-                    :payAmount="box_stats.products.payment.pay_amount"
-                    :class="[box_stats.products.payment.pay_amount ? 'hover:bg-gray-100 cursor-pointer' : '']"
-                    :currencyCode="currency.code" /> -->
+
             </dl>
 
             <div class="mt-1 flex items-center w-full flex-none gap-x-1.5">
@@ -181,15 +175,17 @@ const isModalShippingAddress = ref(false)
 
                     <!-- Shipments -->
                     <div v-if="note?.shipments?.length > 0" class="mt-1 text-xs text-gray-600">
-                        <p class="text-gray-700 font-medium mb-1">Shipments:</p>
+                        <p class="text-gray-700 font-medium mb-1">{{trans('Shipments')}}:</p>
                         <ul class="list-disc pl-4 space-y-1">
                             <li v-for="(shipment, i) in note.shipments" :key="i">
-                                <template v-if="shipment?.tracking_urls?.length">
-                                    <div v-for="(tracking, j) in shipment.tracking_urls" :key="j">
-                                        <a :href="tracking?.url" target="_blank" rel="noopener noreferrer"
-                                            class="text-blue-600 hover:text-blue-800 hover:underline"
+                                <template v-if="shipment?.formatted_tracking_urls?.length">
+                                    <div v-for="trackingData in shipment.formatted_tracking_urls">
+
+                                        {{shipment.name}}
+                                        <a :href="trackingData.url" target="_blank" rel="noopener noreferrer"
+                                            class="secondaryLink"
                                             v-tooltip="trans('Click to track shipment')">
-                                            {{ tracking?.url || trans('No Tracking provided') }}
+                                            {{ trackingData.tracking }}
                                         </a>
                                     </div>
                                 </template>

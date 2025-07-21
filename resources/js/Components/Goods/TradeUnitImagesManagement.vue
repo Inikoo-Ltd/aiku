@@ -12,7 +12,7 @@ import { Popover } from 'primevue'
 import Button from '../Elements/Buttons/Button.vue'
 import Modal from '../Utils/Modal.vue'
 import PureInput from '../Pure/PureInput.vue'
-import { set } from 'lodash'
+import { set } from 'lodash-es'
 import LoadingIcon from '../Utils/LoadingIcon.vue'
 
 const props = defineProps<{

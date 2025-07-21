@@ -195,12 +195,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                     'invoice' => $invoice->slug,
                 ],
             ];
-            $routeDownload = [
-                'name'       => 'retina.dropshipping.invoices.pdf',
-                'parameters' => [
-                    'invoice' => $invoice->slug,
-                ],
-            ];
+
 
             $routeDownload = null;
 
@@ -232,29 +227,22 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                 ]
             );
         }
-        $deliveryNote = $order->deliveryNotes->first();
-        $shipments    = $deliveryNote?->shipments ? RetinaShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null;
-        $deliveryNotes = $order->deliveryNotes;
+
+        $deliveryNotes     = $order->deliveryNotes;
         $deliveryNotesData = [];
 
         if ($deliveryNotes) {
             foreach ($deliveryNotes as $deliveryNote) {
-                $shipmentsData = [];
-
-                foreach ($deliveryNote->shipments as $shipment) {
-                    $shipmentsData[] = [
-                        'trackings' => $shipment->trackings,
-                        'tracking_urls' => $shipment->tracking_urls,
-                    ];
-                }
-
                 $deliveryNotesData[] = [
+                    'id'        => $deliveryNote->id,
                     'reference' => $deliveryNote->reference,
                     'state'     => $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
-                    'shipments' => $shipmentsData,
+                    'shipments' => $deliveryNote?->shipments ? RetinaShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null
                 ];
             }
         }
+
+
         return [
             'customer_client'  => $customerClientData,
             'customer'         => array_merge(
@@ -275,12 +263,11 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                 ]
             ),
             'customer_channel' => $customerChannel,
-            'invoices'          => $invoicesData,
+            'invoices'         => $invoicesData,
             'order_properties' => [
                 'weight'    => NaturalLanguage::make()->weight($order->estimated_weight),
-                'shipments' => $shipments,
             ],
-            'delivery_notes' => $deliveryNotesData,
+            'delivery_notes'   => $deliveryNotesData,
             'products'         => [
                 'payment'          => [
                     'routes'       => [

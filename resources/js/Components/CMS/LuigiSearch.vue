@@ -43,23 +43,23 @@ const LBInitAutocompleteNew = async () => {
                 prefixed: true,
                 symbol: locale.currencySymbol(layout.iris?.currency?.code)
             },
-            // ShowBuyTitle: 'Buy now', // Top Product: Button label
-            Translations: {
-                en: {
-                    // showBuyTitle: 'Burrrry now', // Top Product: Button label
-                    // priceFilter: {
-                    //     minimumFractionDigits: 0,
-                    //     maximumFractionDigits: 2,
-                    //     locale: locale.language.code,
-                    //     prefixed: true,
-                    //     symbol: locale.currencySymbol(layout.iris?.currency?.code)
-                    // }
-                }
-            },
+            // Translations: {
+            //     en: {
+            //         // showBuyTitle: 'Burrrry now', // Top Product: Button label
+            //         // priceFilter: {
+            //         //     minimumFractionDigits: 0,
+            //         //     maximumFractionDigits: 2,
+            //         //     locale: locale.language.code,
+            //         //     prefixed: true,
+            //         //     symbol: locale.currencySymbol(layout.iris?.currency?.code)
+            //         // }
+            //     }
+            // },
             RemoveFields: layout.iris.is_logged_in ? [] : ['formatted_price', 'price_amount', 'price'],
             Types: [
                 {
-                    name: "Product",
+                    name: "Products",
+                    heroName: "Top product",
                     type: "item",
                     size: 7,
                     xattributes: layout.iris.is_logged_in ? ['product_code', 'formatted_price'] : ['product_code'],
@@ -97,6 +97,7 @@ const LBInitAutocompleteNew = async () => {
                     type: "tag",
                 },
             ],
+            ShowAllTitle: 'View all results', // Show All Product: Button label
             ShowAllCallback: () => {  // Called when 'Show All Product' clicked
                 if (inputValue.value) {
                     // console.log('query:', stringQuery)
@@ -109,16 +110,21 @@ const LBInitAutocompleteNew = async () => {
                     })
                 }
             },
+            ShowBuyTitle: 'Detail', // Top Product: Button label
             Actions: [  // Action for Top Product 'Add To Basket'
                 {
                     forRow: function(row) {
-                        console.log('row:', row)
+                        // console.log('row:', row)
                         return layout.retina.type !== 'b2b' && row['data-autocomplete-id'] == 1 && row.type === 'item'  // Top product
                     },
                     // iconUrl: 'https://cdn-icons-png.freepik.com/256/275/275790.png',
-                    title: "Visit product's page",
+                    iconText: '➔',
+                    // title: "Visit product's page",
                     action: function(e, result) {
-                        console.log('zzzzzzzzz', e, result)
+                        // console.log('zzzzzzzzz', e, result)
+                        window.location.href = result?.attributes?.web_url?.[0]
+                        // router.visit(result.attributes.web_url[0])
+
                     }
                 }
             ]
@@ -150,7 +156,6 @@ onBeforeMount(() => {
     script.async = true;
     document.head.appendChild(script);
     script.onload = () => {
-        console.log('Luigi autocomplete script loaded');
         LBInitAutocompleteNew();
     };
     script.onerror = () => {
@@ -194,9 +199,16 @@ const visitSearchPage = () => {
 /* Styling for Layout: Hero */
 .luigi-ac-hero-color {
     background: var(--luigiColor1) !important;
+    color: var(--luigiColor2) !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding-left: 0px !important;
+    padding-bottom: 2px !important;
 }
 .luigi-ac-others {
     background: #F3F7FA !important;
+    overflow-y: auto !important;
 }
 .luigi-ac-header {
     color: var(--luigiColor1) !important;

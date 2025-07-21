@@ -18,10 +18,12 @@ use App\Actions\UI\WithInertia;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Catalogue\ShopTabsEnum;
 use App\Http\Resources\Catalogue\ShopResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Models\Catalogue\Shop;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
@@ -119,6 +121,53 @@ class ShowShop extends OrgAction
         ];
     }
 
+    private function getStatsBox(Shop $shop): array
+    {
+        $customerChannels = CustomerSalesChannel::where('connection_status', 'connected')
+            ->where('shop_id', $shop->id)
+            ->get();
+        $totalPlatforms   = $customerChannels->count();
+
+        $metas         = [];
+        foreach (PlatformTypeEnum::cases() as $platformType) {
+            $platformTypeName = $platformType->value;
+
+            $platform = $customerChannels->filter(function ($channel) use ($platformTypeName) {
+                return $channel->platform->type->value === $platformTypeName;
+            });
+
+            $metas[] = [
+                'tooltip'   => __($platformType->labels()[$platformTypeName]),
+                'icon'      => [
+                    'tooltip' => $platform->count() > 0 ? 'active' : 'inactive',
+                    'icon'    => $platform->count() > 0 ? 'fas fa-check-circle' : 'fas fa-times-circle',
+                    'class'   => $platform->count() > 0 ? 'text-green-500' : 'text-red-500'
+                ],
+                'logo_icon' => $platformType->value,
+                'count'     => $platform->count(),
+            ];
+        }
+
+        return [
+            [
+                'label' => __('Customers Channels'),
+                // 'route' => [
+                //     'name'       => 'retina.dropshipping.customer_sales_channels.index',
+                //     'parameters' => []
+                // ],
+                'color' => '#E87928',
+                'icon'  => [
+                    'icon'          => 'fal fa-code-branch',
+                    'tooltip'       => __('Channels'),
+                    'icon_rotation' => '90',
+                ],
+                'value' => $totalPlatforms,
+
+                'metas' => $metas
+            ],
+        ];
+    }
+
     private function getDashboard(Shop $shop): array
     {
         return [
@@ -163,6 +212,7 @@ class ShowShop extends OrgAction
                     ]
                 ]
             ],
+            'statsBox'  => $this->getStatsBox($shop),
         ];
     }
 
