@@ -11,6 +11,7 @@ use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
 use App\Actions\Dispatching\GoodsOut\UI\IndexWarehousePalletReturns;
 use App\Actions\Dispatching\GoodsOut\UI\ShowWarehousePalletReturn;
 use App\Actions\Dispatching\GoodsOut\UI\ShowWarehouseStoredItemReturn;
+use App\Actions\Dispatching\PickingSession\UI\IndexPickingSessions;
 use App\Actions\Dispatching\Shipper\UI\CreateShipper;
 use App\Actions\Dispatching\Shipper\UI\EditShipper;
 use App\Actions\Dispatching\Shipper\UI\IndexShippers;
@@ -60,3 +61,5 @@ Route::get('shippers/inactive', [IndexShippers::class, 'inInactive'])->name('shi
 Route::get('shippers/create', CreateShipper::class)->name('shippers.create');
 Route::get('shippers/{shipper}', ShowShipper::class)->name('shippers.show');
 Route::get('shippers/{shipper}/edit', EditShipper::class)->name('shippers.edit');
+
+Route::get('picking-sessions', IndexPickingSessions::class)->name('picking_sessions.index');

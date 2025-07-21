@@ -10,6 +10,7 @@
 namespace App\Actions\Dispatching\PickingSession\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\UI\Dispatch\ShowDispatchHub;
 use App\Http\Resources\Dispatching\PickingSessionsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Inventory\PickingSession;
@@ -74,7 +75,7 @@ class IndexPickingSessions extends OrgAction
 
         $actions = [];
         return Inertia::render(
-            'XXXX',
+            'Org/Inventory/PickingSessions',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
@@ -122,5 +123,36 @@ class IndexPickingSessions extends OrgAction
         $this->initialisationFromWarehouse($warehouse, $request);
 
         return $this->handle($warehouse);
+    }
+
+    public function getBreadcrumbs(string $routeName, array $routeParameters): array
+    {
+        $headCrumb = function (array $routeParameters = [], ?string $suffix = null) {
+            return [
+                [
+                    'type'   => 'simple',
+                    'simple' => [
+                        'route' => $routeParameters,
+                        'label' => __('Picking sessions'),
+                        'icon'  => 'fal fa-bars'
+                    ],
+                    'suffix' => $suffix
+                ],
+            ];
+        };
+
+        return match ($routeName) {
+            'grp.org.warehouses.show.dispatching.picking_sessions.index' =>
+            array_merge(
+                ShowDispatchHub::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.warehouses.show.dispatching.picking_sessions.index',
+                        'parameters' => $routeParameters
+                    ]
+                )
+            ),
+            default => []
+        };
     }
 }

@@ -48,6 +48,6 @@ Route::prefix('{warehouse}')
 
                 Route::prefix('fulfilment')->name('.fulfilment.')
                     ->group(__DIR__."/fulfilment.php");
-
+                    
             });
     });
