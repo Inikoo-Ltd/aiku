@@ -15,7 +15,9 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
 use Exception;
+use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Lorisleiva\Actions\ActionRequest;
 use Sentry;
 
 class CreateShopifyProduct extends RetinaAction
@@ -229,5 +231,21 @@ class CreateShopifyProduct extends RetinaAction
             'variants'     => $variants,
             'images'       => $images
         ];
+    }
+
+    public function getCommandSignature(): string
+    {
+        return 'shopify:product:create {portfolio_id}';
+    }
+
+    public function asCommand(Command $command): void
+    {
+        $portfolio = Portfolio::find($command->argument('portfolio_id'));;
+
+        $customerSalesChannel = $portfolio->customer_sales_channel;
+        $shopifyUser = $customerSalesChannel->user;
+
+        $this->handle($shopifyUser,$portfolio);
+
     }
 }
