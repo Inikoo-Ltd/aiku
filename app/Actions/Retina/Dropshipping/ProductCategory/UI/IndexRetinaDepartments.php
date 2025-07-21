@@ -191,7 +191,7 @@ class IndexRetinaDepartments extends RetinaAction
                                     'route' => [
                                         'name' => 'retina.json.dropshipping.customer_sales_channel.portfolio_images_zip',
                                         'parameters' => [
-                                              'customerSalesChannel' => 'xxx',
+                                              'customerSalesChannel' => 'xxx',   
                                         ]
                                     ],
                                 ],
