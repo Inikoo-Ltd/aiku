@@ -14,6 +14,8 @@ use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
+use function Pest\Laravel\json;
+
 class CopyOrderNotesToDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
@@ -21,10 +23,10 @@ class CopyOrderNotesToDeliveryNote extends OrgAction
     public function handle(DeliveryNote $deliveryNote, array $modelData)
     {
         $order = $deliveryNote->orders->first();
-        $customerNotes = '';
-        $publicNotes = '';
-        $internalNotes = '';
-        $shippingNotes = '';
+        $customerNotes = $deliveryNote->customer_notes;
+        $publicNotes = $deliveryNote->public_notes;
+        $internalNotes = $deliveryNote->internal_notes;
+        $shippingNotes = $deliveryNote->shipping_notes;
 
         if(Arr::exists($modelData, 'customer_notes') && Arr::get($modelData, 'customer_notes') == true) {
             $customerNotes  = $order->customer_notes;
@@ -39,12 +41,16 @@ class CopyOrderNotesToDeliveryNote extends OrgAction
             $shippingNotes = $order->shipping_notes;
         }
 
-        $this->update($deliveryNote, [
+        $deliveryNote = $this->update($deliveryNote, [
             'customer_notes'            => $customerNotes,
             'public_notes'              => $publicNotes,
             'internal_notes'            => $internalNotes,
             'shipping_notes'            => $shippingNotes,
         ]);
+
+        $deliveryNote->refresh();
+        
+        return $deliveryNote;
     }
 
     public function rules(): array
@@ -56,6 +62,16 @@ class CopyOrderNotesToDeliveryNote extends OrgAction
             'shipping_notes'            => ['sometimes', 'boolean'],
         ];
         return $rules;
+    }
+
+    public function jsonResponse(DeliveryNote $deliveryNote)
+    {
+        return [
+            'customer_notes'            => $deliveryNote->customer_notes,
+            'public_notes'              => $deliveryNote->public_notes,
+            'internal_notes'            => $deliveryNote->internal_notes,
+            'shipping_notes'            => $deliveryNote->shipping_notes,
+        ];
     }
 
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request)
