@@ -82,8 +82,6 @@ class CreateShopifyProduct extends RetinaAction
                         sku
                         barcode
                         inventoryQuantity
-                        weight
-                        weightUnit
                       }
                     }
                   }
@@ -236,11 +234,63 @@ class CreateShopifyProduct extends RetinaAction
     {
         $portfolio = Portfolio::find($command->argument('portfolio_id'));
 
+        if (!$portfolio) {
+            $command->error("Portfolio not found");
+            return;
+        }
+
         $customerSalesChannel = $portfolio->customerSalesChannel;
 
+        if (!$customerSalesChannel) {
+            $command->error("Customer sales channel not found for this portfolio");
+            return;
+        }
 
         $shopifyUser = $customerSalesChannel->user;
 
-        $this->handle($shopifyUser, $portfolio);
+        if (!$shopifyUser) {
+            $command->error("Shopify user not found for this customer sales channel");
+            return;
+        }
+
+        $command->info("Creating product in Shopify for portfolio #{$portfolio->id}...");
+
+        $result = $this->handle($shopifyUser, $portfolio);
+
+        if (!$result) {
+            $command->error("Failed to create product in Shopify");
+            $command->error("Errors:");
+            $command->error(implode("\n", $portfolio->errors_response ?? []));
+            return;
+        }
+
+        // Display the product data in a table format
+        $command->info("Product created successfully!");
+        $command->table(['Field', 'Value'], [
+            ['ID', $result['id']],
+            ['Title', $result['title']],
+            ['Handle', $result['handle']],
+            ['Vendor', $result['vendor'] ?? 'N/A'],
+            ['Product Type', $result['product_type'] ?? 'N/A'],
+            ['Variants Count', count($result['variants'] ?? [])],
+            ['Images Count', count($result['images'] ?? [])]
+        ]);
+
+        // Display variants information if available
+        if (!empty($result['variants'])) {
+            $command->info("\nVariants Information:");
+            $variantData = [];
+            foreach ($result['variants'] as $index => $variant) {
+                $variantData[] = [
+                    'Index' => $index + 1,
+                    'ID' => $variant['id'] ?? 'N/A',
+                    'Price' => $variant['price'] ?? 'N/A',
+                    'SKU' => $variant['sku'] ?? 'N/A',
+                    'Barcode' => $variant['barcode'] ?? 'N/A',
+                    'Inventory' => $variant['inventoryQuantity'] ?? 'N/A'
+                ];
+            }
+            $command->table(['Index', 'ID', 'Price', 'SKU', 'Barcode', 'Inventory'], $variantData);
+        }
     }
 }

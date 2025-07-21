@@ -18,16 +18,12 @@ class FindShopifyProductVariant
 {
     use AsAction;
 
-    /**
-     * Find a Shopify product variant by SKU or barcode
-     *
-     * @param ShopifyUser $shopifyUser The Shopify user account to use for API access
-     * @param string $searchValue The SKU or barcode to search for
-     * @param string $searchType The type of search ('sku' or 'barcode')
-     * @return array|null The product data or null if not found
-     */
-    public function handle(ShopifyUser $shopifyUser, string $searchValue, string $searchType = 'sku'): ?array
+
+    public function handle(CustomerSalesChannel $customerSalesChannel, string $searchValue, string $searchType = ''): ?array
     {
+        /** @var ShopifyUser $shopifyUser */
+        $shopifyUser = $customerSalesChannel->user;
+
         $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
 
         if (!$client) {
@@ -75,12 +71,12 @@ class FindShopifyProductVariant
             QUERY;
 
 
-            if($searchType === 'barcode'){
-                $searchParam="variant:barcode:$searchValue";
-            }elseif($searchType === 'sku'){
-                $searchParam="variant:sku:$searchValue";
-            }else{
-                $searchParam=$searchValue;
+            if ($searchType === 'barcode') {
+                $searchParam = "variant:barcode:$searchValue";
+            } elseif ($searchType === 'sku') {
+                $searchParam = "variant:sku:$searchValue";
+            } else {
+                $searchParam = $searchValue;
             }
 
 
@@ -93,8 +89,9 @@ class FindShopifyProductVariant
             $response = $client->request($query, $variables);
 
             if (!empty($response['errors']) || !isset($response['body'])) {
-                $errorMessage = 'Error in API response: ' . json_encode($response['errors'] ?? []);
-                Sentry::captureMessage("Product search failed: " . $errorMessage);
+                $errorMessage = 'Error in API response: '.json_encode($response['errors'] ?? []);
+                Sentry::captureMessage("Product search failed: ".$errorMessage);
+
                 return null;
             }
 
@@ -105,46 +102,29 @@ class FindShopifyProductVariant
                 return null;
             }
 
+
+
             // Format the response
             $products = [];
             foreach ($body['data']['products']['edges'] as $edge) {
                 $product = $edge['node'];
 
-                // Extract variants
-                $variants = [];
-                if (isset($product['variants']['edges'])) {
-                    foreach ($product['variants']['edges'] as $variantEdge) {
-                        $variant = $variantEdge['node'];
-                        // Only include variants that match the search criteria
-                        if (
-                            ($searchType === 'sku' && $variant['sku'] === $searchValue) || 
-                            ($searchType === 'barcode' && $variant['barcode'] === $searchValue)
-                        ) {
-                            $variants[] = $variant;
-                        }
-                    }
-                }
+                $products[] = [
+                    'id'           => $product['id'],
+                    'title'        => $product['title'],
+                    'handle'       => $product['handle'],
+                    'vendor'       => $product['vendor'],
+                    'images'       => array_map(function ($imageEdge) {
+                        return $imageEdge['node'];
+                    }, $product['images']['edges'] ?? [])
+                ];
 
-                // Only include products that have matching variants
-                if (!empty($variants)) {
-                    $products[] = [
-                        'id' => $product['id'],
-                        'title' => $product['title'],
-                        'handle' => $product['handle'],
-                        'description' => $product['descriptionHtml'],
-                        'product_type' => $product['productType'],
-                        'vendor' => $product['vendor'],
-                        'variants' => $variants,
-                        'images' => array_map(function($imageEdge) {
-                            return $imageEdge['node'];
-                        }, $product['images']['edges'] ?? [])
-                    ];
-                }
             }
 
             return ['products' => $products];
         } catch (\Exception $e) {
             Sentry::captureException($e);
+
             return null;
         }
     }
@@ -156,33 +136,36 @@ class FindShopifyProductVariant
 
     public function asCommand(Command $command): void
     {
-        $customerSalesChannel = CustomerSalesChannel::where('slug',$command->argument('customerSalesChannel'))->first();
-        $shopifyUser=$customerSalesChannel->user;
-        $searchValue = $command->argument('searchValue');
-        $searchType = $command->option('type');
+        $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->first();
+        $shopifyUser          = $customerSalesChannel->user;
+        $searchValue          = $command->argument('searchValue');
+        $searchType           = $command->option('type');
 
         if (!in_array($searchType, ['sku', 'barcode'])) {
             $command->error("Invalid search type. Must be 'sku' or 'barcode'");
+
             return;
         }
 
         if (!$shopifyUser) {
             $command->error("Shopify user not found");
+
             return;
         }
 
-        $result = $this->handle($shopifyUser, $searchValue, $searchType);
+        $result = $this->handle($customerSalesChannel, $searchValue, $searchType);
 
         if (!$result) {
             $command->info("No products found with variant $searchType: $searchValue");
+
             return;
         }
 
         $products = $result['products'];
-        $command->info("Found " . count($products) . " products with variant $searchType: $searchValue");
+        $command->info("Found ".count($products)." products with variant $searchType: $searchValue");
 
         foreach ($products as $index => $product) {
-            $command->info("\nProduct #" . ($index + 1) . ":");
+            $command->info("\nProduct #".($index + 1).":");
             $command->table(['Field', 'Value'], [
                 ['ID', $product['id']],
                 ['Title', $product['title']],
@@ -196,12 +179,12 @@ class FindShopifyProductVariant
                 $variantData = [];
                 foreach ($product['variants'] as $vIndex => $variant) {
                     $variantData[] = [
-                        'Index' => $vIndex + 1,
-                        'ID' => $variant['id'],
-                        'Title' => $variant['title'],
-                        'Price' => $variant['price'],
-                        'SKU' => $variant['sku'],
-                        'Barcode' => $variant['barcode'] ?? 'N/A',
+                        'Index'     => $vIndex + 1,
+                        'ID'        => $variant['id'],
+                        'Title'     => $variant['title'],
+                        'Price'     => $variant['price'],
+                        'SKU'       => $variant['sku'],
+                        'Barcode'   => $variant['barcode'] ?? 'N/A',
                         'Inventory' => $variant['inventoryQuantity'] ?? 'N/A'
                     ];
                 }

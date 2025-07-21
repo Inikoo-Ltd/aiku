@@ -19,7 +19,7 @@ class ResetShopifyChannel
 {
     use asAction;
 
-    public function handle(CustomerSalesChannel $customerSalesChannel)
+    public function handle(CustomerSalesChannel $customerSalesChannel): void
     {
         DeleteWebhooksFromShopify::run($customerSalesChannel->user);
         DeleteAllFulfilmentServices::run($customerSalesChannel);

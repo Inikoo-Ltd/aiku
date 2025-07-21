@@ -16,9 +16,6 @@ use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
 use Exception;
 use Illuminate\Console\Command;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
-use Lorisleiva\Actions\ActionRequest;
 use Sentry;
 
 class StoreShopifyProductVariant extends RetinaAction
@@ -32,11 +29,10 @@ class StoreShopifyProductVariant extends RetinaAction
      * Get product data from Shopify using GraphQL
      *
      * @param  Portfolio  $portfolio  The portfolio containing the Shopify product ID
-     * @param  array  $productData  Optional additional query parameters
      *
      * @return array|null The product data or null if retrieval failed
      */
-    public function handle(Portfolio $portfolio, array $productData = []): ?array
+    public function handle(Portfolio $portfolio): ?array
     {
         $customerSalesChannel = $portfolio->customerSalesChannel;
 
@@ -56,20 +52,14 @@ class StoreShopifyProductVariant extends RetinaAction
 
 
         $productID        = $portfolio->platform_product_id;
-        $productVariantID = $portfolio->platform_product_variant_id;
 
 
         if (!$productID) {
             Sentry::captureMessage("No Shopify product ID found in portfolio");
-
             return null;
         }
 
-        if (!$productVariantID) {
-            Sentry::captureMessage("No Shopify product variant ID found in portfolio");
 
-            return null;
-        }
 
         try {
             // GraphQL mutation to update product variants
@@ -109,18 +99,11 @@ class StoreShopifyProductVariant extends RetinaAction
                         'availableQuantity' => $product->available_quantity,
                         'locationId'        => $shopifyUser->shopify_location_id
                     ]
-
-
-                    //                    'inventoryManagement' => 'SHOPIFY',
                 ]
             ];
 
 
 
-            // Merge any additional product data
-            if (!empty($productData)) {
-                $variants[0] = array_merge($variants[0], $productData);
-            }
 
             $variables = [
                 'productId' => $productID,
@@ -128,9 +111,10 @@ class StoreShopifyProductVariant extends RetinaAction
                 ];
 
 
+
             // Make the GraphQL request
             $response = $client->request($mutation, $variables);
-
+            dd($response);
 
             if (!empty($response['errors']) || !isset($response['body'])) {
                 $errorMessage = 'Error in API response: '.json_encode($response['errors'] ?? []);
