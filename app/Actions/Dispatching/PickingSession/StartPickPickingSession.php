@@ -22,7 +22,7 @@ class StartPickPickingSession extends OrgAction
 
     public function handle(PickingSession $pickingSession, array $modelData): PickingSession
     {
-        data_set($modelData, 'state', PickingSessionStateEnum::ACTIVE);
+        data_set($modelData, 'state', PickingSessionStateEnum::HANDLING);
         data_set($modelData, 'start_at', now());
 
         $pickingSession = $this->update($pickingSession, $modelData);
