@@ -122,22 +122,6 @@ class ShowPickingSession extends OrgAction
 
     public function getItems(PickingSession $pickingSession): array
     {
-        if ($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
-            return [
-                PickingSessionTabsEnum::ITEMS->value => $this->tab == PickingSessionTabsEnum::ITEMS->value ?
-                    fn () => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsInPickingSessionStateInProcess::run($pickingSession))
-                    : Inertia::lazy(fn () => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsInPickingSessionStateInProcess::run($pickingSession))),
-
-            ];
-        } elseif ($pickingSession->state == PickingSessionStateEnum::ACTIVE) {
-            return [
-                PickingSessionTabsEnum::ITEMS->value => $this->tab == PickingSessionTabsEnum::ITEMS->value ?
-                    fn () => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsInPickingSessionStateActive::run($pickingSession))
-                    : Inertia::lazy(fn () => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsInPickingSessionStateActive::run($pickingSession))),
-
-            ];
-        }
-
         return [
             PickingSessionTabsEnum::ITEMS->value => $this->tab == PickingSessionTabsEnum::ITEMS->value ?
                 fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession))
