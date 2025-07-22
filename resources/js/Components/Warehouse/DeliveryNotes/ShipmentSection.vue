@@ -41,6 +41,11 @@ const props = defineProps<{
         fetch_route: routeType
         delete_route: routeType
     }
+    address: {
+
+    }
+
+    updateAddressRoute: routeType
 }>()
 
 // Shipment deletion
@@ -187,6 +192,8 @@ const onSubmitShipment = () => {
 }
 
 const onSaveAddress = (submitShipment: Function) => {
+    if (!props.updateAddressRoute?.name) return
+
     const filterDataAddress = { ...xxxCopyAddress.value }
     delete filterDataAddress.formatted_address
     delete filterDataAddress.country
@@ -195,12 +202,8 @@ const onSaveAddress = (submitShipment: Function) => {
     delete filterDataAddress.can_edit
     delete filterDataAddress.can_delete
     
-    const updateRoute = {
-        name: 'grp.models.delivery_note.update_address',
-        parameters: { deliveryNote: props.delivery_note.id }
-    }
     router.patch(
-        route(updateRoute.name, updateRoute.parameters),
+        route(props.updateAddressRoute.name, props.updateAddressRoute.parameters),
         {
             address: filterDataAddress
         },
@@ -406,9 +409,12 @@ const xxxCopyAddress = ref({ ...props.address?.delivery })
                     </div>
 
                     <!-- Field: Address -->
-                    <div v-if="formTrackingNumber?.errors?.address" class="my-3 p-2 rounded bg-gray-100"
+                    <div v-if="formTrackingNumber?.errors?.address" class="relative my-3 p-2 rounded bg-gray-100"
                         :class="formTrackingNumber?.errors?.address ? 'errorShake' : ''">
                         <PureAddress v-model="xxxCopyAddress" :options="address?.options" xfieldLabel />
+                        <div v-if="isLoadingButton" class="absolute inset-0 bg-black/40 text-white flex place-content-center items-center text-4xl">
+                            <LoadingIcon />
+                        </div>
                     </div>
 
                     <!-- Button: Save -->

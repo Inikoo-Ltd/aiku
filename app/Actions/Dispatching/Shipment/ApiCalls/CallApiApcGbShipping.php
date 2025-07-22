@@ -199,6 +199,7 @@ class CallApiApcGbShipping extends OrgAction
         $dataFlat = array_filter(Arr::flatten($apiResponse));
         if (in_array('DutyItems', $dataFlat)) {
             $errorData['address'][] = 'Address must be in United Kingdom';
+            $errorData['message'][] = 'Address must be in United Kingdom';
         }
 
         if ($statusCode == 200 && Arr::get($apiResponse, 'Orders.Messages.Code') == 'SUCCESS') {
@@ -222,12 +223,16 @@ class CallApiApcGbShipping extends OrgAction
                 foreach ($errFields as $error) {
                     if ($error['FieldName'] == 'Delivery PostalCode') {
                         $errorData['others'][] = 'Invalid postcode,';
+                        $errorData['message'][] = 'Invalid postcode';
                     } else {
                         $fieldParts = explode(' ', $error['FieldName']);
 
                         if (count($fieldParts) > 1) {
                             if (Str::contains($fieldParts[0], 'Delivery')) {
                                 $errorData['address'][] = Str::headline($fieldParts[1]) . ' ' . $error['ErrorMessage'] . ',';
+                                if (!isset($errorData['message'])) {
+                                    $errorData['message'][] = Str::headline($fieldParts[1]) . ' ' . $error['ErrorMessage'] . ',';
+                                }
                                 continue;
                             }
                             $errorData[strtolower($fieldParts[0])] .= Str::headline($fieldParts[1]) . ' ' . $error['ErrorMessage'] . ',';
@@ -235,6 +240,9 @@ class CallApiApcGbShipping extends OrgAction
                         }
 
                         $errorData['others'][] = Str::headline($error['FieldName']) . ' ' . $error['ErrorMessage'] . ',';
+                        if (!isset($errorData['message'])) {
+                            $errorData['message'][] = Str::headline($error['FieldName']) . ' ' . $error['ErrorMessage'] . ',';
+                        }
                     }
                 }
 
