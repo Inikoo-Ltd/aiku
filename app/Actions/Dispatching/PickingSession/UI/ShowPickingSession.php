@@ -2,43 +2,18 @@
 
 namespace App\Actions\Dispatching\PickingSession\UI;
 
-use App\Actions\Catalogue\Shop\UI\ShowShop;
-use App\Actions\CRM\Customer\UI\ShowCustomer;
-use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItems;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSession;
-use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSessionStateActive;
-use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSessionStateInProcess;
-use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandling;
-use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateUnassigned;
-use App\Actions\Dispatching\Picking\Picker\Json\GetPickerUsers;
-use App\Actions\Helpers\Country\UI\GetAddressData;
-use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
-use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\OrgAction;
-use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\UI\WithInertia;
-use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
-use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
 use App\Enums\UI\Dispatch\PickingSessionTabsEnum;
-use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsResource;
-use App\Http\Resources\Dispatching\DeliveryNoteItemsStateHandlingResource;
-use App\Http\Resources\Dispatching\DeliveryNoteItemsStateUnassignedResource;
-use App\Http\Resources\Dispatching\DeliveryNoteResource;
-use App\Http\Resources\Dispatching\ShipmentsResource;
-use App\Http\Resources\Helpers\AddressResource;
-use App\Http\Resources\Ordering\PickersResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
-use App\Models\Dispatching\DeliveryNote;
-use App\Models\Dispatching\DeliveryNoteItem;
-use App\Models\Helpers\Address;
 use App\Models\Inventory\PickingSession;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -65,33 +40,14 @@ class ShowPickingSession extends OrgAction
         return $this->handle($pickingSession);
     }
 
-    public function getHandlingActions(PickingSession $pickingSession): array
-    {
-        $actions = [];
-        return $actions;
-    }
-
-    public function getBoxStats(PickingSession $pickingSession): array
-    {
-        return [
-            'state'            => $pickingSession->state,
-        ];
-    }
-
-    public function getTimeline(PickingSession $pickingSession): array
-    {
-        $timeline = [];
-        return $timeline;
-    }
-
     public function htmlResponse(PickingSession $pickingSession, ActionRequest $request): Response
     {
-        $actions = [];
+        $actions = null;
 
         $props = [
             'title'         => __('picking session'),
-            'breadcrumbs'   => [],
-            'navigation'    => [],
+            'breadcrumbs'   => null,
+            'navigation'    => null,
             'pageHead'      => [
                 'title'      => $pickingSession->reference,
                 'model'      => __('Picking Session'),
@@ -105,7 +61,6 @@ class ShowPickingSession extends OrgAction
 
 
         $props = array_merge($props, $this->getItems($pickingSession));
-
 
         $inertiaResponse = Inertia::render(
             'Org/Inventory/PickingSession',
