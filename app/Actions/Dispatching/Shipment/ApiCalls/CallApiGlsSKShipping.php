@@ -54,10 +54,13 @@ class CallApiGlsSKShipping extends OrgAction
         $parentResource = ShippingDeliveryNoteResource::make($parent)->getArray();
         $parcels        = $parent->parcels;
 
+        $shippingNotes = $parent->shipping_notes ?? '';
+        $shippingNotes = Str::limit(preg_replace("/[^A-Za-z0-9 \-]/", '', strip_tags($shippingNotes), 60));
+
         $prepareParams = (object)[
             'ClientNumber' => $clientNumber,
             'ClientReference' => Str::limit($parent->reference, 30),
-            'Content' => app()->isProduction() ? '' : 'test_development_aiku_' . ($parent->customer_notes ?? ''),
+            'Content' => app()->isProduction() ? $shippingNotes : 'test_development_aiku_' . ($parent->customer_notes ?? ''),
             'Count' => $parcels ? count($parcels) : 1,
             'DeliveryAddress' => (object)[
                 'ContactEmail' => Arr::get($parentResource, 'to_email'),
@@ -148,11 +151,16 @@ class CallApiGlsSKShipping extends OrgAction
 
                 foreach ($errFields as $error) {
                     if (Str::contains($error['ErrorDescription'] ?? '', ['Pickup', 'Delivery'])) {
-                        $errorData['address'][] = $error['ErrorDescription'] ?? 'Error in address';
+                        if (isset($errorData['address'])) {
+                            continue;
+                        }
+                        $errorData['address'] = 'Invalid address';
                     } else {
                         $errorData['others'][] =  $error['ErrorDescription'] ?? 'Unknown error';
                     }
                 }
+
+                $errorData['message'] = $errorData['address'] ?? $errorData['others'] ?? '';
             }
         }
 
@@ -162,5 +170,4 @@ class CallApiGlsSKShipping extends OrgAction
             'errorData' => $errorData,
         ];
     }
-
 }
