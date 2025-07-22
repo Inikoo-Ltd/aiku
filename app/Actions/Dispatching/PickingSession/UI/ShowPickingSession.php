@@ -45,29 +45,23 @@ class ShowPickingSession extends OrgAction
         $title = __('Picking Session');
 
 
-        $actions = null;
-         $actions[] = [
-                'type'    => 'button',
-                'style'   => 'save',
-                'tooltip' => __('start picking'),
-                'label'   => __('Start Picking'),
-                'key'     => 'action',
-                'route'   => [
-                    'method'     => 'patch',
-                    'name'       => 'grp.models.picking_session.start_picking',
-                    'parameters' => [
-                        'pickingSession' => $pickingSession->id
-                    ]
+        $actions   = null;
+        $actions[] = [
+            'type'    => 'button',
+            'style'   => 'save',
+            'tooltip' => __('start picking'),
+            'label'   => __('Start Picking'),
+            'key'     => 'action',
+            'route'   => [
+                'method'     => 'patch',
+                'name'       => 'grp.models.picking_session.start_picking',
+                'parameters' => [
+                    'pickingSession' => $pickingSession->id
                 ]
-            ];
-        // dd(IndexDeliveryNoteItemsInPickingSession::run($pickingSession, PickingSessionTabsEnum::ITEMS->value));
-        // dd(DeliveryNoteItemsResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession)));
+            ]
+        ];
+
         $props = [
-            'title'         => __('picking session'),
-            'breadcrumbs'   => null,
-            'navigation'    => null,
-            'pageHead'      => [
-        $props   = [
             'title'       => $title,
             'breadcrumbs' => null,
             'navigation'  => null,
