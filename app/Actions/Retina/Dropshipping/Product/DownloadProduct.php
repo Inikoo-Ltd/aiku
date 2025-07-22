@@ -13,9 +13,11 @@ namespace App\Actions\Retina\Dropshipping\Product;
 use App\Actions\Catalogue\Asset\ExportProductsInProductCategory;
 use App\Actions\Catalogue\Asset\ExportProductsInShop;
 use App\Actions\RetinaAction;
+use App\Exports\Marketing\ProductsInCollectionExport;
 use App\Exports\Marketing\ProductsInProductCategoryExport;
 use App\Exports\Marketing\ProductsInShopExport;
 use App\Exports\Marketing\SingleProductExport;
+use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -33,7 +35,7 @@ class DownloadProduct extends RetinaAction
      * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
      * @throws \Exception
      */
-    public function handle(Shop|ProductCategory|Product $parent, string $type): BinaryFileResponse|Response
+    public function handle(Shop|ProductCategory|Product|Collection $parent, string $type): BinaryFileResponse|Response
     {
         $filename =  'products' . '_' . now()->format('Ymd');
 
@@ -51,6 +53,11 @@ class DownloadProduct extends RetinaAction
                 ]);
             } elseif ($parent instanceof Product) {
                 return Excel::download(new SingleProductExport($parent), $filename, null, [
+                    'Content-Type' => 'text/csv',
+                    'Cache-Control' => 'max-age=0',
+                ]);
+            } elseif ($parent instanceof Collection) {
+                return Excel::download(new ProductsInCollectionExport($parent), $filename, null, [
                     'Content-Type' => 'text/csv',
                     'Cache-Control' => 'max-age=0',
                 ]);
@@ -107,5 +114,19 @@ class DownloadProduct extends RetinaAction
         $this->initialisation($request);
 
         return $this->handle($product, $type);
+    }
+
+    public function inCollection(Collection $collection, ActionRequest $request): BinaryFileResponse|Response
+    {
+        $type = $request->query('type', 'products_csv');
+
+        if (!in_array($type, ['products_csv', 'products_images'])) {
+            abort(404);
+        }
+
+
+        $this->initialisation($request);
+
+        return $this->handle($collection, $type);
     }
 }
