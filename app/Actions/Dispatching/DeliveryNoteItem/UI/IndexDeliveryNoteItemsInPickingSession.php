@@ -23,7 +23,6 @@ class IndexDeliveryNoteItemsInPickingSession extends OrgAction
 {
     public function handle(PickingSession $parent, $prefix = null): LengthAwarePaginator
     {
-
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('org_stocks.code', $value)
@@ -38,13 +37,10 @@ class IndexDeliveryNoteItemsInPickingSession extends OrgAction
         $query = QueryBuilder::for(DeliveryNoteItem::class);
 
         $query->where('delivery_note_items.picking_session_id', $parent->id);
-
         $query->leftJoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id');
-
-
-        return $query->defaultSort('delivery_note_items.id')
-            ->select([
-                'delivery_note_items.id',
+        // dd($query->get());
+        $query->select([
+                'delivery_note_items.id as id',
                 'delivery_note_items.state',
                 'delivery_note_items.quantity_required',
                 'delivery_note_items.quantity_picked',
@@ -55,7 +51,9 @@ class IndexDeliveryNoteItemsInPickingSession extends OrgAction
                 'org_stocks.id as org_stock_id',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
-            ])
+        ]);
+
+        return $query
             ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required', 'quantity_picked', 'quantity_packed', 'state'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())

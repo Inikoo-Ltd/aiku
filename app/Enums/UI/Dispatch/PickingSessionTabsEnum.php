@@ -9,19 +9,18 @@
 namespace App\Enums\UI\Dispatch;
 
 use App\Enums\EnumHelperTrait;
-use App\Enums\HasTabsWithIndicator;
-use App\Models\Inventory\PickingSession;
+use App\Enums\HasTabs;
 
 enum PickingSessionTabsEnum: string
 {
     use EnumHelperTrait;
-    use HasTabsWithIndicator;
+    use HasTabs;
 
     case ITEMS = 'items';
     // case PICKINGS = 'pickings';
 
 
-    public function blueprint(PickingSession $parent): array
+    public function blueprint(): array
     {
 
         return match ($this) {

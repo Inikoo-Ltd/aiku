@@ -43,7 +43,8 @@ class ShowPickingSession extends OrgAction
     public function htmlResponse(PickingSession $pickingSession, ActionRequest $request): Response
     {
         $actions = null;
-
+        // dd(IndexDeliveryNoteItemsInPickingSession::run($pickingSession, PickingSessionTabsEnum::ITEMS->value));
+        // dd(DeliveryNoteItemsResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession)));
         $props = [
             'title'         => __('picking session'),
             'breadcrumbs'   => null,
@@ -57,6 +58,10 @@ class ShowPickingSession extends OrgAction
                 ],
                 'actions'    => $actions,
             ],
+            'tabs'          => [
+                'current'    => $this->tab,
+                'navigation' => PickingSessionTabsEnum::navigation()
+            ],
         ];
 
 
@@ -68,8 +73,6 @@ class ShowPickingSession extends OrgAction
         );
 
         $inertiaResponse->table(IndexDeliveryNoteItemsInPickingSession::make()->tableStructure(parent: $pickingSession));
-        
-
 
         return $inertiaResponse;
     }
