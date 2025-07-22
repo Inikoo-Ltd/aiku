@@ -13,6 +13,7 @@ import { ref, computed } from 'vue'
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import TableDeliveryNoteItemInPickingSessions from "@/Components/Warehouse/PickingSessions/TableDeliveryNoteItemInPickingSessions.vue";
 import Timeline from "@/Components/Utils/Timeline.vue";
+import TablePickings from "@/Components/Warehouse/DeliveryNotes/TablePickings.vue";
 
 
 const props = defineProps<{
@@ -20,6 +21,7 @@ const props = defineProps<{
   title: string
   pageHead: PageHeadingTypes
   items: object
+  pickings?: {}
   timelines: {
     [key: string]: TSTimeline
   }
@@ -38,6 +40,8 @@ const component = computed(() => {
 
   const components = {
     items: TableDeliveryNoteItemInPickingSessions,
+    pickings: TablePickings
+
   };
   return components[currentTab.value];
 

@@ -166,10 +166,12 @@ const onCloseModal = () => {
 const findLocation = (locationsList: { location_code: string }[], selectedHehe: string) => {
     return locationsList.find(x => x.location_code == selectedHehe) || locationsList[0]
 }
+
 </script>
 
 <template>
-    <Table :resource="data" class="mt-5" rowAlignTop>
+    
+    <Table :resource="data" class="mt-5" rowAlignTop >
         <!-- Column: state -->
         <template #cell(state)="{ item }">
             <Icon :data="item.state_icon" />
@@ -273,10 +275,9 @@ const findLocation = (locationsList: { location_code: string }[], selectedHehe: 
                 {{ trans("No item picked yet") }}
             </div>
         </template>
-
+        
         <!-- Column: actions -->
-        <template #cell(handing_actions)="{ item: itemValue, proxyItem }">
-            <!-- <pre>{{ itemValue }}</pre> -->
+        <template #cell(action)="{ item: itemValue, proxyItem }">
             <div v-if="itemValue.quantity_to_pick > 0">
                 <div v-if="findLocation(itemValue.locations, proxyItem.hehe)"
                     class="rounded p-1 flex flex-col justify-between gap-x-6 items-center even:bg-black/5">
