@@ -21,6 +21,7 @@ use App\Actions\OrgAction;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\UI\WithInertia;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsResource;
@@ -445,7 +446,11 @@ class ShowDeliveryNote extends OrgAction
     public function htmlResponse(DeliveryNote $deliveryNote, ActionRequest $request): Response
     {
         $actions = $this->getActions($deliveryNote, $request);
-
+        $model = __('Delivery Note');
+        if($deliveryNote->type == DeliveryNoteTypeEnum::REPLACEMENT)
+        {
+            $model = __('Replacement Delivery Note');
+        }
         $props = [
             'title'         => __('delivery note'),
             'breadcrumbs'   => $this->getBreadcrumbs(
@@ -459,7 +464,7 @@ class ShowDeliveryNote extends OrgAction
             ],
             'pageHead'      => [
                 'title'      => $deliveryNote->reference,
-                'model'      => __('Delivery Note'),
+                'model'      => $model,
                 'icon'       => [
                     'icon'  => 'fal fa-truck',
                     'title' => __('delivery note')
