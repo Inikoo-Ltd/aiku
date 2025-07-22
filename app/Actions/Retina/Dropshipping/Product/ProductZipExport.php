@@ -11,6 +11,7 @@
 namespace App\Actions\Retina\Dropshipping\Product;
 
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -26,7 +27,7 @@ class ProductZipExport
     /**
      * @throws \ZipStream\Exception\OverflowException
      */
-    public function handle(Shop|ProductCategory|Product $parent): void
+    public function handle(Shop|ProductCategory|Product|Collection $parent): void
     {
         $zipFileName = 'images_products' . '.zip';
         $zip         = new ZipStream(
@@ -73,7 +74,7 @@ class ProductZipExport
     }
 
 
-    public function getImages(Shop|ProductCategory|Product $parent): array
+    public function getImages(Shop|ProductCategory|Product|Collection $parent): array
     {
         $imagesData = [];
         $products = [];
@@ -93,6 +94,10 @@ class ProductZipExport
                 ];
             }
             return $imagesData;
+        } elseif ($parent instanceof Collection) {
+            $products = $parent->products
+                ->whereIn('state', [ProductStateEnum::ACTIVE, ProductStateEnum::DISCONTINUING])
+                ->where('is_main', true);
         }
 
         foreach ($products as $product) {
