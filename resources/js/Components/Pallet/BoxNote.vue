@@ -3,7 +3,7 @@ import { trans } from 'laravel-vue-i18n'
 import { inject, ref } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faPencil, faStickyNote, faTrash, faLock } from '@fas'
-import { faTimes } from '@fal'
+import { faTimes, faSyncAlt } from '@fal'
 import { faPlus } from '@far'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Modal from '@/Components/Utils/Modal.vue'
@@ -15,13 +15,15 @@ import { notify } from '@kyvg/vue3-notification'
 import { PDRNotes } from '@/types/Pallet'
 // import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { useBasicColor } from '@/Composables/useColors'
-library.add(faPencil, faStickyNote, faTrash, faPlus, faLock, faTimes)
+import InformationIcon from '../Utils/InformationIcon.vue'
+library.add(faPencil, faStickyNote, faTrash, faPlus, faLock, faTimes, faSyncAlt)
 
 // const layout = inject('layout', layoutStructure)
 
 const props = defineProps<{
     noteData: PDRNotes
     updateRoute: routeType
+    fetchRoute: routeType
 }>()
 
 // Section: Modal Note
@@ -51,6 +53,30 @@ const onSubmitNote = async () => {
     isModalOpen.value = false
 }
 
+const onFetchNotes = async () => {
+    isSubmitNoteLoading.value = true
+    try {
+        const response = await axios.patch(route(props.fetchRoute.name, props.fetchRoute.parameters), {
+            [props.noteData.field]: true
+        },
+        {
+                headers: { "Content-Type": 'application/json' },
+        }
+        )
+
+        props.noteData.note = response.data?.[props.noteData.field]
+    } catch  {
+        notify({
+			title: "Failed",
+			text: "Failed to fetch the note, try again.",
+			type: "error",
+		})
+    }
+
+    isSubmitNoteLoading.value = false
+    isModalOpen.value = false
+}
+
 const fallbackBgColor = '#f9fafb'  // Background
 const fallbackColor = '#374151'  // Color
 </script>
@@ -71,6 +97,7 @@ const fallbackColor = '#374151'  // Color
                 >
                     <FontAwesomeIcon icon='fas fa-sticky-note' class='' fixed-width aria-hidden='true' />
                     {{ noteData.label }}
+                    <InformationIcon v-if="noteData.information" :information="noteData.information" />
                 </div>
 
                 <!-- Section: Actions -->
@@ -97,7 +124,7 @@ const fallbackColor = '#374151'  // Color
 
                 <!-- Icon: Lock -->
                 <div v-else v-tooltip="noteData.lockMessage || trans('This note is not editable')" class="h-5 flex items-center cursor-not-allowed">
-                    <FontAwesomeIcon icon='fas fa-lock' class='text-gray-400' fixed-width aria-hidden='true' />
+                    <FontAwesomeIcon icon='fas fa-lock' class='text-black/50' fixed-width aria-hidden='true' />
                 </div>
             </div>
         </div>
@@ -105,7 +132,7 @@ const fallbackColor = '#374151'  // Color
         <!-- Section: Note -->
         <p @dblclick="noteData.editable ? isModalOpen = true : false"
             v-tooltip="noteData.editable ? trans('Double click to edit') : false"
-            class="h-full mx-auto items-center px-4 rounded-md pt-4 pb-2 text-xxs break-words"
+            class="h-full max-h-32 mx-auto items-center px-4 rounded-md pt-4 pb-2 text-xxs break-words"
             :class="noteData.editable ? 'cursor-pointer' : ''"
             :style="{
                 backgroundColor: useBasicColor(noteData.bgColor) + '11' || noteData.bgColor ? `${noteData.bgColor}11` : fallbackBgColor,
@@ -127,8 +154,20 @@ const fallbackColor = '#374151'  // Color
     <Modal :isOpen="isModalOpen" @onClose="() => (isModalOpen = false, noteModalValue = noteData.note)" width="w-[600px]">
 		<div class="min-h-64 max-h-96 px-2 overflow-auto flex flex-col justify-between">
             <div>
-                <div class="text-xl font-semibold mb-2">{{ noteData.label }} {{ trans("note") }}</div>
-                            <div class="relative isolate">
+                <div class="text-xl font-semibold mb-2">
+                    {{ noteData.label }} {{ trans("note") }}
+                    <Button
+                        v-if="props.fetchRoute?.name"
+                        v-tooltip="trans('Duplicate note from Order (only :field)', { field: noteData.label })"
+                        @click="() => onFetchNotes()"
+                        label="Fetch from order"
+                        :loading="isSubmitNoteLoading"
+                        icon="fal fa-sync-alt"
+                        size="xs"
+                        type="tertiary"
+                    />
+                </div>
+                <div class="relative isolate">
                     <div v-if="noteModalValue" @click="() => noteModalValue = ''" class="z-10 absolute top-1 right-1 text-red-400 hover:text-red-600 text-xxs cursor-pointer">
                         {{ trans("Clear") }}
                     </div>

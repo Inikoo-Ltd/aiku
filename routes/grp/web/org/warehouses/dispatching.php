@@ -6,12 +6,13 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Actions\Dispatching\DeliveryNote\PdfDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotes;
 use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
 use App\Actions\Dispatching\GoodsOut\UI\IndexWarehousePalletReturns;
 use App\Actions\Dispatching\GoodsOut\UI\ShowWarehousePalletReturn;
 use App\Actions\Dispatching\GoodsOut\UI\ShowWarehouseStoredItemReturn;
+use App\Actions\Dispatching\PickingSession\UI\IndexPickingSessions;
+use App\Actions\Dispatching\PickingSession\UI\ShowPickingSession;
 use App\Actions\Dispatching\Shipper\UI\CreateShipper;
 use App\Actions\Dispatching\Shipper\UI\EditShipper;
 use App\Actions\Dispatching\Shipper\UI\IndexShippers;
@@ -45,8 +46,7 @@ Route::get('/delivery-notes/finalised/shop/{shopType}', [IndexDeliveryNotes::cla
 Route::get('/delivery-notes/dispatched', [IndexDeliveryNotes::class, 'dispatched'])->name('dispatched.delivery-notes');
 Route::get('/delivery-notes/dispatched/shop/{shopType}', [IndexDeliveryNotes::class, 'dispatchedShopTypes'])->name('dispatched.delivery-notes.shop');
 
-Route::get('/delivery-notes/{deliveryNote}', [ShowDeliveryNote::class, 'inWarehouse'])->name('delivery-notes.show');
-Route::get('/delivery-notes/{deliveryNote}/pdf', PdfDeliveryNote::class)->name('delivery-notes.pdf');
+Route::get('/delivery-notes/{deliveryNote}', [ShowDeliveryNote::class, 'inWarehouse'])->name('delivery_notes.show');
 
 Route::get('returns', IndexWarehousePalletReturns::class)->name('pallet-returns.index');
 Route::get('returns/confirmed', [IndexWarehousePalletReturns::class, 'inWarehouseConfirmed'])->name('pallet-returns.confirmed.index');
@@ -62,3 +62,6 @@ Route::get('shippers/inactive', [IndexShippers::class, 'inInactive'])->name('shi
 Route::get('shippers/create', CreateShipper::class)->name('shippers.create');
 Route::get('shippers/{shipper}', ShowShipper::class)->name('shippers.show');
 Route::get('shippers/{shipper}/edit', EditShipper::class)->name('shippers.edit');
+
+Route::get('picking-sessions', IndexPickingSessions::class)->name('picking_sessions.index');
+Route::get('picking-sessions/{pickingSession}', ShowPickingSession::class)->name('picking_sessions.show');

@@ -138,12 +138,12 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
     }
 
 
-    public string $commandSignature = 'order:send-dispatched-email';
+    public string $commandSignature = 'test:send-dispatched-email';
 
 
     public function asCommand()
     {
-        $order = Order::where('slug', 'awd150095')->first();
+        $order = Order::where('slug', 'awd150599')->first();
 
         $this->handle($order);
     }
@@ -161,8 +161,8 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
         foreach ($shipments as $shipment) {
             $shipperName = $shipment['name'] ?? 'Unknown';
 
-            if (!empty($shipment['tracking_urls'])) {
-                foreach ($shipment['tracking_urls'] as $trackingData) {
+            if (!empty($shipment['formatted_tracking_urls'])) {
+                foreach ($shipment['formatted_tracking_urls'] as $trackingData) {
                     $trackingNumber = $trackingData['tracking'] ?? '';
                     $trackingUrl = $trackingData['url'] ?? '';
 
@@ -182,4 +182,7 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
 
         return $html ?: '<span class="fallback-text">No tracking information available</span>';
     }
+
+
+
 }

@@ -30,15 +30,18 @@ const locale = inject('locale', aikuLocaleStructure)
 </script>
 
 <template>
-    <Link
-
+    <component
+        :is="stat.route?.name ? Link : 'div'"
         :href="stat.route?.name ? route(stat.route.name, stat.route.parameters) : ''"
         :style="{
             color: stat.color,
             xbackgroundColor: stat.backgroundColor
         }"
-        class="block isolate relative overflow-hidden rounded-lg cursor-pointer border px-4 py-5 shadow-sm sm:p-6 sm:pb-3"
-        :class="stat.is_negative ? 'bg-red-100 hover:bg-red-200 border-red-200 hover:border-red-300 text-red-500' : 'bg-white hover:bg-gray-50 border-gray-200'"
+        class="block isolate relative overflow-hidden rounded-lg  border px-4 py-5 shadow-sm sm:p-6 sm:pb-3"
+        :class="[
+            stat.is_negative ? 'bg-red-100 hover:bg-red-200 border-red-200 hover:border-red-300 text-red-500' : 'bg-white hover:bg-gray-50 border-gray-200',
+            stat.route?.name ? 'cursor-pointer' : ''
+        ]"
         @start="() => isBoxLoading = true"
         @finish="() => isBoxLoading = false"
     >
@@ -95,7 +98,6 @@ const locale = inject('locale', aikuLocaleStructure)
                 :class="meta.route?.name ? 'hover:underline' : ''"
                 v-tooltip="capitalize(meta.tooltip) || capitalize(meta.icon?.tooltip)"
             >
-                <template v-if="!meta?.hide">
                 <LoadingIcon v-if="isLoadingMeta == idxMeta" class="md:opacity-50 group-hover/sub:opacity-100" />
                 <span v-else-if="meta.logo_icon" v-html="ChannelLogo(meta.logo_icon)" class="flex items-center min-w-6 w-min max-w-10 min-h-4 h-auto max-h-7" />
                 <Icon v-else-if="meta.icon" :data="meta.icon" class="" :class="meta.route?.name ? 'md:opacity-50 group-hover/sub:opacity-100' : 'md:opacity-50'" />
@@ -103,11 +105,10 @@ const locale = inject('locale', aikuLocaleStructure)
                 <div class="group-hover/sub:text-gray-700">
                     {{ locale.number(meta.count) }}
                 </div>
-                </template>
             </component>
         </div>
         <div v-else class="mt-3">
 
         </div>
-    </Link>
+    </component>
 </template>

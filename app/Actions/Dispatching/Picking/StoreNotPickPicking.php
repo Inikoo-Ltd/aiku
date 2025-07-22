@@ -70,11 +70,6 @@ class StoreNotPickPicking extends OrgAction
      */
     public function prepareForValidation(ActionRequest $request): void
     {
-        if ($this->deliveryNoteItem->quantity_required == $this->deliveryNoteItem->quantity_picked || $this->deliveryNoteItem->is_handled) {
-            throw ValidationException::withMessages([
-                'messages' => __('This delivery note item has been fully picked')
-            ]);
-        }
         if (!$request->has('picker_user_id')) {
             $this->set('picker_user_id', $this->user->id);
         }
@@ -94,8 +89,10 @@ class StoreNotPickPicking extends OrgAction
 
     public function action(DeliveryNoteItem $deliveryNoteItem, User $user, array $modelData): Picking
     {
+        $this->cancel = $cancel;
         $this->user             = $user;
         $this->deliveryNoteItem = $deliveryNoteItem;
+
         $this->initialisationFromShop($deliveryNoteItem->shop, $modelData);
 
         return $this->handle($deliveryNoteItem, $this->validatedData);

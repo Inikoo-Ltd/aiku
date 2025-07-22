@@ -100,8 +100,7 @@ const selectProduct = (item: any) => {
 
 const isAllSelected = computed(() => {
     if (portfoliosList.value.length === 0) return false
-    return portfoliosList.value.length === selectedProduct.value.length &&
-        portfoliosList.value.every(item =>
+    return portfoliosList.value.every(item =>
             selectedProduct.value.some(selected => selected.id === item.id)
         )
 })
@@ -182,7 +181,7 @@ watch(() => props.idxSubmitSuccess, (newVal, oldVal) => {
                 <slot name="afterInput">
                 </slot>
             </div>
-            <div class="h-full md:h-[500px] text-base font-normal">
+            <div class="h-full md:h-[570px] text-base font-normal">
                 <!-- <div class="overflow-y-auto bg-gray-200 rounded h-full px-3 py-1">
                     <div class="font-semibold text-lg py-1">{{ trans("Suggestions") }}</div>
                     <div class="border-t border-gray-300 mb-1"></div>
@@ -191,9 +190,19 @@ watch(() => props.idxSubmitSuccess, (newVal, oldVal) => {
                     <div class="flex justify-between items-center">
                         <div class="font-semibold text-lg py-1">{{ props.label_result ?? trans("Result") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div>
                         <div class="flex gap-2">
-                            <div class="text-green-600">Select ({{portfoliosList.length}}) products</div><ToggleSwitch :model-value="isAllSelected" @change="() => selectAllProducts()" />
-                            <div v-if="compSelectedProduct.length" @click="() => selectedProduct = []" class="cursor-pointer text-red-400 hover:text-red-600">
-                                {{ trans('Clear selection') }} ({{ compSelectedProduct.length }})
+                            <div @click="() => isAllSelected ? null : selectAllProducts()"
+                                class=" "
+                                :class="isAllSelected ? 'text-green-400' : 'cursor-pointer text-green-600 hover:text-green-700 hover:underline'"
+                            >
+                                {{ trans("Select :number products in this page", { number: portfoliosList.length }) }}
+
+                            </div>
+                            <!-- <ToggleSwitch :model-value="isAllSelected" @change="() => selectAllProducts()" /> -->
+                            <div
+                                v-if="compSelectedProduct.length"
+                                @click="() => selectedProduct = []"
+                                class="cursor-pointer text-red-400 hover:text-red-600 hover:underline">
+                                {{ trans('Clear :number selections', {number: compSelectedProduct.length}) }}
                                 <FontAwesomeIcon :icon="faTimes" class="" fixed-width aria-hidden="true" />
                             </div>
                         </div>
@@ -253,17 +262,9 @@ watch(() => props.idxSubmitSuccess, (newVal, oldVal) => {
                             >
                             </div>
                         </div>
-                        <!-- Pagination -->
-                        <Pagination
-                            v-if="portfoliosMeta"
-                            :on-click="getPortfoliosList"
-                            :has-data="true"
-                            :meta="portfoliosMeta"
-                            xexportLinks="queryBuilderProps.exportLinks"
-                            :per-page-options="[]"
-                            xon-per-page-change="onPerPageChange"
-                        />
-                        <TransitionGroup name="list" tag="ul" class="mt-2 flex flex-wrap gap-x-2 gap-y-1">
+
+
+                        <!-- <TransitionGroup name="list" tag="ul" class="mt-2 flex flex-wrap gap-x-2 gap-y-1">
                             <li
                                 v-for="product in selectedProduct"
                                 :key="product.id"
@@ -277,8 +278,19 @@ watch(() => props.idxSubmitSuccess, (newVal, oldVal) => {
                                     }"
                                 />
                             </li>
-                        </TransitionGroup>
+                        </TransitionGroup> -->
                     </div>
+                    
+                    <!-- Pagination -->
+                    <Pagination
+                        v-if="portfoliosMeta"
+                        :on-click="getPortfoliosList"
+                        :has-data="true"
+                        :meta="portfoliosMeta"
+                        xexportLinks="queryBuilderProps.exportLinks"
+                        :per-page-options="[]"
+                        xon-per-page-change="onPerPageChange"
+                    />
                     
                     <slot name="bottom-button" :selectedProduct :isLoadingSubmit>
                         <div class="mt-4">
