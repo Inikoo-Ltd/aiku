@@ -12,6 +12,7 @@ use App\Actions\Dispatching\GoodsOut\UI\IndexWarehousePalletReturns;
 use App\Actions\Dispatching\GoodsOut\UI\ShowWarehousePalletReturn;
 use App\Actions\Dispatching\GoodsOut\UI\ShowWarehouseStoredItemReturn;
 use App\Actions\Dispatching\PickingSession\UI\IndexPickingSessions;
+use App\Actions\Dispatching\PickingSession\UI\ShowPickingSession;
 use App\Actions\Dispatching\Shipper\UI\CreateShipper;
 use App\Actions\Dispatching\Shipper\UI\EditShipper;
 use App\Actions\Dispatching\Shipper\UI\IndexShippers;
@@ -63,3 +64,4 @@ Route::get('shippers/{shipper}', ShowShipper::class)->name('shippers.show');
 Route::get('shippers/{shipper}/edit', EditShipper::class)->name('shippers.edit');
 
 Route::get('picking-sessions', IndexPickingSessions::class)->name('picking_sessions.index');
+Route::get('picking-sessions/{pickingSession}', ShowPickingSession::class)->name('picking_sessions.show');
