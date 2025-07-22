@@ -12,10 +12,13 @@ namespace App\Actions\Dispatching\PickingSession;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
+use App\Models\Fulfilment\PalletDelivery;
 use App\Models\Inventory\PickingSession;
 use App\Models\Inventory\Warehouse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rules\Enum;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -31,9 +34,9 @@ class StorePickingSession extends OrgAction
      */
     public function handle(Warehouse $warehouse, array $modelData): PickingSession
     {
-        $pickingSession =  DB::transaction(function () use ($warehouse, $modelData) {
+        $pickingSession = DB::transaction(function () use ($warehouse, $modelData) {
             $deliveryNoteIds = Arr::pull($modelData, 'delivery_notes');
-            $reference = 'PS-'. $warehouse->pickingSessions()->max('id') + 1;
+            $reference       = 'PS-'.$warehouse->pickingSessions()->max('id') + 1;
 
             data_set($modelData, 'group_id', $warehouse->group_id);
             data_set($modelData, 'organisation_id', $warehouse->organisation_id);
@@ -45,7 +48,7 @@ class StorePickingSession extends OrgAction
 
             $pickingSession->deliveryNotes()->attach($deliveryNoteIds, [
                 'organisation_id' => $pickingSession->organisation_id,
-                'group_id' => $pickingSession->group_id
+                'group_id'        => $pickingSession->group_id
             ]);
 
             $pickingSession->refresh();
@@ -69,7 +72,7 @@ class StorePickingSession extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'delivery_notes'  => ['required', 'array'],
+            'delivery_notes' => ['required', 'array'],
         ];
 
         if (!$this->strict) {
@@ -83,10 +86,23 @@ class StorePickingSession extends OrgAction
         return $rules;
     }
 
-    public function asController(Warehouse $warehouse, ActionRequest $request)
+    /**
+     * @throws \Throwable
+     */
+    public function asController(Warehouse $warehouse, ActionRequest $request): PickingSession
     {
         $this->initialisationFromWarehouse($warehouse, $request);
 
         return $this->handle($warehouse, $this->validatedData);
     }
+
+    public function htmlResponse(PickingSession $pickingSession, ActionRequest $request): RedirectResponse
+    {
+        return Redirect::route('grp.org.warehouses.show.dispatching.picking_sessions.show', [
+            'organisation'    => $pickingSession->organisation->slug,
+            'warehouse'       => $pickingSession->warehouse->slug,
+            'pickingSession' => $pickingSession->slug,
+        ]);
+    }
+
 }
