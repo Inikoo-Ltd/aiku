@@ -1,8 +1,8 @@
 <?php
 
 /*
- * Author: Artha <artha@aw-advantage.com>
- * Created: Tue, 18 Feb 2025 10:56:59 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Tue, 22 Jul 2025 21:08:21 British Summer Time, Trnava, Slovakia
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
@@ -14,7 +14,7 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Console\Command;
 
-class RetrieveShopifyAssignedOrders extends OrgAction
+class RetrieveShopifyAcceptedOrders extends OrgAction
 {
     use WithShopifyApi;
     use WithShopifyOrderRetrieval;
@@ -24,7 +24,7 @@ class RetrieveShopifyAssignedOrders extends OrgAction
      */
     public function handle(ShopifyUser $shopifyUser)
     {
-        return $this->retrieveOrders($shopifyUser, 'FULFILLMENT_REQUESTED');
+        return $this->retrieveOrders($shopifyUser, 'FULFILLMENT_ACCEPTED');
     }
 
     /**
@@ -34,18 +34,13 @@ class RetrieveShopifyAssignedOrders extends OrgAction
     {
         foreach ($fulfillmentOrders as $edge) {
             $fulfillmentOrder = $edge['node'];
-
-            if (!isset($fulfillmentOrder['destination'])) {
-                RejectShopifyFulfillmentRequest::run($shopifyUser, $fulfillmentOrder['id'], __('Fulfillment request destination not found.'));;
-            } else {
-                AcceptShopifyFulfillmentRequest::run($shopifyUser, $fulfillmentOrder);
-            }
+            print_r($fulfillmentOrder);
         }
 
-        return [true, 'Retrieved assigned fulfillment orders'];
+        return [true, 'Retrieved accepted fulfillment orders'];
     }
 
-    public string $commandSignature = 'shopify:retrieve_orders {customerSalesChannel}';
+    public string $commandSignature = 'shopify:retrieve_accepted_orders {customerSalesChannel}';
 
     /**
      * @throws \Throwable
