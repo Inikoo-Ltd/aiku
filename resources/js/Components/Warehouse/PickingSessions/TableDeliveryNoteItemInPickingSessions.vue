@@ -43,7 +43,7 @@ defineProps<{
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" rowAlignTop>
+    <Table :resource="data"  class="mt-5" rowAlignTop>
         </Table>
  
 </template>
