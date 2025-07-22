@@ -9,6 +9,8 @@ use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
 use App\Enums\UI\Dispatch\PickingSessionTabsEnum;
 use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsStateUnassignedResource;
+use App\Http\Resources\Dispatching\PickingSessionResource;
+use App\Http\Resources\Dispatching\PickingSessionsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Inventory\PickingSession;
@@ -115,6 +117,7 @@ class ShowPickingSession extends OrgAction
                 'current'    => $this->tab,
                 'navigation' => PickingSessionTabsEnum::navigation()
             ],
+            'data' => PickingSessionResource::make($pickingSession)
         ];
 
 
