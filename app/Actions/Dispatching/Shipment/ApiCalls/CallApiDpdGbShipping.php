@@ -145,7 +145,7 @@ class CallApiDpdGbShipping extends OrgAction
         $parcels = $parent->parcels;
 
         data_set($parentResource, 'reference', $parent->reference);
-        data_set($parentResource, 'customer_notes', $parent->customer_notes ?? '');
+        data_set($parentResource, 'shipping_notes', $parent->shipping_notes ?? '');
 
         $params = $this->prepareShipmentParams($parentResource, $parcels);
 
@@ -206,13 +206,19 @@ class CallApiDpdGbShipping extends OrgAction
         $errorMessage = Arr::get($error, 'errorMessage', 'Unknown error');
 
         if (Str::contains($obj, 'consignment.networkCode')) {
-            $errorData['service'] = 'Invalid service';
+            $errorMessage = 'Invalid network code';
+            $errorData['service'] = $errorMessage;
         } elseif (Str::contains($obj, 'address')) {
+            $errorMessage = 'Invalid address';
             $errorData['address'] = $errorMessage;
         } elseif (Str::contains($obj, 'contact')) {
+            $errorMessage = 'Invalid contact details';
             $errorData['contact'] = $errorMessage;
         } else {
-            $errorData['others'][] = $errorMessage . ' (' . $obj . ')';
+            $errorData['others'][] = $errorMessage;
+        }
+        if (!isset($errorData['message'])) {
+            $errorData['message'] = $errorMessage;
         }
     }
 
@@ -227,6 +233,8 @@ class CallApiDpdGbShipping extends OrgAction
 
         $now = Carbon::now();
         $collectionDate = $now->format('Y-m-d') . 'T' . $now->format('H:i') . ':00';
+
+        $shippingNotes = $parentResource['shipping_notes'] ?? '';
 
         return [
             'jobId' => null,
@@ -278,7 +286,7 @@ class CallApiDpdGbShipping extends OrgAction
                     'shippingRef2' => null,
                     'shippingRef3' => null,
                     'customsValue' => null,
-                    'deliveryInstructions' => Arr::get($parentResource, 'customer_notes', 'test_development_aiku'),
+                    'deliveryInstructions' => Str::limit(preg_replace("/[^A-Za-z0-9 \-]/", '', strip_tags($shippingNotes), 60)),
                     'parcelDescription' => 'test_development_aiku',
                     'liabilityValue' => null,
                     'liability' => false

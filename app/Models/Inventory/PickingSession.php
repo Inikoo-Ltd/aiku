@@ -40,8 +40,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $number_delivery_notes_picked
  * @property int $number_locations
  * @property int $number_locations_picked
- * @property int $number_picking_session_items
- * @property int $number_picking_session_items_picked
+ * @property int $number_items
+ * @property int $number_items_picked
  * @property string|null $start_at
  * @property string|null $end_at
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -68,6 +68,12 @@ class PickingSession extends Model
     protected $casts = [
         'state'                  => PickingSessionStateEnum::class,
     ];
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
 
     public function group(): BelongsTo
     {

@@ -26,7 +26,11 @@ class PollOptionsResource extends JsonResource
             'id'                 => $pollOption->id,
             'slug'               => $pollOption->slug,
             'value'              => $pollOption->value,
-            'label'              => $pollOption->label
+            'label'              => $pollOption->label,
+            'number_customers' => $pollOption->number_customers,
+            'number_customer_purchases' => $pollOption->number_customer_purchases,
+            'total_customer_revenue' => $pollOption->total_customer_revenue,
+            'currency_code' => $pollOption->currency_code ?? null,
         ];
     }
 }

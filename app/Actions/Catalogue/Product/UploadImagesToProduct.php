@@ -11,7 +11,6 @@ namespace App\Actions\Catalogue\Product;
 use App\Actions\Catalogue\WithUploadProductImage;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Product;
-use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\ActionRequest;
 
 class UploadImagesToProduct extends OrgAction
@@ -19,9 +18,9 @@ class UploadImagesToProduct extends OrgAction
     use WithUploadProductImage;
 
 
-    public function asController(Organisation $organisation, Product $product, ActionRequest $request): void
+    public function asController(Product $product, ActionRequest $request): void
     {
-        $this->initialisation($organisation, $request);
+        $this->initialisationFromShop($product->shop, $request);
 
         $this->handle($product, 'image', $this->validatedData);
     }
