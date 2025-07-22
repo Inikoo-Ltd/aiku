@@ -10,6 +10,8 @@
 
 namespace App\Actions\Retina\Dropshipping\Product;
 
+use App\Actions\Catalogue\Asset\ExportProductsInProductCategory;
+use App\Actions\Catalogue\Asset\ExportProductsInShop;
 use App\Actions\RetinaAction;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -29,44 +31,57 @@ class DownloadProduct extends RetinaAction
      */
     public function handle(Shop|ProductCategory $parent, string $type): BinaryFileResponse|Response
     {
-        $filename =  'portfolio' . '_' . now()->format('Ymd');
+        $filename =  'products' . '_' . now()->format('Ymd');
 
-        if ($type == 'portfolio_images') {
+        if ($type == 'products_images') {
             $filename .= '_images.zip';
             return response()->streamDownload(function () use ($parent) {
                 ProductZipExport::make()->handle($parent);
             }, $filename);
-        } elseif ($type == 'portfolio_xlsx') {
-            // $filename .= '.xlsx';
-            // return Excel::download(new PortfoliosCsvOrExcelExport($customer, $shop), $filename, null, [
-            //     'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            //     'Cache-Control' => 'max-age=0',
-            // ]);
+        } else {
+            $filename .= '.csv';
+            if ($parent instanceof ProductCategory) {
+                return Excel::download(new ExportProductsInProductCategory($parent), $filename, null, [
+                    'Content-Type' => 'text/csv',
+                    'Cache-Control' => 'max-age=0',
+                ]);
+            } else {
+                return Excel::download(new ExportProductsInShop($parent), $filename, null, [
+                    'Content-Type' => 'text/csv',
+                    'Cache-Control' => 'max-age=0',
+                ]);
+            }
         }
-
-        // $filename .= '.csv';
-        // return Excel::download(new PortfoliosCsvOrExcelExport($customer, $shop), $filename, null, [
-        //     'Content-Type' => 'text/csv',
-        //     'Cache-Control' => 'max-age=0',
-        // ]);
     }
     /**
      * @throws \PhpOffice\PhpSpreadsheet\Exception
      * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
      */
 
-    public function asController($shop, ActionRequest $request): BinaryFileResponse|Response
+    public function asController(Shop $shop, ActionRequest $request): BinaryFileResponse|Response
     {
-        $customer = $request->user()->customer;
 
-        $type = $request->query('type', 'portfolio_csv');
+        $type = $request->query('type', 'products_csv');
 
-        if (!in_array($type, ['portfolio_csv', 'portfolio_xlsx', 'portfolio_json', 'portfolio_images'])) {
+        if (!in_array($type, ['products_images'])) {
             abort(404);
         }
 
         $this->initialisation($request);
 
-        return $this->handle($customer, $shop, $type);
+        return $this->handle($shop, $type);
+    }
+
+    public function inProductCategory(ProductCategory $productCategory, ActionRequest $request): BinaryFileResponse|Response
+    {
+        $type = $request->query('type', 'products_csv');
+
+        if (!in_array($type, ['products_images'])) {
+            abort(404);
+        }
+
+        $this->initialisation($request);
+
+        return $this->handle($productCategory, $type);
     }
 }

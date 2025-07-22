@@ -9,6 +9,7 @@
 use App\Actions\Retina\Dropshipping\Catalogue\ShowRetinaCatalogue;
 use App\Actions\Retina\Dropshipping\Collection\UI\IndexRetinaCollections;
 use App\Actions\Retina\Dropshipping\Collection\UI\ShowRetinaCollection;
+use App\Actions\Retina\Dropshipping\Product\DownloadProduct;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInCatalogue;
 use App\Actions\Retina\Dropshipping\Product\UI\ShowRetinaCatalogueProduct;
 use App\Actions\Retina\Dropshipping\ProductCategory\UI\IndexRetinaDepartments;
@@ -25,6 +26,12 @@ Route::prefix('departments')->as('departments.')->group(function () {
     Route::get('/', IndexRetinaDepartments::class)->name('index');
     Route::get('{department}', ShowRetinaDepartment::class)->name('show');
 });
+
+Route::prefix('feeds')->as('feeds.')->group(function () {
+    Route::get('feeds/{productCategory}/download', [DownloadProduct::class, 'inProductCategory'])->name('product_category.download');
+    Route::get('feeds/{shop}/download', DownloadProduct::class)->name('shop.download');
+});
+
 
 Route::prefix('sub-departments')->as('sub_departments.')->group(function () {
     Route::get('/', IndexRetinaSubDepartments::class)->name('index');
