@@ -41,12 +41,12 @@ class DownloadProduct extends RetinaAction
         } else {
             $filename .= '.csv';
             if ($parent instanceof ProductCategory) {
-                return Excel::download(new ExportProductsInProductCategory($parent), $filename, null, [
+                return Excel::download(new ExportProductsInProductCategory($parent, ['type' => 'csv']), $filename, null, [
                     'Content-Type' => 'text/csv',
                     'Cache-Control' => 'max-age=0',
                 ]);
             } else {
-                return Excel::download(new ExportProductsInShop($parent), $filename, null, [
+                return Excel::download(new ExportProductsInShop($parent, ['type' => 'csv']), $filename, null, [
                     'Content-Type' => 'text/csv',
                     'Cache-Control' => 'max-age=0',
                 ]);
@@ -63,7 +63,7 @@ class DownloadProduct extends RetinaAction
 
         $type = $request->query('type', 'products_csv');
 
-        if (!in_array($type, ['products_images'])) {
+        if (!in_array($type, ['products_csv', 'products_images'])) {
             abort(404);
         }
 
@@ -76,7 +76,7 @@ class DownloadProduct extends RetinaAction
     {
         $type = $request->query('type', 'products_csv');
 
-        if (!in_array($type, ['products_images'])) {
+        if (!in_array($type, ['products_csv', 'products_images'])) {
             abort(404);
         }
 
