@@ -124,7 +124,7 @@ class CallApiApcGbShipping extends OrgAction
                     'PhoneNumber' => Str::limit(Arr::get($parentResource, 'to_phone'), 15, ''),
                     'Email'       => Arr::get($parentResource, 'to_email'),
                 ],
-                'Instructions' => Str::limit(preg_replace("/[^A-Za-z0-9 \-]/", '', strip_tags($parent->customer_notes), 60)),
+                'Instructions' => Str::limit(preg_replace("/[^A-Za-z0-9 \-]/", '', strip_tags($parent?->shipping_notes), 60)),
 
             ],
             'ShipmentDetails' => [

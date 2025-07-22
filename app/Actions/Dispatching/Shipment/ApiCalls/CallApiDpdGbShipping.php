@@ -145,7 +145,7 @@ class CallApiDpdGbShipping extends OrgAction
         $parcels = $parent->parcels;
 
         data_set($parentResource, 'reference', $parent->reference);
-        data_set($parentResource, 'customer_notes', $parent->customer_notes ?? '');
+        data_set($parentResource, 'shipping_notes', $parent->shipping_notes ?? '');
 
         $params = $this->prepareShipmentParams($parentResource, $parcels);
 
@@ -234,6 +234,8 @@ class CallApiDpdGbShipping extends OrgAction
         $now = Carbon::now();
         $collectionDate = $now->format('Y-m-d') . 'T' . $now->format('H:i') . ':00';
 
+        $shippingNotes = $parentResource['shipping_notes'] ?? '';
+
         return [
             'jobId' => null,
             'collectionOnDelivery' => false,
@@ -284,7 +286,7 @@ class CallApiDpdGbShipping extends OrgAction
                     'shippingRef2' => null,
                     'shippingRef3' => null,
                     'customsValue' => null,
-                    'deliveryInstructions' => Arr::get($parentResource, 'customer_notes', 'test_development_aiku'),
+                    'deliveryInstructions' => Str::limit(preg_replace("/[^A-Za-z0-9 \-]/", '', strip_tags($shippingNotes), 60)),
                     'parcelDescription' => 'test_development_aiku',
                     'liabilityValue' => null,
                     'liability' => false

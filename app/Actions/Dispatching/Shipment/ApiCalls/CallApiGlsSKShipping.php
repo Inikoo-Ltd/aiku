@@ -54,10 +54,13 @@ class CallApiGlsSKShipping extends OrgAction
         $parentResource = ShippingDeliveryNoteResource::make($parent)->getArray();
         $parcels        = $parent->parcels;
 
+        $shippingNotes = $parent->shipping_notes ?? '';
+        $shippingNotes = Str::limit(preg_replace("/[^A-Za-z0-9 \-]/", '', strip_tags($shippingNotes), 60));
+
         $prepareParams = (object)[
             'ClientNumber' => $clientNumber,
             'ClientReference' => Str::limit($parent->reference, 30),
-            'Content' => app()->isProduction() ? '' : 'test_development_aiku_' . ($parent->customer_notes ?? ''),
+            'Content' => app()->isProduction() ? $shippingNotes : 'test_development_aiku_' . ($parent->customer_notes ?? ''),
             'Count' => $parcels ? count($parcels) : 1,
             'DeliveryAddress' => (object)[
                 'ContactEmail' => Arr::get($parentResource, 'to_email'),
