@@ -48,7 +48,6 @@ class ShowPickingSession extends OrgAction
 {
     use AsAction;
     use WithInertia;
-    use GetPlatformLogo;
 
     private Order|Shop|Warehouse|Customer $parent;
 
