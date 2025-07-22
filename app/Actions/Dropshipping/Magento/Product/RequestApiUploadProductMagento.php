@@ -35,21 +35,25 @@ class RequestApiUploadProductMagento extends RetinaAction
             $product = $portfolio->item;
 
             $images = [];
-            if (app()->isProduction()) {
-                foreach ($product->images as $key => $image) {
-                    $images[] = [
-                        'media_type' => 'image',
-                        'label' => 'Product Image 1',
-                        'position' => $key + 1,
-                        'disabled' => false,
-                        'types' => $key === 0 ? ['image', 'small_image', 'thumbnail'] : ['image'],
-                        'content' => [
-                            'base64_encoded_data' => base64_encode(file_get_contents(GetImgProxyUrl::run($image->getImage()->extension('png')))),
-                            'type' => 'image/png',
-                            'name' => $image->file_name
-                        ]
-                    ];
-                }
+
+            foreach ($product->images as $key => $image) {
+                $imageUrl = match (app()->environment()) {
+                    'local' => Arr::get($product->web_images, 'main.gallery.png'),
+                    default => GetImgProxyUrl::run($image->getImage()->extension('png'))
+                };
+
+                $images[] = [
+                    'media_type' => 'image',
+                    'label' => 'Product Image 1',
+                    'position' => $key + 1,
+                    'disabled' => false,
+                    'types' => $key === 0 ? ['image', 'small_image', 'thumbnail'] : ['image'],
+                    'content' => [
+                        'base64_encoded_data' => base64_encode(file_get_contents($imageUrl)),
+                        'type' => 'image/png',
+                        'name' => $image->file_name
+                    ]
+                ];
             }
 
             $wooCommerceProduct = [

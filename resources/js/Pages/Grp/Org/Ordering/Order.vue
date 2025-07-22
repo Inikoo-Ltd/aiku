@@ -61,6 +61,7 @@ import { useTruncate } from "@/Composables/useTruncate"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import ShipmentSection from "@/Components/Warehouse/DeliveryNotes/ShipmentSection.vue"
+import Icon from "@/Components/Icon.vue"
 
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird)
 
@@ -366,6 +367,15 @@ const last_payment = computed(() => {
     return Array.isArray(props.box_stats.payments) && props.box_stats.payments.length > 0 ? props.box_stats.payments[props.box_stats.payments.length - 1] : null
 })
 
+// console.log("props.box_stats.payments", router)
+const generateRouteDeliveryNote = (slug: string) => {
+    if (!slug) return ''
+
+    return route(props.routes.delivery_note.deliveryNoteRoute.name, {
+        ...props.routes.delivery_note.deliveryNoteRoute.parameters,
+        deliveryNote: slug
+    })
+}
 </script>
 
 <template>
@@ -453,10 +463,10 @@ const last_payment = computed(() => {
     <!-- Section: Box Note -->
     <div class="relative">
         <Transition name="headlessui">
-            <div v-if="notes?.note_list?.some(item => !!(item?.note?.trim()))"
-                 class="p-2 grid sm:grid-cols-3 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
+            <div xv-if="notes?.note_list?.some(item => !!(item?.note?.trim()))"
+                class="p-2 grid grid-cols-2 sm:grid-cols-4 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
                 <BoxNote v-for="(note, index) in notes.note_list" :key="index + note.label" :noteData="note"
-                         :updateRoute="routes.updateOrderRoute" />
+                    :updateRoute="routes.updateOrderRoute" />
             </div>
         </Transition>
     </div>
@@ -474,204 +484,283 @@ const last_payment = computed(() => {
 
     <div v-if="currentTab != 'products'" class="grid grid-cols-2 lg:grid-cols-3 divide-x divide-gray-300 border-b border-gray-200">
         <BoxStatPallet class=" py-2 px-3" icon="fal fa-user">
-            <!-- Field: Reference Number -->
-            <Link as="a" v-if="box_stats?.customer.reference" v-tooltip="trans('Customer')"
-                  :href="box_stats?.customer?.route?.name ? route(box_stats?.customer.route.name, box_stats?.customer.route.parameters) : '#'"
-                  class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
-                <dt class="flex-none">
-                    <FontAwesomeIcon icon="fal fa-user" class="text-gray-400" fixed-width aria-hidden="true" />
-                </dt>
-                <dd class="text-sm text-gray-500">#{{ box_stats?.customer.reference }}</dd>
-            </Link>
+            <div class="text-xs md:text-sm">
+				<div class="font-semibold xmb-2 text-base">
+					{{ trans("Order") }}
+				</div>
+				
+				<div class="space-y-0.5 pl-1">
+                    <!-- Field: Reference Number -->
+                    <Link as="a" v-if="box_stats?.customer.reference"
+                        :href="box_stats?.customer?.route?.name ? route(box_stats?.customer.route.name, box_stats?.customer.route.parameters) : '#'"
+                        class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
+                        <div v-tooltip="trans('Customer')" class="flex-none">
+                            <FontAwesomeIcon icon="fal fa-user" class="text-gray-400" fixed-width aria-hidden="true" />
+                        </div>
+                        <dd class="text-sm text-gray-500">#{{ box_stats?.customer.reference }}</dd>
+                    </Link>
+        
+                    <!-- Field: Customer -->
+                    <Link as="a" v-if="!box_stats?.customer.reference"
+                        :href="box_stats?.customer?.route?.name ? route(box_stats?.customer.route.name, box_stats?.customer.route.parameters) : '#'"
+                        class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer secondaryLink">
+                        <div v-tooltip="trans('Contact name')" class="flex-none">
+                            <FontAwesomeIcon icon="fal fa-id-card-alt" class="text-gray-400" fixed-width aria-hidden="true" />
+                        </div>
+                        <dd class="text-sm text-gray-500">{{ box_stats?.customer.contact_name }}</dd>
+                    </Link>
+        
+                    <!-- Field: Client -->
+                    <Link as="a" v-if="box_stats?.customer_client"
+                        :href="box_stats?.customer_client?.route?.name ? route(box_stats?.customer_client.route.name, box_stats?.customer_client.route.parameters) : '#'"
+                        class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer secondaryLink">
+                        <div v-tooltip="trans('Customer client')" class="flex-none">
+                            <FontAwesomeIcon icon="fal fa-users" class="text-gray-400" fixed-width aria-hidden="true" />
+                        </div>
+                        <dd class="text-sm text-gray-500">{{ box_stats?.customer_client.contact_name }}</dd>
+                    </Link>
+        
+                    <!-- Field: Contact name -->
+                    <dl v-else-if="box_stats?.customer.contact_name"
+                        class="pl-1 flex items-center w-fit flex-none gap-x-2">
+                        <dt v-tooltip="trans('Contact name')" class="flex-none">
+                            <FontAwesomeIcon icon="fal fa-id-card-alt" class="text-gray-400" fixed-width aria-hidden="true" />
+                        </dt>
+                        <dd class="text-sm text-gray-500">{{ box_stats?.customer.contact_name }}</dd>
+                    </dl>
+        
+                    <!-- Field: Company name -->
+                    <dl v-if="box_stats?.customer.company_name"
+                        class="pl-1 flex items-center w-full flex-none gap-x-2">
+                        <dt v-tooltip="trans('Company name')" class="flex-none">
+                            <FontAwesomeIcon icon="fal fa-building" class="text-gray-400" fixed-width aria-hidden="true" />
+                        </dt>
+                        <dd class="text-sm text-gray-500">{{ box_stats?.customer.company_name }}</dd>
+                    </dl>
+        
+                    <!-- Field: Email -->
+                    <dl v-if="box_stats?.customer.email" class="pl-1 flex items-center w-full flex-none gap-x-2">
+                        <dt v-tooltip="trans('Email')" class="flex-none">
+                            <FontAwesomeIcon icon="fal fa-envelope" class="text-gray-400" fixed-width aria-hidden="true" />
+                        </dt>
+                        <a :href="`mailto:${box_stats?.customer.email}`" v-tooltip="'Click to send email'"
+                            class="text-sm text-gray-500 hover:text-gray-700 truncate">{{ box_stats?.customer.email }}</a>
+                    </dl>
+        
+                    <!-- Field: Phone -->
+                    <dl v-if="box_stats?.customer.phone" class="pl-1 flex items-center w-full flex-none gap-x-2">
+                        <dt v-tooltip="trans('Phone')" class="flex-none">
+                            <FontAwesomeIcon icon="fal fa-phone" class="text-gray-400" fixed-width aria-hidden="true" />
+                        </dt>
+                        <a :href="`tel:${box_stats?.customer.phone}`" v-tooltip="'Click to make a phone call'"
+                            class="text-sm text-gray-500 hover:text-gray-700">{{ box_stats?.customer.phone }}</a>
+                    </dl>
+        
+                    <!-- Field: Billing Address -->
+                    <dl v-if="box_stats?.customer?.addresses?.billing?.formatted_address !== box_stats?.customer?.addresses?.delivery?.formatted_address"
+                        class="pl-1 flex items w-full flex-none gap-x-2">
+                        <dt v-tooltip="trans('Billing address')" class="flex-none">
+                            <FontAwesomeIcon icon="fal fa-dollar-sign" class="text-gray-400" fixed-width aria-hidden="true" />
+                        </dt>
+                        <dd class="flex text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded min-w-52"
+                            v-html="box_stats?.customer.addresses.billing.formatted_address">
+                        </dd>
+                    </dl>
 
-            <Link as="a" v-if="!box_stats?.customer.reference" v-tooltip="trans('Contact name')"
-                  :href="box_stats?.customer?.route?.name ? route(box_stats?.customer.route.name, box_stats?.customer.route.parameters) : '#'"
-                  class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer secondaryLink">
-                <dt class="flex-none">
-                    <FontAwesomeIcon icon="fal fa-id-card-alt" class="text-gray-400" fixed-width aria-hidden="true" />
-                </dt>
-                <dd class="text-sm text-gray-500">{{ box_stats?.customer.contact_name }}</dd>
-            </Link>
-
-            <Link as="a" v-if="box_stats?.customer_client" v-tooltip="trans('Customer client')"
-                  :href="box_stats?.customer_client?.route?.name ? route(box_stats?.customer_client.route.name, box_stats?.customer_client.route.parameters) : '#'"
-                  class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer secondaryLink">
-                <dt class="flex-none">
-                    <FontAwesomeIcon icon="fal fa-users" class="text-gray-400" fixed-width aria-hidden="true" />
-                </dt>
-                <dd class="text-sm text-gray-500">{{ box_stats?.customer_client.contact_name }}</dd>
-            </Link>
-
-            <!-- Field: Contact name -->
-            <div v-else-if="box_stats?.customer.contact_name" v-tooltip="trans('Contact name')"
-                 class="pl-1 flex items-center w-fit flex-none gap-x-2">
-                <dt class="flex-none">
-                    <FontAwesomeIcon icon="fal fa-id-card-alt" class="text-gray-400" fixed-width aria-hidden="true" />
-                </dt>
-                <dd class="text-sm text-gray-500">{{ box_stats?.customer.contact_name }}</dd>
-            </div>
-
-            <!-- Field: Company name -->
-            <div v-if="box_stats?.customer.company_name" v-tooltip="trans('Company name')"
-                 class="pl-1 flex items-center w-full flex-none gap-x-2">
-                <dt class="flex-none">
-                    <FontAwesomeIcon icon="fal fa-building" class="text-gray-400" fixed-width aria-hidden="true" />
-                </dt>
-                <dd class="text-sm text-gray-500">{{ box_stats?.customer.company_name }}</dd>
-            </div>
-
-            <!-- Field: Email -->
-            <div v-if="box_stats?.customer.email" class="pl-1 flex items-center w-full flex-none gap-x-2">
-                <dt v-tooltip="trans('Email')" class="flex-none">
-                    <FontAwesomeIcon icon="fal fa-envelope" class="text-gray-400" fixed-width aria-hidden="true" />
-                </dt>
-                <a :href="`mailto:${box_stats?.customer.email}`" v-tooltip="'Click to send email'"
-                   class="text-sm text-gray-500 hover:text-gray-700 truncate">{{ box_stats?.customer.email }}</a>
-            </div>
-
-            <!-- Field: Phone -->
-            <div v-if="box_stats?.customer.phone" class="pl-1 flex items-center w-full flex-none gap-x-2">
-                <dt v-tooltip="trans('Phone')" class="flex-none">
-                    <FontAwesomeIcon icon="fal fa-phone" class="text-gray-400" fixed-width aria-hidden="true" />
-                </dt>
-                <a :href="`tel:${box_stats?.customer.phone}`" v-tooltip="'Click to make a phone call'"
-                   class="text-sm text-gray-500 hover:text-gray-700">{{ box_stats?.customer.phone }}</a>
-            </div>
-
-            <!-- Field: Billing Address -->
-            <div v-if="box_stats?.customer?.addresses?.billing?.formatted_address !== box_stats?.customer?.addresses?.delivery?.formatted_address"
-                 class="pl-1 flex items w-full flex-none gap-x-2" v-tooltip="trans('Billing address')">
-                <dt class="flex-none">
-                    <FontAwesomeIcon icon="fal fa-dollar-sign" class="text-gray-400" fixed-width aria-hidden="true" />
-                </dt>
-                <dd class="flex text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded min-w-52"
-                    v-html="box_stats?.customer.addresses.billing.formatted_address">
-                </dd>
-            </div>
-            <!-- Field: Shipping Address -->
-            <div v-if="box_stats?.customer?.addresses?.delivery?.formatted_address !== box_stats?.customer?.addresses?.billing?.formatted_address"
-                 class="mt-2 pl-1 flex items w-full flex-none gap-x-2" v-tooltip="trans('Shipping address')">
-                <dt class="flex-none">
-                    <FontAwesomeIcon icon="fal fa-shipping-fast" class="text-gray-400" fixed-width aria-hidden="true" />
-                </dt>
-                <dd class=" text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded min-w-52">
-                    <span v-html="box_stats?.customer.addresses.delivery.formatted_address"></span>
-                    <div v-if="!props.readonly" @click="() => isModalAddress = true"
-                         class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
-                        <span>{{ trans("Edit") }}</span>
-                    </div>
-                </dd>
-            </div>
-
-            <div v-if="box_stats?.customer?.addresses?.delivery?.formatted_address === box_stats?.customer?.addresses?.billing?.formatted_address"
-                 class="mt-2 pl-1 flex items w-full flex-none gap-x-2" v-tooltip="trans('Shipping address and Billing address')">
-                <dt class="flex-none">
-                    <FontAwesomeIcon icon="fal fa-shipping-fast" class="text-gray-400" fixed-width aria-hidden="true" />
-                </dt>
-                <dd class="flex text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
-                <span v-html="box_stats?.customer.addresses.delivery.formatted_address"></span>
-                    <div v-if="!props.readonly" @click="() => isModalAddress = true"
-                         class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
-                        <span>{{ trans("Edit") }}</span>
-                    </div>
-                </dd>
+                    <!-- Field: Shipping Address -->
+                    <dl v-if="box_stats?.customer?.addresses?.delivery?.formatted_address !== box_stats?.customer?.addresses?.billing?.formatted_address"
+                        class="mt-2 pt-1 pl-1 flex items w-full flex-none gap-x-2">
+                        <dt v-tooltip="trans('Shipping address')" class="flex-none">
+                            <FontAwesomeIcon icon="fal fa-shipping-fast" class="text-gray-400" fixed-width aria-hidden="true" />
+                        </dt>
+                        <dd class=" text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded min-w-52">
+                            <span v-html="box_stats?.customer.addresses.delivery.formatted_address"></span>
+                            <div v-if="!props.readonly" @click="() => isModalAddress = true"
+                                class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
+                                <span>{{ trans("Edit") }}</span>
+                            </div>
+                        </dd>
+                    </dl>
+        
+                    <!-- Field: Billing Address -->
+                    <dl v-if="box_stats?.customer?.addresses?.delivery?.formatted_address === box_stats?.customer?.addresses?.billing?.formatted_address"
+                        class="mt-2 pl-1 flex items w-full flex-none gap-x-2">
+                        <dt v-tooltip="trans('Shipping address and Billing address')" class="flex-none">
+                            <FontAwesomeIcon icon="fal fa-shipping-fast" class="text-gray-400" fixed-width aria-hidden="true" />
+                        </dt>
+                        <dd class="flex text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
+                        <span v-html="box_stats?.customer.addresses.delivery.formatted_address"></span>
+                            <div v-if="!props.readonly" @click="() => isModalAddress = true"
+                                class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
+                                <span>{{ trans("Edit") }}</span>
+                            </div>
+                        </dd>
+                    </dl>
+                </div>
             </div>
         </BoxStatPallet>
 
         <!-- Box: Payment/Invoices/Delivery Notes  -->
-        <BoxStatPallet class="py-4 pl-1.5 pr-3" icon="fal fa-user">
-            <dl class="relative flex items-start w-full flex-none gap-x-1">
-                <dt class="flex-none pt-0.5">
-                    <FontAwesomeIcon icon="fal fa-dollar-sign" fixed-width aria-hidden="true" class="text-gray-500" />
-                </dt>
-
-                <div>
-                    <NeedToPay
-                        @click="onPayClick"
-                        :totalAmount="box_stats.products.payment.total_amount"
-                        :paidAmount="box_stats.products.payment.paid_amount"
-                        :payAmount="box_stats.products.payment.pay_amount"
-                        :class="[box_stats.products.payment.pay_amount ? 'hover:bg-gray-100 cursor-pointer' : '']"
-                        :currencyCode="currency.code"
-                    >
-                        <template #default>
-                        </template>
-                    </NeedToPay>
-
-                    <div v-if="last_payment" class="text-xs text-gray-500">
-                        {{ trans("Last payments:") }}
-                        <Link :href="route('grp.org.accounting.payments.show', {
-                            organisation: route().params.organisation,
-                            payment: last_payment?.id
-                        })" class="primaryLink">{{ last_payment?.reference ?? last_payment?.id }}
+        <BoxStatPallet class="py-4 px-3" icon="fal fa-user">
+            <div class="text-xs md:text-sm">
+				<div class="font-semibold xmb-2 text-base">
+					{{ trans("Delivery Note") }}
+				</div>
+				
+				<div class="xspace-y-0.5 pl-1">
+                    <!-- Field: Billing -->
+                    <dl class="relative flex items-start w-full flex-none gap-x-1">
+                        <dt class="flex-none pt-0.5 pl-1">
+                            <FontAwesomeIcon icon="fal fa-dollar-sign" fixed-width aria-hidden="true" class="text-gray-500" />
+                        </dt>
+        
+                        <div>
+                            <NeedToPay
+                                @click="onPayClick"
+                                :totalAmount="box_stats.products.payment.total_amount"
+                                :paidAmount="box_stats.products.payment.paid_amount"
+                                :payAmount="box_stats.products.payment.pay_amount"
+                                :class="[box_stats.products.payment.pay_amount ? 'hover:bg-gray-100 cursor-pointer' : '']"
+                                :currencyCode="currency.code"
+                            >
+                                <template #default>
+                                </template>
+                            </NeedToPay>
+        
+                            <div v-if="last_payment" class="text-xs text-gray-500">
+                                {{ trans("Last payments:") }}
+                                <Link :href="route('grp.org.accounting.payments.show', {
+                                    organisation: route().params.organisation,
+                                    payment: last_payment?.id
+                                })" class="secondaryLink">{{ last_payment?.reference ?? last_payment?.id }}
+                                </Link>
+                            </div>
+                        </div>
+                    </dl>
+        
+                    <!-- Field: weight -->
+                    <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
+                        <dt class="flex-none pl-1">
+                            <FontAwesomeIcon icon="fal fa-weight" fixed-width aria-hidden="true" class="text-gray-500" />
+                        </dt>
+                        <dd class="text-gray-500 sep" v-tooltip="trans('Estimated weight of all products')">
+                            {{ box_stats?.products.estimated_weight || 0 }} kilograms
+                        </dd>
+                    </dl>
+        
+        
+                    <div v-if="box_stats?.invoice" class="mt-1 flex items-center w-full flex-none justify-between">
+                        <Link
+                            :href="route(box_stats?.invoice?.routes?.show?.name, box_stats?.invoice?.routes?.show.parameters)"
+                            class="flex items-center gap-3 gap-x-1.5 primaryLink cursor-pointer">
+                            <div class="flex-none">
+                                <FontAwesomeIcon icon="fal fa-file-invoice-dollar" fixed-width aria-hidden="true" class="text-gray-500" />
+                            </div>
+                            <div class="text-gray-500 " v-tooltip="trans('Invoice')">
+                                {{ box_stats?.invoice?.reference }}
+                            </div>
                         </Link>
+        
+                        <a v-if="box_stats?.invoice?.routes?.download?.name" :href="route(box_stats?.invoice?.routes?.download?.name, box_stats?.invoice?.routes?.download.parameters)"
+                            as="a" target="_blank" class="flex items-center text-gray-400 hover:text-orange-600">
+                            <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true" />
+                        </a>
+                    </div>
+        
+                   <!--  <div v-for="delivery_note in  box_stats.delivery_notes" >
+        
+                        <dl class="flex">
+                            <dt class="flex-none">
+                                <FontAwesomeIcon icon="fal fa-truck" fixed-width aria-hidden="true" class="text-gray-500" />
+                            </dt>
+                            <dd class="text-gray-500 w-full" >
+                                <Link
+                                    :href="route('grp.helpers.redirect_delivery_notes', delivery_note.id)"
+                                    class="primaryLink cursor-pointer">
+                                    {{ delivery_note.reference }}
+                                </Link>
+        
+                                <div class="">
+                                    <ShipmentSection
+                                        :shipments="delivery_note.shipments"
+                                    />
+                                </div>
+                            </dd>
+                        </dl>
+        
+        
+                    </div> -->
+                    
+                    <div v-if="box_stats?.delivery_notes?.length" class="mt-4 border rounded-lg p-4 pt-3 bg-white shadow-sm">
+                        <!-- Section Title -->
+                        <div class="flex items-center gap-2 border-b border-gray-200 pb-2 mb-3">
+                            <FontAwesomeIcon :icon="faTruck" class="text-blue-500" fixed-width />
+                            <div class="text-sm font-semibold text-gray-800">
+                                {{ trans('Delivery Notes') }}
+                            </div>
+                        </div>
+        
+                        <!-- Delivery Note Items -->
+                        <div v-for="(note, index) in box_stats?.delivery_notes" :key="index"
+                            class="mb-3 pb-3 border-b border-dashed last:border-0 last:mb-0 last:pb-0">
+        
+                            <div class="flex items-center gap-2 text-sm text-gray-700 mb-1">
+                                <span class="font-medium">Ref:</span>
+                                <Link :href="generateRouteDeliveryNote(note?.slug)" class="secondaryLink">{{ note?.reference }}</Link>
+                                <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+                                    <Icon :data="note?.state" />
+                                </span>
+                            </div>
+        
+                            <!-- Shipments -->
+                            <div v-if="note?.shipments?.length > 0" class="mt-1 text-xs text-gray-600">
+                                <p class="text-gray-700 font-medium mb-1">{{trans('Shipments')}}:</p>
+                                <ul class="list-disc pl-4 space-y-1">
+                                    <li v-for="(shipment, i) in note.shipments" :key="i">
+                                        <template v-if="shipment?.formatted_tracking_urls?.length">
+                                            {{ shipment.name }}
+                                            <div v-for="trackingData in shipment.formatted_tracking_urls">
+        
+                                                <a :href="trackingData.url" target="_blank" rel="noopener noreferrer"
+                                                    class="secondaryLink"
+                                                    v-tooltip="trans('Click to track shipment')">
+                                                    {{ trackingData.tracking }}
+                                                </a>
+                                            </div>
+                                        </template>
+        
+                                        <span v-else-if="shipment.name" class="">
+                                            {{ shipment.name }}
+                                        </span>
+                                        <span v-else-if="shipment.name" class="text-gray-400 italic">
+                                            {{ trans("No shipment information") }}
+                                        </span>
+                                    </li>
+                                </ul>
+                            </div>
+        
+                            <div v-else class="mt-1 text-xs italic text-gray-400">
+                                {{ trans('No shipments') }}
+                            </div>
+                        </div>
                     </div>
                 </div>
-
-            </dl>
-
-            <div class="mt-1 flex items-center w-full flex-none gap-x-1.5">
-                <dt class="flex-none">
-                    <FontAwesomeIcon icon="fal fa-weight" fixed-width aria-hidden="true" class="text-gray-500" />
-                </dt>
-                <dd class="text-gray-500 sep" v-tooltip="trans('Estimated weight of all products')">
-                    {{ box_stats?.products.estimated_weight || 0 }} kilograms
-                </dd>
             </div>
-
-
-            <div v-if="box_stats?.invoice" class="mt-1 flex items-center w-full flex-none justify-between">
-                <Link
-                    :href="route(box_stats?.invoice?.routes?.show?.name, box_stats?.invoice?.routes?.show.parameters)"
-                    class="flex items-center gap-3 gap-x-1.5 primaryLink cursor-pointer">
-                    <dt class="flex-none">
-                        <FontAwesomeIcon icon="fal fa-file-invoice-dollar" fixed-width aria-hidden="true" class="text-gray-500" />
-                    </dt>
-                    <dd class="text-gray-500 " v-tooltip="trans('Invoice')">
-                        {{ box_stats?.invoice?.reference }}
-                    </dd>
-                </Link>
-
-                <a v-if="box_stats?.invoice?.routes?.download?.name" :href="route(box_stats?.invoice?.routes?.download?.name, box_stats?.invoice?.routes?.download.parameters)"
-                   as="a" target="_blank" class="flex items-center">
-                    <button class="flex items-center">
-                        <div class="flex-none">
-                            <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true"
-                                             class="text-gray-500 hover:text-indigo-500 transition-colors duration-200" />
-                        </div>
-                    </button>
-                </a>
-            </div>
-
-            <div v-for="delivery_note in  box_stats.delivery_notes" >
-
-                <dl>
-                    <dt class="flex-none">
-                        <FontAwesomeIcon icon="fal fa-truck" fixed-width aria-hidden="true" class="text-gray-500" />
-                    </dt>
-                    <dd class="text-gray-500 " >
-                        <Link
-                            :href="route('grp.helpers.redirect_delivery_notes', delivery_note.id)"
-                            class="primaryLink cursor-pointer">
-                            {{ delivery_note.reference }}
-                        </Link>
-                        <div>
-                            <ShipmentSection :shipments="delivery_note.shipments" />
-
-                        </div>
-                    </dd>
-                </dl>
-
-
-            </div>
-
         </BoxStatPallet>
 
         <!-- Box: Order summary -->
-        <BoxStatPallet class="border-t lg:border-t-0 border-gray-300">
-            <section aria-labelledby="summary-heading" class="rounded-lg px-4 py-4 sm:px-6 lg:mt-0">
-                <OrderSummary :order_summary="box_stats.order_summary" :currency_code="currency.code" />
-            </section>
+        <BoxStatPallet class="py-4 border-t lg:border-t-0 border-gray-300">
+            <div class="text-xs md:text-sm">
+				<div class="px-3 font-semibold xmb-2 text-base">
+					{{ trans("Summary") }}
+				</div>
+				
+                <section aria-labelledby="summary-heading" class="rounded-lg px-4 py-4 sm:px-6 lg:mt-0">
+                    <OrderSummary :order_summary="box_stats.order_summary" :currency_code="currency.code" />
+                </section>
+				<!-- <div class="xspace-y-0.5 pl-1">
+                </div> -->
+            </div>
         </BoxStatPallet>
     </div>
 

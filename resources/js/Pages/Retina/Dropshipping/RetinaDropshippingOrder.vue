@@ -37,6 +37,8 @@ import { Message } from 'primevue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
+import { debounce } from 'lodash-es'
+import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird)
 
 
@@ -45,13 +47,18 @@ const props = defineProps<{
     tabs: TSTabs
     pageHead: PageHeadingTypes
     order: {}
-    routes?: {
+
+
+    routes: {
         update_route: routeType
         submit_route: routeType
         route_to_pay_unpaid: routeType
+        updateOrderRoute: routeType
     }
     timelines: {
     }
+    is_notes_editable: boolean
+
     box_stats: {
         customer: {
             reference: string
@@ -96,6 +103,9 @@ const props = defineProps<{
             state: string
             state_label: string
             state_icon: string
+            public_notes?: string
+            customer_notes?: string
+            shipping_notes?: string
         }
     }
 
@@ -130,6 +140,42 @@ const component = computed(() => {
 
 const locale = inject('locale', aikuLocaleStructure)
 console.log('DS Orders', props)
+
+
+
+const noteToSubmit = ref(props?.data?.data?.customer_notes || '')
+const deliveryInstructions = ref(props?.data?.data?.shipping_notes || '')
+const recentlySuccessNote = ref<string[]>([])
+const recentlyErrorNote = ref(false)
+const isLoadingNote = ref<string[]>([])
+const onSubmitNote = async (key_in_db: string, value: string) => {
+    try {
+        isLoadingNote.value.push(key_in_db)
+        await axios.patch(route(props.routes.update_route.name, props.routes.update_route.parameters), {
+            [key_in_db ?? 'customer_notes']: value
+        })
+
+
+        isLoadingNote.value = isLoadingNote.value.filter(item => item !== key_in_db)
+        recentlySuccessNote.value.push(key_in_db)
+        setTimeout(() => {
+            recentlySuccessNote.value = recentlySuccessNote.value.filter(item => item !== key_in_db)
+        }, 3000)
+    } catch  {
+        recentlyErrorNote.value = true
+        setTimeout(() => {
+            recentlyErrorNote.value = false
+        }, 3000)
+
+        notify({
+            title: trans("Something went wrong"),
+            text: trans("Failed to update the note, try again."),
+            type: "error",
+        })
+    }
+}
+const debounceSubmitNote = debounce(() => onSubmitNote('customer_notes', noteToSubmit.value), 800)
+const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes', deliveryInstructions.value), 800)
 
 </script>
 
@@ -174,5 +220,65 @@ console.log('DS Orders', props)
             @update:tab="handleTabUpdate" />
     </div>
 
+    <div class="flex justify-end px-6 gap-x-4">
+        <div class="grid grid-cols-3 gap-x-4 w-full">
+            <!-- Input text: notes from staff -->
+            <div class="">
+                <div class="mb-2 text-sm text-gray-500">
+                    <FontAwesomeIcon style="color: rgb(148, 219, 132)" icon="fal fa-sticky-note" class="xopacity-70" fixed-width aria-hidden="true" />
+                    {{ trans("Notes from staff") }}
+                    :
+                </div>
+                <PureTextarea
+                    :modelValue="props.data?.data?.public_notes || ''"
+                    @update:modelValue="() => debounceDeliveryInstructions()"
+                    :placeholder="trans('No notes from staff')"
+                    rows="4"
+                    disabled
+                    xloading="isLoadingNote.includes('shipping_notes')"
+                    xisSuccess="recentlySuccessNote.includes('shipping_notes')"
+                    xisError="recentlyErrorNote"
+                />
+            </div>
+
+            <!-- Input text: Delivery instructions -->
+            <div class="">
+                <div class="mb-2 text-sm text-gray-500">
+                    <FontAwesomeIcon icon="fal fa-truck" class="text-[#38bdf8]" fixed-width aria-hidden="true" />
+                    {{ trans("Delivery instructions") }}
+                    <FontAwesomeIcon v-tooltip="trans('To be printed in shipping label')" icon="fal fa-info-circle" class="text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
+                    :
+                </div>
+                <PureTextarea
+                    v-model="deliveryInstructions"
+                    @update:modelValue="() => debounceDeliveryInstructions()"
+                    :placeholder="is_notes_editable ? trans('Add if needed') : 'No delivery instructions'"
+                    rows="4"
+                    :disabled="!is_notes_editable"
+                    :loading="isLoadingNote.includes('shipping_notes')"
+                    :isSuccess="recentlySuccessNote.includes('shipping_notes')"
+                    :isError="recentlyErrorNote"
+                />
+            </div>
+        
+            <!-- Input text: Other instructions -->
+            <div class="">
+                <div class="mb-2 text-sm text-gray-500">
+                    <FontAwesomeIcon icon="fal fa-sticky-note" style="color: rgb(255, 125, 189)" fixed-width aria-hidden="true" />
+                    {{ trans("Other instructions") }}:
+                </div>
+                <PureTextarea
+                    v-model="noteToSubmit"
+                    @update:modelValue="() => debounceSubmitNote()"
+                    :placeholder="is_notes_editable ? trans('Add if needed') : 'No instructions'"
+                    rows="4"
+                    :disabled="!is_notes_editable"
+                    :loading="isLoadingNote.includes('customer_notes')"
+                    :isSuccess="recentlySuccessNote.includes('customer_notes')"
+                    :isError="recentlyErrorNote"
+                />
+            </div>
+        </div>
+    </div>
 
 </template>

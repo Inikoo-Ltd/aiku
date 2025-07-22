@@ -12,7 +12,6 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 use App\Actions\Dropshipping\Magento\Orders\GetRetinaOrdersFromMagento;
 use App\Actions\Dropshipping\WooCommerce\Orders\FetchWooUserOrders;
 use App\Actions\RetinaAction;
-use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
@@ -41,7 +40,7 @@ class ScheduleGetRetinaOrders extends RetinaAction
             ->chunk(100, function ($channels) {
                 foreach ($channels as $channel) {
                     $user = $channel->user;
-                    if ($user && ($channel->state === CustomerSalesChannelStateEnum::WITH_PORTFOLIO)) {
+                    if ($user) {
                         match ($channel->platform->type) {
                             PlatformTypeEnum::MAGENTO => GetRetinaOrdersFromMagento::dispatch($user),
                             PlatformTypeEnum::WOOCOMMERCE => FetchWooUserOrders::dispatch($user),

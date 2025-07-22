@@ -69,6 +69,12 @@ class PickingSession extends Model
         'state'                  => PickingSessionStateEnum::class,
     ];
 
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
+
     public function group(): BelongsTo
     {
         return $this->belongsTo(Group::class);

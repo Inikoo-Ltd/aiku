@@ -26,7 +26,6 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import axios from "axios";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
-import deliveryNote from "@/Pages/Grp/Org/Dispatching/DeliveryNote.vue";
 import Modal from "@/Components/Utils/Modal.vue"
 import { RadioButton } from "primevue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"

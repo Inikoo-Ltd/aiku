@@ -12,6 +12,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\OrgAction;
 use App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum;
+use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\MagentoUser;
@@ -75,17 +76,24 @@ class StoreMagentoUser extends OrgAction
                 'postcode' => 'S9 1XT'
             ]);
 
-            $stock = $magentoUser->createStock([
-                'name' => 'AW Connect Stock',
-                'extension_attributes' => [
-                    'sales_channels' => [
-                        [
-                            'type' => 'website',
-                            'code' => 'base'
+            $stocks = Arr::get($magentoUser->getStocks(), 'items');
+            $existingStock = collect($stocks)->where('name', 'AW Connect Stock')->first();
+
+            if (! $existingStock) {
+                $stock = $magentoUser->createStock([
+                    'name' => 'AW Connect Stock',
+                    'extension_attributes' => [
+                        'sales_channels' => [
+                            [
+                                'type' => 'website',
+                                'code' => 'base'
+                            ]
                         ]
                     ]
-                ]
-            ]);
+                ]);
+            } else {
+                $stock = [Arr::get($existingStock, 'stock_id')];
+            }
 
             $magentoUser->assignSourceToStock([
                 [
@@ -101,13 +109,17 @@ class StoreMagentoUser extends OrgAction
                     'credentials' => [
                         ...Arr::get($magentoUser->settings, 'credentials'),
                         'access_token' => $accessToken
-                    ]
+                    ],
+                    'stock_id' => Arr::get($stock, '0'),
+                    'source_code' => 'aw-source',
+                    'stores' => $stores
                 ],
                 'name' => Arr::get($stores, '0.name')
             ]);
 
             UpdateCustomerSalesChannel::run($customerSalesChannel, [
                 'name' => Arr::get($stores, '0.name'),
+                'state' => CustomerSalesChannelStateEnum::READY,
                 'connection_status' => CustomerSalesChannelConnectionStatusEnum::CONNECTED
             ]);
 

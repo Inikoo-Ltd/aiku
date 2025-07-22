@@ -31,11 +31,14 @@ class ShopHydrateVisitorsIntervals implements ShouldBeUnique
 
     public function handle(Shop $shop, ?array $intervals = null, ?array $doPreviousPeriods = null): void
     {
-        $websiteId = $shop->website->id;
+        $website = $shop->website;
+        if (!$website) {
+            return;
+        }
 
         $stats = [];
 
-        $queryBase = DB::table('web_user_requests')->where('website_id', $websiteId)
+        $queryBase = DB::table('web_user_requests')->where('website_id', $website->id)
             ->selectRaw('COUNT(DISTINCT web_user_id) as sum_aggregate');
         $stats     = $this->getIntervalsData(
             stats: $stats,

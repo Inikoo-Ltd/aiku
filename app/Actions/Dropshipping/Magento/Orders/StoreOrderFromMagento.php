@@ -48,39 +48,40 @@ class StoreOrderFromMagento extends OrgAction
         $customerClient = $this->digestMagentoCustomerClient($magentoUser, $modelData);
         $orderedProducts = $this->digestMagentoProducts($magentoUser, $modelData);
 
-        $order = StoreOrder::make()->action($customerClient, [
-            'platform_id' => $magentoUser->platform_id,
-            'customer_reference'        => Arr::get($modelData, 'ext_order_id', ''),
-            'customer_sales_channel_id' => $magentoUser->customer_sales_channel_id,
-            'date' => $modelData['created_at'],
-            'delivery_address' => $this->digestMagentoAddress($shippingRawAddress),
-            'platform_order_id'         => Arr::get($modelData, 'entity_id'),
-            'data' => [
-                'magento_order' => $modelData
-            ]
-        ]);
+        if (count($orderedProducts)) {
+            $order = StoreOrder::make()->action($customerClient, [
+                'platform_id' => $magentoUser->platform_id,
+                'customer_reference'        => Arr::get($modelData, 'ext_order_id', ''),
+                'customer_sales_channel_id' => $magentoUser->customer_sales_channel_id,
+                'date' => $modelData['created_at'],
+                'delivery_address' => $this->digestMagentoAddress($shippingRawAddress),
+                'platform_order_id'         => Arr::get($modelData, 'entity_id'),
+                'data' => [
+                    'magento_order' => $modelData
+                ]
+            ]);
 
-        foreach ($orderedProducts as $orderedProduct) {
-            $transactionData = [
-                'quantity_ordered'        => $orderedProduct['quantity_ordered'],
-                'platform_transaction_id' => $orderedProduct['platform_transaction_id'],
+            foreach ($orderedProducts as $orderedProduct) {
+                $transactionData = [
+                    'quantity_ordered'        => $orderedProduct['quantity_ordered'],
+                    'platform_transaction_id' => $orderedProduct['platform_transaction_id'],
 
-            ];
+                ];
 
-            StoreTransaction::make()->action(
-                order: $order,
-                historicAsset: $orderedProduct['historicAsset'],
-                modelData: $transactionData
-            );
+                StoreTransaction::make()->action(
+                    order: $order,
+                    historicAsset: $orderedProduct['historicAsset'],
+                    modelData: $transactionData
+                );
+            }
+
+            try {
+                PayOrderAsync::run($order);
+            } catch (Exception $e) {
+                Sentry::captureException($e);
+            }
+            SubmitOrder::run($order);
         }
-
-        try {
-            PayOrderAsync::run($order);
-        } catch (Exception $e) {
-            Sentry::captureException($e);
-        }
-        SubmitOrder::run($order);
-
     }
 
     /**
@@ -90,7 +91,7 @@ class StoreOrderFromMagento extends OrgAction
     {
         $reference = Arr::get($magentoOrderData, 'customer_id');
         if (!$reference || $reference == 0 || $reference == '0') {
-            $reference = Arr::get($magentoOrderData, 'billing_address.email');
+            $reference = $magentoUser->customer_sales_channel_id .'|' .Arr::get($magentoOrderData, 'billing_address.email');
             if (!$reference) {
                 $reference = Arr::get($magentoOrderData, 'billing_address.telephone');
             }

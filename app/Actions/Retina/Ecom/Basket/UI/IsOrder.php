@@ -107,6 +107,7 @@ trait IsOrder
             foreach ($deliveryNotes as $deliveryNote) {
                 $deliveryNotesData[] = [
                     'id'        => $deliveryNote->id,
+                    'slug'        => $deliveryNote->slug,
                     'reference' => $deliveryNote->reference,
                     'state'     => $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
                     'shipments' => $deliveryNote?->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null
