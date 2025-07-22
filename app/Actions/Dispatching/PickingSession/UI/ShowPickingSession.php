@@ -42,25 +42,27 @@ class ShowPickingSession extends OrgAction
 
     public function htmlResponse(PickingSession $pickingSession, ActionRequest $request): Response
     {
-
         $title = __('Picking Session');
-        ;
+
 
         $actions = null;
-        $props = [
-            'title'         => $title,
-            'breadcrumbs'   => null,
-            'navigation'    => null,
-            'pageHead'      => [
+        $props   = [
+            'title'       => $title,
+            'breadcrumbs' => null,
+            'navigation'  => null,
+            'pageHead'    => [
                 'title'      => $pickingSession->reference,
                 'model'      => $title,
                 'icon'       => [
                     'icon'  => 'fal fa-truck',
                     'title' => $title
                 ],
+                'afterTitle' => [
+                    'label' => $pickingSession->state->labels()[$pickingSession->state->value],
+                ],
                 'actions'    => $actions,
             ],
-            'tabs'          => [
+            'tabs'        => [
                 'current'    => $this->tab,
                 'navigation' => PickingSessionTabsEnum::navigation()
             ],
@@ -81,18 +83,15 @@ class ShowPickingSession extends OrgAction
 
     public function getItems(PickingSession $pickingSession): array
     {
-
         if ($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
             return [
                 PickingSessionTabsEnum::ITEMS->value => $this->tab == PickingSessionTabsEnum::ITEMS->value ?
-                    fn () => PickingSessionDeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession))
-                    : Inertia::lazy(fn () => PickingSessionDeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession))),
+                    fn() => PickingSessionDeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession))
+                    : Inertia::lazy(fn() => PickingSessionDeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession))),
 
             ];
         }
 
         return [];
-
-
     }
 }
