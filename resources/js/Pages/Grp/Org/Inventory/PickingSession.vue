@@ -47,12 +47,13 @@ const component = computed(() => {
 </script>
 
 <template>
+
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead"></PageHeading>
-  <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
   <div v-if="timelines" class="mt-4 sm:mt-1 border-b border-gray-200 pb-2">
     <Timeline :options="timelines" :state="data.data.state" :slidesPerView="6" :format-time="'MMMM d yyyy, HH:mm'" />
   </div>
+  <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
   <div class="pb-12">
     <component :is="component" :data="props[currentTab]" :tab="currentTab" />
   </div>
