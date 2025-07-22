@@ -28,8 +28,6 @@ class SynchroniseDropshippingPortfoliosToShopify extends RetinaAction
     public function handle(ShopifyUser $shopifyUser, array $attributes): void
     {
 
-
-
         $portfolios = $shopifyUser
             ->customerSalesChannel
             ->portfolios()

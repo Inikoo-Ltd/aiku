@@ -13,19 +13,15 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class SynchroniseDropshippingPortfolioToShopify extends RetinaAction
 {
-    use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
 
     /**
      * @throws \Exception
      */
-    public function handle(ShopifyUser $shopifyUser, Portfolio $portfolio): void
+    public function handle(Portfolio $portfolio): void
     {
         StoreShopifyProduct::run($portfolio);
     }
@@ -37,6 +33,6 @@ class SynchroniseDropshippingPortfolioToShopify extends RetinaAction
     {
         $this->initialisation($request);
 
-        $this->handle($shopifyUser, $portfolio);
+        $this->handle($portfolio);
     }
 }
