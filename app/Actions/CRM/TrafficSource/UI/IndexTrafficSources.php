@@ -44,7 +44,7 @@ class IndexTrafficSources extends OrgAction
             $queryBuilder->where('traffic_sources.organisation_id', $parent->id);
             $queryBuilder->leftJoin('organisations', 'organisations.id', '=', 'traffic_sources.organisation_id');
             $queryBuilder->leftJoin('currencies', 'currencies.id', '=', 'organisations.currency_id');
-        } elseif ($parent instanceof Shop) {
+        } else{
             $queryBuilder->where('traffic_sources.shop_id', $parent->id);
             $queryBuilder->leftJoin('shops', 'shops.id', '=', 'traffic_sources.shop_id');
             $queryBuilder->leftJoin('currencies', 'currencies.id', '=', 'shops.currency_id');
@@ -144,20 +144,7 @@ class IndexTrafficSources extends OrgAction
         }
 
         $action = [];
-        // if ($this->canEdit) {
-        //     $action = [
-        //         [
-        //             'type'    => 'button',
-        //             'style'   => 'create',
-        //             'tooltip' => __('New Traffic Source'),
-        //             'label'   => __('New Traffic Source'),
-        //             'route'   => [
-        //                 'name'       => 'grp.org.shops.show.crm.traffic-sources.create',
-        //                 'parameters' => $request->route()->originalParameters()
-        //             ]
-        //         ],
-        //     ];
-        // }
+
 
         return Inertia::render(
             'Org/Shop/CRM/TrafficSources',

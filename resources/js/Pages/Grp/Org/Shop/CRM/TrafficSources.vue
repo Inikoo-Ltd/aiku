@@ -7,7 +7,6 @@
   <script setup lang="ts">
   import { Head } from '@inertiajs/vue3'
   import PageHeading from '@/Components/Headings/PageHeading.vue'
-  import TableCollections from "@/Components/Tables/Grp/Org/Catalogue/TableCollections.vue"
   import TableTrafficSources from '@/Components/Tables/Grp/Org/CRM/TableTrafficSources.vue'
   import { capitalize } from "@/Composables/capitalize"
   import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
