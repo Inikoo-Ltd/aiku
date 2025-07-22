@@ -10,7 +10,6 @@
 namespace App\Http\Resources\CRM;
 
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Models\CRM\Poll;
 
 /**
  * @property mixed $number_customers

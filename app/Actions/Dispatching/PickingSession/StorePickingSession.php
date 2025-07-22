@@ -13,7 +13,6 @@ use App\Actions\Dispatching\DeliveryNote\StartHandlingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
-use App\Models\Fulfilment\PalletDelivery;
 use App\Models\Inventory\PickingSession;
 use App\Models\Inventory\Warehouse;
 use Illuminate\Http\RedirectResponse;

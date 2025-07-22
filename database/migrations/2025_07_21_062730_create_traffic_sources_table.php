@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Tue, 22 Jul 2025 13:54:48 British Summer Time, Trnava, Slovakia
@@ -10,9 +11,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
-
+return new class () extends Migration {
     use HasGroupOrganisationRelationship;
 
     public function up(): void

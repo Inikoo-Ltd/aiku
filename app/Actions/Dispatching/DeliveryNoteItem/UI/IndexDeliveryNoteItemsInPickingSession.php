@@ -11,7 +11,6 @@ namespace App\Actions\Dispatching\DeliveryNoteItem\UI;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\InertiaTable\InertiaTable;
-use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\PickingSession;
 use App\Services\QueryBuilder;

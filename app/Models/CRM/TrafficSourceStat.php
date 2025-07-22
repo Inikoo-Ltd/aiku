@@ -13,9 +13,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $traffic_source_id
  * @property int $number_customers
  * @property int $number_customer_purchases
- * @property float $total_customer_revenue
+ * @property string $total_customer_revenue
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\CRM\TrafficSource $trafficSource
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TrafficSourceStat newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TrafficSourceStat newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TrafficSourceStat query()
+ * @mixin \Eloquent
  */
 class TrafficSourceStat extends Model
 {

@@ -15,7 +15,6 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsController;
 use App\Actions\Helpers\Country\UI\GetAddressData;
-use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Http\Resources\CRM\PollsResource;
 use App\Models\CRM\Poll;
 use Google\Service\Oauth2;

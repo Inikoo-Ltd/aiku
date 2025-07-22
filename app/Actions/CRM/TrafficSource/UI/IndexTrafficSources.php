@@ -18,7 +18,6 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 use App\Models\CRM\TrafficSource;
-use Illuminate\Support\Facades\DB;
 
 class IndexTrafficSources extends OrgAction
 {

@@ -2,7 +2,6 @@
 
 namespace App\Models\CRM;
 
-use App\Models\Catalogue\Shop;
 use App\Models\Web\Website;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -10,7 +9,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -18,14 +16,20 @@ use Spatie\Sluggable\SlugOptions;
  * App\Models\TrafficSource\TrafficSource
  *
  * @property int $id
+ * @property int $group_id
+ * @property int $organisation_id
+ * @property int $shop_id
+ * @property string $type
  * @property string $slug
  * @property string $name
- * @property int $shop_id
+ * @property array<array-key, mixed> $settings
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @method static Builder|TrafficSource newModelQuery()
- * @method static Builder|TrafficSource newQuery()
- * @method static Builder|TrafficSource query()
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\Customer> $customers
+ * @property-read \App\Models\CRM\TrafficSourceStat|null $stats
+ * @method static Builder<static>|TrafficSource newModelQuery()
+ * @method static Builder<static>|TrafficSource newQuery()
+ * @method static Builder<static>|TrafficSource query()
  * @mixin Eloquent
  */
 class TrafficSource extends Model

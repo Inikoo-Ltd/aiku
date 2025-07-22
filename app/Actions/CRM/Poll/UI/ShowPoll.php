@@ -98,8 +98,8 @@ class ShowPoll extends OrgAction
 
         if ($poll->type != PollTypeEnum::OPEN_QUESTION) {
             $renderData[PollsTabsEnum::POLL_OPTIONS->value] = $this->tab == PollsTabsEnum::POLL_OPTIONS->value ?
-                fn() => PollOptionsResource::collection(IndexPollOptions::run($poll, PollsTabsEnum::POLL_OPTIONS->value))
-                : Inertia::lazy(fn() => PollOptionsResource::collection(IndexPollOptions::run($poll, PollsTabsEnum::POLL_OPTIONS->value)));
+                fn () => PollOptionsResource::collection(IndexPollOptions::run($poll, PollsTabsEnum::POLL_OPTIONS->value))
+                : Inertia::lazy(fn () => PollOptionsResource::collection(IndexPollOptions::run($poll, PollsTabsEnum::POLL_OPTIONS->value)));
         }
 
         $response = Inertia::render('CRM/Poll', $renderData);

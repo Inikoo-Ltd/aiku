@@ -11,7 +11,6 @@
 namespace App\Actions\CRM\Customer\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
-use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Models\CRM\Customer;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;

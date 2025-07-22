@@ -56,7 +56,7 @@ class UpdatePoll extends OrgAction
                         ]
                     );
                     $oldOptions = $oldOptions->reject(
-                        fn(PollOption $pollOption) => $pollOption->id == $optionExist->id
+                        fn (PollOption $pollOption) => $pollOption->id == $optionExist->id
                     );
                 } else {
                     StorePollOption::make()->action(

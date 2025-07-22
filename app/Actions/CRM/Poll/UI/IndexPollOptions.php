@@ -2,26 +2,15 @@
 
 namespace App\Actions\CRM\Poll\UI;
 
-use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Traits\WithCustomersSubNavigation;
-use App\Enums\CRM\Poll\PollTypeEnum;
-use App\Http\Resources\CRM\PollOptionsResource;
-use App\Http\Resources\CRM\PollsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Catalogue\Shop;
 use App\Models\CRM\Poll;
 use App\Models\CRM\PollOption;
-use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Support\Facades\DB;
-use Inertia\Inertia;
-use Inertia\Response;
-use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexPollOptions extends OrgAction
