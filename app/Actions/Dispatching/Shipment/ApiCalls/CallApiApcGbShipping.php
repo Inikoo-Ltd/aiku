@@ -124,7 +124,7 @@ class CallApiApcGbShipping extends OrgAction
                     'PhoneNumber' => Str::limit(Arr::get($parentResource, 'to_phone'), 15, ''),
                     'Email'       => Arr::get($parentResource, 'to_email'),
                 ],
-                'Instructions' => Str::limit(preg_replace("/[^A-Za-z0-9 \-]/", '', strip_tags($parent->customer_notes), 60)),
+                'Instructions' => Str::limit(preg_replace("/[^A-Za-z0-9 \-]/", '', strip_tags($parent?->shipping_notes), 60)),
 
             ],
             'ShipmentDetails' => [
@@ -199,6 +199,7 @@ class CallApiApcGbShipping extends OrgAction
         $dataFlat = array_filter(Arr::flatten($apiResponse));
         if (in_array('DutyItems', $dataFlat)) {
             $errorData['address'][] = 'Address must be in United Kingdom';
+            $errorData['message'][] = 'Address must be in United Kingdom';
         }
 
         if ($statusCode == 200 && Arr::get($apiResponse, 'Orders.Messages.Code') == 'SUCCESS') {
@@ -221,13 +222,17 @@ class CallApiApcGbShipping extends OrgAction
                 }
                 foreach ($errFields as $error) {
                     if ($error['FieldName'] == 'Delivery PostalCode') {
-                        $errorData['others'][] = 'Invalid postcode,';
+                        $errorData['address'][] = 'Invalid address';
+                        $errorData['message'][] = 'Invalid address';
                     } else {
                         $fieldParts = explode(' ', $error['FieldName']);
 
                         if (count($fieldParts) > 1) {
                             if (Str::contains($fieldParts[0], 'Delivery')) {
                                 $errorData['address'][] = Str::headline($fieldParts[1]) . ' ' . $error['ErrorMessage'] . ',';
+                                if (!isset($errorData['message'])) {
+                                    $errorData['message'][] = Str::headline($fieldParts[1]) . ' ' . $error['ErrorMessage'] . ',';
+                                }
                                 continue;
                             }
                             $errorData[strtolower($fieldParts[0])] .= Str::headline($fieldParts[1]) . ' ' . $error['ErrorMessage'] . ',';
@@ -235,6 +240,9 @@ class CallApiApcGbShipping extends OrgAction
                         }
 
                         $errorData['others'][] = Str::headline($error['FieldName']) . ' ' . $error['ErrorMessage'] . ',';
+                        if (!isset($errorData['message'])) {
+                            $errorData['message'][] = Str::headline($error['FieldName']) . ' ' . $error['ErrorMessage'] . ',';
+                        }
                     }
                 }
 
