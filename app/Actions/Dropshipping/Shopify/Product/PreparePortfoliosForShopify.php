@@ -11,6 +11,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Sentry;
 
@@ -36,16 +37,29 @@ class PreparePortfoliosForShopify
                 $hasVariantAtLocation   = $this->hasVariantAtLocation($shopifyUser, $portfolio->platform_product_id);
             }
 
-            if ($fixLevel >= 1 && $hasValidProductId && !$hasVariantAtLocation) {
 
-                StoreShopifyProductVariant::run($portfolio);
-                $hasVariantAtLocation = $this->hasVariantAtLocation($shopifyUser, $portfolio->platform_product_id);
+            $numberMatches = '';
+            $matchesLabels = [];
+
+            if (!$hasValidProductId || !$productExistsInShopify || !$hasVariantAtLocation) {
+                $result = FindShopifyProductVariant::run($customerSalesChannel, trim($portfolio->sku.' '.$portfolio->barcode.' '.$product->code));
+
+                $matches       = Arr::get($result, 'products', []);
+                $numberMatches = count($matches);
+                $matchesLabels = Arr::pluck($matches, 'title');
             }
 
-            if(!$hasValidProductId || !$productExistsInShopify || !$hasVariantAtLocation) {
-               $result= FindShopifyProductVariant::run($customerSalesChannel, "dsjbb-01");
-               print "==========\n";
-               print_r($result);
+
+            if ($fixLevel >= 1) {
+                if ($hasValidProductId && !$hasVariantAtLocation) {
+                    StoreShopifyProductVariant::run($portfolio);
+                    $hasVariantAtLocation = $this->hasVariantAtLocation($shopifyUser, $portfolio->platform_product_id);
+                }
+
+                if (!$hasValidProductId || !$productExistsInShopify) {
+                    StoreShopifyProduct::run($portfolio);
+                    $hasVariantAtLocation = $this->hasVariantAtLocation($shopifyUser, $portfolio->platform_product_id);
+                }
             }
 
 
@@ -57,6 +71,8 @@ class PreparePortfoliosForShopify
                 'product_exists_in_shopify' => $productExistsInShopify,
                 'has_variant_at_location'   => $hasVariantAtLocation,
                 'fix_level'                 => $fixLevel,
+                'number_matches'            => $numberMatches,
+                'matches_labels'            => $matchesLabels,
             ];
         }
 
@@ -212,7 +228,7 @@ class PreparePortfoliosForShopify
                 $variant = $edge['node'];
                 if (isset($variant['inventoryItem']['inventoryLevel'])
                     && isset($variant['inventoryItem']['inventoryLevel']['id'])
-                    && $variant['inventoryItem']['inventoryLevel']['id'] ) {
+                    && $variant['inventoryItem']['inventoryLevel']['id']) {
                     return true;
                 }
             }
@@ -224,7 +240,6 @@ class PreparePortfoliosForShopify
             return false;
         }
     }
-
 
 
     public function getCommandSignature(): string
@@ -257,21 +272,23 @@ class PreparePortfoliosForShopify
 
         foreach ($portfoliosSynchronisation as $portfolioId => $portfolio) {
             $tableData[] = [
-                'counter'      => $counter,
-                'id'           => $portfolioId,
-                'product_code' => $portfolio['product_code'] ?? 'N/A',
-                'sku'          => $portfolio['sku'] ?? 'N/A',
-                'barcode'      => $portfolio['barcode'] ?? 'N/A',
-                'valid_id'     => $portfolio['has_platform_product_id'] ? 'Yes' : 'No',
-                'exists'       => $portfolio['product_exists_in_shopify'] ? 'Yes' : 'No',
-                'at_location'  => $portfolio['has_variant_at_location'] ? 'Yes' : 'No'
+                'counter'        => $counter,
+                'id'             => $portfolioId,
+                'product_code'   => $portfolio['product_code'] ?? 'N/A',
+                'sku'            => $portfolio['sku'] ?? 'N/A',
+                'barcode'        => $portfolio['barcode'] ?? 'N/A',
+                'valid_id'       => $portfolio['has_platform_product_id'] ? 'Yes' : 'No',
+                'exists'         => $portfolio['product_exists_in_shopify'] ? 'Yes' : 'No',
+                'at_location'    => $portfolio['has_variant_at_location'] ? 'Yes' : 'No',
+                'number_matches' => $portfolio['number_matches'] ?? 0,
+                'matches_labels' => implode(', ', $portfolio['matches_labels'] ?? [])
             ];
             $counter++;
         }
 
         // Output results in table format
         $this->table(
-            ['#', 'ID', 'Product Code', 'SKU', 'Barcode', 'Valid Product ID', 'Exists in Shopify', 'At Location'],
+            ['#', 'ID', 'Product Code', 'SKU', 'Barcode', 'Valid Product ID', 'Exists in Shopify', 'At Location', 'Matches', 'Match Labels'],
             $tableData,
             $command
         );

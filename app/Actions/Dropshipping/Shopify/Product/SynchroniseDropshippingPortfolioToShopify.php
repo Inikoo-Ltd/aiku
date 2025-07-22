@@ -27,7 +27,7 @@ class SynchroniseDropshippingPortfolioToShopify extends RetinaAction
      */
     public function handle(ShopifyUser $shopifyUser, Portfolio $portfolio): void
     {
-        CreateShopifyProduct::run($shopifyUser, $portfolio);
+        StoreShopifyProduct::run($shopifyUser, $portfolio);
     }
 
     /**

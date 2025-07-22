@@ -21,7 +21,7 @@ use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 use Sentry;
 
-class CreateShopifyProduct extends RetinaAction
+class StoreShopifyProduct extends RetinaAction
 {
     use WithActionUpdate;
 
