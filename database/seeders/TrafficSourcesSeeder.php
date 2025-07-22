@@ -54,6 +54,18 @@ class TrafficSourcesSeeder extends Seeder
                     'traffic_source_id' => $trafficSource->id,
                 ]);
             }
+            $shop->crmStats()->updateOrCreate(
+                ['shop_id' => $shop->id],
+                ['number_traffic_sources' => TrafficSource::where('shop_id', $shop->id)->count()]
+            );
+            $shop->organisation->crmStats()->updateOrCreate(
+                ['organisation_id' => $shop->organisation_id],
+                ['number_traffic_sources' => TrafficSource::where('organisation_id', $shop->organisation_id)->count()]
+            );
+            $shop->group->crmStats()->updateOrCreate(
+                ['group_id' => $shop->group_id],
+                ['number_traffic_sources' => TrafficSource::where('group_id', $shop->group_id)->count()]
+            );
         }
     }
 }
