@@ -11,7 +11,7 @@ namespace App\Actions\Ordering\Order;
 use App\Actions\Comms\Email\SendNewOrderEmailToCustomer;
 use App\Actions\Comms\Email\SendNewOrderEmailToSubscribers;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
-use App\Actions\CRM\Customer\Hydrators\CustomerHydrateOptionReferralSource;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateTrafficSource;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBasket;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\OrgAction;
@@ -85,7 +85,8 @@ class SubmitOrder extends OrgAction
         if ($customerSalesChannel) {
             CustomerSalesChannelsHydrateOrders::dispatch($customerSalesChannel);
         }
-        CustomerHydrateOptionReferralSource::dispatch($order->customer);
+
+        CustomerHydrateTrafficSource::dispatch($order->customer);
 
         return $order;
     }

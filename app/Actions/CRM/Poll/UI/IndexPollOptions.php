@@ -57,17 +57,6 @@ class IndexPollOptions extends OrgAction
 
         $groupByFields = ['poll_options.id', 'poll_option_stats.id'];
 
-        if ($parent->type === PollTypeEnum::OPTION_REFERRAL_SOURCES) {
-            $queryBuilder->leftJoin('shops', 'shops.id', '=', 'poll_options.shop_id');
-            $queryBuilder->leftJoin('currencies', 'currencies.id', '=', 'shops.currency_id');
-            $selectFields = array_merge($selectFields, [
-                'poll_option_stats.number_customer_purchases',
-                'poll_option_stats.total_customer_revenue',
-                'currencies.code as currency_code',
-            ]);
-            $groupByFields[] = 'currencies.code';
-        }
-
         $queryBuilder
             ->defaultSort('poll_options.id')
             ->select($selectFields)
@@ -102,13 +91,6 @@ class IndexPollOptions extends OrgAction
             $table
                 ->column(key: 'label', label: __('Label'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_customers', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true);
-
-            // Add purchase and revenue columns if parent type is referral sources
-            if ($parent->type == PollTypeEnum::OPTION_REFERRAL_SOURCES) {
-                $table
-                    ->column(key: 'number_customer_purchases', label: __('Purchases'), canBeHidden: false, sortable: true)
-                    ->column(key: 'total_customer_revenue', label: __('Total Revenue'), canBeHidden: false, sortable: true, type: 'currency');
-            }
         };
     }
 }

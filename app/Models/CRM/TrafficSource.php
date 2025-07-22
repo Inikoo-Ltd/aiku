@@ -2,6 +2,8 @@
 
 namespace App\Models\CRM;
 
+use App\Models\Catalogue\Shop;
+use App\Models\Web\Website;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -33,6 +35,14 @@ class TrafficSource extends Model
 
     protected $guarded = [];
 
+    protected $casts = [
+        'settings' => 'array',
+    ];
+
+    protected $attributes = [
+        'settings' => '{}',
+    ];
+
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()
@@ -54,5 +64,28 @@ class TrafficSource extends Model
     public function customers(): HasMany
     {
         return $this->hasMany(Customer::class, 'traffic_source_id');
+    }
+
+    public static function detectFromWebsite(Website $website, string $url): ?self
+    {
+        $url = strtolower($url);
+
+        // Get all traffic sources and check their patterns
+        $trafficSources = self::where('group_id', $website->group_id)
+            ->where('shop_id', $website->shop_id)
+            ->where('organisation_id', $website->organisation_id)
+            ->get();
+
+        foreach ($trafficSources as $trafficSource) {
+            $patterns = $trafficSource->settings['url_patterns'] ?? [];
+
+            foreach ($patterns as $pattern) {
+                if (str_contains($url, strtolower($pattern))) {
+                    return $trafficSource;
+                }
+            }
+        }
+
+        return null;
     }
 }

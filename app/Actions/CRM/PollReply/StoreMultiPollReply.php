@@ -10,13 +10,11 @@
 
 namespace App\Actions\CRM\PollReply;
 
-use App\Actions\CRM\Poll\Hydrate\PollOptionHydrateCustomers;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Models\Catalogue\Shop;
-use App\Models\CRM\PollOption;
 use App\Models\CRM\PollReply;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -49,7 +47,6 @@ class StoreMultiPollReply extends OrgAction
             } else {
                 $replyData['value'] = null;
                 $replyData['poll_option_id'] = (int) $answer;
-                PollOptionHydrateCustomers::dispatch(PollOption::find($replyData['poll_option_id']));
             }
 
             $pollRepliesData[] = $replyData;

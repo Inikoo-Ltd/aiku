@@ -12,7 +12,9 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCrmStats;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomerInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRegistrationIntervals;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateTrafficSource;
 use App\Actions\CRM\Customer\Search\CustomerRecordSearch;
+use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceHydrateCustomers;
 use App\Actions\Fulfilment\FulfilmentCustomer\StoreFulfilmentCustomerFromCustomer;
 use App\Actions\Helpers\Address\ParseCountryID;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
@@ -166,6 +168,9 @@ class StoreCustomer extends OrgAction
         GroupHydrateRegistrationIntervals::dispatch($customer->group, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
 
         CustomerRecordSearch::dispatch($customer);
+        if ($customer?->trafficSource) {
+            TrafficSourceHydrateCustomers::dispatch($customer->trafficSource);
+        }
 
 
         return $customer;
@@ -230,7 +235,7 @@ class StoreCustomer extends OrgAction
             ],
             'identity_document_number' => ['sometimes', 'nullable', 'string'],
             'contact_website'          => ['sometimes', 'nullable', 'string', 'max:255'],
-            'contact_address'          => ['sometimes','required', new ValidAddress()],
+            'contact_address'          => ['sometimes', 'required', new ValidAddress()],
             'delivery_address'         => ['sometimes', 'required', new ValidAddress()],
 
 
@@ -241,6 +246,7 @@ class StoreCustomer extends OrgAction
             'internal_notes'           => ['sometimes', 'nullable', 'string'],
             'warehouse_internal_notes' => ['sometimes', 'nullable', 'string'],
             'warehouse_public_notes'   => ['sometimes', 'nullable', 'string'],
+            'traffic_source_id'       => ['sometimes', 'nullable', 'exists:traffic_sources,id'],
 
             'email_subscriptions'                                    => ['sometimes', 'array'],
             'email_subscriptions.is_subscribed_to_newsletter'        => ['sometimes', 'boolean'],
@@ -254,11 +260,11 @@ class StoreCustomer extends OrgAction
 
 
             'password' =>
-                [
-                    'sometimes',
-                    'required',
-                    app()->isLocal() || app()->environment('testing') ? Password::min(3) : Password::min(8)
-                ],
+            [
+                'sometimes',
+                'required',
+                app()->isLocal() || app()->environment('testing') ? Password::min(3) : Password::min(8)
+            ],
 
         ];
 
@@ -372,7 +378,7 @@ class StoreCustomer extends OrgAction
 
         $customer = $this->handle($shop, $this->validatedData);
 
-        echo "Customer $customer->reference created 🎉"."\n";
+        echo "Customer $customer->reference created 🎉" . "\n";
 
         return 0;
     }

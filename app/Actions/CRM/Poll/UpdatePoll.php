@@ -16,7 +16,6 @@ use App\Actions\CRM\PollOption\UpdatePollOption;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\CRM\Poll\PollOptionReferralSourcesEnum;
 use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Models\CRM\Poll;
 use App\Models\CRM\PollOption;
@@ -76,27 +75,6 @@ class UpdatePoll extends OrgAction
                         true
                     );
                 }
-            }
-        } else if ($poll->type == PollTypeEnum::OPTION_REFERRAL_SOURCES) {
-            $oldOptions = $poll->pollOptions->whereIn('value', PollOptionReferralSourcesEnum::values());
-
-            if (!empty($oldOptions)) {
-                foreach ($oldOptions as $oldOption) {
-                    DeletePollOptions::run(
-                        $oldOption,
-                        true
-                    );
-                }
-            }
-
-            foreach (PollOptionReferralSourcesEnum::cases() as $option) {
-                StorePollOption::make()->action(
-                    $poll,
-                    [
-                        'value' => $option->value,
-                        'label' => $option->label(),
-                    ]
-                );
             }
         } else {
             $oldOptions = $poll->pollOptions;

@@ -11,7 +11,6 @@ namespace App\Actions\Retina\SysAdmin;
 use App\Actions\CRM\Customer\RegisterCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\RegisterFulfilmentCustomer;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Enums\CRM\Poll\PollOptionReferralSourcesEnum;
 use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Models\CRM\Poll;
 use App\Models\CRM\PollOption;
@@ -26,9 +25,9 @@ trait WithRetinaRegistration
 {
     public function handle(array $modelData): void
     {
-        $newPollReplies = $this->get('poll_replies');
-        if ($newPollReplies) {
-            $modelData['poll_replies'] = $newPollReplies;
+        $trafficSourceId = $this->get('traffic_source_id');
+        if ($trafficSourceId) {
+            $modelData['traffic_source_id'] = $trafficSourceId;
         }
 
         if ($this->shop->type == ShopTypeEnum::FULFILMENT) {
@@ -46,6 +45,13 @@ trait WithRetinaRegistration
 
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
+        // already set from middleware CaptureTrafficSource
+        $trafficSourceId = $request->session()->get('traffic_source_id');
+        if ($trafficSourceId) {
+            $this->set('traffic_source_id', $trafficSourceId);
+            $request->session()->forget('traffic_source_id');
+        }
+
         $pollReplies = $request->input('poll_replies', []);
 
         if (count($pollReplies) === 0) {
@@ -112,30 +118,6 @@ trait WithRetinaRegistration
                 );
             }
         }
-
-        // already set from middleware CaptureReferralSource
-        $pollReferalAuto = $request->session()->get('referral_source');
-
-        if ($pollReferalAuto) {
-            $autoPoll = Poll::where('shop_id', $this->shop->id)
-                ->where('type', PollTypeEnum::OPTION_REFERRAL_SOURCES)
-                ->first();
-
-            if ($autoPoll) {
-                $pollOption = PollOption::where('shop_id', $this->shop->id)
-                    ->where('value', $pollReferalAuto->value)->first() ?? null;
-                if ($pollOption) {
-                    $pollReply = [
-                        'id'     => $autoPoll->id,
-                        'type'   => PollTypeEnum::OPTION_REFERRAL_SOURCES->value,
-                        'answer' => $pollOption->id,
-                    ];
-                    $pollReplies[] = $pollReply;
-                }
-            }
-            $request->session()->forget('referral_source');
-        }
-        $this->set('poll_replies', $pollReplies);
     }
 
     public function rules(): array

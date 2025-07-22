@@ -15,14 +15,12 @@ enum PollTypeEnum: string
     use EnumHelperTrait;
 
     case OPEN_QUESTION     = 'open_question';
-    case OPTION_REFERRAL_SOURCES = 'option_referral_sources';
     case OPTION            = 'option';
 
     public function label(): string
     {
         return match ($this) {
             self::OPEN_QUESTION => __('Open Question'),
-            self::OPTION_REFERRAL_SOURCES => __('Referral Sources'),
             self::OPTION        => __('Multiple Choice'),
         };
     }
@@ -34,11 +32,6 @@ enum PollTypeEnum: string
                 'tooltip' => __('Open Question'),
                 'icon'    => 'fal fa-question-circle',
                 'class'   => 'text-blue-500'
-            ],
-            self::OPTION_REFERRAL_SOURCES->value => [
-                'tooltip' => __('Referral Sources'),
-                'icon'    => 'fal fa-share-alt',
-                'class'   => 'text-yellow-500'
             ],
             self::OPTION->value => [
                 'tooltip' => __('Option'),

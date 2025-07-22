@@ -16,7 +16,7 @@ use App\Models\CRM\Customer;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class CustomerHydrateOptionReferralSource implements ShouldBeUnique
+class CustomerHydrateTrafficSource implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
@@ -29,15 +29,9 @@ class CustomerHydrateOptionReferralSource implements ShouldBeUnique
     public function handle(Customer $customer): void
     {
 
-        $referralSourceReply = $customer->pollReplies()
-            ->whereHas('poll', function ($query) {
-                $query->where('type', PollTypeEnum::OPTION_REFERRAL_SOURCES);
-            })
-            ->first();
+        $trafficSource = $customer->trafficSource;
 
-        $pollOption = $referralSourceReply?->pollOption;
-
-        if (!$pollOption) {
+        if (!$trafficSource) {
             return;
         }
 
@@ -49,6 +43,6 @@ class CustomerHydrateOptionReferralSource implements ShouldBeUnique
             ->where('state', '!=', 'creating')
             ->sum('total_amount');
 
-        $pollOption->stats()->update($stats);
+        $trafficSource->stats()->update($stats);
     }
 }

@@ -14,10 +14,8 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Enums\CRM\Customer\CustomerTradeStateEnum;
-use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Models\CRM\Customer;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use App\Models\CRM\PollOption;
 
@@ -82,23 +80,6 @@ class PollOptionHydrateCustomers implements ShouldBeUnique
                 }
             )
         );
-
-        if ($pollOption->poll->type == PollTypeEnum::OPTION_REFERRAL_SOURCES) {
-            $customerIds = $pollReplies->pluck('customer_id')->unique();
-
-            $stats['number_customer_purchases'] = DB::table('orders')
-                ->whereIn('customer_id', $customerIds)
-                ->where('state', '!=', 'creating')
-                ->select(DB::raw('COUNT(DISTINCT id) as count'))
-                ->first()->count ?? 0;
-
-            $stats['total_customer_revenue'] = DB::table('orders')
-                ->whereIn('customer_id', $customerIds)
-                ->where('state', '!=', 'creating')
-                ->select(DB::raw('SUM(total_amount) as total'))
-                ->first()->total ?? 0;
-        }
-
 
         $pollOption->stats()->update($stats);
     }

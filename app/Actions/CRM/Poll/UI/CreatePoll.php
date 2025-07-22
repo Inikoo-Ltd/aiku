@@ -13,7 +13,6 @@ namespace App\Actions\CRM\Poll\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Traits\WithCustomersSubNavigation;
-use App\Enums\CRM\Poll\PollOptionReferralSourcesEnum;
 use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -31,13 +30,7 @@ class CreatePoll extends OrgAction
      */
     public function handle(ActionRequest $request): \Inertia\Response
     {
-        $poll_option_referral_sources = array_map(function ($enum) {
-            return [
-                'label' => $enum->label(),
-                'value' => $enum->value
-            ];
-        }, PollOptionReferralSourcesEnum::cases());
-        
+
         return Inertia::render(
             'CreateModel',
             [
@@ -83,7 +76,6 @@ class CreatePoll extends OrgAction
                                     'value'    => [
                                         'type'         => PollTypeEnum::OPTION->value,
                                         'poll_options' => [],
-                                        'poll_option_referral_sources' => $poll_option_referral_sources,
                                     ]
                                 ],
                                 'label'                    => [

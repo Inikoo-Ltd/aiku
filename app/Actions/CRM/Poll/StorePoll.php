@@ -13,7 +13,6 @@ use App\Actions\CRM\Poll\Hydrate\PollHydrateCustomers;
 use App\Actions\CRM\PollOption\StorePollOption;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
-use App\Enums\CRM\Poll\PollOptionReferralSourcesEnum;
 use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Poll;
@@ -40,13 +39,6 @@ class StorePoll extends OrgAction
         data_forget($modelData, 'type');
         data_set($modelData, 'type', $type);
 
-        if ($type == PollTypeEnum::OPTION_REFERRAL_SOURCES->value) {
-            $modelData['in_registration'] = true;
-            $modelData['in_registration_required'] = true;
-            $modelData['in_iris'] = true;
-            $modelData['in_iris_required'] = true;
-        }
-
         /** @var \App\Models\CRM\Poll $poll */
         $poll = $shop->polls()->create($modelData);
         $poll->stats()->create([
@@ -60,16 +52,6 @@ class StorePoll extends OrgAction
                     [
                         'value' => $shop->id . $poll->id . $index,
                         'label' => $option['label'],
-                    ]
-                );
-            }
-        } else if ($poll->type == PollTypeEnum::OPTION_REFERRAL_SOURCES) {
-            foreach (PollOptionReferralSourcesEnum::cases() as $option) {
-                StorePollOption::make()->action(
-                    $poll,
-                    [
-                        'value' => $option->value,
-                        'label' => $option->label(),
                     ]
                 );
             }
@@ -155,12 +137,6 @@ class StorePoll extends OrgAction
     public function afterValidator(Validator $validator): void
     {
         $type = $this->get('type.type');
-
-        if ($type == PollTypeEnum::OPTION_REFERRAL_SOURCES->value) {
-            if (Poll::where('shop_id', $this->shop->id)->where('type', PollTypeEnum::OPTION_REFERRAL_SOURCES)->exists()) {
-                $validator->errors()->add('type.type', 'A poll of type "Option Referral Sources" already exists for this shop.');
-            }
-        }
     }
 
     public function htmlResponse(Poll $poll): RedirectResponse

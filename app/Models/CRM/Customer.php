@@ -256,7 +256,7 @@ class Customer extends Model implements HasMedia, Auditable
     {
         return SlugOptions::create()
             ->generateSlugsFrom(function () {
-                return $this->reference.'-'.$this->shop->slug;
+                return $this->reference . '-' . $this->shop->slug;
             })
             ->saveSlugsTo('slug')
             ->slugsShouldBeNoLongerThan(128)
@@ -489,5 +489,10 @@ class Customer extends Model implements HasMedia, Auditable
     public function exclusiveProducts(): HasMany
     {
         return $this->hasMany(Product::class, 'exclusive_for_customer_id');
+    }
+
+    public function trafficSource(): BelongsTo
+    {
+        return $this->belongsTo(TrafficSource::class, 'traffic_source_id');
     }
 }

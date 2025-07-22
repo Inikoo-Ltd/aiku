@@ -32,6 +32,7 @@ const props = defineProps<{
         id: number
         label: string
         type: string
+        type_value: string
         in_registration: boolean
         in_registration_required: boolean
         created_at: string
@@ -43,7 +44,6 @@ const props = defineProps<{
 
 
 }>();
-
 
 const stats = [
     { id: 1, name: trans("Created at"), value: useFormatTime(props.data?.created_at) },
@@ -108,17 +108,7 @@ const component = computed(() => {
 
         <div class="mt-2">
             <Select
-                v-if="data.type === 'option'"
-                xv-model="form.poll_replies[idx].answer"
-                :modelValue="'ewewqewqeq'"
-                xupdate:model-value="(e) => form.clearErrors(`poll_replies.${idx}`)"
-                :options="data.options"
-                optionLabel="label"
-                optionValue="id"
-                :placeholder="`Please Choose One`"
-                class="w-full" />
-            <Select
-                v-else-if="data.type === 'option_referral_sources'"
+                v-if="data.type_value === 'option'"
                 xv-model="form.poll_replies[idx].answer"
                 :modelValue="'ewewqewqeq'"
                 xupdate:model-value="(e) => form.clearErrors(`poll_replies.${idx}`)"

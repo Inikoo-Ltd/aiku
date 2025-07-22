@@ -9,11 +9,12 @@
 
 namespace App\Http\Middleware;
 
-use App\Enums\CRM\Poll\PollOptionReferralSourcesEnum;
+use App\Models\CRM\TrafficSource;
+use App\Models\Web\Website;
 use Closure;
 use Illuminate\Http\Request;
 
-class CaptureReferralSource
+class CaptureTrafficSource
 {
     public function handle(Request $request, Closure $next)
     {
@@ -32,18 +33,21 @@ class CaptureReferralSource
         if (auth()->check()) {
             return $next($request);
         }
+        $website = $request->get('website');
 
-        // Check both referer and current full URL
-        $referer = $request->headers->get('referer', '');
-        $fullUrl = $request->fullUrl();
+        if ($website instanceof Website) {
+            // Check both referer and current full URL
+            $referer = $request->headers->get('referer', '');
+            $fullUrl = $request->fullUrl();
 
-        // Use your detection logic
-        $source = PollOptionReferralSourcesEnum::detectFromUrl($referer)
-            ?? PollOptionReferralSourcesEnum::detectFromUrl($fullUrl);
+            // Use your detection logic
+            $trafficSource = TrafficSource::detectFromWebsite($website, $referer)
+                ?? TrafficSource::detectFromWebsite($website, $fullUrl);
 
-        // Store in session if detected
-        if ($source) {
-            session(['referral_source' => $source]);
+            // Store in session if detected
+            if ($trafficSource) {
+                session(['traffic_source_id' => $trafficSource->id]);
+            }
         }
 
         return $next($request);

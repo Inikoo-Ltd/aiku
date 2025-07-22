@@ -13,7 +13,6 @@ namespace App\Actions\CRM\Poll\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Traits\WithCustomersSubNavigation;
-use App\Enums\CRM\Poll\PollOptionReferralSourcesEnum;
 use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Http\Resources\CRM\PollOptionsResource;
 use App\Models\Catalogue\Shop;
@@ -47,17 +46,10 @@ class EditPoll extends OrgAction
     public function htmlResponse(Poll $poll, ActionRequest $request): Response
     {
         $optionsPool = [];
-        $options     = $poll->pollOptions->whereNotIn('value', PollOptionReferralSourcesEnum::values());
+        $options     = $poll->pollOptions;
         if ($options->isNotEmpty()) {
             $optionsPool = PollOptionsResource::collection($options)->toArray($request);
         }
-
-        $poll_option_referral_sources = array_map(function ($enum) {
-            return [
-                'label' => $enum->label(),
-                'value' => $enum->value
-            ];
-        }, PollOptionReferralSourcesEnum::cases());
 
         return Inertia::render(
             'EditModel',
@@ -111,7 +103,6 @@ class EditPoll extends OrgAction
                                     'value'        => [
                                         'type'         => $poll->type->value,
                                         'poll_options' => $optionsPool,
-                                        'poll_option_referral_sources' => $poll_option_referral_sources,
                                     ]
                                 ],
                                 'in_registration'           => [
