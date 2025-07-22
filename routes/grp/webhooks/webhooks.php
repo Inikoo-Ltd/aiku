@@ -7,6 +7,8 @@
  */
 
 use App\Actions\Comms\Notifications\GetSnsNotification;
+use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackFetchStock;
+use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackFulfillmentOrderNotification;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Webhooks\CatchFulfilmentOrderFromShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\CustomerDataRedactWebhookShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\CustomerDataRequestWebhookShopify;
@@ -22,8 +24,8 @@ Route::name('webhooks.')->group(function () {
 });
 
 Route::prefix('shopify/{shopifyUser:id}')->name('webhooks.shopify.')->group(function () {
-    Route::post('fulfillment_order_notification', CatchFulfilmentOrderFromShopify::class)->name('fulfillment_order_notification');
-    Route::post('fetch_stock', CatchFulfilmentOrderFromShopify::class)->name('fetch_stock');
+    Route::post('fulfillment_order_notification', CallbackFulfillmentOrderNotification::class)->name('fulfillment_order_notification');
+    Route::post('fetch_stock', CallbackFetchStock::class)->name('fetch_stock');
 
 
 
