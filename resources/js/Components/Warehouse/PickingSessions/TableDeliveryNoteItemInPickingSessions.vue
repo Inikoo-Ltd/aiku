@@ -277,7 +277,7 @@ const findLocation = (locationsList: { location_code: string }[], selectedHehe: 
         </template>
         
         <!-- Column: actions -->
-        <template #cell(action)="{ item: itemValue, proxyItem }">
+        <template #cell(handing_actions)="{ item: itemValue, proxyItem }">
             <div v-if="itemValue.quantity_to_pick > 0">
                 <div v-if="findLocation(itemValue.locations, proxyItem.hehe)"
                     class="rounded p-1 flex flex-col justify-between gap-x-6 items-center even:bg-black/5">
