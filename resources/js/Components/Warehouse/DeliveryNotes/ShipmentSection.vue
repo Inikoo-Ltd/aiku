@@ -41,6 +41,9 @@ const props = defineProps<{
         fetch_route: routeType
         delete_route: routeType
     }
+    address: {
+        
+    }
 }>()
 
 // Shipment deletion
