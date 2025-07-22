@@ -17,15 +17,17 @@ enum PickingSessionStateEnum: string
 
 
     case IN_PROCESS = 'in_process';
-    case HISTORIC = 'historic';
-    case ACTIVE = 'active';
+    case HANDLING = 'handling'; // picking and packing
+    case HANDLING_BLOCKED = 'handling_blocked';
+    case PICKING_FINISHED = 'picking_finished';
 
     public static function labels(): array
     {
         return [
-            'in_process' => __('In Process'),
-            'historic'     => __('Historic'),
-            'active'   => __('Active'),
+            'in_process'       => __('In Process'),
+            'handling'         => __('Handling'),
+            'handling_blocked' => __('Handling Blocked'),
+            'picking_finished' => __('Picking Finished'),
         ];
     }
 }

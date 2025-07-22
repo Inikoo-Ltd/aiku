@@ -50,6 +50,8 @@ class StorePickingSession extends OrgAction
                 )
             );
 
+            data_set($modelData, 'state', PickingSessionStateEnum::IN_PROCESS->value);
+
             data_set($modelData, 'group_id', $warehouse->group_id);
             data_set($modelData, 'organisation_id', $warehouse->organisation_id);
             data_set($modelData, 'user_id', request()->user()->id);
