@@ -51,7 +51,7 @@ const component = computed(() => {
   <PageHeading :data="pageHead"></PageHeading>
   <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
   <div v-if="timelines" class="mt-4 sm:mt-1 border-b border-gray-200 pb-2">
-    <Timeline :options="timelines" :state="data.state" :slidesPerView="6" :format-time="'MMMM d yyyy, HH:mm'" />
+    <Timeline :options="timelines" :state="data.data.state" :slidesPerView="6" :format-time="'MMMM d yyyy, HH:mm'" />
   </div>
   <div class="pb-12">
     <component :is="component" :data="props[currentTab]" :tab="currentTab" />
