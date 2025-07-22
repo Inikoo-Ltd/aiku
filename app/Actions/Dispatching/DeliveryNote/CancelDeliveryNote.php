@@ -44,7 +44,6 @@ class CancelDeliveryNote extends OrgAction
                         'not_picked_note' => "Delivery Note #{$deliveryNote->reference} cancelled. Item will be returned.",
                         'quantity' => $item->quantity_required,
                     ],
-                    true
                 );
             }
         }

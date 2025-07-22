@@ -157,7 +157,7 @@ class GenerateInvoiceFromOrder extends OrgAction
 
         $pickings = [];
         foreach ($transaction->deliveryNoteItems as $deliveryNoteItem) {
-            if ($deliveryNoteItem->quantity_ordered == 0) {
+            if ($deliveryNoteItem->quantity_required == 0) {
                 $pickings[] = 1;
             }
 
