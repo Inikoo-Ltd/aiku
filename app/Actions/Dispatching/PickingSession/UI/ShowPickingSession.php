@@ -43,6 +43,20 @@ class ShowPickingSession extends OrgAction
     public function htmlResponse(PickingSession $pickingSession, ActionRequest $request): Response
     {
         $actions = null;
+        $actions[] = [
+               'type'    => 'button',
+               'style'   => 'save',
+               'tooltip' => __('start picking'),
+               'label'   => __('Start Picking'),
+               'key'     => 'action',
+               'route'   => [
+                   'method'     => 'patch',
+                   'name'       => 'grp.models.picking_session.start_picking',
+                   'parameters' => [
+                       'pickingSession' => $pickingSession->id
+                   ]
+               ]
+           ];
         // dd(IndexDeliveryNoteItemsInPickingSession::run($pickingSession, PickingSessionTabsEnum::ITEMS->value));
         // dd(DeliveryNoteItemsResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession)));
         $props = [
