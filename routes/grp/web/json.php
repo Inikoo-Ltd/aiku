@@ -143,6 +143,7 @@ Route::get('parent/collection/{collection}/departments', GetDepartmentsInCollect
 Route::get('parent/collection/{collection}/sub-departments', GetSubDepartmentsInCollection::class)->name('collection.parent.sub_departments.index');
 
 Route::get('/shops/{shop}/webpages', [GetWebpagesInCollection::class, 'inShop'])->name('webpages.index');
+Route::get('/shops/{shop}/webpages/active', [GetWebpagesInCollection::class, 'inShopActive'])->name('active_webpages.index');
 Route::get('/product/{product:id}/org-stocks', GetOrgStocksInProduct::class)->name('product.org_stocks.index');
 
 Route::get('/{organisation}/payment-service-providers', GetOrgPaymentServiceProviders::class)->name('org_payment_service_providers.index');
