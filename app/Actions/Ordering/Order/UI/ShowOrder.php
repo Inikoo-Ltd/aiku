@@ -268,7 +268,8 @@ class ShowOrder extends OrgAction
                     'actions'  => $actions,
                     'platform' => $platform ? [
                         'icon'  => $platform->imageSources(24, 24),
-                        'title' => $platform->name,
+                        'type' => $platform->type,
+                        'title' => __('Platform :platform', ['platform' => $platform->name]),
                     ] : null,
                 ],
                 'tabs'        => [
