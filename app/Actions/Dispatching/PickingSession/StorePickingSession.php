@@ -9,6 +9,7 @@
 
 namespace App\Actions\Dispatching\PickingSession;
 
+use App\Actions\Dispatching\DeliveryNote\StartHandlingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
@@ -42,7 +43,6 @@ class StorePickingSession extends OrgAction
             data_set($modelData, 'organisation_id', $warehouse->organisation_id);
             data_set($modelData, 'reference', $reference);
             data_set($modelData, 'user_id', request()->user()->id);
-            data_set($modelData, 'start_at', now());
 
             $pickingSession = $warehouse->pickingSessions()->create($modelData);
 
@@ -56,6 +56,7 @@ class StorePickingSession extends OrgAction
             $deliveryNotes = $pickingSession->deliveryNotes;
 
             foreach ($deliveryNotes as $deliveryNote) {
+                StartHandlingDeliveryNote::make()->action($deliveryNote, request()->user());
                 foreach ($deliveryNote->deliveryNoteItems as $item) {
                     UpdateDeliveryNoteItem::make()->action($item, [
                         'picking_session_id' => $pickingSession->id
