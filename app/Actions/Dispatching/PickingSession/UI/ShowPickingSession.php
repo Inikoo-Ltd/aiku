@@ -42,25 +42,42 @@ class ShowPickingSession extends OrgAction
 
     public function htmlResponse(PickingSession $pickingSession, ActionRequest $request): Response
     {
-
         $title = __('Picking Session');
-        ;
 
-        $actions = null;
+
+        $actions   = null;
+        $actions[] = [
+            'type'    => 'button',
+            'style'   => 'save',
+            'tooltip' => __('start picking'),
+            'label'   => __('Start Picking'),
+            'key'     => 'action',
+            'route'   => [
+                'method'     => 'patch',
+                'name'       => 'grp.models.picking_session.start_picking',
+                'parameters' => [
+                    'pickingSession' => $pickingSession->id
+                ]
+            ]
+        ];
+
         $props = [
-            'title'         => $title,
-            'breadcrumbs'   => null,
-            'navigation'    => null,
-            'pageHead'      => [
+            'title'       => $title,
+            'breadcrumbs' => null,
+            'navigation'  => null,
+            'pageHead'    => [
                 'title'      => $pickingSession->reference,
                 'model'      => $title,
                 'icon'       => [
                     'icon'  => 'fal fa-truck',
                     'title' => $title
                 ],
+                'afterTitle' => [
+                    'label' => $pickingSession->state->labels()[$pickingSession->state->value],
+                ],
                 'actions'    => $actions,
             ],
-            'tabs'          => [
+            'tabs'        => [
                 'current'    => $this->tab,
                 'navigation' => PickingSessionTabsEnum::navigation()
             ],
@@ -81,18 +98,15 @@ class ShowPickingSession extends OrgAction
 
     public function getItems(PickingSession $pickingSession): array
     {
-
         if ($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
             return [
                 PickingSessionTabsEnum::ITEMS->value => $this->tab == PickingSessionTabsEnum::ITEMS->value ?
-                    fn () => PickingSessionDeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession))
-                    : Inertia::lazy(fn () => PickingSessionDeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession))),
+                    fn() => PickingSessionDeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession))
+                    : Inertia::lazy(fn() => PickingSessionDeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession))),
 
             ];
         }
 
         return [];
-
-
     }
 }
