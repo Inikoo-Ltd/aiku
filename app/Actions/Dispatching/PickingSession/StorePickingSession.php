@@ -10,6 +10,7 @@
 namespace App\Actions\Dispatching\PickingSession;
 
 use App\Actions\Dispatching\DeliveryNote\StartHandlingDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToInQueue;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\OrgAction;
@@ -70,7 +71,7 @@ class StorePickingSession extends OrgAction
             $numberDeliveryNotes=0;
             foreach ($deliveryNotes as $deliveryNote) {
                 $numberDeliveryNotes++;
-                StartHandlingDeliveryNote::make()->action($deliveryNote, request()->user());
+                UpdateDeliveryNoteStateToInQueue::make()->action($deliveryNote, request()->user());
 
                 foreach ($deliveryNote->deliveryNoteItems as $item) {
                     $numberItems++;

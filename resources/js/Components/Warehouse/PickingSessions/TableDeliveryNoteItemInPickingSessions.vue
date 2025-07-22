@@ -163,7 +163,15 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
 <template>
     <Table :resource="data" class="mt-5" rowAlignTop>
         <!-- Column: state -->
-     
+        <template #cell(state)="{ item }">
+            <Icon :data="item.state_icon" />
+        </template>
+
+       <!--  <template #cell(delivery_note_reference)="{ item }">
+            <Link :href="orgStockRoute(deliveryNoteItem)" class="primaryLink">
+                {{ deliveryNoteItem.org_stock_code }}
+            </Link>
+        </template> -->
 
          <template #cell(org_stock_code)="{ item: deliveryNoteItem }">
             <Link :href="orgStockRoute(deliveryNoteItem)" class="primaryLink">

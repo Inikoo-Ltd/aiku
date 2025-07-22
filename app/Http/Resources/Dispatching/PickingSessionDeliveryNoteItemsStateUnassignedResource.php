@@ -32,6 +32,7 @@ class PickingSessionDeliveryNoteItemsStateUnassignedResource extends JsonResourc
     {
         $requiredFactionalData = divideWithRemainder(findSmallestFactors($this->quantity_required));
 
+
         return [
             'id'                           => $this->id,
             'state'                        => $this->state,
