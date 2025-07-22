@@ -12,12 +12,12 @@ import {
     faChartLine, faDraftingCompass, faRoad, faSlidersH, faUsersClass, faClock, faSeedling,
     faBroadcastTower,
     faSkull,
-    faRocket, 
+    faRocket,
     faExternalLink
 } from "@fal"
 
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import { computed, ref } from "vue"
+import { computed, ref, provide} from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import ModelDetails from "@/Components/ModelDetails.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
@@ -31,6 +31,12 @@ import WebsiteAnalytics from "@/Pages/Grp/Org/Web/WebsiteAnalytics.vue"
 import TableRedirects from "@/Components/Tables/Grp/Org/Web/TableRedirects.vue"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 import { routeType } from "@/types/route"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import Modal from "@/Components/Utils/Modal.vue"
+import PureInput from "@/Components/Pure/PureInput.vue"
+import { useForm } from '@inertiajs/vue3'
+import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
+import { trans } from "laravel-vue-i18n"
 
 library.add(
     faChartLine,
@@ -66,7 +72,8 @@ const props = defineProps<{
     route_storefront: routeType
 }>()
 
-console.log(props)
+/* provide('layout', {})
+const layout = {} */
 let currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
 
@@ -86,18 +93,79 @@ const component = computed(() => {
 
 })
 
+const openModal = ref(false)
+
+const form = useForm({
+    from_url: '',
+    to_url: ''
+})
+
+const submitForm = () => {
+    form.post(route('redirects.store'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            openModal.value = false
+            form.reset()
+        }
+    })
+}
+
+
 </script>
 
 
 <template>
-    
+
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead" />
+    <PageHeading :data="pageHead">
+        <template #other v-if="currentTab == 'redirects'">
+            <Button type="create" label="redirect" @click="openModal = true" />
+        </template>
+    </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component
-        :is="component"
-        :data="props[currentTab]"
-        :tab="currentTab"
-        :route_storefront
-    />
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :route_storefront />
+
+    <Modal :isOpen="openModal" width="w-1/4">
+        <slot name="modal" :closeModal="() => openModal = false">
+            <div class="space-y-2">
+                <!-- Modal Title -->
+                <h2 class="text-xl font-semibold text-gray-800 pb-2 border-b">Create Redirect</h2>
+
+                <!-- Form -->
+                <form @submit.prevent="submitForm" class="space-y-3">
+                    <!-- From URL -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 py-2">From URL</label>
+                        <PureInput v-model="form.from_url" placeholder="e.g. /old-page"
+                            :class="{ 'border-red-500': form.errors.from_url }" />
+                        <p v-if="form.errors.from_url" class="text-sm text-red-600 mt-1">
+                            {{ form.errors.from_url }}
+                        </p>
+                    </div>
+
+                    <!-- To URL -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 py-2">To URL</label>
+                        <PureMultiselectInfiniteScroll v-model="form.to_url" :fetchRoute="{
+                            name: 'grp.org.shops.show.web.webpages.index', parameters: {
+                                organisation: route().params['organisation'],
+                                shop: route().params['shop'],
+                                website: route().params['website'],
+                            }
+                        }" :placeholder="trans('Select Redirect')" valueProp="id" labelProp="url"  />
+                        <p v-if="form.errors.to_url" class="text-sm text-red-600 mt-1">
+                            {{ form.errors.to_url }}
+                        </p>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex justify-end space-x-2 pt-2">
+                        <Button label="Cancel" @click="() => openModal = false" type="white" />
+                        <Button type="save" label="create Redirect" :disabled="form.processing" />
+                    </div>
+                </form>
+            </div>
+        </slot>
+    </Modal>
+
 </template>
