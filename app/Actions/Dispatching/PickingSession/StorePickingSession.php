@@ -82,7 +82,7 @@ class StorePickingSession extends OrgAction
             }
 
             $pickingSession->updateQuietly([
-                'number_picking_session_items' => $numberItems,
+                'number_items' => $numberItems,
                 'number_delivery_notes' => $numberDeliveryNotes,
             ]);
 
