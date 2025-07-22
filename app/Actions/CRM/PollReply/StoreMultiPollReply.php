@@ -15,6 +15,7 @@ use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\CRM\Poll;
 use App\Models\CRM\PollReply;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -29,11 +30,18 @@ class StoreMultiPollReply extends OrgAction
     {
         $pollReplies = Arr::pull($modelData, 'poll_replies');
 
-        $pollRepliesData = [];
 
         foreach ($pollReplies as $pollReply) {
+
             $pollId = Arr::pull($pollReply, 'id');
-            $type = PollTypeEnum::tryFrom(Arr::pull($pollReply, 'type'));
+            if(Arr::pull($pollReply, 'type')=='Open Question'){
+                $type=PollTypeEnum::OPEN_QUESTION;
+            }else{
+                $type=PollTypeEnum::OPTION;
+            }
+
+
+
             $answer = Arr::pull($pollReply, 'answer');
 
             $replyData = [
@@ -41,30 +49,41 @@ class StoreMultiPollReply extends OrgAction
                 'poll_id'     => $pollId,
             ];
 
+            $ok=false;
             if ($type == PollTypeEnum::OPEN_QUESTION) {
-                $replyData['value'] = (string) $answer;
+                $answer=(string)$answer ?? '';
+                if($answer!=''){
+                    $ok=true;
+                }
+                $replyData['value']          = $answer;
                 $replyData['poll_option_id'] = null;
             } else {
-                $replyData['value'] = null;
-                $replyData['poll_option_id'] = (int) $answer;
+                $answer=(int)$answer;
+                $replyData['value']          = null;
+                $replyData['poll_option_id'] = $answer;
+                if($answer){
+                    $ok=true;
+                }
             }
-
-            $pollRepliesData[] = $replyData;
+            if($ok) {
+                $poll = Poll::find($pollId);
+                if ($poll) {
+                    StorePollReply::make()->action($poll, $replyData);
+                }
+            }
         }
-
-        PollReply::insert($pollRepliesData);
     }
 
     public function rules(): array
     {
         return [
-            'customer_id' => [
+            'customer_id'  => [
                 'required',
                 Rule::exists('customers', 'id')->where(function ($query) {
                     $query->where('shop_id', $this->shop->id);
                 })
             ],
-            'poll_replies'            => ['required', 'array'],
+            'poll_replies' => ['required', 'array'],
         ];
     }
 
