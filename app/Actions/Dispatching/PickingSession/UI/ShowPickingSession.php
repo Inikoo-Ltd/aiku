@@ -40,6 +40,39 @@ class ShowPickingSession extends OrgAction
         return $this->handle($pickingSession);
     }
 
+    public function getTimeline(PickingSession $pickingSession): array
+    {
+        $timeline = [];
+
+        foreach (PickingSessionStateEnum::cases() as $case) {
+            $timestamp = $pickingSession->{$case->snake().'_at'}
+                ? $pickingSession->{$case->snake().'_at'}
+                : null;
+
+            $timestamp = $timestamp ?: null;
+
+            $timestamp = match ($case) {
+                PickingSessionStateEnum::HANDLING => $pickingSession->start_at,
+                default => $timestamp ?: null
+            };
+
+            $label = $case->labels()[$case->value];
+            $label .= ' ('.$pickingSession->user->contact_name.')';
+            
+
+
+            $timeline[$case->value] = [
+                'label'       => $label,
+                'tooltip'     => $case->labels()[$case->value],
+                'key'         => $case->value,
+                'format_time' => null,
+                'timestamp'   => $timestamp
+            ];
+        }
+
+        return $timeline;
+    }
+
     public function htmlResponse(PickingSession $pickingSession, ActionRequest $request): Response
     {
         $title = __('Picking Session');
@@ -77,6 +110,7 @@ class ShowPickingSession extends OrgAction
                 ],
                 'actions'    => $actions,
             ],
+            'timelines' => $this->getTimeline($pickingSession),
             'tabs'        => [
                 'current'    => $this->tab,
                 'navigation' => PickingSessionTabsEnum::navigation()
