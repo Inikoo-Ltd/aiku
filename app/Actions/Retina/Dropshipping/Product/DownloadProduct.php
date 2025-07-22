@@ -128,18 +128,4 @@ class DownloadProduct extends RetinaAction
 
         return $this->handle($product, $type);
     }
-
-    public function inCollection(Collection $collection, ActionRequest $request): BinaryFileResponse|Response
-    {
-        $type = $request->query('type', 'products_csv');
-
-        if (!in_array($type, ['products_csv', 'products_images'])) {
-            abort(404);
-        }
-
-
-        $this->initialisation($request);
-
-        return $this->handle($collection, $type);
-    }
 }
