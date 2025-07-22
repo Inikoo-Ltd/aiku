@@ -13,6 +13,8 @@ namespace App\Actions\Retina\Dropshipping\Product;
 use App\Actions\Catalogue\Asset\ExportProductsInProductCategory;
 use App\Actions\Catalogue\Asset\ExportProductsInShop;
 use App\Actions\RetinaAction;
+use App\Exports\Marketing\ProductsInProductCategoryExport;
+use App\Exports\Marketing\ProductsInShopExport;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -41,12 +43,12 @@ class DownloadProduct extends RetinaAction
         } else {
             $filename .= '.csv';
             if ($parent instanceof ProductCategory) {
-                return Excel::download(new ExportProductsInProductCategory($parent, ['type' => 'csv']), $filename, null, [
+                return Excel::download(new ProductsInProductCategoryExport($parent), $filename, null, [
                     'Content-Type' => 'text/csv',
                     'Cache-Control' => 'max-age=0',
                 ]);
             } else {
-                return Excel::download(new ExportProductsInShop($parent, ['type' => 'csv']), $filename, null, [
+                return Excel::download(new ProductsInShopExport($parent), $filename, null, [
                     'Content-Type' => 'text/csv',
                     'Cache-Control' => 'max-age=0',
                 ]);

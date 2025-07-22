@@ -30,7 +30,6 @@ class ExportProductsInProductCategory
     public function handle(ProductCategory $productCategory, array $modelData): BinaryFileResponse
     {
         $type = $modelData['type'];
-
         return $this->export(new ProductsInProductCategoryExport($productCategory), 'products', $type);
     }
 

@@ -43,7 +43,7 @@ class ProductsInProductCategoryExport implements FromQuery, WithMapping, ShouldA
         return [
             $row->id,
             $row->code,
-            $row->state,
+            $row->state->value,
             $row->name,
             $row->available_quantity,
             $row->gross_weight,
