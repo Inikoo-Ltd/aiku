@@ -33,5 +33,7 @@ export interface StatsBoxTS {
         icon: Icon
         route?: routeType
         tooltip: string
+        hide : boolean
+        logo_icon : Object
     }[]
 }
