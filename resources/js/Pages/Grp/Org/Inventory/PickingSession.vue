@@ -48,7 +48,7 @@ const component = computed(() => {
   <PageHeading :data="pageHead"></PageHeading>
   <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
   <div class="pb-12">
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" />
+    <component :is="component" :data="props[currentTab]" :tab="currentTab"  />
   </div>
 
 </template>
