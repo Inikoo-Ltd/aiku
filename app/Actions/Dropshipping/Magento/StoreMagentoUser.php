@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\Magento;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\OrgAction;
+use App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
@@ -67,19 +68,59 @@ class StoreMagentoUser extends OrgAction
             $accessToken = $magentoUser->getMagentoToken();
             $stores = $magentoUser->getStores();
 
+            $magentoUser->createSource([
+                'name' => 'AW Source',
+                'source_code' => 'aw-source',
+                'enabled' => true,
+                'country_id' => 'GB',
+                'postcode' => 'S9 1XT'
+            ]);
+
+            $stocks = Arr::get($magentoUser->getStocks(), 'items');
+            $existingStock = collect($stocks)->where('name', 'AW Connect Stock')->first();
+
+            if (! $existingStock) {
+                $stock = $magentoUser->createStock([
+                    'name' => 'AW Connect Stock',
+                    'extension_attributes' => [
+                        'sales_channels' => [
+                            [
+                                'type' => 'website',
+                                'code' => 'base'
+                            ]
+                        ]
+                    ]
+                ]);
+            } else {
+                $stock = [Arr::get($existingStock, 'stock_id')];
+            }
+
+            $magentoUser->assignSourceToStock([
+                [
+                    'stock_id' => Arr::get($stock, '0'),
+                    'source_code' => 'aw-source',
+                    'priority' => 1
+                ]
+            ]);
+
             $magentoUser->update([
                 'customer_sales_channel_id' => $customerSalesChannel->id,
                 'settings' => [
                     'credentials' => [
                         ...Arr::get($magentoUser->settings, 'credentials'),
                         'access_token' => $accessToken
-                    ]
+                    ],
+                    'stock_id' => Arr::get($stock, '0'),
+                    'source_code' => 'aw-source',
+                    'stores' => $stores
                 ],
                 'name' => Arr::get($stores, '0.name')
             ]);
 
             UpdateCustomerSalesChannel::run($customerSalesChannel, [
-                'state' => CustomerSalesChannelStateEnum::AUTHENTICATED
+                'name' => Arr::get($stores, '0.name'),
+                'state' => CustomerSalesChannelStateEnum::READY,
+                'connection_status' => CustomerSalesChannelConnectionStatusEnum::CONNECTED
             ]);
 
             return $magentoUser;

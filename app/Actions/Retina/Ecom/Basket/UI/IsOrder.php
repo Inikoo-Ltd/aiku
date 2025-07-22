@@ -25,7 +25,6 @@ trait IsOrder
 
     public function getOrderBoxStats(Order $order): array
     {
-
         $payAmount   = $order->total_amount - $order->payment_amount;
         $roundedDiff = round($payAmount, 2);
 
@@ -34,21 +33,21 @@ trait IsOrder
         $customerChannel = null;
         if ($order->customer_sales_channel_id) {
             $customerChannel = [
-                'slug'      => $order->customerSalesChannel->slug,
-                'status'    => $order->customer_sales_channel_id,
-                'platform'  => [
-                    'name' => $order->platform?->name,
+                'slug'     => $order->customerSalesChannel->slug,
+                'status'   => $order->customer_sales_channel_id,
+                'platform' => [
+                    'name'  => $order->platform?->name,
                     'image' => $this->getPlatformLogo($order->customerSalesChannel->platform->code)
                 ]
             ];
         }
 
         $invoiceData = null;
-        $invoice = $order->invoices->first();
+        $invoice     = $order->invoices->first();
 
         if ($invoice) {
             if (request()->routeIs('retina.*')) {
-                $routeShow = [
+                $routeShow     = [
                     'name'       => 'retina.dropshipping.invoices.show',
                     'parameters' => [
                         'invoice' => $invoice->slug,
@@ -59,15 +58,15 @@ trait IsOrder
                 $routeShow = [
                     'name'       => 'grp.org.accounting.invoices.show',
                     'parameters' => [
-                        'organisation'  => $order->organisation->slug,
-                        'invoice'       => $invoice->slug,
+                        'organisation' => $order->organisation->slug,
+                        'invoice'      => $invoice->slug,
                     ]
                 ];
 
                 $routeDownload = [
                     'name'       => 'grp.org.accounting.invoices.download',
                     'parameters' => [
-                        'organisation'  => $order->organisation->slug,
+                        'organisation' => $order->organisation->slug,
                         'invoice'      => $invoice->slug,
                     ]
                 ];
@@ -75,9 +74,9 @@ trait IsOrder
 
             $invoiceData = [
                 'reference' => $invoice->reference,
-                'routes' => [
+                'routes'    => [
                     'show'     => $routeShow,
-                    'download' => $routeDownload || null,
+                    'download' => $routeDownload,
                 ]
             ];
         }
@@ -91,67 +90,57 @@ trait IsOrder
                     'route' => [
                         'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show',
                         'parameters' => [
-                            'organisation'  => $order->organisation->slug,
-                            'shop'          => $order->shop->slug,
-                            'customer'      => $order->customer->slug,
+                            'organisation'         => $order->organisation->slug,
+                            'shop'                 => $order->shop->slug,
+                            'customer'             => $order->customer->slug,
                             'customerSalesChannel' => $order->customerSalesChannel->slug,
-                            'customerClient'  => $order->customerClient->ulid
+                            'customerClient'       => $order->customerClient->ulid
                         ]
                     ]
                 ]
             );
         }
-        $deliveryNote =  $order->deliveryNotes->first();
-        $shipments = $deliveryNote?->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null;
-        $deliveryNotes = $order->deliveryNotes;
+        $deliveryNotes     = $order->deliveryNotes;
         $deliveryNotesData = [];
 
         if ($deliveryNotes) {
             foreach ($deliveryNotes as $deliveryNote) {
-                $shipmentsData = [];
-
-                foreach ($deliveryNote->shipments as $shipment) {
-                    $shipmentsData[] = [
-                        'trackings' => $shipment->trackings,
-                        'tracking_urls' => $shipment->tracking_urls,
-                    ];
-                }
-
                 $deliveryNotesData[] = [
+                    'id'        => $deliveryNote->id,
+                    'slug'        => $deliveryNote->slug,
                     'reference' => $deliveryNote->reference,
                     'state'     => $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
-                    'shipments' => $shipmentsData,
+                    'shipments' => $deliveryNote?->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null
                 ];
             }
         }
+
         return [
-            'customer_client' => $customerClientData,
-            'customer' => array_merge(
+            'customer_client'  => $customerClientData,
+            'customer'         => array_merge(
                 CustomerResource::make($order->customer)->getArray(),
                 [
                     'addresses' => [
                         'delivery' => AddressResource::make($order->deliveryAddress ?? new Address()),
                         'billing'  => AddressResource::make($order->billingAddress ?? new Address())
                     ],
-                    'route' => [
+                    'route'     => [
                         'name'       => 'grp.org.shops.show.crm.customers.show',
                         'parameters' => [
-                            'organisation'  => $order->organisation->slug,
-                            'shop'          => $order->shop->slug,
-                            'customer'      => $order->customer->slug,
+                            'organisation' => $order->organisation->slug,
+                            'shop'         => $order->shop->slug,
+                            'customer'     => $order->customer->slug,
                         ]
                     ]
                 ]
             ),
-            // 'customer_client' => $order->customerClient ? CustomerClientResource::make($order->customerClient)->getArray() : [],
             'customer_channel' => $customerChannel,
-            'invoice'  => $invoiceData,
+            'invoice'          => $invoiceData,
             'order_properties' => [
                 'weight' => NaturalLanguage::make()->weight($order->estimated_weight),
-                'shipments' => $shipments,
             ],
-            'delivery_notes' => $deliveryNotesData,
-            'products' => [
+            'delivery_notes'   => $deliveryNotesData,
+            'products'         => [
                 'payment'          => [
                     'routes'       => [
                         'fetch_payment_accounts' => [
@@ -171,12 +160,12 @@ trait IsOrder
                     'total_amount' => (float)$order->total_amount,
                     'paid_amount'  => (float)$order->payment_amount,
                     'pay_amount'   => $roundedDiff,
-                    'pay_status' => $order->pay_status,
+                    'pay_status'   => $order->pay_status,
                 ],
                 'estimated_weight' => $estWeight,
             ],
 
-            'payments'  => PaymentsResource::collection($order->payments)->toArray(request()),
+            'payments' => PaymentsResource::collection($order->payments)->toArray(request()),
 
             'order_summary' => [
                 [
@@ -222,4 +211,6 @@ trait IsOrder
             ],
         ];
     }
+
+
 }

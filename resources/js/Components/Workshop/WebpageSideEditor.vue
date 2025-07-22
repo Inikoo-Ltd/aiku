@@ -250,8 +250,8 @@ defineExpose({
                       </div>
                     </div>
 
-                    <Collapse v-if="element?.web_block?.layout"
-                      :when="openedBlockSideEditor === index">
+                    <Collapse v-if="element?.web_block?.layout "
+                      :when="openedBlockSideEditor === index && getEditPermissions(element.web_block.layout.data)">
                       <div class="p-2 space-y-2">
                         <VisibleCheckmark v-model="element.visibility" @update:modelValue="sendBlockUpdate(element)" />
                         <SideEditor v-model="element.web_block.layout.data.fieldValue"

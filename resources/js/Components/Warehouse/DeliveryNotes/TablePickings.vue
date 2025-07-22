@@ -36,7 +36,7 @@ const props = defineProps<{
 function deliveryNoteRoute(deliveryNote: Order) {
     // console.log(route().current())
     switch (route().current()) {
-        case "grp.org.warehouses.show.dispatching.delivery-notes.show":
+        case "grp.org.warehouses.show.dispatching.delivery_notes.show":
             // return route(
             //     "grp.org.shops.show.discounts.campaigns.show",
             //     [route().params["organisation"], , route().params["shop"], route().params["customer"], deliveryNote.slug])
