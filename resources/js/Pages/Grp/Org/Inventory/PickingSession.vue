@@ -12,13 +12,17 @@ import { useTabChange } from "@/Composables/tab-change";
 import { ref, computed } from 'vue'
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import TableDeliveryNoteItemInPickingSessions from "@/Components/Warehouse/PickingSessions/TableDeliveryNoteItemInPickingSessions.vue";
+import Timeline from "@/Components/Utils/Timeline.vue";
 
 
 const props = defineProps<{
   data: object
   title: string
-  pageHead: PageHeadingTypes   
+  pageHead: PageHeadingTypes
   items: object
+  timelines: {
+    [key: string]: TSTimeline
+  }
   tabs: {
     current: string;
     navigation: object;
@@ -43,12 +47,13 @@ const component = computed(() => {
 </script>
 
 <template>
-
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead"></PageHeading>
   <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
-  <div class="pb-12">
-    <component :is="component" :data="props[currentTab]" :tab="currentTab"  />
+  <div v-if="timelines" class="mt-4 sm:mt-1 border-b border-gray-200 pb-2">
+    <Timeline :options="timelines" :state="data.state" :slidesPerView="6" :format-time="'MMMM d yyyy, HH:mm'" />
   </div>
-
+  <div class="pb-12">
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" />
+  </div>
 </template>
