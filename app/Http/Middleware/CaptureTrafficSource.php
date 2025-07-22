@@ -20,7 +20,7 @@ class CaptureTrafficSource
     {
         $routeName = $request->route() ? $request->route()->getName() : null;
 
-        // Allow only if route name starts with 'iris' or is one of the specified retina routes
+        // Allow only if the route name starts with 'iris' or is one of the specified retina routes
         $allowedRoutes = [
             'retina.register',
             'retina.register_standalone',

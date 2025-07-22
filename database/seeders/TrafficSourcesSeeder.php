@@ -12,25 +12,26 @@ namespace Database\Seeders;
 use App\Models\Catalogue\Shop;
 use Illuminate\Database\Seeder;
 use App\Models\CRM\TrafficSource;
+use Illuminate\Support\Str;
 
 class TrafficSourcesSeeder extends Seeder
 {
     public function run(): void
     {
         $data = [
-            'Organic Google' => ['google'],
-            'Google Ads' => ['gad_source', 'gclid'],
-            'Organic Bing' => ['bing'],
-            'Bing Ads' => ['msclkid'],
-            'Organic Facebook' => ['facebook'],
-            'Meta Ads' => ['fbclid'],
+            'Organic Google'    => ['google'],
+            'Google Ads'        => ['gad_source', 'gclid'],
+            'Organic Bing'      => ['bing'],
+            'Bing Ads'          => ['msclkid'],
+            'Organic Facebook'  => ['facebook'],
+            'Meta Ads'          => ['fbclid'],
             'Organic Instagram' => ['instagram'],
             'Organic Pinterest' => ['pin', 'pinterest'],
-            'Pinterest Ads' => ['pp=0', 'pp=1'],
-            'Organic TikTok' => ['tiktok'],
-            'TikTok Ads' => ['ttclid'],
-            'Organic LinkedIn' => ['linkedin'],
-            'LinkedIn Ads' => ['li_fat_id'],
+            'Pinterest Ads'     => ['pp=0', 'pp=1'],
+            'Organic TikTok'    => ['tiktok'],
+            'TikTok Ads'        => ['ttclid'],
+            'Organic LinkedIn'  => ['linkedin'],
+            'LinkedIn Ads'      => ['li_fat_id'],
         ];
 
         $shops = Shop::all();
@@ -39,10 +40,11 @@ class TrafficSourcesSeeder extends Seeder
             foreach ($data as $name => $urlPatterns) {
                 $trafficSource = TrafficSource::updateOrCreate(
                     [
-                        'name' => $name,
-                        'group_id' => $shop->group_id,
+                        'name'            => $name,
+                        'group_id'        => $shop->group_id,
                         'organisation_id' => $shop->organisation_id,
-                        'shop_id' => $shop->id,
+                        'shop_id'         => $shop->id,
+                        'type'            => Str::slug($name),
                     ],
                     [
                         'settings' => [
@@ -54,16 +56,13 @@ class TrafficSourcesSeeder extends Seeder
                     'traffic_source_id' => $trafficSource->id,
                 ]);
             }
-            $shop->crmStats()->updateOrCreate(
-                ['shop_id' => $shop->id],
+            $shop->crmStats()->update(
                 ['number_traffic_sources' => TrafficSource::where('shop_id', $shop->id)->count()]
             );
-            $shop->organisation->crmStats()->updateOrCreate(
-                ['organisation_id' => $shop->organisation_id],
+            $shop->organisation->crmStats()->update(
                 ['number_traffic_sources' => TrafficSource::where('organisation_id', $shop->organisation_id)->count()]
             );
-            $shop->group->crmStats()->updateOrCreate(
-                ['group_id' => $shop->group_id],
+            $shop->group->crmStats()->update(
                 ['number_traffic_sources' => TrafficSource::where('group_id', $shop->group_id)->count()]
             );
         }
