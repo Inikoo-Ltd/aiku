@@ -8,22 +8,47 @@ import { Head } from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import { capitalize } from "@/Composables/capitalize";
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { useTabChange } from "@/Composables/tab-change";
+import { ref, computed } from 'vue'
+import Tabs from "@/Components/Navigation/Tabs.vue";
+import TableDeliveryNoteItemInPickingSessions from "@/Components/Warehouse/PickingSessions/TableDeliveryNoteItemInPickingSessions.vue";
 
 
-defineProps<{
+const props = defineProps<{
   data: object
   title: string
   pageHead: PageHeadingTypes
+  items: object
+  tabs: {
+    current: string;
+    navigation: object;
+  }
 }>();
+
+console.log(props)
+
+let currentTab = ref(props.tabs.current);
+const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab);
+
+const component = computed(() => {
+
+  const components = {
+    items: TableDeliveryNoteItemInPickingSessions,
+  };
+  return components[currentTab.value];
+
+});
 
 
 </script>
 
 <template>
+
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead"></PageHeading>
-  <div>
-    to do....
+  <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
+  <div class="pb-12">
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" />
   </div>
-</template>
 
+</template>
