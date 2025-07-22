@@ -242,7 +242,7 @@ const xxxCopyAddress = ref({ ...props.address?.delivery })
 
             <ul v-if="shipments.length" class="list-none">
                 <li v-for="(shipment, shipmentIdx) in shipments" :key="shipmentIdx"
-                    class="hover:bg-gray-100 tabular-nums ">
+                    class="p-1 rounded hover:bg-gray-100 tabular-nums ">
                     <div class="flex justify-between gap-x-2">
                         <div class="">{{ shipment.name }}</div>
                         <div v-if="shipment.formatted_tracking_urls && shipment.formatted_tracking_urls.length > 0">
@@ -319,8 +319,8 @@ const xxxCopyAddress = ref({ ...props.address?.delivery })
                     type="dashed"
                     size="xs"
                 />
-                <div v-else class="italic text-gray-400 text-xs">
-                    No shipment yet. Waiting for warehouse team to add shipment..
+                <div v-else-if="!shipments.length" class="italic text-gray-400 text-xs">
+                    {{ trans("No shipment yet. Waiting for warehouse team to add shipment..") }}
                 </div>
             </div>
         </div>
@@ -408,7 +408,7 @@ const xxxCopyAddress = ref({ ...props.address?.delivery })
                     <!-- Field: Address -->
                     <div v-if="formTrackingNumber?.errors?.address" class="my-3 p-2 rounded bg-gray-100"
                         :class="formTrackingNumber?.errors?.address ? 'errorShake' : ''">
-                        <PureAddress v-model="xxxCopyAddress" :options="address.options" xfieldLabel />
+                        <PureAddress v-model="xxxCopyAddress" :options="address?.options" xfieldLabel />
                     </div>
 
                     <!-- Button: Save -->

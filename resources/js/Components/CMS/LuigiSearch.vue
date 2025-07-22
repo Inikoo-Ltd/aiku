@@ -114,8 +114,11 @@ const LBInitAutocompleteNew = async () => {
             Actions: [  // Action for Top Product 'Add To Basket'
                 {
                     forRow: function(row) {
-                        // console.log('row:', row)
-                        return layout.retina.type !== 'b2b' && row['data-autocomplete-id'] == 1 && row.type === 'item'  // Top product
+                        return (
+                            layout.retina.type !== 'b2b' &&
+                            row['data-autocomplete-id'] == 1 &&
+                            row.type === 'item'
+                        )
                     },
                     // iconUrl: 'https://cdn-icons-png.freepik.com/256/275/275790.png',
                     iconText: '➔',
@@ -188,7 +191,7 @@ const visitSearchPage = () => {
     </div>
 </template>
 
-<style>
+<style lang="scss">
 
 .luigi-ac-ribbon {
     /* Border top of the Autocomplete */
@@ -342,6 +345,10 @@ const visitSearchPage = () => {
 .luigi-ac-rest-main .luigi-ac-attr--formatted_price {
     display: block !important;
     color: var(--luigiColor1) !important;
+}
+
+.luigi-ac-heromobile-action-for-mobile  {
+    @apply md:!hidden;
 }
 
 /* Button: Shop Today */
