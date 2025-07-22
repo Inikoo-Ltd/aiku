@@ -32,6 +32,7 @@ class StoreNotPickPicking extends OrgAction
 
     private DeliveryNoteItem $deliveryNoteItem;
     protected User $user;
+    private bool $cancel;
 
     public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): Picking
     {
@@ -70,7 +71,7 @@ class StoreNotPickPicking extends OrgAction
      */
     public function prepareForValidation(ActionRequest $request): void
     {
-        if ($this->deliveryNoteItem->quantity_required == $this->deliveryNoteItem->quantity_picked || $this->deliveryNoteItem->is_handled) {
+        if ($this->deliveryNoteItem->quantity_required == $this->deliveryNoteItem->quantity_picked || $this->deliveryNoteItem->is_handled || !$this->cancel) {
             throw ValidationException::withMessages([
                 'messages' => __('This delivery note item has been fully picked')
             ]);
@@ -92,10 +93,12 @@ class StoreNotPickPicking extends OrgAction
         return $this->handle($deliveryNoteItem, $this->validatedData);
     }
 
-    public function action(DeliveryNoteItem $deliveryNoteItem, User $user, array $modelData): Picking
+    public function action(DeliveryNoteItem $deliveryNoteItem, User $user, array $modelData, bool $cancel = false): Picking
     {
+        $this->cancel = $cancel;
         $this->user             = $user;
         $this->deliveryNoteItem = $deliveryNoteItem;
+
         $this->initialisationFromShop($deliveryNoteItem->shop, $modelData);
 
         return $this->handle($deliveryNoteItem, $this->validatedData);
