@@ -9,7 +9,7 @@
 
 namespace App\Actions\Dispatching\PickingSession;
 
-use App\Actions\Dispatching\PickingSessionItem\StorePickingSessionItem;
+use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Models\Inventory\PickingSession;
@@ -50,41 +50,20 @@ class StorePickingSession extends OrgAction
 
             $pickingSession->refresh();
 
-            $mergedItems = $this->getMergedDeliveryNoteItems($pickingSession);
-            foreach ($mergedItems as $item) {
-                StorePickingSessionItem::dispatch($pickingSession, $item);
+            $deliveryNotes = $pickingSession->deliveryNotes;
+
+            foreach ($deliveryNotes as $deliveryNote) {
+                foreach ($deliveryNote->deliveryNoteItems as $item) {
+                    UpdateDeliveryNoteItem::make()->action($item, [
+                        'picking_session_id' => $pickingSession->id
+                    ]);
+                }
             }
+
             return $pickingSession;
         });
 
         return $pickingSession;
-    }
-
-    public function getMergedDeliveryNoteItems(PickingSession $pickingSession): array
-    {
-        $deliveryNotes = $pickingSession->deliveryNotes()->with('deliveryNoteItems')->get();
-
-        $mergedItems = [];
-
-        foreach ($deliveryNotes as $deliveryNote) {
-
-            foreach ($deliveryNote->deliveryNoteItems as $item) {
-                $orgStockId = $item->org_stock_id;
-
-                if (isset($mergedItems[$orgStockId])) {
-                    $mergedItems[$orgStockId]['quantity_required'] += $item->quantity_required;
-                    $mergedItems[$orgStockId]['delivery_note_item_ids'][] = $item->id;
-                } else {
-                    $mergedItems[$orgStockId] = [
-                        'org_stock_id' => $orgStockId,
-                        'quantity_required' => $item->quantity_required,
-                        'delivery_note_item_ids' => [$item->id]
-                    ];
-                }
-            }
-        }
-
-        return array_values($mergedItems);
     }
 
     public function rules(): array

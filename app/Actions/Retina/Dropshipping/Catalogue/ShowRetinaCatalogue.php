@@ -69,14 +69,7 @@ class ShowRetinaCatalogue extends RetinaAction
                         'value' => $shop->stats->number_current_departments,
 
 
-                        'metaRight' => [
-                            'tooltip' => __('Sub Departments'),
-                            'icon'    => [
-                                'icon'  => 'fal fa-folder-tree',
-                                'class' => ''
-                            ],
-                            'count'   => $shop->stats->number_current_sub_departments,
-                        ],
+
                         'metas'     => [
 
                             [

@@ -13,7 +13,7 @@ use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshipp
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
+use App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -44,8 +44,8 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
     public function htmlResponse(CustomerSalesChannel $customerSalesChannel): Response
     {
         $title = __('Channel Dashboard');
-        $step = match ($customerSalesChannel->state) {
-            CustomerSalesChannelStateEnum::CREATED => [
+        $step = match ($customerSalesChannel->connection_status) {
+            CustomerSalesChannelConnectionStatusEnum::PENDING, CustomerSalesChannelConnectionStatusEnum::DISCONNECTED => [
                 'label' => __('Great! You just complete first step.'),
                 'title' => __('Connect your store'),
                 'description' => __('Connect your store to Shopify and start selling with ease. Our platform is designed to help you manage your sales channels efficiently, so you can focus on growing your business.'),
@@ -61,40 +61,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                 ],
                 'icon' => 'fal fa-link',
             ],
-            CustomerSalesChannelStateEnum::AUTHENTICATED => [
-                'label' => __('Almost! Setup credit card to make you easier in the future.'),
-                'title' => __('Setup your credit card'),
-                'description' => __('To manage your payment methods. If you mind to do it later, you can skip this step.'),
-                'button' => [
-                    'label' => __('Setup credit card'),
-                    'route_target' => [
-                        'name' => 'retina.dropshipping.mit_saved_cards.create',
-                    ],
-                ],
-                'icon' => 'fal fa-credit-card',
-            ],
-            CustomerSalesChannelStateEnum::CARD_SAVED => [
-                'label' => __('Very very last! Add products to your store.'),
-                'title' => __('Add products to your store'),
-                'description' => __('Add products to your store to start selling. Select items from our catalogue or upload your own products to showcase in your sales channel.'),
-                'button' => [
-                    'label' => __('Add Products'),
-                    'route_target' => [
-                        'name' => 'retina.dropshipping.customer_sales_channels.portfolios.index',
-                        'parameters' => [
-                            'customerSalesChannel' => $customerSalesChannel->slug,
-                        ]
-                    ],
-                ],
-                'icon' => 'fal fa-cube',
-            ],
-            CustomerSalesChannelStateEnum::PORTFOLIO_ADDED,
-            CustomerSalesChannelStateEnum::READY,
-            CustomerSalesChannelStateEnum::NOT_READY => [
-                // Handle these states as needed
-            ],
-            CustomerSalesChannelStateEnum::WITH_PORTFOLIO => [
-            ],
+            default => []
         };
 
         $renderPage = $customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL
@@ -132,28 +99,18 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                 ]
 
             ],
-            'timeline' => $customerSalesChannel->state !== CustomerSalesChannelStateEnum::READY ? [
+            'timeline' => $customerSalesChannel->connection_status !== CustomerSalesChannelConnectionStatusEnum::CONNECTED ? [
                 'current_state' => $customerSalesChannel->state->value,
                 'options'   => [
-                    CustomerSalesChannelStateEnum::CREATED->value => [
-                        "label" => "Account Created",
-                        "tooltip" => "Create account to connect",
-                        "key" => CustomerSalesChannelStateEnum::CREATED->value
+                    CustomerSalesChannelConnectionStatusEnum::PENDING->value => [
+                        "label" => "Connection Pending",
+                        "tooltip" => "Reconnect your account to start using our services",
+                        "key" => CustomerSalesChannelConnectionStatusEnum::PENDING->value
                     ],
-                    CustomerSalesChannelStateEnum::AUTHENTICATED->value => [
-                        "label" => "Connected",
-                        "tooltip" => "Connect to platform to able receive orders",
-                        "key" => CustomerSalesChannelStateEnum::AUTHENTICATED->value
-                    ],
-                    CustomerSalesChannelStateEnum::CARD_SAVED->value => [
-                        "label" => "Setup card",
-                        "tooltip" => "Setup cards to make a payment",
-                        "key" => CustomerSalesChannelStateEnum::CARD_SAVED->value
-                    ],
-                    CustomerSalesChannelStateEnum::PORTFOLIO_ADDED->value => [
+                    CustomerSalesChannelConnectionStatusEnum::CONNECTED->value => [
                         "label" => "Add products",
                         "tooltip" => "Add products to your portfolio",
-                        "key" => CustomerSalesChannelStateEnum::PORTFOLIO_ADDED->value
+                        "key" => CustomerSalesChannelConnectionStatusEnum::CONNECTED->value
                     ]
                 ],
             ] : null,

@@ -26,7 +26,6 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import axios from "axios";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
-import deliveryNote from "@/Pages/Grp/Org/Dispatching/DeliveryNote.vue";
 import Modal from "@/Components/Utils/Modal.vue"
 import { RadioButton } from "primevue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
@@ -45,7 +44,7 @@ const locale = inject("locale", aikuLocaleStructure);
 function orgStockRoute(deliveryNoteItem: DeliverNoteItem) {
     // console.log(route().current())
     switch (route().current()) {
-        case "grp.org.warehouses.show.dispatching.delivery-notes.show":
+        case "grp.org.warehouses.show.dispatching.delivery_notes.show":
         // return route(
         //     "grp.org.shops.show.discounts.campaigns.show",
         //     [route().params["organisation"], , route().params["shop"], route().params["customer"], deliveryNote.slug])
@@ -93,7 +92,7 @@ const generateLocationRoute = (location: any) => {
         return "#";
     }
 
-    if (route().current() === "grp.org.warehouses.show.dispatching.delivery-notes.show") {
+    if (route().current() === "grp.org.warehouses.show.dispatching.delivery_notes.show") {
         return route(
             "grp.org.warehouses.show.infrastructure.locations.show",
             [
@@ -102,7 +101,7 @@ const generateLocationRoute = (location: any) => {
                 location.location_slug
             ]
         );
-    } else if (route().current() === "grp.org.warehouses.show.dispatching.delivery-notes.show") {
+    } else if (route().current() === "grp.org.warehouses.show.dispatching.delivery_notes.show") {
         return route(
             "grp.org.warehouses.show.infrastructure.locations.show",
             [

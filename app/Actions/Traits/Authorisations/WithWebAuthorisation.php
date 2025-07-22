@@ -58,6 +58,22 @@ trait WithWebAuthorisation
             ]);
         }
 
+        // TODO RAUL PLEASE REVIEW
+        if (str_starts_with($routeName, 'grp.models.product.')) {
+            $this->canEdit = $user->authTo([
+                "web.{$this->shop->id}.edit",
+                "group-webmaster.edit"
+            ]);
+            $this->isSupervisor = $user->authTo([
+                "supervisor-web.{$this->shop->id}",
+                "group-webmaster.edit"
+            ]);
+            return $user->authTo([
+                "web.{$this->shop->id}.view",
+                "group-webmaster.view"
+            ]);
+        }
+
         if (str_starts_with($routeName, 'grp.org.fulfilments.show.web.')) {
             $this->canEdit = $user->authTo([
                 "fulfilment-shop.{$this->fulfilment->id}.edit",
