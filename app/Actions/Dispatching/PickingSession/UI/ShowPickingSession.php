@@ -81,20 +81,22 @@ class ShowPickingSession extends OrgAction
 
 
         $actions   = null;
-        $actions[] = [
-            'type'    => 'button',
-            'style'   => 'save',
-            'tooltip' => __('start picking'),
-            'label'   => __('Start Picking'),
-            'key'     => 'action',
-            'route'   => [
-                'method'     => 'patch',
-                'name'       => 'grp.models.picking_session.start_picking',
-                'parameters' => [
-                    'pickingSession' => $pickingSession->id
+        if($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'save',
+                'tooltip' => __('start picking'),
+                'label'   => __('Start Picking'),
+                'key'     => 'action',
+                'route'   => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.picking_session.start_picking',
+                    'parameters' => [
+                        'pickingSession' => $pickingSession->id
+                    ]
                 ]
-            ]
-        ];
+            ];
+        }
 
         $props = [
             'title'       => $title,
