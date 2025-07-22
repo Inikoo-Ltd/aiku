@@ -3,12 +3,16 @@
 namespace App\Actions\Dispatching\PickingSession\UI;
 
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSession;
+use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSessionStateActive;
 use App\Actions\OrgAction;
 use App\Actions\UI\WithInertia;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
 use App\Enums\UI\Dispatch\PickingSessionTabsEnum;
+use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsStateHandlingResource;
 use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsStateUnassignedResource;
+use App\Http\Resources\Dispatching\PickingSessionResource;
+use App\Http\Resources\Dispatching\PickingSessionsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Inventory\PickingSession;
@@ -40,26 +44,61 @@ class ShowPickingSession extends OrgAction
         return $this->handle($pickingSession);
     }
 
+    public function getTimeline(PickingSession $pickingSession): array
+    {
+        $timeline = [];
+
+        foreach (PickingSessionStateEnum::cases() as $case) {
+            $timestamp = $pickingSession->{$case->snake().'_at'}
+                ? $pickingSession->{$case->snake().'_at'}
+                : null;
+
+            $timestamp = $timestamp ?: null;
+
+            $timestamp = match ($case) {
+                PickingSessionStateEnum::HANDLING => $pickingSession->start_at,
+                default => $timestamp ?: null
+            };
+
+            $label = $case->labels()[$case->value];
+            $label .= ' ('.$pickingSession->user->contact_name.')';
+            
+
+
+            $timeline[$case->value] = [
+                'label'       => $label,
+                'tooltip'     => $case->labels()[$case->value],
+                'key'         => $case->value,
+                'format_time' => null,
+                'timestamp'   => $timestamp
+            ];
+        }
+
+        return $timeline;
+    }
+
     public function htmlResponse(PickingSession $pickingSession, ActionRequest $request): Response
     {
         $title = __('Picking Session');
 
 
         $actions   = null;
-        $actions[] = [
-            'type'    => 'button',
-            'style'   => 'save',
-            'tooltip' => __('start picking'),
-            'label'   => __('Start Picking'),
-            'key'     => 'action',
-            'route'   => [
-                'method'     => 'patch',
-                'name'       => 'grp.models.picking_session.start_picking',
-                'parameters' => [
-                    'pickingSession' => $pickingSession->id
+        if($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'save',
+                'tooltip' => __('start picking'),
+                'label'   => __('Start Picking'),
+                'key'     => 'action',
+                'route'   => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.picking_session.start_picking',
+                    'parameters' => [
+                        'pickingSession' => $pickingSession->id
+                    ]
                 ]
-            ]
-        ];
+            ];
+        }
 
         $props = [
             'title'       => $title,
@@ -77,10 +116,12 @@ class ShowPickingSession extends OrgAction
                 ],
                 'actions'    => $actions,
             ],
+            'timelines' => $this->getTimeline($pickingSession),
             'tabs'        => [
                 'current'    => $this->tab,
                 'navigation' => PickingSessionTabsEnum::navigation()
             ],
+            'data' => PickingSessionResource::make($pickingSession)
         ];
 
 
@@ -103,6 +144,13 @@ class ShowPickingSession extends OrgAction
                 PickingSessionTabsEnum::ITEMS->value => $this->tab == PickingSessionTabsEnum::ITEMS->value ?
                     fn() => PickingSessionDeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession))
                     : Inertia::lazy(fn() => PickingSessionDeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession))),
+
+            ];
+        } elseif ($pickingSession->state == PickingSessionStateEnum::HANDLING) {
+            return [
+                PickingSessionTabsEnum::ITEMS->value => $this->tab == PickingSessionTabsEnum::ITEMS->value ?
+                    fn() => PickingSessionDeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsInPickingSessionStateActive::run($pickingSession))
+                    : Inertia::lazy(fn() => PickingSessionDeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsInPickingSessionStateActive::run($pickingSession))),
 
             ];
         }

@@ -30,4 +30,51 @@ enum PickingSessionStateEnum: string
             'picking_finished' => __('Picking Finished'),
         ];
     }
+
+    public static function stateIcon(): array
+    {
+        return [
+            'in_process'     => [
+                'tooltip' => __('In Process'),
+                'icon'    => 'fal fa-chair',
+                'class'   => 'text-lime-500',
+                'color'   => 'lime',
+                'app'     => [
+                    'name' => 'chair',
+                    'type' => 'font-awesome-5'
+                ]
+            ],
+            'handling'   => [
+                'tooltip' => __('Handling'),
+                'icon'    => 'fal fa-hand-paper',
+                'class'   => 'text-gray-500',
+                'color'   => 'gray',
+                'app'     => [
+                    'name' => 'check',
+                    'type' => 'font-awesome-5'
+                ]
+            ],
+            'handling_blocked' => [
+                'tooltip' => __('Handling Blocked'),
+                'icon'    => 'fal fa-hand-paper',
+                'class'   => 'text-gray-500',
+                'color'   => 'gray',
+                'app'     => [
+                    'name' => 'check',
+                    'type' => 'font-awesome-5'
+                ]
+            ],
+            'picking_finished'     => [
+                'tooltip' => __('Picking Finished'),
+                'icon'    => 'fal fa-box-check',
+                'class'   => 'text-gray-500',
+                'color'   => 'gray',
+                'app'     => [
+                    'name' => 'times',
+                    'type' => 'font-awesome-5'
+                ]
+            ],
+
+        ];
+    }
 }

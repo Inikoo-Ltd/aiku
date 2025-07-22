@@ -35,10 +35,11 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
         $query = QueryBuilder::for(DeliveryNoteItem::class);
 
         $query->where('delivery_note_items.picking_session_id', $parent->id);
+        $query->leftJoin('delivery_notes', 'delivery_note_items.delivery_note_id', '=', 'delivery_notes.id');
 
         $query->leftjoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id');
 
-        return $query->defaultSort('delivery_note_items.id')
+        return $query
             ->select([
                 'delivery_note_items.id',
                 'delivery_note_items.state',
@@ -50,7 +51,9 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
                 'delivery_note_items.is_handled',
                 'org_stocks.id as org_stock_id',
                 'org_stocks.code as org_stock_code',
-                'org_stocks.name as org_stock_name'
+                'org_stocks.name as org_stock_name',
+                'delivery_notes.slug as delivery_note_slug',
+                'delivery_notes.reference as delivery_note_reference',
             ])
             ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required', 'quantity_picked', 'quantity_packed', 'state'])
             ->allowedFilters([$globalSearch])
