@@ -48,7 +48,7 @@ import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.v
 import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
 import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
 import { faExclamationTriangle, faExclamation } from "@fas"
-import { faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faTruck, faFilePdf, faPaperclip } from "@fal"
+import { faDollarSign, faIdCardAlt, faRepeat1Alt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faTruck, faFilePdf, faPaperclip } from "@fal"
 import { Currency } from "@/types/LayoutRules"
 import TableInvoices from "@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue"
 import ModalProductList from "@/Components/Utils/ModalProductList.vue"
@@ -61,8 +61,9 @@ import { useTruncate } from "@/Composables/useTruncate"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import ShipmentSection from "@/Components/Warehouse/DeliveryNotes/ShipmentSection.vue"
+import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
 
-library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird)
+library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faRepeat1Alt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird)
 
 interface UploadSection {
     title: {
@@ -439,6 +440,35 @@ const last_payment = computed(() => {
                 </template>
             </Popover>
         </template>
+
+        <template #button-replacement="{ action }">
+            <ModalConfirmation
+                :routeYes="action.route"
+                :title="trans('Create Replacement Order?')"
+                :description="trans('This will create a replacement for the current Delivery Note (do this when the user requests replacement of items)')"
+            >
+                <template #default="{ changeModel }">
+                    <Button
+                        @click="() => changeModel()"
+                        :label="trans('Replacement')"
+                        xsize="xs"
+                        icon="fal fa-repeat-1-alt"
+                        type="secondary"
+                        key="1"
+                        v-tooltip="trans('Create replacement if the user requests replacement of items')"
+                    />
+                </template>
+
+                <template #btn-yes="{ isLoadingdelete, clickYes}">
+                    <Button
+                        :loading="isLoadingdelete"
+                        @click="() => clickYes()"
+                        :label="trans('Yes, Create Replacement')"
+                    />
+                </template>
+            </ModalConfirmation>
+        </template>
+
         <template #other>
             <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
                     icon="upload" />
