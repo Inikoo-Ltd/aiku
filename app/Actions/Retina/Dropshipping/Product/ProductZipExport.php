@@ -26,7 +26,7 @@ class ProductZipExport
     /**
      * @throws \ZipStream\Exception\OverflowException
      */
-    public function handle(Shop|ProductCategory $parent): void
+    public function handle(Shop|ProductCategory|Product $parent): void
     {
         $zipFileName = 'images_products' . '.zip';
         $zip         = new ZipStream(
@@ -73,7 +73,7 @@ class ProductZipExport
     }
 
 
-    public function getImages(Shop|ProductCategory $parent): array
+    public function getImages(Shop|ProductCategory|Product $parent): array
     {
         $imagesData = [];
         $products = [];
@@ -84,6 +84,15 @@ class ProductZipExport
                 ->where('is_main', true);
         } elseif ($parent instanceof ProductCategory) {
             $products = $parent->getProducts();
+        } elseif ($parent instanceof Product) {
+            $product = $parent;
+            foreach ($product->images as $image) {
+                $imagesData[$image->id] = [
+                    'filename' => strtolower($product->code) . '__' . $image->id . '.' . $image->extension,
+                    'image'    => $image
+                ];
+            }
+            return $imagesData;
         }
 
         foreach ($products as $product) {

@@ -28,8 +28,9 @@ Route::prefix('departments')->as('departments.')->group(function () {
 });
 
 Route::prefix('feeds')->as('feeds.')->group(function () {
-    Route::get('feeds/{productCategory}/download', [DownloadProduct::class, 'inProductCategory'])->name('product_category.download');
-    Route::get('feeds/{shop}/download', DownloadProduct::class)->name('shop.download');
+    Route::get('feeds/product-category/{productCategory}/download', [DownloadProduct::class, 'inProductCategory'])->name('product_category.download');
+    Route::get('feeds/shop/{shop}/download', DownloadProduct::class)->name('shop.download');
+    Route::get('feeds/product/{product}/download', [DownloadProduct::class, 'inProduct'])->name('product.download');
 });
 
 

@@ -112,26 +112,26 @@ class IndexRetinaDepartments extends RetinaAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
 
 
 
-                $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
 
 
-                if (class_basename($parent) != 'Collection') {
-                    $table->column(key: 'number_current_sub_departments', label: __('sub-departments'), tooltip: __('current sub departments'), canBeHidden: false, sortable: true, searchable: true);
-                    $table->column(key: 'number_current_collections', label: __('collections'), tooltip: __('current collections'), canBeHidden: false, sortable: true, searchable: true);
+            if (class_basename($parent) != 'Collection') {
+                $table->column(key: 'number_current_sub_departments', label: __('sub-departments'), tooltip: __('current sub departments'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'number_current_collections', label: __('collections'), tooltip: __('current collections'), canBeHidden: false, sortable: true, searchable: true);
 
-                    $table->column(key: 'number_current_families', label: __('families'), tooltip: __('current families'), canBeHidden: false, sortable: true, searchable: true)
-                        ->column(key: 'number_current_products', label: __('products'), tooltip: __('current products'), canBeHidden: false, sortable: true, searchable: true);
-                }
+                $table->column(key: 'number_current_families', label: __('families'), tooltip: __('current families'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'number_current_products', label: __('products'), tooltip: __('current products'), canBeHidden: false, sortable: true, searchable: true);
+            }
 
-                if (class_basename($parent) == 'Collection') {
-                    $table->column(key: 'actions', label: __('action'), canBeHidden: false, sortable: true, searchable: true);
-                }
+            if (class_basename($parent) == 'Collection') {
+                $table->column(key: 'actions', label: __('action'), canBeHidden: false, sortable: true, searchable: true);
+            }
         };
     }
 
@@ -180,48 +180,6 @@ class IndexRetinaDepartments extends RetinaAction
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
-                    'exports' => [
-                        [
-                            'routes' => [
-                                [
-                                    'label' => 'CSV',
-                                    'key'   => 'csf',
-                                    'icon' => ['fal', 'fa-file-csv'],
-                                    'popover' => false,
-                                    'route' => [
-                                        'name' => 'retina.json.dropshipping.customer_sales_channel.portfolio_images_zip',
-                                        'parameters' => [
-                                              'customerSalesChannel' => 'xxx',   
-                                        ]
-                                    ],
-                                ],
-                                [
-                                    'label' => 'Excel',
-                                    'key'   => 'excel',
-                                    'icon' => ['fal', 'fa-file-excel'],
-                                    'inside_popover' => true,
-                                    'route' => [
-                                        'name' => 'retina.json.dropshipping.customer_sales_channel.portfolio_images_zip',
-                                        'parameters' => [
-                                              'customerSalesChannel' => 'xxx',
-                                        ]
-                                    ],
-                                ],
-                                [
-                                    'label' => 'images',
-                                    'key'   => 'images',
-                                    'icon' => ['fal', 'fa-images'],
-                                    'inside_popover' => true,
-                                    'route' => [
-                                        'name' => 'retina.json.dropshipping.customer_sales_channel.portfolio_images_zip',
-                                        'parameters' => [
-                                              'customerSalesChannel' => 'xxx',
-                                        ]
-                                    ],
-                                ]
-                            ]
-                        ]
-                    ]
                 ],
                 'data'                                => DepartmentsResource::collection($departments),
             ]

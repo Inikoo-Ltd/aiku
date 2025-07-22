@@ -68,6 +68,38 @@ class ShowRetinaFamily extends RetinaAction
                             'style' => 'create',
                             'label' => __('to Portfolio'),
                         ]
+                    ],
+                    'exports' => [
+                        [
+                            'routes' => [
+                                [
+                                    'label' => 'CSV',
+                                    'key'   => 'csv',
+                                    'icon' => ['fal', 'fa-file-csv'],
+                                    'popover' => false,
+                                    'route' => [
+                                        'name' => 'retina.catalogue.feeds.product_category.download',
+                                        'parameters' => [
+                                            'productCategory' => $family->slug,
+                                            'type'       => 'products_csv'
+                                        ]
+                                    ],
+                                ],
+                                [
+                                    'label' => 'images',
+                                    'key'   => 'images',
+                                    'icon' => ['fal', 'fa-images'],
+                                    'inside_popover' => true,
+                                    'route' => [
+                                        'name' => 'retina.catalogue.feeds.product_category.download',
+                                        'parameters' => [
+                                            'productCategory' => $family->slug,
+                                            'type'       => 'products_images'
+                                        ]
+                                    ],
+                                ]
+                            ]
+                        ]
                     ]
                 ],
                 'tabs'        => [
@@ -82,18 +114,18 @@ class ShowRetinaFamily extends RetinaAction
                 ],
 
                 RetinaFamilyTabsEnum::SHOWCASE->value => $this->tab == RetinaFamilyTabsEnum::SHOWCASE->value ?
-                    fn () => GetProductCategoryShowcase::run($family)
-                    : Inertia::lazy(fn () => GetProductCategoryShowcase::run($family)),
+                    fn() => GetProductCategoryShowcase::run($family)
+                    : Inertia::lazy(fn() => GetProductCategoryShowcase::run($family)),
 
                 RetinaFamilyTabsEnum::PRODUCTS->value => $this->tab == RetinaFamilyTabsEnum::PRODUCTS->value
                     ?
-                    fn () => ProductsResource::collection(
+                    fn() => ProductsResource::collection(
                         IndexRetinaProductsInCatalogue::run(
                             parent: $family,
                             prefix: RetinaFamilyTabsEnum::PRODUCTS->value
                         )
                     )
-                    : Inertia::lazy(fn () => ProductsResource::collection(
+                    : Inertia::lazy(fn() => ProductsResource::collection(
                         IndexRetinaProductsInCatalogue::run(
                             parent: $family,
                             prefix: RetinaFamilyTabsEnum::PRODUCTS->value

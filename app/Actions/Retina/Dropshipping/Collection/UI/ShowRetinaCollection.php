@@ -67,6 +67,38 @@ class ShowRetinaCollection extends RetinaAction
                     'model'      => $model,
                     'afterTitle' => $afterTitle,
                     'container'  => $container,
+                    'exports' => [
+                        [
+                            'routes' => [
+                                [
+                                    'label' => 'CSV',
+                                    'key'   => 'csv',
+                                    'icon' => ['fal', 'fa-file-csv'],
+                                    'popover' => false,
+                                    'route' => [
+                                        'name' => 'retina.catalogue.feeds.product_category.download',
+                                        'parameters' => [
+                                            'productCategory' => $collection->slug,
+                                            'type'       => 'products_csv'
+                                        ]
+                                    ],
+                                ],
+                                [
+                                    'label' => 'images',
+                                    'key'   => 'images',
+                                    'icon' => ['fal', 'fa-images'],
+                                    'inside_popover' => true,
+                                    'route' => [
+                                        'name' => 'retina.catalogue.feeds.product_category.download',
+                                        'parameters' => [
+                                            'productCategory' => $collection->slug,
+                                            'type'       => 'products_images'
+                                        ]
+                                    ],
+                                ]
+                            ]
+                        ]
+                    ],
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
@@ -74,21 +106,21 @@ class ShowRetinaCollection extends RetinaAction
                 ],
 
                 RetinaCollectionTabsEnum::SHOWCASE->value => $this->tab == RetinaCollectionTabsEnum::SHOWCASE->value ?
-                    fn () => GetCollectionShowcase::run($collection)
-                    : Inertia::lazy(fn () => GetCollectionShowcase::run($collection)),
+                    fn() => GetCollectionShowcase::run($collection)
+                    : Inertia::lazy(fn() => GetCollectionShowcase::run($collection)),
 
 
                 RetinaCollectionTabsEnum::FAMILIES->value => $this->tab == RetinaCollectionTabsEnum::FAMILIES->value ?
-                    fn () => FamiliesInCollectionResource::collection(IndexFamiliesInCollection::run($collection, prefix: RetinaCollectionTabsEnum::FAMILIES->value))
-                    : Inertia::lazy(fn () => FamiliesInCollectionResource::collection(IndexFamiliesInCollection::run($collection, prefix: RetinaCollectionTabsEnum::FAMILIES->value))),
+                    fn() => FamiliesInCollectionResource::collection(IndexFamiliesInCollection::run($collection, prefix: RetinaCollectionTabsEnum::FAMILIES->value))
+                    : Inertia::lazy(fn() => FamiliesInCollectionResource::collection(IndexFamiliesInCollection::run($collection, prefix: RetinaCollectionTabsEnum::FAMILIES->value))),
 
                 RetinaCollectionTabsEnum::PRODUCTS->value => $this->tab == RetinaCollectionTabsEnum::PRODUCTS->value ?
-                    fn () => ProductsResource::collection(IndexProductsInCollection::run($collection, prefix: RetinaCollectionTabsEnum::PRODUCTS->value))
-                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInCollection::run($collection, prefix: RetinaCollectionTabsEnum::PRODUCTS->value))),
+                    fn() => ProductsResource::collection(IndexProductsInCollection::run($collection, prefix: RetinaCollectionTabsEnum::PRODUCTS->value))
+                    : Inertia::lazy(fn() => ProductsResource::collection(IndexProductsInCollection::run($collection, prefix: RetinaCollectionTabsEnum::PRODUCTS->value))),
 
                 RetinaCollectionTabsEnum::COLLECTIONS->value => $this->tab == RetinaCollectionTabsEnum::COLLECTIONS->value ?
-                    fn () => CollectionsResource::collection(IndexCollectionsInCollection::run($collection, prefix: RetinaCollectionTabsEnum::COLLECTIONS->value))
-                    : Inertia::lazy(fn () => CollectionsResource::collection(IndexCollectionsInCollection::run($collection, prefix: RetinaCollectionTabsEnum::COLLECTIONS->value))),
+                    fn() => CollectionsResource::collection(IndexCollectionsInCollection::run($collection, prefix: RetinaCollectionTabsEnum::COLLECTIONS->value))
+                    : Inertia::lazy(fn() => CollectionsResource::collection(IndexCollectionsInCollection::run($collection, prefix: RetinaCollectionTabsEnum::COLLECTIONS->value))),
             ]
         )
             ->table(

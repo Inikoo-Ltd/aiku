@@ -162,17 +162,17 @@ class ShowCollection extends OrgAction
                                 ]
                             ]
                             : [
-                            'type'    => 'button',
-                            'style'   => 'edit',
-                            'tooltip' => __('Create Webpage'),
-                            'label'   => __('Create Webpage'),
-                            'icon'    => ["fas", "fa-plus"],
-                            'route'   => [
-                                'name'       => 'grp.models.webpages.collection.store',
-                                'parameters' => $collection->id,
-                                'method'     => 'post'
-                            ]
-                        ],
+                                'type'    => 'button',
+                                'style'   => 'edit',
+                                'tooltip' => __('Create Webpage'),
+                                'label'   => __('Create Webpage'),
+                                'icon'    => ["fas", "fa-plus"],
+                                'route'   => [
+                                    'name'       => 'grp.models.webpages.collection.store',
+                                    'parameters' => $collection->id,
+                                    'method'     => 'post'
+                                ]
+                            ],
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
@@ -182,6 +182,38 @@ class ShowCollection extends OrgAction
                             ]
                         ] : false,
 
+                    ],
+                    'exports' => [
+                        [
+                            'routes' => [
+                                [
+                                    'label' => 'CSV',
+                                    'key'   => 'csv',
+                                    'icon' => ['fal', 'fa-file-csv'],
+                                    'popover' => false,
+                                    'route' => [
+                                        'name' => 'retina.catalogue.feeds.product_category.download',
+                                        'parameters' => [
+                                            'productCategory' => $collection->slug,
+                                            'type'       => 'products_csv'
+                                        ]
+                                    ],
+                                ],
+                                [
+                                    'label' => 'images',
+                                    'key'   => 'images',
+                                    'icon' => ['fal', 'fa-images'],
+                                    'inside_popover' => true,
+                                    'route' => [
+                                        'name' => 'retina.catalogue.feeds.product_category.download',
+                                        'parameters' => [
+                                            'productCategory' => $collection->slug,
+                                            'type'       => 'products_images'
+                                        ]
+                                    ],
+                                ]
+                            ]
+                        ]
                     ],
                 ],
                 'routes'      => [
@@ -280,25 +312,25 @@ class ShowCollection extends OrgAction
                 ],
 
                 CollectionTabsEnum::SHOWCASE->value => $this->tab == CollectionTabsEnum::SHOWCASE->value ?
-                    fn () => GetCollectionShowcase::run($collection)
-                    : Inertia::lazy(fn () => GetCollectionShowcase::run($collection)),
+                    fn() => GetCollectionShowcase::run($collection)
+                    : Inertia::lazy(fn() => GetCollectionShowcase::run($collection)),
 
 
                 CollectionTabsEnum::FAMILIES->value => $this->tab == CollectionTabsEnum::FAMILIES->value ?
-                    fn () => FamiliesInCollectionResource::collection(IndexFamiliesInCollection::run($collection, prefix: CollectionTabsEnum::FAMILIES->value))
-                    : Inertia::lazy(fn () => FamiliesInCollectionResource::collection(IndexFamiliesInCollection::run($collection, prefix: CollectionTabsEnum::FAMILIES->value))),
+                    fn() => FamiliesInCollectionResource::collection(IndexFamiliesInCollection::run($collection, prefix: CollectionTabsEnum::FAMILIES->value))
+                    : Inertia::lazy(fn() => FamiliesInCollectionResource::collection(IndexFamiliesInCollection::run($collection, prefix: CollectionTabsEnum::FAMILIES->value))),
 
                 CollectionTabsEnum::PRODUCTS->value => $this->tab == CollectionTabsEnum::PRODUCTS->value ?
-                    fn () => ProductsResource::collection(IndexProductsInCollection::run($collection, prefix: CollectionTabsEnum::PRODUCTS->value))
-                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInCollection::run($collection, prefix: CollectionTabsEnum::PRODUCTS->value))),
+                    fn() => ProductsResource::collection(IndexProductsInCollection::run($collection, prefix: CollectionTabsEnum::PRODUCTS->value))
+                    : Inertia::lazy(fn() => ProductsResource::collection(IndexProductsInCollection::run($collection, prefix: CollectionTabsEnum::PRODUCTS->value))),
 
                 CollectionTabsEnum::COLLECTIONS->value => $this->tab == CollectionTabsEnum::COLLECTIONS->value ?
-                    fn () => CollectionsResource::collection(IndexCollectionsInCollection::run($collection, prefix: CollectionTabsEnum::COLLECTIONS->value))
-                    : Inertia::lazy(fn () => CollectionsResource::collection(IndexCollectionsInCollection::run($collection, prefix: CollectionTabsEnum::COLLECTIONS->value))),
+                    fn() => CollectionsResource::collection(IndexCollectionsInCollection::run($collection, prefix: CollectionTabsEnum::COLLECTIONS->value))
+                    : Inertia::lazy(fn() => CollectionsResource::collection(IndexCollectionsInCollection::run($collection, prefix: CollectionTabsEnum::COLLECTIONS->value))),
 
                 CollectionTabsEnum::HISTORY->value => $this->tab == CollectionTabsEnum::HISTORY->value ?
-                                    fn () => HistoryResource::collection(IndexHistory::run($collection))
-                                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($collection))),
+                    fn() => HistoryResource::collection(IndexHistory::run($collection))
+                    : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run($collection))),
 
             ]
         )

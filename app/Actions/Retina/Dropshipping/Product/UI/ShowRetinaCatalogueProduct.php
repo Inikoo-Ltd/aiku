@@ -65,6 +65,38 @@ class ShowRetinaCatalogueProduct extends RetinaAction
                     ],
                     'model' => __('Product'),
                     'actions'       => $actions,
+                    'exports' => [
+                        [
+                            'routes' => [
+                                [
+                                    'label' => 'CSV',
+                                    'key'   => 'csv',
+                                    'icon' => ['fal', 'fa-file-csv'],
+                                    'popover' => false,
+                                    'route' => [
+                                        'name' => 'retina.catalogue.feeds.product.download',
+                                        'parameters' => [
+                                            'product' => $product->slug,
+                                            'type'       => 'products_csv'
+                                        ]
+                                    ],
+                                ],
+                                [
+                                    'label' => 'images',
+                                    'key'   => 'images',
+                                    'icon' => ['fal', 'fa-images'],
+                                    'inside_popover' => true,
+                                    'route' => [
+                                        'name' => 'retina.catalogue.feeds.product.download',
+                                        'parameters' => [
+                                            'product' => $product->slug,
+                                            'type'       => 'products_images'
+                                        ]
+                                    ],
+                                ]
+                            ]
+                        ]
+                    ],
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
@@ -73,8 +105,8 @@ class ShowRetinaCatalogueProduct extends RetinaAction
 
 
                 RetinaProductTabsEnum::SHOWCASE->value => $this->tab == RetinaProductTabsEnum::SHOWCASE->value ?
-                    fn () => GetProductShowcase::run($product)
-                    : Inertia::lazy(fn () => GetProductShowcase::run($product)),
+                    fn() => GetProductShowcase::run($product)
+                    : Inertia::lazy(fn() => GetProductShowcase::run($product)),
 
             ]
         );
@@ -134,5 +166,4 @@ class ShowRetinaCatalogueProduct extends RetinaAction
             default => []
         };
     }
-
 }
