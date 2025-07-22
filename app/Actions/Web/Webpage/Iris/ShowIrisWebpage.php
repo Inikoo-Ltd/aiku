@@ -42,7 +42,10 @@ class ShowIrisWebpage
             webBlocks: Arr::get($webPageLayout, 'web_blocks', []),
             isLoggedIn: auth()->check()
         );
-
+        $webpageImg = [];
+        if ($webpage->seoImage) {
+            $webpageImg = $webpage->imageSources(1200, 1200, 'seoImage');
+        }
 
         return [
             'status'         => 'ok',
@@ -50,8 +53,8 @@ class ShowIrisWebpage
                 webpage: $webpage,
                 parentPaths: $parentPaths
             ),
-            'meta'           => $webpage->seo_data,
-            'script_website' => Arr::get($webpage->website->settings, 'script_website.header'),
+            'webpage'        => $webpage,
+            'webpage_img'    => $webpageImg,
             'web_blocks'     => $webBlocks,
         ];
     }
