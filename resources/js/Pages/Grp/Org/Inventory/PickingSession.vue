@@ -11,7 +11,7 @@ import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 import { useTabChange } from "@/Composables/tab-change";
 import { ref, computed } from 'vue'
 import Tabs from "@/Components/Navigation/Tabs.vue";
-import TableDeliveryNoteItems from "@/Components/Warehouse/DeliveryNotes/TableDeliveryNoteItems.vue";
+import TableDeliveryNoteItemInPickingSessions from "@/Components/Warehouse/PickingSessions/TableDeliveryNoteItemInPickingSessions.vue";
 
 
 const props = defineProps<{
@@ -33,7 +33,7 @@ const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab);
 const component = computed(() => {
 
   const components = {
-    items: TableDeliveryNoteItems,
+    items: TableDeliveryNoteItemInPickingSessions,
   };
   return components[currentTab.value];
 
