@@ -369,7 +369,17 @@ const listError = inject('listError', {})
 							<FontAwesomeIcon v-tooltip="trans('Shipment')" icon="fal fa-shipping-fast" fixed-width aria-hidden="true" class="text-gray-500" />
 						</dt>
 						<dd class="text-gray-500">
-							<ShipmentSection :shipments="boxStats.shipments" :shipments_routes="boxStats.shipments_routes" :address="boxStats.address" />
+							<ShipmentSection
+								:shipments="boxStats.shipments"
+								:shipments_routes="boxStats.shipments_routes"
+								:address="boxStats.address"
+								:updateAddressRoute="{
+									name:'grp.models.delivery_note.update_address',
+									parameters: {
+										deliveryNote: props.deliveryNote.id,
+									},
+								}"
+							/>
 						</dd>
 					</dl>
 				</div>
