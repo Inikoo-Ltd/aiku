@@ -3,6 +3,7 @@
 namespace App\Exports\Marketing;
 
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
@@ -19,19 +20,17 @@ class ProductsInProductCategoryExport implements FromQuery, WithMapping, ShouldA
     use Exportable;
 
     protected $productCategory;
-    protected $type;
 
-    public function __construct(ProductCategory $productCategory, string $type)
+    public function __construct(ProductCategory $productCategory)
     {
-        $this->type = $type;
         $this->productCategory = $productCategory;
     }
 
     public function query(): Relation|\Illuminate\Database\Eloquent\Builder|Asset|Builder
     {
-        if($this->type == 'department') {
+        if($this->productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
             return Product::query()->where('department_id', $this->productCategory->id)->whereIn('state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value]);
-        } elseif ($this->type == 'family') {
+        } elseif ($this->productCategory->type == ProductCategoryTypeEnum::FAMILY) {
             return Product::query()->where('family_id', $this->productCategory->id)->whereIn('state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value]);
         } else {
             return Product::query()->where('sub_department_id', $this->productCategory->id)->whereIn('state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value]);
