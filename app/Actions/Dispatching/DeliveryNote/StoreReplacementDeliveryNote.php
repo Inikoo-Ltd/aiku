@@ -204,7 +204,23 @@ class StoreReplacementDeliveryNote extends OrgAction
         }
 
         if (!$this->has('reference')) {
-            $this->set('reference', $this->order->reference. '-R');
+            $baseReference = $this->order->reference . '-R';
+            $existingRefs = $this->order->deliveryNotes
+                ->where('type', DeliveryNoteTypeEnum::REPLACEMENT)
+                ->pluck('reference')
+                ->filter(function ($ref) use ($baseReference) {
+                    return str_starts_with($ref, $baseReference);
+                })
+                ->map(function ($ref) use ($baseReference) {
+                    return (int) str_replace($baseReference, '', $ref);
+                })
+                ->filter(function ($num) {
+                    return $num > 0;
+                });
+
+            $nextIncrement = $existingRefs->max() + 1 ?? 1;
+
+            $this->set('reference', $baseReference . $nextIncrement);
         }
 
         if (!$this->has('date')) {
