@@ -9,7 +9,7 @@
 use App\Actions\Comms\Notifications\GetSnsNotification;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackFetchStock;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackFulfillmentOrderNotification;
-use App\Actions\Dropshipping\Shopify\Fulfilment\Webhooks\CatchFulfilmentOrderFromShopify;
+use App\Actions\Dropshipping\Shopify\Fulfilment\Webhooks\CreateFulfilmentOrderFromShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\CustomerDataRedactWebhookShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\CustomerDataRequestWebhookShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\ShopRedactWebhookShopify;
@@ -39,7 +39,7 @@ Route::prefix('shopify-user/{shopifyUser:id}')->name('webhooks.shopify.')->group
 
     Route::post('app/uninstalled', [DeleteShopifyUser::class, 'inWebhook'])->name('app-uninstalled');
     Route::prefix('orders')->as('orders.')->group(function () {
-        Route::post('create', CatchFulfilmentOrderFromShopify::class)->name('create');
+        Route::post('create', CreateFulfilmentOrderFromShopify::class)->name('create');
     });
 });
 

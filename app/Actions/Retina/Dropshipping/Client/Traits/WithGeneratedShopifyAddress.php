@@ -27,14 +27,14 @@ trait WithGeneratedShopifyAddress
                     'dependent_locality'  => null,
                     'locality'            => Arr::get($address, 'city'),
                     'administrative_area' => Arr::get($address, 'province'),
-                    'country_code'        => Arr::get($address, 'country_code'),
+                    'country_code'        => Arr::get($address, 'countryCode'),
                     'country_id'          => $country->id
                 ]
             ];
         }
 
         return [
-            'contact_name' => $customerClient['first_name'] . ' ' . Arr::get($customerClient, 'last_name'),
+            'contact_name' => $customerClient['firstName'] . ' ' . Arr::get($customerClient, 'lastName'),
             'email' => $customerClient['email'],
             'phone' => $customerClient['phone'],
             ...$address

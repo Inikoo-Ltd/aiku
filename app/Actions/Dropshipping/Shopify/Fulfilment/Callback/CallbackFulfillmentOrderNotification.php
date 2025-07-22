@@ -8,10 +8,11 @@
 
 namespace App\Actions\Dropshipping\Shopify\Fulfilment\Callback;
 
-use App\Actions\Dropshipping\Shopify\Fulfilment\Webhooks\CatchFulfilmentOrderFromShopify;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\ShopifyUser;
+use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -23,18 +24,22 @@ class CallbackFulfillmentOrderNotification extends OrgAction
     use WithAttributes;
     use WithActionUpdate;
 
-    /**
-     * @throws \Throwable
-     */
-    public function handle(ShopifyUser $shopifyUser, array $modelData): void
+    public string $commandSignature = 'callback:fulfillment-order-notification {customerSalesChannel} {kind}';
+
+    public function handle(ShopifyUser $shopifyUser, array $modelData)
     {
-        if (Arr::has($modelData, 'fulfillment_order') && Arr::get($modelData, 'kind') === "FULFILLMENT_REQUEST") {
-            CatchFulfilmentOrderFromShopify::run($shopifyUser, [
-                'id' => Arr::get($modelData, 'fulfillment_order.order_id'),
-                'fulfillment_status' => Arr::get($modelData, 'fulfillment_order.status'),
-                'line_items' => Arr::get($modelData, 'fulfillment_order.line_items')
-            ]);
+        if (Arr::get($modelData, 'kind') === "FULFILLMENT_REQUEST") {
+            AssignFulfillmentOrderRequest::run($shopifyUser);
         }
+    }
+
+    public function asCommand(Command $command)
+    {
+        $customerSalesChanel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->first();
+
+        $this->handle($customerSalesChanel->user, [
+            'kind' => $command->argument('kind')
+        ]);
     }
 
     /**
