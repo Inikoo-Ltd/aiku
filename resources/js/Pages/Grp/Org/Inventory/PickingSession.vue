@@ -17,7 +17,7 @@ import TableDeliveryNoteItems from "@/Components/Warehouse/DeliveryNotes/TableDe
 const props = defineProps<{
   data: object
   title: string
-  pageHead: PageHeadingTypes
+  pageHead: PageHeadingTypes   
   items: object
   tabs: {
     current: string;
