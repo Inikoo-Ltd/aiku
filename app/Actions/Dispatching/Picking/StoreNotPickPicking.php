@@ -32,7 +32,7 @@ class StoreNotPickPicking extends OrgAction
 
     private DeliveryNoteItem $deliveryNoteItem;
     protected User $user;
-    private bool $cancel;
+    private bool $cancel = false;
 
     public function handle(DeliveryNoteItem $deliveryNoteItem, array $modelData): Picking
     {
