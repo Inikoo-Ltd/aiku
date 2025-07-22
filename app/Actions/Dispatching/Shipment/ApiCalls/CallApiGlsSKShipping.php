@@ -148,11 +148,16 @@ class CallApiGlsSKShipping extends OrgAction
 
                 foreach ($errFields as $error) {
                     if (Str::contains($error['ErrorDescription'] ?? '', ['Pickup', 'Delivery'])) {
-                        $errorData['address'][] = $error['ErrorDescription'] ?? 'Error in address';
+                        if (isset($errorData['address'])) {
+                            continue;
+                        }
+                        $errorData['address'] = 'Invalid address';
                     } else {
                         $errorData['others'][] =  $error['ErrorDescription'] ?? 'Unknown error';
                     }
                 }
+
+                $errorData['message'] = $errorData['address'] ?? $errorData['others'] ?? '';
             }
         }
 
@@ -162,5 +167,4 @@ class CallApiGlsSKShipping extends OrgAction
             'errorData' => $errorData,
         ];
     }
-
 }

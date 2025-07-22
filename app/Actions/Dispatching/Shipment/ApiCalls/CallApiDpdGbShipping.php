@@ -206,13 +206,19 @@ class CallApiDpdGbShipping extends OrgAction
         $errorMessage = Arr::get($error, 'errorMessage', 'Unknown error');
 
         if (Str::contains($obj, 'consignment.networkCode')) {
-            $errorData['service'] = 'Invalid service';
+            $errorMessage = 'Invalid network code';
+            $errorData['service'] = $errorMessage;
         } elseif (Str::contains($obj, 'address')) {
+            $errorMessage = 'Invalid address';
             $errorData['address'] = $errorMessage;
         } elseif (Str::contains($obj, 'contact')) {
+            $errorMessage = 'Invalid contact details';
             $errorData['contact'] = $errorMessage;
         } else {
-            $errorData['others'][] = $errorMessage . ' (' . $obj . ')';
+            $errorData['others'][] = $errorMessage;
+        }
+        if (!isset($errorData['message'])) {
+            $errorData['message'] = $errorMessage;
         }
     }
 

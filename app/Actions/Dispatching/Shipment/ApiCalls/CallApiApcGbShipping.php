@@ -222,8 +222,8 @@ class CallApiApcGbShipping extends OrgAction
                 }
                 foreach ($errFields as $error) {
                     if ($error['FieldName'] == 'Delivery PostalCode') {
-                        $errorData['others'][] = 'Invalid postcode,';
-                        $errorData['message'][] = 'Invalid postcode';
+                        $errorData['address'][] = 'Invalid address';
+                        $errorData['message'][] = 'Invalid address';
                     } else {
                         $fieldParts = explode(' ', $error['FieldName']);
 

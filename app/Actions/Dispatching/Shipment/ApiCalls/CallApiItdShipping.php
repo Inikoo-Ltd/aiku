@@ -127,9 +127,9 @@ class CallApiItdShipping extends OrgAction
         ];
 
 
-        $apiResponse = Http::withHeaders($headers)->withToken($this->getAccessToken($shipper))->post($this->getBaseUrl().$url, $params)->json();
+        $apiResponse = Http::withHeaders($headers)->withToken($this->getAccessToken($shipper))->post($this->getBaseUrl() . $url, $params)->json();
         if (Arr::get($apiResponse, 'data.status') == 'ERROR') {
-            throw ValidationException::withMessages(['message' => Arr::get($apiResponse, 'data.errors.0').' from ITD Shipping, please try again later']);
+            throw ValidationException::withMessages(['message' => Arr::get($apiResponse, 'data.errors.0') . ' from ITD Shipping, please try again later']);
         }
         $modelData = [
             'api_response' => $apiResponse,
@@ -167,11 +167,14 @@ class CallApiItdShipping extends OrgAction
             foreach ($consignmentErrors as $key => $errorArr) {
                 $code = Arr::get($errorArr, '0.code');
                 if ($code) {
-                    $msg = $this->getNiceKey($key).' '.Str::of($code)->replace('_', ' ');
+                    $msg = $this->getNiceKey($key) . ' ' . Str::of($code)->replace('_', ' ');
                     if (Str::contains($key, 'Address')) {
-                        $errorData['address'][] = $msg.',';
+                        if (isset($errorData['address'])) {
+                            continue;
+                        }
+                        $errorData['address'] = 'Invalid address';
                     } else {
-                        $errorData['others'][] = $msg.',';
+                        $errorData['others'][] = $msg . ',';
                     }
                 }
             }
@@ -180,13 +183,17 @@ class CallApiItdShipping extends OrgAction
             foreach ($packageErrors as $errorArr) {
                 $code = Arr::get($errorArr, '0.code');
                 if ($code) {
-                    $errorData['others'][] = Str::of($code)->replace('_', ' ').',';
+                    $errorData['others'][] = Str::of($code)->replace('_', ' ') . ',';
                 }
             }
 
             foreach ($errorData as $key => $value) {
+                if (!is_array($value)) {
+                    continue;
+                }
                 $errorData[$key] = strtolower(rtrim(implode(' ', $value), ','));
             }
+            $errorData['message'] = $errorData['address'] ?? $errorData['others'] ?? '';
         }
 
         return [
