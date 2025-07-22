@@ -20,14 +20,13 @@ defineProps<{
 
 
 function referenceRoute(item) {
-  /* return route(
-    "grp.org.warehouses.show.dispatching.picking_sessions.index",
+  return route(
+    "grp.org.warehouses.show.dispatching.picking_sessions.show",
     [
       route().params["organisation"],
       route().params["warehouse"],
       item.slug
-    ]); */
-  return 'text'
+    ]);
 }
 
 </script>
