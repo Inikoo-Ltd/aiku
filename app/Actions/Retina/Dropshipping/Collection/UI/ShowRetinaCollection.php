@@ -76,9 +76,9 @@ class ShowRetinaCollection extends RetinaAction
                                     'icon' => ['fal', 'fa-file-csv'],
                                     'popover' => false,
                                     'route' => [
-                                        'name' => 'retina.catalogue.feeds.product_category.download',
+                                        'name' => 'retina.catalogue.feeds.collection.download',
                                         'parameters' => [
-                                            'productCategory' => $collection->slug,
+                                            'collection' => $collection->slug,
                                             'type'       => 'products_csv'
                                         ]
                                     ],
@@ -89,9 +89,9 @@ class ShowRetinaCollection extends RetinaAction
                                     'icon' => ['fal', 'fa-images'],
                                     'inside_popover' => true,
                                     'route' => [
-                                        'name' => 'retina.catalogue.feeds.product_category.download',
+                                        'name' => 'retina.catalogue.feeds.collection.download',
                                         'parameters' => [
-                                            'productCategory' => $collection->slug,
+                                            'collection' => $collection->slug,
                                             'type'       => 'products_images'
                                         ]
                                     ],

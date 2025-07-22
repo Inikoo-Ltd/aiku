@@ -31,6 +31,7 @@ Route::prefix('feeds')->as('feeds.')->group(function () {
     Route::get('feeds/product-category/{productCategory}/download', [DownloadProduct::class, 'inProductCategory'])->name('product_category.download');
     Route::get('feeds/shop/{shop}/download', DownloadProduct::class)->name('shop.download');
     Route::get('feeds/product/{product}/download', [DownloadProduct::class, 'inProduct'])->name('product.download');
+    Route::get('feeds/collection/{collection}/download', [DownloadProduct::class, 'inCollection'])->name('collection.download');
 });
 
 
