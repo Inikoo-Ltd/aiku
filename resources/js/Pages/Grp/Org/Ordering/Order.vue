@@ -61,6 +61,7 @@ import { useTruncate } from "@/Composables/useTruncate"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import ShipmentSection from "@/Components/Warehouse/DeliveryNotes/ShipmentSection.vue"
+import Icon from "@/Components/Icon.vue"
 
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird)
 
@@ -366,6 +367,15 @@ const last_payment = computed(() => {
     return Array.isArray(props.box_stats.payments) && props.box_stats.payments.length > 0 ? props.box_stats.payments[props.box_stats.payments.length - 1] : null
 })
 
+// console.log("props.box_stats.payments", router)
+const generateRouteDeliveryNote = (slug: string) => {
+    if (!slug) return ''
+
+    return route(props.routes.delivery_note.deliveryNoteRoute.name, {
+        ...props.routes.delivery_note.deliveryNoteRoute.parameters,
+        deliveryNote: slug
+    })
+}
 </script>
 
 <template>
@@ -580,8 +590,9 @@ const last_payment = computed(() => {
 
         <!-- Box: Payment/Invoices/Delivery Notes  -->
         <BoxStatPallet class="py-4 pl-1.5 pr-3" icon="fal fa-user">
+            <!-- Field: Billing -->
             <dl class="relative flex items-start w-full flex-none gap-x-1">
-                <dt class="flex-none pt-0.5">
+                <dt class="flex-none pt-0.5 pl-1">
                     <FontAwesomeIcon icon="fal fa-dollar-sign" fixed-width aria-hidden="true" class="text-gray-500" />
                 </dt>
 
@@ -603,43 +614,38 @@ const last_payment = computed(() => {
                         <Link :href="route('grp.org.accounting.payments.show', {
                             organisation: route().params.organisation,
                             payment: last_payment?.id
-                        })" class="primaryLink">{{ last_payment?.reference ?? last_payment?.id }}
+                        })" class="secondaryLink">{{ last_payment?.reference ?? last_payment?.id }}
                         </Link>
                     </div>
                 </div>
-
             </dl>
 
-            <div class="mt-1 flex items-center w-full flex-none gap-x-1.5">
-                <dt class="flex-none">
+            <!-- Field: weight -->
+            <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
+                <dt class="flex-none pl-1">
                     <FontAwesomeIcon icon="fal fa-weight" fixed-width aria-hidden="true" class="text-gray-500" />
                 </dt>
                 <dd class="text-gray-500 sep" v-tooltip="trans('Estimated weight of all products')">
                     {{ box_stats?.products.estimated_weight || 0 }} kilograms
                 </dd>
-            </div>
+            </dl>
 
 
             <div v-if="box_stats?.invoice" class="mt-1 flex items-center w-full flex-none justify-between">
                 <Link
                     :href="route(box_stats?.invoice?.routes?.show?.name, box_stats?.invoice?.routes?.show.parameters)"
                     class="flex items-center gap-3 gap-x-1.5 primaryLink cursor-pointer">
-                    <dt class="flex-none">
+                    <div class="flex-none">
                         <FontAwesomeIcon icon="fal fa-file-invoice-dollar" fixed-width aria-hidden="true" class="text-gray-500" />
-                    </dt>
-                    <dd class="text-gray-500 " v-tooltip="trans('Invoice')">
+                    </div>
+                    <div class="text-gray-500 " v-tooltip="trans('Invoice')">
                         {{ box_stats?.invoice?.reference }}
-                    </dd>
+                    </div>
                 </Link>
 
                 <a v-if="box_stats?.invoice?.routes?.download?.name" :href="route(box_stats?.invoice?.routes?.download?.name, box_stats?.invoice?.routes?.download.parameters)"
-                   as="a" target="_blank" class="flex items-center">
-                    <button class="flex items-center">
-                        <div class="flex-none">
-                            <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true"
-                                             class="text-gray-500 hover:text-indigo-500 transition-colors duration-200" />
-                        </div>
-                    </button>
+                   as="a" target="_blank" class="flex items-center text-gray-400 hover:text-orange-600">
+                    <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true" />
                 </a>
             </div>
 
@@ -682,7 +688,7 @@ const last_payment = computed(() => {
 
                     <div class="flex items-center gap-2 text-sm text-gray-700 mb-1">
                         <span class="font-medium">Ref:</span>
-                        <span>{{ note?.reference }}</span>
+                        <Link :href="generateRouteDeliveryNote(note?.slug)" class="secondaryLink">{{ note?.reference }}</Link>
                         <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
                             <Icon :data="note?.state" />
                         </span>
@@ -694,9 +700,9 @@ const last_payment = computed(() => {
                         <ul class="list-disc pl-4 space-y-1">
                             <li v-for="(shipment, i) in note.shipments" :key="i">
                                 <template v-if="shipment?.formatted_tracking_urls?.length">
+                                    {{ shipment.name }}
                                     <div v-for="trackingData in shipment.formatted_tracking_urls">
 
-                                        {{shipment.name}}
                                         <a :href="trackingData.url" target="_blank" rel="noopener noreferrer"
                                             class="secondaryLink"
                                             v-tooltip="trans('Click to track shipment')">
@@ -704,11 +710,13 @@ const last_payment = computed(() => {
                                         </a>
                                     </div>
                                 </template>
-                                <template v-else>
-                                    <div class="text-gray-400 italic">
-                                        {{ trans('No Tracking available') }}
-                                    </div>
-                                </template>
+
+                                <span v-else-if="shipment.name" class="">
+                                    {{ shipment.name }}
+                                </span>
+                                <span v-else-if="shipment.name" class="text-gray-400 italic">
+                                    {{ trans("No shipment information") }}
+                                </span>
                             </li>
                         </ul>
                     </div>
