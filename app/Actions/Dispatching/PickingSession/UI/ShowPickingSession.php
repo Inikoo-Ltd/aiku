@@ -130,9 +130,12 @@ class ShowPickingSession extends OrgAction
             'Org/Inventory/PickingSession',
             $props
         );
-
-        $inertiaResponse->table(IndexDeliveryNoteItemsInPickingSession::make()->tableStructure(parent: $pickingSession));
-
+        if ($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
+              $inertiaResponse->table(IndexDeliveryNoteItemsInPickingSession::make()->tableStructure(parent: $pickingSession));
+        } elseif ($pickingSession->state == PickingSessionStateEnum::HANDLING) {
+            $inertiaResponse->table(IndexDeliveryNoteItemsInPickingSessionStateActive::make()->tableStructure());
+        }
+      
         return $inertiaResponse;
     }
 
