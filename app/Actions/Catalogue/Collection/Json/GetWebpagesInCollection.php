@@ -72,8 +72,7 @@ class GetWebpagesInCollection extends OrgAction
 
         $queryBuilder->where('webpages.website_id', $parent->id);
 
-        if($bucket == 'live')
-        {
+        if ($bucket == 'live') {
             $queryBuilder->where('webpages.state', WebpageStateEnum::LIVE);
         }
 

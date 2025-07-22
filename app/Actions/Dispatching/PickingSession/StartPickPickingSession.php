@@ -14,7 +14,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Models\Inventory\PickingSession;
-use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class StartPickPickingSession extends OrgAction

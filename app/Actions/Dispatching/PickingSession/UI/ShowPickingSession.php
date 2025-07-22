@@ -12,7 +12,6 @@ use App\Enums\UI\Dispatch\PickingSessionTabsEnum;
 use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsStateHandlingResource;
 use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsStateUnassignedResource;
 use App\Http\Resources\Dispatching\PickingSessionResource;
-use App\Http\Resources\Dispatching\PickingSessionsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Inventory\PickingSession;
@@ -62,7 +61,7 @@ class ShowPickingSession extends OrgAction
 
             $label = $case->labels()[$case->value];
             $label .= ' ('.$pickingSession->user->contact_name.')';
-            
+
 
 
             $timeline[$case->value] = [
@@ -83,7 +82,7 @@ class ShowPickingSession extends OrgAction
 
 
         $actions   = null;
-        if($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
+        if ($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
             $actions[] = [
                 'type'    => 'button',
                 'style'   => 'save',
@@ -142,15 +141,15 @@ class ShowPickingSession extends OrgAction
         if ($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
             return [
                 PickingSessionTabsEnum::ITEMS->value => $this->tab == PickingSessionTabsEnum::ITEMS->value ?
-                    fn() => PickingSessionDeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession))
-                    : Inertia::lazy(fn() => PickingSessionDeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession))),
+                    fn () => PickingSessionDeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession))
+                    : Inertia::lazy(fn () => PickingSessionDeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession))),
 
             ];
         } elseif ($pickingSession->state == PickingSessionStateEnum::HANDLING) {
             return [
                 PickingSessionTabsEnum::ITEMS->value => $this->tab == PickingSessionTabsEnum::ITEMS->value ?
-                    fn() => PickingSessionDeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsInPickingSessionStateActive::run($pickingSession))
-                    : Inertia::lazy(fn() => PickingSessionDeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsInPickingSessionStateActive::run($pickingSession))),
+                    fn () => PickingSessionDeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsInPickingSessionStateActive::run($pickingSession))
+                    : Inertia::lazy(fn () => PickingSessionDeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsInPickingSessionStateActive::run($pickingSession))),
 
             ];
         }
