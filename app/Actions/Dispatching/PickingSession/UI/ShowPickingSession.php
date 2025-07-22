@@ -8,8 +8,7 @@ use App\Actions\UI\WithInertia;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
 use App\Enums\UI\Dispatch\PickingSessionTabsEnum;
-use App\Http\Resources\Dispatching\DeliveryNoteItemsResource;
-use App\Http\Resources\Dispatching\DeliveryNoteItemsStateUnassignedResource;
+use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsStateUnassignedResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Inventory\PickingSession;
@@ -44,7 +43,8 @@ class ShowPickingSession extends OrgAction
     public function htmlResponse(PickingSession $pickingSession, ActionRequest $request): Response
     {
 
-        $title=__('Picking Session');;
+        $title = __('Picking Session');
+        ;
 
         $actions = null;
         $props = [
@@ -82,11 +82,11 @@ class ShowPickingSession extends OrgAction
     public function getItems(PickingSession $pickingSession): array
     {
 
-        if($pickingSession->state==PickingSessionStateEnum::IN_PROCESS){
+        if ($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
             return [
                 PickingSessionTabsEnum::ITEMS->value => $this->tab == PickingSessionTabsEnum::ITEMS->value ?
-                    fn () => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession))
-                    : Inertia::lazy(fn () => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession))),
+                    fn () => PickingSessionDeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession))
+                    : Inertia::lazy(fn () => PickingSessionDeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession))),
 
             ];
         }
