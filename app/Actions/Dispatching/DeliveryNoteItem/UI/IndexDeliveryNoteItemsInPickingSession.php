@@ -38,7 +38,6 @@ class IndexDeliveryNoteItemsInPickingSession extends OrgAction
 
         $query->where('delivery_note_items.picking_session_id', $parent->id);
         $query->leftJoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id');
-        // dd($query->get());
         $query->select([
                 'delivery_note_items.id as id',
                 'delivery_note_items.state',
@@ -83,7 +82,7 @@ class IndexDeliveryNoteItemsInPickingSession extends OrgAction
             $table->column(key: 'quantity_required', label: __('Quantity Required'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent->state != PickingSessionStateEnum::IN_PROCESS) {
                 $table->column(key: 'quantity_picked', label: __('Quantity Picked'), canBeHidden: false, sortable: true, searchable: true);
-                if ($parent->state == PickingSessionStateEnum::ACTIVE) {
+                if ($parent->state == PickingSessionStateEnum::HANDLING) {
                     $table->column(key: 'quantity_to_pick', label: __('Todo'), canBeHidden: false, sortable: true, searchable: true);
                 }
                 $table->column(key: 'action', label: __('action'), canBeHidden: false, sortable: false, searchable: false);
