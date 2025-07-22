@@ -57,6 +57,7 @@ import { faSpinnerThird } from '@far'
 import DeliveryAddressManagementModal from '@/Components/Utils/DeliveryAddressManagementModal.vue'
 import UploadExcel from '@/Components/Upload/UploadExcel.vue'
 import TablePayments from '@/Components/Tables/Grp/Org/Accounting/TablePayments.vue'
+import ModalConfirmationDelete from '@/Components/Utils/ModalConfirmationDelete.vue'
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird)
 
 interface UploadSection {
@@ -371,13 +372,41 @@ const last_payment = computed(() => {
     <PageHeading :data="pageHead">
         <template #button-add-products="{ action }">
             <div class="relative">
-						<Button
-							:style="action.style"
-							:label="action.label"
-							:icon="action.icon"
-							@click="() => openModal(action)"
-							:key="`ActionButton${action.label}${action.style}`"
-							:tooltip="action.tooltip" />
+                <Button
+                    :style="action.style"
+                    :label="action.label"
+                    :icon="action.icon"
+                    @click="() => openModal(action)"
+                    :key="`ActionButton${action.label}${action.style}`"
+                    :tooltip="action.tooltip"
+                />
+            </div>
+        </template>
+
+        <!-- Button: rollback -->
+        <template #button-rollback="{ action }">
+            <div class="relative">
+                <!-- <pre>{{ action.route }}</pre> -->
+                <ModalConfirmationDelete
+                    :routeDelete="action.route"
+                    :title="trans('Are you sure you want to rollback the Order??')"
+                    :description="trans('The state of the Order will go back to packed, but not delete it.')"
+                    isFullLoading
+                    :noLabel="trans('Yes, rollback')"
+                    noIcon="far fa-undo-alt"
+                >
+                    <template #default="{ isOpenModal, changeModel }">
+                        <Button
+                            @click="changeModel"
+                            type="negative"
+                            :label="trans('Rollback')"
+                            icon="far fa-undo-alt"
+                            :tooltip="trans('Rollback the dispatch')"
+                        />
+                    </template>
+                </ModalConfirmationDelete>
+
+                
             </div>
         </template>
 

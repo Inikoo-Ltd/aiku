@@ -118,7 +118,7 @@ class GetOrderActions
                             'style'   => '',
                             'tooltip' => __('Rollback'),
                             'label'   => __('Rollback'),
-                            'key'     => 'action',
+                            'key'     => 'rollback',
                             'route'   => [
                                 'method'     => 'patch',
                                 'name'       => 'grp.models.order.rollback_dispatch',
