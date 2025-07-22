@@ -97,18 +97,18 @@ console.log(props)
 </script>
 
 <template>
- <Head>
-  <title>{{ webpage.title }}</title>
-    <meta name="description" :content="webpage.description" />
-    <meta property="og:type" content="website" />
-    <meta property="og:title" :content="webpage.title" />
-    <meta property="og:description" :content="webpage.description" />
-    <meta property="og:url" :content="currentUrl" />
-    <meta property="og:image" :content="webpage_img.png" />
-    <meta property="og:image:alt" :content="webpage.title" />
-    <meta property="og:locale" content="en_US" />
-    <meta property="og:site_name" :content="webpage.title" />>
-</Head>
+    <Head>
+        <title>{{ webpage.title }}</title>
+        <meta name="description" :content="webpage.description" />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" :content="webpage.title" />
+        <meta property="og:description" :content="webpage.description" />
+        <meta property="og:url" :content="currentUrl" />
+        <meta property="og:image" :content="webpage_img.png" />
+        <meta property="og:image:alt" :content="webpage.title" />
+        <meta property="og:locale" content="en_US" />
+        <meta property="og:site_name" :content="webpage.title" />
+    </Head>
 
 
 

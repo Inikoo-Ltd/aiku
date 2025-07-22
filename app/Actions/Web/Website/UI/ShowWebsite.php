@@ -220,6 +220,23 @@ class ShowWebsite extends OrgAction
                 ],
 
                 'route_storefront' => $route_storefront,
+                
+                'route_redirects' => [
+                    // 'submit' => [   // TODO: Ganez
+                    //     'name'       => 'grp.org.shops.show.web.redirects.store',
+                    //     'parameters' => [
+                    //         'organisation' => $shop->organisation->slug,
+                    //         'shop'         => $shop->slug,
+                    //         'website'      => $website->slug
+                    //     ]
+                    // ],
+                    'fetch_live_webpages' => [
+                        'name'       => 'grp.json.active_webpages.index',
+                        'parameters' => [
+                            'shop'         => $shop->slug,
+                        ]
+                    ],
+                ],
 
                 WebsiteTabsEnum::SHOWCASE->value => $this->tab == WebsiteTabsEnum::SHOWCASE->value ? array_merge(WebsiteResource::make($website)->getArray(), ['layout' => GetWebsiteWorkshopLayout::run($this->parent, $website)['routeList']], ['stats' => $stats, 'content_blog_stats' => $content_blog_stats])
                     : Inertia::lazy(fn () => WebsiteResource::make($website)->getArray()),

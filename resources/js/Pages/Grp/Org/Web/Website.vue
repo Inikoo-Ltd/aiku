@@ -37,6 +37,7 @@ import PureInput from "@/Components/Pure/PureInput.vue"
 import { useForm } from '@inertiajs/vue3'
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import { trans } from "laravel-vue-i18n"
+import { notify } from "@kyvg/vue3-notification"
 
 library.add(
     faChartLine,
@@ -70,6 +71,10 @@ const props = defineProps<{
     external_links?: {},
     analytics: object
     route_storefront: routeType
+    route_redirects: {
+        fetch_live_webpages: routeType
+        submit: routeType
+    }
 }>()
 
 /* provide('layout', {})
@@ -93,19 +98,28 @@ const component = computed(() => {
 
 })
 
-const openModal = ref(false)
 
+
+const openModal = ref(false)
 const form = useForm({
     from_url: '',
     to_url: ''
 })
-
 const submitForm = () => {
-    form.post(route('redirects.store'), {
+    if (props?.route_redirects?.submit?.name) {
+        console.log('No submit route')
+        return 
+    }
+    form.post(route(props.route_redirects.submit.name, props.route_redirects.submit.parameters), {
         preserveScroll: true,
         onSuccess: () => {
             openModal.value = false
             form.reset()
+            notify({
+                title: trans("Success!"),
+                text: trans("New redirect created successfully."),
+                type: "success",
+            })
         }
     })
 }
@@ -125,19 +139,23 @@ const submitForm = () => {
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component :is="component" :data="props[currentTab]" :tab="currentTab" :route_storefront />
 
-    <Modal :isOpen="openModal" width="w-1/4">
+    <Modal :isOpen="openModal" width="w-full max-w-md" closeButton @onClose="openModal = false">
         <slot name="modal" :closeModal="() => openModal = false">
             <div class="space-y-2">
                 <!-- Modal Title -->
-                <h2 class="text-xl font-semibold text-gray-800 pb-2 border-b">Create Redirect</h2>
+                <h2 class="text-xl font-semibold pb-2 border-b">Create Redirect</h2>
 
                 <!-- Form -->
                 <form @submit.prevent="submitForm" class="space-y-3">
                     <!-- From URL -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 py-2">From URL</label>
-                        <PureInput v-model="form.from_url" placeholder="e.g. /old-page"
-                            :class="{ 'border-red-500': form.errors.from_url }" />
+                        <div class="block text-sm font-medium py-2">From URL:</div>
+                        <PureInput
+                            v-model="form.from_url"
+                            placeholder="e.g. /old-page"
+                            :class="{ 'border-red-500': form.errors.from_url }"
+                            :disabled="form.processing"
+                        />
                         <p v-if="form.errors.from_url" class="text-sm text-red-600 mt-1">
                             {{ form.errors.from_url }}
                         </p>
@@ -145,23 +163,39 @@ const submitForm = () => {
 
                     <!-- To URL -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 py-2">To URL</label>
-                        <PureMultiselectInfiniteScroll v-model="form.to_url" :fetchRoute="{
-                            name: 'grp.org.shops.show.web.webpages.index', parameters: {
-                                organisation: route().params['organisation'],
-                                shop: route().params['shop'],
-                                website: route().params['website'],
-                            }
-                        }" :placeholder="trans('Select Redirect')" valueProp="id" labelProp="url"  />
+                        <div class="block text-sm font-medium py-2">Target URL:</div>
+                        <PureMultiselectInfiniteScroll
+                            v-model="form.to_url"
+                            :fetchRoute="route_redirects.fetch_live_webpages"
+                            :placeholder="trans('Select Redirect')"
+                            valueProp="id"
+                            labelProp="url"
+                            :disabled="form.processing"
+                        >
+                            <template #singlelabel="{ value }">
+                                <div
+                                    class="w-full text-left pl-3 pr-2 text-sm whitespace-nowrap truncate">
+                                    {{ value.slug }}
+                                    <span v-if="value.code" class="text-sm text-gray-400">(/{{ value.href }})</span>
+                                </div>
+                            </template>
+
+                            <template #option="{ option, isSelected, isPointed }">
+                                <!-- <pre>{{ option }}</pre> -->
+                                <div class="">{{ option.slug }} <span v-if="option.code" class="text-sm"
+                                    :class="isSelected(option) ? 'text-indigo-200' : 'text-gray-400'">(/{{ option.href }})</span>
+                                </div>
+                            </template>
+                        </PureMultiselectInfiniteScroll>
                         <p v-if="form.errors.to_url" class="text-sm text-red-600 mt-1">
                             {{ form.errors.to_url }}
                         </p>
                     </div>
 
                     <!-- Action Buttons -->
-                    <div class="flex justify-end space-x-2 pt-2">
+                    <div class="flex justify-end space-x-2">
                         <Button label="Cancel" @click="() => openModal = false" type="white" />
-                        <Button type="save" label="create Redirect" :disabled="form.processing" />
+                        <Button type="save" label="create Redirect" full :disabled="form.processing" />
                     </div>
                 </form>
             </div>
