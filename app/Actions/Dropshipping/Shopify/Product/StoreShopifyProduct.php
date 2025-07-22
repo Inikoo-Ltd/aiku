@@ -37,8 +37,11 @@ class StoreShopifyProduct extends RetinaAction
      *
      * @return array|null The created product data or null if creation failed
      */
-    public function handle(ShopifyUser $shopifyUser, Portfolio $portfolio, array $productData = []): ?array
+    public function handle(Portfolio $portfolio, array $productData = []): ?array
     {
+
+        $shopifyUser = $portfolio->customerSalesChannel->user;
+
         $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
 
         if (!$client) {

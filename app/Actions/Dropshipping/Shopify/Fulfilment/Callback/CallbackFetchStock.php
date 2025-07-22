@@ -10,6 +10,8 @@ namespace App\Actions\Dropshipping\Shopify\Fulfilment\Callback;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Models\Catalogue\Product;
+use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -24,11 +26,21 @@ class CallbackFetchStock extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(ShopifyUser $shopifyUser, array $modelData): void
+    public function handle(ShopifyUser $shopifyUser): void
     {
-        foreach ($modelData as $fetchStock) {
-            // TODO Use for update stock to syncronize with shopify
+
+        $stock=[];
+        /** @var Portfolio $portfolio */
+        foreach (Portfolio::where('customer_sales_channel_id', $shopifyUser->customer_sales_channel_id)->get() as $portfolio){
+            /** @var Product $product */
+            $product = $portfolio->item;
+            $stock[$portfolio->sku]=$product->available_quantity;
         }
+
+
+        print json_encode($stock);
+
+
     }
 
     /**
@@ -42,6 +54,6 @@ class CallbackFetchStock extends OrgAction
 
         $this->initialisation($shopifyUser->organisation, $request);
 
-        $this->handle($shopifyUser, $request->all());
+        $this->handle($shopifyUser);
     }
 }

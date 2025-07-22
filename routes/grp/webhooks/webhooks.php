@@ -25,7 +25,7 @@ Route::name('webhooks.')->group(function () {
 
 Route::prefix('shopify/{shopifyUser:id}')->name('webhooks.shopify.')->group(function () {
     Route::post('fulfillment_order_notification', CallbackFulfillmentOrderNotification::class)->name('fulfillment_order_notification');
-    Route::post('fetch_stock', CallbackFetchStock::class)->name('fetch_stock');
+    Route::get('fetch_stock.json', CallbackFetchStock::class)->name('fetch_stock');
 
 
 

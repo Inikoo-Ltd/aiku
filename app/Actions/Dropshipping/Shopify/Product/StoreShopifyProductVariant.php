@@ -114,7 +114,7 @@ class StoreShopifyProductVariant extends RetinaAction
 
             // Make the GraphQL request
             $response = $client->request($mutation, $variables);
-            dd($response);
+
 
             if (!empty($response['errors']) || !isset($response['body'])) {
                 $errorMessage = 'Error in API response: '.json_encode($response['errors'] ?? []);

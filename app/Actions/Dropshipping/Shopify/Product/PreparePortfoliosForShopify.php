@@ -40,9 +40,10 @@ class PreparePortfoliosForShopify
 
             $numberMatches = '';
             $matchesLabels = [];
+            $matches=[];
 
             if (!$hasValidProductId || !$productExistsInShopify || !$hasVariantAtLocation) {
-                $result = FindShopifyProductVariant::run($customerSalesChannel, trim($portfolio->sku.' '.$portfolio->barcode.' '.$product->code));
+                $result = FindShopifyProductVariant::run($customerSalesChannel, trim($portfolio->sku.' '.$portfolio->barcode));
 
                 $matches       = Arr::get($result, 'products', []);
                 $numberMatches = count($matches);
@@ -51,16 +52,37 @@ class PreparePortfoliosForShopify
 
 
             if ($fixLevel >= 1) {
-                if ($hasValidProductId && !$hasVariantAtLocation) {
+                if ($hasValidProductId && !$hasVariantAtLocation && $numberMatches == 0) {
                     StoreShopifyProductVariant::run($portfolio);
                     $hasVariantAtLocation = $this->hasVariantAtLocation($shopifyUser, $portfolio->platform_product_id);
                 }
 
-                if (!$hasValidProductId || !$productExistsInShopify) {
+                if (!$hasValidProductId || !$productExistsInShopify && $numberMatches == 0) {
                     StoreShopifyProduct::run($portfolio);
                     $hasVariantAtLocation = $this->hasVariantAtLocation($shopifyUser, $portfolio->platform_product_id);
                 }
             }
+
+            if ($fixLevel >= 1) {
+                if ($hasValidProductId && $productExistsInShopify) {
+
+                    $firstMatch = Arr::first($matches);
+                    $shopifyProductId=Arr::get($firstMatch,'id');
+
+
+                    $portfolio->update([
+                        'platform_product_id' => $shopifyProductId,
+                    ]);
+                    $portfolio->refresh();
+                    StoreShopifyProductVariant::run($portfolio);
+                    $hasValidProductId      = $this->isValidShopifyProductId($portfolio->platform_product_id);
+                    $productExistsInShopify = $this->doesProductExistInShopify($shopifyUser, $portfolio->platform_product_id);
+                    $hasVariantAtLocation = $this->hasVariantAtLocation($shopifyUser, $portfolio->platform_product_id);
+
+                }
+
+            }
+
 
 
             $portfoliosSynchronisation[$portfolio->id] = [

@@ -64,11 +64,12 @@ class StoreFulfilmentService
             MUTATION;
 
             $variables = [
-                'name'                   => $fulfilmentServiceName,
-                'callbackUrl'            => config('app.url').'webhooks/shopify/'.$shopifyUser->id,
-                'trackingSupport'        => false,
-                'inventoryManagement'    => true,
+                'name'                => $fulfilmentServiceName,
+                'callbackUrl'         => 'https://'.config('app.domain').'/webhooks/shopify/'.$shopifyUser->id,
+                'trackingSupport'     => false,
+                'inventoryManagement' => true,
             ];
+
 
             $response = $client->request('POST', '/admin/api/2025-07/graphql.json', [
                 'json' => [
