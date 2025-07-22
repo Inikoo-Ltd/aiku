@@ -118,8 +118,8 @@ if (!function_exists('findSmallestFactors')) {
 
         $absNumber = abs($number);
 
-        if($absNumber<0.01){
-          return   findSmallestFactorsForSmallNumbers( $number);
+        if ($absNumber < 0.01) {
+            return   findSmallestFactorsForSmallNumbers($number);
         }
 
 

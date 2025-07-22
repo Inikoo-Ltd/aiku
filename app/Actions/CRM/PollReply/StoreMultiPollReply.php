@@ -78,5 +78,4 @@ class StoreMultiPollReply extends OrgAction
 
         $this->handle($this->validatedData);
     }
-
 }

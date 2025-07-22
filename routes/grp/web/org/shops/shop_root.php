@@ -25,13 +25,13 @@ Route::prefix('{shop}')->name('show.')
     ->group(function () {
 
         Route::name("dashboard.")->prefix('dashboard')
-            ->group(__DIR__."/dashboard.php");
+            ->group(__DIR__ . "/dashboard.php");
 
         Route::name("catalogue.")->prefix('catalogue')
-            ->group(__DIR__."/catalogue.php");
+            ->group(__DIR__ . "/catalogue.php");
 
         Route::name("billables.")->prefix('billables')
-            ->group(__DIR__."/billables.php");
+            ->group(__DIR__ . "/billables.php");
 
 
 
@@ -40,36 +40,37 @@ Route::prefix('{shop}')->name('show.')
                 Route::get('', ShowDummyDashboard::class)->name('dashboard');
                 Route::prefix("customers")
                     ->name("customers.")
-                    ->group(__DIR__."/customers.php");
+                    ->group(__DIR__ . "/customers.php");
                 Route::prefix("web-users")
                     ->name("web_users.")
-                    ->group(__DIR__."/web_users.php");
+                    ->group(__DIR__ . "/web_users.php");
                 Route::prefix("prospects")
                     ->name("prospects.")
-                    ->group(__DIR__."/prospects.php");
+                    ->group(__DIR__ . "/prospects.php");
                 Route::prefix("polls")
                     ->name("polls.")
-                    ->group(__DIR__."/polls.php");
+                    ->group(__DIR__ . "/polls.php");
+                Route::prefix("traffic-sources")
+                    ->name("traffic_sources.")
+                    ->group(__DIR__ . "/traffic_sources.php");
             }
         );
 
 
         Route::name("ordering.")->prefix('ordering')
-            ->group(__DIR__."/ordering.php");
+            ->group(__DIR__ . "/ordering.php");
 
         Route::name("discounts.")->prefix('offers')
-            ->group(__DIR__."/discounts.php");
+            ->group(__DIR__ . "/discounts.php");
 
         Route::name("marketing.")->prefix('marketing')
-            ->group(__DIR__."/marketing.php");
+            ->group(__DIR__ . "/marketing.php");
 
         Route::prefix("web")
             ->name("web.")
-            ->group(__DIR__."/websites.php");
+            ->group(__DIR__ . "/websites.php");
 
         Route::prefix("settings")
             ->name("settings.")
-            ->group(__DIR__."/settings.php");
-
-
+            ->group(__DIR__ . "/settings.php");
     });
