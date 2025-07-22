@@ -42,12 +42,17 @@ defineProps<{
 const locale = inject("locale", aikuLocaleStructure);
 
 function orgStockRoute(deliveryNoteItem: DeliverNoteItem) {
-    // console.log(route().current())
     switch (route().current()) {
         case "grp.org.warehouses.show.dispatching.delivery_notes.show":
-        // return route(
-        //     "grp.org.shops.show.discounts.campaigns.show",
-        //     [route().params["organisation"], , route().params["shop"], route().params["customer"], deliveryNote.slug])
+        default:
+            return "";
+    }
+}
+
+
+function showdeliveryNoteRoute(deliveryNoteItem) {
+    switch (route().current()) {
+        case "grp.org.shops.show.crm.customers.show.delivery_notes.show":
         default:
             return "";
     }
@@ -158,16 +163,14 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
 <template>
     <Table :resource="data" class="mt-5" rowAlignTop>
         <!-- Column: state -->
-        <template #cell(state)="{ item }">
-            <Icon :data="item.state_icon" />
-        </template>
+     
 
-        <!-- Column: Reference -->
-        <template #cell(org_stock_code)="{ item: deliveryNoteItem }">
+         <template #cell(org_stock_code)="{ item: deliveryNoteItem }">
             <Link :href="orgStockRoute(deliveryNoteItem)" class="primaryLink">
                 {{ deliveryNoteItem.org_stock_code }}
             </Link>
         </template>
+
 
         <!-- Column: Quantity Required -->
         <template #cell(quantity_required)="{ item }">
