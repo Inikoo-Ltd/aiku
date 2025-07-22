@@ -23,10 +23,6 @@ class TrafficSourcesResource extends JsonResource
         /** @var \App\Models\CRM\TrafficSource $trafficSource */
         $trafficSource = $this->resource;
 
-        $percentage = 0;
-        if ($this->number_customers) {
-            $percentage = ($this->number_customers / ($this->total_customers > 0 ? $this->total_customers : 1)) * 100;
-        }
 
         return [
             'id'                => $trafficSource->id,
@@ -35,7 +31,6 @@ class TrafficSourcesResource extends JsonResource
             'number_customers'  => $trafficSource->number_customers ?? 0,
             'number_customer_purchases' => $trafficSource->number_customer_purchases ?? 0,
             'total_customer_revenue' => $trafficSource->total_customer_revenue ?? 0,
-            'percentage'        => round($percentage, 3) . '%',
             'created_at'        => $trafficSource->created_at,
             'updated_at'        => $trafficSource->updated_at,
         ];

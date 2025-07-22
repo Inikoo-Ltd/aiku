@@ -45,18 +45,10 @@ class IndexTrafficSources extends OrgAction
             $queryBuilder->where('traffic_sources.organisation_id', $parent->id);
             $queryBuilder->leftJoin('organisations', 'organisations.id', '=', 'traffic_sources.organisation_id');
             $queryBuilder->leftJoin('currencies', 'currencies.id', '=', 'organisations.currency_id');
-
-            $totalCustomer = DB::table('organisation_crm_stats')
-                ->where('organisation_id', $parent->id)
-                ->value('number_customers') ?? 0;
         } elseif ($parent instanceof Shop) {
             $queryBuilder->where('traffic_sources.shop_id', $parent->id);
             $queryBuilder->leftJoin('shops', 'shops.id', '=', 'traffic_sources.shop_id');
             $queryBuilder->leftJoin('currencies', 'currencies.id', '=', 'shops.currency_id');
-
-            $totalCustomer = DB::table('shop_crm_stats')
-                ->where('shop_id', $parent->id)
-                ->value('number_customers') ?? 0;
         }
 
         $queryBuilder->leftJoin('traffic_source_stats', function ($join) {
@@ -73,7 +65,6 @@ class IndexTrafficSources extends OrgAction
             'traffic_source_stats.number_customer_purchases',
             'traffic_source_stats.total_customer_revenue',
             'currencies.code as currency_code',
-            DB::raw("'$totalCustomer' AS total_customers"),
         ];
 
         $groupByFields = [
@@ -119,8 +110,7 @@ class IndexTrafficSources extends OrgAction
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_customers', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_customer_purchases', label: __('Purchases'), canBeHidden: false, sortable: true)
-                ->column(key: 'total_customer_revenue', label: __('Total Revenue'), canBeHidden: false, sortable: true, type: 'currency')
-                ->column(key: 'percentage', label: __('Response %'), canBeHidden: false, align: 'right');
+                ->column(key: 'total_customer_revenue', label: __('Total Revenue'), canBeHidden: false, sortable: true, type: 'currency');
         };
     }
 
