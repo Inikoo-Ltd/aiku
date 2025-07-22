@@ -29,7 +29,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class StoreFulfilmentFromShopify extends OrgAction
+class StorePalletReturnFromShopify extends OrgAction
 {
     use AsAction;
     use WithAttributes;

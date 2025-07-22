@@ -8,38 +8,26 @@
 
 namespace App\Actions\Dropshipping\Shopify\Fulfilment\Callback;
 
-use App\Actions\OrgAction;
-use App\Actions\Traits\WithActionUpdate;
-use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Actions\WebhookAction;
 use App\Models\Dropshipping\ShopifyUser;
-use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class CallbackFulfillmentOrderNotification extends OrgAction
+class CallbackFulfillmentOrderNotification extends WebhookAction
 {
-    use AsAction;
-    use WithAttributes;
-    use WithActionUpdate;
-
-    public string $commandSignature = 'callback:fulfillment-order-notification {customerSalesChannel} {kind}';
-
-    public function handle(ShopifyUser $shopifyUser, array $modelData)
+    public function handle(ShopifyUser $shopifyUser, array $modelData): void
     {
         if (Arr::get($modelData, 'kind') === "FULFILLMENT_REQUEST") {
-            AssignFulfillmentOrderRequest::run($shopifyUser);
+            RetrieveShopifyAssignedOrders::run($shopifyUser);
         }
     }
 
-    public function asCommand(Command $command)
-    {
-        $customerSalesChanel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->first();
 
-        $this->handle($customerSalesChanel->user, [
-            'kind' => $command->argument('kind')
-        ]);
+    public function rules(): array
+    {
+        return [
+            'kind' => ['required', 'string'],
+        ];
     }
 
     /**
@@ -51,8 +39,10 @@ class CallbackFulfillmentOrderNotification extends OrgAction
             abort(422);
         }
 
-        $this->initialisation($shopifyUser->organisation, $request);
+        $this->initialisation($request);
 
-        $this->handle($shopifyUser, $request->all());
+        $this->handle($shopifyUser, $this->validatedData);
     }
+
+
 }

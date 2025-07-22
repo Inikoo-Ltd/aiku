@@ -9,60 +9,50 @@
 namespace App\Actions\Dropshipping\Shopify\Fulfilment\Callback;
 
 use App\Actions\Dropshipping\Shopify\Fulfilment\Webhooks\CreateFulfilmentOrderFromShopify;
+use App\Actions\Dropshipping\Shopify\WithShopifyApi;
 use App\Actions\OrgAction;
-use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\ShopifyUser;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class AcceptFulfillmentRequest extends OrgAction
+
+class AcceptShopifyFulfillmentRequest extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
-    use WithActionUpdate;
+
+    use WithShopifyApi;
 
     /**
      * @throws \Throwable
      */
-    public function handle(ShopifyUser $shopifyUser, array $fulfillmentOrderData)
+    public function handle(ShopifyUser $shopifyUser, array $fulfillmentOrderData): array
     {
         try {
             $mutation = <<<'MUTATION'
-mutation acceptFulfillmentRequest($id: ID!, $message: String!) {
-  fulfillmentOrderAcceptFulfillmentRequest(
-    id: $id
-    message: $message
-  ) {
-    fulfillmentOrder {
-      status
-      requestStatus
-    }
-    userErrors {
-      field
-      message
-    }
-  }
-}
-MUTATION;
+                    mutation acceptFulfillmentRequest($id: ID!, $message: String!) {
+                            fulfillmentOrderAcceptFulfillmentRequest(
+                                id: $id
+                                message: $message
+                            ) {
+                                fulfillmentOrder {
+                                status
+                                requestStatus
+                            }
+                            userErrors {
+                                field
+                                message
+                            }
+                        }
+                    }
+            MUTATION;
 
             $variables = [
                 'id'      => $fulfillmentOrderData['id'],
                 'message' => __('Your fulfillment request has been accepted.'),
             ];
 
-            $client = $shopifyUser->getShopifyClient();
-            $response = $client->request('POST', '/admin/api/2025-07/graphql.json', [
-                'json' => [
-                    'query'     => $mutation,
-                    'variables' => $variables
-                ]
-            ]);
-
-            if (!empty($response['errors']) || !isset($response['body'])) {
-                return [false, 'Error in API response: '.json_encode($response['errors'] ?? [])];
+            list($status, $res) = $this->doPost($shopifyUser, $mutation, $variables);
+            if (!$status) {
+                return $res;
             }
-
-            $body = $response['body']->toArray();
+            $body = $res['body']->toArray();
 
             // Check for user errors
             $userErrors = $body['data']['fulfillmentOrderAcceptFulfillmentRequest']['userErrors'] ?? [];
@@ -75,9 +65,13 @@ MUTATION;
 
             if ($fulfillmentOrder) {
                 CreateFulfilmentOrderFromShopify::run($shopifyUser, $fulfillmentOrderData);
+
+                return [true, 'Fulfillment order accepted'];
             }
+
+            return [false, 'No fulfillment order data in response'];
         } catch (\Exception $e) {
-            return [false, 'Exception occurred: ' . $e->getMessage()];
+            return [false, 'Exception occurred: '.$e->getMessage()];
         }
     }
 }
