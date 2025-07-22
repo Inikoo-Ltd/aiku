@@ -5,9 +5,10 @@ namespace App\Actions\Dispatching\PickingSession\UI;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSession;
 use App\Actions\OrgAction;
 use App\Actions\UI\WithInertia;
+use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
 use App\Enums\UI\Dispatch\PickingSessionTabsEnum;
-use App\Http\Resources\Dispatching\DeliveryNoteItemsResource;
+use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsStateUnassignedResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Inventory\PickingSession;
@@ -31,7 +32,6 @@ class ShowPickingSession extends OrgAction
         return $pickingSession;
     }
 
-    /** @noinspection PhpUnusedParameterInspection */
     public function asController(Organisation $organisation, Warehouse $warehouse, PickingSession $pickingSession, ActionRequest $request): PickingSession
     {
         $this->parent = $warehouse;
@@ -42,19 +42,21 @@ class ShowPickingSession extends OrgAction
 
     public function htmlResponse(PickingSession $pickingSession, ActionRequest $request): Response
     {
+
+        $title = __('Picking Session');
+        ;
+
         $actions = null;
-        // dd(IndexDeliveryNoteItemsInPickingSession::run($pickingSession, PickingSessionTabsEnum::ITEMS->value));
-        // dd(DeliveryNoteItemsResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession)));
         $props = [
-            'title'         => __('picking session'),
+            'title'         => $title,
             'breadcrumbs'   => null,
             'navigation'    => null,
             'pageHead'      => [
                 'title'      => $pickingSession->reference,
-                'model'      => __('Picking Session'),
+                'model'      => $title,
                 'icon'       => [
                     'icon'  => 'fal fa-truck',
-                    'title' => __('picking session')
+                    'title' => $title
                 ],
                 'actions'    => $actions,
             ],
@@ -79,11 +81,18 @@ class ShowPickingSession extends OrgAction
 
     public function getItems(PickingSession $pickingSession): array
     {
-        return [
-            PickingSessionTabsEnum::ITEMS->value => $this->tab == PickingSessionTabsEnum::ITEMS->value ?
-                fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession))
-                : Inertia::lazy(fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession))),
 
-        ];
+        if ($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
+            return [
+                PickingSessionTabsEnum::ITEMS->value => $this->tab == PickingSessionTabsEnum::ITEMS->value ?
+                    fn () => PickingSessionDeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession))
+                    : Inertia::lazy(fn () => PickingSessionDeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession))),
+
+            ];
+        }
+
+        return [];
+
+
     }
 }
