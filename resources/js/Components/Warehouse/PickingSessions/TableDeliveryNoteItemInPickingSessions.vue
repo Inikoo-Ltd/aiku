@@ -419,7 +419,7 @@ console.log('props', props.pickingSession
             </div>
 
 
-            <Link v-if="pickingSession.state == 'picking_finished' && itemValue.is_picked && itemValue.state == 'handling'" method="patch" @start="packedLoading.add(id)"
+            <Link v-if="pickingSession.state == 'picking_finished'  && itemValue.state == 'handling'" method="patch" @start="packedLoading.add(id)"
                 :href="route('grp.models.delivery_note.state.packed', { deliveryNote: itemValue.delivery_note_id })" @finish="packedLoading.delete(id)"
                 class="mx-3">
                 <Button type="save" label="Set as packed" size="sm" :loading="isPacking(itemValue.id)"/>
