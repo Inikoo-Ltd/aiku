@@ -12,6 +12,9 @@ use App\Actions\Comms\Outbox\UI\IndexOutboxes;
 use App\Actions\Comms\Outbox\UI\ShowOutbox;
 use App\Actions\Comms\Outbox\UI\ShowOutboxWorkshop;
 use App\Actions\Helpers\Snapshot\UI\IndexSnapshots;
+use App\Actions\Web\Announcement\UI\IndexAnnouncements;
+use App\Actions\Web\Announcement\UI\ShowAnnouncement;
+use App\Actions\Web\Announcement\UI\ShowAnnouncementWorkshop;
 use App\Actions\Web\Banner\UI\CreateBanner;
 use App\Actions\Web\Banner\UI\EditBanner;
 use App\Actions\Web\Banner\UI\IndexBanners;
@@ -127,6 +130,12 @@ Route::prefix('{website}/banners')->name('banners.')->group(function () {
     Route::get('/{banner}/workshop', ShowBannerWorkshop::class)->name('workshop');
     Route::get('/{banner}/edit', EditBanner::class)->name('edit');
     Route::get('/{banner}', ShowBanner::class)->name('show');
+});
+
+Route::prefix('{website}/announcements')->name('announcements.')->group(function () {
+    Route::get('', IndexAnnouncements::class)->name('index');
+    Route::get('/{announcement}/workshop', ShowAnnouncementWorkshop::class)->name('workshop');
+    Route::get('/{announcement}', ShowAnnouncement::class)->name('show');
 });
 
 Route::prefix('{website}/analytics')->name('analytics.')->group(function () {
