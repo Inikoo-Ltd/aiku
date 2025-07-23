@@ -69,7 +69,7 @@ class IndexRetinaPortfolios extends RetinaAction
         }
 
         if ($customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
-            $query->with(['shopifyPortfolio', 'customerSalesChannel']);
+            $query->with(['customerSalesChannel']);
         }
         $query->with(['item']);
 
@@ -340,10 +340,10 @@ class IndexRetinaPortfolios extends RetinaAction
 
             $table->column(key: 'image', label: __(''), canBeHidden: false, searchable: true);
             // $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'name', label: __('Item'), canBeHidden: false, sortable: true, searchable: true);
             // $table->column(key: 'quantity_left', label: __('stock'), canBeHidden: false, sortable: true, searchable: true);
             // $table->column(key: 'weight', label: __('weight'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-            $table->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            // $table->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             // $table->column(key: 'customer_price', label: __('RRP'), tooltip: __('Recommended retail price'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
 
             if ($this->customerSalesChannel->platform->type !== PlatformTypeEnum::MANUAL) {
@@ -351,6 +351,8 @@ class IndexRetinaPortfolios extends RetinaAction
             }
 
             $table->column(key: 'actions', label: '', canBeHidden: false);
+            $table->column(key: 'actions2', label: '', canBeHidden: false);
+            $table->column(key: 'actions3', label: '', canBeHidden: false);
         };
     }
 

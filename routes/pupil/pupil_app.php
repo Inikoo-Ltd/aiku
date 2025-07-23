@@ -7,14 +7,12 @@
  */
 
 
-use App\Actions\Dropshipping\Shopify\Product\StoreMultiplePortfoliosFromShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\SetupShopifyAccount;
 use App\Actions\Pupil\Auth\AuthShopifyUser;
 use App\Actions\Pupil\Dashboard\ShowPupilDashboard;
 
 Route::middleware(['verify.shopify'])->group(function () {
     Route::get('/', ShowPupilDashboard::class)->name('home');
-    Route::post('shopify-user/{shopifyUser:id}/products', StoreMultiplePortfoliosFromShopify::class)->name('shopify_user.product.store')->withoutScopedBindings();
     Route::post('shopify-user/{shopifyUser:id}/get-started', SetupShopifyAccount::class)->name('shopify_user.get_started.store')->withoutScopedBindings();
 
     Route::prefix("dashboard")
