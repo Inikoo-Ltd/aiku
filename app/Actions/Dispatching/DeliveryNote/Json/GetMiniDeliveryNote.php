@@ -94,31 +94,6 @@ class GetMiniDeliveryNote extends OrgAction
                 'packer'           => $deliveryNote->packerUser,
                 'parcels'          => $deliveryNote->parcels,
             ],
-            'shipment' => [
-                'shipments'        => $deliveryNote->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->toArray(request()) : null,
-                'shipments_routes'           => [
-                    'submit_route' => [
-                        'name'       => 'grp.models.delivery_note.shipment.store',
-                        'parameters' => [
-                            'deliveryNote' => $deliveryNote->id
-                        ]
-                    ],
-    
-                    'fetch_route' => [
-                        'name'       => 'grp.json.shippers.index',
-                        'parameters' => [
-                            'organisation' => $deliveryNote->organisation->slug,
-                        ]
-                    ],
-    
-                    'delete_route' => [
-                        'name'       => 'grp.models.delivery_note.shipment.detach',
-                        'parameters' => [
-                            'deliveryNote' => $deliveryNote->id
-                        ]
-                    ],
-                ],
-            ]
         ];
     }
 }
