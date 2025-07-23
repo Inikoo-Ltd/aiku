@@ -10,7 +10,11 @@ import Table from "@/Components/Table/Table.vue";
 import { capitalize } from "@/Composables/capitalize";
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 import Icon from "@/Components/Icon.vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faChair, faHandPaper, faBoxCheck} from "@fal";
 
+
+library.add(faChair, faHandPaper, faBoxCheck);
 
 defineProps<{
   data: object
@@ -36,11 +40,10 @@ function referenceRoute(item) {
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead"></PageHeading>
   <Table :resource="data"  class="mt-5">
-    <!-- <template #cell(state)="{ item }">
-      {{ item }}
-      <Icon :data="item.state" class="px-1" />
+    <template #cell(state)="{ item }">
+      <Icon :data="item.state_icon" class="px-1" />
     </template>
- -->
+
     <template #cell(reference)="{ item }">
       <Link v-if="item.reference" :href="referenceRoute(item)" class="secondaryLink">
       {{ item["reference"] }}
