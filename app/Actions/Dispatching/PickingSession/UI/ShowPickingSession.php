@@ -106,7 +106,7 @@ class ShowPickingSession extends OrgAction
         $props = [
             'title'       => $title,
             'breadcrumbs' => $this->getBreadcrumbs(
-                $pickingSession, 
+                $pickingSession,
                 $request->route()->getName(),
                 $request->route()->originalParameters()
             ),
@@ -143,7 +143,7 @@ class ShowPickingSession extends OrgAction
         } else {
             $inertiaResponse->table(IndexDeliveryNoteItemsInPickingSessionGrouped::make()->tableStructure(parent: $pickingSession));
         }
-      
+
         return $inertiaResponse;
     }
 

@@ -46,26 +46,38 @@ class UpdatePoll extends OrgAction
         if ($poll->type == PollTypeEnum::OPTION && $options) {
             $oldOptions = $poll->pollOptions;
             foreach ($options as $index => $option) {
-                if (isset($option['id'])) {
+                $id = Arr::pull($option, 'id');
+                $optionExist = $oldOptions->where('label', $option['label'])->first() ?? $oldOptions->where('id', $id)->first();
+                if ($optionExist) {
                     UpdatePollOption::make()->action(
-                        PollOption::findOrFail($option['id']),
+                        $optionExist,
                         [
                             'label' => $option['label'],
                         ]
                     );
                     $oldOptions = $oldOptions->reject(
-                        fn (PollOption $pollOption) => $pollOption->id == $option['id']
+                        fn (PollOption $pollOption) => $pollOption->id == $optionExist->id
                     );
                 } else {
                     StorePollOption::make()->action(
                         $poll,
                         [
-                            'value' => $poll->shop->id.$poll->id.$index,
+                            'value' => $poll->shop->id . $poll->id . $index,
                             'label' => $option['label'],
                         ]
                     );
                 }
             }
+            if (!empty($oldOptions)) {
+                foreach ($oldOptions as $oldOption) {
+                    DeletePollOptions::run(
+                        $oldOption,
+                        true
+                    );
+                }
+            }
+        } else {
+            $oldOptions = $poll->pollOptions;
             if (!empty($oldOptions)) {
                 foreach ($oldOptions as $oldOption) {
                     DeletePollOptions::run(
@@ -165,5 +177,4 @@ class UpdatePoll extends OrgAction
 
         return $this->handle($poll, $this->validatedData);
     }
-
 }

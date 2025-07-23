@@ -21,6 +21,7 @@ use App\Http\Resources\CRM\CustomersResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use App\Models\CRM\TrafficSource;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -92,7 +93,7 @@ class IndexCustomers extends OrgAction
     }
 
 
-    public function handle(Group|Organisation|Shop $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Group|Organisation|Shop|TrafficSource $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) use ($parent) {
             $query->where(function ($query) use ($value, $parent) {
@@ -154,6 +155,8 @@ class IndexCustomers extends OrgAction
                 ])
                 ->leftJoin('organisations', 'organisations.id', 'customers.organisation_id');
             $allowedSort = array_merge(['organisation_name', 'shop_name'], $allowedSort);
+        } elseif (class_basename($parent) == 'TrafficSource') {
+            $queryBuilder->where('customers.traffic_source_id', $parent->id);
         } else {
             $queryBuilder->where('customers.organisation_id', $parent->id)
                 ->select([
@@ -161,6 +164,12 @@ class IndexCustomers extends OrgAction
                     'shops.slug as shop_slug',
                 ])
                 ->leftJoin('shops', 'shops.id', 'shop_id');
+        }
+
+        if ($parent instanceof TrafficSource) {
+            $queryBuilder->withBetweenDates(['registered_at', 'last_invoiced_at']);
+        } else {
+            $queryBuilder->withBetweenDates(['registered_at']);
         }
 
         return $queryBuilder
@@ -188,20 +197,19 @@ class IndexCustomers extends OrgAction
             ->leftJoin('currencies', 'shops.currency_id', 'currencies.id')
             ->allowedSorts($allowedSort)
             ->allowedFilters([$globalSearch])
-            ->withBetweenDates(['registered_at'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure(Group|Organisation|Shop $parent, ?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(Group|Organisation|Shop|TrafficSource $parent, ?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
-            if (!($parent instanceof Group)) {
+            if ($parent instanceof Organisation || $parent instanceof Shop) {
                 foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                     $table->elementGroup(
                         key: $key,
@@ -211,7 +219,11 @@ class IndexCustomers extends OrgAction
                 }
             }
 
-            $table->betweenDates(['registered_at']);
+            if ($parent instanceof TrafficSource) {
+                $table->betweenDates(['last_invoiced_at', 'registered_at']);
+            } else {
+                $table->betweenDates(['registered_at']);
+            }
 
             $isDropshipping = false;
             if ($parent instanceof Shop && $parent->type == ShopTypeEnum::DROPSHIPPING) {
@@ -333,11 +345,11 @@ class IndexCustomers extends OrgAction
                     'navigation' => $navigation
                 ],
                 CustomersTabsEnum::DASHBOARD->value => $this->tab == CustomersTabsEnum::DASHBOARD->value ?
-                    fn () => GetCustomersDashboard::run($this->parent, $request)
-                    : Inertia::lazy(fn () => GetCustomersDashboard::run($this->parent, $request)),
+                    fn() => GetCustomersDashboard::run($this->parent, $request)
+                    : Inertia::lazy(fn() => GetCustomersDashboard::run($this->parent, $request)),
                 CustomersTabsEnum::CUSTOMERS->value => $this->tab == CustomersTabsEnum::CUSTOMERS->value ?
-                    fn () => CustomersResource::collection($customers)
-                    : Inertia::lazy(fn () => CustomersResource::collection($customers)),
+                    fn() => CustomersResource::collection($customers)
+                    : Inertia::lazy(fn() => CustomersResource::collection($customers)),
 
             ]
         )->table($this->tableStructure(parent: $this->parent, prefix: CustomersTabsEnum::CUSTOMERS->value));

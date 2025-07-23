@@ -82,7 +82,7 @@ const submitOrderPosition = async () => {
 
     try {
         console.log('222')
-        isLoadingSubmit.value = false
+        isLoadingSubmit.value = true
         const xxx = await axios.patch(route("grp.models.warehouse_area.update", {
             warehouseArea: selectedWarehouseArea.value?.id
         }), {
