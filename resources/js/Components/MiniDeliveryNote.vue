@@ -234,12 +234,12 @@ onMounted(() => {
                     <dd>{{ locale.number(data.delivery_note?.products.estimated_weight) || '-' }} kg</dd>
                 </dl>
 
-                <div v-if="['packed', 'dispatched', 'finalised'].includes(deliveryNote?.state)">
+                <div v-if="['packed', 'dispatched', 'finalised'].includes(data.delivery_note?.state)">
                     <div class="flex justify-between items-center text-sm">
                         <div class="font-medium text-gray-700">
                             {{ trans("Parcels") }} ({{ data.delivery_note?.parcels?.length ?? 0 }})
                         </div>
-                        <div v-if="deliveryNote?.state === 'packed'"
+                        <div v-if="data.delivery_note?.state === 'packed'"
                             class="text-gray-500 cursor-pointer hover:text-gray-700"
                             @click="() => (isModalParcels = true, parcelsCopy = [...data.delivery_note?.parcels || []])">
                             {{ trans("Edit") }}
@@ -253,7 +253,7 @@ onMounted(() => {
                     </ul>
                 </div>
 
-                <div v-if="['packed', 'dispatched', 'finalised'].includes(deliveryNote?.state)">
+                <div v-if="['packed', 'dispatched', 'finalised'].includes(data.delivery_note?.state)">
                     <ShipmentSection :shipments="shipments?.shipment.shipments"
                         :shipments_routes="shipments.shipment.shipments_routes" :address="data.delivery_note.address"
                         @addSuccsess="getDataShipment()" @editAddressSuccsess="getDataDeliveryNote()" @deleteSuccsess="getDataShipment()" :updateAddressRoute="{
