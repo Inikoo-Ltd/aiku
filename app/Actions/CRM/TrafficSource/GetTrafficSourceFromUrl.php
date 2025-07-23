@@ -16,7 +16,7 @@ class GetTrafficSourceFromUrl
 {
     use AsAction;
 
-    public function handle($url): ?array
+    public function handle($url): ?string
     {
         $urlComponents = parse_url($url);
         $queryParams   = [];
@@ -26,21 +26,16 @@ class GetTrafficSourceFromUrl
         }
 
         if (array_key_exists('gad_source', $queryParams) && array_key_exists('gad_campaignid', $queryParams) && array_key_exists('gclid', $queryParams)) {
-            return [
-                now()->utc()->toDateTimeString(),
-                TrafficSourcesTypeEnum::GOOGLE_ADS->value,
-                Arr::get($queryParams, 'gad_campaignid'),
-                Arr::get($queryParams, 'gclid')
-            ];
+            return
+                TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::GOOGLE_ADS->value].
+                Arr::get($queryParams, 'gad_campaignid');
+
         }
 
         if (array_key_exists('fbclid', $queryParams) && array_key_exists('utm_medium', $queryParams) && $queryParams['utm_medium'] == 'paid') {
-            return [
-                now()->utc()->toDateTimeString(),
-                TrafficSourcesTypeEnum::META_ADS->value,
-                Arr::get($queryParams, 'utm_campaign'),
-                Arr::get($queryParams, 'fbclid')
-            ];
+            return
+                TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::META_ADS->value].
+                Arr::get($queryParams, 'utm_campaign');
         }
 
 

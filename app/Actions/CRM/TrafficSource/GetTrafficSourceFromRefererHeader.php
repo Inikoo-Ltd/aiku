@@ -15,7 +15,7 @@ class GetTrafficSourceFromRefererHeader
 {
     use AsAction;
 
-    public function handle($url): ?array
+    public function handle($url): ?string
     {
         if (!$url) {
             return null;
@@ -30,23 +30,11 @@ class GetTrafficSourceFromRefererHeader
 
 
         if (preg_match('/google\.[a-z.]{2,}$/', $domain)) {
-            return
-                [
-                    now()->utc()->toDateTimeString(),
-                    TrafficSourcesTypeEnum::ORGANIC_GOOGLE->value,
-                    null,
-                    null
-                ];
+            return TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::ORGANIC_GOOGLE->value];
         }
 
         if (preg_match('/bing\.[a-z.]{2,}$/', $domain)) {
-            return
-                [
-                    now()->utc()->toDateTimeString(),
-                    TrafficSourcesTypeEnum::ORGANIC_BING->value,
-                    null,
-                    null
-                ];
+            return TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::ORGANIC_BING->value];
         }
 
         // Check for Meta platforms (Facebook, Instagram, etc.)
@@ -55,70 +43,34 @@ class GetTrafficSourceFromRefererHeader
             preg_match('/threads\.net$/', $domain) ||
             preg_match('/messenger\.com$/', $domain) ||
             preg_match('/whatsapp\.com$/', $domain)) {
-            return
-                [
-                    now()->utc()->toDateTimeString(),
-                    TrafficSourcesTypeEnum::ORGANIC_META->value,
-                    null,
-                    null
-                ];
+            return TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::ORGANIC_META->value];
         }
 
         // Check for YouTube referrals
         if (preg_match('/youtube\.com$/', $domain) ||
             preg_match('/youtu\.be$/', $domain)) {
-            return
-                [
-                    now()->utc()->toDateTimeString(),
-                    TrafficSourcesTypeEnum::YOUTUBE->value,
-                    null,
-                    null
-                ];
+            return TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::YOUTUBE->value];
         }
 
         // Check for LinkedIn referrals
         if (preg_match('/linkedin\.com$/', $domain)) {
-            return
-                [
-                    now()->utc()->toDateTimeString(),
-                    TrafficSourcesTypeEnum::ORGANIC_LINKEDIN->value,
-                    null,
-                    null
-                ];
+            return TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::ORGANIC_LINKEDIN->value];
         }
 
         // Check for Pinterest referrals
         if (preg_match('/pinterest\.[a-z.]{2,}$/', $domain)) {
-            return
-                [
-                    now()->utc()->toDateTimeString(),
-                    TrafficSourcesTypeEnum::ORGANIC_PINTEREST->value,
-                    null,
-                    null
-                ];
+            return TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::ORGANIC_PINTEREST->value];
         }
 
         // Check for TikTok referrals
         if (preg_match('/tiktok\.com$/', $domain)) {
-            return
-                [
-                    now()->utc()->toDateTimeString(),
-                    TrafficSourcesTypeEnum::ORGANIC_TIKTOK->value,
-                    null,
-                    null
-                ];
+            return TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::ORGANIC_TIKTOK->value];
         }
 
         // Check for Twitter (X) referrals
         if (preg_match('/twitter\.com$/', $domain) ||
             preg_match('/x\.com$/', $domain)) {
-            return
-                [
-                    now()->utc()->toDateTimeString(),
-                    TrafficSourcesTypeEnum::ORGANIC_TWITTER->value,
-                    null,
-                    null
-                ];
+            return TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::ORGANIC_TWITTER->value];
         }
 
         return null;

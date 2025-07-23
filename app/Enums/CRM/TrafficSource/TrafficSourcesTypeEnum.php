@@ -75,6 +75,27 @@ enum TrafficSourcesTypeEnum: string
         ];
     }
 
+    public static function abbr(): array
+    {
+        return [
+            self::ORGANIC_GOOGLE->value    => 'a',
+            self::GOOGLE_ADS->value        => 'b',
+            self::ORGANIC_BING->value      => 'c',
+            self::BING_ADS->value          => 'd',
+            self::ORGANIC_META->value      => 'e',
+            self::META_ADS->value          => 'f',
+            self::ORGANIC_PINTEREST->value => 'g',
+            self::PINTEREST_ADS->value     => 'h',
+            self::ORGANIC_TIKTOK->value    => 'i',
+            self::TIKTOK_ADS->value        => 'j',
+            self::ORGANIC_LINKEDIN->value  => 'k',
+            self::LINKEDIN_ADS->value      => 'l',
+            self::ORGANIC_TWITTER->value   => 'm',
+            self::TWITTER_ADS->value       => 'n',
+            self::YOUTUBE->value           => 'o',
+        ];
+    }
+
 
 
 

@@ -11,7 +11,6 @@ namespace App\Actions\CRM\TrafficSource;
 use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\TrafficSource;
-use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class SeedTrafficSources
@@ -21,7 +20,7 @@ class SeedTrafficSources
     public function handle(Shop $shop): void
     {
 
-        $types=TrafficSource::where('shop_id', $shop->id)->pluck('type')->toArray();
+        $types = TrafficSource::where('shop_id', $shop->id)->pluck('type')->toArray();
 
         // Get all valid types from TrafficSourcesTypeEnum
         $validTypes = TrafficSourcesTypeEnum::values();
@@ -40,7 +39,7 @@ class SeedTrafficSources
 
             $status = $case->status()[$case->value];
             $name = $case->labels()[$case->value];
-            $type= $case->value;
+            $type = $case->value;
 
 
 
@@ -78,7 +77,7 @@ class SeedTrafficSources
 
     public function asCommand(): void
     {
-        foreach(Shop::all() as $shop) {
+        foreach (Shop::all() as $shop) {
             $this->handle($shop);
         }
 
