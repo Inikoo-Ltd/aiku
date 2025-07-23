@@ -130,10 +130,6 @@ class Portfolio extends Model implements Auditable
         return $this->hasOne(PortfolioStats::class);
     }
 
-    public function shopifyPortfolio(): HasOne
-    {
-        return $this->hasOne(ShopifyUserHasProduct::class, 'portfolio_id');
-    }
 
     public function platform(): BelongsTo
     {

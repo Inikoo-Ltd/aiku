@@ -70,22 +70,22 @@ class StoreOrderFromShopify extends OrgAction
             ]);
 
             foreach ($shopifyProducts as $shopifyProduct) {
-                /** @var Portfolio $shopifyUserHasProduct */
-                $shopifyUserHasProduct = $shopifyUser->customerSalesChannel->portfolios()
+                /** @var Portfolio $portfolio */
+                $portfolio = $shopifyUser->customerSalesChannel->portfolios()
                     ->where('platform_product_id', $shopifyProduct['product_id'])->first();
 
-                if ($shopifyUserHasProduct) {
+                if ($portfolio) {
                     /** @var Product $product */
-                    $product = $shopifyUserHasProduct->item;
+                    $product = $portfolio->item;
                     if (!$product) {
-                        \Sentry\captureMessage('ShopifyUserHasProduct '.$shopifyUserHasProduct->id.' does not have a product');
+                        \Sentry\captureMessage('Portfolio '.$portfolio->id.' does not have a product');
                         continue;
                     }
 
                     /** @var HistoricAsset $product */
                     $historicAsset = $product->asset?->historicAsset;
                     if (!$historicAsset) {
-                        \Sentry\captureMessage('ShopifyUserHasProduct '.$shopifyUserHasProduct->id.' does not have a historic asset');
+                        \Sentry\captureMessage('Portfolio '.$portfolio->id.' does not have a historic asset');
                         continue;
                     }
 

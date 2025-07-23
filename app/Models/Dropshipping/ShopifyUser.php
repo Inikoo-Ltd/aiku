@@ -26,7 +26,6 @@ use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -157,11 +156,6 @@ class ShopifyUser extends Authenticatable implements HasMedia, Auditable, IShopM
             ->saveSlugsTo('slug');
     }
 
-    public function products(): BelongsToMany
-    {
-        return $this->morphToMany(Product::class, 'product', 'shopify_user_has_products')
-            ->withTimestamps();
-    }
 
     public function orders(): MorphToMany
     {
