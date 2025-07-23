@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\DeliveryNoteItem\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
@@ -50,9 +51,9 @@ class IndexDeliveryNoteItemsInPickingSessionGrouped extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure($prefix = null): Closure
+    public function tableStructure(PickingSession $parent, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($prefix) {
+        return function (InertiaTable $table) use ($parent, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -69,7 +70,9 @@ class IndexDeliveryNoteItemsInPickingSessionGrouped extends OrgAction
             $table->column(key: 'delivery_note_state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'delivery_note_reference', label: __('Delivery Note'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'items', label: __('Items'), canBeHidden: false);
-            $table->column(key: 'handing_actions', label: __('To do actions'), canBeHidden: false);
+            if($parent->state != PickingSessionStateEnum::HANDLING) {
+                $table->column(key: 'handing_actions', label: __('To do actions'), canBeHidden: false);
+            }
         };
     }
 

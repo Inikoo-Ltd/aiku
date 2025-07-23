@@ -135,7 +135,7 @@ class ShowPickingSession extends OrgAction
         if ($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
               $inertiaResponse->table(IndexDeliveryNoteItemsInPickingSession::make()->tableStructure(parent: $pickingSession));
         } else {
-            $inertiaResponse->table(IndexDeliveryNoteItemsInPickingSessionGrouped::make()->tableStructure());
+            $inertiaResponse->table(IndexDeliveryNoteItemsInPickingSessionGrouped::make()->tableStructure(parent: $pickingSession));
         }
       
         return $inertiaResponse;
