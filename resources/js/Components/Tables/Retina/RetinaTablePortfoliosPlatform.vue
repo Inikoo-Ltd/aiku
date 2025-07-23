@@ -354,6 +354,14 @@ const onSubmitVariant = () => {
 		<!-- Column: Status -->
 		<template #cell(status)="{ item: product }">
 			<div class="flex justify-center">
+				<div v-if="!product.has_valid_platform_product_id && !product.platform_product_id">
+					Is on progress
+				</div>
+
+				<div v-if="product.has_valid_platform_product_id && !product.exist_in_platform">
+					Need repair
+				</div>
+
 				<template v-if="is_platform_connected">
 					<FontAwesomeIcon v-if="(product.platform_product_id)" v-tooltip="trans('Uploaded to platform')" icon="far fa-check" class="text-green-500" fixed-width aria-hidden="true" />
 					<ConditionIcon v-else-if="get(progressToUploadToShopify, [product.id], null)" :state="get(progressToUploadToShopify, [product.id], undefined)" class="text-xl mx-auto" />
@@ -425,6 +433,9 @@ const onSubmitVariant = () => {
 				/>
 		</template>
 	</Table>
+
+	<!-- <pre>{{ data.data[0] }}</pre> -->
+
 
 	<Modal :isOpen="isOpenModal" width="w-full max-w-2xl h-full max-h-[570px]" @close="isOpenModal = false">
 		<div class="relative isolate">

@@ -229,6 +229,15 @@ const onClickFilterOutOfStock = (query: string) => {
 					{{ trans("Weight:") }} {{ locale.number(product.weight/1000) }} kg
 				</div>
 			</div>
+
+			<div class="text-sm text-gray-500 italic flex gap-x-10 gap-y-2">
+				<div>
+					{{ trans("Price:") }} {{ locale.currencyFormat(product.currency_code, product.price) }}
+				</div>
+				<div>
+					{{ trans("RRP:") }} {{ locale.currencyFormat(product.currency_code, product.customer_price) }}
+				</div>
+			</div>
 			
 			<!-- Section: is code exist in platform -->
 			<div v-if="product.is_code_exist_in_platform" class="text-xs text-amber-500">
