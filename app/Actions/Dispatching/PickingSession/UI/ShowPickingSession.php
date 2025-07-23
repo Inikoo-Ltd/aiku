@@ -132,7 +132,7 @@ class ShowPickingSession extends OrgAction
         );
         if ($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
               $inertiaResponse->table(IndexDeliveryNoteItemsInPickingSession::make()->tableStructure(parent: $pickingSession));
-        } elseif ($pickingSession->state == PickingSessionStateEnum::HANDLING) {
+        } else {
             $inertiaResponse->table(IndexDeliveryNoteItemsInPickingSessionStateActive::make()->tableStructure());
         }
       
@@ -148,7 +148,7 @@ class ShowPickingSession extends OrgAction
                     : Inertia::lazy(fn () => PickingSessionDeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsInPickingSession::run($pickingSession))),
 
             ];
-        } elseif ($pickingSession->state == PickingSessionStateEnum::HANDLING) {
+        } else {
             return [
                 PickingSessionTabsEnum::ITEMS->value => $this->tab == PickingSessionTabsEnum::ITEMS->value ?
                     fn () => PickingSessionDeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsInPickingSessionStateActive::run($pickingSession))

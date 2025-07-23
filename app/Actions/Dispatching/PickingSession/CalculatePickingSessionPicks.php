@@ -53,6 +53,8 @@ class CalculatePickingSessionPicks extends OrgAction
             'packing_percentage' => $packingPercentage
         ]);
 
+        AutoFinishPickingPickingSession::run($pickingSession);
+
         return $pickingSession;
     }
 
