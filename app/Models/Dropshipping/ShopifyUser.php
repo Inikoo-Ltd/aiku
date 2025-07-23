@@ -11,7 +11,6 @@ namespace App\Models\Dropshipping;
 use App\Actions\Dropshipping\ShopifyUser\Traits\WithInitShopifyClient;
 use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
 use App\Enums\CRM\WebUser\WebUserTypeEnum;
-use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\DebugWebhooks;
@@ -91,7 +90,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Organisation|null $organisation
  * @property-read Collection<int, \Spatie\Permission\Models\Permission> $permissions
  * @property-read \Osiset\ShopifyApp\Storage\Models\Plan|null $plan
- * @property-read Collection<int, Product> $products
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read Shop|null $shop
  * @property-read Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens

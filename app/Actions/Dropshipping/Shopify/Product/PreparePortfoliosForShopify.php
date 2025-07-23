@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Mon, 21 Jul 2025 20:04:47 British Summer Time, Trnava, Slovakia
@@ -14,7 +15,6 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-
 class PreparePortfoliosForShopify
 {
     use AsAction;
@@ -26,29 +26,26 @@ class PreparePortfoliosForShopify
         $shopifyUser = $customerSalesChannel->user;
 
         foreach ($customerSalesChannel->portfolios as $portfolio) {
+
+
+            $portfolio = UpdatePortfolioShopifyStatus::run($portfolio);
+
             /** @var Product $product */
             $product = $portfolio->item;
 
-            $hasValidProductId      = CheckIfShopifyProductIDIsValid::run($portfolio->platform_product_id);
-            $productExistsInShopify = false;
-            $hasVariantAtLocation   = false;
-            if ($hasValidProductId) {
-                $productExistsInShopify = CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id);
-                $hasVariantAtLocation   = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id);
-            }
+
+            $hasValidProductId = $portfolio->has_valid_platform_product_id;
+            $productExistsInShopify = $portfolio->exist_in_platform;
+            $hasVariantAtLocation = $portfolio->platform_status;
 
 
-            $numberMatches = '';
-            $matchesLabels = [];
-            $matches       = [];
+            $matchesData = $portfolio->platform_possible_matches;
 
-            if (!$hasValidProductId || !$productExistsInShopify || !$hasVariantAtLocation) {
-                $result = FindShopifyProductVariant::run($customerSalesChannel, trim($portfolio->sku.' '.$portfolio->barcode));
+            $numberMatches = Arr::get($matchesData, 'number_matches', 0);
+            $matchesLabels = Arr::get($matchesData, 'matches_labels', []);
+            $matches = Arr::get($matchesData, 'raw_data', []);
 
-                $matches       = Arr::get($result, 'products', []);
-                $numberMatches = count($matches);
-                $matchesLabels = Arr::pluck($matches, 'title');
-            }
+
 
 
             if ($fixLevel >= 1) {
