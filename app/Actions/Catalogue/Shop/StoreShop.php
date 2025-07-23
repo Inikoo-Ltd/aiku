@@ -14,6 +14,7 @@ use App\Actions\Catalogue\Shop\Seeders\SeedShopOfferCampaigns;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopOutboxes;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopTrafficSources;
+use App\Actions\CRM\TrafficSource\SeedTrafficSources;
 use App\Actions\Fulfilment\Fulfilment\StoreFulfilment;
 use App\Actions\Helpers\Colour\GetRandomColour;
 use App\Actions\Helpers\Currency\SetCurrencyHistoricFields;
@@ -224,6 +225,9 @@ class StoreShop extends OrgAction
                     'state'       => PaymentAccountShopStateEnum::ACTIVE
                 ]
             );
+
+            SeedTrafficSources::run($shop);
+
             $shop->refresh();
 
             return $shop;

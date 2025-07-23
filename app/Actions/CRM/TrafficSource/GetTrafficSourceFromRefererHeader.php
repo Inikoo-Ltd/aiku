@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\TrafficSource;
 
+use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetTrafficSourceFromRefererHeader
@@ -32,7 +33,7 @@ class GetTrafficSourceFromRefererHeader
             return
                 [
                     now()->utc()->toDateTimeString(),
-                    'organic-google',
+                    TrafficSourcesTypeEnum::ORGANIC_GOOGLE->value,
                     null,
                     null
                 ];
@@ -42,7 +43,7 @@ class GetTrafficSourceFromRefererHeader
             return
                 [
                     now()->utc()->toDateTimeString(),
-                    'organic-bing',
+                    TrafficSourcesTypeEnum::ORGANIC_BING->value,
                     null,
                     null
                 ];
@@ -57,7 +58,7 @@ class GetTrafficSourceFromRefererHeader
             return
                 [
                     now()->utc()->toDateTimeString(),
-                    'organic-meta',
+                    TrafficSourcesTypeEnum::ORGANIC_META->value,
                     null,
                     null
                 ];
@@ -69,7 +70,7 @@ class GetTrafficSourceFromRefererHeader
             return
                 [
                     now()->utc()->toDateTimeString(),
-                    'organic-youtube',
+                    TrafficSourcesTypeEnum::YOUTUBE->value,
                     null,
                     null
                 ];
@@ -80,7 +81,7 @@ class GetTrafficSourceFromRefererHeader
             return
                 [
                     now()->utc()->toDateTimeString(),
-                    'organic-linkedin',
+                    TrafficSourcesTypeEnum::ORGANIC_LINKEDIN->value,
                     null,
                     null
                 ];
@@ -91,7 +92,7 @@ class GetTrafficSourceFromRefererHeader
             return
                 [
                     now()->utc()->toDateTimeString(),
-                    'organic-pinterest',
+                    TrafficSourcesTypeEnum::ORGANIC_PINTEREST->value,
                     null,
                     null
                 ];
@@ -102,7 +103,7 @@ class GetTrafficSourceFromRefererHeader
             return
                 [
                     now()->utc()->toDateTimeString(),
-                    'organic-tiktok',
+                    TrafficSourcesTypeEnum::ORGANIC_TIKTOK->value,
                     null,
                     null
                 ];
@@ -114,7 +115,7 @@ class GetTrafficSourceFromRefererHeader
             return
                 [
                     now()->utc()->toDateTimeString(),
-                    'organic-twitter',
+                    TrafficSourcesTypeEnum::ORGANIC_TWITTER->value,
                     null,
                     null
                 ];

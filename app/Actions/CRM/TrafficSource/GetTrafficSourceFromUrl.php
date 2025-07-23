@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\TrafficSource;
 
+use App\Enums\CRM\TrafficSource\TrafficSourcesTypeEnum;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -27,7 +28,7 @@ class GetTrafficSourceFromUrl
         if (array_key_exists('gad_source', $queryParams) && array_key_exists('gad_campaignid', $queryParams) && array_key_exists('gclid', $queryParams)) {
             return [
                 now()->utc()->toDateTimeString(),
-                'google-ads',
+                TrafficSourcesTypeEnum::GOOGLE_ADS->value,
                 Arr::get($queryParams, 'gad_campaignid'),
                 Arr::get($queryParams, 'gclid')
             ];
@@ -36,7 +37,7 @@ class GetTrafficSourceFromUrl
         if (array_key_exists('fbclid', $queryParams) && array_key_exists('utm_medium', $queryParams) && $queryParams['utm_medium'] == 'paid') {
             return [
                 now()->utc()->toDateTimeString(),
-                'meta-ads',
+                TrafficSourcesTypeEnum::META_ADS->value,
                 Arr::get($queryParams, 'utm_campaign'),
                 Arr::get($queryParams, 'fbclid')
             ];
