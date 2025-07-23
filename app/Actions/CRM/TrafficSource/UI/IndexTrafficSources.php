@@ -44,7 +44,7 @@ class IndexTrafficSources extends OrgAction
             $queryBuilder->where('traffic_sources.organisation_id', $parent->id);
             $queryBuilder->leftJoin('organisations', 'organisations.id', '=', 'traffic_sources.organisation_id');
             $queryBuilder->leftJoin('currencies', 'currencies.id', '=', 'organisations.currency_id');
-        } else{
+        } else {
             $queryBuilder->where('traffic_sources.shop_id', $parent->id);
             $queryBuilder->leftJoin('shops', 'shops.id', '=', 'traffic_sources.shop_id');
             $queryBuilder->leftJoin('currencies', 'currencies.id', '=', 'shops.currency_id');
@@ -192,6 +192,7 @@ class IndexTrafficSources extends OrgAction
         };
 
         return match ($routeName) {
+            'grp.org.shops.show.crm.traffic_sources.show',
             'grp.org.shops.show.crm.traffic_sources.index' =>
             array_merge(
                 ShowShop::make()->getBreadcrumbs(

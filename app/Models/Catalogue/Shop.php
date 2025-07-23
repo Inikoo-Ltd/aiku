@@ -31,6 +31,7 @@ use App\Models\CRM\Appointment;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Poll;
 use App\Models\CRM\Prospect;
+use App\Models\CRM\TrafficSource;
 use App\Models\CRM\WebUser;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
@@ -675,4 +676,8 @@ class Shop extends Model implements HasMedia, Auditable
         return $this->hasMany(WebUser::class);
     }
 
+    public function trafficSources(): HasMany
+    {
+        return $this->hasMany(TrafficSource::class);
+    }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models\CRM;
 
+use App\Models\Traits\InShop;
 use App\Models\Web\Website;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -34,6 +35,7 @@ use Spatie\Sluggable\SlugOptions;
  */
 class TrafficSource extends Model
 {
+    use InShop;
     use HasSlug;
     use HasFactory;
 
