@@ -15,6 +15,7 @@ use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Support\Arr;
+use Sentry;
 
 trait WithExternalPlatforms
 {
@@ -94,13 +95,13 @@ trait WithExternalPlatforms
         $shopifyUser = $customerSalesChannel->user;
 
         if (!$shopifyUser) {
-            return null;
+            return ['fail', ['error' => 'No shopify user']];
         }
 
         $client = $shopifyUser->getShopifyClient();
 
         if (!$client) {
-            return null;
+            return ['fail', ['error' => 'No shopify client']];
         }
 
         try {
@@ -160,7 +161,7 @@ trait WithExternalPlatforms
 
 
             if (!empty($response['errors']) || !isset($response['body'])) {
-                return null;
+                return ['fail',[]];
             }
 
 
@@ -176,11 +177,12 @@ trait WithExternalPlatforms
                 }
 
 
-                return $shopifyShopData;
+                return ['ok',$shopifyShopData];
             }
 
-            return [CustomerSalesChannelConnectionStatusEnum::DISCONNECTED, ''];
+            return ['fail',[]];
         } catch (\Exception $e) {
+            Sentry::captureException($e);
             return null;
         }
     }

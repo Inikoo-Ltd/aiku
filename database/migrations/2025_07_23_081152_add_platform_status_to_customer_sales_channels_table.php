@@ -14,6 +14,8 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::table('customer_sales_channels', function (Blueprint $table) {
+            $table->boolean('can_connect_to_platform')->default(false);
+            $table->boolean('exist_in_platform')->default(false);
             $table->boolean('platform_status')->default(false);
         });
     }
@@ -23,6 +25,8 @@ return new class () extends Migration {
     {
         Schema::table('customer_sales_channels', function (Blueprint $table) {
             $table->dropColumn('platform_status');
+            $table->dropColumn('exist_in_platform');
+            $table->dropColumn('can_connect_to_platform');
         });
     }
 };

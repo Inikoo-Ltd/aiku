@@ -34,6 +34,9 @@ class GetShopifyProductData extends RetinaAction
      */
     public function handle(Portfolio $portfolio, array $productData = []): ?array
     {
+
+
+
         $customerSalesChannel = $portfolio->customerSalesChannel;
 
         $shopifyUser = $customerSalesChannel->user;

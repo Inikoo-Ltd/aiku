@@ -24,45 +24,68 @@ class UpdateShopifyChannelShopData
 
     public function handle(CustomerSalesChannel $customerSalesChannel): CustomerSalesChannel
     {
-        $storeData = $this->getShopifyShopData($customerSalesChannel);
+        $canConnectToPlatform = false;
+        $existInPlatform      = false;
+        $platformStatus       = false;
 
-        $updateData = [
-            'data' => [
-                'shop' => $storeData
-            ]
-        ];
+        $updateData = [];
 
+        [$status, $storeData] = $this->getShopifyShopData($customerSalesChannel);
 
-        $fulfilmentServiceName = GetFulfilmentServiceName::run($customerSalesChannel);
-
-
-
-        // Extract shopID from the response and save it to shopify_shop_id
-        if ($storeData && isset($storeData['id'])) {
-            $updateData['shopify_shop_id'] = $storeData['id'];
+        if ($status === null) {
+            // try latter
+            return $customerSalesChannel;
         }
 
-        // Loop over fulfillmentServices and look for one with name = $fulfilmentServiceName
-        // and save that id in shopify_fulfilment_service_id
-        if ($storeData && isset($storeData['fulfillmentServices']) && is_array($storeData['fulfillmentServices'])) {
-            foreach ($storeData['fulfillmentServices'] as $service) {
-                if (isset($service['serviceName']) && $service['serviceName'] === $fulfilmentServiceName) {
-                    $updateData['shopify_fulfilment_service_id'] = $service['id'];
 
-                    // Extract location_id from the found fulfillmentService and save it to shopify_location_id
-                    if (isset($service['location']['id'])) {
-                        $updateData['shopify_location_id'] = $service['location']['id'];
+        if ($status == 'ok') {
+            $canConnectToPlatform = true;
+            $updateData           = [
+                'data' => [
+                    'shop' => $storeData
+                ]
+            ];
+
+
+            $fulfilmentServiceName = GetFulfilmentServiceName::run($customerSalesChannel);
+
+
+            // Extract shopID from the response and save it to shopify_shop_id
+            if ($storeData && isset($storeData['id'])) {
+                $updateData['shopify_shop_id'] = $storeData['id'];
+            }
+
+            // Loop over fulfillmentServices and look for one with name = $fulfilmentServiceName
+            // and save that id in shopify_fulfilment_service_id
+            if ($storeData && isset($storeData['fulfillmentServices']) && is_array($storeData['fulfillmentServices'])) {
+                foreach ($storeData['fulfillmentServices'] as $service) {
+                    if (isset($service['serviceName']) && $service['serviceName'] === $fulfilmentServiceName) {
+                        $existInPlatform                             = true;
+                        $platformStatus                              = true;
+                        $updateData['shopify_fulfilment_service_id'] = $service['id'];
+
+                        // Extract location_id from the found fulfillmentService and save it to shopify_location_id
+                        if (isset($service['location']['id'])) {
+                            $updateData['shopify_location_id'] = $service['location']['id'];
+                        }
+
+                        break;
                     }
-
-                    break;
                 }
             }
         }
 
+
+
+        $this->update($customerSalesChannel, [
+            'platform_status'            => $platformStatus,
+            'platform_can_connect'       => $canConnectToPlatform,
+            'platform_exist_in_platform' => $existInPlatform,
+        ]);
         $this->update($customerSalesChannel->user, $updateData);
+
+
         return $customerSalesChannel;
-
-
     }
 
     public function getCommandSignature(): string
@@ -75,15 +98,14 @@ class UpdateShopifyChannelShopData
         $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->firstOrFail();
         $customerSalesChannel = $this->handle($customerSalesChannel);
 
-        // Display shop data in a nice way
         $shopData = $customerSalesChannel->user->data['shop'] ?? [];
 
 
         if (empty($shopData)) {
             $command->info("No shop data found.");
+
             return;
         }
-
 
 
         // Basic shop information
@@ -103,7 +125,7 @@ class UpdateShopifyChannelShopData
         // Billing address information if available
         if (!empty($shopData['billingAddress'])) {
             $billingAddress = $shopData['billingAddress'];
-            $addressData = [
+            $addressData    = [
                 ['Address Line 1', $billingAddress['address_line_1'] ?? 'N/A'],
                 ['Address Line 2', $billingAddress['address_line_2'] ?? 'N/A'],
                 ['City', $billingAddress['locality'] ?? 'N/A'],
@@ -135,7 +157,7 @@ class UpdateShopifyChannelShopData
 
                 // Location information if available
                 if (!empty($service['location'])) {
-                    $location = $service['location'];
+                    $location     = $service['location'];
                     $locationData = [
                         ['ID', $location['id'] ?? 'N/A'],
                         ['Name', $location['name'] ?? 'N/A'],
@@ -149,7 +171,7 @@ class UpdateShopifyChannelShopData
 
                     // Location address if available
                     if (!empty($location['address'])) {
-                        $address = $location['address'];
+                        $address     = $location['address'];
                         $addressData = [
                             ['Phone', $address['phone'] ?? 'N/A'],
                             ['Address Line 1', $address['address_line_1'] ?? 'N/A'],
