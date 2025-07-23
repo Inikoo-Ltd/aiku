@@ -147,7 +147,7 @@ onMounted(() => {
     getDataDeliveryNote()
     getDataShipment()
 })
-console.log('modal', props)
+
 </script>
 <template>
     <PageHeading :data="pageHead" isButtonGroupWithBorder>
@@ -155,8 +155,9 @@ console.log('modal', props)
             v-if="props.deliveryNote?.delivery_note_id && props.deliveryNote.delivery_note_state == 'packed'">
             <Link
                 :href="route('grp.models.delivery_note.state.finalise_and_dispatch', { deliveryNote: props.deliveryNote.delivery_note_id })"
-                method="patch" @start="loadingFinal = true" @finish="loadingFinal = false" @success="()=>emits('SuccsesUpdateState')">
-            <Button type="save" label="Finalise and Dispatch"  :loading="loadingFinal"/>
+                method="patch" @start="loadingFinal = true" @finish="loadingFinal = false"
+                @success="() => emits('SuccsesUpdateState')">
+            <Button type="save" label="Finalise and Dispatch" :loading="loadingFinal" />
             </Link>
         </template>
     </PageHeading>
@@ -255,11 +256,10 @@ console.log('modal', props)
                 <div v-if="['packed', 'dispatched', 'finalised'].includes(deliveryNote?.state)">
                     <ShipmentSection :shipments="shipments?.shipment.shipments"
                         :shipments_routes="shipments.shipment.shipments_routes" :address="data.delivery_note.address"
-                        @addSuccsess="getDataShipment()" @editAddressSuccsess="getDataDeliveryNote()"
-                        @deleteSuccsess="getDataShipment()" :updateAddressRoute="{
-                            name: 'grp.models.delivery_note.update_address',
-                            parameters: { deliveryNote: props.deliveryNote.delivery_note_id }
-                        }" />
+                        @addSuccsess="getDataShipment()" @editAddressSuccsess="getDataDeliveryNote()" @deleteSuccsess="getDataShipment()" :updateAddressRoute="{
+                                    name: 'grp.models.delivery_note.update_address',
+                                    parameters: { deliveryNote: props.deliveryNote.delivery_note_id }
+                                }" />
                 </div>
             </div>
         </BoxStatPallet>

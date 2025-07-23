@@ -21,6 +21,9 @@ import PureInput from '@/Components/Pure/PureInput.vue'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import { get } from 'lodash'
+import ConfirmDialog from 'primevue/confirmdialog';
+import { faExclamationCircle } from '@fal'
+import { useConfirm } from "primevue/useconfirm";
 
 const props = defineProps<{
     shipments: {
@@ -209,7 +212,7 @@ const onSaveAddress = (submitShipment: Function) => {
     delete filterDataAddress.id
     delete filterDataAddress.can_edit
     delete filterDataAddress.can_delete
-    
+
     router.patch(
         route(props.updateAddressRoute.name, props.updateAddressRoute.parameters),
         {
@@ -223,7 +226,7 @@ const onSaveAddress = (submitShipment: Function) => {
 
             },
             onSuccess: () => {
-                emits('editAddressSuccsess',{...xxxCopyAddress.value})
+                emits('editAddressSuccsess', { ...xxxCopyAddress.value })
                 submitShipment()
             },
             onError: () => notify({
@@ -240,6 +243,61 @@ const onSubmitAddressThenShipment = () => {
     onSaveAddress(onSubmitShipment)
 }
 
+const DeleteShipment = (index) => {
+    isModalShipment.value = false  // ✅ Close the modal after delete
+    emits('deleteSuccsess', index)
+}
+
+const confirm = useConfirm("confirm-delete");
+
+const confirmdelete = (event: MouseEvent, shipment) => {
+    confirm.require({
+        target: event.currentTarget,
+        group: "confirm-delete",
+        message: trans('Are you sure you want to delete this shipment (:ship)?', { ship: shipment.name }),
+        header: trans('Confirm Delete'),
+        icon: 'pi pi-exclamation-triangle',
+        rejectProps: {
+            label: trans('Cancel'),
+            severity: 'secondary',
+            outlined: true,
+        },
+        acceptProps: {
+            label: trans('Yes, delete it'),
+            severity: 'danger',
+        },
+        accept: () => {
+            // Call your delete logic here
+            router.delete(route('grp.models.shipment.delete', {
+                shipment: shipment.id,
+            }), {
+                preserveScroll: true,
+                onStart: () => {
+                    isDeleteShipment.value = shipment.id
+                },
+                onSuccess: () => {
+                    notify({
+                        title: trans("Success!"),
+                        text: trans("Shipment has been deleted."),
+                        type: "success",
+                    })
+                    emits('deleteSuccsess', shipment.id)
+                },
+                onError: () => {
+                    notify({
+                        title: trans("Something went wrong."),
+                        text: trans("Failed to delete shipment. Please try again or contact administrator."),
+                        type: "error",
+                    })
+                },
+                onFinish: () => {
+                    isDeleteShipment.value = null
+                }
+            })
+        },
+    });
+};
+
 
 const isModalEditAddress = ref(false)
 const xxxCopyAddress = ref({ ...props.address?.delivery })
@@ -248,7 +306,8 @@ const xxxCopyAddress = ref({ ...props.address?.delivery })
 <template>
     <div class="flex gap-x-1 py-0.5">
         <div class="group w-full">
-            <div v-if="props.shipments_routes?.submit_route?.name" class="leading-4 xtext-base flex justify-between w-full py-1">
+            <div v-if="props.shipments_routes?.submit_route?.name"
+                class="leading-4 xtext-base flex justify-between w-full py-1">
                 <div>{{ trans("Shipments") }}</div>
             </div>
 
@@ -296,15 +355,15 @@ const xxxCopyAddress = ref({ ...props.address?.delivery })
                         <div v-if="isDeleteShipment === shipment.id" class="px-1">
                             <LoadingIcon />
                         </div>
-                        
-                        <ModalConfirmationDelete v-else :routeDelete="{
+
+                        <!--  <ModalConfirmationDelete v-else :routeDelete="{
                             name: 'grp.models.shipment.delete',
                             parameters: {
 
                                 shipment: shipment.id,
                             }
                         }" :title="trans('Are you sure you want to delete this shipment (:ship)?', { ship: shipment.name })"
-                            @success="e=>emits('deleteSuccsess',shipmentIdx)"
+                            @success="DeleteShipment(shipmentIdx)"
                             isFullLoading>
                             <template #default="{ isOpenModal, changeModel }">
                                 <div @click="changeModel" class="cursor-pointer">
@@ -312,9 +371,14 @@ const xxxCopyAddress = ref({ ...props.address?.delivery })
                                         fixed-width aria-hidden="true" />
                                 </div>
                             </template>
-                        </ModalConfirmationDelete>
+</ModalConfirmationDelete> -->
+
+                        <div v-else class="cursor-pointer" @click="(e) => confirmdelete(e, shipment)">
+                            <FontAwesomeIcon icon="fal fa-times" class="text-red-400 hover:text-red-600" fixed-width
+                                aria-hidden="true" />
+                        </div>
                     </div>
-                    <Button v-if="shipment.is_printable" @click="() => onPrintShipment(shipment)" size="xs"
+                    <Button v-if="shipment.is_printable" @click="(e) => onPrintShipment(shipment)" size="xs"
                         icon="fal fa-print" label="Print label" type="tertiary" :loading="isLoadingPrint" />
                 </li>
             </ul>
@@ -327,11 +391,7 @@ const xxxCopyAddress = ref({ ...props.address?.delivery })
                     :disabled="props.shipments_routes?.submit_route?.name ? false : true"
                     @click="() => (isModalShipment = true, onOpenModalTrackingNumber())"
                     xv-tooltip="box_stats.parcels?.length ? '' : trans('Please add at least one parcel')"
-                    :label="trans('Shipment')"
-                    icon="fas fa-plus"
-                    type="dashed"
-                    size="xs"
-                />
+                    :label="trans('Shipment')" icon="fas fa-plus" type="dashed" size="xs" />
                 <div v-else-if="!shipments.length" class="italic text-gray-400 text-xs">
                     {{ trans("No shipment yet. Waiting for warehouse team to add shipment..") }}
                 </div>
@@ -339,8 +399,8 @@ const xxxCopyAddress = ref({ ...props.address?.delivery })
         </div>
 
         <!-- Modal: Shipment -->
-        <Modal xv-if="['packed', 'finalised', 'dispatched'].includes(delivery_note_state.value)" :isOpen="isModalShipment"
-            @onClose="isModalShipment = false" width="w-full max-w-2xl">
+        <Modal xv-if="['packed', 'finalised', 'dispatched'].includes(delivery_note_state.value)"
+            :isOpen="isModalShipment" @onClose="isModalShipment = false" width="w-full max-w-2xl">
             <div>
                 <div class="text-center font-bold mb-4">
                     {{ trans("Add shipment") }}
@@ -352,13 +412,15 @@ const xxxCopyAddress = ref({ ...props.address?.delivery })
                         <div v-if="isLoadingData === 'addTrackingNumber'" v-for="sip in 3"
                             class="skeleton w-full max-w-52 h-20 rounded">
                         </div>
-                        <div v-else v-for="(shipment, index) in optionShippingList.filter(shipment => shipment.api_shipper)"
+                        <div v-else
+                            v-for="(shipment, index) in optionShippingList.filter(shipment => shipment.api_shipper)"
                             @click="() => isLoadingButton == 'addTrackingNumber' ? null : formTrackingNumber.shipping_id = shipment"
-                            class="relative isolate w-full max-w-52 h-20 border rounded-md px-5 py-3 cursor-pointer" :class="[
-                                        formTrackingNumber.shipping_id?.id == shipment.id
-                                            ? 'bg-indigo-200 border-indigo-300'
-                                            : 'hover:bg-gray-100 border-gray-300',
-                                    ]">
+                            class="relative isolate w-full max-w-52 h-20 border rounded-md px-5 py-3 cursor-pointer"
+                            :class="[
+                                formTrackingNumber.shipping_id?.id == shipment.id
+                                    ? 'bg-indigo-200 border-indigo-300'
+                                    : 'hover:bg-gray-100 border-gray-300',
+                            ]">
                             <div class="font-bold tesm">{{ shipment.name }}</div>
                             <div class="text-xs text-gray-500 italic">
                                 {{ shipment.phone }}
@@ -376,8 +438,9 @@ const xxxCopyAddress = ref({ ...props.address?.delivery })
 
                     <div class="">
                         <PureMultiselectInfiniteScroll v-model="formTrackingNumber.shipping_id"
-                            :fetchRoute="shipments_routes.fetch_route" required :disabled="isLoadingButton == 'addTrackingNumber'"
-                            :placeholder="trans('Select shipping')" object @optionsList="(e) => optionShippingList = e">
+                            :fetchRoute="shipments_routes.fetch_route" required
+                            :disabled="isLoadingButton == 'addTrackingNumber'" :placeholder="trans('Select shipping')"
+                            object @optionsList="(e) => optionShippingList = e">
                             <template #singlelabel="{ value }">
                                 <div class="w-full text-left pl-4">
                                     {{ value.name }}
@@ -398,11 +461,13 @@ const xxxCopyAddress = ref({ ...props.address?.delivery })
                     </div>
 
                     <!-- Tracking number -->
-                    <div v-if="formTrackingNumber.shipping_id && !formTrackingNumber.shipping_id?.api_shipper" class="mt-3">
+                    <div v-if="formTrackingNumber.shipping_id && !formTrackingNumber.shipping_id?.api_shipper"
+                        class="mt-3">
                         <span class="text-xs px-1 my-2">{{ trans("Tracking number") }}: </span>
                         <PureInput v-model="formTrackingNumber.tracking_number" placeholder="ABC-DE-1234567"
                             xxkeydown.enter="() => onSubmitAddService(action, closed)" />
-                        <p v-if="get(formTrackingNumber, ['errors', 'tracking_number'])" class="mt-2 text-sm text-red-600">
+                        <p v-if="get(formTrackingNumber, ['errors', 'tracking_number'])"
+                            class="mt-2 text-sm text-red-600">
                             {{ formTrackingNumber.errors.tracking_number }}
                         </p>
                     </div>
@@ -422,16 +487,17 @@ const xxxCopyAddress = ref({ ...props.address?.delivery })
                     <div v-if="formTrackingNumber?.errors?.address" class="relative my-3 p-2 rounded bg-gray-100"
                         :class="formTrackingNumber?.errors?.address ? 'errorShake' : ''">
                         <PureAddress v-model="xxxCopyAddress" :options="address?.options" xfieldLabel />
-                        <div v-if="isLoadingButton" class="absolute inset-0 bg-black/40 text-white flex place-content-center items-center text-4xl">
+                        <div v-if="isLoadingButton"
+                            class="absolute inset-0 bg-black/40 text-white flex place-content-center items-center text-4xl">
                             <LoadingIcon />
                         </div>
                     </div>
 
                     <!-- Button: Save -->
                     <div class="flex justify-end mt-3">
-                        <Button :style="'save'" :loading="isLoadingButton == 'addTrackingNumber'" :label="'save'" :disabled="
-                                !formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id?.api_shipper ? true : formTrackingNumber.tracking_number)
-                            " full
+                        <Button :style="'save'" :loading="isLoadingButton == 'addTrackingNumber'" :label="'save'"
+                            :disabled="!formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id?.api_shipper ? true : formTrackingNumber.tracking_number)
+                                " full
                             @click="() => formTrackingNumber?.errors?.address ? onSubmitAddressThenShipment() : onSubmitShipment()" />
                     </div>
 
@@ -445,4 +511,10 @@ const xxxCopyAddress = ref({ ...props.address?.delivery })
             </div>
         </Modal>
     </div>
+
+    <ConfirmDialog :group="'confirm-delete'">
+        <template #icon>
+            <FontAwesomeIcon :icon="faExclamationCircle" class="text-yellow-500" />
+        </template>
+    </ConfirmDialog>
 </template>

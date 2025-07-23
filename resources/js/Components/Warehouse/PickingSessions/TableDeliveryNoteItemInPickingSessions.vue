@@ -37,7 +37,6 @@ library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHa
 const props = defineProps<{
     data: TableTS
     tab?: string
-    state: string
     pickingSession: object
 }>();
 
@@ -178,7 +177,6 @@ const isPacking = (id: number) => packedLoading.value.has(id)
 
 const DeliveryNoteInModal = ref(null)
 const onCloseModalDetail = () => {
-    console.log('sdsd')
     modalDetail.value = false
     DeliveryNoteInModal.value = null
 }
