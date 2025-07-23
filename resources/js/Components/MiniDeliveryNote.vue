@@ -41,6 +41,8 @@ const props = defineProps<{
     deliveryNote: Number
 }>();
 
+console.log(props)
+
 const emits = defineEmits<{
     (e: 'SuccsesUpdateState'): void
 }>()
@@ -150,7 +152,7 @@ onMounted(() => {
 
 </script>
 <template>
-    <PageHeading :data="pageHead" isButtonGroupWithBorder :key="props.deliveryNote.state">
+    <PageHeading v-if="props.deliveryNote" :data="pageHead" isButtonGroupWithBorder :key="props.deliveryNote?.state">
         <template #other
             v-if="props.deliveryNote?.delivery_note_id && props.deliveryNote.delivery_note_state == 'packed'">
             <Link
@@ -253,7 +255,7 @@ onMounted(() => {
                     </ul>
                 </div>
 
-                <div v-if="['packed', 'dispatched', 'finalised'].includes(data.delivery_note?.state)">
+                <div v-if="['packed', 'dispatched', 'finalised'].includes(data.delivery_note?.state) && props.deliveryNote">
                     <ShipmentSection :shipments="shipments?.shipment.shipments"
                         :shipments_routes="shipments.shipment.shipments_routes" :address="data.delivery_note.address"
                         @addSuccsess="getDataShipment()" @editAddressSuccsess="getDataDeliveryNote()" @deleteSuccsess="getDataShipment()" :updateAddressRoute="{
