@@ -38,6 +38,14 @@ class GetTrafficSourceFromUrl
                 Arr::get($queryParams, 'utm_campaign');
         }
 
+        if (array_key_exists('msclkid', $queryParams)) {
+            return
+                TrafficSourcesTypeEnum::abbr()[TrafficSourcesTypeEnum::BING_ADS->value].
+                Arr::get($queryParams, 'msclkid');
+        }
+
+
+
 
         return null;
     }
