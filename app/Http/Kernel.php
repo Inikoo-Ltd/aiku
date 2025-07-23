@@ -22,7 +22,6 @@ use App\Http\Middleware\SameSiteSession;
 use App\Http\Middleware\SetHanAsAppScope;
 use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\BindGroupInstance;
-use App\Http\Middleware\CaptureAcquisitionSource;
 use App\Http\Middleware\CaptureTrafficSource;
 use App\Http\Middleware\CheckWebsiteState;
 use App\Http\Middleware\DetectWebsite;
@@ -182,7 +181,6 @@ class Kernel extends HttpKernel
             AddLinkHeadersForPreloadedAssets::class,
             LogWebUserRequestMiddleware::class,
             InspectorOctaneMiddleware::class,
-            CaptureAcquisitionSource::class,
             CaptureTrafficSource::class,
         ],
         'retina'      => [
@@ -200,7 +198,6 @@ class Kernel extends HttpKernel
             AddLinkHeadersForPreloadedAssets::class,
             LogWebUserRequestMiddleware::class,
             InspectorOctaneMiddleware::class,
-            CaptureAcquisitionSource::class,
             CaptureTrafficSource::class,
         ],
         'pupil'       => [

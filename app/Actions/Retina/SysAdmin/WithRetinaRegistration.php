@@ -9,7 +9,7 @@
 namespace App\Actions\Retina\SysAdmin;
 
 use App\Actions\CRM\Customer\RegisterCustomer;
-use App\Actions\CRM\CustomerAcquisitionSource\StoreCustomerAcquisitionSource;
+use App\Actions\CRM\CustomerTrafficAd\StoreCustomerTrafficAd;
 use App\Actions\Fulfilment\FulfilmentCustomer\RegisterFulfilmentCustomer;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Poll\PollTypeEnum;
@@ -45,20 +45,20 @@ trait WithRetinaRegistration
             );
         }
 
-        $trackingData = request()->session()->get('acquisition_tracking_data');
-        if ($trackingData) {
-            try {
-                StoreCustomerAcquisitionSource::dispatch($customer, $trackingData);
-                request()->session()->forget('acquisition_tracking_data');
-            } catch (\Exception $e) {
-                // Log error but don't fail the registration/login process
-                logger()->warning('Failed to store acquisition source', [
-                    'customer_id' => $customer->id,
-                    'tracking_data' => $trackingData,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
+        // $trackingData = request()->session()->get('acquisition_tracking_data');
+        // if ($trackingData) {
+        //     try {
+        //         StoreCustomerTrafficAd::dispatch($customer, $trackingData);
+        //         request()->session()->forget('acquisition_tracking_data');
+        //     } catch (\Exception $e) {
+        //         // Log error but don't fail the registration/login process
+        //         logger()->warning('Failed to store acquisition source', [
+        //             'customer_id' => $customer->id,
+        //             'tracking_data' => $trackingData,
+        //             'error' => $e->getMessage(),
+        //         ]);
+        //     }
+        // }
     }
 
     public function afterValidator(Validator $validator, ActionRequest $request): void

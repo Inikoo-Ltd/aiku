@@ -23,7 +23,7 @@ use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\SubscriptionEvent;
-use App\Models\CRM\CustomerAcquisitionSource;
+use App\Models\CRM\CustomerTrafficAd;
 use App\Models\CRM\OfflineConversion;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\AmazonUser;
@@ -496,14 +496,14 @@ class Customer extends Model implements HasMedia, Auditable
         return $this->hasMany(Product::class, 'exclusive_for_customer_id');
     }
 
-    public function acquisitionSources(): HasMany
+    public function trafficAds(): HasMany
     {
-        return $this->hasMany(CustomerAcquisitionSource::class);
+        return $this->hasMany(CustomerTrafficAd::class);
     }
 
-    public function activeAcquisitionSources(): HasMany
+    public function activeTrafficAds(): HasMany
     {
-        return $this->hasMany(CustomerAcquisitionSource::class)
+        return $this->hasMany(CustomerTrafficAd::class)
             ->where('is_active', true)
             ->where('expires_at', '>', now());
     }

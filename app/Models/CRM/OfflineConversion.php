@@ -8,55 +8,21 @@ use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\InOrganisation;
+use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/**
- * App\Models\CRM\OfflineConversion
- *
- * @property int $id
- * @property int $group_id
- * @property int $organisation_id
- * @property int $customer_id
- * @property int|null $customer_acquisition_source_id
- * @property int|null $order_id
- * @property string|null $external_order_id
- * @property string|null $platform_source
- * @property float $revenue
- * @property string $currency
- * @property float|null $grp_exchange
- * @property float|null $org_exchange
- * @property string|null $advertising_platform
- * @property string|null $tracking_id
- * @property \Illuminate\Support\Carbon $conversion_date
- * @property \Illuminate\Support\Carbon|null $attribution_date
- * @property bool $within_attribution_window
- * @property bool $uploaded_to_platform
- * @property \Illuminate\Support\Carbon|null $uploaded_at
- * @property array|null $upload_response
- * @property string $upload_status
- * @property array|null $data
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read Customer $customer
- * @property-read CustomerAcquisitionSource|null $customerAcquisitionSource
- * @property-read Group $group
- * @property-read Order|null $order
- * @property-read Organisation $organisation
- */
 class OfflineConversion extends Model
 {
     use HasFactory;
-    use InOrganisation;
+    use InShop;
 
     protected $guarded = [];
 
     protected $casts = [
         'revenue' => 'decimal:4',
-        'grp_exchange' => 'decimal:4',
-        'org_exchange' => 'decimal:4',
         'conversion_date' => 'datetime',
         'attribution_date' => 'datetime',
         'uploaded_at' => 'datetime',
@@ -64,7 +30,6 @@ class OfflineConversion extends Model
         'uploaded_to_platform' => 'boolean',
         'upload_response' => 'array',
         'upload_status' => OfflineConversionUploadStatusEnum::class,
-        'data' => 'array',
     ];
 
     public function customer(): BelongsTo
@@ -72,9 +37,9 @@ class OfflineConversion extends Model
         return $this->belongsTo(Customer::class);
     }
 
-    public function customerAcquisitionSource(): BelongsTo
+    public function CustomerTrafficAd(): BelongsTo
     {
-        return $this->belongsTo(CustomerAcquisitionSource::class);
+        return $this->belongsTo(CustomerTrafficAd::class);
     }
 
     public function order(): BelongsTo

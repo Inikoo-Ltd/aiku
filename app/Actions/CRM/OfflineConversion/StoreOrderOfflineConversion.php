@@ -4,7 +4,7 @@ namespace App\Actions\CRM\OfflineConversion;
 
 use App\Actions\OrgAction;
 use App\Enums\CRM\OfflineConversion\OfflineConversionUploadStatusEnum;
-use App\Models\CRM\CustomerAcquisitionSource;
+use App\Models\CRM\CustomerTrafficAd;
 use App\Models\CRM\OfflineConversion;
 use App\Models\Ordering\Order;
 
@@ -19,7 +19,7 @@ class StoreOrderOfflineConversion extends OrgAction
 
         $conversionDate = $order->submitted_at ?? $order->created_at ?? now();
 
-        $acquisitionSource = CustomerAcquisitionSource::where('customer_id', $order->customer->id)
+        $acquisitionSource = CustomerTrafficAd::where('customer_id', $order->customer->id)
             ->active()
             ->where('expires_at', '>', $conversionDate)
             ->orderBy('captured_at', 'desc')
