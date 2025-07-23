@@ -198,6 +198,11 @@ console.log('props', props.pickingSession)
             <Icon :data="item.state_icon" />
         </template>
 
+        <template #cell(delivery_note_state)="{ item }">
+            <Icon :data="item.delivery_note_state_icon" />
+        </template>
+
+
         <template #cell(delivery_note_reference)="{ item }">
             <Link :href="showdeliveryNoteRoute(item)" class="primaryLink">
             {{ item?.delivery_note_reference }}
@@ -291,6 +296,168 @@ console.log('props', props.pickingSession)
             </div>
         </template>
 
+        <template #cell(items)="{ item: itemValue, proxyItem }">
+            <div v-for="(deliveryItem, index) in itemValue.items" :key="deliveryItem.id || index" class="space-y-2">
+
+                <div class="flex justify-between items-center">
+                    <div>{{ deliveryItem.org_stock_code }}</div>
+
+                    <template v-if="deliveryItem.quantity_to_pick > 0 && pickingSession.state === 'handling'">
+                        <div v-if="findLocation(deliveryItem.locations, proxyItem.hehe)"
+                            class="rounded p-1 flex flex-col justify-between gap-x-6 items-center even:bg-black/5">
+                            <div class="mb-3 w-full flex justify-between gap-x-6 items-center">
+                                <!-- Location Info -->
+                                <div>
+                                    <Transition name="spin-to-right">
+                                        <div :key="findLocation(deliveryItem.locations, proxyItem.hehe).location_code">
+                                            <Link v-if="findLocation(deliveryItem.locations, proxyItem.hehe)"
+                                                :href="generateLocationRoute(findLocation(deliveryItem.locations, proxyItem.hehe))"
+                                                class="secondaryLink">
+                                            {{ findLocation(deliveryItem.locations, proxyItem.hehe).location_code }}
+                                            </Link>
+                                            <span v-else v-tooltip="trans('Unknown location')"
+                                                class="text-gray-400 italic">
+                                                ({{ trans("Unknown") }})
+                                            </span>
+
+                                            <span v-tooltip="trans('Total stock in this location')"
+                                                class="whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-gray-300 rounded px-1">
+                                                <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width
+                                                    aria-hidden="true" />
+                                                {{ findLocation(deliveryItem.locations, proxyItem.hehe).quantity }}
+                                            </span>
+
+                                            <span v-if="deliveryItem.locations?.length > 1" @click="() => {
+                                                isModalLocation = true;
+                                                selectedItemValue = deliveryItem;
+                                                selectedItemProxy = proxyItem;
+                                            }" v-tooltip="`Other ${deliveryItem.locations.length - 1} locations`"
+                                                class="cursor-pointer hover:bg-orange-50 ml-1 whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-orange-300 rounded px-1">
+                                                <FontAwesomeIcon icon="fal fa-list-ol" class="mr-1" fixed-width
+                                                    aria-hidden="true" />
+                                                {{ deliveryItem.locations.length - 1 }}
+                                            </span>
+                                        </div>
+                                    </Transition>
+                                </div>
+
+                                <!-- Quantity Picker -->
+                                <div class="flex items-center flex-nowrap gap-x-2">
+                                    <NumberWithButtonSave
+                                        v-if="!deliveryItem.is_handled && findLocation(deliveryItem.locations, proxyItem.hehe).quantity > 0"
+                                        :key="findLocation(deliveryItem.locations, proxyItem.hehe).location_code"
+                                        noUndoButton
+                                        @onError="(error: any) => proxyItem.errors = Object.values(error || {})"
+                                        :modelValue="findLocation(deliveryItem.locations, proxyItem.hehe).quantity_picked"
+                                        @update:modelValue="() => proxyItem.errors ? proxyItem.errors = null : undefined"
+                                        saveOnForm :routeSubmit="{
+                                            name: deliveryItem.upsert_picking_route.name,
+                                            parameters: deliveryItem.upsert_picking_route.parameters
+                                        }" :bindToTarget="{
+                                            step: 1,
+                                            min: 0,
+                                            max: Math.min(
+                                                findLocation(deliveryItem.locations, proxyItem.hehe).quantity,
+                                                deliveryItem.quantity_required,
+                                                deliveryItem.quantity_to_pick + findLocation(deliveryItem.locations, proxyItem.hehe).quantity_picked
+                                            )
+                                        }" :additionalData="{
+                                            location_org_stock_id: findLocation(deliveryItem.locations, proxyItem.hehe).id,
+                                            picking_id: deliveryItem.pickings.find(p => p.location_id === findLocation(deliveryItem.locations, proxyItem.hehe).location_id)?.id
+                                        }" autoSave xxisWithRefreshModel
+                                        :readonly="deliveryItem.is_handled || deliveryItem.quantity_required === deliveryItem.quantity_picked">
+                                        <template #save="{ isProcessing }">
+                                            <ButtonWithLink
+                                                v-tooltip="trans('Pick all required quantity in this location')"
+                                                icon="fal fa-clipboard-list-check"
+                                                :disabled="deliveryItem.is_handled || deliveryItem.quantity_required === deliveryItem.quantity_picked"
+                                                size="xs" type="secondary" :loading="isProcessing"
+                                                :routeTarget="deliveryItem.picking_all_route" :bind-to-link="{
+                                                    preserveScroll: true,
+                                                    preserveState: true
+                                                }" :body="{
+                                                    location_org_stock_id: findLocation(deliveryItem.locations, proxyItem.hehe).id
+                                                }" isWithError>
+                                                <template #label>
+                                                    <FractionDisplay v-if="deliveryItem.quantity_to_pick_fractional"
+                                                        :fractionData="deliveryItem.quantity_to_pick_fractional" />
+                                                    <span v-else>{{ locale.number(deliveryItem.quantity_to_pick ?? 0)
+                                                        }}</span>
+                                                </template>
+                                            </ButtonWithLink>
+                                        </template>
+                                    </NumberWithButtonSave>
+
+                                    <!-- Not Picked Button -->
+                                    <ButtonWithLink v-if="!deliveryItem.is_handled" type="negative"
+                                        tooltip="Set as not picked" icon="fal fa-debug" size="xs"
+                                        :routeTarget="deliveryItem.not_picking_route"
+                                        :bindToLink="{ preserveScroll: true }" />
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Set as Packed Button -->
+                    <Link
+                        v-if="pickingSession.state === 'picking_finished' && deliveryItem.delivery_note_state === 'handling'"
+                        method="patch" @start="packedLoading.add(deliveryItem.id)"
+                        :href="route('grp.models.delivery_note.state.packed', { deliveryNote: deliveryItem.delivery_note_id })"
+                        @finish="packedLoading.delete(deliveryItem.id)" class="mx-3">
+                    <Button type="save" label="Set as packed" size="sm" :loading="isPacking(deliveryItem.id)" />
+                    </Link>
+
+
+
+                    <div v-if="deliveryItem.pickings?.length" class="space-y-1">
+                        <div v-for="picking in deliveryItem.pickings" :key="picking.id" class="flex gap-x-2 w-fit">
+                            <!-- {{ picking.location_code }} -->
+                            <div v-if="picking.type === 'pick'" class="flex gap-x-2 items-center">
+                                <Link :href="generateLocationRoute(picking)" class="secondaryLink">
+                                {{ picking.location_code }}
+                                </Link>
+
+                                <div v-tooltip="trans('Total picked quantity in this location')"
+                                    class="text-gray-500 whitespace-nowrap">
+                                    <FontAwesomeIcon icon="fal fa-hand-holding-box" class="mr text-gray-500" fixed-width
+                                        aria-hidden="true" />
+                                    <FractionDisplay v-if="picking.quantity_picked_fractional"
+                                        :fractionData="picking.quantity_picked_fractional" />
+                                    <span v-else>
+                                        {{ picking.quantity_picked }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div v-if="picking.type === 'not-pick'" v-tooltip="trans('Quantity not gonna be picked')"
+                                class="text-red-500 w-fit mr-auto">
+                                <FontAwesomeIcon icon="fas fa-skull" class="" fixed-width aria-hidden="true" />
+                                <FractionDisplay v-if="picking.quantity_picked_fractional"
+                                    :fractionData="picking.quantity_picked_fractional" />
+                                <span v-else>
+                                    {{ picking.quantity_picked }}
+                                </span>
+                            </div>
+
+                            <ButtonWithLink v-if="!deliveryItem.is_packed && pickingSession.state == 'handling'"
+                                v-tooltip="trans('Undo')" type="negative" size="xxs" icon="fal fa-undo-alt"
+                                :routeTarget="picking.undo_picking_route" :bindToLink="{ preserveScroll: true }"
+                                @click="onUndoPick(picking.undo_picking_route, deliveryItem, `undo-pick-${picking.id}`)"
+                                :loading="get(isLoadingUndoPick, `undo-pick-${picking.id}`, false)" />
+                        </div>
+
+                    </div>
+
+                    <div v-else class="text-xs text-gray-400 italic">
+                        {{ trans("No item picked yet") }}
+                    </div>
+                </div>
+            </div>
+
+
+        </template>
+
+
         <!-- Column: actions -->
         <template #cell(handing_actions)="{ item: itemValue, proxyItem }">
             <div v-if="itemValue.quantity_to_pick > 0 && pickingSession.state == 'handling'">
@@ -371,7 +538,7 @@ console.log('props', props.pickingSession)
                                                     <FractionDisplay v-if="itemValue.quantity_to_pick_fractional"
                                                         :fractionData="itemValue.quantity_to_pick_fractional" />
                                                     <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0)
-                                                        }}</span>
+                                                    }}</span>
                                                 </div>
                                             </template>
                                         </ButtonWithLink>
@@ -393,7 +560,7 @@ console.log('props', props.pickingSession)
                                                     <FractionDisplay v-if="itemValue.quantity_to_pick_fractional"
                                                         :fractionData="itemValue.quantity_to_pick_fractional" />
                                                     <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0)
-                                                        }}</span>
+                                                    }}</span>
                                                 </div>
                                             </template>
                                         </ButtonWithLink>
@@ -427,15 +594,15 @@ console.log('props', props.pickingSession)
             </div>
 
 
-            <Link v-if="pickingSession.state == 'picking_finished' && itemValue.state == 'handling'" method="patch"
-                @start="packedLoading.add(id)"
+            <Link v-if="pickingSession.state == 'picking_finished' && itemValue.delivery_note_state == 'handling'"
+                method="patch" @start="packedLoading.add(id)"
                 :href="route('grp.models.delivery_note.state.packed', { deliveryNote: itemValue.delivery_note_id })"
                 @finish="packedLoading.delete(id)" class="mx-3">
             <Button type="save" label="Set as packed" size="sm" :loading="isPacking(itemValue.id)" />
             </Link>
 
 
-            <Button v-if="itemValue.state == 'packed'" :icon="faPencil" label="Edit Detail" size="sm"
+            <Button v-if="itemValue.delivery_note_state == 'packed'" :icon="faPencil" label="Edit Detail" size="sm"
                 @click="onOpenModalDetail(itemValue)" />
 
         </template>
@@ -462,7 +629,7 @@ console.log('props', props.pickingSession)
                         </Link>
                     </span>
                     <span v-else v-tooltip="trans('Unknown location')" class="text-gray-400 italic">({{ trans("Unknown")
-                        }})</span>
+                    }})</span>
 
                     <span v-tooltip="trans('Total stock in this location')"
                         class="ml-1 whitespace-nowrap text-gray-400 tabular-nums border border-gray-300 rounded px-1">
@@ -527,8 +694,9 @@ console.log('props', props.pickingSession)
     </Modal>
 
     <Modal :isOpen="modalDetail" @onClose="() => onCloseModalDetail()" width="w-1/2">
-        <MiniDeliveryNote :deliveryNote="DeliveryNoteInModal" @SuccsesUpdateState="()=> {router.reload(), onCloseModalDetail()}"/>
+        <MiniDeliveryNote :deliveryNote="DeliveryNoteInModal"
+            @SuccsesUpdateState="() => { router.reload(), onCloseModalDetail() }" />
     </Modal>
 
-    
+
 </template>
