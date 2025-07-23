@@ -39,6 +39,8 @@ const props = defineProps<{
     fullLoading?: boolean
     isWithError?: boolean
     buttonClass?: string
+    iconRightRotation?: number | string
+    iconRotation?: number | string
 }>()
 
 const emits = defineEmits<{
@@ -90,6 +92,8 @@ const setError = (e: {}) => {
                 :disabled="props.disabled"
                 :noHover="props.noHover"
                 :class="props.buttonClass"
+                :iconRightRotation
+                :iconRotation
             >
                 <template #loading>
                     <slot name="loading" />

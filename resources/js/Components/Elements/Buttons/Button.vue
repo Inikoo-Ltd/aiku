@@ -35,6 +35,8 @@ const props = withDefaults(defineProps<{
   disabled?: boolean
   noHover?: boolean
   injectStyle? : object|null
+  iconRightRotation?: number | string
+  iconRotation?: number | string
 }>(), {
   size: "m",
   capitalize: true,
@@ -172,12 +174,12 @@ const getActionIcon = (icon: any) => {
         <FontAwesomeIcon v-if="loading" icon="fad fa-spinner-third" class="animate-spin" fixed-width aria-hidden="true" />
       </slot>
       <slot name="icon" v-if="!loading">
-        <FontAwesomeIcon v-if="getActionIcon(icon)" :icon="getActionIcon(icon)" fixed-width class="" aria-hidden="true" />
+        <FontAwesomeIcon v-if="getActionIcon(icon)" :icon="getActionIcon(icon)" :rotation="iconRotation" fixed-width class="" aria-hidden="true" />
       </slot>
       <slot name="label"></slot>
       <span v-if="getActionLabel(label)" class="leading-none tabular-nums" :class="{'capitalize': capitalize}">{{ getActionLabel(label) }}</span>
       <slot name="iconRight">
-        <FontAwesomeIcon v-if="iconRight" :icon="getActionIcon(iconRight)" fixed-width class="" aria-hidden="true" />
+        <FontAwesomeIcon v-if="iconRight" :icon="getActionIcon(iconRight)" :rotation="iconRightRotation" fixed-width class="" aria-hidden="true" />
       </slot>
     </slot>
   </button>
