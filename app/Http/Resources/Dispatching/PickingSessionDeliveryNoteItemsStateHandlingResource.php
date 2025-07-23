@@ -98,6 +98,7 @@ class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
             'is_handled'                   => $this->is_handled,
             'delivery_note_reference'      => $this->delivery_note_reference,
             'delivery_note_slug'           => $this->delivery_note_slug,
+            'delivery_note_id'             => $this->delivery_note_id,
             'is_packed'                    => $isPacked,
             'quantity_required_fractional' => $requiredFactionalData,
 

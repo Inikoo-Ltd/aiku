@@ -53,6 +53,7 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
                 'delivery_notes.slug as delivery_note_slug',
+                'delivery_notes.id as delivery_note_id',
                 'delivery_notes.reference as delivery_note_reference',
             ])
             ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required', 'quantity_picked', 'quantity_packed', 'state'])

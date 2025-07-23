@@ -20,7 +20,8 @@ enum PickingSessionStateEnum: string
     case HANDLING = 'handling'; // picking and packing
     case HANDLING_BLOCKED = 'handling_blocked';
     case PICKING_FINISHED = 'picking_finished';
-
+    case PACKING_FINISHED = 'packing_finished';
+    
     public static function labels(): array
     {
         return [
@@ -28,6 +29,7 @@ enum PickingSessionStateEnum: string
             'handling'         => __('Handling'),
             'handling_blocked' => __('Handling Blocked'),
             'picking_finished' => __('Picking Finished'),
+            'packing_finished' => __('Packing Finished'),
         ];
     }
 
@@ -65,6 +67,16 @@ enum PickingSessionStateEnum: string
                 ]
             ],
             'picking_finished'     => [
+                'tooltip' => __('Picking Finished'),
+                'icon'    => 'fal fa-box-check',
+                'class'   => 'text-gray-500',
+                'color'   => 'gray',
+                'app'     => [
+                    'name' => 'times',
+                    'type' => 'font-awesome-5'
+                ]
+            ],
+            'packing_finished'     => [
                 'tooltip' => __('Picking Finished'),
                 'icon'    => 'fal fa-box-check',
                 'class'   => 'text-gray-500',
