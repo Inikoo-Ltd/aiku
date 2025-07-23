@@ -32,17 +32,26 @@ test('findSmallestFactors works for numbers less than 1', function () {
 });
 
 test('findSmallestFactors works for numbers greater than 1', function () {
+
+
+    $result = findSmallestFactors(5.0);
+    expect($result)->toBe([5.0, 1]);
+
+    $result = findSmallestFactors(3.0);
+    expect($result)->toBe([3.0, 1]);
+
     // Test for 2.0 (2/1)
+
     $result = findSmallestFactors(2.0);
-    expect($result)->toBe([1, 2]);
+    expect($result)->toBe([2.0, 1]);
 
     // Test for 3.5 (7/2)
     $result = findSmallestFactors(3.5);
-    expect($result)->toBe([7, 2]);
+    expect($result)->toBe([7.0, 2]);
 
     // Test for 1.5 (3/2)
     $result = findSmallestFactors(1.5);
-    expect($result)->toBe([3, 2]);
+    expect($result)->toBe([3.0, 2]);
 });
 
 test('findSmallestFactors works for negative numbers', function () {
@@ -52,7 +61,7 @@ test('findSmallestFactors works for negative numbers', function () {
 
     // Test for -2.0 (-2/1)
     $result = findSmallestFactors(-2.0);
-    expect($result)->toBe([-1, 2]);
+    expect($result)->toBe([-2.0, 1]);
 });
 
 test('findSmallestFactors works for complex fractions', function () {
@@ -90,14 +99,26 @@ test('findSmallestFactors works with custom epsilon', function () {
 
 test('findSmallestFactors handles edge cases', function () {
     // Test for a very small number
-    $result = findSmallestFactors(0.001);
+    $result = findSmallestFactors(0.01);
     expect($result)->toBe([1, 100]);
+
+    $result = findSmallestFactors(0.001);
+    expect($result)->toBe([1, 1000]);
+
+    $result = findSmallestFactors(0.0066666);
+    expect($result)->toBe([1, 150]);
+
+    $result = findSmallestFactors(0.002);
+    expect($result)->toBe([1, 500]);
+
+    $result = findSmallestFactors(0.0001);
+    expect($result)->toBe([1, 10000]);
 
     // Test for a very large number
     $result = findSmallestFactors(1000.0);
-    expect($result)->toBe([1, 1000]);
+    expect($result)->toBe([1000.0, 1]);
 
     // Test for a number very close to an integer
     $result = findSmallestFactors(2.0001);
-    expect($result)->toBe([2, 1]);
+    expect($result)->toBe([2.0, 1]);
 });

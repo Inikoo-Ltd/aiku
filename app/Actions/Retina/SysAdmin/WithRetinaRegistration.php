@@ -25,6 +25,11 @@ trait WithRetinaRegistration
 {
     public function handle(array $modelData): void
     {
+        $trafficSourceId = $this->get('traffic_source_id');
+        if ($trafficSourceId) {
+            $modelData['traffic_source_id'] = $trafficSourceId;
+        }
+
         if ($this->shop->type == ShopTypeEnum::FULFILMENT) {
             RegisterFulfilmentCustomer::run(
                 $this->shop->fulfilment,
@@ -40,6 +45,13 @@ trait WithRetinaRegistration
 
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
+        // already set from middleware CaptureTrafficSource
+        $trafficSourceId = $request->session()->get('traffic_source_id');
+        if ($trafficSourceId) {
+            $this->set('traffic_source_id', $trafficSourceId);
+            $request->session()->forget('traffic_source_id');
+        }
+
         $pollReplies = $request->input('poll_replies', []);
 
         if (count($pollReplies) === 0) {
@@ -59,7 +71,7 @@ trait WithRetinaRegistration
 
             if (!$pollId || !$pollType) {
                 $validator->errors()->add(
-                    'poll_replies.'.$key,
+                    'poll_replies.' . $key,
                     "Poll reply not valid"
                 );
                 continue;
@@ -71,7 +83,7 @@ trait WithRetinaRegistration
 
             if (!$pollAnswer && $poll->in_registration_required) {
                 $validator->errors()->add(
-                    'poll_replies.'.$key,
+                    'poll_replies.' . $key,
                     "The answer is required for this poll!"
                 );
                 continue;
@@ -81,7 +93,7 @@ trait WithRetinaRegistration
 
             if (!$poll) {
                 $validator->errors()->add(
-                    'poll_replies.'.$key,
+                    'poll_replies.' . $key,
                     "The poll does not exist!"
                 );
                 continue;
@@ -95,13 +107,13 @@ trait WithRetinaRegistration
 
                 if (!in_array((int)$pollAnswer, $pollOptions, true)) {
                     $validator->errors()->add(
-                        'poll_replies.'.$key,
+                        'poll_replies.' . $key,
                         "The answer option does not exist!"
                     );
                 }
             } elseif ($pollType === PollTypeEnum::OPEN_QUESTION->value && !is_string($pollAnswer)) {
                 $validator->errors()->add(
-                    'poll_replies.'.$key,
+                    'poll_replies.' . $key,
                     "The answer must be a string!"
                 );
             }
@@ -139,11 +151,11 @@ trait WithRetinaRegistration
             'is_opt_in'       => ['required', 'boolean'],
             'poll_replies'    => ['sometimes', 'array'],
             'password'        =>
-                [
-                    'required',
-                    'required',
-                    app()->isLocal() || app()->environment('testing') ? null : Password::min(8)
-                ],
+            [
+                'required',
+                'required',
+                app()->isLocal() || app()->environment('testing') ? null : Password::min(8)
+            ],
         ];
 
         if ($this->shop->type == ShopTypeEnum::FULFILMENT) {
@@ -152,5 +164,4 @@ trait WithRetinaRegistration
 
         return $rules;
     }
-
 }

@@ -113,7 +113,7 @@ class IndexPickingSessions extends OrgAction
                 ->column(key: 'number_picking_session_items', label: __('items'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'user_name', label: __('user'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'start_at', label: __('start'), canBeHidden: false, sortable: true, searchable: true, align: 'right', type: 'date')
-                ->column(key: 'end_at', label: __('end'), canBeHidden: false, sortable: true, searchable: true,  align: 'right', type: 'date')
+                ->column(key: 'end_at', label: __('end'), canBeHidden: false, sortable: true, searchable: true, align: 'right', type: 'date')
                 ->defaultSort('reference');
         };
     }
