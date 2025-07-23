@@ -17,13 +17,13 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@/Components/Image.vue"
 import { debounce, get, set } from "lodash-es"
 import ConditionIcon from "@/Components/Utils/ConditionIcon.vue"
-import { faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar as falStar, faTrashAlt, faExclamationCircle} from "@fal"
+import { faConciergeBell, faGarage, faExclamationTriangle, faSyncAlt, faPencil, faSearch, faThLarge, faListUl, faStar as falStar, faTrashAlt, faExclamationCircle, faClone, faLink} from "@fal"
 import { faStar, faFilter } from "@fas"
 import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
 import { faCheck } from "@far"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
-library.add( fadExclamationTriangle, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle )
+library.add( fadExclamationTriangle, faSyncAlt, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, faClone, faLink )
 
 interface PlatformData {
 	id: number
@@ -132,7 +132,7 @@ const compTableFilterStatus = computed(() => {
 	return layout.currentQuery?.[`${props.tab}_filter`]?.status
 })
 const isLoadingTable = ref<null | string>(null)
-const onClickOutOfStock = (query: string) => {
+const onClickFilterOutOfStock = (query: string) => {
 	let xx: string | null = ''
 	if (compTableFilterStatus.value === query) {
 		xx = null
@@ -185,7 +185,7 @@ const onClickOutOfStock = (query: string) => {
 	>
 		<template #add-on-button>
 			<Button
-				@click="onClickOutOfStock('out-of-stock')"
+				@click="onClickFilterOutOfStock('out-of-stock')"
 				v-tooltip="trans('Filter the product that out of stock')"
 				label="Out of stock"
 				size="xs"
@@ -196,7 +196,7 @@ const onClickOutOfStock = (query: string) => {
 				:loading="isLoadingTable == 'out-of-stock'"
 			/>
 			<Button
-				@click="onClickOutOfStock('discontinued')"
+				@click="onClickFilterOutOfStock('discontinued')"
 				v-tooltip="trans('Filter the product that discontinued')"
 				label="Discontinued"
 				size="xs"
@@ -214,39 +214,62 @@ const onClickOutOfStock = (query: string) => {
 			</div>
         </template>
 
-		<template #cell(code)="{ item: product }">
+		<template #cell(name)="{ item: product }">
 			<Link :href="portfolioRoute(product)" class="primaryLink whitespace-nowrap">
 				{{ product["code"] }}
 			</Link>
+			<div class="text-base font-semibold">
+				{{ product["name"] }}
+			</div>
+			<div class="text-sm text-gray-500 italic flex gap-x-6 gap-y-2">
+				<div>
+					{{ trans("Stocks:") }} {{ locale.number(product.quantity_left) }}
+				</div>
+				<div>
+					{{ trans("Weight:") }} {{ locale.number(product.weight/1000) }} kg
+				</div>
+			</div>
+			
+			<!-- Section: is code exist in platform -->
+			<div v-if="product.is_code_exist_in_platform" class="text-xs text-amber-500">
+				<FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
+				<span class="pr-2">{{ trans("We found same product in your shop, do you want to create new or use existing?") }}</span>
+				<Button v-tooltip="trans('Will create new product in :platform', {platform: props.platform_data.name})" label="Create new" icon="fal fa-plus" type="tertiary" size="xxs" />
+				<span class="px-2 text-gray-500">or</span>
+				<Button v-tooltip="trans('Will sync the product and prioritize our product', {platform: props.platform_data.name})" label="Use Existing" icon="fal fa-sync-alt" :disabled="data?.product_availability?.options === 'use_existing'" :type="data?.product_availability?.options === 'use_existing' ? 'primary' : 'tertiary'" size="xxs" />
+			</div>
         </template>
 
 		<!-- Column: Stock -->
-		<template #cell(quantity_left)="{ item }">
+		<!-- <template #cell(quantity_left)="{ item }">
 			<div>
 				{{ locale.number(item.quantity_left) }}
 			</div>
-		</template>
+		</template> -->
 
 		<!-- Column: Weight -->
-		<template #cell(weight)="{ item }">
+		<!-- <template #cell(weight)="{ item }">
 			<div>
 				{{ locale.number(item.weight/1000) }} kg
 			</div>
-		</template>
+		</template> -->
 
 		<!-- Column: Price -->
 		<template #cell(price)="{ item }">
-			<div>
+			<div class="text-gray-700">
 				{{ locale.currencyFormat(item.currency_code, item.price) }}
+			</div>
+			<div class="whitespace-nowrap text-gray-500">
+				RRP: {{ locale.currencyFormat(item.currency_code, item.customer_price) }}
 			</div>
 		</template>
 
 		<!-- Column: RPP -->
-		<template #cell(customer_price)="{ item }">
+		<!-- <template #cell(customer_price)="{ item }">
 			<div>
 				{{ locale.currencyFormat(item.currency_code, item.customer_price) }}
 			</div>
-		</template>
+		</template> -->
 
 		<!-- Column: Status -->
 		<template #cell(status)="{ item: product }">
@@ -305,8 +328,6 @@ const onClickOutOfStock = (query: string) => {
 						preserveScroll: true,
 					}"
 				/>
-
-
 			</div>
 		</template>
 	</Table>
