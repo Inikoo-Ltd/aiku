@@ -270,6 +270,8 @@ if (storedPickingView !== null) {
 watch(pickingView, (val) => {
   localStorage.setItem('delivery-note:pickingView', String(val));
 });
+
+console.log(props)
 </script>
 
 
@@ -345,7 +347,7 @@ watch(pickingView, (val) => {
                     <div class="flex flex-col gap-1">
                         <template v-for="(item, idx) in warning?.picking_sessions" :key="idx">
                             <Link :href="route(item.route.name, item.route.parameters)"
-                                class="text-sm font-blod hover:underline">
+                                class="text-sm  hover:underline">
                             {{ item.reference }}
                             </Link>
                         </template>

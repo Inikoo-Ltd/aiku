@@ -8,7 +8,6 @@
 <script setup lang="ts">
 import { Link, router } from "@inertiajs/vue3";
 import Table from "@/Components/Table/Table.vue";
-import { Order } from "@/types/order";
 import type { Table as TableTS } from "@/types/Table";
 import Icon from "@/Components/Icon.vue";
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue";
@@ -16,9 +15,7 @@ import { debounce, get, set } from 'lodash-es';
 import { notify } from "@kyvg/vue3-notification";
 import { trans } from "laravel-vue-i18n";
 import { routeType } from "@/types/route";
-import { Collapse } from "vue-collapsed";
 import { ref, onMounted, reactive, inject } from "vue";
-import Button from "@/Components/Elements/Buttons/Button.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes } from "@fal";
 import { faSkull } from "@fas";
@@ -28,30 +25,27 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import Modal from "@/Components/Utils/Modal.vue"
 import { RadioButton } from "primevue"
+import Button from "@/Components/Elements/Buttons/Button.vue";
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
+import { faPencil } from "@far";
 
 library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes);
 
 
-defineProps<{
+const props = defineProps<{
     data: TableTS
     tab?: string
     state: string
+    pickingSession: object
 }>();
 
 const locale = inject("locale", aikuLocaleStructure);
 
-function orgStockRoute(deliveryNoteItem: DeliverNoteItem) {
-    switch (route().current()) {
-        case 'grp.org.warehouses.show.dispatching.picking_sessions.show':
-        default:
-            return "";
-    }
-}
+const modalDetail = ref(false)
+
 
 
 function showdeliveryNoteRoute(deliveryNoteItem) {
-
     switch (route().current()) {
         case 'grp.org.warehouses.show.dispatching.picking_sessions.show':
         default:
@@ -123,6 +117,15 @@ const generateLocationRoute = (location: any) => {
                 location.location_slug
             ]
         )
+    } else if (route().current() === 'grp.org.warehouses.show.dispatching.picking_sessions.show') {
+        return route(
+            "grp.org.warehouses.show.infrastructure.locations.show",
+            [
+                route().params["organisation"],
+                route().params["warehouse"],
+                location.location_slug
+            ]
+        )
     } else {
         return "#";
     }
@@ -167,11 +170,21 @@ const findLocation = (locationsList: { location_code: string }[], selectedHehe: 
     return locationsList.find(x => x.location_code == selectedHehe) || locationsList[0]
 }
 
+const packedLoading = ref<Set<number>>(new Set());
+const isPacking = (id: number) => packedLoading.value.has(id)
+
+const onCloseModalDetail = () => {
+    modalDetail.value = false
+}
+
+console.log('props', props.pickingSession
+)
+
 </script>
 
 <template>
-    
-    <Table :resource="data" class="mt-5" rowAlignTop >
+
+    <Table :resource="data" class="mt-5" rowAlignTop>
         <!-- Column: state -->
         <template #cell(state)="{ item }">
             <Icon :data="item.state_icon" />
@@ -183,11 +196,6 @@ const findLocation = (locationsList: { location_code: string }[], selectedHehe: 
             </Link>
         </template>
 
-        <template #cell(org_stock_code)="{ item: deliveryNoteItem }">
-           <!--  <Link :href="orgStockRoute(deliveryNoteItem)"> -->
-            {{ deliveryNoteItem.org_stock_code }}
-           <!--  </Link> -->
-        </template>
 
 
         <!-- Column: Quantity Required -->
@@ -220,7 +228,6 @@ const findLocation = (locationsList: { location_code: string }[], selectedHehe: 
         <template #cell(quantity_picked)="{ item: item, proxyItem }">
             <FractionDisplay v-if="item.quantity_picked_fractional" :fractionData="item.quantity_picked_fractional" />
             <span v-else>{{ item.quantity_picked }}</span>
-
         </template>
 
 
@@ -262,9 +269,9 @@ const findLocation = (locationsList: { location_code: string }[], selectedHehe: 
                         </span>
                     </div>
 
-                    <ButtonWithLink v-if="!item.is_packed" v-tooltip="trans('Undo')" type="negative" size="xxs"
-                        icon="fal fa-undo-alt" :routeTarget="picking.undo_picking_route"
-                        :bindToLink="{ preserveScroll: true }"
+                    <ButtonWithLink v-if="!item.is_packed && pickingSession.state == 'handling'"
+                        v-tooltip="trans('Undo')" type="negative" size="xxs" icon="fal fa-undo-alt"
+                        :routeTarget="picking.undo_picking_route" :bindToLink="{ preserveScroll: true }"
                         @click="onUndoPick(picking.undo_picking_route, item, `undo-pick-${picking.id}`)"
                         :loading="get(isLoadingUndoPick, `undo-pick-${picking.id}`, false)" />
                 </div>
@@ -275,10 +282,10 @@ const findLocation = (locationsList: { location_code: string }[], selectedHehe: 
                 {{ trans("No item picked yet") }}
             </div>
         </template>
-        
+
         <!-- Column: actions -->
         <template #cell(handing_actions)="{ item: itemValue, proxyItem }">
-            <div v-if="itemValue.quantity_to_pick > 0">
+            <div v-if="itemValue.quantity_to_pick > 0 && pickingSession.state == 'handling'">
                 <div v-if="findLocation(itemValue.locations, proxyItem.hehe)"
                     class="rounded p-1 flex flex-col justify-between gap-x-6 items-center even:bg-black/5">
                     <!-- Action: decrease and increase quantity -->
@@ -320,7 +327,6 @@ const findLocation = (locationsList: { location_code: string }[], selectedHehe: 
                         </div>
 
                         <div class="flex items-center flex-nowrap gap-x-2">
-                            <!-- Button: input number (picking) -->
                             <NumberWithButtonSave
                                 v-if="!itemValue.is_handled && findLocation(itemValue.locations, proxyItem.hehe).quantity > 0"
                                 :key="findLocation(itemValue.locations, proxyItem.hehe).location_code" noUndoButton
@@ -357,7 +363,7 @@ const findLocation = (locationsList: { location_code: string }[], selectedHehe: 
                                                     <FractionDisplay v-if="itemValue.quantity_to_pick_fractional"
                                                         :fractionData="itemValue.quantity_to_pick_fractional" />
                                                     <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0)
-                                                        }}</span>
+                                                    }}</span>
                                                 </div>
                                             </template>
                                         </ButtonWithLink>
@@ -379,7 +385,7 @@ const findLocation = (locationsList: { location_code: string }[], selectedHehe: 
                                                     <FractionDisplay v-if="itemValue.quantity_to_pick_fractional"
                                                         :fractionData="itemValue.quantity_to_pick_fractional" />
                                                     <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0)
-                                                        }}</span>
+                                                    }}</span>
                                                 </div>
                                             </template>
                                         </ButtonWithLink>
@@ -406,63 +412,20 @@ const findLocation = (locationsList: { location_code: string }[], selectedHehe: 
                             </div>
                         </div>
                     </div>
-
-                    <!-- <Button
-                        v-if="itemValue.locations?.length > 1"
-                        @click="() => {
-                            isModalLocation = true;
-                            selectedItemValue = itemValue;
-                            selectedItemProxy = proxyItem;
-                        }"
-                        xlabel="See another locations"
-                        type="tertiary"
-                        full
-                    >
-                        <template #label>
-                            <div v-if="itemValue.locations?.length > 1" class="text-gray-500">Other {{ itemValue.locations?.length - 1 }} locations</div>
-                        </template>
-                    </Button> -->
                 </div>
 
                 <div v-if="!itemValue.locations.every(location => { return location.quantity > 0 })" class="">
-                    <!-- <Collapse as="section" :when="get(proxyItem, ['is_open_collapsed'], false)" class="">
-                        <div :id="`row-${itemValue.id}`">
-                        </div>
-                    </Collapse> -->
-
-                    <!-- <div class="w-full mt-2">
-                        <Button
-                            v-if="!itemValue.locations.every(location => {return location.quantity > 0})"
-                            @click="() => set(proxyItem, ['is_open_collapsed'], !get(proxyItem, ['is_open_collapsed'], false))"
-                            type="dashed"
-                            full
-                            size="sm"
-                        >
-                            <div class="py-1 text-gray-500">
-                                <FontAwesomeIcon icon="fal fa-arrow-down" class="transition-all" :class="get(proxyItem, ['is_open_collapsed'], false) ? 'rotate-180' : ''" fixed-width aria-hidden="true" />
-                                {{ get(proxyItem, ["is_open_collapsed"], false) ? trans("Close") : trans("Open hidden locations") }}
-                            </div>
-                        </Button>
-                    </div> -->
                 </div>
             </div>
 
 
-            <!-- Button: Pack -->
-            <!--   <div v-if="itemValue.is_picked && !itemValue.is_packed" class="w-full max-w-32 mx-auto">
-                <ButtonWithLink
-                    
-                    :routeTarget="itemValue.packing_route"
-                    :bindToLink="{
-                        preserveScroll: true,
-                        preserveState: true,
-                    }"
-                    full
-                    type="secondary"
-                    size="xs"
-                    :label="trans('Pack')"
-                />
-            </div> -->
+            <Link v-if="pickingSession.state == 'picking_finished' && itemValue.is_picked && itemValue.state == 'handling'" method="patch" @start="packedLoading.add(id)"
+                :href="route('grp.models.delivery_note.state.packed', { deliveryNote: itemValue.delivery_note_id })" @finish="packedLoading.delete(id)"
+                class="mx-3">
+                <Button type="save" label="Set as packed" size="sm" :loading="isPacking(itemValue.id)"/>
+            </Link>
+
+            <!-- <Button :icon="faPencil" label="Edit Detail" size="sm" @click="modalDetail = true" /> -->
 
         </template>
     </Table>
@@ -488,7 +451,7 @@ const findLocation = (locationsList: { location_code: string }[], selectedHehe: 
                         </Link>
                     </span>
                     <span v-else v-tooltip="trans('Unknown location')" class="text-gray-400 italic">({{ trans("Unknown")
-                        }})</span>
+                    }})</span>
 
                     <span v-tooltip="trans('Total stock in this location')"
                         class="ml-1 whitespace-nowrap text-gray-400 tabular-nums border border-gray-300 rounded px-1">
@@ -550,5 +513,11 @@ const findLocation = (locationsList: { location_code: string }[], selectedHehe: 
                 </div>
             </div>
         </div>
+    </Modal>
+
+    <Modal :isOpen="modalDetail" @onClose="() => onCloseModalDetail()" width="w-full max-w-2xl" :dialogStyle="{
+        background: '#ffffffcc'
+    }">
+        <div>sdfsdfsdfsdf</div>
     </Modal>
 </template>

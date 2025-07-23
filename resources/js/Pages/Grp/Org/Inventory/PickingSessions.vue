@@ -36,10 +36,11 @@ function referenceRoute(item) {
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead"></PageHeading>
   <Table :resource="data"  class="mt-5">
-    <template #cell(state)="{ item }">
+    <!-- <template #cell(state)="{ item }">
+      {{ item }}
       <Icon :data="item.state" class="px-1" />
     </template>
-
+ -->
     <template #cell(reference)="{ item }">
       <Link v-if="item.reference" :href="referenceRoute(item)" class="secondaryLink">
       {{ item["reference"] }}
