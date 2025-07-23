@@ -166,6 +166,12 @@ class IndexCustomers extends OrgAction
                 ->leftJoin('shops', 'shops.id', 'shop_id');
         }
 
+        if ($parent instanceof TrafficSource) {
+            $queryBuilder->withBetweenDates(['registered_at', 'last_invoiced_at']);
+        } else {
+            $queryBuilder->withBetweenDates(['registered_at']);
+        }
+
         return $queryBuilder
             ->defaultSort('-created_at')
             ->addSelect([
@@ -191,7 +197,6 @@ class IndexCustomers extends OrgAction
             ->leftJoin('currencies', 'shops.currency_id', 'currencies.id')
             ->allowedSorts($allowedSort)
             ->allowedFilters([$globalSearch])
-            ->withBetweenDates(['registered_at'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -215,7 +220,7 @@ class IndexCustomers extends OrgAction
             }
 
             if ($parent instanceof TrafficSource) {
-                $table->betweenDates(['last_invoiced_at']);
+                $table->betweenDates(['last_invoiced_at', 'registered_at']);
             } else {
                 $table->betweenDates(['registered_at']);
             }
