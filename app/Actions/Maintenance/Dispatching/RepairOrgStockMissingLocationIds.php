@@ -21,7 +21,7 @@ class RepairOrgStockMissingLocationIds
     public function handle(OrgStock $orgStock): void
     {
         $locationOrgStock = $orgStock->locationOrgStocks->where('picking_priority', 1)->first();
-        if($locationOrgStock) {
+        if ($locationOrgStock) {
             $orgStock->update([
                 'picking_location_id' => $locationOrgStock->location_id,
                 'picking_dropshipping_location_id' => $locationOrgStock->location_id,

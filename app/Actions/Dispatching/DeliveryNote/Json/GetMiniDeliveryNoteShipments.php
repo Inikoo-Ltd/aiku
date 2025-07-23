@@ -8,15 +8,10 @@
 
 namespace App\Actions\Dispatching\DeliveryNote\Json;
 
-use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
-use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
-use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Dispatching\ShipmentsResource;
-use App\Http\Resources\Helpers\AddressResource;
 use App\Models\Dispatching\DeliveryNote;
-use App\Models\Helpers\Address;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -38,7 +33,7 @@ class GetMiniDeliveryNoteShipments extends OrgAction
     }
 
     public function jsonResponse(DeliveryNote $deliveryNote): array
-    {   
+    {
         return [
             'shipment' => [
                 'shipments'        => $deliveryNote->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->toArray(request()) : null,
@@ -49,14 +44,14 @@ class GetMiniDeliveryNoteShipments extends OrgAction
                             'deliveryNote' => $deliveryNote->id
                         ]
                     ],
-    
+
                     'fetch_route' => [
                         'name'       => 'grp.json.shippers.index',
                         'parameters' => [
                             'organisation' => $deliveryNote->organisation->slug,
                         ]
                     ],
-    
+
                     'delete_route' => [
                         'name'       => 'grp.models.delivery_note.shipment.detach',
                         'parameters' => [

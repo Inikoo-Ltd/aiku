@@ -13,7 +13,6 @@ use App\Actions\OrgAction;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Http\Resources\CRM\CustomerResource;
-use App\Http\Resources\Dispatching\ShipmentsResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Helpers\Address;
@@ -41,7 +40,7 @@ class GetMiniDeliveryNote extends OrgAction
     {
         $estWeight = ($deliveryNote->estimated_weight ?? 0) / 1000;
         $order     = $deliveryNote->orders->first();
-        
+
         return [
             'delivery_note' => [
                 'state'            => $deliveryNote->state,
