@@ -150,7 +150,7 @@ onMounted(() => {
 
 </script>
 <template>
-    <PageHeading :data="pageHead" isButtonGroupWithBorder>
+    <PageHeading :data="pageHead" isButtonGroupWithBorder :key="props.deliveryNote.state">
         <template #other
             v-if="props.deliveryNote?.delivery_note_id && props.deliveryNote.delivery_note_state == 'packed'">
             <Link
