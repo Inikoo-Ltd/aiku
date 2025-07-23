@@ -69,7 +69,7 @@ class IndexRetinaPortfolios extends RetinaAction
         }
 
         if ($customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
-            $query->with(['shopifyPortfolio', 'customerSalesChannel']);
+            $query->with(['customerSalesChannel']);
         }
         $query->with(['item']);
 

@@ -8,7 +8,7 @@
 
 namespace App\Actions\Dropshipping\Portfolio;
 
-use App\Actions\Dropshipping\Shopify\Product\GetShopifyProductFromPortfolio;
+use App\Actions\Dropshipping\Shopify\Product\PreparePortfoliosForShopify;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Portfolio\PortfolioPlatformAvailabilityOptionEnum;
@@ -24,7 +24,7 @@ class DuplicatedProductFoundInPlatform extends OrgAction
     {
         $platformProductAvailabilities = [];
         if ($customerSalesChannel->user instanceof ShopifyUser) {
-            $platformProductAvailabilities = GetShopifyProductFromPortfolio::run($customerSalesChannel->user, $portfolio);
+            $platformProductAvailabilities = PreparePortfoliosForShopify::run($customerSalesChannel->user, $portfolio);
         }
 
         if (! blank($platformProductAvailabilities)) {

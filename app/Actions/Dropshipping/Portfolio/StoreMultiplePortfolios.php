@@ -12,6 +12,7 @@ namespace App\Actions\Dropshipping\Portfolio;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\StoredItem;
@@ -43,11 +44,16 @@ class StoreMultiplePortfolios extends OrgAction
                     continue;
                 }
 
-                StorePortfolio::make()->action(
+                $portfolio = StorePortfolio::make()->action(
                     customerSalesChannel: $customerSalesChannel,
                     item: $item,
                     modelData: []
                 );
+
+                match ($customerSalesChannel->platform->type) {
+                    PlatformTypeEnum::SHOPIFY => [],
+                    default => false
+                };
             }
         });
 
