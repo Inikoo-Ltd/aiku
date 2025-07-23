@@ -21,6 +21,10 @@ class PickingSessionResource extends JsonResource
             'state'         => $this->state,
             'start_at'         => $this->start_at,
             'end_at'         => $this->end_at,
+            'quantity_picked'       => $this->quantity_picked,
+            'quantity_packed'       => $this->quantity_packed,
+            'picking_percentage'       => $this->picking_percentage. '%',
+            'packing_percentage'       => $this->packing_percentage. '%'
         ];
     }
 }
