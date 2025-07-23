@@ -16,6 +16,7 @@ use App\Actions\Ordering\Order\CancelOrder;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Actions\Ordering\Order\ImportTransactionInOrder;
 use App\Actions\Ordering\Order\PayOrder;
+use App\Actions\Ordering\Order\RollbackDispatchedOrder;
 use App\Actions\Ordering\Order\SendOrderToWarehouse;
 use App\Actions\Ordering\Order\SwitchOrderDeliveryAddress;
 use App\Actions\Ordering\Order\UpdateOrder;
@@ -37,6 +38,7 @@ Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(funct
 
 Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::patch('update', UpdateOrder::class)->name('update');
+    Route::patch('rollback-dispatch', RollbackDispatchedOrder::class)->name('rollback_dispatch');
     Route::patch('generate-invoice', GenerateInvoiceFromOrder::class)->name('generate_invoice');
     Route::post('payment-account/{paymentAccount:id}/payment', PayOrder::class)->name('payment.store')->withoutScopedBindings();
     Route::patch('address/switch', SwitchOrderDeliveryAddress::class)->name('address.switch');

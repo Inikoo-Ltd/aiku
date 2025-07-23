@@ -111,8 +111,24 @@ class GetOrderActions
                                     'order' => $order->id
                                 ]
                             ]
-                        ] : []
+                        ] : [],
+                        [
+                            // TODO VIKTOR
+                            'type'    => 'button',
+                            'style'   => '',
+                            'tooltip' => __('Rollback'),
+                            'label'   => __('Rollback'),
+                            'key'     => 'rollback',
+                            'route'   => [
+                                'method'     => 'patch',
+                                'name'       => 'grp.models.order.rollback_dispatch',
+                                'parameters' => [
+                                    'order' => $order->id
+                                ]
+                            ]
+                        ]
                 ],
+                
                 default => []
             };
             $showCancel = true;

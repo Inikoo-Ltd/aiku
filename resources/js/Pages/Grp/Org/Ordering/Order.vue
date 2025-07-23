@@ -389,7 +389,35 @@ const generateRouteDeliveryNote = (slug: string) => {
                     :icon="action.icon"
                     @click="() => openModal(action)"
                     :key="`ActionButton${action.label}${action.style}`"
-                    :tooltip="action.tooltip" />
+                    :tooltip="action.tooltip"
+                />
+            </div>
+        </template>
+
+        <!-- Button: rollback -->
+        <template #button-rollback="{ action }">
+            <div class="relative">
+                <!-- <pre>{{ action.route }}</pre> -->
+                <ModalConfirmationDelete
+                    :routeDelete="action.route"
+                    :title="trans('Are you sure you want to rollback the Order??')"
+                    :description="trans('The state of the Order will go back to packed, but not delete it.')"
+                    isFullLoading
+                    :noLabel="trans('Yes, rollback')"
+                    noIcon="far fa-undo-alt"
+                >
+                    <template #default="{ isOpenModal, changeModel }">
+                        <Button
+                            @click="changeModel"
+                            type="negative"
+                            :label="trans('Rollback')"
+                            icon="far fa-undo-alt"
+                            :tooltip="trans('Rollback the dispatch')"
+                        />
+                    </template>
+                </ModalConfirmationDelete>
+
+                
             </div>
         </template>
 
