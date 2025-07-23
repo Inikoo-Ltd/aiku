@@ -302,9 +302,9 @@ console.log('props', props.pickingSession)
                 <div class="flex justify-between items-center">
                     <div>{{ deliveryItem.org_stock_code }}</div>
 
-                    <template v-if="deliveryItem.quantity_to_pick > 0 && pickingSession.state === 'handling'">
+                    <template v-if="deliveryItem.quantity_to_pick > 0 && deliveryItem.state == 'handling'">
                         <div v-if="findLocation(deliveryItem.locations, proxyItem.hehe)"
-                            class="rounded p-1 flex flex-col justify-between gap-x-6 items-center even:bg-black/5">
+                            class="rounded p-1 flex flex-col justify-between gap-x-6 items-center">
                             <div class="mb-3 w-full flex justify-between gap-x-6 items-center">
                                 <!-- Location Info -->
                                 <div>
@@ -409,7 +409,7 @@ console.log('props', props.pickingSession)
 
 
 
-                    <div v-if="deliveryItem.pickings?.length" class="space-y-1">
+                    <div v-if="deliveryItem.pickings?.length && deliveryItem.state == 'handling'" class="space-y-1">
                         <div v-for="picking in deliveryItem.pickings" :key="picking.id" class="flex gap-x-2 w-fit">
                             <!-- {{ picking.location_code }} -->
                             <div v-if="picking.type === 'pick'" class="flex gap-x-2 items-center">
@@ -439,7 +439,7 @@ console.log('props', props.pickingSession)
                                 </span>
                             </div>
 
-                            <ButtonWithLink v-if="!deliveryItem.is_packed && pickingSession.state == 'handling'"
+                            <ButtonWithLink v-if="!deliveryItem.is_packed && deliveryItem.state == 'handling'"
                                 v-tooltip="trans('Undo')" type="negative" size="xxs" icon="fal fa-undo-alt"
                                 :routeTarget="picking.undo_picking_route" :bindToLink="{ preserveScroll: true }"
                                 @click="onUndoPick(picking.undo_picking_route, deliveryItem, `undo-pick-${picking.id}`)"
@@ -448,9 +448,6 @@ console.log('props', props.pickingSession)
 
                     </div>
 
-                    <div v-else class="text-xs text-gray-400 italic">
-                        {{ trans("No item picked yet") }}
-                    </div>
                 </div>
             </div>
 
