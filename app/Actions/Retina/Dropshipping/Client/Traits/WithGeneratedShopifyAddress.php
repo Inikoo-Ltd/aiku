@@ -15,7 +15,7 @@ trait WithGeneratedShopifyAddress
 {
     public function getShopifyAttributesFromWebhook(array $customerClient, array $address = []): array
     {
-        $country = Country::where('code', Arr::get($address, 'country_code'))->first();
+        $country = Country::where('code', Arr::get($address, 'countryCode'))->first();
 
         if (!blank($address)) {
             $address = [

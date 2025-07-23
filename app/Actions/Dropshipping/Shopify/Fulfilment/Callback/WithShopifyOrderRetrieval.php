@@ -38,6 +38,8 @@ trait WithShopifyOrderRetrieval
                                         phone
                                     }
                                     order {
+                                        id
+                                        createdAt
                                         customer {
                                             id
                                             firstName
