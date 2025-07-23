@@ -11,11 +11,11 @@ namespace App\Actions\Dropshipping\Portfolio;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePortfolios;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydratePortfolios;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
+use App\Actions\Dropshipping\Shopify\Product\UpdatePortfolioShopifyStatus;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePortfolios;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePortfolios;
 use App\Actions\Traits\Rules\WithNoStrictRules;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -78,9 +78,12 @@ class StorePortfolio extends OrgAction
             return $portfolio;
         });
 
-        if ($customerSalesChannel->platform->type === PlatformTypeEnum::SHOPIFY) {
-            DuplicatedProductFoundInPlatform::run($customerSalesChannel, $portfolio);
+        if ($customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
+            $portfolio = UpdatePortfolioShopifyStatus::run($portfolio);
         }
+
+
+        DuplicatedProductFoundInPlatform::run($customerSalesChannel, $portfolio);
 
         GroupHydratePortfolios::dispatch($customerSalesChannel->group)->delay($this->hydratorsDelay);
         OrganisationHydratePortfolios::dispatch($customerSalesChannel->organisation)->delay($this->hydratorsDelay);
