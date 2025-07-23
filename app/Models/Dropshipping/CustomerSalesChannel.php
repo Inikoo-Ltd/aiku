@@ -68,6 +68,7 @@ use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
  * @property CustomerSalesChannelConnectionStatusEnum|null $connection_status
  * @property \Illuminate\Support\Carbon|null $closed_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property bool $platform_status
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\CustomerClient> $clients
  * @property-read Customer|null $customer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, PalletReturn> $fulfilmentOrders

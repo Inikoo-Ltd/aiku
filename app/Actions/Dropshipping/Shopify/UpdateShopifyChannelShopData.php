@@ -9,7 +9,7 @@
 namespace App\Actions\Dropshipping\Shopify;
 
 use App\Actions\Dropshipping\CustomerSalesChannel\WithExternalPlatforms;
-use App\Actions\Dropshipping\Shopify\FulfilmentService\StoreFulfilmentService;
+use App\Actions\Dropshipping\Shopify\FulfilmentService\GetFulfilmentServiceName;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Console\Command;
@@ -33,8 +33,9 @@ class UpdateShopifyChannelShopData
         ];
 
 
+        $fulfilmentServiceName = GetFulfilmentServiceName::run($customerSalesChannel);
 
-        $fulfilmentServiceName = StoreFulfilmentService::make()->getFulfilmentServiceName($customerSalesChannel);
+
 
         // Extract shopID from the response and save it to shopify_shop_id
         if ($storeData && isset($storeData['id'])) {

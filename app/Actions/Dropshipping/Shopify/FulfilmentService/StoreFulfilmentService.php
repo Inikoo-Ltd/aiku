@@ -35,7 +35,7 @@ class StoreFulfilmentService
         }
 
 
-        $fulfilmentServiceName = $this->getFulfilmentServiceName($customerSalesChannel);
+        $fulfilmentServiceName = GetFulfilmentServiceName::run($customerSalesChannel);
 
         try {
             // GraphQL mutation to create a fulfillment service
@@ -96,12 +96,19 @@ class StoreFulfilmentService
             // Return the created fulfillment service
             $fulfillmentService = $body['data']['fulfillmentServiceCreate']['fulfillmentService'] ?? null;
 
-            UpdateShopifyChannelShopData::run($customerSalesChannel);
-            UpdateFulfilmentServiceLocation::run($customerSalesChannel);
-
             if (!$fulfillmentService) {
                 return [false, 'No fulfillment service data in response'];
             }
+
+            UpdateShopifyChannelShopData::run($customerSalesChannel);
+            UpdateFulfilmentServiceLocation::run($customerSalesChannel);
+            $customerSalesChannel->update([
+                'platform_status' => true
+            ]);
+
+
+
+
 
             return [true, $fulfillmentService];
         } catch (\Exception $e) {
@@ -110,10 +117,4 @@ class StoreFulfilmentService
             return [false, 'Exception: '.$e->getMessage()];
         }
     }
-
-    public function getFulfilmentServiceName(CustomerSalesChannel $customerSalesChannel): string
-    {
-        return 'aiku-'.$customerSalesChannel->shop->slug.' ('.$customerSalesChannel->slug.')';
-    }
-
 }
