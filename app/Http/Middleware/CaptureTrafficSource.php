@@ -37,12 +37,16 @@ class CaptureTrafficSource
 
         if ($website instanceof Website) {
             // Check both referer and current full URL
-            $referer = $request->headers->get('referer', '');
             $fullUrl = $request->fullUrl();
+            $referer = $request->headers->get('referer', '');
 
-            // Use your detection logic
-            $trafficSource = TrafficSource::detectFromWebsite($website, $referer)
-                ?? TrafficSource::detectFromWebsite($website, $fullUrl);
+            $trafficSource = null;
+
+            if ($fullUrl) {
+                $trafficSource = TrafficSource::detectFromWebsite($website, 'ads', $referer);
+            } else {
+                $trafficSource = TrafficSource::detectFromWebsite($website, 'organic', $fullUrl);
+            }
 
             // Store in session if detected
             if ($trafficSource) {

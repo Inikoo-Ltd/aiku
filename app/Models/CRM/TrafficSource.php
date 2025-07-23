@@ -70,7 +70,7 @@ class TrafficSource extends Model
         return $this->hasMany(Customer::class, 'traffic_source_id');
     }
 
-    public static function detectFromWebsite(Website $website, string $url): ?self
+    public static function detectFromWebsite(Website $website, string $sourceType, string $url): ?self
     {
         $url = strtolower($url);
 
@@ -78,6 +78,7 @@ class TrafficSource extends Model
         $trafficSources = self::where('group_id', $website->group_id)
             ->where('shop_id', $website->shop_id)
             ->where('organisation_id', $website->organisation_id)
+            ->where('type', 'like', '%' . $sourceType . '%')
             ->get();
 
         foreach ($trafficSources as $trafficSource) {

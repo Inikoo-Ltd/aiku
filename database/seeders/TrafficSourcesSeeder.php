@@ -20,18 +20,18 @@ class TrafficSourcesSeeder extends Seeder
     {
         $data = [
             'Organic Google'    => ['google'],
-            'Google Ads'        => ['gad_source', 'gclid'],
+            'Google Ads'        => ['gad_source', 'gclid', 'utm_source=google', 'utm_medium=cpc'],
             'Organic Bing'      => ['bing'],
-            'Bing Ads'          => ['msclkid'],
+            'Bing Ads'          => ['msclkid', 'utm_source=bing', 'utm_medium=cpc'],
             'Organic Facebook'  => ['facebook'],
-            'Meta Ads'          => ['fbclid'],
+            'Meta Ads'          => ['fbclid', 'utm_source=facebook', 'utm_medium=cpc'],
             'Organic Instagram' => ['instagram'],
             'Organic Pinterest' => ['pin', 'pinterest'],
-            'Pinterest Ads'     => ['pp=0', 'pp=1'],
+            'Pinterest Ads'     => ['pp=0', 'pp=1', 'utm_source=pinterest', 'utm_medium=cpc'],
             'Organic TikTok'    => ['tiktok'],
-            'TikTok Ads'        => ['ttclid'],
+            'TikTok Ads'        => ['ttclid', 'utm_source=tiktok', 'utm_medium=cpc'],
             'Organic LinkedIn'  => ['linkedin'],
-            'LinkedIn Ads'      => ['li_fat_id'],
+            'LinkedIn Ads'      => ['li_fat_id', 'utm_source=linkedin', 'utm_medium=cpc'],
         ];
 
         $shops = Shop::all();
@@ -44,10 +44,10 @@ class TrafficSourcesSeeder extends Seeder
                         'group_id'        => $shop->group_id,
                         'organisation_id' => $shop->organisation_id,
                         'shop_id'         => $shop->id,
-                        'type'            => Str::slug($name),
                     ],
                     [
-                        'settings' => [
+                        'type'            => Str::slug($name),
+                        'settings'        => [
                             'url_patterns' => $urlPatterns,
                         ],
                     ]
