@@ -3,12 +3,14 @@
 namespace App\Actions\Dispatching\PickingSession\UI;
 
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSession;
+use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSessionGrouped;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSessionStateActive;
 use App\Actions\OrgAction;
 use App\Actions\UI\WithInertia;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
 use App\Enums\UI\Dispatch\PickingSessionTabsEnum;
+use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsGroupedResource;
 use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsStateHandlingResource;
 use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsStateUnassignedResource;
 use App\Http\Resources\Dispatching\PickingSessionResource;
@@ -133,7 +135,7 @@ class ShowPickingSession extends OrgAction
         if ($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
               $inertiaResponse->table(IndexDeliveryNoteItemsInPickingSession::make()->tableStructure(parent: $pickingSession));
         } else {
-            $inertiaResponse->table(IndexDeliveryNoteItemsInPickingSessionStateActive::make()->tableStructure());
+            $inertiaResponse->table(IndexDeliveryNoteItemsInPickingSessionGrouped::make()->tableStructure());
         }
       
         return $inertiaResponse;
@@ -151,8 +153,8 @@ class ShowPickingSession extends OrgAction
         } else {
             return [
                 PickingSessionTabsEnum::ITEMS->value => $this->tab == PickingSessionTabsEnum::ITEMS->value ?
-                    fn () => PickingSessionDeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsInPickingSessionStateActive::run($pickingSession))
-                    : Inertia::lazy(fn () => PickingSessionDeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsInPickingSessionStateActive::run($pickingSession))),
+                    fn () => PickingSessionDeliveryNoteItemsGroupedResource::collection(IndexDeliveryNoteItemsInPickingSessionGrouped::run($pickingSession))
+                    : Inertia::lazy(fn () => PickingSessionDeliveryNoteItemsGroupedResource::collection(IndexDeliveryNoteItemsInPickingSessionGrouped::run($pickingSession))),
 
             ];
         }
