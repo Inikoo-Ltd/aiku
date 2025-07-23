@@ -13,7 +13,7 @@ use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Sentry;
+
 
 class PreparePortfoliosForShopify
 {
@@ -29,18 +29,18 @@ class PreparePortfoliosForShopify
             /** @var Product $product */
             $product = $portfolio->item;
 
-            $hasValidProductId      = $this->isValidShopifyProductId($portfolio->platform_product_id);
+            $hasValidProductId      = CheckIfShopifyProductIDIsValid::run($portfolio->platform_product_id);
             $productExistsInShopify = false;
             $hasVariantAtLocation   = false;
             if ($hasValidProductId) {
-                $productExistsInShopify = $this->doesProductExistInShopify($shopifyUser, $portfolio->platform_product_id);
-                $hasVariantAtLocation   = $this->hasVariantAtLocation($shopifyUser, $portfolio->platform_product_id);
+                $productExistsInShopify = CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id);
+                $hasVariantAtLocation   = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id);
             }
 
 
             $numberMatches = '';
             $matchesLabels = [];
-            $matches=[];
+            $matches       = [];
 
             if (!$hasValidProductId || !$productExistsInShopify || !$hasVariantAtLocation) {
                 $result = FindShopifyProductVariant::run($customerSalesChannel, trim($portfolio->sku.' '.$portfolio->barcode));
@@ -54,35 +54,29 @@ class PreparePortfoliosForShopify
             if ($fixLevel >= 1) {
                 if ($hasValidProductId && !$hasVariantAtLocation && $numberMatches == 0) {
                     StoreShopifyProductVariant::run($portfolio);
-                    $hasVariantAtLocation = $this->hasVariantAtLocation($shopifyUser, $portfolio->platform_product_id);
+                    $hasVariantAtLocation = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id);
                 }
 
                 if (!$hasValidProductId || !$productExistsInShopify && $numberMatches == 0) {
                     StoreShopifyProduct::run($portfolio);
-                    $hasVariantAtLocation = $this->hasVariantAtLocation($shopifyUser, $portfolio->platform_product_id);
+                    $hasVariantAtLocation = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id);
                 }
             }
 
-            if ($fixLevel >= 1) {
-                if ($hasValidProductId && $productExistsInShopify) {
-
-                    $firstMatch = Arr::first($matches);
-                    $shopifyProductId=Arr::get($firstMatch,'id');
+            if ($fixLevel >= 1 && $hasValidProductId && $productExistsInShopify) {
+                $firstMatch       = Arr::first($matches);
+                $shopifyProductId = Arr::get($firstMatch, 'id');
 
 
-                    $portfolio->update([
-                        'platform_product_id' => $shopifyProductId,
-                    ]);
-                    $portfolio->refresh();
-                    StoreShopifyProductVariant::run($portfolio);
-                    $hasValidProductId      = $this->isValidShopifyProductId($portfolio->platform_product_id);
-                    $productExistsInShopify = $this->doesProductExistInShopify($shopifyUser, $portfolio->platform_product_id);
-                    $hasVariantAtLocation = $this->hasVariantAtLocation($shopifyUser, $portfolio->platform_product_id);
-
-                }
-
+                $portfolio->update([
+                    'platform_product_id' => $shopifyProductId,
+                ]);
+                $portfolio->refresh();
+                StoreShopifyProductVariant::run($portfolio);
+                $hasValidProductId      = CheckIfShopifyProductIDIsValid::run($portfolio->platform_product_id);
+                $productExistsInShopify = CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id);
+                $hasVariantAtLocation   = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id);
             }
-
 
 
             $portfoliosSynchronisation[$portfolio->id] = [
@@ -100,169 +94,6 @@ class PreparePortfoliosForShopify
 
         return $portfoliosSynchronisation;
     }
-
-    /**
-     * Check if a platform_product_id has a valid Shopify format
-     *
-     * @param  string|null  $platformProductId  The platform_product_id to validate
-     *
-     * @return bool True if the platform_product_id has a valid format, false otherwise
-     */
-    public static function isValidShopifyProductId(?string $platformProductId): bool
-    {
-        if (!$platformProductId) {
-            return false;
-        }
-
-        // Valid format: gid://shopify/Product/{numeric_id}
-        return (bool)preg_match('/^gid:\/\/shopify\/Product\/\d+$/', $platformProductId);
-    }
-
-    /**
-     * Check if a product exists in Shopify
-     *
-     * @param  ShopifyUser  $shopifyUser  The Shopify user account to use for API access
-     * @param  string  $productId  The Shopify product ID to check
-     *
-     * @return bool True if the product exists in Shopify, false otherwise
-     */
-    public static function doesProductExistInShopify(ShopifyUser $shopifyUser, string $productId): bool
-    {
-        $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
-
-        if (!$client) {
-            Sentry::captureMessage("Failed to initialize Shopify GraphQL client");
-
-            return false;
-        }
-
-        try {
-            // GraphQL query to check if a product exists
-            $query = <<<'QUERY'
-            query getProductExistence($id: ID!) {
-              product(id: $id) {
-                id
-                title
-              }
-            }
-            QUERY;
-
-            // Prepare variables for the query
-            $variables = [
-                'id' => $productId
-            ];
-
-            // Make the GraphQL request
-            $response = $client->request($query, $variables);
-
-            if (!empty($response['errors']) || !isset($response['body'])) {
-                $errorMessage = 'Error in API response: '.json_encode($response['errors'] ?? []);
-                Sentry::captureMessage("Product existence check failed: ".$errorMessage);
-
-                return false;
-            }
-
-            $body = $response['body']->toArray();
-
-            // If the product exists, the response will contain product data
-            return isset($body['data']['product']) && !empty($body['data']['product']);
-        } catch (\Exception $e) {
-            Sentry::captureException($e);
-
-            return false;
-        }
-    }
-
-    /**
-     * Check if a Shopify product has a variant with inventory at a specific location
-     *
-     * @param  ShopifyUser  $shopifyUser  The Shopify user account to use for API access
-     * @param  string  $productId  The Shopify product ID to check
-     *
-     * @return bool True if the product has a variant with inventory at the specified location, false otherwise
-     */
-    public static function hasVariantAtLocation(ShopifyUser $shopifyUser, string $productId): bool
-    {
-        if (!$shopifyUser->shopify_location_id) {
-            Sentry::captureMessage("No location ID found for Shopify user");
-
-            return false;
-        }
-
-        $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
-
-        if (!$client) {
-            Sentry::captureMessage("Failed to initialize Shopify GraphQL client");
-
-            return false;
-        }
-
-        try {
-            // GraphQL query to get product variants with inventory at the specified location
-            $query = <<<'QUERY'
-            query getProductInventoryAtLocation($productId: ID!, $locationId: ID!) {
-              product(id: $productId) {
-                variants(first: 50) {
-                  edges {
-                    node {
-                      id
-                      inventoryItem {
-                        inventoryLevel(locationId: $locationId) {
-                          id
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-            QUERY;
-
-            // Prepare variables for the query
-            $variables = [
-                'productId'  => $productId,
-                'locationId' => $shopifyUser->shopify_location_id
-            ];
-
-
-            // Make the GraphQL request
-            $response = $client->request($query, $variables);
-
-
-            if (!empty($response['errors']) || !isset($response['body'])) {
-                $errorMessage = 'Error in API response: '.json_encode($response['errors'] ?? []);
-                Sentry::captureMessage("Product inventory check failed: ".$errorMessage);
-
-                return false;
-            }
-
-            $body = $response['body']->toArray();
-
-            // Check if product data exists in the response
-            if (!isset($body['data']['product']) || !isset($body['data']['product']['variants']['edges'])) {
-                Sentry::captureMessage("Product data not found in response");
-
-                return false;
-            }
-
-            // Check if any variant has inventory at the specified location
-            foreach ($body['data']['product']['variants']['edges'] as $edge) {
-                $variant = $edge['node'];
-                if (isset($variant['inventoryItem']['inventoryLevel'])
-                    && isset($variant['inventoryItem']['inventoryLevel']['id'])
-                    && $variant['inventoryItem']['inventoryLevel']['id']) {
-                    return true;
-                }
-            }
-
-            return false;
-        } catch (\Exception $e) {
-            Sentry::captureException($e);
-
-            return false;
-        }
-    }
-
 
     public function getCommandSignature(): string
     {
