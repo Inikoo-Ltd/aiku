@@ -10,9 +10,7 @@
 
 namespace App\Http\Resources\CRM;
 
-use App\Enums\CRM\Poll\PollTypeEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Models\CRM\Poll;
 use App\Models\CRM\TrafficSource;
 
 class TrafficSourceResource extends JsonResource

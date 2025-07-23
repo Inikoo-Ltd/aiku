@@ -4,7 +4,6 @@ namespace App\Actions\Dispatching\PickingSession\UI;
 
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSession;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSessionGrouped;
-use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSessionStateActive;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
 use App\Actions\UI\WithInertia;
@@ -12,7 +11,6 @@ use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
 use App\Enums\UI\Dispatch\PickingSessionTabsEnum;
 use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsGroupedResource;
-use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsStateHandlingResource;
 use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsStateUnassignedResource;
 use App\Http\Resources\Dispatching\PickingSessionResource;
 use App\Models\Catalogue\Shop;
@@ -139,7 +137,7 @@ class ShowPickingSession extends OrgAction
             $props
         );
         if ($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
-              $inertiaResponse->table(IndexDeliveryNoteItemsInPickingSession::make()->tableStructure(parent: $pickingSession));
+            $inertiaResponse->table(IndexDeliveryNoteItemsInPickingSession::make()->tableStructure(parent: $pickingSession));
         } else {
             $inertiaResponse->table(IndexDeliveryNoteItemsInPickingSessionGrouped::make()->tableStructure(parent: $pickingSession));
         }
@@ -168,7 +166,7 @@ class ShowPickingSession extends OrgAction
         return [];
     }
 
-        public function getBreadcrumbs(PickingSession $pickingSession, string $routeName, array $routeParameters, string $suffix = ''): array
+    public function getBreadcrumbs(PickingSession $pickingSession, string $routeName, array $routeParameters, string $suffix = ''): array
     {
         $headCrumb = function (PickingSession $pickingSession, array $routeParameters, string $suffix) {
             return [

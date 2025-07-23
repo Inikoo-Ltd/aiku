@@ -15,17 +15,9 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
 /**
  *
  *
- * @property int $id
- * @property int $shopify_user_id
- * @property int $product_id
- * @property int|null $shopify_product_id
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property int $portfolio_id
- * @property string $product_type
- * @property-read \App\Models\Dropshipping\Portfolio $portfolio
+ * @property-read \App\Models\Dropshipping\Portfolio|null $portfolio
  * @property-read \Illuminate\Database\Eloquent\Model|\Eloquent $product
- * @property-read \App\Models\Dropshipping\ShopifyUser $shopifyUser
+ * @property-read \App\Models\Dropshipping\ShopifyUser|null $shopifyUser
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopifyUserHasProduct newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopifyUserHasProduct newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopifyUserHasProduct query()

@@ -11,7 +11,6 @@ namespace App\Actions\Dispatching\PickingSession;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Dispatching\DeliveryNote;
 use App\Models\Inventory\PickingSession;
 
 class CalculatePickingSessionPicks extends OrgAction

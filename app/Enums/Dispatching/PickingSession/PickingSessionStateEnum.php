@@ -21,7 +21,7 @@ enum PickingSessionStateEnum: string
     case HANDLING_BLOCKED = 'handling_blocked';
     case PICKING_FINISHED = 'picking_finished';
     case PACKING_FINISHED = 'packing_finished';
-    
+
     public static function labels(): array
     {
         return [

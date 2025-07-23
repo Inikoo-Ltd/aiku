@@ -47,8 +47,8 @@ class CalculateDeliveryNotePercentage extends OrgAction
             'packing_percentage' => $packingPercentage
         ]);
 
-        if($deliveryNote->pickingSessions) {
-            foreach($deliveryNote->pickingSessions as $pickingSession) {
+        if ($deliveryNote->pickingSessions) {
+            foreach ($deliveryNote->pickingSessions as $pickingSession) {
                 CalculatePickingSessionPicks::run($pickingSession);
             }
         }

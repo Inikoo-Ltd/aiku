@@ -22,7 +22,7 @@ class AutoFinishPackingPickingSession extends OrgAction
     {
         $numberPacked = $pickingSession->deliveryNotes->where('state', DeliveryNoteStateEnum::PACKED)->count();
 
-        if($numberPacked == $pickingSession->number_delivery_notes) {
+        if ($numberPacked == $pickingSession->number_delivery_notes) {
             $this->update($pickingSession, [
                 'state' => PickingSessionStateEnum::PACKING_FINISHED
             ]);

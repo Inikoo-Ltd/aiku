@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Actions\Catalogue\Shop\Seeders;
 
 use App\Models\Catalogue\Shop;

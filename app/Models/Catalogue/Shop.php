@@ -212,6 +212,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, \App\Models\Catalogue\ShopTimeSeries> $timeSeries
  * @property-read Timezone $timezone
  * @property-read LaravelCollection<int, TopUp> $topUps
+ * @property-read LaravelCollection<int, TrafficSource> $trafficSources
  * @property-read LaravelCollection<int, Transaction> $transactions
  * @property-read UniversalSearch|null $universalSearch
  * @property-read LaravelCollection<int, Upload> $uploads
