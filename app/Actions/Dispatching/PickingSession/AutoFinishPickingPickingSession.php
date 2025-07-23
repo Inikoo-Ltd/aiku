@@ -28,7 +28,7 @@ class AutoFinishPickingPickingSession extends OrgAction
             ->where('is_handled', true)
             ->count();
 
-        if($numberHandled == $pickingSession->number_items) {
+        if ($numberHandled == $pickingSession->number_items) {
             $this->update($pickingSession, [
                 'state' => PickingSessionStateEnum::PICKING_FINISHED
             ]);

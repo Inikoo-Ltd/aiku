@@ -51,8 +51,8 @@ class SetDeliveryNoteStateAsPacked extends OrgAction
 
         $deliveryNote = $this->update($deliveryNote, $modelData);
 
-        if($deliveryNote->pickingSessions) {
-            foreach($deliveryNote->pickingSessions as $pickingSession) {
+        if ($deliveryNote->pickingSessions) {
+            foreach ($deliveryNote->pickingSessions as $pickingSession) {
                 AutoFinishPackingPickingSession::run($pickingSession);
             }
         }

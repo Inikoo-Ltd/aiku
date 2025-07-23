@@ -59,6 +59,10 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string|null $sku
  * @property string|null $barcode
  * @property string|null $platform_product_variant_id
+ * @property bool $has_valid_platform_product_id
+ * @property bool $exist_in_platform
+ * @property bool $platform_status for shopify: variant has correct location
+ * @property string|null $platform_possible_matches
  * @property PortfolioTypeEnum $type
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Customer $customer

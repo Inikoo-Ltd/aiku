@@ -10,7 +10,6 @@ namespace App\Http\Resources\Dispatching;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
-
 class PickingSessionsResource extends JsonResource
 {
     public function toArray($request): array

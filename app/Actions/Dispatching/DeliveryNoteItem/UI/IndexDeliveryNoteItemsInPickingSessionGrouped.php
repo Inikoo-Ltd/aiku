@@ -12,7 +12,6 @@ use App\Actions\OrgAction;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dispatching\DeliveryNote;
-use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\PickingSession;
 use App\Services\QueryBuilder;
 use Closure;
@@ -70,7 +69,7 @@ class IndexDeliveryNoteItemsInPickingSessionGrouped extends OrgAction
             $table->column(key: 'delivery_note_state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'delivery_note_reference', label: __('Delivery Note'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'items', label: __('Items'), canBeHidden: false);
-            if($parent->state != PickingSessionStateEnum::HANDLING) {
+            if ($parent->state != PickingSessionStateEnum::HANDLING) {
                 $table->column(key: 'handing_actions', label: __('To do actions'), canBeHidden: false);
             }
         };
