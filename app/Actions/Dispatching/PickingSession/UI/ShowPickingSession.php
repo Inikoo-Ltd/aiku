@@ -5,6 +5,7 @@ namespace App\Actions\Dispatching\PickingSession\UI;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSession;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSessionGrouped;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSessionStateActive;
+use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
 use App\Actions\UI\WithInertia;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
@@ -20,6 +21,7 @@ use App\Models\Inventory\PickingSession;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -103,7 +105,11 @@ class ShowPickingSession extends OrgAction
 
         $props = [
             'title'       => $title,
-            'breadcrumbs' => null,
+            'breadcrumbs' => $this->getBreadcrumbs(
+                $pickingSession, 
+                $request->route()->getName(),
+                $request->route()->originalParameters()
+            ),
             'navigation'  => null,
             'pageHead'    => [
                 'title'      => $pickingSession->reference,
@@ -161,4 +167,54 @@ class ShowPickingSession extends OrgAction
 
         return [];
     }
+
+        public function getBreadcrumbs(PickingSession $pickingSession, string $routeName, array $routeParameters, string $suffix = ''): array
+    {
+        $headCrumb = function (PickingSession $pickingSession, array $routeParameters, string $suffix) {
+            return [
+                [
+
+                    'type'           => 'modelWithIndex',
+                    'modelWithIndex' => [
+                        'index' => [
+                            'route' => $routeParameters['index'],
+                            'label' => __('Picking Session')
+                        ],
+                        'model' => [
+                            'route' => $routeParameters['model'],
+                            'label' => $pickingSession->reference,
+                        ],
+
+                    ],
+                    'suffix'         => $suffix
+
+                ],
+            ];
+        };
+
+        return match ($routeName) {
+            'grp.org.warehouses.show.dispatching.picking_sessions.show',
+            => array_merge(
+                ShowWarehouse::make()->getBreadcrumbs(
+                    Arr::only($routeParameters, ['organisation', 'warehouse'])
+                ),
+                $headCrumb(
+                    $pickingSession,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.warehouses.show.dispatching.picking_sessions.index',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'warehouse'])
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.warehouses.show.dispatching.picking_sessions.show',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'warehouse', 'pickingSession'])
+                        ]
+                    ],
+                    $suffix
+                ),
+            ),
+            default => []
+        };
+    }
+
 }
