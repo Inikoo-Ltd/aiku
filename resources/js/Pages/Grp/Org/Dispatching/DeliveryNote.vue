@@ -35,11 +35,8 @@ import { notify } from "@kyvg/vue3-notification";
 import axios from "axios";
 import { get, set } from 'lodash-es';
 import PureInput from "@/Components/Pure/PureInput.vue";
-import DeliveryAddressManagementModal from "@/Components/Utils/DeliveryAddressManagementModal.vue"
-import AddressManagementSingle from "@/Components/Utils/AddressManagementSingle.vue"
 import ToggleSwitch from 'primevue/toggleswitch';
 import PureAddress from "@/Components/Pure/PureAddress.vue"
-import SimpleBoxStatDeliveryNote from "@/Components/Warehouse/DeliveryNotes/SimpleBoxStatDeliveryNote.vue";
 
 
 library.add(faSmileWink,faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck);
@@ -88,7 +85,6 @@ const props = defineProps<{
     shipments: {
         submit_route: routeType
         fetch_route: routeType
-        delete_route: routeType
     }
     address: {
         delivery: {
@@ -127,30 +123,6 @@ const selectedPicker = ref(props.box_stats.picker);
 const disable = ref(props.box_stats.state);
 const isLoading = ref<{ [key: string]: boolean }>({});
 const isLoadingToQueue = ref(false);
-const onSetToQueue = () => {
-    router.patch(
-        route(props.routes.set_queue.name, {
-            ...props.routes.set_queue.parameters,
-            user: selectedPicker.value.id
-        }),
-        {},
-        {
-            onError: (error) => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: error.message,
-                    type: "error"
-                });
-            },
-            onSuccess: () => {
-                isModalToQueue.value = false;
-            },
-            onStart: () => isLoadingToQueue.value = true,
-            onFinish: () => isLoadingToQueue.value = false,
-            preserveScroll: true
-        }
-    );
-};
 const onUpdatePicker = () => {
     router.patch(
         route(props.routes.update.name, props.routes.update.parameters),
@@ -199,8 +171,6 @@ const onOpenModalTrackingNumber = async () => {
     }
     isLoadingData.value = false;
 };
-
-
 const onSubmitShipment = () => {
     formTrackingNumber
         .transform((data) => ({
@@ -316,9 +286,7 @@ watch(pickingView, (val) => {
                 </div>
             </div>
 
-            <a :href="route('grp.org.warehouses.show.dispatching.delivery-notes.pdf', {
-                organisation: route().params.organisation,
-                warehouse: warehouse.slug,
+            <a :href="route('grp.pdfs.delivery-notes', {
                 deliveryNote: route().params.deliveryNote,
             })" as="a" target="_blank" class="flex items-center"
                 v-tooltip="trans('Download PDF of this Delivery Note')">
@@ -326,11 +294,11 @@ watch(pickingView, (val) => {
             </a>
 
             <!-- Button: Shipment -->
-            <Button
+            <!-- <Button
                 v-if="['packed', 'finalised', 'dispatched'].includes(delivery_note_state.value) && !(box_stats?.shipments?.length)"
                 @click="() => box_stats.parcels?.length ? (isModalShipment = true, onOpenModalTrackingNumber()) : set(listError, 'box_stats_parcel', true)"
                 v-tooltip="box_stats.parcels?.length ? '' : trans('Please add at least one parcel')"
-                :label="trans('Shipment')" icon="fal fa-shipping-fast" type="tertiary" />
+                :label="trans('Shipment')" icon="fal fa-shipping-fast" type="tertiary" /> -->
         </template>
 
         <template #button-to-queue="{ action }">
@@ -347,10 +315,6 @@ watch(pickingView, (val) => {
             <Button @click="isModalToQueue = true" :label="action.label" :icon="action.icon" type="tertiary" />
         </template>
 
-        <!--   <template #other>
-           <ToggleSwitch v-model="pickingView" />
-        </template>
- -->
 
     </PageHeading>
 
@@ -360,12 +324,20 @@ watch(pickingView, (val) => {
     </div>
 
     <!-- Section: Box Note -->
-    <div class="relative">
+    <div v-if="pickingView" class="relative">
         <Transition name="headlessui">
-            <div v-if="notes?.note_list?.some(item => !!(item?.note?.trim()))"
-                class="p-2 grid sm:grid-cols-3 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
-                <BoxNote v-for="(note, index) in notes.note_list" :key="index+note.label" :noteData="note"
-                    :updateRoute="routes.update" />
+            <div xv-if="notes?.note_list?.some(item => !!(item?.note?.trim()))"
+                class="p-2 grid grid-cols-2 sm:grid-cols-4 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
+                <BoxNote v-for="(note, index) in notes.note_list"
+                    :key="index+note.label"
+                    :noteData="note"
+                    :updateRoute="routes.update"
+                    :fetchRoute="{
+                        name: 'grp.models.delivery_note.copy_notes',
+                        parameters: { deliveryNote: props.delivery_note.id },
+                        method: 'patch'
+                    }"
+                />
             </div>
         </Transition>
     </div>
@@ -376,8 +348,6 @@ watch(pickingView, (val) => {
             :format-time="'MMMM d yyyy, HH:mm'" />
     </div>
 
-   <!--  <SimpleBoxStatDeliveryNote v-if="box_stats && pickingView" :boxStats="box_stats" :routes
-        :deliveryNote="delivery_note" :updateRoute="routes.update" :shipments /> -->
 
       <BoxStatsDeliveryNote
         v-if="box_stats && pickingView"
@@ -438,7 +408,7 @@ watch(pickingView, (val) => {
                 </dd>
             </div>
             <div class="w-full mt-2">
-                <Button @click="delivery_note_state.value === 'queued' ? onUpdatePicker() : onSetToQueue()"
+                <Button @click="onUpdatePicker()"
                     :label="delivery_note_state.value === 'queued' ? trans('Change picker') : trans('Set Picker')"
                     :iconRight="['fas', 'fa-arrow-right']" full :loading="isLoadingToQueue" :disabled="!selectedPicker"
                     v-tooltip="selectedPicker ? '' : trans('Select picker before set to queue')">
@@ -484,8 +454,10 @@ watch(pickingView, (val) => {
                 </div>
 
                 <div class="">
-                    <PureMultiselectInfiniteScroll v-model="formTrackingNumber.shipping_id"
-                        :fetchRoute="shipments.fetch_route" required :disabled="isLoadingButton == 'addTrackingNumber'"
+                    <PureMultiselectInfiniteScroll
+                        v-if="shipments?.fetch_route"
+                        v-model="formTrackingNumber.shipping_id"
+                        :fetchRoute="shipments?.fetch_route" required :disabled="isLoadingButton == 'addTrackingNumber'"
                         :placeholder="trans('Select shipping')" object @optionsList="(e) => optionShippingList = e">
                         <template #singlelabel="{ value }">
                             <div class="w-full text-left pl-4">

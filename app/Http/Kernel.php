@@ -23,6 +23,7 @@ use App\Http\Middleware\SetHanAsAppScope;
 use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\BindGroupInstance;
 use App\Http\Middleware\CaptureAcquisitionSource;
+use App\Http\Middleware\CaptureTrafficSource;
 use App\Http\Middleware\CheckWebsiteState;
 use App\Http\Middleware\DetectWebsite;
 use App\Http\Middleware\HandleAikuPublicInertiaRequests;
@@ -181,7 +182,8 @@ class Kernel extends HttpKernel
             AddLinkHeadersForPreloadedAssets::class,
             LogWebUserRequestMiddleware::class,
             InspectorOctaneMiddleware::class,
-            CaptureAcquisitionSource::class
+            CaptureAcquisitionSource::class,
+            CaptureTrafficSource::class,
         ],
         'retina'      => [
             DisableSSR::class,
@@ -198,7 +200,8 @@ class Kernel extends HttpKernel
             AddLinkHeadersForPreloadedAssets::class,
             LogWebUserRequestMiddleware::class,
             InspectorOctaneMiddleware::class,
-            CaptureAcquisitionSource::class
+            CaptureAcquisitionSource::class,
+            CaptureTrafficSource::class,
         ],
         'pupil'       => [
             DisableSSR::class,

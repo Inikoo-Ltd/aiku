@@ -128,6 +128,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $current_order_in_basket_id
  * @property int $number_exclusive_products
  * @property array<array-key, mixed>|null $contact_name_components
+ * @property int|null $traffic_source_id
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, AmazonUser> $amazonUsers
@@ -174,6 +175,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read Collection<int, TopUpPaymentApiPoint> $topUpPaymentApiPoint
  * @property-read Collection<int, TopUp> $topUps
+ * @property-read \App\Models\CRM\TrafficSource|null $trafficSource
  * @property-read Collection<int, Transaction> $transactions
  * @property-read UniversalSearch|null $universalSearch
  * @property-read Collection<int, \App\Models\CRM\WebUser> $webUsers
@@ -258,6 +260,7 @@ class Customer extends Model implements HasMedia, Auditable
     {
         return SlugOptions::create()
             ->generateSlugsFrom(function () {
+                return $this->reference . '-' . $this->shop->slug;
                 return $this->reference . '-' . $this->shop->slug;
             })
             ->saveSlugsTo('slug')
@@ -508,5 +511,10 @@ class Customer extends Model implements HasMedia, Auditable
     public function offlineConversions(): HasMany
     {
         return $this->hasMany(OfflineConversion::class);
+    }
+
+    public function trafficSource(): BelongsTo
+    {
+        return $this->belongsTo(TrafficSource::class, 'traffic_source_id');
     }
 }

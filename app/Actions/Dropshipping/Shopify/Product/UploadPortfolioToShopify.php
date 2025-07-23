@@ -67,20 +67,26 @@ class UploadPortfolioToShopify extends RetinaAction
     {
         // Wrap everything in a transaction to ensure data integrity
         DB::transaction(function () use ($shopifyUser, $portfolio, $body) {
-            try {
-                $images = [];
+            /** @var Product $product */
+            $product = $portfolio->item;
+            $images  = [];
 
-                // Get the product associated with this portfolio
-                /** @var Product $product */
-                $product = $portfolio->item;
+            foreach ($product->images as $image) {
+                $base64Image = null;
+                try {
+                    $base64Image = $image->getBase64Image();
+                } catch (Exception) {
+                    //
+                }
 
-                // Convert all product images to base64 for Shopify API
-                foreach ($product->images as $image) {
+                if ($base64Image) {
                     $images[] = [
                         "attachment" => $image->getBase64Image()
                     ];
                 }
+            }
 
+            try {
                 // Prepare the product data for Shopify API
                 $body = [
                     "product" => [
@@ -115,7 +121,6 @@ class UploadPortfolioToShopify extends RetinaAction
                     $shopifyProduct = $this->storeShopifyProduct($shopifyUser, $portfolio, $body);
                 }
 
-
                 // Update inventory levels in Shopify
                 UpdateShopifyProductInventoryLevels::dispatch($product, $shopifyUser, $shopifyProduct);
 
@@ -127,7 +132,7 @@ class UploadPortfolioToShopify extends RetinaAction
                 // Dispatch event to notify about upload progress
                 UploadProductToShopifyProgressEvent::dispatch($shopifyUser, $portfolio);
             } catch (\Exception $e) {
-                Sentry::captureMessage($e->getMessage());
+                Sentry::captureException($e);
 
                 UpdatePortfolio::run($portfolio, [
                     'errors_response' => [$e->getMessage()]
@@ -143,8 +148,7 @@ class UploadPortfolioToShopify extends RetinaAction
 
     private function storeShopifyProduct(ShopifyUser $shopifyUser, Portfolio $portfolio, array $body = [])
     {
-
-        $client         = $shopifyUser->getShopifyClient();
+        $client = $shopifyUser->getShopifyClient();
         try {
             // Make API request to create product in Shopify
             $response = $client->request('POST', '/admin/api/2025-07/products.json', $body);
@@ -157,6 +161,7 @@ class UploadPortfolioToShopify extends RetinaAction
 
                 // Log error to Sentry for monitoring
                 Sentry::captureMessage("Product upload failed: ".$portfolio->errors_response);
+
                 return null;
             } else {
                 // Extract product data from successful response
@@ -164,11 +169,10 @@ class UploadPortfolioToShopify extends RetinaAction
             }
         } catch (Exception $e) {
             // Log exception to Sentry
-            Sentry::captureMessage($e->getMessage());
+            Sentry::captureException($e);
 
             // Try to find the product again in case it was created despite the exception
             return GetShopifyProductFromPortfolio::run($shopifyUser, $portfolio);
-
         }
     }
 

@@ -68,7 +68,7 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             ->orderBy('picking_priority')->get();
 
 
-        $quantityToPick = round(max(0, $this->quantity_required - $this->quantity_picked), 2);
+        $quantityToPick = max(0, $this->quantity_required - $this->quantity_picked);
 
 
         $isPicked = $quantityToPick == 0;
@@ -76,8 +76,6 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
 
 
         $pickings = Picking::where('delivery_note_item_id', $this->id)->get();
-
-
         return [
             'id'                           => $this->id,
             'is_picked'                    => $isPicked,
@@ -85,6 +83,7 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'state_icon'                   => $this->state->stateIcon()[$this->state->value],
             'quantity_required'            => $this->quantity_required,
             'quantity_to_pick'             => $quantityToPick,
+            'quantity_to_pick_fractional'  => divideWithRemainder(findSmallestFactors($quantityToPick)),
             'quantity_picked'              => $this->quantity_picked,
             'quantity_not_picked'          => $this->quantity_not_picked,
             'quantity_packed'              => $this->quantity_packed,

@@ -26,6 +26,11 @@ trait WithRetinaRegistration
 {
     public function handle(array $modelData): void
     {
+        $trafficSourceId = $this->get('traffic_source_id');
+        if ($trafficSourceId) {
+            $modelData['traffic_source_id'] = $trafficSourceId;
+        }
+
         if ($this->shop->type == ShopTypeEnum::FULFILMENT) {
             $fulfilmentCustomer = RegisterFulfilmentCustomer::run(
                 $this->shop->fulfilment,
@@ -58,6 +63,13 @@ trait WithRetinaRegistration
 
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
+        // already set from middleware CaptureTrafficSource
+        $trafficSourceId = $request->session()->get('traffic_source_id');
+        if ($trafficSourceId) {
+            $this->set('traffic_source_id', $trafficSourceId);
+            $request->session()->forget('traffic_source_id');
+        }
+
         $pollReplies = $request->input('poll_replies', []);
 
         if (count($pollReplies) === 0) {

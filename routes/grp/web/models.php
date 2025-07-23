@@ -72,6 +72,7 @@ use App\Actions\CRM\Prospect\ImportShopProspects;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\CRM\WebUser\UpdateWebUser;
 use App\Actions\Dispatching\Printer\PrintShipmentLabel;
+use App\Actions\Dispatching\Shipment\DeleteShipment;
 use App\Actions\Dispatching\Shipment\DetachShipmentFromPalletReturn;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInFulfilment;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInWarehouse;
@@ -245,6 +246,7 @@ use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
 use App\Actions\Web\ModelHasWebBlocks\UpdateModelHasWebBlocks;
 use App\Actions\Web\ModelHasWebBlocks\UploadImagesToModelHasWebBlocks;
 use App\Actions\Web\Redirect\StoreRedirect;
+use App\Actions\Web\Redirect\StoreRedirectFromWebsite;
 use App\Actions\Web\Redirect\UpdateRedirect;
 use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Actions\Web\Webpage\PublishWebpage;
@@ -842,25 +844,29 @@ Route::name('poll.')->prefix('poll')->group(function () {
 });
 
 Route::post('website/{website:id}/break-cache', BreakWebsiteCache::class)->name('website.break_cache')->withoutScopedBindings();
+Route::post('website/{website:id}/redirect', StoreRedirectFromWebsite::class)->name('website.redirect.store')->withoutScopedBindings();
 
 
-require __DIR__."/models/inventory/warehouse.php";
-require __DIR__."/models/inventory/location_org_stock.php";
-require __DIR__."/models/inventory/warehouse_area.php";
-require __DIR__."/models/inventory/location.php";
-require __DIR__."/models/ordering/order.php";
-require __DIR__."/models/dispatching/delivery_note.php";
-require __DIR__."/models/dispatching/delivery_note_item.php";
-require __DIR__."/models/stock/stock.php";
-require __DIR__."/models/accounting/invoice.php";
-require __DIR__."/models/accounting/refund.php";
-require __DIR__."/models/billables/billables.php";
-require __DIR__."/models/billables/services.php";
+Route::delete('/shipment/{shipment:id}', DeleteShipment::class)->name('shipment.delete');
 
-require __DIR__."/models/hr/hr.php";
-require __DIR__."/models/website/webpages.php";
-require __DIR__."/models/supply_chain/agent.php";
-require __DIR__."/models/sys_admin/user.php";
-require __DIR__."/models/fulfilment/fulfilment_customer.php";
-require __DIR__."/models/fulfilment/stored_item_audit.php";
-require __DIR__."/models/fulfilment/stored_item_audit_delta.php";
+
+require __DIR__ . "/models/inventory/warehouse.php";
+require __DIR__ . "/models/inventory/location_org_stock.php";
+require __DIR__ . "/models/inventory/warehouse_area.php";
+require __DIR__ . "/models/inventory/location.php";
+require __DIR__ . "/models/ordering/order.php";
+require __DIR__ . "/models/dispatching/delivery_note.php";
+require __DIR__ . "/models/dispatching/delivery_note_item.php";
+require __DIR__ . "/models/stock/stock.php";
+require __DIR__ . "/models/accounting/invoice.php";
+require __DIR__ . "/models/accounting/refund.php";
+require __DIR__ . "/models/billables/billables.php";
+require __DIR__ . "/models/billables/services.php";
+
+require __DIR__ . "/models/hr/hr.php";
+require __DIR__ . "/models/website/webpages.php";
+require __DIR__ . "/models/supply_chain/agent.php";
+require __DIR__ . "/models/sys_admin/user.php";
+require __DIR__ . "/models/fulfilment/fulfilment_customer.php";
+require __DIR__ . "/models/fulfilment/stored_item_audit.php";
+require __DIR__ . "/models/fulfilment/stored_item_audit_delta.php";

@@ -130,7 +130,7 @@ class ShowWebsite extends OrgAction
                         'website'      => $website->slug
                     ]
                 ],
-                'icon'  => 'fal fa-folder-tree',
+                'icon'  => 'fal fa-columns',
                 "color" => "#b45309",
                 'value' => $website->webStats->number_webpages_sub_type_content,
             ],
@@ -144,7 +144,7 @@ class ShowWebsite extends OrgAction
                         'website'      => $website->slug
                     ]
                 ],
-                'icon'  => 'fal fa-folder-tree',
+                'icon'  => 'fal fa-newspaper',
                 "color" => "#f59e0b",
                 'value' => $website->webStats->number_webpages_sub_type_blog,
             ],
@@ -220,6 +220,23 @@ class ShowWebsite extends OrgAction
                 ],
 
                 'route_storefront' => $route_storefront,
+
+                'route_redirects' => [
+                    'submit' => [
+                        'name'       => 'grp.models.website.redirect.store',
+                        'parameters' => [
+                            'organisation' => $shop->organisation->slug,
+                            'shop'         => $shop->slug,
+                            'website'      => $website->id
+                        ]
+                    ],
+                    'fetch_live_webpages' => [
+                        'name'       => 'grp.json.active_webpages.index',
+                        'parameters' => [
+                            'shop'         => $shop->slug,
+                        ]
+                    ],
+                ],
 
                 WebsiteTabsEnum::SHOWCASE->value => $this->tab == WebsiteTabsEnum::SHOWCASE->value ? array_merge(WebsiteResource::make($website)->getArray(), ['layout' => GetWebsiteWorkshopLayout::run($this->parent, $website)['routeList']], ['stats' => $stats, 'content_blog_stats' => $content_blog_stats])
                     : Inertia::lazy(fn () => WebsiteResource::make($website)->getArray()),

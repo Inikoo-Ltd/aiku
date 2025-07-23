@@ -389,6 +389,4 @@ class GetPalletDeliveryActions
             ]
         ];
     }
-
-
 }

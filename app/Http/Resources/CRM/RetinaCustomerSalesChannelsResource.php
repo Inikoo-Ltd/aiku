@@ -49,6 +49,7 @@ class RetinaCustomerSalesChannelsResource extends JsonResource
             'platform_image'          => $this->getPlatformLogo($this->platform_code),
             'connection'              => $this->connection_status,
 
+
             'delete_route' => [
                 'method'     => 'delete',
                 'name'       => 'retina.models.customer_sales_channel.delete',

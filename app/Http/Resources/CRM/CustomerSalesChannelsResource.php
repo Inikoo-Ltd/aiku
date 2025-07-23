@@ -39,7 +39,6 @@ class CustomerSalesChannelsResource extends JsonResource
         $platform = Platform::find($this->platform_id);
 
         $customerSalesChannels = CustomerSalesChannel::find($this->id);
-        $status                = $this->checkStatus($customerSalesChannels);
 
         return [
             'slug'                                => $this->slug,
@@ -56,7 +55,7 @@ class CustomerSalesChannelsResource extends JsonResource
             'platform_code'                       => $platform?->code,
             'platform_name'                       => $platform?->name,
             'platform_image'                      => $this->getPlatformLogo($customerSalesChannels->platform->code),
-            'connection'                          => $status,
+            'connection_status'                   => $this->connection_status,
             'update_customer_sales_channel_route' => [
                 'method'     => 'patch',
                 'name'       => 'retina.models.customer_sales_channel.update',

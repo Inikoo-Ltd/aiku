@@ -494,14 +494,14 @@ const responsiveGridClass = computed(() => {
                         </span>
                     </div>
 
-                    <!--                    <div>-->
-                    <!--                        <ButtonAddCategoryToPortfolio-->
-                    <!--                            xproduct="fieldValue.product"-->
-                    <!--                            :products-->
-                    <!--                            :categoryId-->
-                    <!--                            xproductHasPortfolio="productExistenceInChannels"-->
-                    <!--                        />-->
-                    <!--                    </div>-->
+                    <div>
+                        <ButtonAddCategoryToPortfolio
+                            xproduct="fieldValue.product"
+                            :products
+                            :categoryId
+                            xproductHasPortfolio="productExistenceInChannels"
+                        />
+                    </div>
                 </div>
 
                 <!-- Product Grid -->

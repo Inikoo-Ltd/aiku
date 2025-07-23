@@ -43,7 +43,7 @@ class EditProfileSettings
                 return GetPrinters::make()->action([])->map(function ($printer) {
                     return [
                         'value' => $printer->id,
-                        'label' => $printer->name,
+                        'label' => $printer->name . ' (' . $printer->computer->name . ')'  . ' - ' . $printer->state,
                     ];
                 })->values()->toArray();
             });

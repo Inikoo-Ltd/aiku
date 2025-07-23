@@ -11,9 +11,9 @@ import { Column, DataTable, IconField, InputIcon, InputText } from 'primevue'
 import { inject, onMounted, ref } from 'vue'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faSearch } from "@fal"
+import {faSearch, faRepeatAlt, faClone, faLink} from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-library.add(faSearch)
+library.add(faSearch, faRepeatAlt, faClone, faLink)
 
 const model = defineModel<{}[]>()
 const props = defineProps<{
@@ -165,9 +165,25 @@ const valueTableFilter = ref({})
 <!--        </Column>-->
 
         <Column field="name" >
-             <template #header>
+            <template #header>
                 <div v-tooltip="'Name'" class="whitespace-nowrap truncate font-semibold">
-                Name
+                    Name
+                </div>
+            </template>
+
+            <template #body="{ data }">
+                <div>
+                    <div class="whitespace-nowrap xtext-right w-full">
+                        {{ data.name }}
+                    </div>
+
+                    <div v-if="data.is_code_exist" class="text-xs text-amber-500">
+                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
+                        <span class="pr-2">We found same product in your shop, do you want to create new or use existing? (default: use existing):</span>
+                        <Button label="Use Existing" icon="fal fa-link" :disabled="data?.product_availability?.options === 'use_existing'" :type="data?.product_availability?.options === 'use_existing' ? 'primary' : 'tertiary'" size="xxs" />
+                        <span class="px-2 text-gray-500">or</span>
+                        <Button label="Create new" icon="fal fa-clone" type="tertiary" size="xxs" />
+                    </div>
                 </div>
             </template>
         </Column>
@@ -178,7 +194,7 @@ const valueTableFilter = ref({})
                 Price
                 </div>
             </template>
-            
+
             <template #body="{ data }">
                 <div  class="whitespace-nowrap text-right w-full">
                     {{ locale.currencyFormat(data.currency_code, data.price) }}

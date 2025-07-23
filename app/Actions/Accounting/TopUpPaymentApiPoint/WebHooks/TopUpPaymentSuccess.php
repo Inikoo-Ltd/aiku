@@ -13,6 +13,7 @@ use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Accounting\TopUp\StoreTopUp;
 use App\Actions\Accounting\TopUpPaymentApiPoint\UpdateTopUpPaymentApiPoint;
 use App\Actions\Accounting\WithCheckoutCom;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateTopUps;
 use App\Actions\RetinaWebhookAction;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
@@ -113,6 +114,8 @@ class TopUpPaymentSuccess extends RetinaWebhookAction
             ]
         );
 
+        CustomerHydrateTopUps::dispatch($topUpPaymentApiPoint->customer);
+
         return $creditTransaction;
     }
 
@@ -144,5 +147,4 @@ class TopUpPaymentSuccess extends RetinaWebhookAction
             ]
         );
     }
-
 }

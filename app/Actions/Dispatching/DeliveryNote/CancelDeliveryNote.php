@@ -43,7 +43,7 @@ class CancelDeliveryNote extends OrgAction
                         'not_picked_reason' => PickingNotPickedReasonEnum::CANCELLED_BY_CUSTOMER,
                         'not_picked_note' => "Delivery Note #{$deliveryNote->reference} cancelled. Item will be returned.",
                         'quantity' => $item->quantity_required,
-                    ]
+                    ],
                 );
             }
         }

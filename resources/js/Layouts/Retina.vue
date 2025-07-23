@@ -10,8 +10,6 @@ import { initialiseRetinaApp } from "@/Composables/initialiseRetinaApp"
 import { useLayoutStore } from "@/Stores/retinaLayout"
 import Notification from '@/Components/Utils/Notification.vue'
 import { faNarwhal, faCircle as falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faTimesCircle, faExternalLink, faSeedling, faSkull } from '@fal'
-import { faSearch, faBell } from '@far'
-import { faExclamationTriangle as fadExclamationTriangle } from '@fad'
 import { onMounted, provide, ref, watch } from 'vue'
 import { useLocaleStore } from "@/Stores/locale"
 import RetinaLayoutFulfilment from "./RetinaLayoutFulfilment.vue"
@@ -22,15 +20,21 @@ import { usePage } from "@inertiajs/vue3"
 import IrisHeader from "@/Layouts/Iris/Header.vue"
 import IrisFooter from "@/Layouts/Iris/Footer.vue"
 import { isArray } from "lodash-es"
-library.add(fadExclamationTriangle, faCheckCircle, faNarwhal, falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faSearch, faBell)
+
+import { confetti } from '@tsparticles/confetti'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faExclamationTriangle, faCheckCircle as fasCheckCircle, faInfoCircle, faTrashAlt, faCopy } from "@fal"
+import { faExclamationTriangle, faCheckCircle as fasCheckCircle, faInfoCircle, faBox, faHandsHelping, faChair, faTrashAlt, faCopy, faStickyNote } from "@fal"
 import { faExclamationTriangle as fasExclamationTriangle, faCheckCircle, faExclamationCircle, faInfo, faCircle } from '@fas'
 import Modal from "@/Components/Utils/Modal.vue"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-library.add(fasExclamationTriangle, faExclamationTriangle, faTimesCircle, faExternalLink, faSeedling, faSkull, fasCheckCircle, faExclamationCircle, faInfo, faCircle, faInfoCircle, faTrashAlt, faCopy)
+import { faSearch, faBell, faPlus } from '@far'
+import { faExclamationTriangle as fadExclamationTriangle } from '@fad'
+
+library.add(fasExclamationTriangle, faExclamationTriangle, faTimesCircle, faExternalLink, faSeedling, faSkull, fasCheckCircle, faExclamationCircle, faInfo, faCircle, faInfoCircle, faBox, faHandsHelping, faChair, faTrashAlt, faCopy, faStickyNote)
+library.add(fadExclamationTriangle, faCheckCircle, faNarwhal, falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faSearch, faBell, faPlus)
+
 
 
 provide('layout', useLayoutStore())
@@ -41,14 +45,63 @@ const layout = useLayoutStore()
 
 // Flash: Notification
 watch(() => usePage().props?.flash?.notification, (notif) => {
-    // console.log('notif ret', notif)
+    console.log('notif ret', notif)
     if (!notif) return
 
     notify({
         title: notif.title,
-        text: notif.description,
+        text: notif.description ?? notif.message,
         type: notif.status,
     })
+    // setTimeout(() => {
+    // }, 500)
+}, {
+    deep: true,
+    immediate: true
+})
+
+
+// Flash: Confetti
+const defaults = {
+    spread: 360,
+    ticks: 50,
+    gravity: 0,
+    decay: 0.94,
+    startVelocity: 30,
+    shapes: ["star"],
+    zIndex: 100,
+};
+
+const shootConfetti = () => {
+    // console.log('1x')
+    confetti('retina-confetti', {
+        ...defaults,
+        particleCount: 40,
+        scalar: 1.2,
+        shapes: ["star"],
+    });
+
+    confetti('retina-confetti', {
+        ...defaults,
+        particleCount: 10,
+        scalar: 0.75,
+        shapes: ["circle"],
+    });
+}
+
+const shootMultipleConfetti = () => {
+    setTimeout(() => {
+        setTimeout(() => shootConfetti(), 0)
+        setTimeout(() => shootConfetti(), 100)
+        setTimeout(() => shootConfetti(), 200)
+        setTimeout(() => shootConfetti(), 300)
+    }, 500);
+}
+watch(() => usePage().props?.flash?.confetti, (newVal) => {
+    console.log('confettixx ret', newVal)
+    if (!newVal) return
+    
+    shootMultipleConfetti()
 }, {
     deep: true,
     immediate: true
@@ -78,7 +131,7 @@ interface Modal {
 const selectedModal = ref<Modal | null>(null)
 const isModalOpen = ref(false)
 watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
-    // console.log('modal ret', modal)
+    console.log('modal ret', modal)
     if (!modal) return
 
     selectedModal.value = modal
@@ -209,7 +262,7 @@ const getBgColorDependsOnStatus = (status: string) => {
         <slot />
     </div>
 
-    <Modal :isOpen="isModalOpen" @onClose="isModalOpen = false" width="w-full max-w-lg">
+    <Modal :isOpen="isModalOpen" aonClose="isModalOpen = false" width="w-full max-w-lg">
         <div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
             <div class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full"
                 :class="getTextColorDependsOnStatus(selectedModal?.status)"
@@ -266,6 +319,32 @@ const getBgColorDependsOnStatus = (status: string) => {
 // * {
 //     --color-primary: v-bind('layout.app.theme[0]');
 // }
+
+/* For Notification */
+.custom-style-notification {
+    @apply mt-2 bg-white rounded-md mr-3;
+
+    .notification-title {
+        @apply font-bold
+    }
+
+    .notification-content {
+        @apply text-sm
+    }
+
+    &.success {
+        @apply bg-lime-50 border-l-8 border border-lime-300 text-lime-600
+    }
+    &.warning {
+        @apply bg-yellow-50 border-l-8 border border-yellow-400  text-amber-600
+    }
+    &.info {
+        @apply bg-gray-100 border-l-8 border border-slate-500  text-slate-500
+    }
+    &.error {
+        @apply bg-red-400 border-l-8 border border-red-600 text-white
+    }
+}
 
 /* Navigation: Aiku */
 .navigationActive {
@@ -343,5 +422,9 @@ const getBgColorDependsOnStatus = (status: string) => {
 // Hide Checkout Apple Pay
 #flow-container #googlepayAccordionContainer {
     display: none !important;
+}
+
+#retina-confetti {
+    pointer-events: none;
 }
 </style>

@@ -17,10 +17,9 @@ import AddPortfoliosWithUpload from "@/Components/Dropshipping/AddPortfoliosWith
 import AddPortfolios from "@/Components/Dropshipping/AddPortfolios.vue";
 import {Message, Popover} from "primevue"
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
-import type {Component} from 'vue';
 import {faSyncAlt} from "@fas";
 import {
-    faBracketsCurly,
+    faBracketsCurly, faPawClaws,
     faFileExcel,
     faImage,
     faArrowLeft,
@@ -31,12 +30,10 @@ import {
     faDownload
 } from "@fal";
 import axios from "axios"
-import {useTabChange} from "@/Composables/tab-change"
-import Tabs from "@/Components/Navigation/Tabs.vue"
 import {Table as TableTS} from "@/types/Table"
 import { CustomerSalesChannel } from "@/types/customer-sales-channel"
 
-library.add(faFileExcel, faBracketsCurly, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
+library.add(faFileExcel, faBracketsCurly, faSyncAlt, faPawClaws, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
 
 
 const props = defineProps<{
@@ -56,6 +53,8 @@ const props = defineProps<{
     products: TableTS
     routes: {
         syncAllRoute: routeType
+        batch_sync: routeType
+        duplicate: routeType
         addPortfolioRoute: routeType
         bulk_upload: routeType
         itemRoute: routeType
@@ -81,8 +80,8 @@ const props = defineProps<{
     }
     manual_channels: object
     count_product_not_synced: number
-    active: {}
-    inactive: {}
+
+   // inactive: {}
     product_count: number
 }>();
 
@@ -242,16 +241,7 @@ const bulkUpload = () => {
 const progressToUploadToShopify = ref<{ [key: number]: string }>({})
 
 
-const currentTab = ref(props.tabs.current);
-const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 
-const component = computed(() => {
-    const components: Component = {
-        active: RetinaTablePortfolios,
-        inactive: RetinaTablePortfolios,
-    };
-    return components[currentTab.value];
-});
 </script>
 
 <template>
@@ -272,7 +262,7 @@ const component = computed(() => {
 
         <template v-if="props.product_count" #other>
             <div class="rounded-md ">
-                <a :href="downloadUrl('csv')" target="_blank" rel="noopener">
+                <a :href="downloadUrl('csv') as string" target="_blank" rel="noopener">
                     <Button
                         :icon="faDownload"
                         label="CSV"
@@ -392,7 +382,7 @@ const component = computed(() => {
                     v-if="customer_sales_channel?.reconnect_route?.name"
                     @click="() => onClickReconnect(customer_sales_channel)"
                     iconRight="fal fa-external-link"
-                    :label="trans('Reconnect')"
+                    :label="trans('Connect')"
                     zsize="xxs"
                     type="secondary"
                     full
@@ -402,7 +392,7 @@ const component = computed(() => {
     </Message>
 
     <!-- Section: Alert if there is product not synced -->
-    <Message v-if="count_product_not_synced > 0 && !isPlatformManual" severity="warn" class="m-4 ">
+    <Message v-if="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual" severity="warn" class="m-4 ">
         <div class="ml-2 font-normal flex flex-col items-center sm:flex-row justify-between w-full">
             <div>
                 <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true"/>
@@ -411,19 +401,35 @@ const component = computed(() => {
                 </div>
             </div>
 
-            <!-- <div class="w-full sm:w-fit h-fit">
-                <Button
-                    v-if="routes.bulk_upload"
-                    @click="() => bulkUpload()"
-                    icon="fas fa-upload"
-                    :label="trans('Upload all')"
-                    size="xxs"
-                    :routeTarget="routes.bulk_upload"
-                    type="green"
-                    full
-                    :disabled="isLoadingBulkDeleteUpload"
+            <div class="w-full sm:w-fit h-fit space-x-2">
+                <ButtonWithLink
+                    v-if="routes.duplicate?.name"
+                    :routeTarget="routes.duplicate"
+                    v-tooltip="trans('This will only create new products to the :platform that not exist in :platform', { platform: props.platform_data.name })"
+                    aclick="() => onClickReconnect(customer_sales_channel)"
+                    icon="far fa-plus"
+                    :label="trans('Create new')"
+                    type="tertiary"
                 />
-            </div> -->
+
+                <ButtonWithLink
+                    v-if="routes.batch_sync?.name"
+                    :routeTarget="routes.batch_sync"
+                    v-tooltip="trans('This will only sync existing products to the :platform (will not create new)', { platform: props.platform_data.name })"
+                    icon="fas fa-sync-alt"
+                    :label="trans('Use existing')"
+                    type="tertiary"
+                />
+
+                <Button
+                    @click="() => bulkUpload()"
+                    v-tooltip="trans('This will create new products (if not exist in :platform) and will sync the products if exist in :platform', { platform: props.platform_data.name })"
+                    icon="fal fa-paw-claws"
+                    :label="trans('Brave mode')"
+                    type="tertiary"
+                    :loading="isLoadingBulkDeleteUpload"
+                />
+            </div>
         </div>
     </Message>
 
@@ -458,36 +464,18 @@ const component = computed(() => {
     </div>
 
     <div v-else class="overflow-x-auto">
-        <Tabs
-            :current="currentTab"
-            :navigation="tabs.navigation"
-            @update:tab="handleTabUpdate"
-        />
 
-        <component
-            :is="component"
-            :data="props[currentTab as keyof typeof props]"
-            :tab="currentTab"
-            :selectedData
-            :platform_data
-            :platform_user_id
-            :is_platform_connected
-            :customerSalesChannel="customer_sales_channel"
-            :progressToUploadToShopify
-            :isPlatformManual
-        />
 
-        <!-- <RetinaTablePortfolios
+        <RetinaTablePortfolios
             :data="props.products"
             :tab="'products'"
             :selectedData
             :platform_data
             :platform_user_id
             :is_platform_connected
-            :customerSalesChannel="customer_sales_channel"
             :progressToUploadToShopify
             :isPlatformManual
-        /> -->
+        />
     </div>
 
     <Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false"

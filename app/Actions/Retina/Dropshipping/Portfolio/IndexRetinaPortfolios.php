@@ -11,9 +11,10 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithPlatformStatusCheck;
+use App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Enums\UI\Dropshipping\RetinaPortfoliosTabsEnum;
+use App\Http\Resources\CRM\RetinaCustomerSalesChannelResource;
 use App\Http\Resources\Dropshipping\DropshippingPortfoliosResource;
 use App\Http\Resources\Platform\PlatformsResource;
 use App\InertiaTable\InertiaTable;
@@ -84,12 +85,10 @@ class IndexRetinaPortfolios extends RetinaAction
     public function getStateFilter(): AllowedFilter
     {
         return AllowedFilter::callback('status', function ($query, $value) {
-            $query->join('products', function ($join) {
-                $join->on('portfolios.item_id', '=', 'products.id')
-                    ->where('portfolios.item_type', 'Product');
+            $query->whereHas('item', function ($subQuery) use ($value) {
+                $subQuery->where('item_type', 'Product')
+                        ->whereIn('status', (array)$value);
             });
-
-            $query->whereIn('products.status', (array)$value);
         });
     }
 
@@ -107,9 +106,9 @@ class IndexRetinaPortfolios extends RetinaAction
     {
         $this->customerSalesChannel = $customerSalesChannel;
 
-        $this->initialisation($request)->withTab(RetinaPortfoliosTabsEnum::values());
+        $this->initialisation($request);
 
-        return $this->handle($customerSalesChannel, 'active');
+        return $this->handle($customerSalesChannel, 'products');
     }
 
     public function jsonResponse(LengthAwarePaginator $portfolios): \Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Http\Resources\Json\JsonResource
@@ -135,6 +134,7 @@ class IndexRetinaPortfolios extends RetinaAction
         /** @var ShopifyUser|WooCommerceUser|AmazonUser|MagentoUser $platformUser */
         $platformUser = $this->customerSalesChannel->user;
 
+        // Button: Brave mode
         $bulkUploadRoute = false;
         if ($platformUser) {
             $bulkUploadRoute = match ($this->customerSalesChannel->platform->type) {
@@ -145,7 +145,7 @@ class IndexRetinaPortfolios extends RetinaAction
                     ]
                 ],
                 PlatformTypeEnum::WOOCOMMERCE => [
-                    'name'       => 'retina.models.dropshipping.woo.batch_upload',
+                    'name'       => 'retina.models.dropshipping.woo.batch_brave',
                     'parameters' => [
                         'wooCommerceUser' => $platformUser->id
                     ]
@@ -172,6 +172,34 @@ class IndexRetinaPortfolios extends RetinaAction
             };
         }
 
+        // Button: Create new product to platform
+        $duplicateRoute = false;
+        if ($platformUser) {
+            $duplicateRoute = match ($this->customerSalesChannel->platform->type) {
+                PlatformTypeEnum::WOOCOMMERCE => [
+                    'name'       => 'retina.models.dropshipping.woo.batch_upload',
+                    'parameters' => [
+                        'wooCommerceUser' => $platformUser->id
+                    ]
+                ],
+                default => false
+            };
+        }
+
+        // Button: Sync all to platform
+        $batchSyncRoute = false;
+        if ($platformUser) {
+            $batchSyncRoute = match ($this->customerSalesChannel->platform->type) {
+                PlatformTypeEnum::WOOCOMMERCE => [
+                    'name'       => 'retina.models.dropshipping.woo.batch_sync',
+                    'parameters' => [
+                        'wooCommerceUser' => $platformUser->id
+                    ]
+                ],
+                default => false
+            };
+        };
+
 
         return Inertia::render(
             'Dropshipping/Portfolios',
@@ -188,6 +216,8 @@ class IndexRetinaPortfolios extends RetinaAction
                 ],
                 'routes'         => [
                     'bulk_upload'               => $bulkUploadRoute,
+                    'batch_sync'                => $batchSyncRoute,
+                    'duplicate'                 => $duplicateRoute,
                     'itemRoute'                 => [
                         'name'       => 'retina.dropshipping.customer_sales_channels.filtered_products.index',
                         'parameters' => [
@@ -271,36 +301,24 @@ class IndexRetinaPortfolios extends RetinaAction
 
                 'step' => [
                     'current' => match ($this->customerSalesChannel->platform->type) {
-                        PlatformTypeEnum::SHOPIFY, PlatformTypeEnum::WOOCOMMERCE => $this->customerSalesChannel->portfolios()->whereNull('platform_product_id')->count() === 0 ? 0 : 1,
+                        // PlatformTypeEnum::SHOPIFY, PlatformTypeEnum::WOOCOMMERCE => $this->customerSalesChannel->portfolios()->whereNull('platform_product_id')->count() === 0 ? 0 : 1,
                         default => 0
                     }
                 ],
 
-                'tabs' => [
-                    'current'    => $this->tab,
-                    'navigation' => RetinaPortfoliosTabsEnum::navigation(),
-                ],
 
                 'product_count' => $this->customerSalesChannel->number_portfolios,
 
-                RetinaPortfoliosTabsEnum::ACTIVE->value => $this->tab == RetinaPortfoliosTabsEnum::ACTIVE->value ?
-                    fn () => DropshippingPortfoliosResource::collection($this->handle(customerSalesChannel: $this->customerSalesChannel, prefix: 'active'))
-                    : Inertia::lazy(fn () => DropshippingPortfoliosResource::collection($this->handle(customerSalesChannel: $this->customerSalesChannel, prefix: 'active'))),
-
-                RetinaPortfoliosTabsEnum::INACTIVE->value => $this->tab == RetinaPortfoliosTabsEnum::INACTIVE->value ?
-                    fn () => DropshippingPortfoliosResource::collection($this->handle(customerSalesChannel: $this->customerSalesChannel, prefix: 'inactive', disabled: true))
-                    : Inertia::lazy(fn () => DropshippingPortfoliosResource::collection($this->handle(customerSalesChannel: $this->customerSalesChannel, prefix: 'inactive', disabled: true))),
 
                 'count_product_not_synced' => $this->customerSalesChannel->portfolios()->whereNull('platform_product_id')->count(),
                 'platform_user_id'         => $platformUser?->id,
                 'platform_data'            => PlatformsResource::make($this->customerSalesChannel->platform)->toArray(request()),
                 'products'                 => DropshippingPortfoliosResource::collection($portfolios),
-                'is_platform_connected'    => $this->checkStatus($this->customerSalesChannel) === 'connected',
-                'customer_sales_channel'   => CustomerSalesChannelsResourceTOFIX::make($this->customerSalesChannel)->toArray(request()),
-                'manual_channels'          => CustomerSalesChannelsResourceTOFIX::collection($manualChannels)
+                'is_platform_connected'    => $this->customerSalesChannel->connection_status === CustomerSalesChannelConnectionStatusEnum::CONNECTED,
+                'customer_sales_channel'   => RetinaCustomerSalesChannelResource::make($this->customerSalesChannel)->toArray(request()),
+                'manual_channels'          => CustomerSalesChannelsResourceTOFIX::collection($manualChannels)//  Do now use the resource. Use an array of necessary data
             ]
-        )->table($this->tableStructure(prefix: RetinaPortfoliosTabsEnum::ACTIVE->value))
-            ->table($this->tableStructure(prefix: RetinaPortfoliosTabsEnum::INACTIVE->value));
+        )->table($this->tableStructure(prefix: 'products'));
     }
 
     public function tableStructure(?array $modelOperations = null, $prefix = null): \Closure

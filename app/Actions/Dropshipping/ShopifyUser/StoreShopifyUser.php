@@ -33,6 +33,11 @@ class StoreShopifyUser extends RetinaAction
      */
     public function handle(Customer $customer, $modelData): ShopifyUser
     {
+        $name            = Arr::get($modelData, 'name');
+        $myShopifyDomain = config('shopify-app.my_shopify_domain');
+        $name            = $name.'.'.$myShopifyDomain;
+        data_set($modelData, 'name', $name);
+
         $platform = Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first();
 
         data_set($modelData, 'group_id', $customer->group_id);
@@ -76,7 +81,26 @@ class StoreShopifyUser extends RetinaAction
 
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
-        $shopifyShopUrl = 'https://'.$this->get('name');
+        if (str_contains($this->get('name'), ' ')) {
+            $validator->errors()->add('name', __('Shop name cannot contain spaces'));
+
+            return;
+        }
+
+        if (!preg_match('/^[a-zA-Z0-9-]+$/', $this->get('name'))) {
+            $validator->errors()->add('name', __('Shop name can only contain letters, numbers, and hyphens'));
+
+            return;
+        }
+
+        $myShopifyDomain = config('shopify-app.my_shopify_domain');
+        $shopifyShopUrl  = 'https://'.$this->get('name').'.'.$myShopifyDomain;
+
+        if (ShopifyUser::where('name', $this->get('name').'.'.$myShopifyDomain)
+            ->whereNotNull('customer_id')
+            ->exists()) {
+            $validator->errors()->add('name', __('Shopify shop :shop already exists, please use other name', ['shop' => $this->get('name')]));
+        }
 
         $response = Http::get($shopifyShopUrl);
         if (!$response->ok()) {
@@ -94,7 +118,12 @@ class StoreShopifyUser extends RetinaAction
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255', 'ends_with:.'.config('shopify-app.myshopify_domain'), Rule::unique('shopify_users', 'name')->whereNotNull('customer_id')]
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('shopify_users', 'name')->whereNotNull('customer_id')
+            ]
         ];
     }
 
@@ -107,12 +136,6 @@ class StoreShopifyUser extends RetinaAction
         $nameInput = preg_replace('/\.myshopify\.com$/i', '', $nameInput);
 
         $nameInput = trim($nameInput);
-
-
-        if ($nameInput) {
-            $myShopifyDomain = config('shopify-app.my_shopify_domain');
-            $nameInput       = $nameInput.'.'.$myShopifyDomain;
-        }
 
 
         $this->set('name', $nameInput);

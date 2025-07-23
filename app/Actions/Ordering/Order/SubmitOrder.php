@@ -12,7 +12,9 @@ use App\Actions\Comms\Email\SendNewOrderEmailToCustomer;
 use App\Actions\Comms\Email\SendNewOrderEmailToSubscribers;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\CRM\OfflineConversion\StoreOrderOfflineConversion;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateTrafficSource;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBasket;
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
@@ -80,6 +82,12 @@ class SubmitOrder extends OrgAction
             SendOrderToWarehouse::make()->action($order, []);
         }
         StoreOrderOfflineConversion::dispatch($order);
+        $customerSalesChannel = $order->customerSalesChannel;
+        if ($customerSalesChannel) {
+            CustomerSalesChannelsHydrateOrders::dispatch($customerSalesChannel);
+        }
+
+        CustomerHydrateTrafficSource::dispatch($order->customer);
 
         return $order;
     }

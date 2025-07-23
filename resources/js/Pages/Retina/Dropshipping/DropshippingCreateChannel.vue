@@ -316,14 +316,8 @@ const isModalEbayDuplicate = ref(false)
 
                 <!-- Button: Connect -->
                 <div class="relative w-full">
-                    <Button v-if="layout?.app?.environment === 'xlocal'"
-                            :label=" trans('Connect')"
-                            type="primary"
-                            full
-                            iconRight="fal fa-external-link-alt"
-                    />
-                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
 <!--                    <Button @click="() => isModalOpen = 'shopify'" label="Connect" type="primary" full/>-->
+                    <Button :label="trans('Coming soon')" type="tertiary" disabled full/>
                 </div>
             </div>
 
@@ -372,16 +366,14 @@ const isModalEbayDuplicate = ref(false)
                 </div>
 
                 <div class="w-full flex justify-end">
-
-                    <Button :label="trans('Coming soon')" type="tertiary" disabled full/>
-
-
-                    <!--                    <Button-->
-<!--                        :label="trans('Connect')"-->
-<!--                        type="primary"-->
-<!--                        full-->
-<!--                        @click="() => isModalWooCommerce = true"-->
-<!--                    />-->
+                    <Button
+                        v-if="layout?.app?.environment === 'local'"
+                        :label="trans('Connect')"
+                        type="primary"
+                        full
+                        @click="() => isModalWooCommerce = true"
+                    />
+                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
                 </div>
             </div>
             <!-- Section: Ebay -->
@@ -401,17 +393,18 @@ const isModalEbayDuplicate = ref(false)
                 </div>
 
                 <div class="w-full flex justify-end">
+                    
+                    <Button
+                        v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
+                        :label="trans('Connect')"
+                        xtype="primary"
+                        :type="total_channels?.ebay ? 'tertiary' : 'primary'"
+                        full
+                        :iconRight="total_channels?.ebay ? '' : 'fal fa-external-link-alt'"
+                        @click="() => total_channels?.ebay ? isModalEbay = true : onSubmitEbay()"
+                    />
+                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
 
-                    <Button :label="trans('Coming soon')" type="tertiary" disabled full/>
-
-<!--                    <Button-->
-<!--                        :label="trans('Connect')"-->
-<!--                        xtype="primary"-->
-<!--                        :type="total_channels?.ebay ? 'tertiary' : 'primary'"-->
-<!--                        full-->
-<!--                        :iconRight="total_channels?.ebay ? '' : 'fal fa-external-link-alt'"-->
-<!--                        @click="() => total_channels?.ebay ? isModalEbay = true : onSubmitEbay()"-->
-<!--                    />-->
                 </div>
             </div>
 
@@ -440,6 +433,7 @@ const isModalEbayDuplicate = ref(false)
                         :label="trans('Connect')"
                         type="primary"
                         full
+                        iconRight="fal fa-external-link-alt"
                         @click="onSubmitAmazon"
                     />
 
@@ -466,16 +460,14 @@ const isModalEbayDuplicate = ref(false)
                 </div>
 
                 <div class="w-full flex justify-end">
-
-                    <Button :label="trans('Coming soon')" type="tertiary" disabled full/>
-
-
-<!--                    <Button-->
-<!--                        :label="trans('Connect')"-->
-<!--                        type="primary"-->
-<!--                        full-->
-<!--                        @click="() => isModalMagento = true"-->
-<!--                    />-->
+                    <Button
+                        v-if="layout?.app?.environment === 'local'"
+                        :label="trans('Connect')"
+                        type="primary"
+                        full
+                        @click="() => isModalMagento = true"
+                    />
+                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
                 </div>
             </div>
         </div>
@@ -486,11 +478,11 @@ const isModalEbayDuplicate = ref(false)
         <div class="h-fit">
             <div class="mb-4">
                 <div class="text-center font-semibold text-xl">
-                    {{ trans("Select your store name") }}
+                    {{ trans("Enter your Shopify store name") }}
                 </div>
 
-                <div class="text-center text-xs text-gray-500">
-                    {{ trans("This is the url that your store can be accessed") }}
+                <div class="text-center text-xs text-gray-500 w-9/12 mx-auto">
+                    {{ trans("This is the store name that you already have in Shopify. You can it in Shopify Settings") }}
                 </div>
             </div>
 
@@ -512,7 +504,7 @@ const isModalEbayDuplicate = ref(false)
                 </div>
             </Transition>
 
-            <Button @click="() => onCreateStoreShopify()" full label="Create" :loading="!!isLoading" class="mt-6"/>
+            <Button @click="() => onCreateStoreShopify()" full :label="trans('Connect')" :loading="!!isLoading" class="mt-6" />
         </div>
     </Modal>
 
@@ -521,7 +513,7 @@ const isModalEbayDuplicate = ref(false)
         <div class="">
             <div class="mb-4">
                 <div class="text-center font-semibold text-xl">
-                    {{ trans("Create manual platform") }}
+                    {{ trans("Create platform manual") }}
                 </div>
 
                 <div class="text-center text-xs text-gray-500">

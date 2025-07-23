@@ -58,6 +58,10 @@ class UpdateWebsite extends OrgAction
             data_set($modelData, "settings.luigisbox.script_lbx", Arr::pull($modelData, "luigisbox_script_lbx"));
         }
 
+        if (Arr::has($modelData, "luigisbox_lbx_code")) {
+            data_set($modelData, "settings.luigisbox.lbx_code", Arr::pull($modelData, "luigisbox_lbx_code"));
+        }
+
         if (Arr::has($modelData, "luigisbox_private_key")) {
             data_set($modelData, "settings.luigisbox.private_key", Arr::pull($modelData, "luigisbox_private_key"));
         }
@@ -164,6 +168,12 @@ class UpdateWebsite extends OrgAction
                 'sometimes',
                 'nullable',
                 'string',
+            ],
+            'luigisbox_lbx_code' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'regex:/^LBX-\d{6}$/',
             ],
             'luigisbox_private_key' => ['sometimes', 'nullable', 'string'],
             'return_policy' => ['sometimes', 'string'],

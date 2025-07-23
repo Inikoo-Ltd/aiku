@@ -45,12 +45,12 @@ class CreateGuest extends InertiaAction
                             'title' => __('Credentials'),
 
                             'fields' => [
-                                'username' => [
+                                'user.username' => [
                                     'type'     => 'input',
                                     'label'    => __('username'),
                                     'required' => true
                                 ],
-                                'password' => [
+                                'user.password' => [
                                     'type'     => 'password',
                                     'label'    => __('password'),
                                     'required' => true

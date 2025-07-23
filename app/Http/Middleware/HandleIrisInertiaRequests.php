@@ -9,6 +9,7 @@
 namespace App\Http\Middleware;
 
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Http\Resources\UI\LoggedWebUserResource;
 use App\Models\CRM\WebUser;
 use Illuminate\Http\Request;
@@ -48,6 +49,7 @@ class HandleIrisInertiaRequests extends Middleware
                 ->leftJoin('platforms', 'customer_sales_channels.platform_id', '=', 'platforms.id')
                 ->select('customer_sales_channels.id', 'customer_sales_channels.name as customer_sales_channel_name', 'platform_id', 'platforms.slug', 'platforms.code', 'platforms.name')
                 ->where('customer_id', $webUser->customer_id)
+                ->where('status', CustomerSalesChannelStatusEnum::OPEN->value)
                 ->get();
 
             foreach ($channels as $channel) {
