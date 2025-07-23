@@ -153,13 +153,20 @@ onMounted(() => {
 </script>
 <template>
     <PageHeading v-if="props.deliveryNote" :data="pageHead" isButtonGroupWithBorder :key="props.deliveryNote?.state">
-        <template #other
-            v-if="props.deliveryNote?.delivery_note_id && props.deliveryNote.delivery_note_state == 'packed'">
-            <Link
+        <template #other>
+            <Link v-if="props.deliveryNote?.delivery_note_id && props.deliveryNote.delivery_note_state == 'packed'"
                 :href="route('grp.models.delivery_note.state.finalise_and_dispatch', { deliveryNote: props.deliveryNote.delivery_note_id })"
                 method="patch" @start="loadingFinal = true" @finish="loadingFinal = false"
                 @success="() => emits('SuccsesUpdateState')">
             <Button type="save" label="Finalise and Dispatch" :loading="loadingFinal" />
+            </Link>
+
+            <Link v-if="props.deliveryNote?.delivery_note_id && props.deliveryNote.delivery_note_state == 'handling'"
+                method="patch" @start="loadingFinal = true"
+                :href="route('grp.models.delivery_note.state.packed', { deliveryNote: props.deliveryNote.delivery_note_id })"
+                @finish="loadingFinal = false" class="mx-3">
+            <Button
+                type="save" label="Set as packed" size="sm"  />
             </Link>
         </template>
     </PageHeading>
@@ -181,7 +188,7 @@ onMounted(() => {
                         <p>
                             <strong>{{ trans("Name") }}:</strong>
                             {{ data.delivery_note.customer_client.contact_name ||
-                                data.delivery_note.customer_client.name }}
+                            data.delivery_note.customer_client.name }}
                         </p>
                         <p v-if="data.delivery_note.customer_client.email">
                             <strong>{{ trans("Email") }}:</strong> {{ data.delivery_note.customer_client.email }}
@@ -255,10 +262,12 @@ onMounted(() => {
                     </ul>
                 </div>
 
-                <div v-if="['packed', 'dispatched', 'finalised'].includes(data.delivery_note?.state) && props.deliveryNote">
+                <div
+                    v-if="['packed', 'dispatched', 'finalised'].includes(data.delivery_note?.state) && props.deliveryNote">
                     <ShipmentSection :shipments="shipments?.shipment.shipments"
                         :shipments_routes="shipments.shipment.shipments_routes" :address="data.delivery_note.address"
-                        @addSuccsess="getDataShipment()" @editAddressSuccsess="getDataDeliveryNote()" @deleteSuccsess="getDataShipment()" :updateAddressRoute="{
+                        @addSuccsess="getDataShipment()" @editAddressSuccsess="getDataDeliveryNote()"
+                        @deleteSuccsess="getDataShipment()" :updateAddressRoute="{
                                     name: 'grp.models.delivery_note.update_address',
                                     parameters: { deliveryNote: props.deliveryNote.delivery_note_id }
                                 }" />
