@@ -149,7 +149,7 @@ class ShowAnnouncement extends OrgAction
                 IndexAnnouncements::make()->getBreadcrumbs($routeName, $routeParameters),
                 $headCrumb(
                     'modelWithIndex',
-                    Banner::firstWhere('slug', $routeParameters['banner']),
+                    Banner::firstWhere('slug', $routeParameters['announcement']),
                     [
                         'index' => [
                             'name'       => 'grp.org.shops.show.web.announcements.index',
