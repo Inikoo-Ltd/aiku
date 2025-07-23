@@ -28,6 +28,8 @@ import { RadioButton } from "primevue"
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import { faPencil } from "@far";
+import MiniDeliveryNote from "@/Components/MiniDeliveryNote.vue";
+import Drawer from 'primevue/drawer';
 
 library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes);
 
@@ -173,12 +175,20 @@ const findLocation = (locationsList: { location_code: string }[], selectedHehe: 
 const packedLoading = ref<Set<number>>(new Set());
 const isPacking = (id: number) => packedLoading.value.has(id)
 
+
+const DeliveryNoteInModal = ref(null)
 const onCloseModalDetail = () => {
+    console.log('sdsd')
     modalDetail.value = false
+    DeliveryNoteInModal.value = null
 }
 
-console.log('props', props.pickingSession
-)
+const onOpenModalDetail = (deliveryNote) => {
+    modalDetail.value = true
+    DeliveryNoteInModal.value = deliveryNote
+}
+
+console.log('props', props.pickingSession)
 
 </script>
 
@@ -363,7 +373,7 @@ console.log('props', props.pickingSession
                                                     <FractionDisplay v-if="itemValue.quantity_to_pick_fractional"
                                                         :fractionData="itemValue.quantity_to_pick_fractional" />
                                                     <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0)
-                                                    }}</span>
+                                                        }}</span>
                                                 </div>
                                             </template>
                                         </ButtonWithLink>
@@ -385,7 +395,7 @@ console.log('props', props.pickingSession
                                                     <FractionDisplay v-if="itemValue.quantity_to_pick_fractional"
                                                         :fractionData="itemValue.quantity_to_pick_fractional" />
                                                     <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0)
-                                                    }}</span>
+                                                        }}</span>
                                                 </div>
                                             </template>
                                         </ButtonWithLink>
@@ -419,13 +429,16 @@ console.log('props', props.pickingSession
             </div>
 
 
-            <Link v-if="pickingSession.state == 'picking_finished'  && itemValue.state == 'handling'" method="patch" @start="packedLoading.add(id)"
-                :href="route('grp.models.delivery_note.state.packed', { deliveryNote: itemValue.delivery_note_id })" @finish="packedLoading.delete(id)"
-                class="mx-3">
-                <Button type="save" label="Set as packed" size="sm" :loading="isPacking(itemValue.id)"/>
+            <Link v-if="pickingSession.state == 'picking_finished' && itemValue.state == 'handling'" method="patch"
+                @start="packedLoading.add(id)"
+                :href="route('grp.models.delivery_note.state.packed', { deliveryNote: itemValue.delivery_note_id })"
+                @finish="packedLoading.delete(id)" class="mx-3">
+            <Button type="save" label="Set as packed" size="sm" :loading="isPacking(itemValue.id)" />
             </Link>
 
-            <!-- <Button :icon="faPencil" label="Edit Detail" size="sm" @click="modalDetail = true" /> -->
+
+            <Button v-if="itemValue.state == 'packed'" :icon="faPencil" label="Edit Detail" size="sm"
+                @click="onOpenModalDetail(itemValue)" />
 
         </template>
     </Table>
@@ -451,7 +464,7 @@ console.log('props', props.pickingSession
                         </Link>
                     </span>
                     <span v-else v-tooltip="trans('Unknown location')" class="text-gray-400 italic">({{ trans("Unknown")
-                    }})</span>
+                        }})</span>
 
                     <span v-tooltip="trans('Total stock in this location')"
                         class="ml-1 whitespace-nowrap text-gray-400 tabular-nums border border-gray-300 rounded px-1">
@@ -515,9 +528,9 @@ console.log('props', props.pickingSession
         </div>
     </Modal>
 
-    <Modal :isOpen="modalDetail" @onClose="() => onCloseModalDetail()" width="w-full max-w-2xl" :dialogStyle="{
-        background: '#ffffffcc'
-    }">
-        <div>sdfsdfsdfsdf</div>
+    <Modal :isOpen="modalDetail" @onClose="() => onCloseModalDetail()" width="w-1/2">
+        <MiniDeliveryNote :deliveryNote="DeliveryNoteInModal" @SuccsesUpdateState="()=> {router.reload(), onCloseModalDetail()}"/>
     </Modal>
+
+    
 </template>

@@ -48,6 +48,12 @@ const props = defineProps<{
     updateAddressRoute: routeType
 }>()
 
+const emits = defineEmits<{
+    (e: 'addSuccsess', value: string | number): void
+    (e: 'deleteSuccsess', value: string | number): void
+    (e: 'editAddressSuccsess', value: string | number): void
+}>()
+
 // Shipment deletion
 const isDeleteShipment = ref<number | null>(null)
 // const onDeleteShipment = (idShipment: number) => {
@@ -161,6 +167,7 @@ const onOpenModalTrackingNumber = async () => {
     }
     isLoadingData.value = false;
 };
+
 const onSubmitShipment = () => {
     formTrackingNumber
         .transform((data) => ({
@@ -173,6 +180,7 @@ const onSubmitShipment = () => {
                 isLoadingButton.value = "addTrackingNumber";
             },
             onSuccess: () => {
+                emits('addSuccsess', null)
                 isModalShipment.value = false;
                 formTrackingNumber.reset();
             },
@@ -215,6 +223,7 @@ const onSaveAddress = (submitShipment: Function) => {
 
             },
             onSuccess: () => {
+                emits('editAddressSuccsess',{...xxxCopyAddress.value})
                 submitShipment()
             },
             onError: () => notify({
@@ -295,6 +304,7 @@ const xxxCopyAddress = ref({ ...props.address?.delivery })
                                 shipment: shipment.id,
                             }
                         }" :title="trans('Are you sure you want to delete this shipment (:ship)?', { ship: shipment.name })"
+                            @success="e=>emits('deleteSuccsess',shipmentIdx)"
                             isFullLoading>
                             <template #default="{ isOpenModal, changeModel }">
                                 <div @click="changeModel" class="cursor-pointer">
