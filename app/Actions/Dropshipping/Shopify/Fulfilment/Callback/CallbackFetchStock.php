@@ -29,12 +29,12 @@ class CallbackFetchStock extends OrgAction
     public function handle(ShopifyUser $shopifyUser): void
     {
 
-        $stock=[];
+        $stock = [];
         /** @var Portfolio $portfolio */
-        foreach (Portfolio::where('customer_sales_channel_id', $shopifyUser->customer_sales_channel_id)->get() as $portfolio){
+        foreach (Portfolio::where('customer_sales_channel_id', $shopifyUser->customer_sales_channel_id)->get() as $portfolio) {
             /** @var Product $product */
             $product = $portfolio->item;
-            $stock[$portfolio->sku]=$product->available_quantity;
+            $stock[$portfolio->sku] = $product->available_quantity;
         }
 
 

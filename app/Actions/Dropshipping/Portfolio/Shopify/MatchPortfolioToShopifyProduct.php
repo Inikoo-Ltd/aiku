@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Mon, 21 Jul 2025 18:17:12 British Summer Time, Trnava, Slovakia
@@ -13,7 +14,6 @@ use Illuminate\Console\Command;
 
 class MatchPortfolioToShopifyProduct
 {
-
     public function handle(Portfolio $portfolio)
     {
         $shopifyUser = $portfolio->customerSalesChannel->user;

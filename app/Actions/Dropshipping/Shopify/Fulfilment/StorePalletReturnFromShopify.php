@@ -88,7 +88,7 @@ class StorePalletReturnFromShopify extends OrgAction
                     ->first();
 
                 // todo i dont know what you have to do , but just do it
-                $portfolio=null;//<-- this is wrong
+                $portfolio = null;//<-- this is wrong
 
                 $storedItems[$portfolio->item_id] = [
                     'quantity' => $shopifyProduct['quantity']

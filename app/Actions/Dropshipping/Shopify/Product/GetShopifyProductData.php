@@ -13,12 +13,8 @@ use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\Portfolio;
-use App\Models\Dropshipping\ShopifyUser;
 use Exception;
 use Illuminate\Console\Command;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
-use Lorisleiva\Actions\ActionRequest;
 use Sentry;
 
 class GetShopifyProductData extends RetinaAction
