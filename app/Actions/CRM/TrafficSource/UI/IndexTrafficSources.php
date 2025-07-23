@@ -107,9 +107,11 @@ class IndexTrafficSources extends OrgAction
 
             $table
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_customers', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_customer_purchases', label: __('Purchases'), canBeHidden: false, sortable: true)
-                ->column(key: 'total_customer_revenue', label: __('Total Revenue'), canBeHidden: false, sortable: true, type: 'currency');
+                ->column(key: 'number_customers', label: __('Registrations'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_customer_purchases', label: __('Orders'), canBeHidden: false, sortable: true)
+                ->column(key: 'cost', label: __('Cost'), canBeHidden: false, sortable: false)
+
+                ->column(key: 'total_customer_revenue', label: __('Revenue'), canBeHidden: false, sortable: true, type: 'currency');
         };
     }
 
