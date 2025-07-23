@@ -99,7 +99,6 @@ use App\Actions\Retina\Fulfilment\StoredItem\UpdateRetinaStoredItem;
 use App\Actions\Retina\Media\AttachRetinaAttachmentToModel;
 use App\Actions\Retina\Media\DetachRetinaAttachmentFromModel;
 use App\Actions\Retina\Media\DownloadRetinaAttachment;
-use App\Actions\Retina\Shopify\HandleRetinaApiDeleteProductFromShopify;
 use App\Actions\Retina\Shopify\StoreRetinaProductShopify;
 use App\Actions\Retina\SysAdmin\AddRetinaDeliveryAddressToCustomer;
 use App\Actions\Retina\SysAdmin\AddRetinaDeliveryAddressToFulfilmentCustomer;
@@ -244,7 +243,7 @@ Route::delete('{token}/access-token', DeleteCustomerAccessToken::class)->name('a
 
 Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('shopify-user/{shopifyUser:id}/products', StoreRetinaProductShopify::class)->name('shopify_user.product.store')->withoutScopedBindings();
-    Route::delete('shopify-user/{shopifyUser:id}/products/{product}', HandleRetinaApiDeleteProductFromShopify::class)->name('shopify_user.product.delete')->withoutScopedBindings();
+
     Route::get('shopify-user/{shopifyUser:id}/sync-products', GetApiProductsFromShopify::class)->name('shopify_user.product.sync')->withoutScopedBindings();
     Route::post('{shopifyUser:id}/shopify-batch-upload', SynchroniseDropshippingPortfoliosToShopify::class)->name('shopify.batch_upload')->withoutScopedBindings();
     Route::post('{shopifyUser:id}/shopify-single-upload/{portfolio:id}', SynchroniseDropshippingPortfolioToShopify::class)->name('shopify.single_upload')->withoutScopedBindings();

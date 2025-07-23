@@ -20,7 +20,6 @@ use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
-use App\Models\Dropshipping\ShopifyUserHasProduct;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
 use Illuminate\Support\Arr;
@@ -88,19 +87,8 @@ class StorePalletReturnFromShopify extends OrgAction
                     ->where('platform_product_id', $shopifyProduct['product_id'])
                     ->first();
 
-                $shopifyUserHasProduct = ShopifyUserHasProduct::where('shopify_user_id', $shopifyUser->id)
-                    ->where('shopify_product_id', $shopifyProduct['product_id'])
-                    ->first();
-
-                if (!$shopifyUserHasProduct && !$shopifyPortfolio) {
-                    continue;
-                }
-
-                if ($shopifyPortfolio) {
-                    $portfolio = $shopifyPortfolio;
-                } else {
-                    $portfolio = $shopifyUserHasProduct->portfolio;
-                }
+                // todo i dont know what you have to do , but just do it
+                $portfolio = null;//<-- this is wrong
 
                 $storedItems[$portfolio->item_id] = [
                     'quantity' => $shopifyProduct['quantity']

@@ -10,7 +10,6 @@ namespace App\Actions\Dropshipping\Shopify\Fulfilment\Callback;
 
 use App\Actions\Dropshipping\Shopify\WithShopifyApi;
 use App\Actions\OrgAction;
-use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Console\Command;
 
@@ -36,7 +35,8 @@ class RetrieveShopifyAssignedOrders extends OrgAction
             $fulfillmentOrder = $edge['node'];
 
             if (!isset($fulfillmentOrder['destination'])) {
-                RejectShopifyFulfillmentRequest::run($shopifyUser, $fulfillmentOrder['id'], __('Fulfillment request destination not found.'));;
+                RejectShopifyFulfillmentRequest::run($shopifyUser, $fulfillmentOrder['id'], __('Fulfillment request destination not found.'));
+                ;
             } else {
                 AcceptShopifyFulfillmentRequest::run($shopifyUser, $fulfillmentOrder);
             }

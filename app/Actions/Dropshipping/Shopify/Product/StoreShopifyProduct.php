@@ -18,7 +18,6 @@ use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
-use Lorisleiva\Actions\ActionRequest;
 use Sentry;
 
 class StoreShopifyProduct extends RetinaAction

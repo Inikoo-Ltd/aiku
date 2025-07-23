@@ -13,10 +13,8 @@ use App\Actions\Dropshipping\Shopify\WithShopifyApi;
 use App\Actions\OrgAction;
 use App\Models\Dropshipping\ShopifyUser;
 
-
 class AcceptShopifyFulfillmentRequest extends OrgAction
 {
-
     use WithShopifyApi;
 
     /**
