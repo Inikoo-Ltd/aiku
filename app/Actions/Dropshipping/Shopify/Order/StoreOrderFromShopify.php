@@ -45,7 +45,6 @@ class StoreOrderFromShopify extends OrgAction
     {
         $deliveryAddress = Arr::get($modelData, 'shipping_address');
 
-        // I dont know something wrong here, i dd after $deliveryAddress its works and i dd right after this 4 below not works
         $customerClient = $this->digestShopifyCustomerClient($shopifyUser, $modelData);
         $shopifyProducts = collect($modelData['line_items']);
         $attributes = $this->getShopifyAttributesFromWebhook(Arr::get($modelData, 'customer'), $deliveryAddress);

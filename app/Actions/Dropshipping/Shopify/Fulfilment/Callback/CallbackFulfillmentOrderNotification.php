@@ -43,6 +43,4 @@ class CallbackFulfillmentOrderNotification extends WebhookAction
 
         $this->handle($shopifyUser, $this->validatedData);
     }
-
-
 }
