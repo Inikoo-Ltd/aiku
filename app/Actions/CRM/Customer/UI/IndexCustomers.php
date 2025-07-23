@@ -345,11 +345,11 @@ class IndexCustomers extends OrgAction
                     'navigation' => $navigation
                 ],
                 CustomersTabsEnum::DASHBOARD->value => $this->tab == CustomersTabsEnum::DASHBOARD->value ?
-                    fn() => GetCustomersDashboard::run($this->parent, $request)
-                    : Inertia::lazy(fn() => GetCustomersDashboard::run($this->parent, $request)),
+                    fn () => GetCustomersDashboard::run($this->parent, $request)
+                    : Inertia::lazy(fn () => GetCustomersDashboard::run($this->parent, $request)),
                 CustomersTabsEnum::CUSTOMERS->value => $this->tab == CustomersTabsEnum::CUSTOMERS->value ?
-                    fn() => CustomersResource::collection($customers)
-                    : Inertia::lazy(fn() => CustomersResource::collection($customers)),
+                    fn () => CustomersResource::collection($customers)
+                    : Inertia::lazy(fn () => CustomersResource::collection($customers)),
 
             ]
         )->table($this->tableStructure(parent: $this->parent, prefix: CustomersTabsEnum::CUSTOMERS->value));

@@ -9,7 +9,8 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\CRM\TrafficSource;
+use App\Actions\CRM\TrafficSource\GetTrafficSourceFromRefererHeader;
+use App\Actions\CRM\TrafficSource\GetTrafficSourceFromUrl;
 use App\Models\Web\Website;
 use Closure;
 use Illuminate\Http\Request;
@@ -37,21 +38,15 @@ class CaptureTrafficSource
 
         if ($website instanceof Website) {
             // Check both referer and current full URL
-            $fullUrl = $request->fullUrl();
-            $referer = $request->headers->get('referer', '');
+            $trafficSourceData = GetTrafficSourceFromUrl::run($request->fullUrl());
 
-            $trafficSource = null;
-
-            if ($fullUrl) {
-                $trafficSource = TrafficSource::detectFromWebsite($website, 'ads', $referer);
-            } else {
-                $trafficSource = TrafficSource::detectFromWebsite($website, 'organic', $fullUrl);
+            if ($trafficSourceData === null) {
+                $trafficSourceData = GetTrafficSourceFromRefererHeader::run($request->headers->get('referer', ''));
             }
 
-            // Store in session if detected
-            if ($trafficSource) {
-                session(['traffic_source_id' => $trafficSource->id]);
-            }
+            //todo append to a cookie
+
+
         }
 
         return $next($request);

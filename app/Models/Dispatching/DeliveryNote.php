@@ -125,6 +125,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $public_notes
  * @property string|null $internal_notes
  * @property string|null $shipping_notes
+ * @property string|null $quantity_picked
+ * @property string|null $quantity_packed
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
