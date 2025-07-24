@@ -201,10 +201,10 @@ const isModalAddress = ref(false)
 
         <div class="h-fit flex gap-x-2 w-fit text-xs">
             <div class="border border-gray-300 rounded flex items-center gap-x-2 px-2 py-1 w-fit">
-                <FontAwesomeIcon v-if="customer_sales_channel.has_valid_platform_product_id" icon="fal fa-check"
+                <FontAwesomeIcon v-if="customer_sales_channel.can_connect_to_platform" icon="fal fa-check"
                     class="text-green-500" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon v-else icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-                Has valid platform
+                Can connect to platform
             </div>
             <div class="border border-gray-300 rounded flex items-center gap-x-2 px-2 py-1 w-fit">
                 <FontAwesomeIcon v-if="customer_sales_channel.exist_in_platform" icon="fal fa-check"
@@ -219,7 +219,10 @@ const isModalAddress = ref(false)
                 Platform status
             </div>
 
-            <Button label="Reset Channel" type="red" icon="fal fa-undo-alt">
+            <Button v-if="customer_sales_channel.can_connect_to_platform" label="Reset Channel" type="red" icon="fal fa-undo-alt">
+
+            </Button>
+            <Button v-else label="Delete" type="delete">
 
             </Button>
         </div>
