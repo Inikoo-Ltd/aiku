@@ -64,6 +64,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property int|null $picking_location_id
  * @property int|null $picking_dropshipping_location_id
+ * @property int|null $packed_in Number of trade units usually packed together
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Inventory\OrgStockIntervals|null $intervals
