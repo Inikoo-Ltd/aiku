@@ -84,8 +84,11 @@ const onDeletePortfolio = async (routeDelete: routeType, portfolioReference: str
 
     <template #cell(platform_status)="{ item: portfolio }">
       <FontAwesomeIcon v-if="portfolio.has_valid_platform_product_id" v-tooltip="trans('Has valid platform product id')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+      <FontAwesomeIcon v-else v-tooltip="trans('Has valid platform product id')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
       <FontAwesomeIcon v-if="portfolio.exist_in_platform" v-tooltip="trans('Exist in platform')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+      <FontAwesomeIcon v-else v-tooltip="trans('Exist in platform')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
       <FontAwesomeIcon v-if="portfolio.platform_status" v-tooltip="trans('Platform status')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+      <FontAwesomeIcon v-else v-tooltip="trans('Platform status')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
     </template>
 
     <template #cell(created_at)="{ item: portfolio }">
