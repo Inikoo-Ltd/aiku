@@ -151,12 +151,21 @@ const onChangeCheked = (checked: boolean, item: DeliveryNote) => {
 }
 
 
+const onCheckedAll = ({ data, allChecked }) => {
+    for (const row of data) {
+        onChangeCheked(allChecked, row)
+    }
+}
+
 
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="layout.app.environment !== 'production'"
-        @onChecked="(item) => onChangeCheked(true, item)" @onUnchecked="(item) => onChangeCheked(false, item)"
+    <Table :resource="data" :name="tab" class="mt-5" 
+        :isCheckBox="layout.app.environment !== 'production'"
+        @onChecked="(item) => onChangeCheked(true, item)" 
+        @onUnchecked="(item) => onChangeCheked(false, item)"
+        @onCheckedAll="(data) => onCheckedAll(data)"
         checkboxKey='id' :isChecked="(item) => selectedDeliveryNotes.includes(item.id)">
         <template #cell(status)="{ item: deliveryNote }">
             <Icon :data="deliveryNote.state_icon" />
