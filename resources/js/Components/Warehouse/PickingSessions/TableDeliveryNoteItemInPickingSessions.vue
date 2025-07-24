@@ -193,8 +193,7 @@ console.log('props', props.pickingSession)
 </script>
 
 <template>
-
-    <Table :resource="data" class="mt-5" rowAlignTop>
+    <Table :resource="data" class="mt-5" rowAlignTop :name="tab">
         <!-- Column: state -->
         <template #cell(state)="{ item }">
             <Icon :data="item.state_icon" />
