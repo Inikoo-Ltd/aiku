@@ -183,38 +183,6 @@ class ShowCollection extends OrgAction
                         ] : false,
 
                     ],
-                    'exports' => [
-                        [
-                            'routes' => [
-                                [
-                                    'label' => 'CSV',
-                                    'key'   => 'csv',
-                                    'icon' => ['fal', 'fa-file-csv'],
-                                    'popover' => false,
-                                    'route' => [
-                                        'name' => 'retina.catalogue.feeds.product_category.download',
-                                        'parameters' => [
-                                            'productCategory' => $collection->slug,
-                                            'type'       => 'products_csv'
-                                        ]
-                                    ],
-                                ],
-                                [
-                                    'label' => 'images',
-                                    'key'   => 'images',
-                                    'icon' => ['fal', 'fa-images'],
-                                    'inside_popover' => true,
-                                    'route' => [
-                                        'name' => 'retina.catalogue.feeds.product_category.download',
-                                        'parameters' => [
-                                            'productCategory' => $collection->slug,
-                                            'type'       => 'products_images'
-                                        ]
-                                    ],
-                                ]
-                            ]
-                        ]
-                    ],
                 ],
                 'routes'      => [
                     'departments' => [
