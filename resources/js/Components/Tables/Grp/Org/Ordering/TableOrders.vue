@@ -56,7 +56,7 @@ function orderRoute(order: Order) {
         "grp.org.shops.show.crm.customers.show.customer_clients.orders.show",
         [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, (route().params as RouteParams).customer, (route().params as RouteParams).customerClient, order.slug]);
     default:
-      return null;
+      return '';
   }
 }
 
