@@ -97,7 +97,7 @@ const onSubmitNotPicked = async (idPallet: number, closePopup: Function, routeNo
     })
 }
 
-const SetSelected = debounce(() => {
+/* const SetSelected = debounce(() => {
     const finalValue: Record<string, { quantity: number }> = [];
 
     for(const key in selectedRow.value){
@@ -128,7 +128,7 @@ const onChangeCheked = (value) => {
     selectedRow.value = value;
     SetSelected();
     console.log('lkm')
-}
+} */
 
 
 const setUpChecked = () => {
@@ -273,7 +273,7 @@ const generateLinkPallet = (pallet: {}) => {
 <template>
     <!-- <pre>{{ data.data[0] }}</pre> -->
     <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="state == 'in_process'"
-        @onSelectRow="onChangeCheked" checkboxKey='pallet_id'
+        checkboxKey='pallet_id'
         @onChecked="(item) => onCheckTable(item)"
         @onUnchecked="(item) => onCheckTable(item)"
     >

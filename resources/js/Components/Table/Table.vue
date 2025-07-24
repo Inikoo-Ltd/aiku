@@ -689,10 +689,17 @@ const onClickSelectAll = (state: boolean) => {
 
 
 // Check props.isCheckbox to improve performance
-const compIsAllChecked = props.isCheckBox ? computed(() => {
-    return compResourceData.value.length > 0 &&
-        compResourceData.value.every((row: Record<string, any>) => selectRow[row.id] === true);
-}) : false
+const compIsAllChecked = props.isCheckBox
+  ? computed(() => {
+      return compResourceData.value.length > 0 &&
+        compResourceData.value.every((row: Record<string, any>) => {
+          const key = props.checkboxKey ? row[props.checkboxKey] : row.id
+          return !!selectRow[key]
+        })
+    })
+  : false
+
+
 watch(selectRow, () => {
     emits('onSelectRow', selectRow)
 }, {deep: true})
