@@ -70,7 +70,7 @@ class IndexDeliveryNoteItemsInPickingSessionGrouped extends OrgAction
             $table->column(key: 'delivery_note_reference', label: __('Delivery Note'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'items', label: __('Items'), canBeHidden: false);
             if ($parent->state != PickingSessionStateEnum::HANDLING) {
-                $table->column(key: 'handing_actions', label: __('To do actions'), canBeHidden: false);
+                $table->column(key: 'picking_position', label: __('To do actions'), canBeHidden: false);
             }
         };
     }

@@ -167,7 +167,7 @@ const onCheckedAll = ({ data, allChecked }) => {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5" 
-        :isCheckBox="layout.app.environment !== 'production'"
+        :isCheckBox="true"
         @onChecked="(item) => onChangeCheked(true, item)" 
         @onUnchecked="(item) => onChangeCheked(false, item)"
         @onCheckedAll="(data) => onCheckedAll(data)"

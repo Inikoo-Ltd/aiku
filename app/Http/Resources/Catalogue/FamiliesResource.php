@@ -69,7 +69,7 @@ class FamiliesResource extends JsonResource
             'created_at'               => $this->created_at,
             'updated_at'               => $this->updated_at,
             'number_current_products'  => $this->number_current_products,
-            // 'collections'       => $collections, // TODO uncomment this @aqordeon
+            'collections'       => $collections,
             'sales'                    => $this->sales_all,
             'invoices'                 => $this->invoices_all,
             'organisation_name' => $this->organisation_name,
