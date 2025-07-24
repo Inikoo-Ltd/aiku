@@ -185,6 +185,24 @@ class EditProduct extends OrgAction
                         'label' => __('name'),
                         'value' => $product->name
                     ],
+
+                    //tranlation input raul request 7/24/25
+                    /* 'name' => [
+                        'type'  => 'input_translation',
+                        'label' => __('name'),
+                        'value' => [
+                            "en" => [
+                                'value' => $product->name,
+                                'default' => true,
+                            ],
+                            "hr" => [
+                                'value' => '',
+                            ],
+                            'zh-Hans' => [
+                                'value' => '',
+                            ]
+                        ]
+                    ], */
                     'description_title' => [
                         'type'  => 'input',
                         'label' => __('description title'),
