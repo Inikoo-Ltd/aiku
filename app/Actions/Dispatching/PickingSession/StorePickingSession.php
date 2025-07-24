@@ -9,10 +9,12 @@
 
 namespace App\Actions\Dispatching\PickingSession;
 
-use App\Actions\Dispatching\DeliveryNote\StartHandlingDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToInQueue;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
+use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
+use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Models\Inventory\PickingSession;
 use App\Models\Inventory\Warehouse;
 use Illuminate\Http\RedirectResponse;
@@ -36,13 +38,23 @@ class StorePickingSession extends OrgAction
     {
         $pickingSession = DB::transaction(function () use ($warehouse, $modelData) {
             $deliveryNoteIds = Arr::pull($modelData, 'delivery_notes');
-            $reference       = 'PS-'.$warehouse->pickingSessions()->max('id') + 1;
+
+            data_set(
+                $modelData,
+                'reference',
+                GetSerialReference::run(
+                    container: $warehouse->organisation,
+                    modelType: SerialReferenceModelEnum::PICKING_SESSION,
+                )
+            );
+
+            data_set($modelData, 'state', PickingSessionStateEnum::IN_PROCESS->value);
 
             data_set($modelData, 'group_id', $warehouse->group_id);
             data_set($modelData, 'organisation_id', $warehouse->organisation_id);
-            data_set($modelData, 'reference', $reference);
             data_set($modelData, 'user_id', request()->user()->id);
 
+            /** @var PickingSession $pickingSession */
             $pickingSession = $warehouse->pickingSessions()->create($modelData);
 
             $pickingSession->deliveryNotes()->attach($deliveryNoteIds, [
@@ -54,14 +66,25 @@ class StorePickingSession extends OrgAction
 
             $deliveryNotes = $pickingSession->deliveryNotes;
 
+            $numberItems = 0;
+            $numberDeliveryNotes = 0;
             foreach ($deliveryNotes as $deliveryNote) {
-                StartHandlingDeliveryNote::make()->action($deliveryNote, request()->user());
+                $numberDeliveryNotes++;
+                UpdateDeliveryNoteStateToInQueue::make()->action($deliveryNote, request()->user());
+
                 foreach ($deliveryNote->deliveryNoteItems as $item) {
+                    $numberItems++;
                     UpdateDeliveryNoteItem::make()->action($item, [
                         'picking_session_id' => $pickingSession->id
                     ]);
                 }
             }
+
+            $pickingSession->updateQuietly([
+                'number_items' => $numberItems,
+                'number_delivery_notes' => $numberDeliveryNotes,
+            ]);
+
 
             return $pickingSession;
         });
@@ -99,8 +122,8 @@ class StorePickingSession extends OrgAction
     public function htmlResponse(PickingSession $pickingSession, ActionRequest $request): RedirectResponse
     {
         return Redirect::route('grp.org.warehouses.show.dispatching.picking_sessions.show', [
-            'organisation'    => $pickingSession->organisation->slug,
-            'warehouse'       => $pickingSession->warehouse->slug,
+            'organisation'   => $pickingSession->organisation->slug,
+            'warehouse'      => $pickingSession->warehouse->slug,
             'pickingSession' => $pickingSession->slug,
         ]);
     }

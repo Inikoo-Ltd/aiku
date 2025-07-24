@@ -12,6 +12,7 @@ use App\Actions\Inventory\Location\Hydrators\LocationHydrateStocks;
 use App\Actions\Inventory\Location\Hydrators\LocationHydrateStockValue;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateLocations;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
+use App\Actions\Maintenance\Dispatching\RepairOrgStockMissingLocationIds;
 use App\Actions\OrgAction;
 use App\Models\Inventory\LocationOrgStock;
 use Lorisleiva\Actions\ActionRequest;
@@ -28,6 +29,7 @@ class DeleteLocationOrgStock extends OrgAction
 
         $locationOrgStock->delete();
 
+        RepairOrgStockMissingLocationIds::dispatch($orgStock);
         LocationHydrateStocks::dispatch($location);
         LocationHydrateStockValue::dispatch($location);
         OrgStockHydrateLocations::dispatch($orgStock);
