@@ -33,14 +33,26 @@ function webpageRoute(webpage: Webpage) {
 
     switch (route().current()) {
 
-      case 'grp.org.fulfilments.show.web.webpages.index.type.info':
-      case 'grp.org.fulfilments.show.web.webpages.index.type.content':
-      case 'grp.org.fulfilments.show.web.webpages.index.type.operations':
+        case 'grp.org.fulfilments.show.web.webpages.index.type.info':
+        case 'grp.org.fulfilments.show.web.webpages.index.type.content':
+        case 'grp.org.fulfilments.show.web.webpages.index.type.operations':
             return route(
                 'grp.org.fulfilments.show.web.webpages.show',
                 [
                     route().params['organisation'],
                     route().params['fulfilment'],
+                    route().params['website'],
+                    webpage.slug
+                ]);
+                
+        case 'grp.org.shops.show.web.webpages.index.type.info':
+        case 'grp.org.shops.show.web.webpages.index.type.content':
+        case 'grp.org.shops.show.web.webpages.index.type.operations':
+            return route(
+                'grp.org.shops.show.web.webpages.show',
+                [
+                    route().params['organisation'],
+                    route().params['shop'],
                     route().params['website'],
                     webpage.slug
                 ]);
@@ -193,21 +205,25 @@ function productsRoute(webpage: Webpage) {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
+        <!-- Column: Code -->
         <template #cell(code)="{ item: webpage }">
             <Link :href="webpageRoute(webpage)" class="primaryLink">
-            {{ webpage['code'] }}
+                {{ webpage['code'] }}
             </Link>
         </template>
+
         <template #cell(number_current_sub_departments)="{ item: webpage }">
             <Link :href="subDepartmentsRoute(webpage)" class="primaryLink">
                 {{ webpage['number_current_sub_departments'] }}
             </Link>
         </template>
+
         <template #cell(number_current_families)="{ item: webpage }">
             <Link :href="familiesRoute(webpage)" class="primaryLink">
                 {{ webpage['number_current_families'] }}
             </Link>
         </template>
+
         <template #cell(number_current_products)="{ item: webpage }">
             <Link :href="productsRoute(webpage)" class="primaryLink">
                 {{ webpage['number_current_products'] }}
@@ -218,6 +234,7 @@ function productsRoute(webpage: Webpage) {
             <!-- <FontAwesomeIcon :icon="webpage.typeIcon.icon" class="" /> -->
             <Icon :data="webpage.typeIcon" class="px-1" />
         </template>
+
         <template #cell(action)="{ item: webpage }">
             <div
                 class="px-2 cursor-pointer"
