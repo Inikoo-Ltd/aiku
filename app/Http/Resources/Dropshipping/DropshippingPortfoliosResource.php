@@ -168,7 +168,6 @@ class DropshippingPortfoliosResource extends JsonResource
             'exist_in_platform' => $this->exist_in_platform,
             'platform_status' => $this->platform_status,
             'platform_possible_matches' => $possibleMatches,
-            'number_matches' => count($possibleMatches),
 
             'category' => $category,
             'platform' => $this->platform->type,

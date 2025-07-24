@@ -30,7 +30,7 @@ import {
     faTrashAlt,
     faExclamationCircle,
     faClone,
-    faLink
+    faLink, faScrewdriver
 } from "@fal"
 import {faStar, faFilter} from "@fas"
 import {faExclamationTriangle as fadExclamationTriangle} from "@fad"
@@ -43,7 +43,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import Tag from '@/Components/Tag.vue'
 
-library.add(fadExclamationTriangle, faSyncAlt, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, faClone, faLink)
+library.add(fadExclamationTriangle, faSyncAlt, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, faClone, faLink, faScrewdriver)
 
 interface PlatformData {
     id: number
@@ -183,53 +183,53 @@ const isOpenModal = ref(false)
 const selectedRow = ref(null)
 const isLoadingSubmit = ref(false)
 const querySearchPortfolios = ref('')
-const portfoliosList = ref<Product[]>([
-    {
-        "id": 124682,
-        "slug": "aatom-13-awd",
-        "code": "AATOM-13",
-        "image": {
-            "png": "https://media.aiku.io/48QAqfDxcejWuJ0IQnR6FWPWGcumudWUK52refQp-Vk/rs::0:300::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.png",
-            "avif": "https://media.aiku.io/lK4uLZHjC09slPHtR3qOjvDKzws4TAl7Q5utWoDWGAs/rs::0:300::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.avif",
-            "webp": "https://media.aiku.io/QZAAzKSCssL4-6KBp9IYbUxzbQPO3cazo1d4dJFQJBI/rs::0:300::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.webp",
-            "png_2x": "https://media.aiku.io/XuTRFP1Dy89CH6txbj9hxIrK1EJzbflbnZ5ZEWutvjk/rs::0:600::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.png",
-            "avif_2x": "https://media.aiku.io/nmU_amChUdcEXcnFF47vVX__FSHOFfb3mlju2Mv7NPo/rs::0:600::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.avif",
-            "webp_2x": "https://media.aiku.io/C1ow5wRZtTa9gyQIDmYc9WU4qIXltOW-vJ3yhnPHlHk/rs::0:600::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.webp",
-            "original": "https://media.aiku.io/kD5EfcuDXmcDMfdud6h67Mvt8o-rMxIuNeHuRP3IRT0/rs::0:300::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc",
-            "original_2x": "https://media.aiku.io/TIAMo0qQH6aRbXSddGskcEmEZejFsOJXtU9SfQjnDSY/rs::0:600::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc"
-        },
-        "price": "24.12",
-        "name": "Ibiza Atomiser - Infinity Lights - USB - Colour Change",
-        "gross_weight": 750,
-        "currency_code": "GBP",
-        "currency_id": 23
-    },
-    {
-        "id": 1111,
-        "slug": "gggg-13-awd",
-        "code": "GGGG-13",
-        "image": {
-            "png": "https://media.aiku.io/48QAqfDxcejWuJ0IQnR6FWPWGcumudWUK52refQp-Vk/rs::0:300::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.png",
-            "avif": "https://media.aiku.io/lK4uLZHjC09slPHtR3qOjvDKzws4TAl7Q5utWoDWGAs/rs::0:300::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.avif",
-            "webp": "https://media.aiku.io/QZAAzKSCssL4-6KBp9IYbUxzbQPO3cazo1d4dJFQJBI/rs::0:300::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.webp",
-            "png_2x": "https://media.aiku.io/XuTRFP1Dy89CH6txbj9hxIrK1EJzbflbnZ5ZEWutvjk/rs::0:600::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.png",
-            "avif_2x": "https://media.aiku.io/nmU_amChUdcEXcnFF47vVX__FSHOFfb3mlju2Mv7NPo/rs::0:600::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.avif",
-            "webp_2x": "https://media.aiku.io/C1ow5wRZtTa9gyQIDmYc9WU4qIXltOW-vJ3yhnPHlHk/rs::0:600::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.webp",
-            "original": "https://media.aiku.io/kD5EfcuDXmcDMfdud6h67Mvt8o-rMxIuNeHuRP3IRT0/rs::0:300::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc",
-            "original_2x": "https://media.aiku.io/TIAMo0qQH6aRbXSddGskcEmEZejFsOJXtU9SfQjnDSY/rs::0:600::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc"
-        },
-        "price": "24.12",
-        "name": "Ibiza Atomiser - Infinity Lights - USB - Colour Change",
-        "gross_weight": 750,
-        "currency_code": "GBP",
-        "currency_id": 23
-    }
-])
+// const portfoliosList = ref<Product[]>([
+//     {
+//         "id": 124682,
+//         "slug": "aatom-13-awd",
+//         "code": "AATOM-13",
+//         "image": {
+//             "png": "https://media.aiku.io/48QAqfDxcejWuJ0IQnR6FWPWGcumudWUK52refQp-Vk/rs::0:300::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.png",
+//             "avif": "https://media.aiku.io/lK4uLZHjC09slPHtR3qOjvDKzws4TAl7Q5utWoDWGAs/rs::0:300::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.avif",
+//             "webp": "https://media.aiku.io/QZAAzKSCssL4-6KBp9IYbUxzbQPO3cazo1d4dJFQJBI/rs::0:300::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.webp",
+//             "png_2x": "https://media.aiku.io/XuTRFP1Dy89CH6txbj9hxIrK1EJzbflbnZ5ZEWutvjk/rs::0:600::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.png",
+//             "avif_2x": "https://media.aiku.io/nmU_amChUdcEXcnFF47vVX__FSHOFfb3mlju2Mv7NPo/rs::0:600::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.avif",
+//             "webp_2x": "https://media.aiku.io/C1ow5wRZtTa9gyQIDmYc9WU4qIXltOW-vJ3yhnPHlHk/rs::0:600::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.webp",
+//             "original": "https://media.aiku.io/kD5EfcuDXmcDMfdud6h67Mvt8o-rMxIuNeHuRP3IRT0/rs::0:300::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc",
+//             "original_2x": "https://media.aiku.io/TIAMo0qQH6aRbXSddGskcEmEZejFsOJXtU9SfQjnDSY/rs::0:600::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc"
+//         },
+//         "price": "24.12",
+//         "name": "Ibiza Atomiser - Infinity Lights - USB - Colour Change",
+//         "gross_weight": 750,
+//         "currency_code": "GBP",
+//         "currency_id": 23
+//     },
+//     {
+//         "id": 1111,
+//         "slug": "gggg-13-awd",
+//         "code": "GGGG-13",
+//         "image": {
+//             "png": "https://media.aiku.io/48QAqfDxcejWuJ0IQnR6FWPWGcumudWUK52refQp-Vk/rs::0:300::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.png",
+//             "avif": "https://media.aiku.io/lK4uLZHjC09slPHtR3qOjvDKzws4TAl7Q5utWoDWGAs/rs::0:300::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.avif",
+//             "webp": "https://media.aiku.io/QZAAzKSCssL4-6KBp9IYbUxzbQPO3cazo1d4dJFQJBI/rs::0:300::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.webp",
+//             "png_2x": "https://media.aiku.io/XuTRFP1Dy89CH6txbj9hxIrK1EJzbflbnZ5ZEWutvjk/rs::0:600::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.png",
+//             "avif_2x": "https://media.aiku.io/nmU_amChUdcEXcnFF47vVX__FSHOFfb3mlju2Mv7NPo/rs::0:600::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.avif",
+//             "webp_2x": "https://media.aiku.io/C1ow5wRZtTa9gyQIDmYc9WU4qIXltOW-vJ3yhnPHlHk/rs::0:600::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.webp",
+//             "original": "https://media.aiku.io/kD5EfcuDXmcDMfdud6h67Mvt8o-rMxIuNeHuRP3IRT0/rs::0:300::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc",
+//             "original_2x": "https://media.aiku.io/TIAMo0qQH6aRbXSddGskcEmEZejFsOJXtU9SfQjnDSY/rs::0:600::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc"
+//         },
+//         "price": "24.12",
+//         "name": "Ibiza Atomiser - Infinity Lights - USB - Colour Change",
+//         "gross_weight": 750,
+//         "currency_code": "GBP",
+//         "currency_id": 23
+//     }
+// ])
 const filteredPortfolios = computed(() => {
     if (!querySearchPortfolios.value) {
-        return portfoliosList.value
+        return selectedRow.value?.platform_possible_matches
     }
-    return portfoliosList.value.filter(portfolio => {
+    return selectedRow.value?.platform_possible_matches.filter(portfolio => {
         return portfolio.name.toLowerCase().includes(querySearchPortfolios.value.toLowerCase())
             || portfolio.code.toLowerCase().includes(querySearchPortfolios.value.toLowerCase())
     })
@@ -375,50 +375,40 @@ const onSubmitVariant = () => {
         </template>
 
         <!-- Column: Status -->
-        <template #cell(status)="{ item: product }">
+        <template #cell(status)="{ item }">
             <div class="flex justify-center">
-                <div v-if="!product.has_valid_platform_product_id && !product.platform_product_id">
-                    Is on progress
-                </div>
+				<FontAwesomeIcon
+					v-if="(item.has_valid_platform_product_id && item.exist_in_platform && item.platform_status)"
+					v-tooltip="trans('Uploaded to platform')" icon="far fa-check" class="text-green-500" fixed-width
+					aria-hidden="true"/>
+				<ConditionIcon v-else-if="get(progressToUploadToShopify, [item.id], null)"
+					:state="get(progressToUploadToShopify, [item.id], undefined)"
+					class="text-xl mx-auto"/>
+				
 
-                <div v-if="product.has_valid_platform_product_id && !product.exist_in_platform">
-                    <Tag :label="'Need repair'" theme="4"/>
-                </div>
-
-                <template v-if="is_platform_connected">
-                    <FontAwesomeIcon
-                        v-if="(product.has_valid_platform_product_id && product.exist_in_platform && product.platform_status)"
-                        v-tooltip="trans('Uploaded to platform')" icon="far fa-check" class="text-green-500" fixed-width
-                        aria-hidden="true"/>
-                    <ConditionIcon v-else-if="get(progressToUploadToShopify, [product.id], null)"
-                                   :state="get(progressToUploadToShopify, [product.id], undefined)"
-                                   class="text-xl mx-auto"/>
-                    <span v-if="(product.upload_warning)" class="text-red-500 text-xs text-center italic">
-						{{ product.upload_warning }}
-					</span>
-                    <span v-else-if="!product.platform_product_id" class="text-gray-500 text-xs text-center italic">
-						{{ trans("Pending upload") }}
-					</span>
-                </template>
-
-                <div v-else-if="isPlatformManual"
-                     v-tooltip="trans('Your channel is not connected to the platform yet.')"
-                     class="text-center text-lg">
-                    <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-red-500" fixed-width
-                                     aria-hidden="true"/>
-                </div>
+				<!-- Button: repair -->
+				<template v-if="!(!item.has_valid_platform_product_id && !item.exist_in_platform && !item.platform_status && get(progressToUploadToShopify, [item.id], undefined) != 'success')">
+					<Button
+						v-if="!item.has_valid_platform_product_id || !item.exist_in_platform || !item.platform_status"
+						label="Repair"
+						type="tertiary"
+						icon="fal fa-screwdriver"
+						v-tooltip="trans('Upload product to :platform', {platform: props.platform_data.name})"
+					/>
+				</template>
             </div>
         </template>
 
-        <!-- Column: Actions -->
+        <!-- Column: Actions (connect) -->
         <template #cell(actions)="{ item }">
             <div class="mx-auto flex flex-wrap justify-center gap-2">
                 <!-- {{ item.platform_product_id }} -->
                 <ButtonWithLink
-                    v-if="
-						is_platform_connected
-						&& !item.platform_product_id
-						&& get(progressToUploadToShopify, [item.id], undefined) != 'success'
+					v-if="
+						!item.has_valid_platform_product_id && 
+						!item.exist_in_platform && 
+						!item.platform_status &&
+						get(progressToUploadToShopify, [item.id], undefined) != 'success'
 					"
                     :routeTarget="item.platform_upload_portfolio"
                     label="Connect"
@@ -438,13 +428,15 @@ const onSubmitVariant = () => {
 
         <!-- Column: Actions 2 -->
         <template #cell(actions2)="{ item }">
-            <Button
-                @click="isOpenModal = true, selectedRow = item"
-                label="Modal Shopify"
-                type="tertiary"
-            >
-
-            </Button>
+            <template v-if="!(!item.has_valid_platform_product_id && !item.exist_in_platform && !item.platform_status)">
+				<Button
+					v-if="item.platform_possible_matches.length"
+					@click="isOpenModal = true, selectedRow = item"
+					label="Modal Shopify"
+					type="tertiary"
+				>
+				</Button>
+			</template>
         </template>
 
         <!-- Column: Actions 3 -->
@@ -496,7 +488,7 @@ const onSubmitVariant = () => {
                     <div class="h-full md:h-[400px] overflow-auto py-2 relative">
                         <!-- Products list -->
                         <div class="grid grid-cols-2 gap-3 pb-2">
-                            <template v-if="portfoliosList.length > 0">
+                            <template v-if="selectedRow?.platform_possible_matches?.length > 0">
                                 <div
                                     v-for="(item, index) in filteredPortfolios"
                                     :key="index"

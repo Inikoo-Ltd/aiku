@@ -264,14 +264,14 @@ const onClickFilterOutOfStock = (query: string) => {
 		</template> -->
 
 		<!-- Column: Price -->
-		<template #cell(price)="{ item }">
+		<!-- <template #cell(price)="{ item }">
 			<div class="text-gray-700">
 				{{ locale.currencyFormat(item.currency_code, item.price) }}
 			</div>
 			<div class="whitespace-nowrap text-gray-500">
 				RRP: {{ locale.currencyFormat(item.currency_code, item.customer_price) }}
 			</div>
-		</template>
+		</template> -->
 
 		<!-- Column: RPP -->
 		<!-- <template #cell(customer_price)="{ item }">
@@ -281,7 +281,7 @@ const onClickFilterOutOfStock = (query: string) => {
 		</template> -->
 
 		<!-- Column: Status -->
-		<template #cell(status)="{ item: product }">
+		<!-- <template #cell(status)="{ item: product }">
 			<div class="flex justify-center">
 				<template v-if="is_platform_connected">
 					<FontAwesomeIcon v-if="(product.platform_product_id)" v-tooltip="trans('Uploaded to platform')" icon="far fa-check" class="text-green-500" fixed-width aria-hidden="true" />
@@ -298,7 +298,7 @@ const onClickFilterOutOfStock = (query: string) => {
                     <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-red-500" fixed-width aria-hidden="true" />
                 </div>
 			</div>
-        </template>
+        </template> -->
 
 		<!-- Column: Actions -->
 		<template #cell(actions)="{ item }">
