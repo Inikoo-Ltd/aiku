@@ -10,13 +10,11 @@
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
-use App\Actions\IrisAction;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\CRM\Customer;
-use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -83,7 +81,7 @@ class StoreRetinaPortfolioToMultiChannels extends RetinaAction
         $this->handle($this->customer, $this->validatedData);
     }
 
-    
+
     public function inProductCategory(ProductCategory $productCategory, ActionRequest $request): void
     {
         $this->productCategory = $productCategory;

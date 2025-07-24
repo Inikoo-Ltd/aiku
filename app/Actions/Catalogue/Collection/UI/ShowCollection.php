@@ -280,25 +280,25 @@ class ShowCollection extends OrgAction
                 ],
 
                 CollectionTabsEnum::SHOWCASE->value => $this->tab == CollectionTabsEnum::SHOWCASE->value ?
-                    fn() => GetCollectionShowcase::run($collection)
-                    : Inertia::lazy(fn() => GetCollectionShowcase::run($collection)),
+                    fn () => GetCollectionShowcase::run($collection)
+                    : Inertia::lazy(fn () => GetCollectionShowcase::run($collection)),
 
 
                 CollectionTabsEnum::FAMILIES->value => $this->tab == CollectionTabsEnum::FAMILIES->value ?
-                    fn() => FamiliesInCollectionResource::collection(IndexFamiliesInCollection::run($collection, prefix: CollectionTabsEnum::FAMILIES->value))
-                    : Inertia::lazy(fn() => FamiliesInCollectionResource::collection(IndexFamiliesInCollection::run($collection, prefix: CollectionTabsEnum::FAMILIES->value))),
+                    fn () => FamiliesInCollectionResource::collection(IndexFamiliesInCollection::run($collection, prefix: CollectionTabsEnum::FAMILIES->value))
+                    : Inertia::lazy(fn () => FamiliesInCollectionResource::collection(IndexFamiliesInCollection::run($collection, prefix: CollectionTabsEnum::FAMILIES->value))),
 
                 CollectionTabsEnum::PRODUCTS->value => $this->tab == CollectionTabsEnum::PRODUCTS->value ?
-                    fn() => ProductsResource::collection(IndexProductsInCollection::run($collection, prefix: CollectionTabsEnum::PRODUCTS->value))
-                    : Inertia::lazy(fn() => ProductsResource::collection(IndexProductsInCollection::run($collection, prefix: CollectionTabsEnum::PRODUCTS->value))),
+                    fn () => ProductsResource::collection(IndexProductsInCollection::run($collection, prefix: CollectionTabsEnum::PRODUCTS->value))
+                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInCollection::run($collection, prefix: CollectionTabsEnum::PRODUCTS->value))),
 
                 CollectionTabsEnum::COLLECTIONS->value => $this->tab == CollectionTabsEnum::COLLECTIONS->value ?
-                    fn() => CollectionsResource::collection(IndexCollectionsInCollection::run($collection, prefix: CollectionTabsEnum::COLLECTIONS->value))
-                    : Inertia::lazy(fn() => CollectionsResource::collection(IndexCollectionsInCollection::run($collection, prefix: CollectionTabsEnum::COLLECTIONS->value))),
+                    fn () => CollectionsResource::collection(IndexCollectionsInCollection::run($collection, prefix: CollectionTabsEnum::COLLECTIONS->value))
+                    : Inertia::lazy(fn () => CollectionsResource::collection(IndexCollectionsInCollection::run($collection, prefix: CollectionTabsEnum::COLLECTIONS->value))),
 
                 CollectionTabsEnum::HISTORY->value => $this->tab == CollectionTabsEnum::HISTORY->value ?
-                    fn() => HistoryResource::collection(IndexHistory::run($collection))
-                    : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run($collection))),
+                    fn () => HistoryResource::collection(IndexHistory::run($collection))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($collection))),
 
             ]
         )

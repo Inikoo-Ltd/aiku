@@ -142,7 +142,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $containedByCollections
  * @property-read LaravelCollection<int, ModelHasContent> $contents
- * @property-read \App\Models\Helpers\Currency $currency
+ * @property-read Currency $currency
  * @property-read \App\Models\Catalogue\HistoricAsset|null $currentHistoricProduct
  * @property-read \App\Models\Catalogue\ProductCategory|null $department
  * @property-read Customer|null $exclusiveForCustomer
