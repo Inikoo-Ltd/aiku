@@ -50,9 +50,6 @@ Route::prefix('{shop}')->name('show.')
                 Route::prefix("polls")
                     ->name("polls.")
                     ->group(__DIR__ . "/polls.php");
-                Route::prefix("traffic-sources")
-                    ->name("traffic_sources.")
-                    ->group(__DIR__ . "/traffic_sources.php");
             }
         );
 
@@ -64,6 +61,11 @@ Route::prefix('{shop}')->name('show.')
             ->group(__DIR__ . "/discounts.php");
 
         Route::name("marketing.")->prefix('marketing')
+            ->group(function () {
+                Route::prefix("traffic-sources")
+                    ->name("traffic_sources.")
+                    ->group(__DIR__ . "/traffic_sources.php");
+            })
             ->group(__DIR__ . "/marketing.php");
 
         Route::prefix("web")

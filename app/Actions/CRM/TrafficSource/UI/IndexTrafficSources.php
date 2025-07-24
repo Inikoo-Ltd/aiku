@@ -3,8 +3,9 @@
 namespace App\Actions\CRM\TrafficSource\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
+use App\Actions\Comms\Mailshot\UI\HasUIMailshots;
+use App\Actions\Comms\Mailshot\UI\WithIndexMailshots;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Traits\WithCustomersSubNavigation;
 use App\Http\Resources\CRM\TrafficSourcesResource;
 use App\InertiaTable\InertiaTable;
@@ -21,8 +22,8 @@ use App\Models\CRM\TrafficSource;
 
 class IndexTrafficSources extends OrgAction
 {
-    use WithCustomersSubNavigation;
-    use WithCRMAuthorisation;
+    use HasUIMailshots;
+    use WithIndexMailshots;
 
     private Shop|Organisation $parent;
 
@@ -118,9 +119,9 @@ class IndexTrafficSources extends OrgAction
     public function htmlResponse(LengthAwarePaginator $trafficSources, ActionRequest $request): Response
     {
         $subNavigation = null;
-        if ($this->parent instanceof Shop) {
-            $subNavigation = $this->getSubNavigation($request);
-        }
+        // if ($this->parent instanceof Shop) {
+        //     $subNavigation = $this->getSubNavigation($request);
+        // }
         $title      = __('Traffic Sources');
         $model      = __('Traffic Source');
         $icon       = [
@@ -194,15 +195,15 @@ class IndexTrafficSources extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.shops.show.crm.traffic_sources.show',
-            'grp.org.shops.show.crm.traffic_sources.index' =>
+            'grp.org.shops.show.marketing.traffic_sources.show',
+            'grp.org.shops.show.marketing.traffic_sources.index' =>
             array_merge(
                 ShowShop::make()->getBreadcrumbs(
                     $routeParameters
                 ),
                 $headCrumb(
                     [
-                        'name'       => 'grp.org.shops.show.crm.traffic_sources.index',
+                        'name'       => 'grp.org.shops.show.marketing.traffic_sources.index',
                         'parameters' => $routeParameters
                     ]
                 )

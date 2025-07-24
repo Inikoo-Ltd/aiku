@@ -26,7 +26,7 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowTrafficSource extends OrgAction
 {
     use WithCustomersSubNavigation;
-    use WithCRMAuthorisation;
+    // use WithCRMAuthorisation; // TODO: change permission to marketing
 
     private Organisation|Shop $parent;
 
@@ -81,9 +81,10 @@ class ShowTrafficSource extends OrgAction
             ],
 
             // 'data'        => TrafficSourceResource::make($trafficSource)->toarray($request),
+            // TODO: Fix this with new model pivot
             TrafficSourceTabsEnum::CUSTOMERS->value => $this->tab == TrafficSourceTabsEnum::CUSTOMERS->value
-                ? fn () => CustomersResource::collection(IndexCustomers::run($trafficSource, TrafficSourceTabsEnum::CUSTOMERS->value))
-                : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run($trafficSource, TrafficSourceTabsEnum::CUSTOMERS->value))),
+                ? fn() => CustomersResource::collection(IndexCustomers::run($trafficSource, TrafficSourceTabsEnum::CUSTOMERS->value))
+                : Inertia::lazy(fn() => CustomersResource::collection(IndexCustomers::run($trafficSource, TrafficSourceTabsEnum::CUSTOMERS->value))),
 
 
         ])->table(IndexCustomers::make()->tableStructure($trafficSource, [], TrafficSourceTabsEnum::CUSTOMERS->value));
