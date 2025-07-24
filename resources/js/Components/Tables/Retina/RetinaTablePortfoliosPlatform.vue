@@ -402,13 +402,12 @@ const onSubmitVariant = () => {
         <!-- Column: Actions (connect) -->
         <template #cell(actions)="{ item }">
             <div class="mx-auto flex flex-wrap justify-center gap-2">
-                <!-- {{ item.platform_product_id }} -->
                 <ButtonWithLink
 					v-if="
 						!item.has_valid_platform_product_id && 
 						!item.exist_in_platform && 
 						!item.platform_status &&
-						get(progressToUploadToShopify, [item.id], undefined) != 'success'
+						(get(progressToUploadToShopify, [item.id], undefined) != 'success' && get(progressToUploadToShopify, [item.id], undefined) != 'loading')
 					"
                     :routeTarget="item.platform_upload_portfolio"
                     label="Connect"
@@ -428,14 +427,13 @@ const onSubmitVariant = () => {
 
         <!-- Column: Actions 2 -->
         <template #cell(actions2)="{ item }">
-            <template v-if="!(!item.has_valid_platform_product_id && !item.exist_in_platform && !item.platform_status)">
+            <template v-if="item.has_valid_platform_product_id && item.exist_in_platform">
 				<Button
 					v-if="item.platform_possible_matches.length"
 					@click="isOpenModal = true, selectedRow = item"
 					label="Modal Shopify"
 					type="tertiary"
-				>
-				</Button>
+				/>
 			</template>
         </template>
 
