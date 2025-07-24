@@ -122,10 +122,45 @@ const locale = inject('locale', aikuLocaleStructure)
 
         <div v-else>
             <div class="flex justify-between">
-                <h3 class="text-2xl font-semibold">{{ customer_sales_channel.name || 'n/a' }} <span
-                    class="text-gray-500 font-normal">({{ customer_sales_channel.reference }})</span></h3>
-                <div class="flex flex-nowrap items-center gap-4"
-                     v-if="!platform_status">
+                <h3 class="text-2xl font-semibold">
+                    <div v-html="ChannelLogo(platform.code)"
+                        class="align-middle inline-block h-7 w-7"
+                        v-tooltip="platform.name"
+                    />
+                    {{ customer_sales_channel.name || 'n/a' }}
+                    <span class="text-gray-500 font-normal">({{ customer_sales_channel.reference }})</span>
+                </h3>
+
+                <!-- Button: delete channel -->
+                <div v-if="platform_status && exist_in_platform && can_connect_to_platform" class="flex flex-nowrap items-center gap-4">
+                    <ModalConfirmationDelete
+                        v-if="platform.type === 'shopify'"
+                        :routeDelete="{
+                            name: 'retina.dashboard.show',
+                            parameters: {
+                                customerSalesChannel: customer_sales_channel.id,
+                            },
+                            method: 'get'
+                        }"
+                        :title="trans('Are you sure you want to delete channel :channel?', { channel: customer_sales_channel?.name })"
+                        xdescription="trans('This will delete the products, baskets, orders and other data associated with this channel. This action cannot be undone.')"
+                        isFullLoading
+                        :noLabel="trans('Yes, delete channel')"
+                    >
+                        <template #default="{ isOpenModal, changeModel }">
+                            <Button
+                                @click="changeModel"
+                                label="Delete channel"
+                                type="delete"
+                            >
+
+                            </Button>
+                        </template>
+                    </ModalConfirmationDelete>
+                </div>
+
+                <!-- Button: reset channel -->
+                <div v-else-if="!platform_status" class="flex flex-nowrap items-center gap-4">
                     <ModalConfirmationDelete
                         v-if="platform.type === 'shopify'"
                         :routeDelete="{
@@ -149,12 +184,6 @@ const locale = inject('locale', aikuLocaleStructure)
                             </Button>
                         </template>
                     </ModalConfirmationDelete>
-
-                    <div v-html="ChannelLogo(platform.code)"
-                         class="h-8 w-8"
-                         v-tooltip="platform.name">
-
-                    </div>
                 </div>
             </div>
 
@@ -223,5 +252,6 @@ const locale = inject('locale', aikuLocaleStructure)
                 </div>
             </dl>
         </div>
+        {{ platform_status}} {{exist_in_platform}} {{can_connect_to_platform }}
     </div>
 </template>
