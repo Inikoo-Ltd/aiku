@@ -67,19 +67,6 @@ class ShowRetinaCatalogue extends RetinaAction
                                         ]
                                     ],
                                 ],
-                                [
-                                    'label'          => 'images',
-                                    'key'            => 'images',
-                                    'icon'           => ['fal', 'fa-images'],
-                                    'inside_popover' => true,
-                                    'route'          => [
-                                        'name'       => 'retina.catalogue.feeds.shop.download',
-                                        'parameters' => [
-                                            'shop' => $shop->slug,
-                                            'type' => 'products_images'
-                                        ]
-                                    ],
-                                ]
                             ]
                         ]
                     ],
@@ -110,8 +97,7 @@ class ShowRetinaCatalogue extends RetinaAction
                                     "class"   => "text-green-500"
                                 ],
                                 'count'   => $shop->stats->number_departments_state_active,
-                                'route'   => [
-                                ],
+                                'route'   => [],
                             ],
 
                             [
@@ -122,8 +108,7 @@ class ShowRetinaCatalogue extends RetinaAction
                                     'class' => 'text-amber-500'
                                 ],
                                 'count'   => $shop->stats->number_departments_state_discontinuing,
-                                'route'   => [
-                                ],
+                                'route'   => [],
                             ],
                         ]
                     ],
@@ -152,9 +137,7 @@ class ShowRetinaCatalogue extends RetinaAction
                                     "class"   => "text-green-500"
                                 ],
                                 'count'   => $shop->stats->number_departments_state_active,
-                                'route'   => [
-
-                                ],
+                                'route'   => [],
                             ],
 
                             [
@@ -165,9 +148,7 @@ class ShowRetinaCatalogue extends RetinaAction
                                     'class' => 'text-amber-500'
                                 ],
                                 'count'   => $shop->stats->number_departments_state_discontinuing,
-                                'route'   => [
-
-                                ],
+                                'route'   => [],
                             ],
                         ]
                     ],

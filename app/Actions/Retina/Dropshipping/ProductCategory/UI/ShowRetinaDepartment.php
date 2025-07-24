@@ -63,6 +63,25 @@ class ShowRetinaDepartment extends RetinaAction
                         'title' => __('department')
                     ],
                     'iconRight' => $department->state->stateIcon()[$department->state->value],
+                    'exports' => [
+                        [
+                            'routes' => [
+                                [
+                                    'label'   => 'CSV',
+                                    'key'     => 'csv',
+                                    'icon'    => ['fal', 'fa-file-csv'],
+                                    'popover' => false,
+                                    'route'   => [
+                                        'name'       => 'retina.catalogue.feeds.product_category.download',
+                                        'parameters' => [
+                                            'productCategory' => $department->slug,
+                                            'type' => 'products_csv'
+                                        ]
+                                    ],
+                                ],
+                            ]
+                        ]
+                    ],
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,

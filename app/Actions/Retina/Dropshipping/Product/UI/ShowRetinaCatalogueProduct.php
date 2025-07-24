@@ -69,6 +69,19 @@ class ShowRetinaCatalogueProduct extends RetinaAction
                         [
                             'routes' => [
                                 [
+                                    'label' => 'images',
+                                    'key'   => 'images',
+                                    'icon' => ['fal', 'fa-images'],
+                                    'inside_popover' => true,
+                                    'route' => [
+                                        'name' => 'retina.catalogue.feeds.product.download',
+                                        'parameters' => [
+                                            'product' => $product->slug,
+                                            'type'       => 'products_images'
+                                        ]
+                                    ],
+                                ],
+                                [
                                     'label' => 'CSV',
                                     'key'   => 'csv',
                                     'icon' => ['fal', 'fa-file-csv'],
@@ -81,19 +94,6 @@ class ShowRetinaCatalogueProduct extends RetinaAction
                                         ]
                                     ],
                                 ],
-                                [
-                                    'label' => 'images',
-                                    'key'   => 'images',
-                                    'icon' => ['fal', 'fa-images'],
-                                    'inside_popover' => true,
-                                    'route' => [
-                                        'name' => 'retina.catalogue.feeds.product.download',
-                                        'parameters' => [
-                                            'product' => $product->slug,
-                                            'type'       => 'products_images'
-                                        ]
-                                    ],
-                                ]
                             ]
                         ]
                     ],

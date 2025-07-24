@@ -85,19 +85,6 @@ class ShowRetinaFamily extends RetinaAction
                                         ]
                                     ],
                                 ],
-                                [
-                                    'label' => 'images',
-                                    'key'   => 'images',
-                                    'icon' => ['fal', 'fa-images'],
-                                    'inside_popover' => true,
-                                    'route' => [
-                                        'name' => 'retina.catalogue.feeds.product_category.download',
-                                        'parameters' => [
-                                            'productCategory' => $family->slug,
-                                            'type'       => 'products_images'
-                                        ]
-                                    ],
-                                ]
                             ]
                         ]
                     ]
