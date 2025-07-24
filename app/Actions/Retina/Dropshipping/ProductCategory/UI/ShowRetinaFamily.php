@@ -67,8 +67,7 @@ class ShowRetinaFamily extends RetinaAction
                             'type' => 'button',
                             'style' => 'create',
                             'label' => __('to Portfolio'),
-                        ] */
-                    ],
+                        ] */],
                     'exports' => [
                         [
                             'routes' => [
@@ -82,6 +81,19 @@ class ShowRetinaFamily extends RetinaAction
                                         'parameters' => [
                                             'productCategory' => $family->slug,
                                             'type'       => 'products_csv'
+                                        ]
+                                    ],
+                                ],
+                                [
+                                    'label' => 'images',
+                                    'key'   => 'images',
+                                    'icon' => ['fal', 'fa-images'],
+                                    'inside_popover' => true,
+                                    'route' => [
+                                        'name' => 'retina.catalogue.feeds.product_category.download',
+                                        'parameters' => [
+                                            'productCategory' => $family->slug,
+                                            'type'       => 'products_images'
                                         ]
                                     ],
                                 ],
