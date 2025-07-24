@@ -54,6 +54,7 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
                 'org_stocks.id as org_stock_id',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
+                'org_stocks.packed_in',
                 'delivery_notes.slug as delivery_note_slug',
                 'delivery_notes.id as delivery_note_id',
                 'delivery_notes.reference as delivery_note_reference',

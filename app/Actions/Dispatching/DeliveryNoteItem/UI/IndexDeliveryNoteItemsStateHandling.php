@@ -54,6 +54,7 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
                 'org_stocks.id as org_stock_id',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
+                'org_stocks.packed_in',
                 'warehouse_areas.picking_position as picking_position',
             ])
             ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required', 'quantity_picked', 'quantity_packed', 'state', 'picking_position'])
