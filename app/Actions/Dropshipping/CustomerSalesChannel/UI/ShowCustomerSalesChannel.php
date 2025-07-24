@@ -84,9 +84,9 @@ class ShowCustomerSalesChannel extends OrgAction
                     'navigation' => $navigation
                 ],
 
-                'can_connect_to_platform' => $customerSalesChannel->can_connect_to_platform,
-                'exist_in_platform' => $customerSalesChannel->exist_in_platform,
-                'platform_status' => $customerSalesChannel->platform_status,
+                'customer_sales_channel' => $customerSalesChannel,
+
+
 
                 'showcase' => [
                     'stats' => [
