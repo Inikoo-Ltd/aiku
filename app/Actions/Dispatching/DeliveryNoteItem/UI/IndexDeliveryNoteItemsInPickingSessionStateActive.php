@@ -85,9 +85,8 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
             $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'pickings', label: __('Pickings'), canBeHidden: false);
-           if ($parent->state != PickingSessionStateEnum::HANDLING) {
-                $table->column(key: 'handing_actions', label: __('To do actions'), canBeHidden: false);
-            }
+            $table->column(key: 'handing_actions', label: __('To do actions'), canBeHidden: false);
+            
         };
     }
 
