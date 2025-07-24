@@ -30,12 +30,12 @@ enum PickingSessionTabsEnum: string
                 'icon'  => 'fal fa-bars',
             ],
             PickingSessionTabsEnum::ITEMIZED => [
-                'title' => __('Itemized'),
-                'icon'  => 'fal fa-bars',
+                'title' => __('Pick by location'),
+                'icon'  => 'fal fa-inventory',
             ],
             PickingSessionTabsEnum::GROUPED => [
-                'title' => __('Grouped'),
-                'icon'  => 'fal fa-bars',
+                'title' => __('Group by delivery'),
+                'icon'  => 'fal fa-truck',
             ],
         };
     }
