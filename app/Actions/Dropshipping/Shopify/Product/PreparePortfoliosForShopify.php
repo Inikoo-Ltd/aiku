@@ -28,7 +28,7 @@ class PreparePortfoliosForShopify
         foreach ($customerSalesChannel->portfolios as $portfolio) {
 
 
-            $portfolio = UpdatePortfolioShopifyStatus::run($portfolio);
+            $portfolio = CheckShopifyPortfolio::run($portfolio);
 
             /** @var Product $product */
             $product = $portfolio->item;

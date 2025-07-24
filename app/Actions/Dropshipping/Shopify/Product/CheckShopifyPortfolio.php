@@ -12,7 +12,7 @@ use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class UpdatePortfolioShopifyStatus
+class CheckShopifyPortfolio
 {
     use AsAction;
 
