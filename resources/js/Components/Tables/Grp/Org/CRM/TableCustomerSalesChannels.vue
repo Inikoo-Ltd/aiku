@@ -15,49 +15,79 @@ import { notify } from "@kyvg/vue3-notification"
 
 defineProps<{
     data: TableTS,
+    tab?: string
 }>()
 
 const confirm = useConfirm()
 const deletingId = ref<number | null>(null)
 
 function platformRoute(customerSalesChannel: CustomerSalesChannel) {
-    return route(
-        "grp.org.shops.show.crm.customers.show.customer_sales_channels.show",
-        [
-            (route().params as RouteParams).organisation,
-            (route().params as RouteParams).shop,
-            (route().params as RouteParams).customer,
-            customerSalesChannel.slug])
+
+    switch (route().current()) {
+        case 'grp.org.shops.show.crm.platforms.show':
+            return ''
+        
+        default:
+            return route("grp.org.shops.show.crm.customers.show.customer_sales_channels.show",
+            [
+                (route().params as RouteParams).organisation,
+                (route().params as RouteParams).shop,
+                (route().params as RouteParams).customer,
+                customerSalesChannel.slug]
+            )
+    }
 }
 
 function portfoliosRoute(customerSalesChannel: CustomerSalesChannel) {
-    return route(
-        "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.portfolios.index",
-        [
-            (route().params as RouteParams).organisation,
-            (route().params as RouteParams).shop,
-            (route().params as RouteParams).customer,
-            customerSalesChannel.slug])
+    switch (route().current()) {
+        case 'grp.org.shops.show.crm.platforms.show':
+            return ''
+        
+        default:
+            return route(
+            "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.portfolios.index",
+            [
+                (route().params as RouteParams).organisation,
+                (route().params as RouteParams).shop,
+                (route().params as RouteParams).customer,
+                customerSalesChannel.slug])
+    }
+
+    
 }
 
 function clientsRoute(customerSalesChannel: CustomerSalesChannel) {
-    return route(
+    switch (route().current()) {
+        case 'grp.org.shops.show.crm.platforms.show':
+            return ''
+        
+        default:
+            return route(
         "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.index",
         [
             (route().params as RouteParams).organisation,
             (route().params as RouteParams).shop,
             (route().params as RouteParams).customer,
             customerSalesChannel.slug])
+    }
+    
 }
 
 function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
-    return route(
+    switch (route().current()) {
+        case 'grp.org.shops.show.crm.platforms.show':
+            return ''
+        
+        default:
+            return route(
         "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.index",
         [
             (route().params as RouteParams).organisation,
             (route().params as RouteParams).shop,
             (route().params as RouteParams).customer,
             customerSalesChannel.slug])
+    }
+    
 }
 
 
@@ -93,35 +123,35 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
     });
 }
 
-
-
 </script>
+
+
 <template>
-    <Table :resource="data">
+    <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(name)="{ item: customerSalesChannel }">
             <div class="flex items-center gap-2">
                 <img v-tooltip="customerSalesChannel.platform_name" :src="customerSalesChannel.platform_image"
                     :alt="customerSalesChannel.platform_name" class="w-6 h-6" />
-                <Link :href="platformRoute(customerSalesChannel) as string" class="primaryLink">
+                <Link :href="(platformRoute(customerSalesChannel) as string)" class="primaryLink">
                 {{ customerSalesChannel.name || customerSalesChannel.reference }}
                 </Link>
             </div>
         </template>
 
         <template #cell(number_portfolios)="{ item: customerSalesChannel }">
-            <Link :href="portfoliosRoute(customerSalesChannel) as string" class="secondaryLink">
+            <Link :href="(portfoliosRoute(customerSalesChannel) as string)" class="secondaryLink">
             {{ customerSalesChannel.number_portfolios }}
             </Link>
         </template>
 
         <template #cell(number_clients)="{ item: customerSalesChannel }">
-            <Link :href="clientsRoute(customerSalesChannel) as string" class="secondaryLink">
+            <Link :href="(clientsRoute(customerSalesChannel) as string)" class="secondaryLink">
             {{ customerSalesChannel.number_clients }}
             </Link>
         </template>
 
         <template #cell(number_orders)="{ item: customerSalesChannel }">
-            <Link :href="ordersRoute(customerSalesChannel) as string" class="secondaryLink">
+            <Link :href="(ordersRoute(customerSalesChannel) as string)" class="secondaryLink">
             {{ customerSalesChannel.number_orders }}
             </Link>
         </template>
