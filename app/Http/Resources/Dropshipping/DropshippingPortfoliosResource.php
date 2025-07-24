@@ -133,8 +133,14 @@ class DropshippingPortfoliosResource extends JsonResource
             }
         }
 
-
-
+        $possibleMatches = [];
+        foreach (Arr::get($this->platform_possible_matches, 'raw_data') as $possibleMatch) {
+            $possibleMatches[] = [
+                'id' => Arr::get($possibleMatch, 'id'),
+                'title' => Arr::get($possibleMatch, 'title'),
+                'images' => Arr::get($possibleMatch, '0.uri'),
+            ];
+        }
 
         return [
             'id'                        => $this->id,
@@ -161,14 +167,8 @@ class DropshippingPortfoliosResource extends JsonResource
             'has_valid_platform_product_id' => $this->has_valid_platform_product_id,
             'exist_in_platform' => $this->exist_in_platform,
             'platform_status' => $this->platform_status,
-            'platform_possible_matches' => $this->platform_possible_matches,
+            'platform_possible_matches' => $possibleMatches,
 
-            'is_code_exist_in_platform' => false,//Arr::get($this->platform_product_availabilities, 'number_matches') >= 1,
-            'is_at_location'            => Arr::get($this->platform_product_availabilities, 'at_location'),
-            'product_availability'      => [
-                'number_matches' => Arr::get($this->platform_product_availabilities, 'number_matches', 0),
-                'matches_labels' => Arr::get($this->platform_product_availabilities, 'matches_labels')
-            ],
             'category' => $category,
             'platform' => $this->platform->type,
             'delete_portfolio' => [

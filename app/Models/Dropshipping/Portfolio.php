@@ -102,7 +102,7 @@ class Portfolio extends Model implements Auditable
         'settings'                        => '{}',
         'errors_response'                 => '{}',
         'platform_product_availabilities' => '{}',
-        'platform_possible_matches'       => '{}}',
+        'platform_possible_matches'       => '{}',
     ];
 
     protected $guarded = [];

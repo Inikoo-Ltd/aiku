@@ -64,7 +64,6 @@ class PreparePortfoliosForShopify
                 $firstMatch       = Arr::first($matches);
                 $shopifyProductId = Arr::get($firstMatch, 'id');
 
-
                 $portfolio->update([
                     'platform_product_id' => $shopifyProductId,
                 ]);
