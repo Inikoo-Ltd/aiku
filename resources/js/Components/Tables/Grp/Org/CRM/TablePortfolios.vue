@@ -128,6 +128,9 @@ const dummyImage = [
                                 shopify_product_id: portfolio.platform_possible_matches.raw_data?.[0]?.id
                             }
                         }"
+                        :bindToLink="{
+                            preserveScroll: true,
+                        }"
                         icon=""
                         label="Matching"
                         size="xxs"
