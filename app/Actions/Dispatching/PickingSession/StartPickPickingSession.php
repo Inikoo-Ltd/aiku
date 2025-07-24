@@ -9,6 +9,7 @@
 
 namespace App\Actions\Dispatching\PickingSession;
 
+use App\Actions\Dispatching\DeliveryNote\StartHandlingDeliveryNote;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
@@ -19,17 +20,29 @@ class StartPickPickingSession extends OrgAction
 {
     use WithActionUpdate;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(PickingSession $pickingSession, array $modelData): PickingSession
     {
-        data_set($modelData, 'state', PickingSessionStateEnum::ACTIVE);
+        data_set($modelData, 'state', PickingSessionStateEnum::HANDLING);
         data_set($modelData, 'start_at', now());
+
+        $deliveryNotes = $pickingSession->deliveryNotes;
+
+        foreach ($deliveryNotes as $deliveryNote) {
+            StartHandlingDeliveryNote::make()->action($deliveryNote, $pickingSession->user);
+        }
 
         $pickingSession = $this->update($pickingSession, $modelData);
 
         return $pickingSession;
     }
 
-    public function asController(PickingSession $pickingSession, ActionRequest $request)
+    /**
+     * @throws \Throwable
+     */
+    public function asController(PickingSession $pickingSession, ActionRequest $request): PickingSession
     {
         $this->initialisationFromWarehouse($pickingSession->warehouse, $request);
 

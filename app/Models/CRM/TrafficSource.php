@@ -2,7 +2,7 @@
 
 namespace App\Models\CRM;
 
-use App\Models\Web\Website;
+use App\Models\Traits\InShop;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,10 +22,13 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $type
  * @property string $slug
  * @property string $name
- * @property array<array-key, mixed> $settings
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property bool $status
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\Customer> $customers
+ * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Organisation $organisation
+ * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read \App\Models\CRM\TrafficSourceStat|null $stats
  * @method static Builder<static>|TrafficSource newModelQuery()
  * @method static Builder<static>|TrafficSource newQuery()
@@ -34,17 +37,14 @@ use Spatie\Sluggable\SlugOptions;
  */
 class TrafficSource extends Model
 {
+    use InShop;
     use HasSlug;
     use HasFactory;
 
     protected $guarded = [];
 
     protected $casts = [
-        'settings' => 'array',
-    ];
-
-    protected $attributes = [
-        'settings' => '{}',
+        'status' => 'boolean',
     ];
 
     public function getSlugOptions(): SlugOptions
@@ -70,26 +70,4 @@ class TrafficSource extends Model
         return $this->hasMany(Customer::class, 'traffic_source_id');
     }
 
-    public static function detectFromWebsite(Website $website, string $url): ?self
-    {
-        $url = strtolower($url);
-
-        // Get all traffic sources and check their patterns
-        $trafficSources = self::where('group_id', $website->group_id)
-            ->where('shop_id', $website->shop_id)
-            ->where('organisation_id', $website->organisation_id)
-            ->get();
-
-        foreach ($trafficSources as $trafficSource) {
-            $patterns = $trafficSource->settings['url_patterns'] ?? [];
-
-            foreach ($patterns as $pattern) {
-                if (str_contains($url, strtolower($pattern))) {
-                    return $trafficSource;
-                }
-            }
-        }
-
-        return null;
-    }
 }

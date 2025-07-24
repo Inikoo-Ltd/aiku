@@ -13,6 +13,8 @@ use App\Actions\Accounting\PaymentAccountShop\StorePaymentAccountShop;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopOfferCampaigns;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopOutboxes;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions;
+use App\Actions\Catalogue\Shop\Seeders\SeedShopTrafficSources;
+use App\Actions\CRM\TrafficSource\SeedTrafficSources;
 use App\Actions\Fulfilment\Fulfilment\StoreFulfilment;
 use App\Actions\Helpers\Colour\GetRandomColour;
 use App\Actions\Helpers\Currency\SetCurrencyHistoricFields;
@@ -155,7 +157,7 @@ class StoreShop extends OrgAction
                 [
                     'model'           => SerialReferenceModelEnum::TOP_UP,
                     'organisation_id' => $organisation->id,
-                    'format'          => $shop->slug.'-%04d'
+                    'format'          => $shop->slug . '-%04d'
                 ]
             );
 
@@ -163,7 +165,7 @@ class StoreShop extends OrgAction
                 [
                     'model'           => SerialReferenceModelEnum::PURGE,
                     'organisation_id' => $organisation->id,
-                    'format'          => 'purge-'.$shop->slug.'-%04d'
+                    'format'          => 'purge-' . $shop->slug . '-%04d'
                 ]
             );
 
@@ -171,7 +173,7 @@ class StoreShop extends OrgAction
                 [
                     'model'           => SerialReferenceModelEnum::INVOICE,
                     'organisation_id' => $organisation->id,
-                    'format'          => 'inv-'.$shop->slug.'-%04d'
+                    'format'          => 'inv-' . $shop->slug . '-%04d'
                 ]
             );
 
@@ -206,13 +208,13 @@ class StoreShop extends OrgAction
             $paymentAccount       = StorePaymentAccount::make()->action(
                 $organisation->getAccountsServiceProvider(),
                 [
-                    'code'        => 'accounts-'.$shop->slug,
-                    'name'        => 'Accounts '.$shop->code,
+                    'code'        => 'accounts-' . $shop->slug,
+                    'name'        => 'Accounts ' . $shop->code,
                     'type'        => PaymentAccountTypeEnum::ACCOUNT->value,
                     'is_accounts' => true
                 ]
             );
-            $paymentAccount->slug = 'accounts-'.$shop->slug;
+            $paymentAccount->slug = 'accounts-' . $shop->slug;
             $paymentAccount->save();
 
             StorePaymentAccountShop::make()->action(
@@ -223,6 +225,9 @@ class StoreShop extends OrgAction
                     'state'       => PaymentAccountShopStateEnum::ACTIVE
                 ]
             );
+
+            SeedTrafficSources::run($shop);
+
             $shop->refresh();
 
             return $shop;
@@ -235,6 +240,7 @@ class StoreShop extends OrgAction
         SeedShopOutboxes::run($shop);
         SeedJobPositions::run($organisation);
         SetIconAsShopLogo::dispatch($shop)->delay($this->hydratorsDelay);
+        SeedShopTrafficSources::run($shop);
 
         SeedShopOfferCampaigns::run($shop);
 
@@ -394,5 +400,4 @@ class StoreShop extends OrgAction
     {
         return Redirect::route('grp.org.shops.show.catalogue.dashboard', [$this->organisation->slug, $shop->slug]);
     }
-
 }

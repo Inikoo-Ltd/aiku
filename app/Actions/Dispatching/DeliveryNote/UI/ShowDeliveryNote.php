@@ -474,6 +474,29 @@ class ShowDeliveryNote extends OrgAction
     {
         $actions = $this->getActions($deliveryNote, $request);
 
+        $warning = null;
+
+        if ($deliveryNote->pickingSessions && $deliveryNote->pickingSessions->isNotEmpty()) {
+            $pickingSessions = $deliveryNote->pickingSessions->map(function ($pickingSession) {
+                return [
+                    'reference' => $pickingSession->reference,
+                    'route' => [
+                        'name' => 'grp.org.warehouses.show.dispatching.picking_sessions.show',
+                        'parameters' => [
+                            'organisation' => $pickingSession->organisation->slug,
+                            'warehouse' => $pickingSession->warehouse->slug,
+                            'pickingSession' => $pickingSession->slug,
+                        ],
+                    ],
+                ];
+            })->toArray();
+
+            $warning = [
+                'text' => __('This DeliveryNote is being picked in Picking Sessions'),
+                'picking_sessions' => $pickingSessions,
+            ];
+        }
+
         $props = [
             'title'         => __('delivery note'),
             'breadcrumbs'   => $this->getBreadcrumbs(
@@ -498,6 +521,7 @@ class ShowDeliveryNote extends OrgAction
                 'actions'    => $actions,
                 $this->getInvoiceButton($deliveryNote)
             ],
+            'warning'       => $warning,
             'tabs'          => [
                 'current'    => $this->tab,
                 'navigation' => DeliveryNoteTabsEnum::navigation($deliveryNote)

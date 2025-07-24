@@ -16,7 +16,6 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Poll;
-use App\Models\CRM\PollReply;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 
@@ -34,10 +33,10 @@ class StoreMultiPollReply extends OrgAction
         foreach ($pollReplies as $pollReply) {
 
             $pollId = Arr::pull($pollReply, 'id');
-            if(Arr::pull($pollReply, 'type')=='Open Question'){
-                $type=PollTypeEnum::OPEN_QUESTION;
-            }else{
-                $type=PollTypeEnum::OPTION;
+            if (Arr::pull($pollReply, 'type') == 'Open Question') {
+                $type = PollTypeEnum::OPEN_QUESTION;
+            } else {
+                $type = PollTypeEnum::OPTION;
             }
 
 
@@ -49,23 +48,23 @@ class StoreMultiPollReply extends OrgAction
                 'poll_id'     => $pollId,
             ];
 
-            $ok=false;
+            $ok = false;
             if ($type == PollTypeEnum::OPEN_QUESTION) {
-                $answer=(string)$answer ?? '';
-                if($answer!=''){
-                    $ok=true;
+                $answer = (string)$answer ?? '';
+                if ($answer != '') {
+                    $ok = true;
                 }
                 $replyData['value']          = $answer;
                 $replyData['poll_option_id'] = null;
             } else {
-                $answer=(int)$answer;
+                $answer = (int)$answer;
                 $replyData['value']          = null;
                 $replyData['poll_option_id'] = $answer;
-                if($answer){
-                    $ok=true;
+                if ($answer) {
+                    $ok = true;
                 }
             }
-            if($ok) {
+            if ($ok) {
                 $poll = Poll::find($pollId);
                 if ($poll) {
                     StorePollReply::make()->action($poll, $replyData);

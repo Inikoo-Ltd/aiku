@@ -46,6 +46,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $end_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property string|null $quantity_picked
+ * @property string|null $quantity_packed
+ * @property string $picking_percentage
+ * @property string $packing_percentage
  * @property-read \Illuminate\Database\Eloquent\Collection<int, DeliveryNote> $deliveryNotes
  * @property-read Group $group
  * @property-read Organisation $organisation

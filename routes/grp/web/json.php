@@ -37,6 +37,8 @@ use App\Actions\Comms\EmailTemplate\GetSeededEmailTemplates;
 use App\Actions\Comms\Mailshot\GetMailshotMergeTags;
 use App\Actions\Comms\OutboxHasSubscribers\Json\GetOutboxUsers;
 use App\Actions\CRM\Customer\UI\GetProductsForPortfolioSelect;
+use App\Actions\Dispatching\DeliveryNote\Json\GetMiniDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\Json\GetMiniDeliveryNoteShipments;
 use App\Actions\Dispatching\Picking\Packer\Json\GetPackers;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickers;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickerUsers;
@@ -155,3 +157,6 @@ Route::get('printing/computers', GetComputers::class)->name('computers.index');
 Route::get('printing/printers', GetPrinters::class)->name('printers.index');
 
 Route::get('products-for-portfolio-select/{customerSalesChannel:id}', GetProductsForPortfolioSelect::class)->name('products_for_portfolio_select');
+
+Route::get('mini-delivery-note/{deliveryNote:id}', GetMiniDeliveryNote::class)->name('mini_delivery_note');
+Route::get('mini-delivery-note-shipments/{deliveryNote:id}', GetMiniDeliveryNoteShipments::class)->name('mini_delivery_note_shipments');

@@ -44,7 +44,7 @@ class IndexTrafficSources extends OrgAction
             $queryBuilder->where('traffic_sources.organisation_id', $parent->id);
             $queryBuilder->leftJoin('organisations', 'organisations.id', '=', 'traffic_sources.organisation_id');
             $queryBuilder->leftJoin('currencies', 'currencies.id', '=', 'organisations.currency_id');
-        } else{
+        } else {
             $queryBuilder->where('traffic_sources.shop_id', $parent->id);
             $queryBuilder->leftJoin('shops', 'shops.id', '=', 'traffic_sources.shop_id');
             $queryBuilder->leftJoin('currencies', 'currencies.id', '=', 'shops.currency_id');
@@ -107,9 +107,11 @@ class IndexTrafficSources extends OrgAction
 
             $table
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_customers', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_customer_purchases', label: __('Purchases'), canBeHidden: false, sortable: true)
-                ->column(key: 'total_customer_revenue', label: __('Total Revenue'), canBeHidden: false, sortable: true, type: 'currency');
+                ->column(key: 'number_customers', label: __('Registrations'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_customer_purchases', label: __('Orders'), canBeHidden: false, sortable: true)
+                ->column(key: 'cost', label: __('Cost'), canBeHidden: false, sortable: false)
+
+                ->column(key: 'total_customer_revenue', label: __('Revenue'), canBeHidden: false, sortable: true, type: 'currency');
         };
     }
 
@@ -192,6 +194,7 @@ class IndexTrafficSources extends OrgAction
         };
 
         return match ($routeName) {
+            'grp.org.shops.show.crm.traffic_sources.show',
             'grp.org.shops.show.crm.traffic_sources.index' =>
             array_merge(
                 ShowShop::make()->getBreadcrumbs(
