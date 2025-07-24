@@ -176,9 +176,11 @@ const isPacking = (id: number) => packedLoading.value.has(id)
 
 
 const DeliveryNoteInModal = ref(null)
+
 const onCloseModalDetail = () => {
     modalDetail.value = false
     DeliveryNoteInModal.value = null
+    router.reload()
 }
 
 const onOpenModalDetail = (deliveryNote) => {
@@ -694,7 +696,7 @@ console.log('props', props.pickingSession)
 
     <Modal :isOpen="modalDetail" @onClose="() => onCloseModalDetail()" width="w-1/2">
         <MiniDeliveryNote :deliveryNote="DeliveryNoteInModal"
-            @SuccsesUpdateState="() => { router.reload(), onCloseModalDetail() }" />
+            @SuccsesUpdateState="() => { onCloseModalDetail() }" />
     </Modal>
 
 

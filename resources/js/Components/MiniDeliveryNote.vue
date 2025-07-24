@@ -6,7 +6,6 @@
 -->
 
 <script setup lang="ts">
-import type { Table as TableTS } from "@/types/Table";
 import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl } from "@fal";
 import { faSkull } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -14,38 +13,42 @@ import { onMounted } from "vue";
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
 import ShipmentSection from "@/Components/Warehouse/DeliveryNotes/ShipmentSection.vue"
 import { trans } from "laravel-vue-i18n"
-import { Address } from "@/types/PureComponent/Address"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faBarcodeRead, faPrint } from "@fal"
 import { faCubes } from "@fas"
-import { Link, router } from "@inertiajs/vue3"
+import { router } from "@inertiajs/vue3"
 import { inject, ref, toRaw } from "vue"
-import { routeType } from "@/types/route"
 import { set } from 'lodash-es'
 import { notify } from "@kyvg/vue3-notification"
-import { useTruncate } from "@/Composables/useTruncate"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import Skeleton from 'primevue/skeleton';
 import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { Fieldset, InputNumber } from "primevue"
 import Icon from "@/Components/Icon.vue"
 import axios from "axios"
 import PageHeading from "./Headings/PageHeading.vue";
-import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
-library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes, faPrint, faBarcodeRead, faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl);
 
+library.add(
+    faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes,
+    faPrint, faBarcodeRead, faSkull, faArrowDown, faDebug, faClipboardListCheck,
+    faUndoAlt, faHandHoldingBox, faListOl
+);
 
 const props = defineProps<{
     deliveryNote: Number
-}>();
-
-console.log(props)
+}>()
 
 const emits = defineEmits<{
     (e: 'SuccsesUpdateState'): void
 }>()
+
+const data = ref(null)
+const shipments = ref(null)
+const isLoading = ref(true)
+const locale = inject('locale', aikuLocaleStructure)
 
 const pageHead = {
     title: props.deliveryNote.delivery_note_reference,
@@ -55,13 +58,6 @@ const pageHead = {
         title: "delivery note"
     },
 }
-const data = ref(null)
-const shipments = ref(null)
-const isLoading = ref(true)
-/* console.log(props.data.delivery_note) */
-
-const locale = inject('locale', aikuLocaleStructure)
-
 
 // Section: Parcels
 const isLoadingSubmitParcels = ref(false)
@@ -72,35 +68,30 @@ const onDeleteParcel = (index: number) => {
 }
 
 const onSubmitParcels = () => {
-    router.patch(route('grp.models.delivery_note.update', { deliveryNote: props.deliveryNote.delivery_note_id }),
-        {
-            parcels: parcelsCopy.value,
+    router.patch(route('grp.models.delivery_note.update', {
+        deliveryNote: props.deliveryNote.delivery_note_id
+    }), {
+        parcels: parcelsCopy.value,
+    }, {
+        preserveScroll: true,
+        onStart: () => isLoadingSubmitParcels.value = true,
+        onSuccess: () => {
+            isModalParcels.value = false
+            data.value.delivery_note.parcels = parcelsCopy.value
+            set(listError, 'box_stats_parcel', false)
         },
-        {
-            preserveScroll: true,
-            onStart: () => {
-                isLoadingSubmitParcels.value = true
-            },
-            onSuccess: () => {
-                isModalParcels.value = false
-                data.value.delivery_note.parcels = parcelsCopy.value
-                set(listError, 'box_stats_parcel', false)
-            },
-            onError: (errors) => {
-                notify({
-                    title: trans("Something went wrong."),
-                    text: trans("Failed to add Shipment. Please try again or contact administrator."),
-                    type: "error",
-                })
-            },
-            onFinish: () => {
-                isLoadingSubmitParcels.value = false
-            },
-        })
+        onError: () => {
+            notify({
+                title: trans("Something went wrong."),
+                text: trans("Failed to add Shipment. Please try again or contact administrator."),
+                type: "error",
+            })
+        },
+        onFinish: () => isLoadingSubmitParcels.value = false
+    })
 }
 
 const listError = inject('listError', {})
-
 
 const getDataDeliveryNote = async () => {
     if (props.deliveryNote?.delivery_note_id) {
@@ -111,10 +102,8 @@ const getDataDeliveryNote = async () => {
             }), {
                 headers: { Accept: 'application/json' },
             })
-
             data.value = response.data
             parcelsCopy.value = response.data.delivery_note.parcels || []
-            console.log('✅ Success:', response.data)
         } catch (error) {
             console.error('❌ Error:', error)
         } finally {
@@ -122,7 +111,6 @@ const getDataDeliveryNote = async () => {
         }
     }
 }
-
 
 const getDataShipment = async () => {
     if (props.deliveryNote?.delivery_note_id) {
@@ -133,9 +121,7 @@ const getDataShipment = async () => {
             }), {
                 headers: { Accept: 'application/json' },
             })
-
             shipments.value = response.data
-            console.log('✅ Success:', response.data)
         } catch (error) {
             console.error('❌ Error:', error)
         } finally {
@@ -144,62 +130,105 @@ const getDataShipment = async () => {
     }
 }
 
+const onSuccessPacked = () => {
+    props.deliveryNote.delivery_note_state = 'packed'
+    getDataDeliveryNote()
+    getDataShipment()
+}
+
+// 🔁 Finalise + Packed Button Logic (router)
 const loadingFinal = ref(false)
+
+const handleFinaliseAndDispatch = () => {
+    if (!props.deliveryNote?.delivery_note_id) return
+
+    loadingFinal.value = true
+    router.patch(
+        route('grp.models.delivery_note.state.finalise_and_dispatch', {
+            deliveryNote: props.deliveryNote.delivery_note_id,
+        }),
+        {},
+        {
+            onFinish: () => loadingFinal.value = false,
+            onSuccess: () => emits('SuccsesUpdateState'),
+        }
+    )
+}
+
+
+const handleSetAsPacked = async () => {
+    if (!props.deliveryNote?.delivery_note_id) return
+
+    loadingFinal.value = true
+    try {
+        await axios.patch(
+            route('grp.models.delivery_note.state.packed', {
+                deliveryNote: props.deliveryNote.delivery_note_id,
+            }),
+            {},
+            {
+                headers: {
+                    Accept: 'application/json',
+                },
+            }
+        )
+
+        onSuccessPacked()
+    } catch (error) {
+        console.error('❌ Failed to set as packed:', error)
+        notify({
+            type: "error",
+            title: trans("Failed"),
+            text: trans("Unable to set delivery note as packed."),
+        })
+    } finally {
+        loadingFinal.value = false
+    }
+}
+
+
 onMounted(() => {
     getDataDeliveryNote()
     getDataShipment()
 })
-
 </script>
+
 <template>
+    <div class="max-h-[500px] overflow-auto">
+
     <PageHeading v-if="props.deliveryNote" :data="pageHead" isButtonGroupWithBorder :key="props.deliveryNote?.state">
         <template #other>
-            <Link v-if="props.deliveryNote?.delivery_note_id && props.deliveryNote.delivery_note_state == 'packed'"
-                :href="route('grp.models.delivery_note.state.finalise_and_dispatch', { deliveryNote: props.deliveryNote.delivery_note_id })"
-                method="patch" @start="loadingFinal = true" @finish="loadingFinal = false"
-                @success="() => emits('SuccsesUpdateState')">
-            <Button type="save" label="Finalise and Dispatch" :loading="loadingFinal" />
-            </Link>
+            <Button v-if="props.deliveryNote?.delivery_note_id && props.deliveryNote.delivery_note_state === 'packed'"
+                type="save" label="Finalise and Dispatch" :loading="loadingFinal" @click="handleFinaliseAndDispatch" />
 
-            <Link v-if="props.deliveryNote?.delivery_note_id && props.deliveryNote.delivery_note_state == 'handling'"
-                method="patch" @start="loadingFinal = true"
-                :href="route('grp.models.delivery_note.state.packed', { deliveryNote: props.deliveryNote.delivery_note_id })"
-                @finish="loadingFinal = false" class="mx-3">
-            <Button
-                type="save" label="Set as packed" size="sm"  />
-            </Link>
+            <Button v-if="props.deliveryNote?.delivery_note_id && props.deliveryNote.delivery_note_state === 'handling'"
+                type="save" label="Set as packed" size="sm" class="mx-3" :loading="loadingFinal"
+                @click="handleSetAsPacked" />
         </template>
     </PageHeading>
 
-    <div v-if="isLoading" class="flex justify-center py-10">
-        <LoadingIcon class="w-6 h-6 text-gray-500 animate-spin" />
+    <div v-if="isLoading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 py-4">
+        <div v-for="n in 2" :key="n" class="p-4 border border-gray-200 rounded-lg shadow-sm space-y-4">
+            <Skeleton height="1.25rem" width="60%" class="rounded" />
+            <Skeleton height="1.25rem" width="80%" class="rounded" />
+            <Skeleton height="1.25rem" width="80%" class="rounded" />
+            <Skeleton height="1.25rem" width="80%" class="rounded" />
+        </div>
     </div>
 
-    <div v-if="data" class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-gray-200 pt-4">
+    <div v-if="!isLoading && data" class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-gray-200 pt-4">
         <!-- Box 1: Shipping -->
         <BoxStatPallet class="p-4 space-y-2 border rounded-lg shadow-sm bg-white">
-            <h3 class="text-base font-semibold text-gray-800 mb-2">
-                {{ trans("Shipping") }}
-            </h3>
+            <h3 class="text-base font-semibold text-gray-800 mb-2">{{ trans("Shipping") }}</h3>
 
             <div v-if="data.delivery_note?.delivery_address">
                 <div class="border border-gray-300 p-4 rounded-lg bg-gray-50 space-y-2 text-sm text-gray-700">
                     <div v-if="data.delivery_note.customer_client">
-                        <p>
-                            <strong>{{ trans("Name") }}:</strong>
-                            {{ data.delivery_note.customer_client.contact_name ||
-                            data.delivery_note.customer_client.name }}
-                        </p>
-                        <p v-if="data.delivery_note.customer_client.email">
-                            <strong>{{ trans("Email") }}:</strong> {{ data.delivery_note.customer_client.email }}
-                        </p>
-                        <p v-if="data.delivery_note.customer_client.phone">
-                            <strong>{{ trans("Phone") }}:</strong> {{ data.delivery_note.customer_client.phone }}
-                        </p>
+                        <p><strong>{{ trans("Name") }}:</strong> {{ data.delivery_note.customer_client.contact_name || data.delivery_note.customer_client.name }}</p>
+                        <p v-if="data.delivery_note.customer_client.email"><strong>{{ trans("Email") }}:</strong> {{ data.delivery_note.customer_client.email }}</p>
+                        <p v-if="data.delivery_note.customer_client.phone"><strong>{{ trans("Phone") }}:</strong> {{ data.delivery_note.customer_client.phone }}</p>
                     </div>
-
-                    <div v-html="data.delivery_note.delivery_address.formatted_address" class="text-gray-600 text-sm">
-                    </div>
+                    <div v-html="data.delivery_note.delivery_address.formatted_address" class="text-gray-600 text-sm"></div>
                 </div>
             </div>
 
@@ -210,9 +239,7 @@ onMounted(() => {
 
         <!-- Box 2: Delivery Note -->
         <BoxStatPallet class="p-4 space-y-2 border rounded-lg shadow-sm bg-white">
-            <h3 class="text-base font-semibold text-gray-800 mb-2">
-                {{ trans("Delivery Note") }}
-            </h3>
+            <h3 class="text-base font-semibold text-gray-800 mb-2">{{ trans("Delivery Note") }}</h3>
 
             <div class="space-y-1 text-sm text-gray-700">
                 <div v-if="data.delivery_note?.picker?.contact_name">
@@ -223,23 +250,17 @@ onMounted(() => {
                 </div>
 
                 <dl class="flex items-center gap-2">
-                    <dt>
-                        <Icon :data="data.delivery_note?.state_icon" />
-                    </dt>
+                    <dt><Icon :data="data.delivery_note?.state_icon" /></dt>
                     <dd class="text-gray-600">{{ data.delivery_note.state_label }}</dd>
                 </dl>
 
                 <dl class="flex items-center gap-2">
-                    <dt>
-                        <FontAwesomeIcon icon="fal fa-cube" class="text-gray-500" />
-                    </dt>
+                    <dt><FontAwesomeIcon icon="fal fa-cube" class="text-gray-500" /></dt>
                     <dd>{{ locale.number(data.delivery_note.products?.number_items || 0) }} items</dd>
                 </dl>
 
                 <dl class="flex items-center gap-2">
-                    <dt>
-                        <FontAwesomeIcon icon="fal fa-weight" class="text-gray-500" />
-                    </dt>
+                    <dt><FontAwesomeIcon icon="fal fa-weight" class="text-gray-500" /></dt>
                     <dd>{{ locale.number(data.delivery_note?.products.estimated_weight) || '-' }} kg</dd>
                 </dl>
 
@@ -264,17 +285,25 @@ onMounted(() => {
 
                 <div
                     v-if="['packed', 'dispatched', 'finalised'].includes(data.delivery_note?.state) && props.deliveryNote">
-                    <ShipmentSection :shipments="shipments?.shipment.shipments"
-                        :shipments_routes="shipments.shipment.shipments_routes" :address="data.delivery_note.address"
-                        @addSuccsess="getDataShipment()" @editAddressSuccsess="getDataDeliveryNote()"
-                        @deleteSuccsess="getDataShipment()" :updateAddressRoute="{
-                                    name: 'grp.models.delivery_note.update_address',
-                                    parameters: { deliveryNote: props.deliveryNote.delivery_note_id }
-                                }" />
+                    <ShipmentSection
+                        :shipments="shipments?.shipment.shipments"
+                        :shipments_routes="shipments.shipment.shipments_routes"
+                        :address="data.delivery_note.address"
+                        @addSuccsess="getDataShipment()"
+                        @editAddressSuccsess="getDataDeliveryNote()"
+                        @deleteSuccsess="getDataShipment()"
+                        :updateAddressRoute="{
+                            name: 'grp.models.delivery_note.update_address',
+                            parameters: { deliveryNote: props.deliveryNote.delivery_note_id }
+                        }"
+                    />
                 </div>
             </div>
         </BoxStatPallet>
     </div>
+
+</div>
+
 
     <Modal :isOpen="isModalParcels" @onClose="isModalParcels = false" width="w-full max-w-lg">
         <div class="text-center font-bold mb-4">
@@ -349,4 +378,5 @@ onMounted(() => {
             </div>
         </div>
     </Modal>
+    
 </template>
