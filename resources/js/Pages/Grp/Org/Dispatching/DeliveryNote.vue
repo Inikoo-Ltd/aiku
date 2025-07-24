@@ -330,34 +330,31 @@ console.log(props)
         <AlertMessage :alert />
     </div>
 
-    <div v-if="warning" class="p-4">
-        <Message severity="warn" class="p-4 rounded-md border-l-4 border-yellow-500 bg-yellow-50 text-yellow-800">
-            <div class="flex items-start gap-3">
-                <!-- Icon -->
-                <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500 mt-1 w-5 h-5 flex-shrink-0" />
+   <div v-if="warning" class="p-1">
+  <Message severity="warn" class="p-1 rounded-md border-l-4 border-yellow-500 bg-yellow-50 text-yellow-800">
+    <div class="flex items-start gap-3">
+      <!-- Icon -->
+      <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500  w-4 h-4 flex-shrink-0" />
 
-                <!-- Main Content -->
-                <div class="flex flex-col gap-2">
-                    <!-- Warning Text -->
-                    <div class="text-sm font-medium">
-                        {{ warning?.text }}
-                    </div>
+      <!-- Main Content -->
+      <div class="flex gap-2">
+        <!-- Warning Text -->
+        <div class="text-sm font-medium">
+          {{ warning?.text }}
+        </div>
 
-                    <!-- Session Links -->
-                    <div class="flex flex-col gap-1">
-                        <template v-for="(item, idx) in warning?.picking_sessions" :key="idx">
-                            <Link :href="route(item.route.name, item.route.parameters)"
-                                class="text-sm  hover:underline">
-                            {{ item.reference }}
-                            </Link>
-                        </template>
-                    </div>
-                </div>
-            </div>
-        </Message>
-
+        <!-- Session Links in One Line -->
+        <div class="flex flex-wrap items-center gap-2 font-bold underline">
+          <template v-for="(item, idx) in warning?.picking_sessions" :key="idx">
+            <Link :href="route(item.route.name, item.route.parameters)" class="text-sm hover:underline">
+              {{ item.reference }}
+            </Link>
+          </template>
+        </div>
+      </div>
     </div>
-
+  </Message>
+</div>
 
     <!-- Section: Box Note -->
     <div v-if="pickingView" class="relative">
