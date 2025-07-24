@@ -36,27 +36,16 @@ class TrafficSourceHydrateCustomers implements ShouldBeUnique
 
         $customerIds = $customers->pluck('id')->unique();
 
-        $stats['number_customer_purchases'] = DB::table('orders')
+        $stats['number_customer_purchases'] =  DB::table('customer_stats')
             ->whereIn('customer_id', $customerIds)
-            ->where('state', '!=', 'creating')
-            ->select(DB::raw('COUNT(DISTINCT id) as count'))
-            ->first()->count ?? 0;
+            ->select(DB::raw('SUM(number_orders_state_dispatched) as total'))
+            ->first()->total ?? 0;
 
-        $stats['total_customer_revenue'] = DB::table('orders')
+        $stats['total_customer_revenue'] = DB::table('customer_stats')
             ->whereIn('customer_id', $customerIds)
-            ->where('state', '!=', 'creating')
-            ->select(DB::raw('SUM(total_amount) as total'))
+            ->select(DB::raw('SUM(sales_all) as total'))
             ->first()->total ?? 0;
 
         $trafficSource->stats()->update($stats);
-    }
-
-    public string $commandSignature = 'xxx22222';
-
-    public function asCommand()
-    {
-        $product = TrafficSource::find(1592);
-
-        $this->handle($product);
     }
 }

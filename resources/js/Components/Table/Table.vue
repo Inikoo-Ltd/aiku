@@ -186,6 +186,7 @@ const emits = defineEmits<{
     (e: 'onCheked', value: {[key: string]: boolean}, checked : {[key: string]: boolean}): void
     (e: 'onChecked', value: {}): void
     (e: 'onUnchecked', value: {}): void
+    (e: 'onCheckedAll', value: {}): void
 }>()
 
 // const app = getCurrentInstance();
@@ -682,15 +683,10 @@ const onClickSelectAll = (state: boolean) => {
         selectRow[props.resource.data[row][props.checkboxKey]] = !state
         setLodash(props.resource.data, [row, 'is_checked'], false)
     }
+
+     emits('onCheckedAll', {data : props.resource.data, allChecked : compIsAllChecked.value})
 }
 
-const onSelectCheckbox = async (item : Any) => {
-    emits('onCheked', item , !selectRow[item[props.checkboxKey]])
-    // selectRow[item[props.checkboxKey]] = !selectRow[item[props.checkboxKey]]
-    item.is_checked = !item.is_checked
-    emits('onChecked', item)
-
-}
 
 // Check props.isCheckbox to improve performance
 const compIsAllChecked = props.isCheckBox ? computed(() => {

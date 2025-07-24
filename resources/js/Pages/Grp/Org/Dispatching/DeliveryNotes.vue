@@ -30,6 +30,7 @@ const props = defineProps<{
 
 const selectedDeliveryNotes = ref<number[]>([])
 const layoutStore = inject("layout", layoutStructure);
+const loading=ref(false)
 
 console.log("layoutStore", layoutStore)
 </script>
@@ -38,8 +39,8 @@ console.log("layoutStore", layoutStore)
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead">
     <template #other>
-      <Link v-if="selectedDeliveryNotes.length > 0" :href="route(picking_session_route.name,picking_session_route.parameters)" method="post" as="button" :data="{ delivery_notes : selectedDeliveryNotes}">
-        <Button type="create" label="picking session" />
+      <Link v-if="selectedDeliveryNotes.length > 0" @start="loading= true" @finish="loading = false" :href="route(picking_session_route.name,picking_session_route.parameters)" method="post" as="button" :data="{ delivery_notes : selectedDeliveryNotes}">
+        <Button type="create" label="picking session"  :loading="loading"/>
       </Link>
     </template>
   </PageHeading>

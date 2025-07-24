@@ -27,6 +27,7 @@ class TrafficSourcesResource extends JsonResource
             'id'                => $trafficSource->id,
             'slug'              => $trafficSource->slug,
             'name'              => $trafficSource->name,
+            'currency_code' => $trafficSource->currency_code,
             'number_customers'  => $trafficSource->number_customers ?? 0,
             'number_customer_purchases' => $trafficSource->number_customer_purchases ?? 0,
             'total_customer_revenue' => $trafficSource->total_customer_revenue ?? 0,

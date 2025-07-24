@@ -46,21 +46,18 @@ class ShippingDeliveryNoteResource extends JsonResource
         }
 
 
-        $toCompanyName = 'Unknown'; // TODO: fill this to corresponding customer company name
+        $toCompanyName = 'Unknown'; // TODO: fill this when not from delivery note
         $toContactName = '';
         if ($deliveryNote instanceof DeliveryNote) {
-            $contactName = $deliveryNote->deliveryAddress->contact_name; //todo if if Dropshippin or not
-            if (!$contactName) {
-                $contactName = $customer->contact_name;
-            }
-            $toFirstName = explode(' ', $contactName)[0];
+            $contactName = $recipient->contact_name ?? '';
+            $toFirstName = explode(' ', $contactName)[0] ?? '';
             $toLastName  = (strpos($contactName, ' ') !== false)
                 ? substr($contactName, strpos($contactName, ' ') + 1)
                 : 'Unknown';
             $toContactName = $contactName;
-            $toPhone = ''; // todo
-            $toEmail = ''; // todo
-
+            $toPhone = $recipient->phone;
+            $toEmail = $recipient->email;
+            $toCompanyName = $recipient->company_name ?? '';
         } else {
             $isManual = $deliveryNote->platform?->type == PlatformTypeEnum::MANUAL;
             if ($isManual) {

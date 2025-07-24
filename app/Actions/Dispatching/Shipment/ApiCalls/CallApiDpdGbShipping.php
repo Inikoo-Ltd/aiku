@@ -11,8 +11,11 @@
 namespace App\Actions\Dispatching\Shipment\ApiCalls;
 
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
 use App\Http\Resources\Dispatching\ShippingDeliveryNoteResource;
+use App\Http\Resources\Dispatching\ShippingDropshippingDeliveryNoteResource;
+use App\Http\Resources\Dispatching\ShippingPalletReturnResource;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
 use App\Models\Fulfilment\PalletReturn;
@@ -141,7 +144,15 @@ class CallApiDpdGbShipping extends OrgAction
     public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper): array
     {
         $url = 'shipping/shipment';
-        $parentResource = ShippingDeliveryNoteResource::make($parent)->getArray();
+
+        if ($parent instanceof PalletReturn) {
+            $parentResource = ShippingPalletReturnResource::make($parent)->getArray();
+        } elseif ($parent->shop->type == ShopTypeEnum::DROPSHIPPING) {
+            $parentResource = ShippingDropshippingDeliveryNoteResource::make($parent)->getArray();
+        } else {
+            $parentResource = ShippingDeliveryNoteResource::make($parent)->getArray();
+        }
+
         $parcels = $parent->parcels;
 
         data_set($parentResource, 'reference', $parent->reference);
@@ -165,21 +176,24 @@ class CallApiDpdGbShipping extends OrgAction
             $trackingNumber = Arr::get($apiResponse, 'data.consignmentDetail.0.consignmentNumber');
             $shipmentId = Arr::get($apiResponse, 'data.shipmentId');
 
+            $htmlBase64 = $this->getLabel($shipmentId, $shipper, 'text/html');
+            $modelData['tracking'] = $trackingNumber;
+            $modelData['label'] = $htmlBase64;
+            $modelData['label_type'] = ShipmentLabelTypeEnum::HTML;
+            $modelData['number_parcels'] = count($parcels);
             try {
-                $html = $this->getLabel($shipmentId, $shipper, 'text/html');
-                $modelData['tracking'] = $trackingNumber;
-                $htmlContent = base64_decode($html);
+                $htmlContent = base64_decode($htmlBase64);
                 $pdfContent = Browsershot::html($htmlContent)
                     ->setOption('no-stop-slow-scripts', true)
                     ->setOption('timeout', 5000)
                     ->margins(10, 10, 10, 10)
                     ->pdf();
+
                 $modelData['label'] = base64_encode($pdfContent);
                 $modelData['label_type'] = ShipmentLabelTypeEnum::PDF;
                 $modelData['number_parcels'] = count($parcels);
             } catch (\Exception $e) {
                 Sentry::captureException($e);
-                $errorData['label'] = 'Failed to generate label: ' . $e->getMessage();
             }
         } else {
             $status = 'fail';
@@ -302,6 +316,8 @@ class CallApiDpdGbShipping extends OrgAction
     {
 
         $response = Http::withHeaders($this->getHeaders($shipper, $output))
+            ->timeout(120)
+            ->retry(3, 5000)
             ->get($this->getBaseUrl() . 'shipping/shipment/' . $shipmentId . '/label');
 
         if ($response->successful()) {

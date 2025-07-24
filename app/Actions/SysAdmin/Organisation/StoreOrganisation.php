@@ -165,7 +165,17 @@ class StoreOrganisation extends GrpAction
                 $organisation->orderHandlingStats()->create();
                 $organisation->fulfilmentStats()->create();
                 $organisation->manufactureStats()->create();
+
+                $organisation->serialReferences()->create(
+                    [
+                        'model'           => SerialReferenceModelEnum::PICKING_SESSION,
+                        'organisation_id' => $organisation->id,
+                        'format'          => 'PS'.$organisation->slug.'-%04d'
+                    ]
+                );
             }
+
+
 
             $organisation->serialReferences()->create(
                 [
