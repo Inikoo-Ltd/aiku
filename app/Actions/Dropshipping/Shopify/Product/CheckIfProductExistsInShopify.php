@@ -24,8 +24,12 @@ class CheckIfProductExistsInShopify
      *
      * @return bool True if the product exists in Shopify, false otherwise
      */
-    public function handle(ShopifyUser $shopifyUser, string $productId): bool
+    public function handle(ShopifyUser $shopifyUser, ?string $productId): bool
     {
+        if (!$productId) {
+            return false;
+        }
+
         $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
 
         if (!$client) {

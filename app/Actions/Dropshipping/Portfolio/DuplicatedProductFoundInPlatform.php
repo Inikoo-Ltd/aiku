@@ -24,7 +24,7 @@ class DuplicatedProductFoundInPlatform extends OrgAction
     {
         $platformProductAvailabilities = [];
         if ($customerSalesChannel->user instanceof ShopifyUser) {
-            $platformProductAvailabilities = PreparePortfoliosForShopify::run($customerSalesChannel->user, $portfolio);
+            $platformProductAvailabilities = PreparePortfoliosForShopify::run($customerSalesChannel);
         }
 
         if (! blank($platformProductAvailabilities)) {

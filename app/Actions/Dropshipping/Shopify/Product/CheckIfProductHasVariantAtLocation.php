@@ -24,8 +24,12 @@ class CheckIfProductHasVariantAtLocation
      *
      * @return bool True if the product has a variant with inventory at the specified location, false otherwise
      */
-    public function handle(ShopifyUser $shopifyUser, string $productId): bool
+    public function handle(ShopifyUser $shopifyUser, ?string $productId): bool
     {
+        if (!$productId) {
+            return false;
+        }
+
         if (!$shopifyUser->shopify_location_id) {
             Sentry::captureMessage("No location ID found for Shopify user");
 
