@@ -5,6 +5,7 @@ import { faImage } from "@far";
 import Image from "@/Components/Image.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import {faAlbumCollection } from "@fal";
+import ButtonAddCategoryToPortfolio from "@/Components/Iris/Products/ButtonAddCategoryToPortfolio.vue"
 
 library.add(faAlbumCollection);
 
@@ -51,7 +52,7 @@ const props = defineProps<{
             </div>
           </div>
         </div>
-      </div>
+      </div>      
     </div>
   </div>
 </template>

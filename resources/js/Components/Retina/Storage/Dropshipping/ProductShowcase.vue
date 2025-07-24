@@ -15,9 +15,11 @@ import { Image as ImageTS } from "@/types/Image"
 import { routeType } from "@/types/route"
 import { trans } from "laravel-vue-i18n"
 import ProductContentsIris from "@/Components/CMS/Webpage/Product1/ProductContentIris.vue"
+import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
 library.add(faCircle, faTrash)
 
 const props = defineProps<{
+    productHasPortfolio? : object
     data: {
         imagesUploadedRoutes: routeType
         stockImagesRoute: routeType
@@ -139,6 +141,10 @@ console.log(props)
                     <dd class="text-sm font-medium">{{ locale.currencyFormat(data?.product?.data?.currency_code,
                         data?.product?.data?.price) }}</dd>
                 </div>
+
+                <!--  <ButtonAddPortfolio v-if="productHasPortfolio" :product="data.product.data" :productHasPortfolio="productHasPortfolio.list"
+                :routeToAllPortfolios="{ name: 'retina.models.portfolio.store_to_all_channels', parameters: null }"
+                :routeToSpecificChannel="{ name: 'retina.models.portfolio.store_to_multi_channels', parameters: null }" /> -->
 
                 <div class="flex flex-col">
                     <dt class="text-sm text-gray-500">{{ trans("Description") }}</dt>

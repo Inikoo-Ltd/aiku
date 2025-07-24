@@ -57,7 +57,7 @@ class ShowRetinaFamily extends RetinaAction
                     ],
                     'iconRight' => $family->state->stateIcon()[$family->state->value],
                     'actions' => [
-                        [
+                        /* [
                             'route' => [
                                 'name' => 'retina.models.portfolio.store_to_multi_channels',
                                 'parameters' => [
@@ -67,7 +67,7 @@ class ShowRetinaFamily extends RetinaAction
                             'type' => 'button',
                             'style' => 'create',
                             'label' => __('to Portfolio'),
-                        ]
+                        ] */
                     ],
                     'exports' => [
                         [
