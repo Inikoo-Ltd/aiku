@@ -69,12 +69,12 @@ console.log("RetinaFamily.vue", props.data)
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #button-to-portfolio>
+       <!--  <template #button-to-portfolio>
             <ButtonAddCategoryToPortfolio :products="data.products.data" :categoryId="data.showcase"
                 :routeGetCategoryChannels="{ name: 'retina.json.product_category.channel_ids.index', parameters: { productCategory: data.showcase } }"
                 :routeAddPortfolios="{ name: 'retina.models.portfolio.store_to_multi_channels', parameters: { productCategory: data.showcase } }" />
-        </template>
+        </template> -->
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" />
+    <component :is="component" :data="props[currentTab]" :tab="currentTab"/>
 </template>

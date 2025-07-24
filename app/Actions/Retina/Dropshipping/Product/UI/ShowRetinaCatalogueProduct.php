@@ -64,7 +64,7 @@ class ShowRetinaCatalogueProduct extends RetinaAction
                         'title' => $title
                     ],
                     'model' => __('Product'),
-                    'actions'       => $actions,
+                    /* 'actions'       => $actions, */
                     'exports' => [
                         [
                             'routes' => [

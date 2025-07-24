@@ -88,5 +88,10 @@ onMounted(() => {
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" />
+    <component 
+        :is="component" 
+        :data="props[currentTab as keyof typeof props]" 
+        :tab="currentTab" 
+        :productHasPortfolio="productHasPortfolio"
+    />
 </template>
