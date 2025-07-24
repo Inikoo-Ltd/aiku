@@ -18,6 +18,7 @@ use App\Models\CRM\Favourite;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Brand;
+use App\Models\Helpers\Currency;
 use App\Models\Helpers\Tag;
 use App\Models\Inventory\OrgStock;
 use App\Models\SysAdmin\Group;
@@ -247,7 +248,7 @@ class Product extends Model implements Auditable, HasMedia
     {
         return SlugOptions::create()
             ->generateSlugsFrom(function () {
-                return $this->code.'-'.$this->shop->code;
+                return $this->code . '-' . $this->shop->code;
             })
             ->saveSlugsTo('slug')
             ->doNotGenerateSlugsOnUpdate()
@@ -362,4 +363,8 @@ class Product extends Model implements Auditable, HasMedia
         return $this->hasOne(HistoricAsset::class, 'id', 'current_historic_asset_id');
     }
 
+    public function currency(): BelongsTo
+    {
+        return $this->belongsTo(Currency::class, 'currency_id');
+    }
 }
