@@ -19,6 +19,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { Portfolio } from "@/types/portfolio"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 
 library.add(faTrashAlt)
 
@@ -66,6 +67,12 @@ const onDeletePortfolio = async (routeDelete: routeType, portfolioReference: str
     }
 }
 
+const dummyImage = [
+    {
+        "id": "gid://shopify/ProductImage/63906764816711",
+        "src": "https://cdn.shopify.com/s/files/1/0906/1842/9767/files/e7ca90da70759d0fc8e53eecfff56999.jpg?v=1752500955"
+    }
+]
 </script>
 
 <template>
@@ -106,6 +113,31 @@ const onDeletePortfolio = async (routeDelete: routeType, portfolioReference: str
         </template>
 
         <template #cell(matches)="{ item: portfolio }">
+            <div class="flex gap-x-2 items-center">
+                <div class="h-9 w-auto max-w-9">
+                    <img :src="dummyImage?.[0]?.src" />
+                </div>
+
+                <div>
+                    {{ portfolio.platform_possible_matches?.matches_labels?.[0] }}
+                    <ButtonWithLink
+                        :routeTarget="{
+                            name: 'grp.models.portfolio.match_to_existing_shopify_product',
+                            parameters: {
+                                portfolio: portfolio.id,
+                                shopify_product_id: portfolio.platform_possible_matches.raw_data?.[0]?.id
+                            }
+                        }"
+                        icon=""
+                        label="Matching"
+                        size="xxs"
+                    />
+                </div>
+            </div>
+
+            <br />
+            <br />
+            
             <pre>{{ portfolio.id }}</pre>
             <pre>{{ portfolio.platform_possible_matches }}</pre>
         </template>
