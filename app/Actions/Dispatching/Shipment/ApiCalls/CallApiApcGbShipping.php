@@ -11,8 +11,11 @@
 namespace App\Actions\Dispatching\Shipment\ApiCalls;
 
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
 use App\Http\Resources\Dispatching\ShippingDeliveryNoteResource;
+use App\Http\Resources\Dispatching\ShippingDropshippingDeliveryNoteResource;
+use App\Http\Resources\Dispatching\ShippingPalletReturnResource;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
 use App\Models\Fulfilment\PalletReturn;
@@ -61,7 +64,15 @@ class CallApiApcGbShipping extends OrgAction
     {
         $url = '/api/3.0/Orders.json';
 
-        $parentResource = ShippingDeliveryNoteResource::make($parent)->getArray();
+
+        if ($parent instanceof PalletReturn) {
+            $parentResource = ShippingPalletReturnResource::make($parent)->getArray();
+        } elseif ($parent->shop->type == ShopTypeEnum::DROPSHIPPING) {
+            $parentResource = ShippingDropshippingDeliveryNoteResource::make($parent)->getArray();
+        } else {
+            $parentResource = ShippingDeliveryNoteResource::make($parent)->getArray();
+        }
+
         $parcels        = $parent->parcels;
 
         $shipTo = Arr::get($parentResource, 'to_address');
@@ -115,7 +126,7 @@ class CallApiApcGbShipping extends OrgAction
                 'CompanyName'  => Str::limit(Arr::get($parentResource, 'to_company_name'), 30),
                 'AddressLine1' => Str::limit(Arr::get($parentResource, 'to_address.address_line_1'), 60),
                 'AddressLine2' => Str::limit($address2, 60),
-                'PostalCode'   => Arr::get($parentResource, 'to_address.postal_code'),
+                'PostalCode'   => $postalCode,
                 'City'         => Str::limit(Arr::get($parentResource, 'to_address.locality'), 31, ''),
                 'County'       => Str::limit(Arr::get($parentResource, 'to_address.administrative_area'), 31, ''),
                 'CountryCode'  => Arr::get($parentResource, 'to_address.country.code'),
@@ -265,7 +276,7 @@ class CallApiApcGbShipping extends OrgAction
      */
     public function getLabel(string $labelID, Shipper $shipper): string
     {
-        $apiResponse = Http::withHeaders($this->getHeaders($shipper))->get($this->getBaseUrl() . '/api/3.0/Orders/' . $labelID . '.json')->json();
+        $apiResponse = Http::withHeaders($this->getHeaders($shipper))->timeout(120)->retry(3, 5000)->get($this->getBaseUrl() . '/api/3.0/Orders/' . $labelID . '.json')->json();
 
         return Arr::get($apiResponse, 'Orders.Order.Label.Content', '');
     }

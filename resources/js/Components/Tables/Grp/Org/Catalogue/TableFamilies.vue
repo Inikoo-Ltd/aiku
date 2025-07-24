@@ -108,6 +108,27 @@ function departmentRoute(family: Family) {
     }
 }
 
+function collectionRoute(shop_slug: string, collection: { id: string, name: string, code?: string }) {
+    switch (route().current()) {
+        case 'xxxxxxxxx':
+            return route(
+                "grp.org.shops.show.catalogue.collections.show",
+                {
+                    organisation: (route().params as RouteParams).organisation,
+                    shop: shop_slug,
+                    collection: collection.slug
+                })
+        default:
+            return route(
+                "grp.org.shops.show.catalogue.collections.show",
+                {
+                    organisation: (route().params as RouteParams).organisation,
+                    shop: shop_slug,
+                    collection: collection.slug
+                })
+    }
+}
+
 function subDepartmentRoute(family: Family) {
     switch (route().current()) {
         case 'grp.org.shops.show.catalogue.families.index':
@@ -170,6 +191,19 @@ const isLoadingDetach = ref<string[]>([])
             </Link>
         </template>
 
+        <!-- Column: Collections -->
+        <template #cell(collections)="{ item: family }">
+            <div class="flex flex-col gap-2">
+                <ul>
+                    <li v-for="collect in family.collections" :key="collect.id" class="list-disc">
+                        <Link :href="collectionRoute(family.shop_slug, collect)" class="secondaryLink w-fit">
+                            {{ collect.name }} <span v-if="collect.code" class="text-gray-400 italic">({{ collect.code }})</span>
+                        </Link>
+                    </li>
+                </ul>
+            </div>
+        </template>
+
         <template #cell(product_categories)="{ item: family }">
             <!-- <Link v-if="family.department_slug" :href="departmentRoute(family)" class="secondaryLink">
                 {{ family["department_code"] }}
@@ -222,4 +256,5 @@ const isLoadingDetach = ref<string[]>([])
             </Link>
         </template>
     </Table>
+    <!-- <pre>{{ data.data[0] }}</pre> -->
 </template>

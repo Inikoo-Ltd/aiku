@@ -220,6 +220,7 @@ class ShowWebpage extends OrgAction
                 'type'  => 'button',
                 'style' => 'edit',
                 'icon'  => ["fal", "fa-folder"],
+                'tooltip' => __('See Family'),
                 'route' => [
                     'name'       => 'grp.org.shops.show.catalogue.families.show',
                     'parameters' => [
@@ -259,7 +260,7 @@ class ShowWebpage extends OrgAction
                 'type'    => 'button',
                 'style'   => 'edit',
                 'icon'    => ["fal", "fa-object-group"],
-                'tooltip' => __('blueprint'),
+                'tooltip' => __('Blueprint'),
                 'route'   => $workshopRoute
             ];
         }

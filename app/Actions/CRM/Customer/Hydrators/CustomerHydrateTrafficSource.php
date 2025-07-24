@@ -34,13 +34,10 @@ class CustomerHydrateTrafficSource implements ShouldBeUnique
             return;
         }
 
-        $stats['number_customer_purchases'] = $customer->orders()
-            ->where('state', '!=', 'creating')
-            ->count();
+        $customerStats = $customer->stats;
+        $stats['number_customer_purchases'] = $customerStats->number_orders_state_dispatched ?? 0;
 
-        $stats['total_customer_revenue'] = $customer->orders()
-            ->where('state', '!=', 'creating')
-            ->sum('total_amount');
+        $stats['total_customer_revenue'] = $customerStats->sales_all ?? 0;
 
         $trafficSource->stats()->update($stats);
     }

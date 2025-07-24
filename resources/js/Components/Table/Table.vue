@@ -25,14 +25,14 @@ import CountUp from 'vue-countup-v3'
 import { useFormatTime } from '@/Composables/useFormatTime'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faCheckSquare, faCheck, faSquare, faMinusSquare} from '@fal'
+import { faCheckSquare, faCheck, faSquare, faMinusSquare, faYinYang} from '@fal'
 import { faCheckSquare as fasCheckSquare, faWatchCalculator} from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import TableBetweenFilter from '@/Components/Table/TableBetweenFilter.vue'
 import TableRadioFilter from './TableRadioFilter.vue'
 import TableDateInterval from './TableDateInterval.vue'
-library.add(faCheckSquare, faCheck, faSquare, faMinusSquare, fasCheckSquare, faWatchCalculator)
+library.add(faCheckSquare, faCheck, faSquare, faMinusSquare, fasCheckSquare, faWatchCalculator,faYinYang)
 
 const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', layoutStructure)
@@ -186,6 +186,7 @@ const emits = defineEmits<{
     (e: 'onCheked', value: {[key: string]: boolean}, checked : {[key: string]: boolean}): void
     (e: 'onChecked', value: {}): void
     (e: 'onUnchecked', value: {}): void
+    (e: 'onCheckedAll', value: {}): void
 }>()
 
 // const app = getCurrentInstance();
@@ -682,21 +683,23 @@ const onClickSelectAll = (state: boolean) => {
         selectRow[props.resource.data[row][props.checkboxKey]] = !state
         setLodash(props.resource.data, [row, 'is_checked'], false)
     }
+
+     emits('onCheckedAll', {data : props.resource.data, allChecked : compIsAllChecked.value})
 }
 
-const onSelectCheckbox = async (item : Any) => {
-    emits('onCheked', item , !selectRow[item[props.checkboxKey]])
-    // selectRow[item[props.checkboxKey]] = !selectRow[item[props.checkboxKey]]
-    item.is_checked = !item.is_checked
-    emits('onChecked', item)
-
-}
 
 // Check props.isCheckbox to improve performance
-const compIsAllChecked = props.isCheckBox ? computed(() => {
-    return compResourceData.value.length > 0 &&
-        compResourceData.value.every((row: Record<string, any>) => selectRow[row.id] === true);
-}) : false
+const compIsAllChecked = props.isCheckBox
+  ? computed(() => {
+      return compResourceData.value.length > 0 &&
+        compResourceData.value.every((row: Record<string, any>) => {
+          const key = props.checkboxKey ? row[props.checkboxKey] : row.id
+          return !!selectRow[key]
+        })
+    })
+  : false
+
+
 watch(selectRow, () => {
     emits('onSelectRow', selectRow)
 }, {deep: true})

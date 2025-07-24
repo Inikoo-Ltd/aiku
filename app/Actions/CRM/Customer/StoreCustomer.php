@@ -238,15 +238,13 @@ class StoreCustomer extends OrgAction
             'delivery_address'         => ['sometimes', 'required', new ValidAddress()],
 
 
-            'timezone_id'              => ['nullable', 'exists:timezones,id'],
-            'language_id'              => ['nullable', 'exists:languages,id'],
-            'data'                     => ['sometimes', 'array'],
-            'registered_at'            => ['sometimes', 'nullable', 'date'],
-            'internal_notes'           => ['sometimes', 'nullable', 'string'],
-            'warehouse_internal_notes' => ['sometimes', 'nullable', 'string'],
-            'warehouse_public_notes'   => ['sometimes', 'nullable', 'string'],
-            'traffic_source_id'       => ['sometimes', 'nullable', 'exists:traffic_sources,id'],
-
+            'timezone_id'                                            => ['nullable', 'exists:timezones,id'],
+            'language_id'                                            => ['nullable', 'exists:languages,id'],
+            'data'                                                   => ['sometimes', 'array'],
+            'registered_at'                                          => ['sometimes', 'nullable', 'date'],
+            'internal_notes'                                         => ['sometimes', 'nullable', 'string'],
+            'warehouse_internal_notes'                               => ['sometimes', 'nullable', 'string'],
+            'warehouse_public_notes'                                 => ['sometimes', 'nullable', 'string'],
             'email_subscriptions'                                    => ['sometimes', 'array'],
             'email_subscriptions.is_subscribed_to_newsletter'        => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_marketing'         => ['sometimes', 'boolean'],
@@ -256,14 +254,15 @@ class StoreCustomer extends OrgAction
             'email_subscriptions.is_subscribed_to_basket_reminder_1' => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_basket_reminder_2' => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_basket_reminder_3' => ['sometimes', 'boolean'],
+            'traffic_sources'                                        => ['sometimes', 'nullable', 'string'],
 
 
             'password' =>
-            [
-                'sometimes',
-                'required',
-                app()->isLocal() || app()->environment('testing') ? Password::min(3) : Password::min(8)
-            ],
+                [
+                    'sometimes',
+                    'required',
+                    app()->isLocal() || app()->environment('testing') ? Password::min(3) : Password::min(8)
+                ],
 
         ];
 
@@ -305,7 +304,7 @@ class StoreCustomer extends OrgAction
             $lastName  = trim($this->get('last_name'));
 
             if ($firstName || $lastName) {
-                $this->set('contact_name', trim($firstName . ' ' . $lastName));
+                $this->set('contact_name', trim($firstName.' '.$lastName));
             }
         }
     }
@@ -377,7 +376,7 @@ class StoreCustomer extends OrgAction
 
         $customer = $this->handle($shop, $this->validatedData);
 
-        echo "Customer $customer->reference created 🎉" . "\n";
+        echo "Customer $customer->reference created 🎉"."\n";
 
         return 0;
     }
