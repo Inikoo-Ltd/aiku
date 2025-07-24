@@ -37,6 +37,11 @@ class PortfoliosResource extends JsonResource
             'item_id'    => $this->item_id,
             'type'       => $this->type,
             'created_at' => $this->created_at,
+
+            'has_valid_platform_product_id' => $this->has_valid_platform_product_id,
+            'exist_in_platform' => $this->exist_in_platform,
+            'platform_status' => $this->platform_status,
+
             'platform_product_id' => $this->platform_product_id ? '✅' : '❌', // TODO change later
             'customer_sales_channel_id' => $this->customer_sales_channel_id ?? null,
             'routes'     => [
