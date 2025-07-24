@@ -8,7 +8,7 @@
 
 namespace App\Actions\Dropshipping\Shopify\FulfilmentService;
 
-use App\Actions\Dropshipping\Shopify\UpdateShopifyChannelShopData;
+use App\Actions\Dropshipping\Shopify\CheckShopifyChannel;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -103,7 +103,7 @@ class UpdateFulfilmentServiceLocation
             if (!$location) {
                 return [false, 'No location data in response'];
             }
-            UpdateShopifyChannelShopData::run($customerSalesChannel);
+            CheckShopifyChannel::run($customerSalesChannel);
 
 
             return [true, $location];

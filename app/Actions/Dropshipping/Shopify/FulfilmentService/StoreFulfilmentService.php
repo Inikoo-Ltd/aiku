@@ -8,7 +8,7 @@
 
 namespace App\Actions\Dropshipping\Shopify\FulfilmentService;
 
-use App\Actions\Dropshipping\Shopify\UpdateShopifyChannelShopData;
+use App\Actions\Dropshipping\Shopify\CheckShopifyChannel;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\ShopifyUser;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -100,7 +100,7 @@ class StoreFulfilmentService
                 return [false, 'No fulfillment service data in response'];
             }
 
-            UpdateShopifyChannelShopData::run($customerSalesChannel);
+            CheckShopifyChannel::run($customerSalesChannel);
             UpdateFulfilmentServiceLocation::run($customerSalesChannel);
             $customerSalesChannel->update([
                 'platform_status' => true

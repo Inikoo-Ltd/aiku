@@ -15,7 +15,7 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class UpdateShopifyChannelShopData
+class CheckShopifyChannel
 {
     use asAction;
     use WithActionUpdate;
@@ -89,7 +89,7 @@ class UpdateShopifyChannelShopData
 
     public function getCommandSignature(): string
     {
-        return 'shopify:shop_data {customerSalesChannel}';
+        return 'shopify:check {customerSalesChannel}';
     }
 
     public function asCommand(Command $command): void
