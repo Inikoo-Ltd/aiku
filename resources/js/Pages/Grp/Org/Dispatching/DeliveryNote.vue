@@ -272,6 +272,7 @@ watch(pickingView, (val) => {
 });
 
 console.log(props)
+const showWarningMessage = ref(true);
 </script>
 
 
@@ -330,14 +331,19 @@ console.log(props)
         <AlertMessage :alert />
     </div>
 
-   <div v-if="warning" class="p-1">
-  <Message severity="warn" class="p-1 rounded-md border-l-4 border-yellow-500 bg-yellow-50 text-yellow-800">
+  <div v-if="warning && showWarningMessage" class="p-1">
+  <Message 
+    severity="warn"
+    class="p-1 rounded-md border-l-4 border-yellow-500 bg-yellow-50 text-yellow-800"
+    :closable="true"
+    @close="showWarningMessage = false"
+  >
     <div class="flex items-start gap-3">
       <!-- Icon -->
-      <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500  w-4 h-4 flex-shrink-0" />
+      <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500 w-4 h-4 flex-shrink-0" />
 
       <!-- Main Content -->
-      <div class="flex gap-2">
+      <div class="flex gap-2 flex-wrap items-center">
         <!-- Warning Text -->
         <div class="text-sm font-medium">
           {{ warning?.text }}
@@ -355,6 +361,7 @@ console.log(props)
     </div>
   </Message>
 </div>
+
 
     <!-- Section: Box Note -->
     <div v-if="pickingView" class="relative">
