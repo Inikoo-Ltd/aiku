@@ -387,7 +387,7 @@ const onSubmitVariant = () => {
 				
 
 				<!-- Button: repair -->
-				<template v-if="!(!item.has_valid_platform_product_id && !item.exist_in_platform && !item.platform_status && get(progressToUploadToShopify, [item.id], undefined) != 'success')">
+				<template v-if="!(!item.has_valid_platform_product_id && !item.exist_in_platform && !item.platform_status && (get(progressToUploadToShopify, [item.id], undefined) != 'success' && get(progressToUploadToShopify, [item.id], undefined) != 'loading'))">
 					<Button
 						v-if="!item.has_valid_platform_product_id || !item.exist_in_platform || !item.platform_status"
 						label="Repair"
@@ -425,11 +425,11 @@ const onSubmitVariant = () => {
             </div>
         </template>
 
-        <!-- Column: Actions 2 -->
+        <!-- Column: Actions 2 (Modal shopify) -->
         <template #cell(actions2)="{ item }">
-            <template v-if="item.has_valid_platform_product_id && item.exist_in_platform">
+            <template v-if="!(!item.has_valid_platform_product_id && !item.exist_in_platform && !item.platform_status && (get(progressToUploadToShopify, [item.id], undefined) != 'success' && get(progressToUploadToShopify, [item.id], undefined) != 'loading'))">
 				<Button
-					v-if="item.platform_possible_matches.length"
+					v-if="(!item.has_valid_platform_product_id || !item.exist_in_platform || !item.platform_status) && item.platform_possible_matches.length"
 					@click="isOpenModal = true, selectedRow = item"
 					label="Modal Shopify"
 					type="tertiary"
