@@ -135,7 +135,6 @@ class ShowRetinaFamily extends RetinaAction
             ]
         )->table(
             IndexRetinaProductsInCatalogue::make()->tableStructure(
-                shop: $family->shop,
                 prefix: RetinaFamilyTabsEnum::PRODUCTS->value
             )
         );

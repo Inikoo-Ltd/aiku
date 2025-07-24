@@ -10,16 +10,13 @@ namespace App\Actions\Retina\Dropshipping\Product\UI;
 
 use App\Actions\Retina\Dropshipping\Catalogue\ShowRetinaCatalogue;
 use App\Actions\RetinaAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Enums\UI\Catalogue\ProductsTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
-use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -50,7 +47,7 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
         if($parent instanceof Shop) {
             $shop = $parent;
             $queryBuilder->where('products.shop_id', $parent->id);
-        } elseif ($parent instanceof ProductCategory) {
+        } else{
             $shop = $parent->shop;
             if ($parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
                 $queryBuilder->where('products.department_id', $parent->id);
@@ -102,9 +99,9 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
             ->withQueryString();
     }
 
-    public function tableStructure(Shop $shop, ?array $modelOperations = null, $prefix = null, string $bucket = null): Closure
+    public function tableStructure( $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($shop, $modelOperations, $prefix, $bucket) {
+        return function (InertiaTable $table) use  ($prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -113,21 +110,19 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
 
             $table
                 ->withGlobalSearch()
-                ->withModelOperations($modelOperations)
                 ->withEmptyState(
                     [
 
                     ]
                 );
-            $table->column(key: 'image', label:  __('image'), type: 'icon', sortable: false)
-                ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon', sortable: true)
+            $table->column(key: 'image', label: __('image'), type: 'icon')
+                ->column(key: 'state', label: ['fal', 'fa-yin-yang'], sortable: true, type: 'icon')
                 ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'available_quantity', label: __('stock'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'weight', label: __('weight'), canBeHidden: false, sortable: false, searchable: false)
+                ->column(key: 'weight', label: __('weight'), canBeHidden: false)
                 ->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: true, align: 'left' )
                 ->column(key: 'rrp', label: __('RRP'), canBeHidden: false, sortable: true, searchable: true, align: 'left' );
-             /*  $table->column(key: 'actions', label: __('Actions'), canBeHidden: false, sortable: false, searchable: false); */
         };
     }
 
@@ -138,8 +133,6 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
 
     public function htmlResponse(LengthAwarePaginator $products, ActionRequest $request): Response
     {
-        /** @var Shop $shop */
-        $shop = $this->shop;
 
 
         $title = __('Products');
@@ -170,7 +163,7 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
                 ],
                 'data'                         => ProductsResource::collection($products),
             ]
-        )->table($this->tableStructure(shop: $shop));
+        )->table($this->tableStructure());
     }
 
 

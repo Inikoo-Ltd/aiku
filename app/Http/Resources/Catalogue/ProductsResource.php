@@ -41,7 +41,11 @@ use App\Http\Resources\Helpers\ImageResource;
  * @property mixed $id
  * @property mixed $units
  * @property mixed $currency_code
+ * @property mixed $rrp
+ * @property mixed $gross_weight
+ * @property mixed $images
  *
+ * @method imageSources(int $int, int $int1)
  */
 class ProductsResource extends JsonResource
 {
@@ -69,7 +73,6 @@ class ProductsResource extends JsonResource
             'family_name'               => $this->family_name,
             'price'                     => $this->price,
             'units'                     => $this->units,
-            'image_thumbnail'           => $this->image_thumbnail,
             'current_historic_asset_id' => $this->current_historic_asset_id,
             'asset_id'                  => $this->asset_id,
             'available_quantity'        => $this->available_quantity,
@@ -78,7 +81,7 @@ class ProductsResource extends JsonResource
             'customers_invoiced_all'    => $this->customers_invoiced_all,
             'invoices_all'              => $this->invoices_all,
             'sales_all'                 => $this->sales_all,
-            'currency_code'             => $this->currency_code,    
+            'currency_code'             => $this->currency_code,
             'stock'                     => $this->available_quantity,
             'images'                    => ImageResource::collection($this->images),
             'image_thumbnail'           => $this->imageSources(720, 480),

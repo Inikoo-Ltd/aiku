@@ -145,7 +145,6 @@ class ShowRetinaSubDepartment extends RetinaAction
             )
         )->table(
             IndexRetinaProductsInCatalogue::make()->tableStructure(
-                shop: $subDepartment->shop,
                 prefix: RetinaSubDepartmentTabsEnum::PRODUCTS->value
             )
         )->table(

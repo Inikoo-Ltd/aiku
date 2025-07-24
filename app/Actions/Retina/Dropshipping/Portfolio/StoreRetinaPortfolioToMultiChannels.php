@@ -25,7 +25,7 @@ class StoreRetinaPortfolioToMultiChannels extends RetinaAction
     use WithActionUpdate;
 
 
-    private Portfolio $portfolio;
+
     /**
      * @var ProductCategory|null
      */

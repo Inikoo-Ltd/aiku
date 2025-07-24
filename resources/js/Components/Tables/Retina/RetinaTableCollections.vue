@@ -7,7 +7,6 @@
 <script setup lang="ts">
 import { Link } from "@inertiajs/vue3";
 import Table from "@/Components/Table/Table.vue";
-import { routeType } from "@/types/route";
 import Icon from "@/Components/Icon.vue";
 import { faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faPowerOff, faExclamationTriangle, faTrashAlt, faFolders, faFolderTree, faGameConsoleHandheld } from "@fal";
 import { faPlay } from "@fas";
@@ -19,7 +18,7 @@ import Tag from "@/Components/Tag.vue";
 
 library.add(faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay, faFolders, faFolderTree);
 
-const props = defineProps<{
+defineProps<{
     data: {}
     tab?: string
 }>();

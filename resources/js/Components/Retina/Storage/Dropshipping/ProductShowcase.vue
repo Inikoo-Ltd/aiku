@@ -5,23 +5,14 @@
   -->
 
 <script setup lang="ts">
-import Gallery from "@/Components/Fulfilment/Website/Gallery/Gallery.vue"
 import { useLocaleStore } from '@/Stores/locale'
 import { faCircle, faTrash } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { notify } from '@kyvg/vue3-notification'
 import Image from "@/Components/Image.vue"
-import { Tab, TabGroup, TabList, TabPanel, TabPanels, } from '@headlessui/vue'
 import { ref } from 'vue'
-import EmptyState from "@/Components/Utils/EmptyState.vue"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
-
-import axios from "axios"
-import { router } from '@inertiajs/vue3'
 import { Image as ImageTS } from "@/types/Image"
 import { routeType } from "@/types/route"
-import { useFormatTime } from "@/Composables/useFormatTime"
 import { trans } from "laravel-vue-i18n"
 import ProductContentsIris from "@/Components/CMS/Webpage/Product1/ProductContentIris.vue"
 library.add(faCircle, faTrash)

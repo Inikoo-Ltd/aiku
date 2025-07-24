@@ -8,22 +8,16 @@
 
 namespace App\Actions\Retina\Dropshipping\ProductCategory\UI;
 
-use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
-use App\Actions\Catalogue\WithCollectionSubNavigation;
-use App\Actions\OrgAction;
+
 use App\Actions\Retina\Dropshipping\Catalogue\ShowRetinaCatalogue;
 use App\Actions\RetinaAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Enums\UI\Catalogue\ProductCategoryTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
-use App\Models\SysAdmin\Group;
-use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -106,9 +100,9 @@ class IndexRetinaDepartments extends RetinaAction
             ->withQueryString();
     }
 
-    public function tableStructure(Shop|ProductCategory|Collection $parent, $prefix = null, $canEdit = false): Closure
+    public function tableStructure(Shop|ProductCategory|Collection $parent, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($parent, $prefix, $canEdit) {
+        return function (InertiaTable $table) use ($parent, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)

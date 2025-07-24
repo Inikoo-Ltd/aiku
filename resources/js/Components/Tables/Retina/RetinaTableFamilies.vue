@@ -9,10 +9,8 @@ import Table from "@/Components/Table/Table.vue"
 import Icon from "@/Components/Icon.vue"
 import { routeType } from "@/types/route"
 import { library } from "@fortawesome/fontawesome-svg-core";
-import Tag from "@/Components/Tag.vue";
 import { Link } from "@inertiajs/vue3";
-import { faYinYang, faDotCircle, faCheck, faPlus} from "@fal";
-import Button from "@/Components/Elements/Buttons/Button.vue";
+import { faYinYang, faDotCircle, faCheck,} from "@fal";
 
 
 library.add(faCheck,faYinYang, faDotCircle)
@@ -57,28 +55,20 @@ function familyRoute(family): string {
             </Link>
         </template>
         <template #cell(shop_code)="{ item: family }">
-            <!--  <Link :href="shopRoute(family)" class="secondaryLink"> -->
             {{ family["shop_code"] }}
-            <!--   </Link> -->
         </template>
         <template #cell(current_products)="{ item: family }">
-            <!--       <Link :href="productRoute(family)" class="primaryLink"> -->
             {{ family["current_products"] }}
-            <!--  </Link> -->
         </template>
 
         <!-- Column: Department code -->
         <template #cell(department_code)="{ item: family }">
-            <!--  <Link v-if="family.department_slug" :href="departmentRoute(family)" class="secondaryLink"> -->
             {{ family["department_code"] }}
-            <!-- </Link> -->
         </template>
 
         <!-- Column: Department name -->
         <template #cell(department_name)="{ item: family }">
-            <!-- <Link v-if="family.department_slug" :href="departmentRoute(family)" class="secondaryLink"> -->
             {{ family["department_name"] }}
-            <!--  </Link> -->
         </template>
 
         <template #cell(product_categories)="{ item: family }">

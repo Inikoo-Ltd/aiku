@@ -43,7 +43,7 @@ class GetRetinaDropshippingNavigation
                     'name' => 'retina.catalogue.dashboard'
                 ],
                 'topMenu' => [
-                    'subSections' => 
+                    'subSections' =>
                     [
                         [
                             'label' => __(''),

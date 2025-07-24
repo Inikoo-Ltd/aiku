@@ -13,7 +13,6 @@ use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
-use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -22,11 +21,13 @@ class StoreRetinaPortfolioToAllChannels extends RetinaAction
     use WithActionUpdate;
 
 
-    private Portfolio $portfolio;
-
+    /**
+     * @throws \Throwable
+     */
     public function handle(array $modelData): void
     {
         foreach ($this->customer->customerSalesChannels as $salesChannel) {
+            /** @var Product $items */
             $items = Product::whereIn('id', Arr::get($modelData, 'item_id'))->get();
 
 
@@ -51,6 +52,9 @@ class StoreRetinaPortfolioToAllChannels extends RetinaAction
         ];
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(ActionRequest $request): void
     {
         $this->initialisation($request);

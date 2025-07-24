@@ -67,7 +67,6 @@ class IndexRetinaFamilies extends RetinaAction
             } elseif ($parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
                 $queryBuilder->where('product_categories.sub_department_id', $parent->id);
             } else {
-                // todo
                 abort(419);
             }
         }
@@ -144,7 +143,6 @@ class IndexRetinaFamilies extends RetinaAction
                 if (class_basename($parent) != 'Collection') {
                     $table->column(key: 'number_current_products', label: __('current products'), canBeHidden: false, sortable: false, searchable: false);
                 }
-                  /*  $table->column(key: 'actions', label: __('actions'), canBeHidden: false, sortable: true, searchable: false); */
         };
     }
 
@@ -172,9 +170,6 @@ class IndexRetinaFamilies extends RetinaAction
                     'icon'  => ['fal', 'fa-folder-tree'],
                     'title' => __('department')
                 ];
-                // $iconRight  = [
-                //     'icon' => 'fal fa-folder',
-                // ];
                 $iconRight  = $this->parent->state->stateIcon()[$this->parent->state->value];
                 $afterTitle = [
 
@@ -187,9 +182,7 @@ class IndexRetinaFamilies extends RetinaAction
                     'icon'  => ['fal', 'fa-dot-circle'],
                     'title' => __('sub department')
                 ];
-                // $iconRight  = [
-                //     'icon' => 'fal fa-folder',
-                // ];
+
                 $iconRight  = $this->parent->state->stateIcon()[$this->parent->state->value];
                 $afterTitle = [
 

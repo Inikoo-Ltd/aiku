@@ -1,18 +1,17 @@
 <?php
-
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 24 Jul 2025 05:46:00 British Summer Time, Trnava, Slovakia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Retina\Dropshipping\Catalogue;
 
-use App\Actions\OrgAction;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Actions\UI\WithInertia;
-use App\Http\Resources\Catalogue\DepartmentResource;
-use App\Http\Resources\Catalogue\FamilyResource;
-use App\Http\Resources\Catalogue\ProductResource;
 use App\Http\Resources\Catalogue\ShopResource;
 use App\Models\Catalogue\Shop;
-use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -46,9 +45,9 @@ class ShowRetinaCatalogue extends RetinaAction
                     $request->route()->originalParameters()
                 ),
                 'pageHead'    => [
-                    'title' => __('Catalogue'),
-                    'model' => '',
-                    'icon'  => [
+                    'title'   => __('Catalogue'),
+                    'model'   => '',
+                    'icon'    => [
                         'title' => __('Catalogue'),
                         'icon'  => 'fal fa-books'
                     ],
@@ -56,28 +55,28 @@ class ShowRetinaCatalogue extends RetinaAction
                         [
                             'routes' => [
                                 [
-                                    'label' => 'CSV',
-                                    'key'   => 'csv',
-                                    'icon' => ['fal', 'fa-file-csv'],
+                                    'label'   => 'CSV',
+                                    'key'     => 'csv',
+                                    'icon'    => ['fal', 'fa-file-csv'],
                                     'popover' => false,
-                                    'route' => [
-                                        'name' => 'retina.catalogue.feeds.shop.download',
+                                    'route'   => [
+                                        'name'       => 'retina.catalogue.feeds.shop.download',
                                         'parameters' => [
                                             'shop' => $shop->slug,
-                                            'type'       => 'products_csv'
+                                            'type' => 'products_csv'
                                         ]
                                     ],
                                 ],
                                 [
-                                    'label' => 'images',
-                                    'key'   => 'images',
-                                    'icon' => ['fal', 'fa-images'],
+                                    'label'          => 'images',
+                                    'key'            => 'images',
+                                    'icon'           => ['fal', 'fa-images'],
                                     'inside_popover' => true,
-                                    'route' => [
-                                        'name' => 'retina.catalogue.feeds.shop.download',
+                                    'route'          => [
+                                        'name'       => 'retina.catalogue.feeds.shop.download',
                                         'parameters' => [
                                             'shop' => $shop->slug,
-                                            'type'       => 'products_images'
+                                            'type' => 'products_images'
                                         ]
                                     ],
                                 ]
@@ -100,8 +99,7 @@ class ShowRetinaCatalogue extends RetinaAction
                         'value' => $shop->stats->number_current_departments,
 
 
-
-                        'metas'     => [
+                        'metas' => [
 
                             [
                                 'hide'    => $shop->stats->number_departments_state_discontinuing == 0,
@@ -113,12 +111,6 @@ class ShowRetinaCatalogue extends RetinaAction
                                 ],
                                 'count'   => $shop->stats->number_departments_state_active,
                                 'route'   => [
-                                    // 'name'       => 'retina.catalogue.sub_departments.index',
-                                    // 'parameters' => [
-                                    //     'organisation' => $shop->organisation->slug,
-                                    //     'shop'         => $shop->slug,
-                                    //     'index_elements[state]' => 'active'
-                                    // ]
                                 ],
                             ],
 
@@ -131,12 +123,6 @@ class ShowRetinaCatalogue extends RetinaAction
                                 ],
                                 'count'   => $shop->stats->number_departments_state_discontinuing,
                                 'route'   => [
-                                    // 'name'       => 'grp.org.shops.show.catalogue.departments.index',
-                                    // 'parameters' => [
-                                    //     'organisation' => $shop->organisation->slug,
-                                    //     'shop'         => $shop->slug,
-                                    //     'index_elements[state]' => 'discontinuing'
-                                    // ]
                                 ],
                             ],
                         ]
@@ -155,8 +141,7 @@ class ShowRetinaCatalogue extends RetinaAction
                         'value' => $shop->stats->number_sub_departments,
 
 
-
-                        'metas'     => [
+                        'metas' => [
 
                             [
                                 'hide'    => $shop->stats->number_departments_state_discontinuing == 0,
@@ -168,12 +153,7 @@ class ShowRetinaCatalogue extends RetinaAction
                                 ],
                                 'count'   => $shop->stats->number_departments_state_active,
                                 'route'   => [
-                                    // 'name'       => 'grp.org.shops.show.catalogue.departments.index',
-                                    // 'parameters' => [
-                                    //     'organisation' => $shop->organisation->slug,
-                                    //     'shop'         => $shop->slug,
-                                    //     'index_elements[state]' => 'active'
-                                    // ]
+
                                 ],
                             ],
 
@@ -186,12 +166,7 @@ class ShowRetinaCatalogue extends RetinaAction
                                 ],
                                 'count'   => $shop->stats->number_departments_state_discontinuing,
                                 'route'   => [
-                                    // 'name'       => 'grp.org.shops.show.catalogue.departments.index',
-                                    // 'parameters' => [
-                                    //     'organisation' => $shop->organisation->slug,
-                                    //     'shop'         => $shop->slug,
-                                    //     'index_elements[state]' => 'discontinuing'
-                                    // ]
+
                                 ],
                             ],
                         ]
@@ -199,7 +174,7 @@ class ShowRetinaCatalogue extends RetinaAction
                     [
                         'label' => __('Families'),
                         'route' => [
-                            'name'       => 'retina.catalogue.families.index',        // TODO
+                            'name'       => 'retina.catalogue.families.index',
                             'parameters' => []
                         ],
                         'icon'  => 'fal fa-folder',
@@ -243,16 +218,16 @@ class ShowRetinaCatalogue extends RetinaAction
                         ]
                     ],
                     [
-                        'label'     => __('Products'),
-                        'route'     => [
+                        'label' => __('Products'),
+                        'route' => [
                             'name'       => 'retina.catalogue.products.index',        // TODO
                             'parameters' => []
                         ],
-                        'icon'      => 'fal fa-cube',
-                        "color"     => "#38bdf8",
-                        'value'     => $shop->stats->number_current_products,
+                        'icon'  => 'fal fa-cube',
+                        "color" => "#38bdf8",
+                        'value' => $shop->stats->number_current_products,
 
-                        'metas'     => [
+                        'metas' => [
 
                             [
                                 "icon"    => [
@@ -285,7 +260,7 @@ class ShowRetinaCatalogue extends RetinaAction
                     [
                         'label' => __('Collections'),
                         'route' => [
-                            'name'       => 'retina.catalogue.collections.index',        // TODO
+                            'name'       => 'retina.catalogue.collections.index',
                             'parameters' => [
                                 'organisation' => $shop->organisation->slug,
                                 'shop'         => $shop->slug
