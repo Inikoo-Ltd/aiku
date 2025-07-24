@@ -88,6 +88,16 @@ class ShowPickingSession extends OrgAction
         $actions   = null;
         $navigation = PickingSessionTabsEnum::navigation();
 
+        if($pickingSession->state == PickingSessionStateEnum::IN_PROCESS)
+        {
+            $this->tab = PickingSessionTabsEnum::ITEMS->value;
+        } elseif($pickingSession->state == PickingSessionStateEnum::HANDLING)
+        {
+            $this->tab = PickingSessionTabsEnum::ITEMIZED->value;
+        } else {
+            $this->tab = PickingSessionTabsEnum::GROUPED->value;
+        }
+
         
         if ($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
             $actions[] = [
