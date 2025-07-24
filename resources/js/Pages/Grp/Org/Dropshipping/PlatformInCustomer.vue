@@ -35,6 +35,9 @@ const props = defineProps<{
       number_portfolios: number
     }
   }
+  platform: {}
+  customer_sales_channel: {}
+  platform_user: {}
 }>();
 
 let currentTab = ref(props.tabs.current);
@@ -184,5 +187,22 @@ const isModalAddress = ref(false);
         </dl>
       </div>
     </div>
+    
+    <!-- <div>
+      <div class="border border-gray-500 rounded">
+        <FontAwesomeIcon v-if="true" icon="fal fa-check" class="fa-green-500" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon icon="fal fa-times" class="fa-red-500" fixed-width aria-hidden="true" />
+      </div>
+    </div> -->
   </div>
+
+  <pre>{{platform}}</pre>
+  <br /><br />
+  <pre>{{customer_sales_channel}}</pre>
+  <br /><br />
+<pre>{{platform_user}}</pre>
+
+  <!-- has_valid_platform_product_id
+  exist_in_platform
+  platform_status -->
 </template>
