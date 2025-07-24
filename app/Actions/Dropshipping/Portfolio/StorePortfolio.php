@@ -11,7 +11,7 @@ namespace App\Actions\Dropshipping\Portfolio;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePortfolios;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydratePortfolios;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
-use App\Actions\Dropshipping\Shopify\Product\UpdatePortfolioShopifyStatus;
+use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolio;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePortfolios;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePortfolios;
@@ -80,7 +80,7 @@ class StorePortfolio extends OrgAction
         });
 
         if ($customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
-            $portfolio = UpdatePortfolioShopifyStatus::run($portfolio);
+            $portfolio = CheckShopifyPortfolio::run($portfolio);
         }
 
 
