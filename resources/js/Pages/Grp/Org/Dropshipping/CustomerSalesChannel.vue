@@ -19,6 +19,7 @@ import { faShopify, faTiktok } from "@fortawesome/free-brands-svg-icons"
 import { faStore, faBookmark, faUndoAlt } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 library.add(faStore, faBookmark, faUndoAlt)
 
 const props = defineProps<{
@@ -222,9 +223,24 @@ const isModalAddress = ref(false)
             <Button v-if="customer_sales_channel.can_connect_to_platform" label="Reset Channel" type="red" icon="fal fa-undo-alt">
 
             </Button>
-            <Button v-else label="Delete" type="delete">
-
-            </Button>
+            <ModalConfirmationDelete
+                v-else
+                xrouteDelete="{
+                    name: props.brand_routes.delete_brand.name,
+                    parameters: {
+                        ...props.brand_routes.delete_brand.parameters,
+                        brand: option.id,
+                    }
+                }"
+                xtitle="trans('Are you sure you want to delete brand') + ` ${option.name}?`"
+                isFullLoading
+            >
+                <template #default="{ isOpenModal, changeModel }">
+                    <Button  @click.stop="changeModel" label="Delete" type="delete">
+        
+                    </Button>
+                </template>
+            </ModalConfirmationDelete>
         </div>
     </div>
 
