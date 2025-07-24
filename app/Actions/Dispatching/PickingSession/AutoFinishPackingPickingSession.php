@@ -24,7 +24,8 @@ class AutoFinishPackingPickingSession extends OrgAction
 
         if ($numberPacked == $pickingSession->number_delivery_notes) {
             $this->update($pickingSession, [
-                'state' => PickingSessionStateEnum::PACKING_FINISHED
+                'state' => PickingSessionStateEnum::PACKING_FINISHED,
+                'end_at' => now()
             ]);
         }
         return $pickingSession;
