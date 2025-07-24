@@ -186,7 +186,7 @@ class EditProduct extends OrgAction
                         'value' => $product->name
                     ],
 
-                    //tranlation input raul request 7/24/25
+                    //translation input raul request 7/24/25
                     /* 'name' => [
                         'type'  => 'input_translation',
                         'label' => __('name'),
