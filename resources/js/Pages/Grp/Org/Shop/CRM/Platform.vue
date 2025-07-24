@@ -17,6 +17,8 @@
   
   import { capitalize } from "@/Composables/capitalize"
   import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
+import TablePortfolios from '@/Components/Tables/Grp/Org/CRM/TablePortfolios.vue'
+import TableCustomerSalesChannels from '@/Components/Tables/Grp/Org/CRM/TableCustomerSalesChannels.vue'
 
   library.add(
       faFolder,
@@ -51,6 +53,8 @@
   
   const component = computed(() => {
       const components: {[key: string]: Component} = {
+        products: TablePortfolios,
+        channels: TableCustomerSalesChannels
       }
   
       return components[currentTab.value]
