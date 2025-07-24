@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\DeliveryNoteItem\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\PickingSession;
@@ -63,9 +64,9 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure($prefix = null): Closure
+    public function tableStructure(PickingSession $parent, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($prefix) {
+        return function (InertiaTable $table) use ($parent, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -84,7 +85,9 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
             $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'pickings', label: __('Pickings'), canBeHidden: false);
-            $table->column(key: 'handing_actions', label: __('To do actions'), canBeHidden: false);
+           if ($parent->state != PickingSessionStateEnum::HANDLING) {
+                $table->column(key: 'handing_actions', label: __('To do actions'), canBeHidden: false);
+            }
         };
     }
 

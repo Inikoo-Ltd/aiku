@@ -38,7 +38,8 @@ const component = computed(() => {
 
   const components = {
     items: TableDeliveryNoteItemInPickingSessions,
-
+    itemized: TableDeliveryNoteItemInPickingSessions,
+    grouped: TableDeliveryNoteItemInPickingSessions
   };
   return components[currentTab.value];
 
