@@ -492,11 +492,11 @@ class IndexOrders extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $platform, CustomerClient $customerClient, ActionRequest $request): LengthAwarePaginator
+    public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, CustomerClient $customerClient, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket               = 'all';
         $this->parent               = $customerClient;
-        $this->customerSalesChannel = $platform;
+        $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisationFromShop($shop, $request)->withTab(OrdersTabsEnum::values());
 
         return $this->handle(parent: $customerClient, prefix: OrdersTabsEnum::ORDERS->value);
