@@ -17,6 +17,8 @@ import { notify } from "@kyvg/vue3-notification";
 import { faTrashAlt } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { Portfolio } from "@/types/portfolio";
+import { trans } from "laravel-vue-i18n"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 library.add(faTrashAlt);
 
@@ -67,7 +69,7 @@ const onDeletePortfolio = async (routeDelete: routeType, portfolioReference: str
 </script>
 
 <template>
-  <!-- {{ routeDelete.method }} -->
+  <!-- <pre>{{ data.data[0] }}</pre> -->
   <Table :resource="data" :name="tab" class="mt-5">
     <template #cell(item_code)="{ item: portfolio }">
       <Link :href="itemRoute(portfolio)" class="primaryLink">
@@ -78,6 +80,15 @@ const onDeletePortfolio = async (routeDelete: routeType, portfolioReference: str
 
     <template #cell(location)="{ item: portfolio }">
       <AddressLocation :data="portfolio['location']" />
+    </template>
+
+    <template #cell(platform_status)="{ item: portfolio }">
+      <FontAwesomeIcon v-if="portfolio.has_valid_platform_product_id" v-tooltip="trans('Has valid platform product id')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+      <FontAwesomeIcon v-else v-tooltip="trans('Has valid platform product id')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+      <FontAwesomeIcon v-if="portfolio.exist_in_platform" v-tooltip="trans('Exist in platform')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+      <FontAwesomeIcon v-else v-tooltip="trans('Exist in platform')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+      <FontAwesomeIcon v-if="portfolio.platform_status" v-tooltip="trans('Platform status')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+      <FontAwesomeIcon v-else v-tooltip="trans('Platform status')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
     </template>
 
     <template #cell(created_at)="{ item: portfolio }">
