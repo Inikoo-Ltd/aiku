@@ -9,7 +9,6 @@
 namespace App\Actions\Dispatching\DeliveryNoteItem\UI;
 
 use App\Actions\OrgAction;
-use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\PickingSession;
@@ -42,7 +41,7 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
         $query->leftjoin('warehouse_areas', 'warehouse_areas.id', '=', 'locations.warehouse_area_id');
 
         return $query
-            ->defaultSort('warehouse_areas.picking_position')
+            ->defaultSort('warehouse_areas.picking_position','locations.code','org_stocks.reference')
             ->select([
                 'delivery_note_items.id',
                 'delivery_note_items.state',
@@ -67,9 +66,9 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(PickingSession $parent, $prefix = null): Closure
+    public function tableStructure($prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($parent, $prefix) {
+        return function (InertiaTable $table) use ($prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)

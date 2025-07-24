@@ -162,7 +162,7 @@ class ShowPickingSession extends OrgAction
             $inertiaResponse->table(IndexDeliveryNoteItemsInPickingSession::make()->tableStructure(parent: $pickingSession, prefix: PickingSessionTabsEnum::ITEMS->value));
         } else {
             $inertiaResponse->table(IndexDeliveryNoteItemsInPickingSessionGrouped::make()->tableStructure(parent: $pickingSession, prefix: PickingSessionTabsEnum::GROUPED->value))
-                            ->table(IndexDeliveryNoteItemsInPickingSessionStateActive::make()->tableStructure(parent: $pickingSession, prefix: PickingSessionTabsEnum::ITEMIZED->value));
+                            ->table(IndexDeliveryNoteItemsInPickingSessionStateActive::make()->tableStructure(prefix: PickingSessionTabsEnum::ITEMIZED->value));
         }
 
         return $inertiaResponse;
