@@ -76,11 +76,10 @@ class UpdateShopifyChannelShopData
         }
 
 
-
         $this->update($customerSalesChannel, [
-            'platform_status'            => $platformStatus,
-            'platform_can_connect'       => $canConnectToPlatform,
-            'platform_exist_in_platform' => $existInPlatform,
+            'platform_status'         => $platformStatus,
+            'can_connect_to_platform' => $canConnectToPlatform,
+            'exist_in_platform'       => $existInPlatform,
         ]);
         $this->update($customerSalesChannel->user, $updateData);
 
@@ -97,6 +96,16 @@ class UpdateShopifyChannelShopData
     {
         $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->firstOrFail();
         $customerSalesChannel = $this->handle($customerSalesChannel);
+
+        // Display CustomerSalesChannel status information
+        $statusData = [
+            ['Customer Sales Channel', $customerSalesChannel->slug],
+            ['Platform Status', $customerSalesChannel->platform_status ? 'Yes' : 'No'],
+            ['Can Connect to Platform', $customerSalesChannel->can_connect_to_platform ? 'Yes' : 'No'],
+            ['Exist in Platform', $customerSalesChannel->exist_in_platform ? 'Yes' : 'No']
+        ];
+
+
 
         $shopData = $customerSalesChannel->user->data['shop'] ?? [];
 
@@ -190,6 +199,9 @@ class UpdateShopifyChannelShopData
                 $counter++;
             }
         }
+
+        $command->info("\nCustomer Sales Channel Status:");
+        $command->table(['Field', 'Value'], $statusData);
 
         $command->info("\nShop data updated successfully.");
     }
