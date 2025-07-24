@@ -331,10 +331,9 @@ Route::prefix('department/{productCategory:id}')->name('department.')->group(fun
 
 
 Route::prefix('/product_category/{productCategory:id}')->name('product_category.')->group(function () {
-    Route::patch('', UpdateProductCategory::class)->name('update');
-    Route::delete('', DeleteProductCategory::class)->name('delete');
+    Route::patch('update', UpdateProductCategory::class)->name('update');
+    Route::delete('delete', DeleteProductCategory::class)->name('delete');
 });
-
 
 Route::prefix('sub-department/{productCategory:id}')->name('sub-department.')->group(function () {
     Route::post('family', [StoreProductCategory::class, 'inSubDepartment'])->name('family.store');
