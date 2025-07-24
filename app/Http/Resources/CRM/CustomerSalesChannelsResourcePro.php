@@ -55,6 +55,11 @@ class CustomerSalesChannelsResourcePro extends JsonResource
             'platform_name'                       => $customerSalesChannels->platform->name,
             'platform_image'                      => $this->getPlatformLogo($customerSalesChannels->platform->code),
             'connection'                          => $this->getStatus($customerSalesChannels),
+
+            'can_connect_to_platform' => $customerSalesChannels->can_connect_to_platform,
+            'exist_in_platform' => $customerSalesChannels->exist_in_platform,
+            'platform_status' => $customerSalesChannels->platform_status,
+
             'update_customer_sales_channel_route' => [
                 'method'     => 'patch',
                 'name'       => 'retina.models.customer_sales_channel.update',
