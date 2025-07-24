@@ -22,6 +22,7 @@ use App\Actions\Dropshipping\Magento\Product\SyncronisePortfolioToMagento;
 use App\Actions\Dropshipping\Shopify\Product\GetApiProductsFromShopify;
 use App\Actions\Dropshipping\Shopify\Product\SynchroniseDropshippingPortfoliosToShopify;
 use App\Actions\Dropshipping\Shopify\Product\SynchroniseDropshippingPortfolioToShopify;
+use App\Actions\Dropshipping\Shopify\ResetShopifyChannel;
 use App\Actions\Dropshipping\Tiktok\Product\GetProductsFromTiktokApi;
 use App\Actions\Dropshipping\Tiktok\Product\StoreProductToTiktok;
 use App\Actions\Dropshipping\Tiktok\User\DeleteTiktokUser;
@@ -221,6 +222,8 @@ Route::post('customer-sales-channel-manual', StoreRetinaManualPlatform::class)->
 
 
 Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customerSalesChannel:id}')->group(function () {
+    Route::delete('reset-shopify', ResetShopifyChannel::class)->name('shopify_reset');
+
     Route::patch('update', UpdateRetinaCustomerSalesChannel::class)->name('update');
     Route::post('client', StoreRetinaCustomerClient::class)->name('customer-client.store');
     Route::post('fulfilment', StoreRetinaFulfilmentCustomerClient::class)->name('fulfilment.customer-client.store');
