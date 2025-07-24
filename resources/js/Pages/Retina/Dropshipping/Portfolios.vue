@@ -5,7 +5,7 @@ import {capitalize} from "@/Composables/capitalize";
 import {computed, reactive, ref} from "vue";
 import {PageHeading as PageHeadingTypes} from "@/types/PageHeading";
 import {Tabs as TSTabs} from "@/types/Tabs";
-import RetinaTablePortfolios from "@/Components/Tables/Retina/RetinaTablePortfolios.vue";
+import RetinaTablePortfoliosManual from "@/Components/Tables/Retina/RetinaTablePortfoliosManual.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import {notify} from "@kyvg/vue3-notification";
 import {trans} from "laravel-vue-i18n";
@@ -465,7 +465,7 @@ const progressToUploadToShopify = ref<{ [key: number]: string }>({})
     </div>
 
     <div v-else class="overflow-x-auto">
-        <RetinaTablePortfolios
+        <RetinaTablePortfoliosManual
             v-if="isPlatformManual"
             :data="props.products"
             :tab="'products'"

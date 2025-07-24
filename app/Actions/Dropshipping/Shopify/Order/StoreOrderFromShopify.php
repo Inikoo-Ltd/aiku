@@ -129,7 +129,7 @@ class StoreOrderFromShopify extends OrgAction
         if (!$customerClientID) {
             $customerClient = StoreCustomerClient::make()->action($shopifyUser->customerSalesChannel, [
                 'reference'    => $reference,
-                'email'        => Arr::get($attributes, 'customer.email'),
+                'email'        => Arr::get($shopifyOrderData, 'customer.email'),
                 'contact_name' => trim(Arr::get($shopifyOrderData, 'customer.firstName').' '.Arr::get($shopifyOrderData, 'customer.lastName')),
                 'phone'        => Arr::get($shopifyOrderData, 'customer.phone'),
                 'address'      => $deliveryAddress
@@ -137,7 +137,7 @@ class StoreOrderFromShopify extends OrgAction
         } else {
             $customerClient = CustomerClient::find($customerClientID->id);
             $customerClient = UpdateCustomerClient::make()->action($customerClient, [
-                'email'        => Arr::get($attributes, 'customer.email'),
+                'email'        => Arr::get($shopifyOrderData, 'customer.email'),
                 'contact_name' => trim(Arr::get($shopifyOrderData, 'customer.firstName').' '.Arr::get($shopifyOrderData, 'customer.lastName')),
                 'phone'        => Arr::get($shopifyOrderData, 'customer.phone'),
                 'address'      => $deliveryAddress

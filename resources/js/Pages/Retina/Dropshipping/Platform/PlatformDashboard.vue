@@ -12,6 +12,8 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { trans } from "laravel-vue-i18n"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { ChannelLogo } from "@/Composables/Icon/ChannelLogoSvg"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 library.add(faArrowRight, faCube, faLink, farArrowRight)
 
 
@@ -114,12 +116,41 @@ const locale = inject('locale', aikuLocaleStructure)
         <div v-else>
             <div class="flex justify-between">
                 <h3 class="text-2xl font-semibold">{{ customer_sales_channel.name || 'n/a' }} <span class="text-gray-500 font-normal">({{ customer_sales_channel.reference }})</span></h3>
-                <div v-html="ChannelLogo(platform.code)"
-                    class="h-8 w-8 mt-2"
-                    v-tooltip="platform.name">
+                <div class="flex flex-nowrap items-center gap-4">
+                    <ModalConfirmationDelete
+                        v-if="platform.type === 'shopify'"
+                        xrouteDelete="{
+                            name: props.tag_routes.delete_tag.name,
+                            parameters: {
+                                ...props.tag_routes.delete_tag.parameters,
+                                tag: tag.id,
+                            }
+                        }"
+                        :title="trans('Are you sure you want to reset channel :channel?', { channel: customer_sales_channel?.name })"
+                        :description="trans('This will reset the products, baskets, orders and other data associated with this channel. This action cannot be undone.')"
+                        isFullLoading
+                        :noLabel="trans('Yes, reset channel')"
+                    >
+                        <template #default="{ isOpenModal, changeModel }">
+                            <Button
+                                @click="changeModel"
+                                label="Reset channel"
+                                type="negative"
+                            >
+
+                            </Button>
+                        </template>
+                    </ModalConfirmationDelete>
+
+                    <div v-html="ChannelLogo(platform.code)"
+                        class="h-8 w-8"
+                        v-tooltip="platform.name">
                     
+                    </div>
                 </div>
             </div>
+
+            <!-- Warning: Ebay seller -->
             <div v-if="platform.type == 'ebay'" class="flex justify-between mt-5">
                 <div class="w-full border-2 border-yellow-500 rounded-lg p-4 bg-yellow-50">
                     <div class="flex flex-col sm:flex-row sm:items-start">
@@ -142,6 +173,7 @@ const locale = inject('locale', aikuLocaleStructure)
                     </div>
                 </div>
             </div>
+            
             <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 max-w-6xl">
                 <div v-for="platform in platformData" :key="platform.id" class="relative overflow-hidden rounded-lg ring-1 ring-gray-300 bg-white px-4 pt-5 pb-12 shadow-sm sm:px-6 sm:pt-6">
                     <dt>

@@ -12,7 +12,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Ordering\Order;
-use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -25,25 +24,69 @@ class FulfillOrderToShopify extends OrgAction
 
     public function handle(Order $order): void
     {
-        $fulfillOrderId = Arr::get($order->data, 'shopify_data.id');
+        $fulfillOrderId = $order->platform_order_id;
 
         /** @var ShopifyUser $shopifyUser */
         $shopifyUser = $order->customerSalesChannel->user;
 
-        $response = $shopifyUser->api()->getRestClient()->request('POST', 'admin/api/2024-07/fulfillments.json', [
-            'fulfillment' => [
-                'line_items_by_fulfillment_order' => [
-                    [
-                        'fulfillment_order_id' => $fulfillOrderId
-                    ]
-                ]
-            ]
-        ]);
+        $mutation = <<<'GRAPHQL'
+            mutation fulfillmentCreateV2($fulfillmentInput: FulfillmentV2Input!) {
+                fulfillmentCreateV2(fulfillment: $fulfillmentInput) {
+                    fulfillment {
+                        id
+                        status
+                        trackingInfo {
+                            company
+                            number
+                            url
+                        }
+                    }
+                    userErrors {
+                        field
+                        message
+                    }
+                }
+            }
+        GRAPHQL;
 
-        if ($response['body'] == 'Not Found') {
-            throw ValidationException::withMessages(['messages' => __('You dont have the order')]);
+        $deliveryNotes = $order->deliveryNotes->first();
+        $shipments = $deliveryNotes->shipments;
+
+        if (blank($shipments)) {
+            throw ValidationException::withMessages([
+                'messages' => __('The shipments are empty.')
+            ]);
         }
 
-        UpdateTrackingFulfilmentOrderShopify::run($order);
+        $shipperCompanyName = $shipments->first()->shipper->name;
+
+        try {
+
+            $response = $shopifyUser->getShopifyClient(true)->request($mutation, [
+                'fulfillmentInput' => [
+                    'lineItemsByFulfillmentOrder' => [
+                        [
+                            'fulfillmentOrderId' => $fulfillOrderId
+                        ]
+                    ],
+                    'trackingInfo' => [
+                        'numbers' => $shipments->pluck('tracking')->toArray(),
+                        'company' => $shipperCompanyName,
+                        'urls' => $shipments->pluck('combined_label_url')->toArray(),
+                    ]
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            throw ValidationException::withMessages(['message' => $e->getMessage()]);
+        }
+
+        if (!empty($response['body']['data']['fulfillmentCreateV2']['userErrors'])) {
+            throw ValidationException::withMessages([
+                'messages' => collect($response['body']['data']['fulfillmentCreateV2']['userErrors'])
+                    ->pluck('message')
+                    ->join(', ')
+            ]);
+        }
     }
 }

@@ -20,6 +20,10 @@ class CallbackFulfillmentOrderNotification extends WebhookAction
         if (Arr::get($modelData, 'kind') === "FULFILLMENT_REQUEST") {
             RetrieveShopifyAssignedOrders::run($shopifyUser);
         }
+
+        if (Arr::get($modelData, 'kind') === "CANCELLATION_REQUEST") {
+            RetrieveShopifyCancelledOrders::run($shopifyUser);
+        }
     }
 
 

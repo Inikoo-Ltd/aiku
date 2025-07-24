@@ -161,11 +161,15 @@ const messageDelete = ref('')
                                                     :loading="isLoadingdelete"
                                                     @click="() => (onClickDelete(), emits('onYes'))"
                                                     type="red"
-                                                    :label="props.noLabel ?? trans('Delete')"
+                                                    xlabel="props.noLabel ?? trans('Delete')"
                                                     :disabled="isWithMessage ? !messageDelete : false"
                                                     :icon="props.noIcon ?? 'far fa-trash-alt'"
                                                     full
-                                                />
+                                                >
+                                                    <template #label>
+                                                        <span class="whitespace-nowrap">{{ props.noLabel ?? trans('Delete')}}</span>
+                                                    </template>
+                                                </Button>
                                             </div>
         
                                             <!-- <button type="button"
