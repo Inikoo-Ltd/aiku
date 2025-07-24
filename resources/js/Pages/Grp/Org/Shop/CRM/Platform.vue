@@ -36,7 +36,9 @@
   
   const props = defineProps<{
       title: string
-      pageHead: PageHeadingTypes
+      pageHead: PageHeadingTypes,
+      channels: {},
+      products: {},
       tabs: {
           current: string
           navigation: {}
