@@ -224,7 +224,7 @@ const isModalAddress = ref(false)
 
             </Button> -->
             <ModalConfirmationDelete
-                v-if="customer_sales_channel.can_connect_to_platform"
+                v-if="customer_sales_channel.can_connect_to_platform && !customer_sales_channel.platform_status"
                 :routeDelete="{
                     name: 'grp.models.customer_sales_channel.shopify_reset',
                     parameters: {
