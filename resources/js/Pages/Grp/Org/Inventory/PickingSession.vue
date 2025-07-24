@@ -20,6 +20,8 @@ const props = defineProps<{
   title: string
   pageHead: PageHeadingTypes
   items: object
+  itemized: object
+  grouped: object
   timelines: {
     [key: string]: TSTimeline
   }

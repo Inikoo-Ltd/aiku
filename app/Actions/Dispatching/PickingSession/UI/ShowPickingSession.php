@@ -42,7 +42,7 @@ class ShowPickingSession extends OrgAction
     public function asController(Organisation $organisation, Warehouse $warehouse, PickingSession $pickingSession, ActionRequest $request): PickingSession
     {
         $this->parent = $warehouse;
-        $this->initialisationFromWarehouse($warehouse, $request)->withTab(DeliveryNoteTabsEnum::values());
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(PickingSessionTabsEnum::values());
 
         return $this->handle($pickingSession);
     }
@@ -106,6 +106,9 @@ class ShowPickingSession extends OrgAction
             ];
             unset($navigation[PickingSessionTabsEnum::ITEMIZED->value]);
             unset($navigation[PickingSessionTabsEnum::GROUPED->value]);
+        } elseif ($pickingSession->state == PickingSessionStateEnum::PICKING_FINISHED || $pickingSession->state == PickingSessionStateEnum::PACKING_FINISHED) {
+            unset($navigation[PickingSessionTabsEnum::ITEMIZED->value]);
+            unset($navigation[PickingSessionTabsEnum::ITEMS->value]);
         } else {
             unset($navigation[PickingSessionTabsEnum::ITEMS->value]);
         }
