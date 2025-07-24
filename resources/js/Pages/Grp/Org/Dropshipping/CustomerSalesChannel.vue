@@ -229,7 +229,8 @@ const isModalAddress = ref(false)
                     name: 'grp.models.customer_sales_channel.shopify_reset',
                     parameters: {
                         customerSalesChannel: customer_sales_channel.id,
-                    }
+                    },
+                    method: 'patch'
                 }"
                 xtitle="trans('Are you sure you want to delete brand') + ` ${option.name}?`"
                 xisFullLoading
