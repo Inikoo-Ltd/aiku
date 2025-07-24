@@ -276,7 +276,7 @@ class CallApiApcGbShipping extends OrgAction
      */
     public function getLabel(string $labelID, Shipper $shipper): string
     {
-        $apiResponse = Http::withHeaders($this->getHeaders($shipper))->get($this->getBaseUrl() . '/api/3.0/Orders/' . $labelID . '.json')->json();
+        $apiResponse = Http::withHeaders($this->getHeaders($shipper))->timeout(120)->retry(3, 5000)->get($this->getBaseUrl() . '/api/3.0/Orders/' . $labelID . '.json')->json();
 
         return Arr::get($apiResponse, 'Orders.Order.Label.Content', '');
     }

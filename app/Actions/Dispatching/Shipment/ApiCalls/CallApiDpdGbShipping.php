@@ -316,6 +316,8 @@ class CallApiDpdGbShipping extends OrgAction
     {
 
         $response = Http::withHeaders($this->getHeaders($shipper, $output))
+            ->timeout(120)
+            ->retry(3, 5000)
             ->get($this->getBaseUrl() . 'shipping/shipment/' . $shipmentId . '/label');
 
         if ($response->successful()) {
