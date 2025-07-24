@@ -84,8 +84,9 @@ class ShowCustomerSalesChannel extends OrgAction
                     'navigation' => $navigation
                 ],
 
+                'platform'               => $customerSalesChannel->platform,
                 'customer_sales_channel' => $customerSalesChannel,
-
+                'platform_user'          => $customerSalesChannel->user,
 
 
                 'showcase' => [
