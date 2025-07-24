@@ -146,14 +146,19 @@ const onChangeCheked = (checked: boolean, item: DeliveryNote) => {
             selectedDeliveryNotes.value.push(item.id)
         }
     } else {
-        selectedDeliveryNotes.value = selectedDeliveryNotes.value.filter(id => id !== item.id)
+        selectedDeliveryNotes.value = selectedDeliveryNotes.value.filter(id => id != item.id)
     }
 }
 
-
 const onCheckedAll = ({ data, allChecked }) => {
-    for (const row of data) {
-        onChangeCheked(allChecked, row)
+    if (!selectedDeliveryNotes.value) return
+
+    if (allChecked) {
+        const newIds = data.map(row => row.id)
+        selectedDeliveryNotes.value = Array.from(new Set([...selectedDeliveryNotes.value, ...newIds]))
+    } else {
+        const uncheckIds = data.map(row => row.id)
+        selectedDeliveryNotes.value = selectedDeliveryNotes.value.filter(id => !uncheckIds.includes(id))
     }
 }
 
@@ -166,7 +171,9 @@ const onCheckedAll = ({ data, allChecked }) => {
         @onChecked="(item) => onChangeCheked(true, item)" 
         @onUnchecked="(item) => onChangeCheked(false, item)"
         @onCheckedAll="(data) => onCheckedAll(data)"
-        checkboxKey='id' :isChecked="(item) => selectedDeliveryNotes.includes(item.id)">
+        checkboxKey='id' 
+        :isChecked="(item) => selectedDeliveryNotes.includes(item.id)"
+    >
         <template #cell(status)="{ item: deliveryNote }">
             <Icon :data="deliveryNote.state_icon" />
         </template>
