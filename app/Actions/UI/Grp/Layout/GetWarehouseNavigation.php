@@ -215,7 +215,7 @@ class GetWarehouseNavigation
                                 'parameters' => [$warehouse->organisation->slug, $warehouse->slug]
                             ],
                         ] : null,
-                        $user->hasPermissionTo("dispatching.$warehouse->id.view") &&  !app()->environment('production') ?
+                        $user->hasPermissionTo("dispatching.$warehouse->id.view")  ?
                         [
                             'label' => __('picking sessions'),
                             'icon'  => ['fal', 'fa-truck'],
