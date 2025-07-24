@@ -66,6 +66,7 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                 'portfolios.platform_product_id',
                 'portfolios.item_id',
                 'portfolios.customer_sales_channel_id',
+                'platform_possible_matches'
             ])
             ->defaultSort('portfolios.reference')
             ->allowedSorts(['reference', 'created_at'])
@@ -109,6 +110,7 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
 
     public function tableStructure(array $modelOperations = null, $prefix = null): Closure
     {
+
         return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
                 $table
@@ -120,7 +122,9 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                 ->withGlobalSearch()
                 ->column(key: 'item_code', label: __('product'), canBeHidden: false, searchable: true)
                 ->column(key: 'item_name', label: __('product name'), canBeHidden: false, searchable: true)
-                ->column(key: 'platform_status', label: __('Status'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'platform_status', label: __('Status'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'matches', label: __('matches'), canBeHidden: false, sortable: true, searchable: true);
+
         };
     }
 

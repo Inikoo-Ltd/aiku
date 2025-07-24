@@ -10,6 +10,8 @@ namespace App\Actions\Dropshipping\Shopify;
 
 use App\Actions\Dropshipping\Shopify\FulfilmentService\DeleteAllFulfilmentServices;
 use App\Actions\Dropshipping\Shopify\FulfilmentService\StoreFulfilmentService;
+use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolio;
+use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolios;
 use App\Actions\Dropshipping\Shopify\Webhook\DeleteWebhooksFromShopify;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Console\Command;
@@ -24,8 +26,8 @@ class ResetShopifyChannel
         DeleteWebhooksFromShopify::run($customerSalesChannel->user);
         DeleteAllFulfilmentServices::run($customerSalesChannel);
         StoreFulfilmentService::run($customerSalesChannel);
-
         CheckShopifyChannel::run($customerSalesChannel);
+        CheckShopifyPortfolios::run($customerSalesChannel);
     }
 
     public function getCommandSignature(): string
