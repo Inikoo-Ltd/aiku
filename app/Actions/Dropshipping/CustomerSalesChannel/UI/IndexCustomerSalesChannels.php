@@ -18,6 +18,7 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\Platform;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -31,9 +32,9 @@ class IndexCustomerSalesChannels extends OrgAction
 {
     use WithCustomerSubNavigation;
 
-    private Customer $customer;
+    private Customer|Platform $parent;
 
-    public function handle(Customer $customer, $prefix = null): LengthAwarePaginator
+    public function handle(Customer|Platform $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -45,9 +46,15 @@ class IndexCustomerSalesChannels extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        return QueryBuilder::for(CustomerSalesChannel::class)
-                ->where('customer_sales_channels.customer_id', $customer->id)
-                ->select([
+            $queryBuilder = QueryBuilder::for(CustomerSalesChannel::class);
+            if($parent instanceof Customer) {
+                $queryBuilder->where('customer_sales_channels.customer_id', $parent->id);
+            } elseif ($parent instanceof Platform) {
+                $queryBuilder->where('customer_sales_channels.platform_id', $parent->id);
+            }
+
+
+            $queryBuilder->select([
                 'customer_sales_channels.id',
                 'customer_sales_channels.reference',
                 'customer_sales_channels.name',
@@ -67,8 +74,9 @@ class IndexCustomerSalesChannels extends OrgAction
                         ->selectRaw('COALESCE(SUM(total_amount), 0)')
                         ->whereColumn('orders.customer_sales_channel_id', 'customer_sales_channels.id')
                         ->whereNotIn('orders.state', [OrderStateEnum::CREATING, OrderStateEnum::SUBMITTED, OrderStateEnum::CANCELLED]);
-                }, 'total_amount')
-                ->defaultSort('customer_sales_channels.reference')
+                }, 'total_amount');
+                
+        return $queryBuilder->defaultSort('customer_sales_channels.reference')
                 ->allowedSorts(['reference', 'number_customer_clients', 'number_portfolios','number_orders'])
                 ->allowedFilters([$globalSearch])
                 ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -78,9 +86,9 @@ class IndexCustomerSalesChannels extends OrgAction
     public function htmlResponse(LengthAwarePaginator $platforms, ActionRequest $request): Response
     {
 
-        $subNavigation = $this->getCustomerDropshippingSubNavigation($this->customer, $request);
+        $subNavigation = $this->getCustomerDropshippingSubNavigation($this->parent, $request);
         $icon          = ['fal', 'fa-user'];
-        $title         = $this->customer->name;
+        $title         = $this->parent->name;
         $iconRight     = [
             'icon'  => ['fal', 'fa-user-friends'],
             'title' => $title
@@ -144,7 +152,7 @@ class IndexCustomerSalesChannels extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, ActionRequest $request): LengthAwarePaginator
     {
-        $this->customer = $customer;
+        $this->parent = $customer;
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($customer);

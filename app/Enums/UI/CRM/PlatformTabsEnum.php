@@ -18,23 +18,23 @@ enum PlatformTabsEnum: string
     use HasTabs;
 
     case SHOWCASE      = 'showcase';
-    case PRODUCTS      = 'products';
     case CHANNELS      = 'channels';
+    case PRODUCTS      = 'products';
 
     public function blueprint(): array
     {
         return match ($this) {
             PlatformTabsEnum::SHOWCASE => [
-                'title' => __('showcase'),
+                'title' => __('Showcase'),
                 'icon'  => 'fal fa-tachometer-alt',
             ],
             PlatformTabsEnum::PRODUCTS => [
-                'title' => __('products'),
-                'icon'  => 'fal fa-tachometer-alt',
+                'title' => __('Portfolios'),
+                'icon'  => 'fal fa-cube',
             ],
             PlatformTabsEnum::CHANNELS => [
-                'title' => __('channels'),
-                'icon'  => 'fal fa-tachometer-alt',
+                'title' => __('Channels'),
+                'icon'  => 'fal fa-user-friends',
             ],
         };
     }
