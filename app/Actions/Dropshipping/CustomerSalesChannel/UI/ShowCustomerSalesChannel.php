@@ -66,7 +66,7 @@ class ShowCustomerSalesChannel extends OrgAction
 
 
         return Inertia::render(
-            'Org/Dropshipping/PlatformInCustomer',
+            'Org/Dropshipping/CustomerSalesChannel',
             [
                 'title'       => __('customer'),
                 'breadcrumbs' => $this->getBreadcrumbs(

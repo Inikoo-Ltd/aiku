@@ -82,6 +82,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\DeleteCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\DeletePortfolio;
 use App\Actions\Dropshipping\Portfolio\StoreMultiplePortfolios;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
+use App\Actions\Dropshipping\Shopify\ResetShopifyChannel;
 use App\Actions\Fulfilment\Fulfilment\StoreFulfilmentFromUI;
 use App\Actions\Fulfilment\Fulfilment\UpdateFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\StoreFulfilmentCustomer;
@@ -689,6 +690,9 @@ Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customer
     Route::post('portfolio-multiple-manual', StoreMultiplePortfolios::class)->name('portfolio.store_multiple_manual');
     Route::post('client', StoreCustomerClient::class)->name('client.store');
     Route::delete('delete', DeleteCustomerSalesChannel::class)->name('delete');
+    Route::patch('reset-shopify', ResetShopifyChannel::class)->name('shopify_reset');
+
+
 });
 
 Route::post('{shop:id}/purge', StorePurge::class)->name('purge.store');

@@ -196,11 +196,10 @@ const isModalAddress = ref(false);
     </div> -->
   </div>
 
-  <pre>{{platform}}</pre>
+=
   <br /><br />
   <pre>{{customer_sales_channel}}</pre>
   <br /><br />
-<pre>{{platform_user}}</pre>
 
   <!-- has_valid_platform_product_id
   exist_in_platform

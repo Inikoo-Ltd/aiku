@@ -222,7 +222,7 @@ Route::post('customer-sales-channel-manual', StoreRetinaManualPlatform::class)->
 
 
 Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customerSalesChannel:id}')->group(function () {
-    Route::delete('reset-shopify', ResetShopifyChannel::class)->name('shopify_reset');
+    Route::patch('reset-shopify', ResetShopifyChannel::class)->name('shopify_reset');
 
     Route::patch('update', UpdateRetinaCustomerSalesChannel::class)->name('update');
     Route::post('client', StoreRetinaCustomerClient::class)->name('customer-client.store');
