@@ -31,6 +31,7 @@ use App\Models\CRM\Appointment;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Poll;
 use App\Models\CRM\Prospect;
+use App\Models\CRM\TrafficSource;
 use App\Models\CRM\WebUser;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
@@ -211,6 +212,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, \App\Models\Catalogue\ShopTimeSeries> $timeSeries
  * @property-read Timezone $timezone
  * @property-read LaravelCollection<int, TopUp> $topUps
+ * @property-read LaravelCollection<int, TrafficSource> $trafficSources
  * @property-read LaravelCollection<int, Transaction> $transactions
  * @property-read UniversalSearch|null $universalSearch
  * @property-read LaravelCollection<int, Upload> $uploads
@@ -675,4 +677,8 @@ class Shop extends Model implements HasMedia, Auditable
         return $this->hasMany(WebUser::class);
     }
 
+    public function trafficSources(): HasMany
+    {
+        return $this->hasMany(TrafficSource::class);
+    }
 }

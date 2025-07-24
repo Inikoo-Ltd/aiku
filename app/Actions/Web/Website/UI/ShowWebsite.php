@@ -220,16 +220,16 @@ class ShowWebsite extends OrgAction
                 ],
 
                 'route_storefront' => $route_storefront,
-                
+
                 'route_redirects' => [
-                    // 'submit' => [   // TODO: Ganez
-                    //     'name'       => 'grp.org.shops.show.web.redirects.store',
-                    //     'parameters' => [
-                    //         'organisation' => $shop->organisation->slug,
-                    //         'shop'         => $shop->slug,
-                    //         'website'      => $website->slug
-                    //     ]
-                    // ],
+                    'submit' => [
+                        'name'       => 'grp.models.website.redirect.store',
+                        'parameters' => [
+                            'organisation' => $shop->organisation->slug,
+                            'shop'         => $shop->slug,
+                            'website'      => $website->id
+                        ]
+                    ],
                     'fetch_live_webpages' => [
                         'name'       => 'grp.json.active_webpages.index',
                         'parameters' => [

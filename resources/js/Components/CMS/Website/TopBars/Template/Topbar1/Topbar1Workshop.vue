@@ -113,19 +113,6 @@ const layout = inject('layout', {})
                 <span v-html="textReplaceVariables(model?.cart?.text, dummyIrisVariables)" />
             </a>
 
-            <!-- Section: Login -->
-             <span @click="()=> emits('setPanelActive', 'login')" class="hover-dashed">
-                <a v-if="checkVisible(model?.login?.visible || null, isLoggedIn)"
-                    class="space-x-1.5 cursor-pointer whitespace-nowrap"
-                    id=""
-                    :style="getStyles(model?.login?.container?.properties)"
-                >
-                    <FontAwesomeIcon icon='fal fa-sign-in' class='' fixed-width aria-hidden='true' />
-                    <span v-html="textReplaceVariables(model?.login?.text, dummyIrisVariables)" />
-                </a>
-             </span>
-
-
             <!-- Section: Register -->
             <span @click="()=> emits('setPanelActive', 'register')" class="hover-dashed">
                 <a v-if="checkVisible(model?.register?.visible || null, isLoggedIn)"
@@ -136,7 +123,19 @@ const layout = inject('layout', {})
                     <span v-html="textReplaceVariables(model?.register.text, dummyIrisVariables)" />
                 </a>
             </span>
-
+            
+            <!-- Section: Login -->
+            <span @click="()=> emits('setPanelActive', 'login')" class="hover-dashed">
+                <a v-if="checkVisible(model?.login?.visible || null, isLoggedIn)"
+                    class="space-x-1.5 cursor-pointer whitespace-nowrap"
+                    id=""
+                    :style="getStyles(model?.login?.container?.properties)"
+                >
+                    <FontAwesomeIcon icon='fal fa-sign-in' class='' fixed-width aria-hidden='true' />
+                    <span v-html="textReplaceVariables(model?.login?.text, dummyIrisVariables)" />
+                </a>
+            </span>
+            
             <!-- Section: LogoutRetina -->
             <a v-if="checkVisible(model?.logout?.visible || null, isLoggedIn)"
                 

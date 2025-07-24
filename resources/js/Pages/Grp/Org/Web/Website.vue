@@ -106,7 +106,7 @@ const form = useForm({
     to_url: ''
 })
 const submitForm = () => {
-    if (props?.route_redirects?.submit?.name) {
+    if (!props?.route_redirects?.submit?.name) {
         console.log('No submit route')
         return 
     }
@@ -195,7 +195,7 @@ const submitForm = () => {
                     <!-- Action Buttons -->
                     <div class="flex justify-end space-x-2">
                         <Button label="Cancel" @click="() => openModal = false" type="white" />
-                        <Button type="save" label="create Redirect" full :disabled="form.processing" />
+                        <Button type="save" label="create Redirect" full :disabled="form.processing"  @click="() => submitForm()" />
                     </div>
                 </form>
             </div>

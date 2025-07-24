@@ -22,31 +22,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 /**
  *
  *
- * @property int $id
- * @property int $group_id
- * @property int $organisation_id
- * @property int $warehouse_id
- * @property int $location_id
- * @property int|null $picking_session_id
- * @property int|null $stock_family_id
- * @property int|null $stock_id
- * @property int|null $org_stock_family_id
- * @property int|null $org_stock_id
- * @property string|null $notes
- * @property string $quantity_required
- * @property string|null $quantity_picked
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, DeliveryNoteItem> $deliveryNoteItems
- * @property-read Group $group
- * @property-read \App\Models\Inventory\Location $location
+ * @property-read Group|null $group
+ * @property-read \App\Models\Inventory\Location|null $location
  * @property-read \App\Models\Inventory\OrgStock|null $orgStock
  * @property-read \App\Models\Inventory\OrgStockFamily|null $orgStockFamily
- * @property-read Organisation $organisation
+ * @property-read Organisation|null $organisation
  * @property-read \App\Models\Inventory\PickingSession|null $pickingSession
  * @property-read Stock|null $stock
  * @property-read StockFamily|null $stockFamily
- * @property-read \App\Models\Inventory\Warehouse $warehouse
+ * @property-read \App\Models\Inventory\Warehouse|null $warehouse
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PickingSessionItem newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PickingSessionItem newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PickingSessionItem query()
