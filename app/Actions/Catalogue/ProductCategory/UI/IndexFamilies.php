@@ -29,6 +29,7 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -160,7 +161,18 @@ class IndexFamilies extends OrgAction
                 'organisations.slug as organisation_slug',
                 'product_category_sales_intervals.sales_grp_currency_all as sales_all',
                 'product_category_ordering_intervals.invoices_all as invoices_all',
-
+                DB::raw("(
+                    SELECT json_agg(json_build_object(
+                        'id', c.id,
+                        'slug', c.slug,
+                        'code', c.code,
+                        'name', c.name
+                    ))
+                    FROM collection_has_models chm
+                    JOIN collections c ON chm.collection_id = c.id
+                    WHERE chm.model_id = product_categories.id
+                        AND chm.model_type = 'ProductCategory'
+                ) as collections"),
             ])
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
             ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
@@ -178,7 +190,7 @@ class IndexFamilies extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
 
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
@@ -244,6 +256,7 @@ class IndexFamilies extends OrgAction
                 }
 
                 if (class_basename($parent) != 'Collection') {
+                    $table->column(key: 'collections', label: __('collections'), canBeHidden: false, sortable: true, searchable: true);
                     $table->column(key: 'number_current_products', label: __('current products'), canBeHidden: false, sortable: true, searchable: true);
                 }
 
@@ -408,12 +421,12 @@ class IndexFamilies extends OrgAction
                     'navigation' => $navigation,
                 ],
                 ProductCategoryTabsEnum::INDEX->value => $this->tab == ProductCategoryTabsEnum::INDEX->value ?
-                    fn () => FamiliesResource::collection($families)
-                    : Inertia::lazy(fn () => FamiliesResource::collection($families)),
+                    fn() => FamiliesResource::collection($families)
+                    : Inertia::lazy(fn() => FamiliesResource::collection($families)),
 
                 ProductCategoryTabsEnum::SALES->value => $this->tab == ProductCategoryTabsEnum::SALES->value ?
-                    fn () => FamiliesResource::collection($families)
-                    : Inertia::lazy(fn () => FamiliesResource::collection($families)),
+                    fn() => FamiliesResource::collection($families)
+                    : Inertia::lazy(fn() => FamiliesResource::collection($families)),
             ]
         )->table($this->tableStructure(parent: $this->parent, modelOperations: null, canEdit: false, prefix: ProductCategoryTabsEnum::INDEX->value, sales: false))
             ->table($this->tableStructure(parent: $this->parent, modelOperations: null, canEdit: false, prefix: ProductCategoryTabsEnum::SALES->value, sales: $this->sales));
