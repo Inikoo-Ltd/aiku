@@ -349,6 +349,7 @@ Route::delete('portfolio/{portfolio:id}', DeletePortfolio::class)->name('portfol
 Route::patch('portfolio/{portfolio:id}', UpdatePortfolio::class)->name('portfolio.update')->withoutScopedBindings();
 
 Route::post('portfolio/{portfolio:id}/match-to-existing-shopify-product', MatchPortfolioToCurrentShopifyProduct::class)->name('portfolio.match_to_existing_shopify_product');
+Route::post('portfolio/{portfolio:id}/store-new-shopify-product', MatchPortfolioToCurrentShopifyProduct::class)->name('portfolio.store_new_shopify_product');
 
 
 Route::name('org.')->prefix('org/{organisation:id}')->group(function () {

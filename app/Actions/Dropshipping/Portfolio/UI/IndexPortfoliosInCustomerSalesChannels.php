@@ -66,7 +66,10 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                 'portfolios.platform_product_id',
                 'portfolios.item_id',
                 'portfolios.customer_sales_channel_id',
-                'platform_possible_matches'
+                'platform_possible_matches',
+                'portfolios.exist_in_platform',
+                'portfolios.platform_status',
+                'portfolios.has_valid_platform_product_id',
             ])
             ->defaultSort('portfolios.reference')
             ->allowedSorts(['reference', 'created_at'])
@@ -123,7 +126,9 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                 ->column(key: 'item_code', label: __('product'), canBeHidden: false, searchable: true)
                 ->column(key: 'item_name', label: __('product name'), canBeHidden: false, searchable: true)
                 ->column(key: 'platform_status', label: __('Status'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'matches', label: __('matches'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'matches', label: __('matches'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'actions', label: __('actions'), canBeHidden: false, sortable: true, searchable: true);
+
 
         };
     }

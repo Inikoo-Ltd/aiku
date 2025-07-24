@@ -113,15 +113,17 @@ const dummyImage = [
         </template>
 
         <template #cell(matches)="{ item: portfolio }">
-            <div class="flex gap-x-2 items-center">
-                <div class="h-9 w-auto max-w-9">
-                    <img :src="dummyImage?.[0]?.src" />
-                </div>
+            <div v-if="!portfolio.platform_status"  class="flex gap-x-2 items-center">
+
+<!--                <div class="h-9 w-auto max-w-9">-->
+<!--                    <img :src="portfolio.platform_possible_matches[0]?.src" />-->
+<!--                </div>-->
 
                 <div>
-                    {{ portfolio.platform_possible_matches?.matches_labels?.[0] }}
+                    {{ portfolio.platform_possible_matches?.matches_labels[0]}}
                     <ButtonWithLink
                         :routeTarget="{
+                        method: 'post',
                             name: 'grp.models.portfolio.match_to_existing_shopify_product',
                             parameters: {
                                 portfolio: portfolio.id,
@@ -129,17 +131,41 @@ const dummyImage = [
                             }
                         }"
                         icon=""
-                        label="Matching"
+                        label="Match"
                         size="xxs"
                     />
                 </div>
+                <br />
+                <br />
+
+                <pre>{{ portfolio.id }}</pre>
             </div>
 
-            <br />
-            <br />
-            
-            <pre>{{ portfolio.id }}</pre>
-            <pre>{{ portfolio.platform_possible_matches }}</pre>
+
+        </template>
+
+        <template #cell(actions)="{ item: portfolio }">
+            <div v-if="!portfolio.platform_status"  class="flex gap-x-2 items-center">
+
+
+                <div>
+
+                    <ButtonWithLink
+                        :routeTarget="{
+                        method: 'post',
+                            name: 'grp.models.portfolio.store_new_shopify_product',
+                            parameters: {
+                                portfolio: portfolio.id,                            }
+                        }"
+                        icon=""
+                        label="Create new product"
+                        size="xxs"
+                    />
+                </div>
+
+            </div>
+
+
         </template>
 
 

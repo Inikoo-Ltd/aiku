@@ -28,6 +28,9 @@ class PortfoliosResource extends JsonResource
 
     public function toArray($request): array
     {
+
+
+
         return [
             'id'         => $this->id,
             'reference'  => $this->reference,
@@ -37,6 +40,9 @@ class PortfoliosResource extends JsonResource
             'item_id'    => $this->item_id,
             'type'       => $this->type,
             'created_at' => $this->created_at,
+
+
+
 
             'has_valid_platform_product_id' => $this->has_valid_platform_product_id,
             'exist_in_platform'             => $this->exist_in_platform,
