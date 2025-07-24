@@ -220,9 +220,27 @@ const isModalAddress = ref(false)
                 Platform status
             </div>
 
-            <Button v-if="customer_sales_channel.can_connect_to_platform" label="Reset Channel" type="red" icon="fal fa-undo-alt">
+            <!-- <Button  label="Reset Channel" type="red" icon="fal fa-undo-alt">
 
-            </Button>
+            </Button> -->
+            <ModalConfirmationDelete
+                v-if="customer_sales_channel.can_connect_to_platform"
+                :routeDelete="{
+                    name: 'grp.models.customer_sales_channel.shopify_reset',
+                    parameters: {
+                        customerSalesChannel: customer_sales_channel.id,
+                    }
+                }"
+                xtitle="trans('Are you sure you want to delete brand') + ` ${option.name}?`"
+                xisFullLoading
+            >
+                <template #default="{ isOpenModal, changeModel }">
+                    <Button  @click.stop="changeModel" label="Reset channel" type="negative" icon="fal fa-undo-alt">
+        
+                    </Button>
+                </template>
+            </ModalConfirmationDelete>
+
             <ModalConfirmationDelete
                 v-else
                 xrouteDelete="{
