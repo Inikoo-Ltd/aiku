@@ -69,7 +69,7 @@ class CallApiGlsSKShipping extends OrgAction
         $prepareParams = (object)[
             'ClientNumber' => $clientNumber,
             'ClientReference' => Str::limit($parent->reference, 30),
-            'Content' => app()->isProduction() ? $shippingNotes : 'test_development_aiku_' . ($parent->customer_notes ?? ''),
+            'Content' => app()->isProduction() ? $shippingNotes : 'test_development_aiku_' . ($shippingNotes ?? ''),
             'Count' => $parcels ? count($parcels) : 1,
             'DeliveryAddress' => (object)[
                 'ContactEmail' => Arr::get($parentResource, 'to_email'),
