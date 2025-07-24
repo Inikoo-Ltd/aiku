@@ -19,6 +19,7 @@ import { faShopify, faTiktok } from "@fortawesome/free-brands-svg-icons"
 import { faStore, faBookmark, faUndoAlt } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 library.add(faStore, faBookmark, faUndoAlt)
 
 const props = defineProps<{
@@ -201,10 +202,10 @@ const isModalAddress = ref(false)
 
         <div class="h-fit flex gap-x-2 w-fit text-xs">
             <div class="border border-gray-300 rounded flex items-center gap-x-2 px-2 py-1 w-fit">
-                <FontAwesomeIcon v-if="customer_sales_channel.has_valid_platform_product_id" icon="fal fa-check"
+                <FontAwesomeIcon v-if="customer_sales_channel.can_connect_to_platform" icon="fal fa-check"
                     class="text-green-500" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon v-else icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-                Has valid platform
+                Can connect to platform
             </div>
             <div class="border border-gray-300 rounded flex items-center gap-x-2 px-2 py-1 w-fit">
                 <FontAwesomeIcon v-if="customer_sales_channel.exist_in_platform" icon="fal fa-check"
@@ -219,9 +220,45 @@ const isModalAddress = ref(false)
                 Platform status
             </div>
 
-            <Button label="Reset Channel" type="red" icon="fal fa-undo-alt">
+            <!-- <Button  label="Reset Channel" type="red" icon="fal fa-undo-alt">
 
-            </Button>
+            </Button> -->
+            <ModalConfirmationDelete
+                v-if="customer_sales_channel.can_connect_to_platform && !customer_sales_channel.platform_status"
+                :routeDelete="{
+                    name: 'grp.models.customer_sales_channel.shopify_reset',
+                    parameters: {
+                        customerSalesChannel: customer_sales_channel.id,
+                    }
+                }"
+                xtitle="trans('Are you sure you want to delete brand') + ` ${option.name}?`"
+                xisFullLoading
+            >
+                <template #default="{ isOpenModal, changeModel }">
+                    <Button  @click.stop="changeModel" label="Reset channel" type="negative" icon="fal fa-undo-alt">
+        
+                    </Button>
+                </template>
+            </ModalConfirmationDelete>
+
+            <ModalConfirmationDelete
+                v-else
+                xrouteDelete="{
+                    name: props.brand_routes.delete_brand.name,
+                    parameters: {
+                        ...props.brand_routes.delete_brand.parameters,
+                        brand: option.id,
+                    }
+                }"
+                xtitle="trans('Are you sure you want to delete brand') + ` ${option.name}?`"
+                isFullLoading
+            >
+                <template #default="{ isOpenModal, changeModel }">
+                    <Button  @click.stop="changeModel" label="Delete" type="delete">
+        
+                    </Button>
+                </template>
+            </ModalConfirmationDelete>
         </div>
     </div>
 
