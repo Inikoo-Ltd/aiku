@@ -24,6 +24,8 @@ class ResetShopifyChannel
         DeleteWebhooksFromShopify::run($customerSalesChannel->user);
         DeleteAllFulfilmentServices::run($customerSalesChannel);
         StoreFulfilmentService::run($customerSalesChannel);
+
+        CheckShopifyChannel::run($customerSalesChannel);
     }
 
     public function getCommandSignature(): string
@@ -34,6 +36,11 @@ class ResetShopifyChannel
     public function asCommand(Command $command): void
     {
         $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->firstOrFail();
+        $this->handle($customerSalesChannel);
+    }
+
+    public function asController(CustomerSalesChannel $customerSalesChannel): void
+    {
         $this->handle($customerSalesChannel);
     }
 
