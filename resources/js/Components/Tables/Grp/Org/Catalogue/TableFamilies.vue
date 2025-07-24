@@ -256,5 +256,5 @@ const isLoadingDetach = ref<string[]>([])
             </Link>
         </template>
     </Table>
-    <pre>{{ data.data[0] }}</pre>
+    <!-- <pre>{{ data.data[0] }}</pre> -->
 </template>

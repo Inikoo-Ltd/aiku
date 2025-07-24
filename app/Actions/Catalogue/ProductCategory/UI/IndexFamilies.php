@@ -172,6 +172,7 @@ class IndexFamilies extends OrgAction
                     JOIN collections c ON chm.collection_id = c.id
                     WHERE chm.model_id = product_categories.id
                         AND chm.model_type = 'ProductCategory'
+                        AND c.deleted_at IS NULL
                 ) as collections"),
             ])
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
