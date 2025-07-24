@@ -137,7 +137,7 @@ class DropshippingPortfoliosResource extends JsonResource
         foreach (Arr::get($this->platform_possible_matches, 'raw_data') as $possibleMatch) {
             $possibleMatches[] = [
                 'id' => Arr::get($possibleMatch, 'id'),
-                'title' => Arr::get($possibleMatch, 'title'),
+                'name' => Arr::get($possibleMatch, 'title'),
                 'images' => Arr::get($possibleMatch, '0.uri'),
             ];
         }

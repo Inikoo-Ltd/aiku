@@ -24,8 +24,12 @@ class PlatformsResource extends JsonResource
         return [
             'id'      => $this->id,
             'code'    => $this->code,
+            'slug'    => $this->slug,
             'name'    => $this->name,
-            'type'    => $this->type
+            'type'    => $this->type,
+            'number_customers' => $this->stats?->number_customers,
+            'number_products' => $this->stats?->number_products,
+            'number_orders' => $this->stats?->number_orders
         ];
     }
 }

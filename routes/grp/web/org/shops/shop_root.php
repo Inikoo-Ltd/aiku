@@ -53,6 +53,9 @@ Route::prefix('{shop}')->name('show.')
                 Route::prefix("traffic-sources")
                     ->name("traffic_sources.")
                     ->group(__DIR__ . "/traffic_sources.php");
+                Route::prefix("platforms")
+                    ->name("platforms.")
+                    ->group(__DIR__ . "/platforms.php");
             }
         );
 
