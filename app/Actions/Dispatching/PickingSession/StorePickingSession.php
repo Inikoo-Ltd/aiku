@@ -16,6 +16,7 @@ use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
+use App\Models\Dispatching\DeliveryNote;
 use App\Models\Inventory\PickingSession;
 use App\Models\Inventory\Warehouse;
 use Illuminate\Http\RedirectResponse;
@@ -23,6 +24,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rules\Enum;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -39,6 +41,23 @@ class StorePickingSession extends OrgAction
     {
         $pickingSession = DB::transaction(function () use ($warehouse, $modelData, $queued) {
             $deliveryNoteIds = Arr::pull($modelData, 'delivery_notes');
+            $validDeliveryNoteIds = DeliveryNote::whereIn('id', $deliveryNoteIds)
+                ->get()
+                ->filter(function ($deliveryNote) {
+                    return $deliveryNote->pickingSessions->isEmpty();
+                })
+                ->pluck('id')
+                ->toArray();
+
+            if (empty($validDeliveryNoteIds)) {
+                throw ValidationException::withMessages(
+                     [
+                        'message' => [
+                            'delivery_notes' => 'All selected delivery notes are already in a picking session.',
+                        ]
+                    ]
+                );
+            }
 
             data_set(
                 $modelData,
@@ -58,7 +77,7 @@ class StorePickingSession extends OrgAction
             /** @var PickingSession $pickingSession */
             $pickingSession = $warehouse->pickingSessions()->create($modelData);
 
-            $pickingSession->deliveryNotes()->attach($deliveryNoteIds, [
+            $pickingSession->deliveryNotes()->attach($validDeliveryNoteIds, [
                 'organisation_id' => $pickingSession->organisation_id,
                 'group_id'        => $pickingSession->group_id
             ]);
