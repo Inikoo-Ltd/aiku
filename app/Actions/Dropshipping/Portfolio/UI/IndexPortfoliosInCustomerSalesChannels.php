@@ -107,7 +107,10 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                             'style' => 'create',
                             'label' => __('Add Sales Channel'),
                             'route' => [
-                                'name' => 'retina.dropshipping.customer_sales_channels.create',
+                                'name' => 'grp.models.shopify.batch_upload',
+                                'parameters' => [
+                                    'customerSalesChannel' =>  $this->customerSalesChannel->id,
+                                ]
                             ]
                         ],
                         [
@@ -115,7 +118,10 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                             'style' => 'create',
                             'label' => __('Add Sales Channel'),
                             'route' => [
-                                'name' => 'retina.dropshipping.customer_sales_channels.create',
+                                'name' => 'grp.models.shopify.batch_match',
+                                'parameters' => [
+                                    'customerSalesChannel' =>  $this->customerSalesChannel->id,
+                                ]
                             ]
                         ]
                     ]
