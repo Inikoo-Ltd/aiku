@@ -12,6 +12,7 @@ namespace App\Actions\Dropshipping\Platform;
 
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateCustomers;
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateOrders;
+use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydratePortfolios;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Dropshipping\Platform;
 
@@ -30,6 +31,7 @@ class HydratePlatforms
     {
         PlatformHydrateOrders::run($platform);
         PlatformHydrateCustomers::run($platform);
+        PlatformHydratePortfolios::run($platform);
     }
 
 
