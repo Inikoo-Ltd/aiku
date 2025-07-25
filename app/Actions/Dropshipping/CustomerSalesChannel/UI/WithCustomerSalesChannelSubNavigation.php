@@ -40,9 +40,7 @@ trait WithCustomerSalesChannelSubNavigation
             ],
             'iconRight'  => $iconRight,
             'titleRight' => $titleRight,
-            'platform'   => [
-                'label' => 'xxx',
-            ],
+            'platform'   => $customerSalesChannel->platform,
             'afterTitle' => [
                 'label' => ' @'.$customerSalesChannel->customer->name.' ('.$customerSalesChannel->platform->name.')',
             ],

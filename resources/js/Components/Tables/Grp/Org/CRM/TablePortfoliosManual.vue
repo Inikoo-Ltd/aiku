@@ -78,12 +78,8 @@ const onDeletePortfolio = async (routeDelete: routeType, portfolioReference: str
             </Link>
         </template>
 
-
-        <template #cell(location)="{ item: portfolio }">
-            <AddressLocation :data="portfolio['location']" />
-        </template>
-
         <template #cell(platform_status)="{ item: portfolio }">
+            
         </template>
 
         <template #cell(created_at)="{ item: portfolio }">
@@ -101,11 +97,13 @@ const onDeletePortfolio = async (routeDelete: routeType, portfolioReference: str
         </template>
 
         <template #cell(matches)="{ item: portfolio }">
+            
         </template>
 
         
         <!-- Column: actions -->
         <template #cell(actions)="{ item: portfolio }">
+            
         </template>
     </Table>
 </template>
