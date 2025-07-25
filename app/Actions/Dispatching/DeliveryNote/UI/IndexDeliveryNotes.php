@@ -62,8 +62,24 @@ class IndexDeliveryNotes extends OrgAction
             $model     = __('Goods Out');
         }
 
-        $todo = $this->bucket == 'unassigned';
+        $todo = $this->bucket == 'unassigned' || $this->bucket == 'queued';
 
+        $pickingSessionRoute = [
+                    'name' => 'grp.models.warehouse.picking_session.store',
+                    'parameters' => [
+                        'warehouse' => $this->warehouse->id
+                    ]
+        ];
+
+        if($this->bucket == 'queued') {
+            $pickingSessionRoute = [
+                    'name' => 'grp.models.warehouse.queued_picking_session.store',
+                    'parameters' => [
+                        'warehouse' => $this->warehouse->id
+                    ]
+            ];
+
+        }
         return Inertia::render(
             'Org/Dispatching/DeliveryNotes',
             [
@@ -83,12 +99,7 @@ class IndexDeliveryNotes extends OrgAction
                 ],
                 'data'        => DeliveryNotesResource::collection($deliveryNotes),
                 "todo"        => $todo,
-                'picking_session_route' => [
-                    'name' => 'grp.models.warehouse.picking_session.store',
-                    'parameters' => [
-                        'warehouse' => $this->warehouse->id
-                    ]
-                ]
+                'picking_session_route' => $pickingSessionRoute
             ]
         )->table($this->tableStructure(parent: $this->parent, bucket: $this->bucket, shopType: $this->shopType));
     }

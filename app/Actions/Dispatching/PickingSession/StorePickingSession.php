@@ -9,6 +9,7 @@
 
 namespace App\Actions\Dispatching\PickingSession;
 
+use App\Actions\Dispatching\DeliveryNote\StartHandlingDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToInQueue;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
@@ -34,9 +35,9 @@ class StorePickingSession extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(Warehouse $warehouse, array $modelData): PickingSession
+    public function handle(Warehouse $warehouse, array $modelData, bool $queued = false): PickingSession
     {
-        $pickingSession = DB::transaction(function () use ($warehouse, $modelData) {
+        $pickingSession = DB::transaction(function () use ($warehouse, $modelData, $queued) {
             $deliveryNoteIds = Arr::pull($modelData, 'delivery_notes');
 
             data_set(
@@ -70,7 +71,11 @@ class StorePickingSession extends OrgAction
             $numberDeliveryNotes = 0;
             foreach ($deliveryNotes as $deliveryNote) {
                 $numberDeliveryNotes++;
-                UpdateDeliveryNoteStateToInQueue::make()->action($deliveryNote, request()->user());
+                if($queued) {
+                    StartHandlingDeliveryNote::make()->action($deliveryNote, request()->user());
+                } else {
+                    UpdateDeliveryNoteStateToInQueue::make()->action($deliveryNote, request()->user());
+                }
 
                 foreach ($deliveryNote->deliveryNoteItems as $item) {
                     $numberItems++;
@@ -117,6 +122,16 @@ class StorePickingSession extends OrgAction
         $this->initialisationFromWarehouse($warehouse, $request);
 
         return $this->handle($warehouse, $this->validatedData);
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function inQueued(Warehouse $warehouse, ActionRequest $request): PickingSession
+    {
+        $this->initialisationFromWarehouse($warehouse, $request);
+
+        return $this->handle($warehouse, $this->validatedData, true);
     }
 
     public function htmlResponse(PickingSession $pickingSession, ActionRequest $request): RedirectResponse
