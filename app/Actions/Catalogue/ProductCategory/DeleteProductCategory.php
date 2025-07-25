@@ -11,7 +11,6 @@ namespace App\Actions\Catalogue\ProductCategory;
 use App\Actions\OrgAction;
 use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
@@ -39,7 +38,7 @@ class DeleteProductCategory extends OrgAction
 
             $productCategory->forceDelete();
         } else {
-            if($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
+            if ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
                 DB::table('products')->where('family_id', $productCategory->id)->update(['family_id' => null]);
             }
             $productCategory->webpage()->delete();

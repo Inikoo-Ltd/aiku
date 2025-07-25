@@ -9,7 +9,6 @@
 namespace App\Http\Middleware;
 
 use App\Actions\Retina\UI\GetRetinaFirstLoadProps;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\UI\LoggedWebUserResource;
 use App\Models\CRM\WebUser;
 use Illuminate\Http\Request;

@@ -17,6 +17,7 @@ use App\Enums\UI\CRM\CustomerPlatformTabsEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\TiktokUser;
 use App\Models\Dropshipping\WooCommerceUser;
@@ -36,11 +37,16 @@ class ShowCustomerSalesChannel extends OrgAction
         return $customerSalesChannel;
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inPlatform(Organisation $organisation, Shop $shop, Platform $platform, CustomerSalesChannel $customerSalesChannel, ActionRequest $request): CustomerSalesChannel
+    {
+        $this->initialisationFromShop($customerSalesChannel->shop, $request)->withTab(CustomerPlatformTabsEnum::values());
+        return $this->handle($customerSalesChannel);
+    }
+
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, ActionRequest $request): CustomerSalesChannel
     {
         $this->initialisationFromShop($shop, $request)->withTab(CustomerPlatformTabsEnum::values());
-
-
         return $this->handle($customerSalesChannel);
     }
 
@@ -69,11 +75,11 @@ class ShowCustomerSalesChannel extends OrgAction
             'Org/Dropshipping/CustomerSalesChannel',
             [
                 'title'       => __('customer'),
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $customerSalesChannel,
-                    $request->route()->getName(),
-                    $request->route()->originalParameters()
-                ),
+//                'breadcrumbs' => $this->getBreadcrumbs(
+//                    $customerSalesChannel,
+//                    $request->route()->getName(),
+//                    $request->route()->originalParameters()
+//                ),
                 'pageHead'    => [
                     ...$this->getCustomerSalesChannelSubNavigationHead($customerSalesChannel, $request),
                     'actions' => $actions
@@ -103,6 +109,7 @@ class ShowCustomerSalesChannel extends OrgAction
 
     public function getBreadcrumbs(CustomerSalesChannel $customerSalesChannel, string $routeName, array $routeParameters): array
     {
+
         $headCrumb = function (CustomerSalesChannel $customerSalesChannel, array $routeParameters, string $suffix = '') {
             return [
                 [

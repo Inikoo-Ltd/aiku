@@ -422,12 +422,12 @@ class IndexFamilies extends OrgAction
                     'navigation' => $navigation,
                 ],
                 ProductCategoryTabsEnum::INDEX->value => $this->tab == ProductCategoryTabsEnum::INDEX->value ?
-                    fn() => FamiliesResource::collection($families)
-                    : Inertia::lazy(fn() => FamiliesResource::collection($families)),
+                    fn () => FamiliesResource::collection($families)
+                    : Inertia::lazy(fn () => FamiliesResource::collection($families)),
 
                 ProductCategoryTabsEnum::SALES->value => $this->tab == ProductCategoryTabsEnum::SALES->value ?
-                    fn() => FamiliesResource::collection($families)
-                    : Inertia::lazy(fn() => FamiliesResource::collection($families)),
+                    fn () => FamiliesResource::collection($families)
+                    : Inertia::lazy(fn () => FamiliesResource::collection($families)),
             ]
         )->table($this->tableStructure(parent: $this->parent, modelOperations: null, canEdit: false, prefix: ProductCategoryTabsEnum::INDEX->value, sales: false))
             ->table($this->tableStructure(parent: $this->parent, modelOperations: null, canEdit: false, prefix: ProductCategoryTabsEnum::SALES->value, sales: $this->sales));

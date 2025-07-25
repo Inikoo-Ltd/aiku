@@ -46,7 +46,8 @@ class IndexDeliveryNoteItemsStateUnassigned extends OrgAction
                 'org_stocks.id as org_stock_id',
                 'org_stocks.slug as org_stock_slug',
                 'org_stocks.code as org_stock_code',
-                'org_stocks.name as org_stock_name'
+                'org_stocks.name as org_stock_name',
+                'org_stocks.packed_in'
             ])
             ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required'])
             ->allowedFilters([$globalSearch])
@@ -75,10 +76,8 @@ class IndexDeliveryNoteItemsStateUnassigned extends OrgAction
             $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'quantity_required', label: __('Quantity Required'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
-
         };
     }
-
 
 
 }

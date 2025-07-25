@@ -171,6 +171,7 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
 
         <!-- Column: Quantity Required -->
         <template #cell(quantity_required)="{ item }">
+
             <span v-tooltip="item.quantity_required">
                 <FractionDisplay  v-if="item.quantity_required_fractional"   :fractionData="item.quantity_required_fractional" />
                 <span v-else>{{item.quantity_required}}</span>

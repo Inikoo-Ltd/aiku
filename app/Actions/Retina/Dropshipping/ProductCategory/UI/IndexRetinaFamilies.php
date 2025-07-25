@@ -27,7 +27,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaFamilies extends RetinaAction
 {
-
     private Shop|ProductCategory $parent;
 
     public function asController(ActionRequest $request): LengthAwarePaginator
@@ -134,15 +133,15 @@ class IndexRetinaFamilies extends RetinaAction
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon', sortable: true)
                 ->withModelOperations($modelOperations);
 
-                $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'sub_department_name', label: __('sub department'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'department_name', label: __('Department'), canBeHidden: false, sortable: true, searchable: true);
-                     
+            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'sub_department_name', label: __('sub department'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'department_name', label: __('Department'), canBeHidden: false, sortable: true, searchable: true);
 
-                if (class_basename($parent) != 'Collection') {
-                    $table->column(key: 'number_current_products', label: __('current products'), canBeHidden: false, sortable: false, searchable: false);
-                }
+
+            if (class_basename($parent) != 'Collection') {
+                $table->column(key: 'number_current_products', label: __('current products'), canBeHidden: false, sortable: false, searchable: false);
+            }
         };
     }
 
@@ -230,17 +229,17 @@ class IndexRetinaFamilies extends RetinaAction
         };
 
         return match ($routeName) {
-             'retina.catalogue.families.index' =>
-                array_merge(
-                    ShowRetinaCatalogue::make()->getBreadcrumbs(),
-                    $headCrumb(
-                        [
-                            'name'       => $routeName,
-                            'parameters' => $routeParameters
-                        ],
-                        $suffix
-                    )
-                ),
+            'retina.catalogue.families.index' =>
+               array_merge(
+                   ShowRetinaCatalogue::make()->getBreadcrumbs(),
+                   $headCrumb(
+                       [
+                           'name'       => $routeName,
+                           'parameters' => $routeParameters
+                       ],
+                       $suffix
+                   )
+               ),
 
 
 

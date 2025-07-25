@@ -17,7 +17,7 @@ trait WithCustomerSalesChannelSubNavigation
     public function getCustomerSalesChannelSubNavigationHead(CustomerSalesChannel $customerSalesChannel, ActionRequest $request, $titleRight = '', $iconRight = null): array
     {
         return [
-            'subNavigation' => $this->getCustomerSalesChannelSubNavigation($customerSalesChannel, $request),
+            'subNavigation' => $this->getCustomerSalesChannelSubNavigation($customerSalesChannel),
             ...$this->getCustomerSalesChannelSubNavigationHeadProperties($customerSalesChannel, $titleRight, $iconRight),
         ];
     }
@@ -48,7 +48,7 @@ trait WithCustomerSalesChannelSubNavigation
     }
 
 
-    public function getCustomerSalesChannelSubNavigation(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): array
+    public function getCustomerSalesChannelSubNavigation(CustomerSalesChannel $customerSalesChannel): array
     {
         $subNavigation = [];
 
@@ -56,7 +56,12 @@ trait WithCustomerSalesChannelSubNavigation
             'isAnchor' => true,
             'route'    => [
                 'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show',
-                'parameters' => $request->route()->originalParameters()
+                'parameters' => [
+                    'organisation' => $customerSalesChannel->shop->organisation->slug,
+                    'shop'         => $customerSalesChannel->shop->slug,
+                    'customer'     => $customerSalesChannel->customer->slug,
+                    'customerSalesChannel' => $customerSalesChannel->slug,
+                ]
             ],
 
             'label'    => __('Channel').': '.$customerSalesChannel->reference,
@@ -72,7 +77,12 @@ trait WithCustomerSalesChannelSubNavigation
             'label'    => __('Portfolios'),
             'route'    => [
                 'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.portfolios.index',
-                'parameters' => $request->route()->originalParameters()
+                'parameters' => [
+                    'organisation' => $customerSalesChannel->shop->organisation->slug,
+                    'shop'         => $customerSalesChannel->shop->slug,
+                    'customer'     => $customerSalesChannel->customer->slug,
+                    'customerSalesChannel' => $customerSalesChannel->slug,
+                ]
 
             ],
             'leftIcon' => [
@@ -86,7 +96,12 @@ trait WithCustomerSalesChannelSubNavigation
             'label'    => __('Clients'),
             'route'    => [
                 'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.index',
-                'parameters' => $request->route()->originalParameters()
+                'parameters' => [
+                    'organisation' => $customerSalesChannel->shop->organisation->slug,
+                    'shop'         => $customerSalesChannel->shop->slug,
+                    'customer'     => $customerSalesChannel->customer->slug,
+                    'customerSalesChannel' => $customerSalesChannel->slug,
+                ]
 
             ],
             'leftIcon' => [
@@ -100,7 +115,12 @@ trait WithCustomerSalesChannelSubNavigation
             'label'    => __('Orders'),
             'route'    => [
                 'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.index',
-                'parameters' => $request->route()->originalParameters()
+                'parameters' => [
+                    'organisation' => $customerSalesChannel->shop->organisation->slug,
+                    'shop'         => $customerSalesChannel->shop->slug,
+                    'customer'     => $customerSalesChannel->customer->slug,
+                    'customerSalesChannel' => $customerSalesChannel->slug,
+                ]
 
             ],
             'leftIcon' => [

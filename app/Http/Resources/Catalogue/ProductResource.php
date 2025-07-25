@@ -22,7 +22,7 @@ class ProductResource extends JsonResource
         $product = $this;
         $tradeUnits = $product->tradeUnits;
 
-         $tradeUnits->loadMissing(['ingredients']);
+        $tradeUnits->loadMissing(['ingredients']);
 
         $ingredients = $tradeUnits->flatMap(function ($tradeUnit) {
             return $tradeUnit->ingredients->pluck('name');

@@ -113,18 +113,18 @@ class ShowRetinaFamily extends RetinaAction
                 ],
 
                 RetinaFamilyTabsEnum::SHOWCASE->value => $this->tab == RetinaFamilyTabsEnum::SHOWCASE->value ?
-                    fn() => GetProductCategoryShowcase::run($family)
-                    : Inertia::lazy(fn() => GetProductCategoryShowcase::run($family)),
+                    fn () => GetProductCategoryShowcase::run($family)
+                    : Inertia::lazy(fn () => GetProductCategoryShowcase::run($family)),
 
                 RetinaFamilyTabsEnum::PRODUCTS->value => $this->tab == RetinaFamilyTabsEnum::PRODUCTS->value
                     ?
-                    fn() => ProductsResource::collection(
+                    fn () => ProductsResource::collection(
                         IndexRetinaProductsInCatalogue::run(
                             parent: $family,
                             prefix: RetinaFamilyTabsEnum::PRODUCTS->value
                         )
                     )
-                    : Inertia::lazy(fn() => ProductsResource::collection(
+                    : Inertia::lazy(fn () => ProductsResource::collection(
                         IndexRetinaProductsInCatalogue::run(
                             parent: $family,
                             prefix: RetinaFamilyTabsEnum::PRODUCTS->value
