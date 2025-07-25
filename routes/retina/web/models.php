@@ -20,6 +20,8 @@ use App\Actions\Dropshipping\Magento\Orders\GetRetinaOrdersFromMagento;
 use App\Actions\Dropshipping\Magento\Product\SyncronisePortfoliosToMagento;
 use App\Actions\Dropshipping\Magento\Product\SyncronisePortfolioToMagento;
 use App\Actions\Dropshipping\Shopify\Product\GetApiProductsFromShopify;
+use App\Actions\Dropshipping\Shopify\Product\MatchPortfolioToCurrentShopifyProduct;
+use App\Actions\Dropshipping\Shopify\Product\StoreNewProductToCurrentShopify;
 use App\Actions\Dropshipping\Shopify\Product\SynchroniseDropshippingPortfoliosToShopify;
 use App\Actions\Dropshipping\Shopify\Product\SynchroniseDropshippingPortfolioToShopify;
 use App\Actions\Dropshipping\Shopify\ResetShopifyChannel;
@@ -302,6 +304,9 @@ Route::name('top-up.')->prefix('top-up')->group(function () {
 
 Route::delete('portfolio/{portfolio:id}', DeleteRetinaPortfolio::class)->name('portfolio.delete');
 Route::patch('portfolio/{portfolio:id}', UpdateRetinaPortfolio::class)->name('portfolio.update');
+
+Route::post('portfolio/{portfolio:id}/match-to-existing-shopify-product', MatchPortfolioToCurrentShopifyProduct::class)->name('portfolio.match_to_existing_shopify_product');
+Route::post('portfolio/{portfolio:id}/store-new-shopify-product', StoreNewProductToCurrentShopify::class)->name('portfolio.store_new_shopify_product');
 
 Route::post('portfolio/product-category/{productCategory:id}/store', StoreRetinaPortfoliosFromProductCategoryToAllChannels::class)->name('portfolio.store_from_product_category')->withoutScopedBindings();
 Route::post('portfolio/all-channels/store', StoreRetinaPortfolioToAllChannels::class)->name('portfolio.store_to_all_channels');

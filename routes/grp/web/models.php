@@ -83,6 +83,7 @@ use App\Actions\Dropshipping\Portfolio\DeletePortfolio;
 use App\Actions\Dropshipping\Portfolio\StoreMultiplePortfolios;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Dropshipping\Shopify\Product\MatchPortfolioToCurrentShopifyProduct;
+use App\Actions\Dropshipping\Shopify\Product\StoreNewProductToCurrentShopify;
 use App\Actions\Dropshipping\Shopify\ResetShopifyChannel;
 use App\Actions\Fulfilment\Fulfilment\StoreFulfilmentFromUI;
 use App\Actions\Fulfilment\Fulfilment\UpdateFulfilment;
@@ -349,7 +350,7 @@ Route::delete('portfolio/{portfolio:id}', DeletePortfolio::class)->name('portfol
 Route::patch('portfolio/{portfolio:id}', UpdatePortfolio::class)->name('portfolio.update')->withoutScopedBindings();
 
 Route::post('portfolio/{portfolio:id}/match-to-existing-shopify-product', MatchPortfolioToCurrentShopifyProduct::class)->name('portfolio.match_to_existing_shopify_product');
-Route::post('portfolio/{portfolio:id}/store-new-shopify-product', MatchPortfolioToCurrentShopifyProduct::class)->name('portfolio.store_new_shopify_product');
+Route::post('portfolio/{portfolio:id}/store-new-shopify-product', StoreNewProductToCurrentShopify::class)->name('portfolio.store_new_shopify_product');
 
 
 Route::name('org.')->prefix('org/{organisation:id}')->group(function () {

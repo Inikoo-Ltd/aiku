@@ -151,7 +151,7 @@ class DropshippingPortfoliosResource extends JsonResource
             'type'                      => $this->item_type,
             'created_at'                => $this->created_at,
             'updated_at'                => $this->updated_at,
-            'platform_product_id'       => (bool) $this->platform_product_id,
+            'platform_product_id'       => $this->platform_product_id,
             'upload_warning'            => $this->upload_warning,
 
             'has_valid_platform_product_id' => $this->has_valid_platform_product_id,
