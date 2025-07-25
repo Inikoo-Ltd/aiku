@@ -5,14 +5,14 @@
   -->
 
 <script setup lang="ts">
-import { Head, router, Link} from "@inertiajs/vue3"
+import { Head, router, Link } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TablePortfolios from "@/Components/Tables/Grp/Org/CRM/TablePortfolios.vue"
 import TablePortfoliosShopify from "@/Components/Tables/Grp/Org/CRM/TablePortfoliosShopify.vue"
 import TablePortfoliosManual from "@/Components/Tables/Grp/Org/CRM/TablePortfoliosManual.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
-import { ref } from "vue"
+import { ref, onMounted } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import { trans } from "laravel-vue-i18n"
@@ -21,10 +21,12 @@ import { notify } from "@kyvg/vue3-notification"
 import { Customer } from "@/types/customer"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faBookmark } from "@fal"
+import { ulid } from "ulid"
+import {debounce, get, set} from "lodash-es"
 
 library.add(faBookmark)
 
-defineProps<{
+const props = defineProps<{
     data: {}
     title: string
     pageHead: PageHeadingTypes
@@ -65,9 +67,74 @@ const onSubmitAddItem = async (idProduct: number[], customerSalesChannelId: numb
         onFinish: () => isLoadingSubmit.value = false
     })
 }
-const loadingCreateNewProducts = ref(false)
-const loadingMatchWithExistingProduct= ref(false)
+const loadingAction= ref([])
 const selectedProducts = ref<number[]>([])
+const key = ref(ulid())
+
+const onSuccessEditCheckmark = () => {
+  /*   router.reload({ only: ["data"] }) */
+    key.value = ulid()
+    notify({
+        title: trans("Success!"),
+        text: trans("Successfully added the portfolio"),
+        type: "success",
+    })
+    selectedProducts.value = []
+}
+
+const onFailedEditCheckmark = (error: any) => {
+    key.value = ulid()
+    notify({
+        title: "Something went wrong.",
+        text: error?.products || "An error occurred.",
+        type: "error",
+    })
+}
+
+const submitPortfolioAction = (action: any) => {
+    loadingAction.value.push(action.label)
+    router.visit(route(action.route.name, action.route?.parameters), {
+        method: action.route?.method || "get",
+        data: { portfolios: selectedProducts.value },
+        onSuccess: onSuccessEditCheckmark,
+        onError: (error) => onFailedEditCheckmark(error),
+        onFinish: () => {
+          loadingAction.value = []
+        }
+    })
+}
+
+
+// Real-time Shopify Upload Listener
+const debReloadPage = debounce(() => {
+  router.reload({
+    except: ['auth', 'breadcrumbs', 'flash', 'layout', 'localeData', 'pageHead', 'ziggy']
+  })
+}, 1200)
+
+const selectShopifyEvent = (portfolio: { id: number }) => {
+  return {
+    event: `shopify.${props.customerSalesChannel?.platform_user_id}.upload-product.${portfolio.id}`,
+    action: '.shopify-upload-progress',
+  }
+}
+
+onMounted(() => {
+  if (props.platform?.type === 'shopify') {
+    props.data?.data?.forEach(portfolio => {
+      const { event, action } = selectShopifyEvent(portfolio)
+      if (event && action) {
+        window.Echo.private(event).listen(action, (eventData) => {
+          console.log('socket in: ', portfolio.id, eventData)
+          if (!eventData?.errors_response) {
+            debReloadPage()
+          }
+        })
+      }
+    })
+  }
+})
+console.log(props)
 </script>
 
 <template>
@@ -80,42 +147,34 @@ const selectedProducts = ref<number[]>([])
         </template>
 
         <template #button-match-with-existing-product="{ action }">
-            <template v-if="action && selectedProducts.length > 0">
-                <Link :href="route(action.route.name, action.route?.parameters)" :method="action.route?.method || 'get'"
-                    as="button" :data="{ portfolios: selectedProducts }" @start="loadingMatchWithExistingProduct = true"
-                    @finish="loadingMatchWithExistingProduct = false">
-                <Button :type="action.style" :label="action.label" />
-                </Link>
-            </template>
+            <Button v-if="selectedProducts.length > 0" :type="action.style" :label="action.label"
+                 :loading="loadingAction.includes(action.label)"
+                @click="() => submitPortfolioAction(action)" />
+            <div v-else></div>
         </template>
-
 
         <template #button-create-new-product="{ action }">
-            <Link v-if="selectedProducts.length > 0" @start="loadingCreateNewProducts = true"
-                @finish="loadingCreateNewProducts = false" :href="route(action.route.name, action.route?.parameters)"
-                :method="action.route?.method || 'get'" as="button" :data="{ portfolios : selectedProducts }">
-            <Button :type="action.style" :label="action.label"/>
-            </Link>
+            <Button v-if="selectedProducts.length > 0" :type="action.style" :label="action.label"
+                :loading="loadingAction.includes(action.label)"
+                @click="() => submitPortfolioAction(action)" />
+            <div v-else></div>
         </template>
-
-
     </PageHeading>
 
     <TablePortfoliosShopify v-if="platform.type === 'shopify'" :data="data" :customerSalesChannel
-        v-model:selectedProducts="selectedProducts" />
-    <TablePortfoliosManual v-else-if="platform.type === 'manual'" :data="data" :customerSalesChannel
-        v-model:selectedProducts="selectedProducts" />
-    <TablePortfolios v-else :data="data" :customerSalesChannel v-model:selectedProducts="selectedProducts" />
+        v-model:selectedProducts="selectedProducts" :key="key" />
+    <TablePortfoliosManual v-else-if="platform.type === 'manual'" :data="data" :customerSalesChannel />
+    <TablePortfolios v-else :data="data" :customerSalesChannel />
 
 
     <Modal v-if="is_show_add_products_modal" :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false"
         width="w-full max-w-6xl">
         <ProductsSelector :headLabel="trans('Add products to portfolios')" :route-fetch="{
-                name: 'grp.json.products_for_portfolio_select',
-                parameters: {
-                    customerSalesChannel: customerSalesChannelId
-                }
-            }" :isLoadingSubmit
+            name: 'grp.json.products_for_portfolio_select',
+            parameters: {
+                customerSalesChannel: customerSalesChannelId
+            }
+        }" :isLoadingSubmit
             @submit="(products: {}[]) => onSubmitAddItem(products.map((product: any) => product.id), customerSalesChannelId)">
         </ProductsSelector>
     </Modal>

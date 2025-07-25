@@ -312,11 +312,12 @@ const onCheckedAll = ({ data, allChecked }) => {
         <!-- Column: actions -->
         <template #cell(actions)="{ item: portfolio }">
             <div v-if="portfolio.customer_sales_channel_platform_status  && !portfolio.platform_status "  class="flex gap-x-2 items-center">
+                sdsdfsfd
                 <ButtonWithLink
                     v-tooltip="trans('Will create new product in Shopify')"
                     :routeTarget="{
                     method: 'post',
-                        name: 'grp.models.portfolio.store_new_shopify_product',
+                        name: 'retina.models.portfolio.store_new_shopify_product',
                         parameters: {
                             portfolio: portfolio.id
                         },
