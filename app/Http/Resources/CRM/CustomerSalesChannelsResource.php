@@ -46,6 +46,7 @@ class CustomerSalesChannelsResource extends JsonResource
             'reference'                           => $this->reference,
             'name'                                => $this->name,
             'number_portfolios'                   => $this->number_portfolios,
+            'number_portfolio_broken'             => $this->number_portfolio_broken,
             'number_clients'                      => $this->number_customer_clients,
             'number_customer_clients'             => $this->number_customer_clients,
             'number_orders'                       => $this->number_orders,

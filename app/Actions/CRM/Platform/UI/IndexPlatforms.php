@@ -69,7 +69,7 @@ class IndexPlatforms extends OrgAction
 
             $table
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_customers', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_customer_sales_channels', label: __('Channels'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_products', label: __('Portfolios'), canBeHidden: false, sortable: true)
                 ->column(key: 'number_orders', label: __('Orders'), canBeHidden: false, sortable: true);
         };
