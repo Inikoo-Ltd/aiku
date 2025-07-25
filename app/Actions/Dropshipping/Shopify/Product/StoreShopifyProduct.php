@@ -157,7 +157,7 @@ class StoreShopifyProduct extends RetinaAction
 
 
             $data = $portfolio->data;
-            data_set($data, 'shopify_product_debug', $createdProduct);
+            data_set($data, 'shopify_product', $createdProduct);
 
 
 

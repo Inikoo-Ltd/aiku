@@ -153,7 +153,7 @@ class StoreShopifyProductVariant extends RetinaAction
             }
 
             $data = $portfolio->data;
-            data_set($data, 'shopify_product_debug', $updatedProduct);
+            data_set($data, 'shopify_product', $updatedProduct);
 
             UpdatePortfolio::run($portfolio, [
                 'data' => $data
