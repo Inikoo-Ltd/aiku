@@ -12,6 +12,7 @@ namespace App\Actions\Dispatching\PickingSession;
 use App\Actions\Dispatching\DeliveryNote\StartHandlingDeliveryNote;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
 use App\Models\Inventory\PickingSession;
 use Lorisleiva\Actions\ActionRequest;
@@ -31,12 +32,19 @@ class StartPickPickingSession extends OrgAction
         $deliveryNotes = $pickingSession->deliveryNotes;
 
         foreach ($deliveryNotes as $deliveryNote) {
-            StartHandlingDeliveryNote::make()->action($deliveryNote, $pickingSession->user);
+            $state=$deliveryNote->state;
+            if($state==DeliveryNoteStateEnum::UNASSIGNED ||
+                $state==DeliveryNoteStateEnum::QUEUED
+            ){
+                StartHandlingDeliveryNote::make()->action($deliveryNote, $pickingSession->user);
+            }
+
+
         }
 
-        $pickingSession = $this->update($pickingSession, $modelData);
+        return $this->update($pickingSession, $modelData);
 
-        return $pickingSession;
+
     }
 
     /**

@@ -10,6 +10,7 @@ namespace App\Models\Inventory;
 
 use App\Enums\Inventory\OrgStock\OrgStockQuantityStatusEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
 use App\Models\Procurement\OrgSupplierProduct;
@@ -219,6 +220,14 @@ class OrgStock extends Model implements Auditable
     public function inventoryDailySnapshots(): HasMany
     {
         return $this->hasMany(InventoryDailySnapshot::class);
+    }
+
+    public function products(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Product::class,
+            'product_has_org_stocks',
+        )->withPivot(['quantity', 'notes'])->withTimestamps();
     }
 
 }
