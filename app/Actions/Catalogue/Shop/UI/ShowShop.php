@@ -204,7 +204,7 @@ class ShowShop extends OrgAction
                 ]
             ],
         );
-        
+
         if ($this->getOrdersWidgetData($shop)) {
             $widgetComponents[] = $this->getWidget(
                 data: $this->getOrdersWidgetData($shop),

@@ -44,10 +44,10 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->whereIn('products.state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value]);
         $queryBuilder->where('products.is_main', true);
-        if($parent instanceof Shop) {
+        if ($parent instanceof Shop) {
             $shop = $parent;
             $queryBuilder->where('products.shop_id', $parent->id);
-        } else{
+        } else {
             $shop = $parent->shop;
             if ($parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
                 $queryBuilder->where('products.department_id', $parent->id);
@@ -99,9 +99,9 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
             ->withQueryString();
     }
 
-    public function tableStructure( $prefix = null): Closure
+    public function tableStructure($prefix = null): Closure
     {
-        return function (InertiaTable $table) use  ($prefix) {
+        return function (InertiaTable $table) use ($prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -121,8 +121,8 @@ class IndexRetinaProductsInCatalogue extends RetinaAction
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'available_quantity', label: __('stock'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'weight', label: __('weight'), canBeHidden: false)
-                ->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: true, align: 'left' )
-                ->column(key: 'rrp', label: __('RRP'), canBeHidden: false, sortable: true, searchable: true, align: 'left' );
+                ->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: true, align: 'left')
+                ->column(key: 'rrp', label: __('RRP'), canBeHidden: false, sortable: true, searchable: true, align: 'left');
         };
     }
 

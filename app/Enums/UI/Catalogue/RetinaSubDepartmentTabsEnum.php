@@ -9,7 +9,6 @@
 namespace App\Enums\UI\Catalogue;
 
 use App\Enums\EnumHelperTrait;
-use App\Enums\HasTabs;
 use App\Enums\HasTabsWithQuantity;
 use App\Models\Catalogue\ProductCategory;
 
@@ -29,7 +28,7 @@ enum RetinaSubDepartmentTabsEnum: string
         $families = $parent->stats->number_families_state_active + $parent->stats->number_families_state_discontinuing;
         $products = $parent->stats->number_products_state_active + $parent->stats->number_products_state_discontinuing;
         $collection = $parent->stats->number_collections_state_active;
-        
+
         return match ($this) {
             RetinaSubDepartmentTabsEnum::SHOWCASE => [
                 'title' => __('overview'),

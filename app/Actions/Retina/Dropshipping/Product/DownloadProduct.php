@@ -10,8 +10,6 @@
 
 namespace App\Actions\Retina\Dropshipping\Product;
 
-use App\Actions\Catalogue\Asset\ExportProductsInProductCategory;
-use App\Actions\Catalogue\Asset\ExportProductsInShop;
 use App\Actions\RetinaAction;
 use App\Exports\Marketing\ProductsInCollectionExport;
 use App\Exports\Marketing\ProductsInProductCategoryExport;
@@ -21,8 +19,6 @@ use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
-use App\Models\CRM\Customer;
-use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\Response;
 use Maatwebsite\Excel\Facades\Excel;
