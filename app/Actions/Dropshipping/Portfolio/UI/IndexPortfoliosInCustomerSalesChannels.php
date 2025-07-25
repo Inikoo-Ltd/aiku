@@ -50,6 +50,7 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
 
         $query = QueryBuilder::for(Portfolio::class);
         $query->where('portfolios.customer_sales_channel_id', $customerSalesChannel->id);
+        $query->leftJoin('customer_sales_channels', 'customer_sales_channels.id', 'portfolios.customer_sales_channel_id');
 
         $query->leftJoin('customers', 'customers.id', 'portfolios.customer_id');
         $query->leftJoin('platforms', 'platforms.id', 'portfolios.platform_id');
@@ -70,6 +71,7 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                 'portfolios.exist_in_platform',
                 'portfolios.platform_status',
                 'portfolios.has_valid_platform_product_id',
+                'customer_sales_channels.platform_status as customer_sales_channel_platform_status',
             ])
             ->defaultSort('portfolios.reference')
             ->allowedSorts(['reference', 'created_at'])

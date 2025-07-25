@@ -14,6 +14,10 @@ import {notify} from "@kyvg/vue3-notification"
 import {trans} from "laravel-vue-i18n"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faUndoAlt } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import customerSalesChannel from "@/Pages/Grp/Org/Dropshipping/CustomerSalesChannel.vue"
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
 import {faUndoAlt} from "@fal"
 import {library} from "@fortawesome/fontawesome-svg-core"
@@ -152,19 +156,12 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
         </template>
 
         <template #cell(connection)="{ item }">
-            <FontAwesomeIcon v-if="item.has_valid_platform_product_id"
-                             v-tooltip="trans('Has valid platform product id')" icon="fal fa-check"
-                             class="text-green-500" fixed-width aria-hidden="true"/>
-            <FontAwesomeIcon v-else v-tooltip="trans('Has valid platform product id')" icon="fal fa-times"
-                             class="text-red-500" fixed-width aria-hidden="true"/>
-            <FontAwesomeIcon v-if="item.exist_in_platform" v-tooltip="trans('Exist in platform')" icon="fal fa-check"
-                             class="text-green-500" fixed-width aria-hidden="true"/>
-            <FontAwesomeIcon v-else v-tooltip="trans('Exist in platform')" icon="fal fa-times" class="text-red-500"
-                             fixed-width aria-hidden="true"/>
-            <FontAwesomeIcon v-if="item.platform_status" v-tooltip="trans('Platform status')" icon="fal fa-check"
-                             class="text-green-500" fixed-width aria-hidden="true"/>
-            <FontAwesomeIcon v-else v-tooltip="trans('Platform status')" icon="fal fa-times" class="text-red-500"
-                             fixed-width aria-hidden="true"/>
+            <FontAwesomeIcon v-if="item.can_connect_to_platform" v-tooltip="trans('App installed ok')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-else v-tooltip="trans('Broken channel delete it an d create new one')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-if="item.exist_in_platform" v-tooltip="trans('Exist in platform')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-else v-tooltip="trans('Exist in platform')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-if="item.platform_status" v-tooltip="trans('Platform status')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-else v-tooltip="trans('Platform status')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
         </template>
 
         <template #cell(number_portfolios)="{ item: customerSalesChannel }">
@@ -191,7 +188,7 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
 
             <div class="space-y-1">
                 <ModalConfirmationDelete
-                    v-if="item.can_connect_to_platform"
+                    v-if=" item.can_connect_to_platform &&  !item.platform_status"
                     :routeDelete="{
                         name: 'grp.models.customer_sales_channel.shopify_reset',
                         parameters: {
@@ -207,6 +204,11 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
                         </Button>
                     </template>
                 </ModalConfirmationDelete>
+
+
+
+                <Button v-if="!item.can_connect_to_platform"  type="negative" label="Delete" :icon="faTrashAlt"
+                    @click="(event) => confirmDelete(event, customerSalesChannel)" />
                 <Button type="negative" label="Delete" :icon="faTrashAlt"
                         @click="(event) => confirmDelete(event, customerSalesChannel)"/>
             </div>

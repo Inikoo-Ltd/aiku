@@ -20,6 +20,7 @@ import { faStore, faBookmark, faUndoAlt } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import { data } from "autoprefixer"
 library.add(faStore, faBookmark, faUndoAlt)
 
 const props = defineProps<{
@@ -205,26 +206,24 @@ const isModalAddress = ref(false)
                 <FontAwesomeIcon v-if="customer_sales_channel.can_connect_to_platform" icon="fal fa-check"
                     class="text-green-500" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon v-else icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-                Can connect to platform
+                {{trans('App installed')}}
             </div>
-            <div class="border border-gray-300 rounded flex items-center gap-x-2 px-2 py-1 w-fit">
+            <div v-if="!customer_sales_channel.platform_status && customer_sales_channel.exist_in_platform"  class="border border-gray-300 rounded flex items-center gap-x-2 px-2 py-1 w-fit">
                 <FontAwesomeIcon v-if="customer_sales_channel.exist_in_platform" icon="fal fa-check"
                     class="text-green-500" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon v-else icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-                Exist in platform
+                {{trans('Found old installation')}}
             </div>
-            <div class="border border-gray-300 rounded flex items-center gap-x-2 px-2 py-1 w-fit">
+            <div v-if="customer_sales_channel.can_connect_to_platform"  class="border border-gray-300 rounded flex items-center gap-x-2 px-2 py-1 w-fit">
                 <FontAwesomeIcon v-if="customer_sales_channel.platform_status" icon="fal fa-check"
                     class="text-green-500" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon v-else icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-                Platform status
+                {{trans('Connected')}}
             </div>
 
-            <!-- <Button  label="Reset Channel" type="red" icon="fal fa-undo-alt">
 
-            </Button> -->
             <ModalConfirmationDelete
-                v-if="customer_sales_channel.can_connect_to_platform"
+                v-if="customer_sales_channel.can_connect_to_platform &&  !customer_sales_channel.platform_status"
                 :routeDelete="{
                     name: 'grp.models.customer_sales_channel.shopify_reset',
                     parameters: {
@@ -243,7 +242,7 @@ const isModalAddress = ref(false)
             </ModalConfirmationDelete>
 
             <ModalConfirmationDelete
-                v-if="!customer_sales_channel.can_connect_to_platform && !customer_sales_channel.exist_in_platform && !customer_sales_channel.platform_status"
+                v-if="!customer_sales_channel.can_connect_to_platform"
                 xrouteDelete="{
                     name: props.brand_routes.delete_brand.name,
                     parameters: {

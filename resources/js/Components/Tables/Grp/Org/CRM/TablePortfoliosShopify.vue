@@ -214,8 +214,7 @@ const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
         </template>
 
         <template #cell(matches)="{ item: portfolio }">
-            <!-- <pre>{{ portfolio.platform_possible_matches?.raw_data?.[1]?.images?.[0]?.src }}</pre> -->
-            <div v-if="!portfolio.platform_status && portfolio.platform_possible_matches.number_matches"  class="flex gap-x-2 items-center">
+            <div v-if=" portfolio.customer_sales_channel_platform_status &&  !portfolio.platform_status  && portfolio.platform_possible_matches?.number_matches"  class="flex gap-x-2 items-center">
                 <div class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow">
                     <img :src="portfolio.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src" />
                 </div>
@@ -237,7 +236,7 @@ const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
                             preserveScroll: true,
                         }"
                         type="secondary"
-                        :label="trans('Quick match')"
+                        :label="trans('Match with this product')"
                         size="xxs"
                         icon="fal fa-tools"
                     />
@@ -245,7 +244,8 @@ const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
                     <Button
                         v-if="portfolio.platform_possible_matches?.number_matches"
                         @click="() => (isOpenModalVariant = true, selectedPortfolio = portfolio)"
-                        :label="trans('Open match list')"
+                        :label="trans('Select other product from Shopify')"
+                        :capitalize="false"
                         size="xxs"
                         type="tertiary"
                     />
@@ -262,7 +262,7 @@ const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
         
         <!-- Column: actions -->
         <template #cell(actions)="{ item: portfolio }">
-            <div v-if="!portfolio.platform_status && portfolio.platform_possible_matches.number_matches"  class="flex gap-x-2 items-center">
+            <div v-if="portfolio.customer_sales_channel_platform_status"  class="flex gap-x-2 items-center">
                 <ButtonWithLink
                     v-tooltip="trans('Will create new product in Shopify')"
                     :routeTarget="{
@@ -271,9 +271,6 @@ const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
                         parameters: {
                             portfolio: portfolio.id
                         },
-                        body: {
-                            shopify_product_id: portfolio.platform_possible_matches.raw_data?.[0]?.id
-                        }
                     }"
                     isWithError
                     icon=""
