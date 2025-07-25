@@ -172,6 +172,7 @@ class IndexFamilies extends OrgAction
                     JOIN collections c ON chm.collection_id = c.id
                     WHERE chm.model_id = product_categories.id
                         AND chm.model_type = 'ProductCategory'
+                        AND c.deleted_at IS NULL
                 ) as collections"),
             ])
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
@@ -421,12 +422,12 @@ class IndexFamilies extends OrgAction
                     'navigation' => $navigation,
                 ],
                 ProductCategoryTabsEnum::INDEX->value => $this->tab == ProductCategoryTabsEnum::INDEX->value ?
-                    fn() => FamiliesResource::collection($families)
-                    : Inertia::lazy(fn() => FamiliesResource::collection($families)),
+                    fn () => FamiliesResource::collection($families)
+                    : Inertia::lazy(fn () => FamiliesResource::collection($families)),
 
                 ProductCategoryTabsEnum::SALES->value => $this->tab == ProductCategoryTabsEnum::SALES->value ?
-                    fn() => FamiliesResource::collection($families)
-                    : Inertia::lazy(fn() => FamiliesResource::collection($families)),
+                    fn () => FamiliesResource::collection($families)
+                    : Inertia::lazy(fn () => FamiliesResource::collection($families)),
             ]
         )->table($this->tableStructure(parent: $this->parent, modelOperations: null, canEdit: false, prefix: ProductCategoryTabsEnum::INDEX->value, sales: false))
             ->table($this->tableStructure(parent: $this->parent, modelOperations: null, canEdit: false, prefix: ProductCategoryTabsEnum::SALES->value, sales: $this->sales));

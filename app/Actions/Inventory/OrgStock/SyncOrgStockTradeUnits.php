@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\OrgStock;
 
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateOrgStocks;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydratePackedIn;
 use App\Models\Inventory\OrgStock;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -23,6 +24,7 @@ class SyncOrgStockTradeUnits
         foreach ($orgStock->tradeUnits as $tradeUnit) {
             TradeUnitsHydrateOrgStocks::dispatch($tradeUnit);
         }
+        OrgStockHydratePackedIn::run($orgStock);
 
         return $orgStock;
     }

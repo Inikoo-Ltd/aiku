@@ -37,8 +37,11 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
         $query->where('delivery_note_items.delivery_note_id', $parent->id);
 
         $query->leftjoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id');
+        $query->leftjoin('locations', 'locations.id', '=', 'org_stocks.picking_location_id');
+        $query->leftjoin('warehouse_areas', 'warehouse_areas.id', '=', 'locations.warehouse_area_id');
 
-        return $query->defaultSort('delivery_note_items.id')
+        return $query
+            ->defaultSort('warehouse_areas.picking_position', 'locations.code', 'org_stocks.code')
             ->select([
                 'delivery_note_items.id',
                 'delivery_note_items.state',
@@ -50,9 +53,11 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
                 'delivery_note_items.is_handled',
                 'org_stocks.id as org_stock_id',
                 'org_stocks.code as org_stock_code',
-                'org_stocks.name as org_stock_name'
+                'org_stocks.name as org_stock_name',
+                'org_stocks.packed_in',
+                'warehouse_areas.picking_position as picking_position',
             ])
-            ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required', 'quantity_picked', 'quantity_packed', 'state'])
+            ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required', 'quantity_picked', 'quantity_packed', 'state', 'picking_position'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -73,12 +78,12 @@ class IndexDeliveryNoteItemsStateHandling extends OrgAction
                     [
                         'title' => __("delivery note empty"),
                     ]
-                );
+                )->defaultSort('picking_position');
 
             $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'pickings', label: __('Pickings'), canBeHidden: false);
-            $table->column(key: 'picking_position', label: __('To do actions'), canBeHidden: false);
+            $table->column(key: 'picking_position', label: __('To do actions'), canBeHidden: false, sortable: true);
         };
     }
 
