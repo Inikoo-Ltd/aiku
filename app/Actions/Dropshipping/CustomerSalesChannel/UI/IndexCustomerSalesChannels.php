@@ -141,9 +141,8 @@ class IndexCustomerSalesChannels extends OrgAction
                 ->withGlobalSearch()
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_portfolios', label: __('Portfolios'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_clients', label: __('Clients'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_orders', label: __('Orders'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'amount', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'amount', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                 ->column(key: 'connection', label: __('Status'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'action', label: __('Actions'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('reference');

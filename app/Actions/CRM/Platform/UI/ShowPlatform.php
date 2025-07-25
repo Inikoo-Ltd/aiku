@@ -9,6 +9,7 @@
 
 namespace App\Actions\CRM\Platform\UI;
 
+use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Dropshipping\CustomerSalesChannel\UI\IndexCustomerSalesChannels;
 use App\Actions\Dropshipping\Portfolio\UI\IndexPortfoliosInPlatform;
 use App\Actions\OrgAction;
@@ -19,6 +20,7 @@ use App\Http\Resources\CRM\PortfoliosResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\Platform;
 use App\Models\SysAdmin\Organisation;
+use Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -114,7 +116,7 @@ class ShowPlatform extends OrgAction
         return match ($routeName) {
             'grp.org.shops.show.crm.platforms.show' =>
             array_merge(
-                IndexPlatforms::make()->getBreadcrumbs('grp.org.shops.show.crm.platforms.index', $routeParameters),
+                ShowShop::make()->getBreadcrumbs(Arr::only($routeParameters, ['organisation', 'shop'])),
                 $headCrumb(
                     $platform,
                     [
