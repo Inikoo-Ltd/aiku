@@ -39,6 +39,7 @@ class RetinaCustomerSalesChannelsResource extends JsonResource
             'reference'               => $this->reference,
             'name'                    => $this->name ?? $this->reference,
             'number_portfolios'       => $this->number_portfolios,
+            'number_portfolio_broken' => $this->number_portfolio_broken,
             'number_customer_clients' => $this->number_customer_clients,
             'number_orders'           => $this->number_orders,
             'type'                    => $this->type,

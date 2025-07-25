@@ -221,7 +221,7 @@ const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
 
                 <div>
                     <span class="mr-1">{{ portfolio.platform_possible_matches?.matches_labels[0]}}</span>
-                    <ButtonWithLink
+                    <!-- <ButtonWithLink
                         v-if="portfolio.platform_possible_matches?.number_matches === 1"
                         v-tooltip="trans('Match to existing Shopify product')"
                         :routeTarget="{
@@ -239,10 +239,10 @@ const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
                         :label="trans('Quick match')"
                         size="xxs"
                         icon="fal fa-tools"
-                    />
+                    /> -->
                     
                     <Button
-                        v-else
+                        v-if="portfolio.platform_possible_matches?.number_matches"
                         @click="() => (isOpenModalVariant = true, selectedPortfolio = portfolio)"
                         :label="trans('Open match list')"
                         size="xxs"

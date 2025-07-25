@@ -46,36 +46,37 @@ class IndexCustomerSalesChannels extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-            $queryBuilder = QueryBuilder::for(CustomerSalesChannel::class);
-            if($parent instanceof Customer) {
-                $queryBuilder->where('customer_sales_channels.customer_id', $parent->id);
-            } elseif ($parent instanceof Platform) {
-                $queryBuilder->where('customer_sales_channels.platform_id', $parent->id);
-            }
+        $queryBuilder = QueryBuilder::for(CustomerSalesChannel::class);
+        if ($parent instanceof Customer) {
+            $queryBuilder->where('customer_sales_channels.customer_id', $parent->id);
+        } elseif ($parent instanceof Platform) {
+            $queryBuilder->where('customer_sales_channels.platform_id', $parent->id);
+        }
 
 
-            $queryBuilder->select([
-                'customer_sales_channels.id',
-                'customer_sales_channels.reference',
-                'customer_sales_channels.name',
-                'customer_sales_channels.slug',
-                'customer_sales_channels.status',
-                'customer_sales_channels.connection_status',
-                'customer_sales_channels.can_connect_to_platform',
-                'customer_sales_channels.exist_in_platform',
-                'customer_sales_channels.platform_status',
-                'customer_sales_channels.number_customer_clients as number_customer_clients',
-                'customer_sales_channels.number_portfolios as number_portfolios',
-                'customer_sales_channels.number_orders as number_orders',
-                'customer_sales_channels.platform_id',
-                ])
-                ->selectSub(function ($subquery) {
-                    $subquery->from('orders')
-                        ->selectRaw('COALESCE(SUM(total_amount), 0)')
-                        ->whereColumn('orders.customer_sales_channel_id', 'customer_sales_channels.id')
-                        ->whereNotIn('orders.state', [OrderStateEnum::CREATING, OrderStateEnum::SUBMITTED, OrderStateEnum::CANCELLED]);
-                }, 'total_amount');
-                
+        $queryBuilder->select([
+            'customer_sales_channels.id',
+            'customer_sales_channels.reference',
+            'customer_sales_channels.name',
+            'customer_sales_channels.slug',
+            'customer_sales_channels.status',
+            'customer_sales_channels.connection_status',
+            'customer_sales_channels.can_connect_to_platform',
+            'customer_sales_channels.exist_in_platform',
+            'customer_sales_channels.platform_status',
+            'customer_sales_channels.number_customer_clients as number_customer_clients',
+            'customer_sales_channels.number_portfolios as number_portfolios',
+            'customer_sales_channels.number_portfolio_broken as number_portfolio_broken',
+            'customer_sales_channels.number_orders as number_orders',
+            'customer_sales_channels.platform_id',
+            ])
+            ->selectSub(function ($subquery) {
+                $subquery->from('orders')
+                    ->selectRaw('COALESCE(SUM(total_amount), 0)')
+                    ->whereColumn('orders.customer_sales_channel_id', 'customer_sales_channels.id')
+                    ->whereNotIn('orders.state', [OrderStateEnum::CREATING, OrderStateEnum::SUBMITTED, OrderStateEnum::CANCELLED]);
+            }, 'total_amount');
+
         return $queryBuilder->defaultSort('customer_sales_channels.reference')
                 ->allowedSorts(['reference', 'number_customer_clients', 'number_portfolios','number_orders'])
                 ->allowedFilters([$globalSearch])
