@@ -180,14 +180,14 @@ class EditProduct extends OrgAction
                         'label' => __('code'),
                         'value' => $product->code
                     ],
-                    'name' => [
+                    /* 'name' => [
                         'type'  => 'input',
                         'label' => __('name'),
                         'value' => $product->name
-                    ],
+                    ], */
 
                     //translation input raul request 7/24/25
-                    /* 'name' => [
+                    'name' => [
                         'type'  => 'input_translation',
                         'label' => __('name'),
                         'value' => [
@@ -202,7 +202,7 @@ class EditProduct extends OrgAction
                                 'value' => '',
                             ]
                         ]
-                    ], */
+                    ],
                     'description_title' => [
                         'type'  => 'input',
                         'label' => __('description title'),
@@ -213,6 +213,24 @@ class EditProduct extends OrgAction
                         'label' => __('description'),
                         'value' => $product->description
                     ],
+
+                    //textEditor_translation
+                    /* 'description' => [
+                        'type'  => 'textEditor_translation',
+                        'label' => __('description'),
+                        'value' => [
+                            "en" => [
+                                'value' =>  $product->description_title,
+                                'default' => true,
+                            ],
+                            "hr" => [
+                                'value' => '',
+                            ],
+                            'zh-Hans' => [
+                                'value' => '',
+                            ]
+                        ]
+                    ], */
                     'description_extra' => [
                         'type'  => 'textEditor',
                         'label' => __('description extra'),
