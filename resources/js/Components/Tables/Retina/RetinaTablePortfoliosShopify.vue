@@ -386,7 +386,7 @@ const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
         </template>
 
         <!-- Column: Actions (connect) -->
-        <template #cell(actions)="{ item }">
+        <template #cell(matches)="{ item }">
             <template v-if="(item.customer_sales_channel_platform_status &&  !item.platform_status)">
                 <div v-if="item.platform_possible_matches?.number_matches"  class="flex gap-x-2 items-center">
                     <div class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow">
@@ -441,7 +441,7 @@ const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
         </template>
 
         <!-- Column: Actions 2 (Modal shopify) -->
-        <template #cell(actions2)="{ item }">
+        <template #cell(create_new)="{ item }">
             <!-- <template v-if="!(!item.has_valid_platform_product_id && !item.exist_in_platform && !item.platform_status && (get(progressToUploadToShopify, [item.id], undefined) != 'success' && get(progressToUploadToShopify, [item.id], undefined) != 'loading'))">
 				<Button
 					v-if="(!item.has_valid_platform_product_id || !item.exist_in_platform || !item.platform_status) && item.platform_possible_matches.length"
@@ -450,11 +450,7 @@ const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
 					type="tertiary"
 				/>
 			</template> -->
-        </template>
-
-        <!-- Column: Actions 3 -->
-        <template #cell(actions3)="{ item }">
-            <div v-if="item.customer_sales_channel_platform_status  && !item.platform_status "  class="flex gap-x-2 items-center">
+             <div v-if="item.customer_sales_channel_platform_status  && !item.platform_status "  class="flex gap-x-2 items-center">
                 <ButtonWithLink
                     v-tooltip="trans('Will create new product in Shopify')"
                     :routeTarget="{
@@ -474,6 +470,11 @@ const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
                     }"
                 />
             </div>
+        </template>
+
+        <!-- Column: Actions 3 -->
+        <template #cell(delete)="{ item }">
+           
 
             <ButtonWithLink
                 v-tooltip="trans('Unselect product')"
