@@ -1,17 +1,23 @@
 <script setup lang="ts">
-import {Link, router} from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
-import type {Table as TableTS} from "@/types/Table"
-import {RouteParams} from "@/types/route-params"
-import {CustomerSalesChannel} from "@/types/customer-sales-channel"
+import type { Table as TableTS } from "@/types/Table"
+import { RouteParams } from "@/types/route-params"
+import { CustomerSalesChannel } from "@/types/customer-sales-channel"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import {faTrashAlt} from "@fal"
-import {ref} from 'vue'
+import { faTrashAlt } from "@fal"
+import { ref } from 'vue'
 import ConfirmPopup from 'primevue/confirmpopup';
-import {useConfirm} from 'primevue/useconfirm'
-import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
-import {faExclamationTriangle} from "@far"
-import {notify} from "@kyvg/vue3-notification"
+import { useConfirm } from 'primevue/useconfirm'
+import { faExclamationTriangle } from "@far"
+import { notify } from "@kyvg/vue3-notification"
+import { trans } from "laravel-vue-i18n"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faUndoAlt } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faUndoAlt)
 
 defineProps<{
     data: TableTS,
@@ -21,19 +27,25 @@ defineProps<{
 const confirm = useConfirm()
 const deletingId = ref<number | null>(null)
 
-function platformRoute(customerSalesChannel: CustomerSalesChannel) {
+function customerSalesChannelRoute(customerSalesChannel: CustomerSalesChannel) {
 
     switch (route().current()) {
         case 'grp.org.shops.show.crm.platforms.show':
-            return ''
-
-        default:
-            return route("grp.org.shops.show.crm.customers.show.customer_sales_channels.show",
+            return route("grp.org.shops.show.crm.platforms.show.customer_sales_channels.show",
                 [
                     (route().params as RouteParams).organisation,
                     (route().params as RouteParams).shop,
-                    (route().params as RouteParams).customer,
+                    (route().params as RouteParams).platform,
                     customerSalesChannel.slug]
+            )
+            break;
+        default:
+            return route("grp.org.shops.show.crm.customers.show.customer_sales_channels.show",
+            [
+                (route().params as RouteParams).organisation,
+                (route().params as RouteParams).shop,
+                (route().params as RouteParams).customer,
+                customerSalesChannel.slug]
             )
     }
 }
@@ -42,52 +54,52 @@ function portfoliosRoute(customerSalesChannel: CustomerSalesChannel) {
     switch (route().current()) {
         case 'grp.org.shops.show.crm.platforms.show':
             return ''
-
+        
         default:
             return route(
-                "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.portfolios.index",
-                [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    (route().params as RouteParams).customer,
-                    customerSalesChannel.slug])
+            "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.portfolios.index",
+            [
+                (route().params as RouteParams).organisation,
+                (route().params as RouteParams).shop,
+                (route().params as RouteParams).customer,
+                customerSalesChannel.slug])
     }
 
-
+    
 }
 
 function clientsRoute(customerSalesChannel: CustomerSalesChannel) {
     switch (route().current()) {
         case 'grp.org.shops.show.crm.platforms.show':
             return ''
-
+        
         default:
             return route(
-                "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.index",
-                [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    (route().params as RouteParams).customer,
-                    customerSalesChannel.slug])
+        "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.index",
+        [
+            (route().params as RouteParams).organisation,
+            (route().params as RouteParams).shop,
+            (route().params as RouteParams).customer,
+            customerSalesChannel.slug])
     }
-
+    
 }
 
 function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
     switch (route().current()) {
         case 'grp.org.shops.show.crm.platforms.show':
             return ''
-
+        
         default:
             return route(
-                "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.index",
-                [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    (route().params as RouteParams).customer,
-                    customerSalesChannel.slug])
+        "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.index",
+        [
+            (route().params as RouteParams).organisation,
+            (route().params as RouteParams).shop,
+            (route().params as RouteParams).customer,
+            customerSalesChannel.slug])
     }
-
+    
 }
 
 
@@ -131,43 +143,70 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
         <template #cell(name)="{ item: customerSalesChannel }">
             <div class="flex items-center gap-2">
                 <img v-tooltip="customerSalesChannel.platform_name" :src="customerSalesChannel.platform_image"
-                     :alt="customerSalesChannel.platform_name" class="w-6 h-6"/>
-                <Link :href="(platformRoute(customerSalesChannel) as string)" class="primaryLink">
-                    {{ customerSalesChannel.name || customerSalesChannel.reference }}
+                    :alt="customerSalesChannel.platform_name" class="w-6 h-6" />
+                <Link :href="(customerSalesChannelRoute(customerSalesChannel) as string)" class="primaryLink">
+                {{ customerSalesChannel.name || customerSalesChannel.reference }}
                 </Link>
             </div>
         </template>
 
+        <template #cell(connection)="{ item }">
+            <FontAwesomeIcon v-if="item.has_valid_platform_product_id" v-tooltip="trans('Has valid platform product id')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-else v-tooltip="trans('Has valid platform product id')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-if="item.exist_in_platform" v-tooltip="trans('Exist in platform')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-else v-tooltip="trans('Exist in platform')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-if="item.platform_status" v-tooltip="trans('Platform status')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-else v-tooltip="trans('Platform status')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+        </template>
+
         <template #cell(number_portfolios)="{ item: customerSalesChannel }">
             <Link :href="(portfoliosRoute(customerSalesChannel) as string)" class="secondaryLink">
-                <span class="text-red-500">{{
-                        customerSalesChannel.number_portfolio_broken
-                    }}</span>/{{ customerSalesChannel.number_portfolios }}
+            {{ customerSalesChannel.number_portfolios }}
             </Link>
         </template>
 
         <template #cell(number_clients)="{ item: customerSalesChannel }">
             <Link :href="(clientsRoute(customerSalesChannel) as string)" class="secondaryLink">
-                {{ customerSalesChannel.number_clients }}
+            {{ customerSalesChannel.number_clients }}
             </Link>
         </template>
 
         <template #cell(number_orders)="{ item: customerSalesChannel }">
             <Link :href="(ordersRoute(customerSalesChannel) as string)" class="secondaryLink">
-                {{ customerSalesChannel.number_orders }}
+            {{ customerSalesChannel.number_orders }}
             </Link>
         </template>
 
-        <template #cell(action)="{ item: customerSalesChannel }">
-            <Button type="negative" label="Delete" :icon="faTrashAlt"
-                    @click="(event) => confirmDelete(event, customerSalesChannel)"/>
+        <template #cell(action)="{ item }">
+            
+            <div class="space-y-1">
+                <ModalConfirmationDelete
+                    v-if="item.can_connect_to_platform"
+                    :routeDelete="{
+                        name: 'grp.models.customer_sales_channel.shopify_reset',
+                        parameters: {
+                            customerSalesChannel: item.id,
+                        },
+                        method: 'patch'
+                    }"
+                    xtitle="trans('Are you sure you want to delete brand') + ` ${option.name}?`"
+                    xisFullLoading
+                >
+                    <template #default="{ isOpenModal, changeModel }">
+                        <Button  @click.stop="changeModel" label="Reset channel" type="negative" icon="fal fa-undo-alt">
+                        </Button>
+                    </template>
+                </ModalConfirmationDelete>
+                <Button type="negative" label="Delete" :icon="faTrashAlt"
+                    @click="(event) => confirmDelete(event, customerSalesChannel)" />
+            </div>
         </template>
     </Table>
 
 
     <ConfirmPopup>
         <template #icon>
-            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500"/>
+            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
         </template>
     </ConfirmPopup>
 </template>
