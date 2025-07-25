@@ -21,6 +21,7 @@ use App\Actions\Web\Webpage\WithWebpageSubNavigation;
 use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\UI\Web\BlogWebpageTabsEnum;
 use App\Enums\UI\Web\WebpageTabsEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
@@ -58,46 +59,6 @@ class ShowBlogWebpage extends OrgAction
         return $webpage;
     }
 
-    public function createRedirectAction(Webpage $webpage): array
-    {
-        $actions = [];
-
-        if ($this->canEdit) {
-            if ($webpage->shop->type == ShopTypeEnum::FULFILMENT) {
-                $redirectRoute = [
-                    'name'       => 'grp.org.fulfilments.show.web.webpages.redirect.create',
-                    'parameters' => [
-                        'organisation' => $webpage->organisation->slug,
-                        'fulfilment'   => $webpage->shop->fulfilment->slug,
-                        'website'      => $webpage->website->slug,
-                        'webpage'      => $webpage->slug
-                    ]
-                ];
-            } else {
-                $redirectRoute = [
-                    'name'       => 'grp.org.shops.show.web.webpages.redirect.create',
-                    'parameters' => [
-                        'organisation' => $webpage->organisation->slug,
-                        'shop'         => $webpage->shop->slug,
-                        'website'      => $webpage->website->slug,
-                        'webpage'      => $webpage->slug
-                    ]
-                ];
-            }
-
-            $actions[] = [
-                'type'    => 'button',
-                'style'   => 'edit',
-                'icon'    => ["fal", "fa-directions"],
-                'tooltip' => __('New Redirect'),
-                'route'   => $redirectRoute
-            ];
-        }
-
-
-        return $actions;
-    }
-
     public function getTypeSpecificActions(Webpage $webpage): array
     {
         $actions = [];
@@ -127,7 +88,6 @@ class ShowBlogWebpage extends OrgAction
 
         $actions = [];
 
-        $actions = array_merge($actions, $this->createRedirectAction($webpage));
         $actions = array_merge($actions, $this->workshopActions($request));
         $actions = array_merge($actions, $this->getTypeSpecificActions($webpage));
 
@@ -157,70 +117,15 @@ class ShowBlogWebpage extends OrgAction
 
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => WebpageTabsEnum::navigation()
+                    'navigation' => BlogWebpageTabsEnum::navigation()
                 ],
                 'root_active' => $subNavigationRoot,
 
-                WebpageTabsEnum::SHOWCASE->value => $this->tab == WebpageTabsEnum::SHOWCASE->value ?
+                BlogWebpageTabsEnum::SHOWCASE->value => $this->tab == BlogWebpageTabsEnum::SHOWCASE->value ?
                     fn () => WebpageResource::make($webpage)->getArray()
                     : Inertia::lazy(fn () => WebpageResource::make($webpage)->getArray()),
-
-                WebpageTabsEnum::SNAPSHOTS->value => $this->tab == WebpageTabsEnum::SNAPSHOTS->value ?
-                    fn () => SnapshotResource::collection(IndexSnapshots::run(parent: $webpage, prefix: 'snapshots'))
-                    : Inertia::lazy(fn () => SnapshotResource::collection(IndexSnapshots::run(parent: $webpage, prefix: 'snapshots'))),
-
-                WebpageTabsEnum::EXTERNAL_LINKS->value => $this->tab == WebpageTabsEnum::EXTERNAL_LINKS->value ?
-                    fn () => ExternalLinksResource::collection(IndexExternalLinks::run($webpage))
-                    : Inertia::lazy(fn () => ExternalLinksResource::collection(IndexExternalLinks::run($webpage))),
-
-                WebpageTabsEnum::WEBPAGES->value  => $this->tab == WebpageTabsEnum::WEBPAGES->value
-                    ?
-                    fn () => WebpageResource::collection(
-                        IndexWebpages::run(
-                            parent: $webpage,
-                            prefix: 'webpages'
-                        )
-                    )
-                    : Inertia::lazy(fn () => WebpageResource::collection(
-                        IndexWebpages::run(
-                            parent: $webpage,
-                            prefix: 'webpages'
-                        )
-                    )),
-                WebpageTabsEnum::ANALYTICS->value => $this->tab == WebpageTabsEnum::ANALYTICS->value ?
-                    fn () => GetWebpageGoogleCloud::make()->action($webpage, $request->only(['startDate', 'endDate', 'searchType']))
-                    : Inertia::lazy(fn () => GetWebpageGoogleCloud::make()->action($webpage, $request->only(['startDate', 'endDate', 'searchType']))),
-
-                WebpageTabsEnum::CHANGELOG->value => $this->tab == WebpageTabsEnum::CHANGELOG->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($webpage))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($webpage))),
-
-                WebpageTabsEnum::REDIRECTS->value => $this->tab == WebpageTabsEnum::REDIRECTS->value ?
-                    fn () => RedirectsResource::collection(IndexRedirects::run($webpage))
-                    : Inertia::lazy(fn () => RedirectsResource::collection(IndexRedirects::run($webpage)))
-
-
             ]
-        )->table(
-            IndexWebpages::make()->tableStructure(parent: $webpage, prefix: 'webpages')
-        )->table(
-            IndexExternalLinks::make()->tableStructure(parent: $webpage, prefix: WebpageTabsEnum::EXTERNAL_LINKS->value)
-        )->table(
-            IndexSnapshots::make()->tableStructure(
-                parent: $webpage,
-                prefix: 'snapshots'
-            )
-        )->table(
-            IndexRedirects::make()->tableStructure(
-                parent: $webpage,
-                prefix: WebpageTabsEnum::REDIRECTS->value
-            )
-        )
-            ->table(
-                IndexHistory::make()->tableStructure(
-                    prefix: WebpageTabsEnum::CHANGELOG->value
-                )
-            );
+        );
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = ''): array
@@ -253,7 +158,7 @@ class ShowBlogWebpage extends OrgAction
         $website = request()->route()->parameter('website');
 
         return match ($routeName) {
-            'grp.org.shops.show.web.blogs.show', 'grp.org.shops.show.web.webpages.edit', 'grp.org.shops.show.web.webpages.workshop', 'grp.org.shops.show.web.webpages.redirect.create' => array_merge(
+            'grp.org.shops.show.web.blogs.show', 'grp.org.shops.show.web.webpages.edit', 'grp.org.shops.show.web.blogs.workshop', 'grp.org.shops.show.web.webpages.redirect.create' => array_merge(
                 ShowWebsite::make()->getBreadcrumbs(
                     $website,
                     'grp.org.shops.show.web.websites.show',

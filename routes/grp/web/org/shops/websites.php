@@ -30,6 +30,7 @@ use App\Actions\Web\Webpage\UI\IndexProductWebpages;
 use App\Actions\Web\Webpage\UI\IndexSubDepartmentWebpages;
 use App\Actions\Web\Webpage\UI\IndexWebpages;
 use App\Actions\Web\Webpage\UI\ShowBlogWebpage;
+use App\Actions\Web\Webpage\UI\ShowBlogWebpageWorkshop;
 use App\Actions\Web\Webpage\UI\ShowFooterWorkshop;
 use App\Actions\Web\Webpage\UI\ShowHeaderWorkshop;
 use App\Actions\Web\Webpage\UI\ShowMenuWorkshop;
@@ -130,6 +131,7 @@ Route::prefix('{website}/blogs')->name('blogs.')->group(function () {
     Route::get('', IndexBlogWebpages::class)->name('index');
     Route::get('create', CreateBlogWebpage::class)->name('create');
     Route::get('{webpage}', ShowBlogWebpage::class)->name('show');
+    Route::get('{webpage}/workshop', ShowBlogWebpageWorkshop::class)->name('workshop');
 });
 
 Route::prefix('{website}/banners')->name('banners.')->group(function () {
