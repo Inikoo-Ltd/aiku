@@ -163,7 +163,8 @@ const fetchRoute = async () => {
 
     try {
         const www = await axios.get(route('grp.json.dropshipping.customer_sales_channel.shopify_products', {
-            customerSalesChannel: props.customerSalesChannel?.id
+            customerSalesChannel: props.customerSalesChannel?.id,
+            query: querySearchPortfolios.value
         }))
         resultOfFetchShopifyProduct.value = www.data.products
         // console.log('qweqw', www)
