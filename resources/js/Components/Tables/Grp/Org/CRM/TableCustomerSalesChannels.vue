@@ -5,7 +5,6 @@ import type {Table as TableTS} from "@/types/Table"
 import {RouteParams} from "@/types/route-params"
 import {CustomerSalesChannel} from "@/types/customer-sales-channel"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import {faTrashAlt} from "@fal"
 import {ref} from 'vue'
 import ConfirmPopup from 'primevue/confirmpopup';
 import {useConfirm} from 'primevue/useconfirm'
@@ -14,12 +13,9 @@ import {notify} from "@kyvg/vue3-notification"
 import {trans} from "laravel-vue-i18n"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faUndoAlt } from "@fal"
-import { library } from "@fortawesome/fontawesome-svg-core"
 import customerSalesChannel from "@/Pages/Grp/Org/Dropshipping/CustomerSalesChannel.vue"
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
-import {faUndoAlt} from "@fal"
+import {faUndoAlt, faTrashAlt} from "@fal"
 import {library} from "@fortawesome/fontawesome-svg-core"
 
 library.add(faUndoAlt)
@@ -205,12 +201,8 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
                     </template>
                 </ModalConfirmationDelete>
 
-
-
                 <Button v-if="!item.can_connect_to_platform"  type="negative" label="Delete" :icon="faTrashAlt"
                     @click="(event) => confirmDelete(event, customerSalesChannel)" />
-                <Button type="negative" label="Delete" :icon="faTrashAlt"
-                        @click="(event) => confirmDelete(event, customerSalesChannel)"/>
             </div>
         </template>
     </Table>

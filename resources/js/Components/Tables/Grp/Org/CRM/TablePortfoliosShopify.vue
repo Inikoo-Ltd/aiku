@@ -163,7 +163,8 @@ const fetchRoute = async () => {
 
     try {
         const www = await axios.get(route('grp.json.dropshipping.customer_sales_channel.shopify_products', {
-            customerSalesChannel: props.customerSalesChannel?.id
+            customerSalesChannel: props.customerSalesChannel?.id,
+            query: querySearchPortfolios.value
         }))
         resultOfFetchShopifyProduct.value = www.data.products
         // console.log('qweqw', www)
@@ -262,7 +263,7 @@ const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
         
         <!-- Column: actions -->
         <template #cell(actions)="{ item: portfolio }">
-            <div v-if="portfolio.customer_sales_channel_platform_status"  class="flex gap-x-2 items-center">
+            <div v-if="portfolio.customer_sales_channel_platform_status  && !portfolio.platform_status "  class="flex gap-x-2 items-center">
                 <ButtonWithLink
                     v-tooltip="trans('Will create new product in Shopify')"
                     :routeTarget="{
