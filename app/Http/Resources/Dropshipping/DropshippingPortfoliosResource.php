@@ -39,23 +39,17 @@ class DropshippingPortfoliosResource extends JsonResource
     public function toArray($request): array
     {
         $category = null;
-        if ($this->item instanceof StoredItem) {
-            $quantity = $this->item->total_quantity;
-            $itemId   = $this->item->id;
-            $weight   = 0;
-            $price    = 0;
-            $image    = null;
-        } else {
-            if ($department = $this->item->department) {
-                $department = $department->name.', ';
-            }
-            $quantity = $this->item->available_quantity;
-            $itemId   = $this->item->current_historic_asset_id;
-            $weight   = $this->item->gross_weight;
-            $price    = $this->item->price;
-            $image    = $this->item->imageSources(64, 64);
-            $category = $department.$this->item->family?->name;
+
+        if ($department = $this->item->department) {
+            $department = $department->name.', ';
         }
+        $quantity         = $this->item->available_quantity;
+        $itemId           = $this->item->current_historic_asset_id;
+        $weight           = $this->item->gross_weight;
+        $marketing_weight = $this->item->marketing_weight;
+        $price            = $this->item->price;
+        $image            = $this->item->imageSources(64, 64);
+        $category         = $department.$this->item->family?->name;
 
 
         $shopifyUploadRoute = [];
@@ -142,6 +136,7 @@ class DropshippingPortfoliosResource extends JsonResource
             'description'          => $this->customer_description ?? $this->item?->description ?? $this->item_description,
             'quantity_left'        => $quantity,
             'weight'               => $weight,
+            'marketing_weight'     => $marketing_weight,
             'price'                => $price,
             'selling_price'        => $this->selling_price,
             'customer_price'       => $this->customer_price,
@@ -153,7 +148,7 @@ class DropshippingPortfoliosResource extends JsonResource
             'updated_at'           => $this->updated_at,
             'platform_product_id'  => $this->platform_product_id,
             'upload_warning'       => $this->upload_warning,
-            'shopify_product_data' =>Arr::get($this->data,'shopify_product',[]),
+            'shopify_product_data' => Arr::get($this->data, 'shopify_product', []),
 
             'has_valid_platform_product_id'          => $this->has_valid_platform_product_id,
             'exist_in_platform'                      => $this->exist_in_platform,

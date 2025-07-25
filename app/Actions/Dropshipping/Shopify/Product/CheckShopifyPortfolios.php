@@ -48,7 +48,7 @@ class CheckShopifyPortfolios
         }
 
 
-        foreach ($query->get() as $portfolioData) {
+        foreach ($query->orderBy('status')->get() as $portfolioData) {
             $portfolio = Portfolio::find($portfolioData->id);
             $portfolio = CheckShopifyPortfolio::run($portfolio);
 
@@ -56,6 +56,7 @@ class CheckShopifyPortfolios
             if ($command) {
                 $this->tableData[] = [
                     'slug'                          => $portfolio->reference ?? $portfolio->id,
+                    'status'                        => $portfolio->status ? 'Open' : 'Closed',
                     'has_valid_platform_product_id' => $portfolio->has_valid_platform_product_id ? 'Yes' : 'No',
                     'exist_in_platform'             => $portfolio->exist_in_platform ? 'Yes' : 'No',
                     'platform_status'               => $portfolio->platform_status ? 'Yes' : 'No',
@@ -67,7 +68,7 @@ class CheckShopifyPortfolios
 
     public function getCommandSignature(): string
     {
-        return 'shopify:portfolios_check {parent_type} {parent_slug}';
+        return 'shopify:check_portfolios {parent_type} {parent_slug}';
     }
 
     public function asCommand(Command $command): void
@@ -89,7 +90,7 @@ class CheckShopifyPortfolios
 
         $command->info("\nPortfolio Shopify Status:");
         $command->table(
-            ['Portfolio', 'Has Valid Product ID', 'Exists in Platform', 'Platform Status', 'Possible Matches'],
+            ['Portfolio', 'Status', 'Has Valid Product ID', 'Exists in Platform', 'Platform Status', 'Possible Matches'],
             $this->tableData
         );
     }

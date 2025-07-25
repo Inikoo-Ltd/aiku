@@ -35,10 +35,9 @@ class SaveShopifyProductData extends RetinaAction
     public function handle(Portfolio $portfolio, array $productData = []): ?array
     {
 
-
-
         $customerSalesChannel = $portfolio->customerSalesChannel;
 
+        /** @var \App\Models\Dropshipping\ShopifyUser $shopifyUser */
         $shopifyUser = $customerSalesChannel->user;
 
         $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
@@ -57,10 +56,12 @@ class SaveShopifyProductData extends RetinaAction
             return null;
         }
 
+        $locationID = $shopifyUser->shopify_location_id;
+
         try {
             // GraphQL query to get product data
             $query = <<<'QUERY'
-            query getProduct($id: ID!) {
+            query getProduct($id: ID!, $locationId: ID!) {
               product(id: $id) {
                 id
                 title
@@ -86,9 +87,8 @@ class SaveShopifyProductData extends RetinaAction
                       inventoryQuantity
                       inventoryItem {
                         id
-                        inventoryLevel(locationId: "gid://shopify/Location/1") {
-                          id
-                        }
+                        inventoryLevel(locationId: $locationId) {
+                          id                        }
                       }
                     }
                   }
@@ -131,7 +131,8 @@ class SaveShopifyProductData extends RetinaAction
 
             // Prepare variables for the query
             $variables = [
-                'id' => $productID
+                'id' => $productID,
+                'locationId' => $locationID
             ];
 
             // Merge any additional query parameters
@@ -141,6 +142,7 @@ class SaveShopifyProductData extends RetinaAction
 
             // Make the GraphQL request
             $response = $client->request($query, $variables);
+
 
 
             if (!empty($response['errors']) || !isset($response['body'])) {
@@ -153,12 +155,12 @@ class SaveShopifyProductData extends RetinaAction
             $body = $response['body']->toArray();
 
 
-            $productData=[];
+            $productData = [];
 
 
             if (isset($body['data']['product'])) {
                 $productData = $body['data']['product'];
-            }else{
+            } else {
                 Sentry::captureMessage("Product data not found in response");
 
             }
@@ -173,10 +175,10 @@ class SaveShopifyProductData extends RetinaAction
             ]);
 
 
-
             // Format the response to match the expected structure
             return $this->formatProductResponse($productData);
         } catch (Exception $e) {
+            dd($e);
             Sentry::captureException($e);
 
             return null;
@@ -203,10 +205,7 @@ class SaveShopifyProductData extends RetinaAction
             foreach ($product['variants']['edges'] as $edge) {
                 $variant = $edge['node'];
 
-                // Add inventory data if available
-                if (isset($variant['inventoryItem']['inventoryLevel'])) {
-                    $variant['inventory_quantity'] = $variant['inventoryItem']['inventoryLevel']['available'];
-                }
+
 
                 $variants[] = $variant;
             }
@@ -228,7 +227,6 @@ class SaveShopifyProductData extends RetinaAction
             }
         }
 
-        // Extract metafields from the edges/node structure
         $metafields = [];
         if (isset($product['metafields']['edges'])) {
             foreach ($product['metafields']['edges'] as $edge) {
@@ -260,6 +258,7 @@ class SaveShopifyProductData extends RetinaAction
     {
         $portfolio = Portfolio::find($command->argument('portfolio_id'));
 
+        // DeactivateShopifyProduct::run($portfolio);
         if (!$portfolio) {
             $command->error("Portfolio not found");
 
@@ -267,6 +266,7 @@ class SaveShopifyProductData extends RetinaAction
         }
 
         $result = $this->handle($portfolio);
+
 
         if (!$result) {
             $command->error("Failed to retrieve product data");
@@ -295,16 +295,18 @@ class SaveShopifyProductData extends RetinaAction
             $variantData = [];
             foreach ($result['variants'] as $index => $variant) {
                 $variantData[] = [
-                    'Index'     => $index + 1,
-                    'ID'        => $variant['id'],
-                    'Title'     => $variant['title'],
-                    'Price'     => $variant['price'],
-                    'SKU'       => $variant['sku'] ?? 'N/A',
-                    'Barcode'   => $variant['barcode'] ?? 'N/A',
-                    'Inventory' => $variant['inventory_quantity'] ?? 'N/A'
+                    'Index'          => $index + 1,
+                    'ID'             => $variant['id'],
+                    'Title'          => $variant['title'],
+                    'Price'          => $variant['price'],
+                    'SKU'            => $variant['sku'] ?? 'N/A',
+                    'Barcode'        => $variant['barcode'] ?? 'N/A',
+                    'Inventory'      => $variant['inventory_quantity'] ?? 'N/A',
+                    'InventoryLevel' => isset($variant['inventoryItem']['inventoryLevel']) ?
+                                        $variant['inventoryItem']['inventoryLevel']['id'] : 'ERROR'
                 ];
             }
-            $command->table(['Index', 'ID', 'Title', 'Price', 'SKU', 'Barcode', 'Inventory'], $variantData);
+            $command->table(['Index', 'ID', 'Title', 'Price', 'SKU', 'Barcode', 'Inventory',  'InventoryLevel'], $variantData);
         }
 
         $command->info("\nProduct data retrieved successfully");

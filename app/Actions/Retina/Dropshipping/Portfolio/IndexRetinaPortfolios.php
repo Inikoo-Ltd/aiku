@@ -329,7 +329,7 @@ class IndexRetinaPortfolios extends RetinaAction
                     ->name($prefix)
                     ->pageName($prefix.'Page');
             }
-            $table->withLabelRecord([__('portfolio'), __('portfolios')]);
+            $table->withLabelRecord([__('product'), __('products')]);
             $table
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
@@ -339,13 +339,20 @@ class IndexRetinaPortfolios extends RetinaAction
                 ]);
 
             $table->column(key: 'image', label: __(''), canBeHidden: false, searchable: true);
-            $table->column(key: 'name', label: __('Item'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'name', label: __('Product'), canBeHidden: false, sortable: true, searchable: true);
 
 
             if ($this->customerSalesChannel->platform->type !== PlatformTypeEnum::MANUAL) {
+
                 $table->column(key: 'status', label: __('status'));
-                $table->column(key: 'matches', label: __('Matches'), canBeHidden: false);
-                $table->column(key: 'create_new',label:__('New'), canBeHidden: false);
+
+                $matchesLabel = __('Matches');
+                if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
+                    $matchesLabel = __('Shopify product');
+                }
+
+                $table->column(key: 'matches', label: $matchesLabel, canBeHidden: false);
+                $table->column(key: 'create_new', label:'', canBeHidden: false);
             }
 
 

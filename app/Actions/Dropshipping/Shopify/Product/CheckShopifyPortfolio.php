@@ -18,6 +18,9 @@ class CheckShopifyPortfolio
 
     public function handle(Portfolio $portfolio): Portfolio
     {
+
+
+
         $shopifyUser = $portfolio->customerSalesChannel->user;
 
 
