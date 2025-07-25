@@ -81,9 +81,10 @@ const onSubmitAddItem = async (idProduct: number[], customerSalesChannelId: numb
         </template>
     </PageHeading>
     
-    <TablePortfoliosShopify v-if="platform.type === 'shopify'" :data="data" />
-    <TablePortfoliosManual v-else-if="platform.type === 'manual'" :data="data" />
-    <TablePortfolios v-else :data="data" />
+    <TablePortfoliosShopify v-if="platform.type === 'shopify'" :data="data" :customerSalesChannel />
+    <TablePortfoliosManual v-else-if="platform.type === 'manual'" :data="data" :customerSalesChannel />
+    <TablePortfolios v-else :data="data" :customerSalesChannel />
+    
 
     <Modal v-if="is_show_add_products_modal" :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl">
         <ProductsSelector

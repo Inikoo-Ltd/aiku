@@ -30,7 +30,7 @@ import {
     faTrashAlt,
     faExclamationCircle,
     faClone,
-    faLink, faScrewdriver
+    faLink, faScrewdriver, faTools
 } from "@fal"
 import {faStar, faFilter} from "@fas"
 import {faExclamationTriangle as fadExclamationTriangle} from "@fad"
@@ -43,7 +43,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import Tag from '@/Components/Tag.vue'
 
-library.add(fadExclamationTriangle, faSyncAlt, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, faClone, faLink, faScrewdriver)
+library.add(fadExclamationTriangle, faSyncAlt, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, faClone, faLink, faScrewdriver, faTools)
 
 interface PlatformData {
     id: number
@@ -180,7 +180,7 @@ const onClickFilterOutOfStock = (query: string) => {
 
 // Section: Modal Shopify select variant
 const isOpenModal = ref(false)
-const selectedRow = ref(null)
+const selectedPortfolio = ref(null)
 const isLoadingSubmit = ref(false)
 const querySearchPortfolios = ref('')
 // const portfoliosList = ref<Product[]>([
@@ -227,9 +227,9 @@ const querySearchPortfolios = ref('')
 // ])
 const filteredPortfolios = computed(() => {
     if (!querySearchPortfolios.value) {
-        return selectedRow.value?.platform_possible_matches
+        return selectedPortfolio.value?.platform_possible_matches
     }
-    return selectedRow.value?.platform_possible_matches.filter(portfolio => {
+    return selectedPortfolio.value?.platform_possible_matches.filter(portfolio => {
         return portfolio.name.toLowerCase().includes(querySearchPortfolios.value.toLowerCase())
             || portfolio.code.toLowerCase().includes(querySearchPortfolios.value.toLowerCase())
     })
@@ -240,7 +240,7 @@ const onSubmitVariant = () => {
 
     isOpenModal.value = false
     selectedVariant.value = null
-    selectedRow.value = null
+    selectedPortfolio.value = null
 
     // Section: Submit
     // router.post(
@@ -374,9 +374,18 @@ const onSubmitVariant = () => {
             </div>
         </template>
 
-        <!-- Column: Status -->
+        <!-- Column: Status (repair) -->
         <template #cell(status)="{ item }">
-            <div class="flex justify-center">
+            <div class="whitespace-nowrap">
+                <FontAwesomeIcon v-if="item.has_valid_platform_product_id" v-tooltip="trans('Has valid platform product id')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-else v-tooltip="trans('Has valid platform product id')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-if="item.exist_in_platform" v-tooltip="trans('Exist in platform')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-else v-tooltip="trans('Exist in platform')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-if="item.platform_status" v-tooltip="trans('Platform status')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-else v-tooltip="trans('Platform status')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+            </div>
+
+            <!-- <div class="flex justify-center">
 				<FontAwesomeIcon
 					v-if="(item.has_valid_platform_product_id && item.exist_in_platform && item.platform_status)"
 					v-tooltip="trans('Uploaded to platform')" icon="far fa-check" class="text-green-500" fixed-width
@@ -384,24 +393,14 @@ const onSubmitVariant = () => {
 				<ConditionIcon v-else-if="get(progressToUploadToShopify, [item.id], null)"
 					:state="get(progressToUploadToShopify, [item.id], undefined)"
 					class="text-xl mx-auto"/>
-				
-
-				<!-- Button: repair -->
-				<template v-if="!(!item.has_valid_platform_product_id && !item.exist_in_platform && !item.platform_status && (get(progressToUploadToShopify, [item.id], undefined) != 'success' && get(progressToUploadToShopify, [item.id], undefined) != 'loading'))">
-					<Button
-						v-if="!item.has_valid_platform_product_id || !item.exist_in_platform || !item.platform_status"
-						label="Repair"
-						type="tertiary"
-						icon="fal fa-screwdriver"
-						v-tooltip="trans('Upload product to :platform', {platform: props.platform_data.name})"
-					/>
-				</template>
-            </div>
+            </div> -->
         </template>
 
         <!-- Column: Actions (connect) -->
         <template #cell(actions)="{ item }">
             <div class="mx-auto flex flex-wrap justify-center gap-2">
+
+                <!-- Button: connect -->
                 <ButtonWithLink
 					v-if="
 						!item.has_valid_platform_product_id && 
@@ -410,7 +409,7 @@ const onSubmitVariant = () => {
 						(get(progressToUploadToShopify, [item.id], undefined) != 'success' && get(progressToUploadToShopify, [item.id], undefined) != 'loading')
 					"
                     :routeTarget="item.platform_upload_portfolio"
-                    label="Connect"
+                    :label="trans('Connect')"
                     icon="fal fa-upload"
                     type="positive"
                     size="xs"
@@ -421,6 +420,46 @@ const onSubmitVariant = () => {
                     :disabled="get(progressToUploadToShopify, [item.id], null)"
                 />
 
+                <!-- Button: repair -->
+                <template v-else>
+                    <div v-if="item.platform_possible_matches?.number_matches && (!item.has_valid_platform_product_id || !item.exist_in_platform || !item.platform_status)" class="w-full flex gap-2 items-center">
+                        <div class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow overflow-hidden">
+                            <img :src="item.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src" :alt="item.platform_possible_matches?.matches_labels[0]" />
+                        </div>
+
+                        <div>
+                            <span class="mr-1">{{ item.platform_possible_matches?.matches_labels[0] }}</span>
+                            <ButtonWithLink
+                                v-if="item.platform_possible_matches?.number_matches === 1"
+                                v-tooltip="trans('Upload product to :platform (matching)', {platform: props.platform_data.name})"
+                                :routeTarget="{
+                                method: 'post',
+                                    name: 'retina.models.portfolio.match_to_existing_shopify_product',
+                                    parameters: {
+                                        portfolio: item.id,
+                                        shopify_product_id: item.platform_possible_matches.raw_data?.[0]?.id
+                                    }
+                                }"
+                                :bindToLink="{
+                                    preserveScroll: true,
+                                }"
+                                type="tertiary"
+                                :label="trans('Repair')"
+                                size="xxs"
+                                icon="fal fa-tools"
+                            />
+                            
+                            <Button
+                                v-else
+                                @click="() => (isOpenModal = true, selectedPortfolio = item)"
+                                :label="trans('Open match list')"
+                                size="xxs"
+                                type="tertiary"
+                            />
+                        </div>
+                    </div>
+				</template>
+
 
             </div>
         </template>
@@ -430,7 +469,7 @@ const onSubmitVariant = () => {
             <template v-if="!(!item.has_valid_platform_product_id && !item.exist_in_platform && !item.platform_status && (get(progressToUploadToShopify, [item.id], undefined) != 'success' && get(progressToUploadToShopify, [item.id], undefined) != 'loading'))">
 				<Button
 					v-if="(!item.has_valid_platform_product_id || !item.exist_in_platform || !item.platform_status) && item.platform_possible_matches.length"
-					@click="isOpenModal = true, selectedRow = item"
+					@click="isOpenModal = true, selectedPortfolio = item"
 					label="Modal Shopify"
 					type="tertiary"
 				/>
@@ -486,7 +525,7 @@ const onSubmitVariant = () => {
                     <div class="h-full md:h-[400px] overflow-auto py-2 relative">
                         <!-- Products list -->
                         <div class="grid grid-cols-2 gap-3 pb-2">
-                            <template v-if="selectedRow?.platform_possible_matches?.length > 0">
+                            <template v-if="selectedPortfolio?.platform_possible_matches?.length > 0">
                                 <div
                                     v-for="(item, index) in filteredPortfolios"
                                     :key="index"

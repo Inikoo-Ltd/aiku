@@ -14,7 +14,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { computed, ref } from "vue"
 import { routeType } from "@/types/route"
 import { notify } from "@kyvg/vue3-notification"
-import { faTrashAlt } from "@fal"
+import { faTrashAlt, faTools } from "@fal"
 import { faCheckCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Portfolio } from "@/types/portfolio"
@@ -24,12 +24,25 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import axios from "axios"
+import { debounce } from "lodash"
 
-library.add(faTrashAlt, faCheckCircle)
+library.add(faTrashAlt, faTools, faCheckCircle)
 
-defineProps<{
+interface ShopifyProduct {
+    id: string // "gid://shopify/Product/12148498727252"
+    title: string // "Aarhus Atomiser - Classic Pod - USB - Colour Change - Timer"
+    handle: string // "aarhus-atomiser-classic-pod-usb-colour-change-timer"
+    vendor: string // "AW-Dropship"
+    images: {
+        src: string
+    }[] // []
+}
+
+const props = defineProps<{
     data: {}
     tab?: string
+    customerSalesChannel:{}
 }>()
 
 const locale = useLocaleStore()
@@ -78,21 +91,89 @@ const isLoadingSubmit = ref(false)
 const querySearchPortfolios = ref("")
 const selectedVariant = ref<number | null>(null)
 const onSubmitVariant = () => {
-    console.log(selectedVariant.value)
+    console.log('qqq', selectedPortfolio.value)
+    console.log('www', selectedVariant.value)
 
-    isOpenModalVariant.value = false
-    selectedVariant.value = null
-    selectedPortfolio.value = null
+    if(!selectedPortfolio.value || !selectedVariant.value) {
+        notify({
+            title: trans("Something went wrong"),
+            text: "",
+            type: "error",
+        })
+    }
+
+    // Section: Submit
+    router.post(
+        route('grp.models.portfolio.match_to_existing_shopify_product', {
+            portfolio: selectedPortfolio.value?.id,
+            shopify_product_id: selectedVariant.value?.id
+        }),
+        {
+            // data: 'qqq'
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingSubmit.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully match the product"),
+                    type: "success"
+                })
+
+                isOpenModalVariant.value = false
+                setTimeout(() => {
+                    selectedVariant.value = null
+                    selectedPortfolio.value = null
+                }, 700)
+
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: errors.message ?? trans("Failed to match the product to platform"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingSubmit.value = false
+            },
+        }
+    )
+    
 }
 const filteredPortfolios = computed(() => {
     if (!querySearchPortfolios.value) {
         return selectedPortfolio.value?.platform_possible_matches?.raw_data
     }
     return selectedPortfolio.value?.platform_possible_matches?.raw_data.filter(portfolio => {
-        return portfolio.name.toLowerCase().includes(querySearchPortfolios.value.toLowerCase())
-            || portfolio.code.toLowerCase().includes(querySearchPortfolios.value.toLowerCase())
+        return portfolio.title.toLowerCase().includes(querySearchPortfolios.value.toLowerCase())
     })
 })
+
+// Section: search in Shopify
+const resultOfFetchShopifyProduct = ref<ShopifyProduct[]>([])
+const isLoadingFetchShopifyProduct = ref(false)
+const fetchRoute = async () => {
+    isLoadingFetchShopifyProduct.value = true
+    
+
+    try {
+        const www = await axios.get(route('grp.json.dropshipping.customer_sales_channel.shopify_products', {
+            customerSalesChannel: props.customerSalesChannel?.id
+        }))
+        resultOfFetchShopifyProduct.value = www.data.products
+        // console.log('qweqw', www)
+    } catch (e) {
+        console.error("Error processing products", e)
+    }
+    isLoadingFetchShopifyProduct.value = false
+
+}
+const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
 </script>
 
 <template>
@@ -142,9 +223,10 @@ const filteredPortfolios = computed(() => {
                 <div>
                     <span class="mr-1">{{ portfolio.platform_possible_matches?.matches_labels[0]}}</span>
                     <ButtonWithLink
+                        v-if="portfolio.platform_possible_matches?.number_matches === 1"
                         v-tooltip="trans('Match to existing Shopify product')"
                         :routeTarget="{
-                        method: 'post',
+                            method: 'post',
                             name: 'grp.models.portfolio.match_to_existing_shopify_product',
                             parameters: {
                                 portfolio: portfolio.id,
@@ -154,15 +236,16 @@ const filteredPortfolios = computed(() => {
                         :bindToLink="{
                             preserveScroll: true,
                         }"
-                        icon=""
-                        type="tertiary"
-                        :label="trans('Match')"
+                        type="secondary"
+                        :label="trans('Quick match')"
                         size="xxs"
+                        icon="fal fa-tools"
                     />
                     
                     <Button
+                        v-else
                         @click="() => (isOpenModalVariant = true, selectedPortfolio = portfolio)"
-                        :label="trans('Select variant')"
+                        :label="trans('Open match list')"
                         size="xxs"
                         type="tertiary"
                     />
@@ -216,8 +299,8 @@ const filteredPortfolios = computed(() => {
             <div class="mb-2">
                 <PureInput
                     v-model="querySearchPortfolios"
-                    aupdate:modelValue="() => debounceGetPortfoliosList()"
-                    :placeholder="trans('Input to search portfolios')"
+                    @update:modelValue="() => debFetchShopifyProduct()"
+                    :placeholder="trans('Search in :platform', { platform: 'Shopify' })"
                 />
                 <slot name="afterInput">
                 </slot>
@@ -232,10 +315,73 @@ const filteredPortfolios = computed(() => {
                     <div class="border-t border-gray-300 mb-1"></div>
                     <div class="h-full md:h-[400px] overflow-auto py-2 relative">
                         <!-- Products list -->
-                        <div class="grid grid-cols-2 gap-3 pb-2">
+                         <!-- {{ selectedVariant }} -->
+                           
+                        <div v-if="querySearchPortfolios" class="min-h-24 relative mb-4 pb-4  p-2 border-b border-indigo-300 grid grid-cols-2 gap-3 pr-2">
+                            <template v-if="resultOfFetchShopifyProduct?.length">
+                                <div
+                                    v-for="(item, index) in resultOfFetchShopifyProduct"
+                                    :key="index"
+                                    @click="() => selectedVariant = item"
+                                    class="relative h-fit rounded cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
+                                    :class="[
+                                        selectedVariant?.id === item.id ? 'bg-green-100 border-green-400' : ''
+                                    ]"
+                                >
+                                    <Transition name="slide-to-right">
+                                        <FontAwesomeIcon v-if="selectedVariant?.id === item.id"
+                                            icon="fas fa-check-circle"
+                                            class="-top-2 -right-2 absolute text-green-500" fixed-width
+                                            aria-hidden="true"
+                                        />
+                                    </Transition>
+                                    <slot name="product" :item="item">
+                                        <!-- <Image v-if="item.image" :src="item.image?.[0]?.src"
+                                            class="w-16 h-16 overflow-hidden mx-auto md:mx-0 mb-4 md:mb-0" imageCover
+                                            :alt="item.name"/> -->
+                                        <div class="min-h-3 h-auto max-h-9 min-w-9 w-auto max-w-9">
+                                            <img :src="item.images?.[0]?.src" class="shadow" />
+                                        </div>
+                                        <div class="flex flex-col justify-between">
+                                            <div class="w-fit" xclick="() => selectProduct(item)">
+                                                <div v-if="item.title" v-tooltip="trans('Name')" class="w-fit text-sm font-semibold leading-none mb-1">
+                                                    {{ item.title || 'no title' }}
+                                                </div>
+                                                <div v-if="item.name" v-tooltip="trans('Name')" class="w-fit font-semibold leading-none mb-1">
+                                                    {{ item.name || 'no name' }}
+                                                </div>
+                                                <div v-if="item.no_code" v-tooltip="trans('Code')"
+                                                        class="w-fit text-xs text-gray-400 italic">
+                                                    {{ item.code || 'no code' }}
+                                                </div>
+                                                <div v-if="item.reference" v-tooltip="trans('Reference')"
+                                                        class="w-fit text-xs text-gray-400 italic">
+                                                    {{ item.reference || 'no reference' }}
+                                                </div>
+                                                <div v-if="item.gross_weight" v-tooltip="trans('Weight')"
+                                                        class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}
+                                                </div>
+                                            </div>
+                                            <!-- <div v-if="!item.no_price" xclick="() => selectProduct(item)"
+                                                    v-tooltip="trans('Price')" class="w-fit text-xs text-gray-x500">
+                                                {{
+                                                    locale?.currencyFormat(item.currency_code || 'usd', item.price || 0)
+                                                }}
+                                            </div> -->
+                                        </div>
+                                    </slot>
+                                </div>
+                            </template>
+
+                            <div v-if="isLoadingFetchShopifyProduct" class="bg-black/50 text-2xl text-white inset-0 absolute flex items-center justify-center">
+                                <LoadingIcon />
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3 pb-2 pr-2">
                             <template v-if="selectedPortfolio?.platform_possible_matches?.number_matches">
                                 <div
-                                    v-for="(item, index) in filteredPortfolios"
+                                    v-for="(item, index) in selectedPortfolio?.platform_possible_matches?.raw_data"
                                     :key="index"
                                     @click="() => selectedVariant = item"
                                     class="relative h-fit rounded cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
@@ -245,22 +391,26 @@ const filteredPortfolios = computed(() => {
                                 >
                                     <Transition name="slide-to-right">
                                         <FontAwesomeIcon v-if="selectedVariant?.id === item.id"
-                                                         icon="fas fa-check-circle"
-                                                         class="bottom-2 right-2 absolute text-green-500" fixed-width
-                                                         aria-hidden="true"/>
+                                            icon="fas fa-check-circle"
+                                            class="-top-2 -right-2 absolute text-green-500" fixed-width
+                                            aria-hidden="true"
+                                        />
                                     </Transition>
                                     <slot name="product" :item="item">
-                                        <Image v-if="item.image" :src="item.image"
-                                               class="w-16 h-16 overflow-hidden mx-auto md:mx-0 mb-4 md:mb-0" imageCover
-                                               :alt="item.name"/>
+                                        <!-- <Image v-if="item.image" :src="item.image?.[0]?.src"
+                                            class="w-16 h-16 overflow-hidden mx-auto md:mx-0 mb-4 md:mb-0" imageCover
+                                            :alt="item.name"/> -->
+
+                                        <div class="min-h-3 h-auto max-h-9 min-w-9 w-auto max-w-9">
+                                            <img :src="item.images?.[0]?.src" class="shadow" />
+                                        </div>
+
                                         <div class="flex flex-col justify-between">
                                             <div class="w-fit" xclick="() => selectProduct(item)">
-                                                <div v-if="item.title" v-tooltip="trans('Name')"
-                                                     class="w-fit font-semibold leading-none mb-1">
+                                                <div v-if="item.title" v-tooltip="trans('Name')" class="w-fit text-sm font-semibold leading-none mb-1">
                                                     {{ item.title || 'no title' }}
                                                 </div>
-                                                <div v-if="item.name" v-tooltip="trans('Name')"
-                                                     class="w-fit font-semibold leading-none mb-1">
+                                                <div v-if="item.name" v-tooltip="trans('Name')" class="w-fit font-semibold leading-none mb-1">
                                                     {{ item.name || 'no name' }}
                                                 </div>
                                                 <div v-if="item.no_code" v-tooltip="trans('Code')"
@@ -289,6 +439,8 @@ const filteredPortfolios = computed(() => {
                                 {{ trans("No products found") }}
                             </div>
                         </div>
+
+                        
                     </div>
                     <!-- Pagination -->
                     <!-- <Pagination
@@ -307,7 +459,7 @@ const filteredPortfolios = computed(() => {
                             xdisabled="selectedProduct.length < 1"
                             xv-tooltip="selectedProduct.length < 1 ? trans('Select at least one product') : ''"
                             xlabel="submitLabel ?? `${trans('Add')} ${selectedProduct.length}`"
-                            label="Select as variant"
+                            :label="trans('Match the product')"
                             type="primary"
                             full
                             xicon="fas fa-plus"
