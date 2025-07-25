@@ -344,10 +344,11 @@ class IndexRetinaPortfolios extends RetinaAction
 
             if ($this->customerSalesChannel->platform->type !== PlatformTypeEnum::MANUAL) {
                 $table->column(key: 'status', label: __('status'));
+                $table->column(key: 'matches', label: __('Matches'), canBeHidden: false);
+                $table->column(key: 'create_new',label:__('New'), canBeHidden: false);
             }
 
-            $table->column(key: 'matches', label: __('Matches'), canBeHidden: false);
-            $table->column(key: 'create_new',label:__('New'), canBeHidden: false);
+
             $table->column(key: 'delete', label: '', canBeHidden: false);
         };
     }
