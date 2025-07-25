@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head, router } from "@inertiajs/vue3"
+import { Head, router, Link} from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TablePortfolios from "@/Components/Tables/Grp/Org/CRM/TablePortfolios.vue"
 import TablePortfoliosShopify from "@/Components/Tables/Grp/Org/CRM/TablePortfoliosShopify.vue"
@@ -66,38 +66,42 @@ const onSubmitAddItem = async (idProduct: number[], customerSalesChannelId: numb
     })
 }
 
+const selectedProducts = ref<number[]>([])
 </script>
 
 <template>
+
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template v-if="is_show_add_products_modal" #other>
-            <Button
-                @click="() => isOpenModalPortfolios = true"
-                :type="'secondary'"
-                icon="fal fa-plus"
-                :label="trans('Add products to portfolio')"
-            />
+        <template  #other>
+            <Button v-if="is_show_add_products_modal" @click="() => isOpenModalPortfolios = true" :type="'secondary'" icon="fal fa-plus"
+                :label="trans('Add products to portfolio')" />
+
+            <!-- <Link v-if="selectedProducts.length > 0" @start="loading = true" @finish="loading = false"
+                :href="route(picking_session_route.name, picking_session_route.parameters)" method="post" as="button"
+                :data="{ delivery_notes: selectedDeliveryNotes }"> -->
+            <Button type="create" label="picking session" @click="()=>console.log('results', selectedProducts)" />
+           <!--  </Link> -->
         </template>
     </PageHeading>
-    
-    <TablePortfoliosShopify v-if="platform.type === 'shopify'" :data="data" :customerSalesChannel />
-    <TablePortfoliosManual v-else-if="platform.type === 'manual'" :data="data" :customerSalesChannel />
-    <TablePortfolios v-else :data="data" :customerSalesChannel />
-    
+    {{ selectedProducts }}
 
-    <Modal v-if="is_show_add_products_modal" :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl">
-        <ProductsSelector
-            :headLabel="trans('Add products to portfolios')"
-            :route-fetch="{
+    <TablePortfoliosShopify v-if="platform.type === 'shopify'" :data="data" :customerSalesChannel
+        v-model:selectedProducts="selectedProducts" />
+    <TablePortfoliosManual v-else-if="platform.type === 'manual'" :data="data" :customerSalesChannel
+        v-model:selectedProducts="selectedProducts" />
+    <TablePortfolios v-else :data="data" :customerSalesChannel v-model:selectedProducts="selectedProducts" />
+
+
+    <Modal v-if="is_show_add_products_modal" :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false"
+        width="w-full max-w-6xl">
+        <ProductsSelector :headLabel="trans('Add products to portfolios')" :route-fetch="{
                 name: 'grp.json.products_for_portfolio_select',
                 parameters: {
                     customerSalesChannel: customerSalesChannelId
                 }
-            }"
-            :isLoadingSubmit
-            @submit="(products: {}[]) => onSubmitAddItem(products.map((product: any) => product.id), customerSalesChannelId)"
-        >
+            }" :isLoadingSubmit
+            @submit="(products: {}[]) => onSubmitAddItem(products.map((product: any) => product.id), customerSalesChannelId)">
         </ProductsSelector>
     </Modal>
 </template>

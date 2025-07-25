@@ -54,6 +54,11 @@ class PortfoliosResource extends JsonResource
             'platform_possible_matches'     => $this->platform_possible_matches,
             'platform_product_id'           => $this->platform_product_id,
 
+            // 'matched_product'               => [
+            //     'img'    => 'xx',
+            //     'label'  => 'yyy'
+            // ],  // TODO: Add matched product details if available
+
             'customer_sales_channel_id' => $this->customer_sales_channel_id ?? null,
             'routes'                    => [
                 'delete_route' => [
