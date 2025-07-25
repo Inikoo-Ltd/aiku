@@ -15,7 +15,7 @@ use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Console\Command;
 use Sentry;
 
-class StoreWebhooksToShopify extends OrgAction
+class CreateShopifyWebhooks extends OrgAction
 {
     use WithActionUpdate;
 
@@ -35,11 +35,26 @@ class StoreWebhooksToShopify extends OrgAction
             [
                 'topic' => 'APP_UNINSTALLED',
                 'webhookSubscription' => [
-                    'uri' => "https://aiku.test/webhooks/shopify-user/{$shopifyUser->id}/app/uninstalled",
+                    'uri' => config('app.url')."/webhooks/shopify/{$shopifyUser->id}/app-uninstalled",
+                    'format' => 'JSON',
+                ]
+            ],
+            [
+                'topic' => 'PRODUCTS_DELETE',
+                'webhookSubscription' => [
+                    'uri' => config('app.url')."/webhooks/shopify/{$shopifyUser->id}/products-deleted",
+                    'format' => 'JSON',
+                ]
+            ],
+            [
+                'topic' => 'PRODUCTS_UPDATE',
+                'webhookSubscription' => [
+                    'uri' => config('app.url')."/webhooks/shopify/{$shopifyUser->id}/products-updated",
                     'format' => 'JSON',
                 ]
             ],
         ];
+
 
         $results = [];
         $success = true;

@@ -3,7 +3,7 @@
 namespace App\Listeners;
 
 use App\Actions\Dropshipping\Shopify\FulfilmentService\StoreFulfilmentService;
-use App\Actions\Dropshipping\Shopify\Webhook\StoreWebhooksToShopify;
+use App\Actions\Dropshipping\Shopify\Webhook\CreateShopifyWebhooks;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\ShopifyUser;
 use Osiset\ShopifyApp\Messaging\Events\AppInstalledEvent;
@@ -36,7 +36,7 @@ class ShopifyAppInstalledListener
         }
 
 
-        StoreWebhooksToShopify::run($shopifyUser);
+        CreateShopifyWebhooks::run($shopifyUser);
 
         if ($shopifyUser->customerSalesChannel) {
             StoreFulfilmentService::run($shopifyUser->customerSalesChannel);

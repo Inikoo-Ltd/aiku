@@ -9,6 +9,7 @@
 use App\Actions\Comms\Notifications\GetSnsNotification;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackFetchStock;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackFulfillmentOrderNotification;
+use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackProductChanged;
 use App\Actions\Dropshipping\Shopify\Webhook\CustomerDataRedactWebhookShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\CustomerDataRequestWebhookShopify;
 use App\Actions\Dropshipping\Shopify\Webhook\ShopRedactWebhookShopify;
@@ -25,11 +26,12 @@ Route::name('webhooks.')->group(function () {
 Route::prefix('shopify/{shopifyUser:id}')->name('webhooks.shopify.')->group(function () {
     Route::post('fulfillment_order_notification', CallbackFulfillmentOrderNotification::class)->name('fulfillment_order_notification');
     Route::get('fetch_stock.json', CallbackFetchStock::class)->name('fetch_stock');
+    Route::post('app-uninstalled', [DeleteShopifyUser::class, 'inWebhook'])->name('app_uninstalled');
+    Route::post('products-deleted', CallbackProductChanged::class)->name('products_deleted');
+    Route::post('products-updated', CallbackProductChanged::class)->name('products_updated');
+
 });
 
-Route::prefix('shopify-user/{shopifyUser:id}')->name('webhooks.shopify.')->group(function () {
-    Route::post('app/uninstalled', [DeleteShopifyUser::class, 'inWebhook'])->name('app-uninstalled');
-});
 
 Route::prefix('woocommerce')->name('webhooks.woo.')->group(function () {
     Route::post('wc-user-callback', CallbackRetinaWooCommerceUser::class)->name('callback');
