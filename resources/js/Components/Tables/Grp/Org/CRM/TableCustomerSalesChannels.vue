@@ -12,6 +12,7 @@ import { useConfirm } from 'primevue/useconfirm'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExclamationTriangle } from "@far"
 import { notify } from "@kyvg/vue3-notification"
+import { trans } from "laravel-vue-i18n"
 
 defineProps<{
     data: TableTS,
@@ -142,6 +143,15 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
                 {{ customerSalesChannel.name || customerSalesChannel.reference }}
                 </Link>
             </div>
+        </template>
+
+        <template #cell(connection)="{ item }">
+            <FontAwesomeIcon v-if="item.has_valid_platform_product_id" v-tooltip="trans('Has valid platform product id')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-else v-tooltip="trans('Has valid platform product id')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-if="item.exist_in_platform" v-tooltip="trans('Exist in platform')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-else v-tooltip="trans('Exist in platform')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-if="item.platform_status" v-tooltip="trans('Platform status')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-else v-tooltip="trans('Platform status')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
         </template>
 
         <template #cell(number_portfolios)="{ item: customerSalesChannel }">
