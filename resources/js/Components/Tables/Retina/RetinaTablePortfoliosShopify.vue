@@ -205,43 +205,53 @@ const filteredPortfolios = computed(() => {
 })
 const selectedVariant = ref<Product | null>(null)
 const onSubmitVariant = () => {
+
     console.log(selectedVariant.value)
 
-    isOpenModal.value = false
-    selectedVariant.value = null
-    selectedPortfolio.value = null
+    /* selectedVariant.value = null
+    selectedPortfolio.value = null */
 
-    // Section: Submit
-    // router.post(
-    // 	'xxxx',
-    // 	{
-    // 		data: 'qqq'
-    // 	},
-    // 	{
-    // 		preserveScroll: true,
-    // 		preserveState: true,
-    // 		onStart: () => {
-    // 			isLoadingSubmit.value = true
-    // 		},
-    // 		onSuccess: () => {
-    // 			notify({
-    // 				title: trans("Success"),
-    // 				text: trans("Successfully submit the data"),
-    // 				type: "success"
-    // 			})
-    // 		},
-    // 		onError: errors => {
-    // 			notify({
-    // 				title: trans("Something went wrong"),
-    // 				text: trans("Failed to set location"),
-    // 				type: "error"
-    // 			})
-    // 		},
-    // 		onFinish: () => {
-    // 			isLoadingSubmit.value = false
-    // 		},
-    // 	}
-    // )
+    /* Section: Submit */
+    router.post(
+    	 route('retina.models.portfolio.match_to_existing_shopify_product', {
+            portfolio: selectedPortfolio.value?.id,
+            shopify_product_id: selectedVariant.value?.id
+        }),
+    	{
+    		// data: 'qqq'
+    	},
+    	 {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingSubmit.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully match the product"),
+                    type: "success"
+                })
+
+                isOpenModal.value = false
+                setTimeout(() => {
+                    selectedVariant.value = null
+                    selectedPortfolio.value = null
+                }, 700)
+
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: errors.message ?? trans("Failed to match the product to platform"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingSubmit.value = false
+            },
+        }
+    )
 }
 
 const resultOfFetchShopifyProduct = ref<ShopifyProduct[]>([])
@@ -474,7 +484,6 @@ const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
 
         <!-- Column: Actions 3 -->
         <template #cell(delete)="{ item }">
-           
 
             <ButtonWithLink
                 v-tooltip="trans('Unselect product')"
