@@ -8,15 +8,15 @@
 
 namespace App\Actions\Dropshipping\Shopify\Product;
 
-use App\Actions\RetinaAction;
+use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class SynchroniseDropshippingPortfoliosToShopify extends RetinaAction
+class MatchBulkPortfoliosToCurrentShopifyProduct extends OrgAction
 {
     use AsAction;
     use WithAttributes;
@@ -25,19 +25,21 @@ class SynchroniseDropshippingPortfoliosToShopify extends RetinaAction
     /**
      * @throws \Exception
      */
-    public function handle(ShopifyUser $shopifyUser, array $attributes): void
+    public function handle(CustomerSalesChannel $customerSalesChannel, array $attributes): void
     {
-
-        $portfolios = $shopifyUser
-            ->customerSalesChannel
+        $portfolios = $customerSalesChannel
             ->portfolios()
             ->where('status', true)
-            ->whereNull('platform_product_id')
             ->whereIn('id', Arr::get($attributes, 'portfolios'))
             ->get();
 
         foreach ($portfolios as $portfolio) {
-            StoreShopifyProduct::dispatch($portfolio);
+            $platformProductId = Arr::get($portfolio->platform_possible_matches, 'raw_data.0.id');
+            if ($platformProductId) {
+                MatchPortfolioToCurrentShopifyProduct::dispatch($portfolio, [
+                    'shopify_product_id' => $platformProductId
+                ]);
+            }
         }
     }
 
@@ -52,10 +54,10 @@ class SynchroniseDropshippingPortfoliosToShopify extends RetinaAction
     /**
      * @throws \Exception
      */
-    public function asController(ShopifyUser $shopifyUser, ActionRequest $request): void
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): void
     {
-        $this->initialisation($request);
+        $this->initialisation($customerSalesChannel->organisation, $request);
 
-        $this->handle($shopifyUser, $this->validatedData);
+        $this->handle($customerSalesChannel, $this->validatedData);
     }
 }

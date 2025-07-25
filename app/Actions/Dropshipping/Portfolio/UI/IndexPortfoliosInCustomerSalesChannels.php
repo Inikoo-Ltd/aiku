@@ -105,17 +105,24 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                         [
                             'type' => 'button',
                             'style' => 'create',
-                            'label' => __('Add Sales Channel'),
+                            'label' => __('Create New Product'),
                             'route' => [
-                                'name' => 'retina.dropshipping.customer_sales_channels.create',
+                                'name' => 'grp.models.shopify.batch_upload',
+                                'parameters' => [
+                                    'customerSalesChannel' =>  $this->customerSalesChannel->id,
+                                ],
+                                'method' => 'post'
                             ]
                         ],
                         [
                             'type' => 'button',
                             'style' => 'create',
-                            'label' => __('Add Sales Channel'),
+                            'label' => __('Match With Existing Product'),
                             'route' => [
-                                'name' => 'retina.dropshipping.customer_sales_channels.create',
+                                'name' => 'grp.models.shopify.batch_match',
+                                'parameters' => [
+                                    'customerSalesChannel' =>  $this->customerSalesChannel->id,
+                                ]
                             ]
                         ]
                     ]
