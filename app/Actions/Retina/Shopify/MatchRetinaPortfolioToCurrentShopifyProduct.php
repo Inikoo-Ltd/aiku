@@ -21,7 +21,7 @@ class MatchRetinaPortfolioToCurrentShopifyProduct extends RetinaAction
 {
     use AsAction;
 
-    public function handle(Portfolio $portfolio, array $modelData)
+    public function handle(Portfolio $portfolio, array $modelData): void
     {
         MatchPortfolioToCurrentShopifyProduct::run($portfolio, $modelData);
     }

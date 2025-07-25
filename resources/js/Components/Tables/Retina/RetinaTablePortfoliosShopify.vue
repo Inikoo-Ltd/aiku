@@ -387,7 +387,10 @@ const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
 
         <!-- Column: Actions (connect) -->
         <template #cell(matches)="{ item }">
-            <template v-if="(item.customer_sales_channel_platform_status &&  !item.platform_status)">
+
+            <template v-if="item.customer_sales_channel_platform_status">
+
+            <template v-if="!item.platform_status">
                 <div v-if="item.platform_possible_matches?.number_matches"  class="flex gap-x-2 items-center">
                     <div class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow">
                         <img :src="item.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src" />
@@ -426,17 +429,13 @@ const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
                     type="tertiary"
                 />
             </template>
+            <template v-else>
+                <pre>{{item.shopify_product_data}}</pre>
+            </template>
 
-            <div v-else-if="item.matched_product?.label">
-                <div v-tooltip="trans('Matched product')" class="flex gap-x-2 items-center border-l-2 border-green-500 bg-green-50 py-1 px-2">
-                    <div class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow">
-                        <img :src="item.matched_product?.img" />
-                    </div>
-                    <div>
-                        <span class="mr-1">{{ item.matched_product?.label }}</span>
-                    </div>
-                </div>
-            </div>
+
+
+            </template>
 
         </template>
 
