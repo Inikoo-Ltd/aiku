@@ -84,7 +84,6 @@ class StorePortfolio extends OrgAction
         }
 
 
-        DuplicatedProductFoundInPlatform::run($customerSalesChannel, $portfolio);
 
         GroupHydratePortfolios::dispatch($customerSalesChannel->group)->delay($this->hydratorsDelay);
         OrganisationHydratePortfolios::dispatch($customerSalesChannel->organisation)->delay($this->hydratorsDelay);

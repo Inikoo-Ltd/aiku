@@ -109,7 +109,8 @@ class UpdatePortfolio extends OrgAction
             'platform_product_id'   => 'sometimes|string',
             'platform_handle'       => 'sometimes|string',
             'errors_response'       => 'sometimes|array',
-            'options'               => 'sometimes|string'
+            'options'               => 'sometimes|string',
+            'data'                  => 'sometimes|array',
         ];
 
         if (!$this->strict) {

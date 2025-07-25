@@ -163,7 +163,7 @@ class GetShopifyProductData extends RetinaAction
             $productData = $body['data']['product'];
 
             $data = $portfolio->data;
-            data_set($data, 'shopify_product_debug', $productData);
+            data_set($data, 'shopify_product', $productData);
 
             UpdatePortfolio::run($portfolio, [
                 'data' => $data
@@ -172,17 +172,11 @@ class GetShopifyProductData extends RetinaAction
 
             if (isset($productData['variants']['edges'][0]['node']['id'])) {
                 $variantId = $productData['variants']['edges'][0]['node']['id'];
-
-
-
-
                 $portfolio->update(
                     [
                         'platform_product_variant_id' => $variantId
                     ]
                 );
-
-
             }
 
 
