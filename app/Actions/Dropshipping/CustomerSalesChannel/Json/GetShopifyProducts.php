@@ -16,15 +16,15 @@ use Lorisleiva\Actions\ActionRequest;
 
 class GetShopifyProducts extends OrgAction
 {
-    public function handle(CustomerSalesChannel $customerSalesChannel): array
+    public function handle(CustomerSalesChannel $customerSalesChannel, string $searchInput): array
     {
-        return FindShopifyProductVariant::run($customerSalesChannel, '');
+        return FindShopifyProductVariant::run($customerSalesChannel, $searchInput);
     }
 
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request)
     {
         $this->initialisation($customerSalesChannel->organisation, $request);
 
-        return $this->handle($customerSalesChannel);
+        return $this->handle($customerSalesChannel, $request->get('query', ''));
     }
 }
