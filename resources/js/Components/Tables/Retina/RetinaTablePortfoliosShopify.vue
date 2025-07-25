@@ -454,12 +454,12 @@ const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
 
         <!-- Column: Actions 3 -->
         <template #cell(actions3)="{ item }">
-           <!--  <div v-if="item.customer_sales_channel_platform_status  && !item.platform_status "  class="flex gap-x-2 items-center">
+            <div v-if="item.customer_sales_channel_platform_status  && !item.platform_status "  class="flex gap-x-2 items-center">
                 <ButtonWithLink
                     v-tooltip="trans('Will create new product in Shopify')"
                     :routeTarget="{
                     method: 'post',
-                        name: 'grp.models.portfolio.store_new_shopify_product',
+                        name: 'retina.models.portfolio.store_new_shopify_product',
                         parameters: {
                             portfolio: item.id
                         },
@@ -473,7 +473,7 @@ const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
                         preserveScroll: true,
                     }"
                 />
-            </div> -->
+            </div>
 
             <ButtonWithLink
                 v-tooltip="trans('Unselect product')"

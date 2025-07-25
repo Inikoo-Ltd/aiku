@@ -317,7 +317,7 @@ const onCheckedAll = ({ data, allChecked }) => {
                     v-tooltip="trans('Will create new product in Shopify')"
                     :routeTarget="{
                     method: 'post',
-                        name: 'retina.models.portfolio.store_new_shopify_product',
+                        name: 'grp.models.portfolio.store_new_shopify_product',
                         parameters: {
                             portfolio: portfolio.id
                         },
