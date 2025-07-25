@@ -249,41 +249,55 @@ const onCheckedAll = ({ data, allChecked }) => {
         </template>
 
         <template #cell(matches)="{ item: portfolio }">
-            <div v-if=" portfolio.customer_sales_channel_platform_status &&  !portfolio.platform_status  && portfolio.platform_possible_matches?.number_matches"  class="flex gap-x-2 items-center">
-                <div class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow">
-                    <img :src="portfolio.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src" />
+            <!-- {{ portfolio.customer_sales_channel_platform_status }} {{   !portfolio.platform_status }} -->
+            <template v-if="(portfolio.customer_sales_channel_platform_status &&  !portfolio.platform_status)">
+                <div v-if="portfolio.platform_possible_matches?.number_matches"  class="flex gap-x-2 items-center">
+                    <div class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow">
+                        <img :src="portfolio.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src" />
+                    </div>
+                    <div>
+                        <span class="mr-1">{{ portfolio.platform_possible_matches?.matches_labels[0]}}</span>
+                    </div>
                 </div>
+                
+                <ButtonWithLink
+                    v-if="portfolio.platform_possible_matches?.number_matches"
+                    v-tooltip="trans('Match to existing Shopify product')"
+                    :routeTarget="{
+                        method: 'post',
+                        name: 'grp.models.portfolio.match_to_existing_shopify_product',
+                        parameters: {
+                            portfolio: portfolio.id,
+                            shopify_product_id: portfolio.platform_possible_matches.raw_data?.[0]?.id
+                        }
+                    }"
+                    :bindToLink="{
+                        preserveScroll: true,
+                    }"
+                    type="secondary"
+                    :label="trans('Match with this product')"
+                    size="xxs"
+                    icon="fal fa-tools"
+                />
+                
+                <Button
+                    xv-if="portfolio.platform_possible_matches?.number_matches"
+                    @click="() => (fetchRoute(), isOpenModalVariant = true, selectedPortfolio = portfolio)"
+                    :label="trans('Select other product from Shopify')"
+                    :capitalize="false"
+                    size="xxs"
+                    type="tertiary"
+                />
+            </template>
 
-                <div>
-                    <span class="mr-1">{{ portfolio.platform_possible_matches?.matches_labels[0]}}</span>
-                    <ButtonWithLink
-                        v-if="portfolio.platform_possible_matches?.number_matches"
-                        v-tooltip="trans('Match to existing Shopify product')"
-                        :routeTarget="{
-                            method: 'post',
-                            name: 'grp.models.portfolio.match_to_existing_shopify_product',
-                            parameters: {
-                                portfolio: portfolio.id,
-                                shopify_product_id: portfolio.platform_possible_matches.raw_data?.[0]?.id
-                            }
-                        }"
-                        :bindToLink="{
-                            preserveScroll: true,
-                        }"
-                        type="secondary"
-                        :label="trans('Match with this product')"
-                        size="xxs"
-                        icon="fal fa-tools"
-                    />
-                    
-                    <Button
-                        v-if="portfolio.platform_possible_matches?.number_matches"
-                        @click="() => (isOpenModalVariant = true, selectedPortfolio = portfolio)"
-                        :label="trans('Select other product from Shopify')"
-                        :capitalize="false"
-                        size="xxs"
-                        type="tertiary"
-                    />
+            <div v-else-if="portfolio.matched_product?.label">
+                <div v-tooltip="trans('Matched product')" class="flex gap-x-2 items-center border-l-2 border-green-500 bg-green-50 py-1 px-2">
+                    <div class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow">
+                        <img :src="portfolio.matched_product?.img" />
+                    </div>
+                    <div>
+                        <span class="mr-1">{{ portfolio.matched_product?.label }}</span>
+                    </div>
                 </div>
             </div>
 
@@ -328,12 +342,15 @@ const onCheckedAll = ({ data, allChecked }) => {
                 <LoadingIcon />
             </div>
 
-            <div class="mb-2">
+            <div class="mb-2 relative">
                 <PureInput
                     v-model="querySearchPortfolios"
                     @update:modelValue="() => debFetchShopifyProduct()"
                     :placeholder="trans('Search in :platform', { platform: 'Shopify' })"
                 />
+                <div v-if="isLoadingFetchShopifyProduct" class="absolute right-2 text-xl top-1/2 -translate-y-1/2">
+                    <LoadingIcon />
+                </div>
                 <slot name="afterInput">
                 </slot>
             </div>
@@ -349,7 +366,7 @@ const onCheckedAll = ({ data, allChecked }) => {
                         <!-- Products list -->
                          <!-- {{ selectedVariant }} -->
                            
-                        <div v-if="querySearchPortfolios" class="min-h-24 relative mb-4 pb-4  p-2 border-b border-indigo-300 grid grid-cols-2 gap-3 pr-2">
+                        <div v-if="querySearchPortfolios || resultOfFetchShopifyProduct?.length" class="min-h-24 relative mb-4 pb-4  p-2 xborder-b xborder-indigo-300 grid grid-cols-2 gap-3 pr-2">
                             <template v-if="resultOfFetchShopifyProduct?.length">
                                 <div
                                     v-for="(item, index) in resultOfFetchShopifyProduct"
@@ -405,73 +422,17 @@ const onCheckedAll = ({ data, allChecked }) => {
                                 </div>
                             </template>
 
+                            <div v-else class="text-center text-gray-500 col-span-3">
+                                {{ trans("No products found") }}
+                            </div>
                             <div v-if="isLoadingFetchShopifyProduct" class="bg-black/50 text-2xl text-white inset-0 absolute flex items-center justify-center">
                                 <LoadingIcon />
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-3 pb-2 pr-2">
-                            <template v-if="selectedPortfolio?.platform_possible_matches?.number_matches">
-                                <div
-                                    v-for="(item, index) in selectedPortfolio?.platform_possible_matches?.raw_data"
-                                    :key="index"
-                                    @click="() => selectedVariant = item"
-                                    class="relative h-fit rounded cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
-                                    :class="[
-										selectedVariant?.id === item.id ? 'bg-green-100 border-green-400' : ''
-									]"
-                                >
-                                    <Transition name="slide-to-right">
-                                        <FontAwesomeIcon v-if="selectedVariant?.id === item.id"
-                                            icon="fas fa-check-circle"
-                                            class="-top-2 -right-2 absolute text-green-500" fixed-width
-                                            aria-hidden="true"
-                                        />
-                                    </Transition>
-                                    <slot name="product" :item="item">
-                                        <!-- <Image v-if="item.image" :src="item.image?.[0]?.src"
-                                            class="w-16 h-16 overflow-hidden mx-auto md:mx-0 mb-4 md:mb-0" imageCover
-                                            :alt="item.name"/> -->
-
-                                        <div class="min-h-3 h-auto max-h-9 min-w-9 w-auto max-w-9">
-                                            <img :src="item.images?.[0]?.src" class="shadow" />
-                                        </div>
-
-                                        <div class="flex flex-col justify-between">
-                                            <div class="w-fit" xclick="() => selectProduct(item)">
-                                                <div v-if="item.title" v-tooltip="trans('Name')" class="w-fit text-sm font-semibold leading-none mb-1">
-                                                    {{ item.title || 'no title' }}
-                                                </div>
-                                                <div v-if="item.name" v-tooltip="trans('Name')" class="w-fit font-semibold leading-none mb-1">
-                                                    {{ item.name || 'no name' }}
-                                                </div>
-                                                <div v-if="item.no_code" v-tooltip="trans('Code')"
-                                                     class="w-fit text-xs text-gray-400 italic">
-                                                    {{ item.code || 'no code' }}
-                                                </div>
-                                                <div v-if="item.reference" v-tooltip="trans('Reference')"
-                                                     class="w-fit text-xs text-gray-400 italic">
-                                                    {{ item.reference || 'no reference' }}
-                                                </div>
-                                                <div v-if="item.gross_weight" v-tooltip="trans('Weight')"
-                                                     class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}
-                                                </div>
-                                            </div>
-                                            <!-- <div v-if="!item.no_price" xclick="() => selectProduct(item)"
-                                                 v-tooltip="trans('Price')" class="w-fit text-xs text-gray-x500">
-                                                {{
-                                                    locale?.currencyFormat(item.currency_code || 'usd', item.price || 0)
-                                                }}
-                                            </div> -->
-                                        </div>
-                                    </slot>
-                                </div>
-                            </template>
-                            <div v-else class="text-center text-gray-500 col-span-3">
-                                {{ trans("No products found") }}
-                            </div>
+                        <div class="text-center text-gray-500" v-else>
+                            Start typing to search for products in Shopify
                         </div>
-
                         
                     </div>
                     <!-- Pagination -->

@@ -204,24 +204,6 @@ class IndexCustomerClients extends OrgAction
         $newClientLabel = __('New Client');
 
         $actions = [];
-        if ($this->parent instanceof CustomerSalesChannel) {
-            $actions[] = [
-                'type'    => 'button',
-                'style'   => 'create',
-                'tooltip' => $newClientLabel,
-                'label'   => $newClientLabel,
-                'route'   => [
-                    'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.create',
-                    'parameters' => [
-                        'organisation'         => $scope->organisation->slug,
-                        'shop'                 => $scope->shop->slug,
-                        'customer'             => $scope->slug,
-                        'customerSalesChannel' => $this->parent->slug
-                    ]
-                ]
-            ];
-        }
-
 
         return Inertia::render(
             'Org/Shop/CRM/CustomerClients',
