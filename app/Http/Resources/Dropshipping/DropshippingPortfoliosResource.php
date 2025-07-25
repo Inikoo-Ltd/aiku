@@ -12,7 +12,6 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Arr;
 
 /**
  * @property string $slug
@@ -133,15 +132,6 @@ class DropshippingPortfoliosResource extends JsonResource
             }
         }
 
-        $possibleMatches = [];
-        foreach (Arr::get($this->platform_possible_matches, 'raw_data') as $possibleMatch) {
-            $possibleMatches[] = [
-                'id' => Arr::get($possibleMatch, 'id'),
-                'name' => Arr::get($possibleMatch, 'title'),
-                'images' => Arr::get($possibleMatch, '0.uri'),
-            ];
-        }
-
         return [
             'id'                        => $this->id,
             'item_id'                   => $itemId,
@@ -167,7 +157,7 @@ class DropshippingPortfoliosResource extends JsonResource
             'has_valid_platform_product_id' => $this->has_valid_platform_product_id,
             'exist_in_platform' => $this->exist_in_platform,
             'platform_status' => $this->platform_status,
-            'platform_possible_matches' => $possibleMatches,
+            'platform_possible_matches' => $this->platform_possible_matches,
 
             'category' => $category,
             'platform' => $this->platform->type,
