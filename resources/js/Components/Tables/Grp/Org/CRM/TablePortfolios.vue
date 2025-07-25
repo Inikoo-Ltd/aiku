@@ -114,14 +114,14 @@ const dummyImage = [
 
         <template #cell(matches)="{ item: portfolio }">
             <div v-if="!portfolio.platform_status"  class="flex gap-x-2 items-center">
-
-<!--                <div class="h-9 w-auto max-w-9">-->
-<!--                    <img :src="portfolio.platform_possible_matches[0]?.src" />-->
-<!--                </div>-->
+                <div class="h-9 min-w-9 w-auto max-w-9 shadow">
+                    <img :src="portfolio.platform_possible_matches[0]?.src" />
+                </div>
 
                 <div>
-                    {{ portfolio.platform_possible_matches?.matches_labels[0]}}
+                    <span class="mr-1">{{ portfolio.platform_possible_matches?.matches_labels[0]}}</span>
                     <ButtonWithLink
+                        v-tooltip="trans('Match to existing Shopify product')"
                         :routeTarget="{
                         method: 'post',
                             name: 'grp.models.portfolio.match_to_existing_shopify_product',
@@ -134,43 +134,44 @@ const dummyImage = [
                             preserveScroll: true,
                         }"
                         icon=""
-                        label="Match"
+                        type="tertiary"
+                        :label="trans('Match')"
                         size="xxs"
                     />
                 </div>
-                <br />
-                <br />
-
-                <pre>{{ portfolio.id }}</pre>
             </div>
+            <!-- <br />
+            <br />
 
-
+            <pre>{{ portfolio.id }}</pre> -->
         </template>
 
+        
+        <!-- Column: actions -->
         <template #cell(actions)="{ item: portfolio }">
             <div v-if="!portfolio.platform_status"  class="flex gap-x-2 items-center">
-
-
-                <div>
-
-                    <ButtonWithLink
-                        :routeTarget="{
-                        method: 'post',
-                            name: 'grp.models.portfolio.store_new_shopify_product',
-                            parameters: {
-                                portfolio: portfolio.id,                            }
-                        }"
-                        icon=""
-                        label="Create new product"
-                        size="xxs"
-                    />
-                </div>
-
+                <ButtonWithLink
+                    v-tooltip="trans('Will create new product in Shopify')"
+                    :routeTarget="{
+                    method: 'post',
+                        name: 'grp.models.portfolio.store_new_shopify_product',
+                        parameters: {
+                            portfolio: portfolio.id
+                        },
+                        body: {
+                            shopify_product_id: portfolio.platform_possible_matches.raw_data?.[0]?.id
+                        }
+                    }"
+                    isWithError
+                    icon=""
+                    :label="trans('Create new product')"
+                    size="xxs"
+                    type="tertiary"
+                    :bindToLink="{
+                        preserveScroll: true,
+                    }"
+                />
             </div>
-
-
         </template>
-
-
     </Table>
 </template>
