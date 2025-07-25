@@ -441,6 +441,16 @@ const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
             </template>
             <template v-else>
                 <pre>{{item.shopify_product_data}}</pre>
+
+                <Button
+                    xv-if="portfolio.platform_possible_matches?.number_matches"
+                    @click="() => (fetchRoute(), isOpenModal = true, selectedPortfolio = item)"
+                    :label="trans('Change product')"
+                    :capitalize="false"
+                    size="xxs"
+                    type="tertiary"
+                />
+
             </template>
 
 
