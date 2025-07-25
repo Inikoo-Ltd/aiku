@@ -60,6 +60,7 @@ const setError = (e: {}) => {
         type: "error",
     })
 }
+const dataToSend = props.body ?? props.routeTarget?.body
 </script>
 
 <template>
@@ -71,7 +72,7 @@ const setError = (e: {}) => {
         @error="(e: {}) => (isWithError ? setError(e) : false, emits('error', e))"
         @finish="() => (fullLoading ? '' : isLoadingVisit = false, emits('finish'))"
         :method="props.method || props.routeTarget?.method || undefined"
-        :data="props.body ?? props.routeTarget?.body"
+        :data="dataToSend"
         v-bind="bindToLink"
         :class="full ? 'w-full' : ''"
     >
