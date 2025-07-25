@@ -68,22 +68,22 @@ class ShowPlatform extends OrgAction
                 ],
 
                 PlatformTabsEnum::CHANNELS->value => $this->tab == PlatformTabsEnum::CHANNELS->value ?
-                    fn() => CustomerSalesChannelsResourcePro::collection(IndexCustomerSalesChannels::run($platform, prefix: PlatformTabsEnum::CHANNELS->value))
-                    : Inertia::lazy(fn() => CustomerSalesChannelsResourcePro::collection(IndexCustomerSalesChannels::run($platform, prefix: PlatformTabsEnum::CHANNELS->value))),
+                    fn () => CustomerSalesChannelsResourcePro::collection(IndexCustomerSalesChannels::run($platform, prefix: PlatformTabsEnum::CHANNELS->value))
+                    : Inertia::lazy(fn () => CustomerSalesChannelsResourcePro::collection(IndexCustomerSalesChannels::run($platform, prefix: PlatformTabsEnum::CHANNELS->value))),
 
                 PlatformTabsEnum::PRODUCTS->value => $this->tab == PlatformTabsEnum::PRODUCTS->value ?
-                    fn() => PortfoliosResource::collection(IndexPortfoliosInPlatform::run($platform, prefix: PlatformTabsEnum::PRODUCTS->value))
-                    : Inertia::lazy(fn() => PortfoliosResource::collection(IndexPortfoliosInPlatform::run($platform, prefix: PlatformTabsEnum::PRODUCTS->value))),
+                    fn () => PortfoliosResource::collection(IndexPortfoliosInPlatform::run($platform, prefix: PlatformTabsEnum::PRODUCTS->value))
+                    : Inertia::lazy(fn () => PortfoliosResource::collection(IndexPortfoliosInPlatform::run($platform, prefix: PlatformTabsEnum::PRODUCTS->value))),
 
             ]
         )->table(
-                IndexCustomerSalesChannels::make()->tableStructure(
-                    prefix: PlatformTabsEnum::CHANNELS->value,
-                )
+            IndexCustomerSalesChannels::make()->tableStructure(
+                prefix: PlatformTabsEnum::CHANNELS->value,
+            )
         )->table(
-                IndexPortfoliosInPlatform::make()->tableStructure(
-                    prefix: PlatformTabsEnum::PRODUCTS->value,
-                )
+            IndexPortfoliosInPlatform::make()->tableStructure(
+                prefix: PlatformTabsEnum::PRODUCTS->value,
+            )
         );
     }
 
