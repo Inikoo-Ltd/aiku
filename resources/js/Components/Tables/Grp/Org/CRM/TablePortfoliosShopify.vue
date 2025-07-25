@@ -250,7 +250,7 @@ const onCheckedAll = ({ data, allChecked }) => {
 
         <template #cell(matches)="{ item: portfolio }">
             <!-- {{ portfolio.customer_sales_channel_platform_status }} {{   !portfolio.platform_status }} -->
-            <template v-if="portfolio.customer_sales_channel_platform_status &&  !portfolio.platform_status">
+            <template v-if="(portfolio.customer_sales_channel_platform_status &&  !portfolio.platform_status)">
                 <div v-if="portfolio.platform_possible_matches?.number_matches"  class="flex gap-x-2 items-center">
                     <div class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow">
                         <img :src="portfolio.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src" />
@@ -289,6 +289,17 @@ const onCheckedAll = ({ data, allChecked }) => {
                     type="tertiary"
                 />
             </template>
+
+            <div v-else-if="portfolio.matched_product?.label">
+                <div v-tooltip="trans('Matched product')" class="flex gap-x-2 items-center border-l-2 border-green-500 bg-green-50 py-1 px-2">
+                    <div class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow">
+                        <img :src="portfolio.matched_product?.img" />
+                    </div>
+                    <div>
+                        <span class="mr-1">{{ portfolio.matched_product?.label }}</span>
+                    </div>
+                </div>
+            </div>
 
             <!-- <pre>{{ portfolio.platform_possible_matches.number_matches }}</pre> -->
             <!-- <br />
