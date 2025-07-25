@@ -236,7 +236,7 @@ const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
                             preserveScroll: true,
                         }"
                         type="secondary"
-                        :label="trans('Quick match')"
+                        :label="trans('Match with this product')"
                         size="xxs"
                         icon="fal fa-tools"
                     />
@@ -244,7 +244,8 @@ const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
                     <Button
                         v-if="portfolio.platform_possible_matches?.number_matches"
                         @click="() => (isOpenModalVariant = true, selectedPortfolio = portfolio)"
-                        :label="trans('Open match list')"
+                        :label="trans('Select other product from Shopify')"
+                        :capitalize="false"
                         size="xxs"
                         type="tertiary"
                     />

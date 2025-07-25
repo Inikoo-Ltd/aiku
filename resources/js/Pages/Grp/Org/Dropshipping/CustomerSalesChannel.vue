@@ -221,11 +221,9 @@ const isModalAddress = ref(false)
                 {{trans('Connected')}}
             </div>
 
-            <!-- <Button  label="Reset Channel" type="red" icon="fal fa-undo-alt">
 
-            </Button> -->
             <ModalConfirmationDelete
-                v-if="customer_sales_channel.can_connect_to_platform"
+                v-if="customer_sales_channel.can_connect_to_platform &&  !customer_sales_channel.platform_status"
                 :routeDelete="{
                     name: 'grp.models.customer_sales_channel.shopify_reset',
                     parameters: {
@@ -244,7 +242,7 @@ const isModalAddress = ref(false)
             </ModalConfirmationDelete>
 
             <ModalConfirmationDelete
-                v-if="!customer_sales_channel.can_connect_to_platform && !customer_sales_channel.exist_in_platform && !customer_sales_channel.platform_status"
+                v-if="!customer_sales_channel.can_connect_to_platform"
                 xrouteDelete="{
                     name: props.brand_routes.delete_brand.name,
                     parameters: {
