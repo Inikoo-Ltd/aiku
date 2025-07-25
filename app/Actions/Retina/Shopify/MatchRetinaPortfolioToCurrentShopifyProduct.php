@@ -6,32 +6,38 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Dropshipping\Shopify\Product;
+namespace App\Actions\Retina\Shopify;
 
+use App\Actions\Dropshipping\Shopify\Product\MatchPortfolioToCurrentShopifyProduct;
 use App\Actions\OrgAction;
+use App\Actions\RetinaAction;
 use App\Events\UploadProductToShopifyProgressEvent;
 use App\Models\Dropshipping\Portfolio;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class StoreNewProductToCurrentShopify extends OrgAction
+class MatchRetinaPortfolioToCurrentShopifyProduct extends RetinaAction
 {
     use AsAction;
 
     public function handle(Portfolio $portfolio, array $modelData)
     {
-        StoreShopifyProduct::run($portfolio, $modelData);
-        StoreShopifyProductVariant::run($portfolio);
+        MatchPortfolioToCurrentShopifyProduct::run($portfolio, $modelData);
+    }
 
-        $portfolio = CheckShopifyPortfolio::run($portfolio);
 
-        UploadProductToShopifyProgressEvent::dispatch($portfolio->customerSalesChannel->user, $portfolio);
+    public function rules(): array
+    {
+        return [
+            'shopify_product_id' => ['required', 'string'],
+        ];
     }
 
     public function asController(Portfolio $portfolio, ActionRequest $request): void
     {
 
-        $this->initialisation($portfolio->customerSalesChannel->organisation, $request);
+        $this->initialisation($request);
         $this->handle($portfolio, $this->validatedData);
     }
 

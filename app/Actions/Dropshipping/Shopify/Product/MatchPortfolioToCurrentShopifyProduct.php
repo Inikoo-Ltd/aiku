@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Actions\OrgAction;
+use App\Events\UploadProductToShopifyProgressEvent;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
@@ -27,9 +28,9 @@ class MatchPortfolioToCurrentShopifyProduct extends OrgAction
 
         $portfolio->refresh();
         StoreShopifyProductVariant::run($portfolio);
-        return CheckShopifyPortfolio::run($portfolio);
-
-
+        $portfolio = CheckShopifyPortfolio::run($portfolio);
+        
+        UploadProductToShopifyProgressEvent::dispatch($portfolio->customerSalesChannel->user, $portfolio);
     }
 
 

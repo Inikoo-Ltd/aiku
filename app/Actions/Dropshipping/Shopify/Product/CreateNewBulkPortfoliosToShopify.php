@@ -35,7 +35,7 @@ class CreateNewBulkPortfoliosToShopify extends OrgAction
             ->get();
 
         foreach ($portfolios as $portfolio) {
-            StoreNewProductToCurrentShopify::run($portfolio, []);
+            StoreNewProductToCurrentShopify::dispatch($portfolio, []);
         }
     }
 

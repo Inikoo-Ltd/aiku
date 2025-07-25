@@ -6,9 +6,11 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Dropshipping\Shopify\Product;
+namespace App\Actions\Retina\Shopify;
 
+use App\Actions\Dropshipping\Shopify\Product\MatchBulkPortfoliosToCurrentShopifyProduct;
 use App\Actions\OrgAction;
+use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Support\Arr;
@@ -16,7 +18,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class MatchBulkPortfoliosToCurrentShopifyProduct extends OrgAction
+class MatchRetinaBulkPortfoliosToCurrentShopifyProduct extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
@@ -27,20 +29,7 @@ class MatchBulkPortfoliosToCurrentShopifyProduct extends OrgAction
      */
     public function handle(CustomerSalesChannel $customerSalesChannel, array $attributes): void
     {
-        $portfolios = $customerSalesChannel
-            ->portfolios()
-            ->where('status', true)
-            ->whereIn('id', Arr::get($attributes, 'portfolios'))
-            ->get();
-
-        foreach ($portfolios as $portfolio) {
-            $platformProductId = Arr::get($portfolio->platform_possible_matches, 'raw_data.0.id');
-            if ($platformProductId) {
-                MatchPortfolioToCurrentShopifyProduct::dispatch($portfolio, [
-                    'shopify_product_id' => $platformProductId
-                ]);
-            }
-        }
+        MatchBulkPortfoliosToCurrentShopifyProduct::run($customerSalesChannel, $attributes);
     }
 
     public function rules(): array
@@ -56,7 +45,7 @@ class MatchBulkPortfoliosToCurrentShopifyProduct extends OrgAction
      */
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): void
     {
-        $this->initialisation($customerSalesChannel->organisation, $request);
+        $this->initialisation($request);
 
         $this->handle($customerSalesChannel, $this->validatedData);
     }

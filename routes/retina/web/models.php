@@ -106,6 +106,10 @@ use App\Actions\Retina\Fulfilment\StoredItem\UpdateRetinaStoredItem;
 use App\Actions\Retina\Media\AttachRetinaAttachmentToModel;
 use App\Actions\Retina\Media\DetachRetinaAttachmentFromModel;
 use App\Actions\Retina\Media\DownloadRetinaAttachment;
+use App\Actions\Retina\Shopify\CreateRetinaNewBulkPortfoliosToShopify;
+use App\Actions\Retina\Shopify\MatchRetinaBulkPortfoliosToCurrentShopifyProduct;
+use App\Actions\Retina\Shopify\MatchRetinaPortfolioToCurrentShopifyProduct;
+use App\Actions\Retina\Shopify\StoreRetinaNewProductToCurrentShopify;
 use App\Actions\Retina\Shopify\StoreRetinaProductShopify;
 use App\Actions\Retina\SysAdmin\AddRetinaDeliveryAddressToCustomer;
 use App\Actions\Retina\SysAdmin\AddRetinaDeliveryAddressToFulfilmentCustomer;
@@ -255,8 +259,8 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('shopify-user/{shopifyUser:id}/products', StoreRetinaProductShopify::class)->name('shopify_user.product.store')->withoutScopedBindings();
 
     Route::get('shopify-user/{shopifyUser:id}/sync-products', GetApiProductsFromShopify::class)->name('shopify_user.product.sync')->withoutScopedBindings();
-    Route::post('{customerSalesChannel:id}/shopify-batch-upload', CreateNewBulkPortfoliosToShopify::class)->name('shopify.batch_upload')->withoutScopedBindings();
-    Route::post('{customerSalesChannel:id}/shopify-batch-match', MatchBulkPortfoliosToCurrentShopifyProduct::class)->name('shopify.batch_match')->withoutScopedBindings();
+    Route::post('{customerSalesChannel:id}/shopify-batch-upload', CreateRetinaNewBulkPortfoliosToShopify::class)->name('shopify.batch_upload')->withoutScopedBindings();
+    Route::post('{customerSalesChannel:id}/shopify-batch-match', MatchRetinaBulkPortfoliosToCurrentShopifyProduct::class)->name('shopify.batch_match')->withoutScopedBindings();
 
     Route::post('{wooCommerceUser:id}/woo-batch-upload', SyncronisePortfoliosToWooCommerce::class)->name('woo.batch_upload')->withoutScopedBindings();
     Route::post('{wooCommerceUser:id}/woo-batch-sync', [SyncronisePortfoliosToWooCommerce::class, 'asBatchSync'])->name('woo.batch_sync')->withoutScopedBindings();
@@ -305,8 +309,8 @@ Route::name('top-up.')->prefix('top-up')->group(function () {
 Route::delete('portfolio/{portfolio:id}', DeleteRetinaPortfolio::class)->name('portfolio.delete');
 Route::patch('portfolio/{portfolio:id}', UpdateRetinaPortfolio::class)->name('portfolio.update');
 
-Route::post('portfolio/{portfolio:id}/match-to-existing-shopify-product', MatchPortfolioToCurrentShopifyProduct::class)->name('portfolio.match_to_existing_shopify_product');
-Route::post('portfolio/{portfolio:id}/store-new-shopify-product', StoreNewProductToCurrentShopify::class)->name('portfolio.store_new_shopify_product');
+Route::post('portfolio/{portfolio:id}/match-to-existing-shopify-product', MatchRetinaPortfolioToCurrentShopifyProduct::class)->name('portfolio.match_to_existing_shopify_product');
+Route::post('portfolio/{portfolio:id}/store-new-shopify-product', StoreRetinaNewProductToCurrentShopify::class)->name('portfolio.store_new_shopify_product');
 
 Route::post('portfolio/product-category/{productCategory:id}/store', StoreRetinaPortfoliosFromProductCategoryToAllChannels::class)->name('portfolio.store_from_product_category')->withoutScopedBindings();
 Route::post('portfolio/all-channels/store', StoreRetinaPortfolioToAllChannels::class)->name('portfolio.store_to_all_channels');
