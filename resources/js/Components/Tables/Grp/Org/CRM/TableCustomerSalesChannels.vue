@@ -21,12 +21,18 @@ defineProps<{
 const confirm = useConfirm()
 const deletingId = ref<number | null>(null)
 
-function platformRoute(customerSalesChannel: CustomerSalesChannel) {
+function customerSalesChannelRoute(customerSalesChannel: CustomerSalesChannel) {
 
     switch (route().current()) {
         case 'grp.org.shops.show.crm.platforms.show':
-            return ''
-        
+            return route("grp.org.shops.show.crm.platforms.show.customer_sales_channels.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    (route().params as RouteParams).platform,
+                    customerSalesChannel.slug]
+            )
+            break;
         default:
             return route("grp.org.shops.show.crm.customers.show.customer_sales_channels.show",
             [
@@ -132,7 +138,7 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
             <div class="flex items-center gap-2">
                 <img v-tooltip="customerSalesChannel.platform_name" :src="customerSalesChannel.platform_image"
                     :alt="customerSalesChannel.platform_name" class="w-6 h-6" />
-                <Link :href="(platformRoute(customerSalesChannel) as string)" class="primaryLink">
+                <Link :href="(customerSalesChannelRoute(customerSalesChannel) as string)" class="primaryLink">
                 {{ customerSalesChannel.name || customerSalesChannel.reference }}
                 </Link>
             </div>
