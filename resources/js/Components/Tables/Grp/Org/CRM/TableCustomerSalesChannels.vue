@@ -9,10 +9,15 @@ import { faTrashAlt } from "@fal"
 import { ref } from 'vue'
 import ConfirmPopup from 'primevue/confirmpopup';
 import { useConfirm } from 'primevue/useconfirm'
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExclamationTriangle } from "@far"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faUndoAlt } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faUndoAlt)
 
 defineProps<{
     data: TableTS,
@@ -172,9 +177,29 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
             </Link>
         </template>
 
-        <template #cell(action)="{ item: customerSalesChannel }">
-            <Button type="negative" label="Delete" :icon="faTrashAlt"
-                @click="(event) => confirmDelete(event, customerSalesChannel)" />
+        <template #cell(action)="{ item }">
+            
+            <div class="space-y-1">
+                <ModalConfirmationDelete
+                    v-if="item.can_connect_to_platform"
+                    :routeDelete="{
+                        name: 'grp.models.customer_sales_channel.shopify_reset',
+                        parameters: {
+                            customerSalesChannel: item.id,
+                        },
+                        method: 'patch'
+                    }"
+                    xtitle="trans('Are you sure you want to delete brand') + ` ${option.name}?`"
+                    xisFullLoading
+                >
+                    <template #default="{ isOpenModal, changeModel }">
+                        <Button  @click.stop="changeModel" label="Reset channel" type="negative" icon="fal fa-undo-alt">
+                        </Button>
+                    </template>
+                </ModalConfirmationDelete>
+                <Button type="negative" label="Delete" :icon="faTrashAlt"
+                    @click="(event) => confirmDelete(event, customerSalesChannel)" />
+            </div>
         </template>
     </Table>
 
