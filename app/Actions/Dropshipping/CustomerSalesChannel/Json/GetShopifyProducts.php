@@ -16,7 +16,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class GetShopifyProducts extends OrgAction
 {
-    public function handle(CustomerSalesChannel $customerSalesChannel, string $searchInput): array
+    public function handle(CustomerSalesChannel $customerSalesChannel, string $searchInput): array|null
     {
         return FindShopifyProductVariant::run($customerSalesChannel, $searchInput);
     }
