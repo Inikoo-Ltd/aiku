@@ -33,6 +33,7 @@ import axios from "axios"
 import {Table as TableTS} from "@/types/Table"
 import { CustomerSalesChannel } from "@/types/customer-sales-channel"
 import RetinaTablePortfoliosPlatform from "@/Components/Tables/Retina/RetinaTablePortfoliosPlatform.vue"
+import RetinaTablePortfoliosShopify from "@/Components/Tables/Retina/RetinaTablePortfoliosShopify.vue"
 
 library.add(faFileExcel, faBracketsCurly, faSyncAlt, faPawClaws, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
 
@@ -475,6 +476,18 @@ const progressToUploadToShopify = ref<{ [key: number]: string }>({})
             :is_platform_connected
             :progressToUploadToShopify
             :isPlatformManual
+        />
+
+        <RetinaTablePortfoliosShopify
+            v-else-if="platform_data.type === 'shopify'"
+            :data="props.products"
+            :tab="'products'"
+            :selectedData
+            :platform_data
+            :platform_user_id
+            :is_platform_connected
+            :progressToUploadToShopify
+            :customerSalesChannel="customer_sales_channel"
         />
 
         <RetinaTablePortfoliosPlatform
