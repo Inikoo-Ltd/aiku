@@ -20,7 +20,7 @@ class StoreRetinaNewProductToCurrentShopify extends RetinaAction
 {
     use AsAction;
 
-    public function handle(Portfolio $portfolio, array $modelData)
+    public function handle(Portfolio $portfolio, array $modelData): void
     {
         StoreNewProductToCurrentShopify::run($portfolio, $modelData);
     }

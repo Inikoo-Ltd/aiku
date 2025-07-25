@@ -18,7 +18,7 @@ class StoreNewProductToCurrentShopify extends OrgAction
 {
     use AsAction;
 
-    public function handle(Portfolio $portfolio, array $modelData)
+    public function handle(Portfolio $portfolio, array $modelData): void
     {
         StoreShopifyProduct::run($portfolio, $modelData);
         StoreShopifyProductVariant::run($portfolio);
