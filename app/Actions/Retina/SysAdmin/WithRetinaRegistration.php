@@ -128,7 +128,7 @@ trait WithRetinaRegistration
         ];
 
         $rules = [
-            'traffic_sources' => ['sometimes', 'string'],
+            'traffic_sources' => ['sometimes'],
             'contact_name'    => ['required', 'string', 'max:255'],
             'company_name'    => ['sometimes', 'nullable', 'string', 'max:255'],
             'contact_website' => ['sometimes', 'nullable', 'string', 'max:255'],
