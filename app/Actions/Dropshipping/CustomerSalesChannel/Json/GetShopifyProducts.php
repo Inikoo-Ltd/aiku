@@ -12,19 +12,40 @@ namespace App\Actions\Dropshipping\CustomerSalesChannel\Json;
 use App\Actions\Dropshipping\Shopify\Product\FindShopifyProductVariant;
 use App\Actions\OrgAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class GetShopifyProducts extends OrgAction
 {
-    public function handle(CustomerSalesChannel $customerSalesChannel, string $searchInput): array|null
+    public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): array|null
     {
-        return FindShopifyProductVariant::run($customerSalesChannel, $searchInput);
+        $query = Arr::get($modelData, 'query', '');
+
+        if ($query === null) {
+            $query = '';
+        }
+
+        return FindShopifyProductVariant::run($customerSalesChannel, $query);
+    }
+
+    public function rules(): array
+    {
+        return [
+            'query' => ['nullable', 'string'],
+        ];
+    }
+
+    public function prepareForValidation(ActionRequest $request): void
+    {
+        $request->merge([
+            'query' => $request->get('query')
+        ]);
     }
 
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request)
     {
         $this->initialisation($customerSalesChannel->organisation, $request);
 
-        return $this->handle($customerSalesChannel, $request->get('query', ''));
+        return $this->handle($customerSalesChannel, $this->validatedData);
     }
 }

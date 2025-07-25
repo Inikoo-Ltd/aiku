@@ -101,6 +101,24 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                             'title' => __('portfolios')
                         ]
                     ),
+                    'actions' => [
+                        [
+                            'type' => 'button',
+                            'style' => 'create',
+                            'label' => __('Add Sales Channel'),
+                            'route' => [
+                                'name' => 'retina.dropshipping.customer_sales_channels.create',
+                            ]
+                        ],
+                        [
+                            'type' => 'button',
+                            'style' => 'create',
+                            'label' => __('Add Sales Channel'),
+                            'route' => [
+                                'name' => 'retina.dropshipping.customer_sales_channels.create',
+                            ]
+                        ]
+                    ]
 
                 ],
 
