@@ -8,6 +8,8 @@
 import { Head, router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TablePortfolios from "@/Components/Tables/Grp/Org/CRM/TablePortfolios.vue"
+import TablePortfoliosShopify from "@/Components/Tables/Grp/Org/CRM/TablePortfoliosShopify.vue"
+import TablePortfoliosManual from "@/Components/Tables/Grp/Org/CRM/TablePortfoliosManual.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 import { ref } from "vue"
@@ -29,6 +31,8 @@ defineProps<{
     customer: Customer
     is_show_add_products_modal: boolean
     customerSalesChannelId: number
+    platform: {}
+    customerSalesChannel: {}
 }>()
 
 
@@ -76,8 +80,10 @@ const onSubmitAddItem = async (idProduct: number[], customerSalesChannelId: numb
             />
         </template>
     </PageHeading>
-
-    <TablePortfolios :data="data" />
+    
+    <TablePortfoliosShopify v-if="platform.type === 'shopify'" :data="data" />
+    <TablePortfoliosManual v-else-if="platform.type === 'manual'" :data="data" />
+    <TablePortfolios v-else :data="data" />
 
     <Modal v-if="is_show_add_products_modal" :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl">
         <ProductsSelector
