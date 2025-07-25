@@ -22,6 +22,7 @@ use App\Actions\Web\Redirect\UI\EditRedirect;
 use App\Actions\Web\Redirect\UI\ShowRedirect;
 use App\Actions\Web\Webpage\UI\CreateWebpage;
 use App\Actions\Web\Webpage\UI\EditWebpage;
+use App\Actions\Web\Webpage\UI\IndexBlogWebpages;
 use App\Actions\Web\Webpage\UI\IndexDepartmentWebpages;
 use App\Actions\Web\Webpage\UI\IndexFamilyWebpages;
 use App\Actions\Web\Webpage\UI\IndexProductWebpages;
@@ -89,7 +90,7 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
     Route::get('/type/catalogue', [IndexWebpages::class, 'catalogue'])->name('index.type.catalogue');
     Route::get('/type/content', [IndexWebpages::class, 'content'])->name('index.type.content');
     Route::get('/type/info', [IndexWebpages::class, 'info'])->name('index.type.info');
-    Route::get('/type/blog', [IndexWebpages::class, 'blog'])->name('index.type.blog');
+
     Route::get('/type/operations', [IndexWebpages::class, 'operations'])->name('index.type.operations');
     Route::get('/sub-type/department', IndexDepartmentWebpages::class)->name('index.sub_type.department');
     Route::get('/sub-type/department/{scope}/sub-departments', [IndexSubDepartmentWebpages::class, 'inDepartmentWebpages'])->name('index.sub_type.department.sub_departments');
@@ -101,6 +102,8 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
     Route::get('/sub-type/family', IndexFamilyWebpages::class)->name('index.sub_type.family');
     Route::get('/sub-type/family/{scope}/products', [IndexProductWebpages::class, 'inFamilyWebpages'])->name('index.sub_type.family.products');
     Route::get('/sub-type/product', IndexProductWebpages::class)->name('index.sub_type.product');
+
+
 
     Route::get('create', CreateWebpage::class)->name('create');
     Route::prefix('{webpage}')
@@ -119,6 +122,10 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
                     Route::get('{redirect}/edit', [EditRedirect::class, 'inWebpage'])->name('.edit');
                 });
         });
+});
+
+Route::prefix('{website}/blogs')->name('blogs.')->group(function () {
+    Route::get('', IndexBlogWebpages::class)->name('index');
 });
 
 Route::prefix('{website}/banners')->name('banners.')->group(function () {
