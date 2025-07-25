@@ -30,7 +30,8 @@ import {
     faTrashAlt,
     faExclamationCircle,
     faClone,
-    faLink, faScrewdriver, faTools
+    faLink, faScrewdriver, faTools,
+    faRecycle
 } from "@fal"
 import {faStar, faFilter} from "@fas"
 import {faExclamationTriangle as fadExclamationTriangle} from "@fad"
@@ -447,8 +448,9 @@ const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
                     @click="() => (fetchRoute(), isOpenModal = true, selectedPortfolio = item)"
                     :label="trans('Change product')"
                     :capitalize="false"
+                    :icon="faRecycle"
                     size="xxs"
-                    type="tertiary"
+                    type="negative"
                 />
 
             </template>
@@ -493,7 +495,6 @@ const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
 
         <!-- Column: Actions 3 -->
         <template #cell(delete)="{ item }">
-
             <ButtonWithLink
                 v-tooltip="trans('Unselect product')"
                 type="negative"
