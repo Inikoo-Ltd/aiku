@@ -65,7 +65,8 @@ const onSubmitAddItem = async (idProduct: number[], customerSalesChannelId: numb
         onFinish: () => isLoadingSubmit.value = false
     })
 }
-
+const loadingCreateNewProducts = ref(false)
+const loadingMatchWithExistingProduct= ref(false)
 const selectedProducts = ref<number[]>([])
 </script>
 
@@ -73,18 +74,32 @@ const selectedProducts = ref<number[]>([])
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template  #other>
-            <Button v-if="is_show_add_products_modal" @click="() => isOpenModalPortfolios = true" :type="'secondary'" icon="fal fa-plus"
+        <template v-if="is_show_add_products_modal" #other>
+            <Button @click="() => isOpenModalPortfolios = true" :type="'secondary'" icon="fal fa-plus"
                 :label="trans('Add products to portfolio')" />
-
-            <!-- <Link v-if="selectedProducts.length > 0" @start="loading = true" @finish="loading = false"
-                :href="route(picking_session_route.name, picking_session_route.parameters)" method="post" as="button"
-                :data="{ delivery_notes: selectedDeliveryNotes }"> -->
-            <Button type="create" label="picking session" @click="()=>console.log('results', selectedProducts)" />
-           <!--  </Link> -->
         </template>
+
+        <template #button-match-with-existing-product="{ action }">
+            <template v-if="action && selectedProducts.length > 0">
+                <Link :href="route(action.route.name, action.route?.parameters)" :method="action.route?.method || 'get'"
+                    as="button" :data="{ portfolios: selectedProducts }" @start="loadingMatchWithExistingProduct = true"
+                    @finish="loadingMatchWithExistingProduct = false">
+                <Button :type="action.style" :label="action.label" />
+                </Link>
+            </template>
+        </template>
+
+
+        <template #button-create-new-product="{ action }">
+            <Link v-if="selectedProducts.length > 0" @start="loadingCreateNewProducts = true"
+                @finish="loadingCreateNewProducts = false" :href="route(action.route.name, action.route?.parameters)"
+                :method="action.route?.method || 'get'" as="button" :data="{ portfolios : selectedProducts }">
+            <Button :type="action.style" :label="action.label"/>
+            </Link>
+        </template>
+
+
     </PageHeading>
-    {{ selectedProducts }}
 
     <TablePortfoliosShopify v-if="platform.type === 'shopify'" :data="data" :customerSalesChannel
         v-model:selectedProducts="selectedProducts" />

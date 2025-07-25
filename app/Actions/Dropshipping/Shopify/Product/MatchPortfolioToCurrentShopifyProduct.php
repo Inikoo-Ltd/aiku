@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Thu, 24 Jul 2025 11:35:56 British Summer Time, Trnava, Slovakia
@@ -15,12 +16,11 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class MatchPortfolioToCurrentShopifyProduct extends OrgAction
 {
-
     use AsAction;
 
-    public function handle(Portfolio $portfolio,array $modelData)
+    public function handle(Portfolio $portfolio, array $modelData)
     {
-        $shopifyProductId=Arr::get($modelData,'shopify_product_id');
+        $shopifyProductId = Arr::get($modelData, 'shopify_product_id');
         $portfolio->update([
             'platform_product_id' => $shopifyProductId,
         ]);
