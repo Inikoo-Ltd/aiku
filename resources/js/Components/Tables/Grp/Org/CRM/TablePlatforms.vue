@@ -32,5 +32,11 @@ function platformRoute(platform) {
                 {{ platform.name }}
             </Link>
         </template>
+
+        <template #cell(number_customer_sales_channels)="{ item: platform }">
+            <span class="text-red-500">{{
+                    platform.number_customer_sales_channel_broken
+                }}</span>/{{ platform.number_customer_sales_channels }}
+        </template>
     </Table>
 </template>
