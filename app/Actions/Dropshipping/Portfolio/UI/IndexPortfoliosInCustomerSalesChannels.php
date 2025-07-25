@@ -119,6 +119,7 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                             'style' => 'create',
                             'label' => __('Match With Existing Product'),
                             'route' => [
+                                'method' => 'post',
                                 'name' => 'grp.models.shopify.batch_match',
                                 'parameters' => [
                                     'customerSalesChannel' =>  $this->customerSalesChannel->id,

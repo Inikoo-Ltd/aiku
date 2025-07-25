@@ -77,34 +77,26 @@ const selectedProducts = ref<number[]>([])
         <template v-if="is_show_add_products_modal" #other>
             <Button @click="() => isOpenModalPortfolios = true" :type="'secondary'" icon="fal fa-plus"
                 :label="trans('Add products to portfolio')" />
-
-
         </template>
 
-      <template #button-match-with-existing-product="{ action }">
-  <template v-if="action && selectedProducts.length > 0">
-    <Link
-      :href="route(action.route.name, action.route?.parameters)"
-      :method="action.route?.method || 'get'"
-      as="button"
-      :data="{ portfolios: selectedProducts }"
-      @start="loadingMatchWithExistingProduct = true"
-      @finish="loadingMatchWithExistingProduct = false"
-    >
-      <Button :type="action.style" :label="action.label" />
-    </Link>
-  </template>
-</template>
+        <template #button-match-with-existing-product="{ action }">
+            <template v-if="action && selectedProducts.length > 0">
+                <Link :href="route(action.route.name, action.route?.parameters)" :method="action.route?.method || 'get'"
+                    as="button" :data="{ portfolios: selectedProducts }" @start="loadingMatchWithExistingProduct = true"
+                    @finish="loadingMatchWithExistingProduct = false">
+                <Button :type="action.style" :label="action.label" />
+                </Link>
+            </template>
+        </template>
 
 
-        <!-- <template #button-create-new-product="{ action }">
-            {{ action  }}
+        <template #button-create-new-product="{ action }">
             <Link v-if="selectedProducts.length > 0" @start="loadingCreateNewProducts = true"
                 @finish="loadingCreateNewProducts = false" :href="route(action.route.name, action.route?.parameters)"
                 :method="action.route?.method || 'get'" as="button" :data="{ portfolios : selectedProducts }">
             <Button :type="action.style" :label="action.label"/>
             </Link>
-        </template> -->
+        </template>
 
 
     </PageHeading>
