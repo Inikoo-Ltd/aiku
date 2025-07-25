@@ -20,6 +20,7 @@ use App\Actions\Web\Banner\UI\ShowBannerWorkshop;
 use App\Actions\Web\Redirect\UI\CreateRedirect;
 use App\Actions\Web\Redirect\UI\EditRedirect;
 use App\Actions\Web\Redirect\UI\ShowRedirect;
+use App\Actions\Web\Webpage\UI\CreateBlogWebpage;
 use App\Actions\Web\Webpage\UI\CreateWebpage;
 use App\Actions\Web\Webpage\UI\EditWebpage;
 use App\Actions\Web\Webpage\UI\IndexBlogWebpages;
@@ -127,7 +128,7 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
 
 Route::prefix('{website}/blogs')->name('blogs.')->group(function () {
     Route::get('', IndexBlogWebpages::class)->name('index');
-    Route::get('create', CreateWebpage::class)->name('create');
+    Route::get('create', CreateBlogWebpage::class)->name('create');
     Route::get('{webpage}', ShowBlogWebpage::class)->name('show');
 });
 

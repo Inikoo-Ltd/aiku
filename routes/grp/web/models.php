@@ -556,6 +556,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
     });
 
     Route::post('website/{website:id}/webpage', [StoreWebpage::class, 'inShop'])->name('webpage.store')->withoutScopedBindings();
+    Route::post('website/{website:id}/blog-webpage', [StoreWebpage::class, 'inBlog'])->name('blog_webpage.store')->withoutScopedBindings();
 
     Route::prefix('website/{website:id}/banner')->name('website.banner.')->group(function () {
         Route::prefix('{banner:id}')->group(function () {
