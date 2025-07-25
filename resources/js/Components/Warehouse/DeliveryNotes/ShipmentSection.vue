@@ -301,6 +301,19 @@ const confirmdelete = (event: MouseEvent, shipment) => {
 
 const isModalEditAddress = ref(false)
 const xxxCopyAddress = ref({ ...props.address?.delivery })
+
+function handleShipmentClick(shipment: number) {
+  if (isLoadingButton.value === 'addTrackingNumber') return
+
+  formTrackingNumber.shipping_id = shipment
+
+  if (formTrackingNumber?.errors?.address) {
+    onSubmitAddressThenShipment()
+  } else {
+    onSubmitShipment()
+  }
+}
+
 </script>
 
 <template>
@@ -414,7 +427,7 @@ const xxxCopyAddress = ref({ ...props.address?.delivery })
                         </div>
                         <div v-else
                             v-for="(shipment, index) in optionShippingList.filter(shipment => shipment.api_shipper)"
-                            @click="() => isLoadingButton == 'addTrackingNumber' ? null : formTrackingNumber.shipping_id = shipment"
+                            @click="handleShipmentClick(shipment)"
                             class="relative isolate w-full max-w-52 h-20 border rounded-md px-5 py-3 cursor-pointer"
                             :class="[
                                 formTrackingNumber.shipping_id?.id == shipment.id

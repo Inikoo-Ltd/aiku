@@ -19,8 +19,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $picker
  * @property mixed $type
  * @property mixed $location
+ * @property mixed $orgStock
  */
-class PickingsResource extends JsonResource
+class PickingResource extends JsonResource
 {
     public function toArray($request): array
     {
@@ -29,7 +30,10 @@ class PickingsResource extends JsonResource
             'not_picked_reason'          => $this->not_picked_reason,
             'not_picked_note'            => $this->not_picked_note,
             'quantity_picked'            => (float)$this->quantity,
-            'quantity_picked_fractional' => divideWithRemainder(findSmallestFactors($this->quantity)),
+            'quantity_picked_fractional' => riseDivisor(
+                divideWithRemainder(findSmallestFactors($this->quantity)),
+                $this->orgStock?->packed_in
+            ),
             'engine'                     => $this->engine,
             'picker_name'                => $this->picker->contact_name,
             'type'                       => $this->type,

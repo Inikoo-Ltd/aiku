@@ -53,6 +53,7 @@ class IndexDeliveryNoteItemsInPickingSession extends OrgAction
             'org_stocks.id as org_stock_id',
             'org_stocks.code as org_stock_code',
             'org_stocks.name as org_stock_name',
+            'org_stocks.packed_in',
         ]);
 
         return $query
