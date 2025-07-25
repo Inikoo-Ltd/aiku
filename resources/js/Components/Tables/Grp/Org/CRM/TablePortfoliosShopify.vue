@@ -175,11 +175,45 @@ const fetchRoute = async () => {
 
 }
 const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
+
+
+const selectedProducts = defineModel<number[]>('selectedProducts')
+
+const onChangeCheked = (checked: boolean, item: DeliveryNote) => {
+    if (!selectedProducts.value) return
+
+    if (checked) {
+        if (!selectedProducts.value.includes(item.id)) {
+            selectedProducts.value.push(item.id)
+        }
+    } else {
+        selectedProducts.value = selectedProducts.value.filter(id => id != item.id)
+    }
+}
+
+const onCheckedAll = ({ data, allChecked }) => {
+    if (!selectedProducts.value) return
+
+    if (allChecked) {
+        const newIds = data.map(row => row.id)
+        selectedProducts.value = Array.from(new Set([...selectedProducts.value, ...newIds]))
+    } else {
+        const uncheckIds = data.map(row => row.id)
+        selectedProducts.value = selectedProducts.value.filter(id => !uncheckIds.includes(id))
+    }
+}
+
 </script>
 
 <template>
     <!-- <pre>{{ data.data[0] }}</pre> -->
-    <Table :resource="data" :name="tab" class="mt-5">
+    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="true"
+        @onChecked="(item) => onChangeCheked(true, item)" 
+        @onUnchecked="(item) => onChangeCheked(false, item)"
+        @onCheckedAll="(data) => onCheckedAll(data)"
+        checkboxKey='id' 
+        :isChecked="(item) => selectedProducts.includes(item.id)"
+    >
         <template #cell(item_code)="{ item: portfolio }">
             <Link :href="itemRoute(portfolio)" class="primaryLink">
                 {{ portfolio["item_code"] }}
