@@ -36,7 +36,7 @@ class MatchBulkPortfoliosToCurrentShopifyProduct extends OrgAction
         foreach ($portfolios as $portfolio) {
             $platformProductId = Arr::get($portfolio->platform_possible_matches, 'raw_data.0.id');
             if ($platformProductId) {
-                MatchPortfolioToCurrentShopifyProduct::dispatch($portfolio, [
+                MatchPortfolioToCurrentShopifyProduct::run($portfolio, [
                     'shopify_product_id' => $platformProductId
                 ]);
             }

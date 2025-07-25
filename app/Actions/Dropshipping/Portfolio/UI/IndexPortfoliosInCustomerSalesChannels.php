@@ -105,18 +105,6 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                         [
                             'type' => 'button',
                             'style' => 'create',
-                            'label' => __('Create New Product'),
-                            'route' => [
-                                'name' => 'grp.models.shopify.batch_upload',
-                                'parameters' => [
-                                    'customerSalesChannel' =>  $this->customerSalesChannel->id,
-                                ],
-                                'method' => 'post'
-                            ]
-                        ],
-                        [
-                            'type' => 'button',
-                            'style' => 'create',
                             'label' => __('Match With Existing Product'),
                             'route' => [
                                 'method' => 'post',
@@ -124,6 +112,18 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                                 'parameters' => [
                                     'customerSalesChannel' =>  $this->customerSalesChannel->id,
                                 ]
+                            ]
+                        ],
+                        [
+                            'type' => 'button',
+                            'style' => 'create',
+                            'label' => __('Create New Product'),
+                            'route' => [
+                                'name' => 'grp.models.shopify.batch_upload',
+                                'parameters' => [
+                                    'customerSalesChannel' =>  $this->customerSalesChannel->id,
+                                ],
+                                'method' => 'post'
                             ]
                         ]
                     ]
