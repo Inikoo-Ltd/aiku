@@ -127,6 +127,7 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
 
 Route::prefix('{website}/blogs')->name('blogs.')->group(function () {
     Route::get('', IndexBlogWebpages::class)->name('index');
+    Route::get('create', CreateWebpage::class)->name('create');
     Route::get('{webpage}', ShowBlogWebpage::class)->name('show');
 });
 

@@ -222,7 +222,7 @@ class IndexBlogWebpages extends OrgAction
         if (str_starts_with($routeName, 'grp.org.fulfilments.')) {
             $routeCreate = 'grp.org.fulfilments.show.web.webpages.create';
         } elseif (str_starts_with($routeName, 'grp.org.shops.show.web.')) {
-            $routeCreate = 'grp.org.shops.show.web.webpages.create';
+            $routeCreate = 'grp.org.shops.show.web.blogs.create';
         }
 
         $actions = [];
