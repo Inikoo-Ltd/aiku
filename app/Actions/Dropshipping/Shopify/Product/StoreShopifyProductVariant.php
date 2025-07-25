@@ -48,17 +48,17 @@ class StoreShopifyProductVariant extends RetinaAction
         }
 
         /** @var Product $product */
-        $product  = $portfolio->item;
+        $product = $portfolio->item;
 
 
-        $productID        = $portfolio->platform_product_id;
+        $productID = $portfolio->platform_product_id;
 
 
         if (!$productID) {
             Sentry::captureMessage("No Shopify product ID found in portfolio");
+
             return null;
         }
-
 
 
         try {
@@ -103,13 +103,10 @@ class StoreShopifyProductVariant extends RetinaAction
             ];
 
 
-
-
             $variables = [
                 'productId' => $productID,
                 'variants'  => $variants,
-                ];
-
+            ];
 
 
             // Make the GraphQL request
@@ -152,12 +149,8 @@ class StoreShopifyProductVariant extends RetinaAction
                 return null;
             }
 
-            $data = $portfolio->data;
-            data_set($data, 'shopify_product', $updatedProduct);
 
-            UpdatePortfolio::run($portfolio, [
-                'data' => $data
-            ]);
+            SaveShopifyProductData::run($portfolio);
 
             // Format the response to match the expected structure
             return $this->formatProductResponse($updatedProduct);

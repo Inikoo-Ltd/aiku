@@ -17,7 +17,7 @@ use Exception;
 use Illuminate\Console\Command;
 use Sentry;
 
-class GetShopifyProductData extends RetinaAction
+class SaveShopifyProductData extends RetinaAction
 {
     use WithActionUpdate;
 
@@ -152,15 +152,18 @@ class GetShopifyProductData extends RetinaAction
 
             $body = $response['body']->toArray();
 
-            // Check if product data exists in the response
-            if (!isset($body['data']['product'])) {
+
+            $productData=[];
+
+
+            if (isset($body['data']['product'])) {
+                $productData = $body['data']['product'];
+            }else{
                 Sentry::captureMessage("Product data not found in response");
 
-                return null;
             }
 
-            // Get the product data
-            $productData = $body['data']['product'];
+
 
             $data = $portfolio->data;
             data_set($data, 'shopify_product', $productData);
@@ -168,17 +171,6 @@ class GetShopifyProductData extends RetinaAction
             UpdatePortfolio::run($portfolio, [
                 'data' => $data
             ]);
-
-
-            if (isset($productData['variants']['edges'][0]['node']['id'])) {
-                $variantId = $productData['variants']['edges'][0]['node']['id'];
-                $portfolio->update(
-                    [
-                        'platform_product_variant_id' => $variantId
-                    ]
-                );
-            }
-
 
 
 

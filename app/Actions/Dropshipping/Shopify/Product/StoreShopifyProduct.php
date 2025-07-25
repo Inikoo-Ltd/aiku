@@ -155,15 +155,8 @@ class StoreShopifyProduct extends RetinaAction
             }
 
 
-
-            $data = $portfolio->data;
-            data_set($data, 'shopify_product', $createdProduct);
-
-
-
             UpdatePortfolio::run($portfolio, [
                 'platform_product_id' => Arr::get($createdProduct, 'id'),
-                'data' => $data
             ]);
 
             StoreShopifyProductVariant::run($portfolio);
@@ -178,6 +171,8 @@ class StoreShopifyProduct extends RetinaAction
             UpdatePortfolio::run($portfolio, [
                 'platform_product_variant_id' => $variantId,
             ]);
+
+            SaveShopifyProductData::run($portfolio);
 
             // Format the response to match the expected structure
             return $this->formatProductResponse($createdProduct);

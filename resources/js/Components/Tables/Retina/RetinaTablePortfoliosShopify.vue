@@ -441,7 +441,19 @@ const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
                 />
             </template>
             <template v-else>
-                <pre>{{item.shopify_product_data}}</pre>
+
+              <template v-if="item.shopify_product_data?.title">
+
+                  <div class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow">
+                      <img :src="item.shopify_product_data?.images?.edges?.[0]?.node?.src" />
+                  </div>
+
+                <div>
+                    <span class="mr-1">{{ item.shopify_product_data?.title}}</span>
+                </div>
+              </template>
+
+
 
                 <Button
                     xv-if="portfolio.platform_possible_matches?.number_matches"
