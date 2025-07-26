@@ -35,7 +35,7 @@ class RetrieveShopifyAssignedOrders extends OrgAction
             $fulfillmentOrder = $edge['node'];
 
             if (!isset($fulfillmentOrder['destination'])) {
-                RejectShopifyFulfillmentRequest::run($shopifyUser, $fulfillmentOrder['id'], __('Fulfillment request destination not found.'));
+                RejectShopifyFulfillmentRequest::run($shopifyUser, $fulfillmentOrder['id'], __("Order don't have shipping information"));
             } else {
                 AcceptShopifyFulfillmentRequest::run($shopifyUser, $fulfillmentOrder);
             }

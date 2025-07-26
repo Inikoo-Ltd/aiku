@@ -50,7 +50,7 @@ class FulfillOrderToShopify extends OrgAction
         GRAPHQL;
 
         $deliveryNotes = $order->deliveryNotes->first();
-        $shipments = $deliveryNotes->shipments;
+        $shipments     = $deliveryNotes->shipments;
 
         if (blank($shipments)) {
             throw ValidationException::withMessages([
@@ -58,9 +58,20 @@ class FulfillOrderToShopify extends OrgAction
             ]);
         }
 
-        $shipperCompanyName = $shipments->first()->shipper->name;
+        $shipper= $shipments->first()->shipper;
+        $shipperCompanyName = $shipper->trade_as??$shipper->name;
+
+
+        $trackingInfo = [
+            'numbers' => $shipments->pluck('tracking')->toArray(),
+            'company' => $shipperCompanyName,
+            'urls'    => $shipments->pluck('tracking_urls')->toArray(),
+        ];
+
+
 
         try {
+
 
             $response = $shopifyUser->getShopifyClient(true)->request($mutation, [
                 'fulfillmentInput' => [
@@ -69,16 +80,22 @@ class FulfillOrderToShopify extends OrgAction
                             'fulfillmentOrderId' => $fulfillOrderId
                         ]
                     ],
-                    'trackingInfo' => [
-                        'numbers' => $shipments->pluck('tracking')->toArray(),
-                        'company' => $shipperCompanyName,
-                        'urls' => $shipments->pluck('combined_label_url')->toArray(),
-                    ]
+                    'trackingInfo'                => $trackingInfo
                 ]
             ]);
 
+
+
         } catch (\Exception $e) {
             throw ValidationException::withMessages(['message' => $e->getMessage()]);
+        }
+
+        if (!empty($response['errors'][0]['message'])) {
+            throw ValidationException::withMessages([
+                'messages' => collect($response['errors'])
+                    ->pluck('message')
+                    ->join(', ')
+            ]);
         }
 
         if (!empty($response['body']['data']['fulfillmentCreateV2']['userErrors'])) {

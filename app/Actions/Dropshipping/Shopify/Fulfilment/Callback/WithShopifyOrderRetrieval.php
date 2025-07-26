@@ -19,6 +19,7 @@ trait WithShopifyOrderRetrieval
      */
     public function retrieveOrders(ShopifyUser $shopifyUser, string $assignmentStatus)
     {
+
         try {
             $query = <<<'QUERY'
                 query assignedFulfillmentOrders($first: Int!, $assignmentStatus: FulfillmentOrderAssignmentStatus!) {
@@ -86,6 +87,7 @@ trait WithShopifyOrderRetrieval
             ];
 
             list($status, $response) = $this->doPost($shopifyUser, $query, $variables);
+
             if (!$status) {
                 return $response;
             }
@@ -97,6 +99,7 @@ trait WithShopifyOrderRetrieval
             $body = $response['body']->toArray();
 
             $fulfillmentOrders = $body['data']['shop']['assignedFulfillmentOrders']['edges'] ?? [];
+
 
             return $this->processFulfillmentOrders($shopifyUser, $fulfillmentOrders);
         } catch (\Exception $e) {

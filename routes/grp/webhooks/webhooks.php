@@ -24,7 +24,7 @@ Route::name('webhooks.')->group(function () {
 });
 
 Route::prefix('shopify/{shopifyUser:id}')->name('webhooks.shopify.')->group(function () {
-    Route::post('fulfillment_order_notification', CallbackFulfillmentOrderNotification::class)->name('fulfillment_order_notification');
+    Route::any('fulfillment_order_notification', CallbackFulfillmentOrderNotification::class)->name('fulfillment_order_notification');
     Route::get('fetch_stock.json', CallbackFetchStock::class)->name('fetch_stock');
     Route::post('app-uninstalled', [DeleteShopifyUser::class, 'inWebhook'])->name('app_uninstalled');
     Route::any('products-deleted', CallbackProductChanged::class)->name('products_deleted');

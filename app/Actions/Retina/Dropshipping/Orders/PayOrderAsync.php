@@ -29,9 +29,11 @@ class PayOrderAsync extends RetinaAction
             PayRetinaOrderWithBalanceAsync::run($order);
         } else {
             foreach ($customer->mitSavedCard->sortBy('priority') as $card) {
-                $result = PayOrderWithMitCard::run($order, $card);
-                if (Arr::get($result, 'status') == 'ok') {
-                    break;
+                if ($card->state == 'success') {
+                    $result = PayOrderWithMitCard::run($order, $card);
+                    if (Arr::get($result, 'status') == 'ok') {
+                        break;
+                    }
                 }
             }
         }

@@ -52,6 +52,8 @@ class UpdateOrderStateToDispatched extends OrgAction
             $this->orderHydrators($order);
             $order->refresh();
 
+
+
             if ($order->customerSalesChannel) {
                 match ($order->customerSalesChannel->platform->type) {
                     PlatformTypeEnum::WOOCOMMERCE => FulfillOrderToWooCommerce::run($order),
