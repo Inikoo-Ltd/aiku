@@ -8,20 +8,22 @@
 
 namespace App\Actions\Dropshipping\Shopify\Fulfilment;
 
+use App\Actions\Dropshipping\Shopify\WithShopifyApi;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Ordering\Order;
 use Illuminate\Validation\ValidationException;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
+
 
 class FulfillOrderToShopify extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
+    use WithShopifyApi;
     use WithActionUpdate;
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function handle(Order $order): void
     {
         $fulfillOrderId = $order->platform_order_id;
@@ -29,25 +31,20 @@ class FulfillOrderToShopify extends OrgAction
         /** @var ShopifyUser $shopifyUser */
         $shopifyUser = $order->customerSalesChannel->user;
 
-        $mutation = <<<'GRAPHQL'
-            mutation fulfillmentCreateV2($fulfillmentInput: FulfillmentV2Input!) {
-                fulfillmentCreateV2(fulfillment: $fulfillmentInput) {
-                    fulfillment {
-                        id
-                        status
-                        trackingInfo {
-                            company
-                            number
-                            url
-                        }
-                    }
-                    userErrors {
-                        field
-                        message
-                    }
+
+        $mutation = <<<'MUTATION'
+           mutation fulfillmentCreate($fulfillment: FulfillmentInput!) {
+              fulfillmentCreate(fulfillment: $fulfillment) {
+                fulfillment {
+                  id
                 }
+                userErrors {
+                  field
+                  message
+                }
+              }
             }
-        GRAPHQL;
+        MUTATION;
 
         $deliveryNotes = $order->deliveryNotes->first();
         $shipments     = $deliveryNotes->shipments;
@@ -62,33 +59,48 @@ class FulfillOrderToShopify extends OrgAction
         $shipperCompanyName = $shipper->trade_as??$shipper->name;
 
 
+        $numbers=[];
+        $urls=[];
+        foreach ($shipments as $shipment) {
+            $numbers=array_merge($numbers,$shipment->trackings);
+            $urls=array_merge($urls,$shipment->tracking_urls);
+        }
+
+
         $trackingInfo = [
-            'numbers' => $shipments->pluck('tracking')->toArray(),
+            'numbers' => $numbers,
             'company' => $shipperCompanyName,
-            'urls'    => $shipments->pluck('tracking_urls')->toArray(),
+        ];
+
+        $validShopifyShippingCompanies=['Yodel','DPD UK','Parcelforce'];
+
+        if(!in_array($shipperCompanyName,$validShopifyShippingCompanies)){
+            $trackingInfo['urls']=$urls;
+        }
+
+        $variables=[
+            'fulfillment' => [
+                'lineItemsByFulfillmentOrder' => [
+                    [
+                        'fulfillmentOrderId' => $fulfillOrderId
+                    ]
+                ],
+                'trackingInfo'                => $trackingInfo
+            ]
         ];
 
 
 
         try {
-
-
-            $response = $shopifyUser->getShopifyClient(true)->request($mutation, [
-                'fulfillmentInput' => [
-                    'lineItemsByFulfillmentOrder' => [
-                        [
-                            'fulfillmentOrderId' => $fulfillOrderId
-                        ]
-                    ],
-                    'trackingInfo'                => $trackingInfo
-                ]
-            ]);
-
-
-
+            list($status, $response) = $this->doPost($shopifyUser, $mutation, $variables);
         } catch (\Exception $e) {
             throw ValidationException::withMessages(['message' => $e->getMessage()]);
         }
+
+        if(!$status){
+            throw ValidationException::withMessages(['message' =>$response]);
+        }
+
 
         if (!empty($response['errors'][0]['message'])) {
             throw ValidationException::withMessages([
