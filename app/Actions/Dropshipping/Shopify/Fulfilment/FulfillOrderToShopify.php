@@ -33,8 +33,8 @@ class FulfillOrderToShopify extends OrgAction
 
 
         $mutation = <<<'MUTATION'
-           mutation fulfillmentCreate($fulfillment: FulfillmentInput!) {
-              fulfillmentCreate(fulfillment: $fulfillment) {
+           mutation fulfillmentCreate($fulfillment: FulfillmentInput!, $message: String) {
+              fulfillmentCreate(fulfillment: $fulfillment, message: $message) {
                 fulfillment {
                   id
                 }
@@ -72,6 +72,8 @@ class FulfillOrderToShopify extends OrgAction
             'company' => $shipperCompanyName,
         ];
 
+        $message= 'Shipper: '.$shipperCompanyName.', '.implode(',',$numbers);
+
         $validShopifyShippingCompanies=['Yodel','DPD UK','Parcelforce'];
 
 
@@ -87,7 +89,8 @@ class FulfillOrderToShopify extends OrgAction
                     ]
                 ],
                 'trackingInfo'                => $trackingInfo
-            ]
+            ],
+            'message' => $message,
         ];
 
 
