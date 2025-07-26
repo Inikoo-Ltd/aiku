@@ -21,6 +21,7 @@ class DeleteWebhooksFromShopify extends OrgAction
 
     public function handle(ShopifyUser $shopifyUser): array
     {
+
         list($status, $result) = GetWebhooksFromShopify::run($shopifyUser);
 
         if (!$status) {
@@ -111,7 +112,7 @@ class DeleteWebhooksFromShopify extends OrgAction
     {
         $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->firstOrFail();
 
-        $command->info("Deleting webhooks for customer sales channel: {$customerSalesChannel->slug}");
+        $command->info("Deleting webhooks for customer sales channel: $customerSalesChannel->slug");
 
         list($success, $results) = $this->handle($customerSalesChannel->user);
 
