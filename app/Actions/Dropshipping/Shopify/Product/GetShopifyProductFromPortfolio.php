@@ -17,7 +17,7 @@ use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Sentry;
 
-//todo delee thi sone of modify to it as PreparePortfoliosForShopify
+//todo delee thi sone of modify to it as FixShopifyPortfolios
 class GetShopifyProductFromPortfolio
 {
     use AsAction;

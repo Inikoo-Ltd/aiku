@@ -24,7 +24,7 @@ use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-//todo deltee thi sone of modify to it as PreparePortfoliosForShopify
+//todo deltee thi sone of modify to it as FixShopifyPortfolios
 class GetApiProductsFromShopify extends OrgAction
 {
     use AsAction;
