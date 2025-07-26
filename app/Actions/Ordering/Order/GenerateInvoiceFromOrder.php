@@ -102,7 +102,7 @@ class GenerateInvoiceFromOrder extends OrgAction
                     StoreInvoiceTransactionFromShipping::make()->action($invoice, $transaction->model, $data);
                 } else {
                     $updatedData = $this->recalculateTransactionTotals($transaction);
-                    StoreInvoiceTransaction::make()->action($invoice, $transaction->historicAsset, $updatedData);
+                    StoreInvoiceTransaction::make()->action($invoice, $transaction, $updatedData);
                     $transaction->update(
                         [
                             'quantity_picked' => $updatedData['quantity'],
