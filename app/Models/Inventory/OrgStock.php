@@ -75,6 +75,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStockMovement> $orgStockMovements
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OrgSupplierProduct> $orgSupplierProducts
  * @property-read Organisation $organisation
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Product> $products
  * @property-read \App\Models\Inventory\OrgStockSalesInterval|null $salesIntervals
  * @property-read \App\Models\Inventory\OrgStockStats|null $stats
  * @property-read Stock|null $stock
