@@ -52,9 +52,8 @@ class CloneCatalogueStructure
 
                 foreach ($fromFamiliesAttachedToDepartment as $fromFamilyData) {
                     $fromFamily = ProductCategory::find($fromFamilyData->id);
+                    $this->cloneFamiliesParentRelationship($department, $fromFamily);
                 }
-
-                $this->cloneFamiliesParentRelationship($department);
             }
         }
     }
