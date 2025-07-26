@@ -16,7 +16,6 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@/Components/Image.vue"
 import { debounce, get, set } from "lodash-es"
-import ConditionIcon from "@/Components/Utils/ConditionIcon.vue"
 import { faConciergeBell, faGarage, faExclamationTriangle, faSyncAlt, faPencil, faSearch, faThLarge, faListUl, faStar as falStar, faTrashAlt, faExclamationCircle, faClone, faLink} from "@fal"
 import { faStar, faFilter } from "@fas"
 import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
@@ -249,56 +248,7 @@ const onClickFilterOutOfStock = (query: string) => {
 			</div>
         </template>
 
-		<!-- Column: Stock -->
-		<!-- <template #cell(quantity_left)="{ item }">
-			<div>
-				{{ locale.number(item.quantity_left) }}
-			</div>
-		</template> -->
 
-		<!-- Column: Weight -->
-		<!-- <template #cell(weight)="{ item }">
-			<div>
-				{{ locale.number(item.weight/1000) }} kg
-			</div>
-		</template> -->
-
-		<!-- Column: Price -->
-		<!-- <template #cell(price)="{ item }">
-			<div class="text-gray-700">
-				{{ locale.currencyFormat(item.currency_code, item.price) }}
-			</div>
-			<div class="whitespace-nowrap text-gray-500">
-				RRP: {{ locale.currencyFormat(item.currency_code, item.customer_price) }}
-			</div>
-		</template> -->
-
-		<!-- Column: RPP -->
-		<!-- <template #cell(customer_price)="{ item }">
-			<div>
-				{{ locale.currencyFormat(item.currency_code, item.customer_price) }}
-			</div>
-		</template> -->
-
-		<!-- Column: Status -->
-		<!-- <template #cell(status)="{ item: product }">
-			<div class="flex justify-center">
-				<template v-if="is_platform_connected">
-					<FontAwesomeIcon v-if="(product.platform_product_id)" v-tooltip="trans('Uploaded to platform')" icon="far fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-					<ConditionIcon v-else-if="get(progressToUploadToShopify, [product.id], null)" :state="get(progressToUploadToShopify, [product.id], undefined)" class="text-xl mx-auto" />
-					<span v-if="(product.upload_warning)" class="text-red-500 text-xs text-center italic">
-						{{ product.upload_warning }}
-					</span>
-					<span v-else-if="!product.platform_product_id" class="text-gray-500 text-xs text-center italic">
-						{{ trans("Pending upload") }}
-					</span>
-				</template>
-
-				<div v-else-if="isPlatformManual" v-tooltip="trans('Your channel is not connected to the platform yet.')" class="text-center text-lg">
-                    <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="text-red-500" fixed-width aria-hidden="true" />
-                </div>
-			</div>
-        </template> -->
 
 		<!-- Column: Actions -->
 		<template #cell(actions)="{ item }">

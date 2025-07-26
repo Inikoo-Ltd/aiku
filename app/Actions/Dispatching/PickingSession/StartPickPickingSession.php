@@ -32,10 +32,10 @@ class StartPickPickingSession extends OrgAction
         $deliveryNotes = $pickingSession->deliveryNotes;
 
         foreach ($deliveryNotes as $deliveryNote) {
-            $state=$deliveryNote->state;
-            if($state==DeliveryNoteStateEnum::UNASSIGNED ||
-                $state==DeliveryNoteStateEnum::QUEUED
-            ){
+            $state = $deliveryNote->state;
+            if ($state == DeliveryNoteStateEnum::UNASSIGNED ||
+                $state == DeliveryNoteStateEnum::QUEUED
+            ) {
                 StartHandlingDeliveryNote::make()->action($deliveryNote, $pickingSession->user);
             }
 

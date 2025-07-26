@@ -29,7 +29,7 @@ class MatchPortfolioToCurrentShopifyProduct extends OrgAction
         $portfolio->refresh();
         StoreShopifyProductVariant::run($portfolio);
         $portfolio = CheckShopifyPortfolio::run($portfolio);
-        
+
         UploadProductToShopifyProgressEvent::dispatch($portfolio->customerSalesChannel->user, $portfolio);
     }
 

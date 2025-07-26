@@ -71,7 +71,7 @@ class IndexDeliveryNotes extends OrgAction
                     ]
         ];
 
-        if($this->bucket == 'queued') {
+        if ($this->bucket == 'queued') {
             $pickingSessionRoute = [
                     'name' => 'grp.models.warehouse.queued_picking_session.store',
                     'parameters' => [

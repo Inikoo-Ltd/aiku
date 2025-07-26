@@ -51,7 +51,7 @@ class StorePickingSession extends OrgAction
 
             if (empty($validDeliveryNoteIds)) {
                 throw ValidationException::withMessages(
-                     [
+                    [
                         'message' => [
                             'delivery_notes' => 'All selected delivery notes are already in a picking session.',
                         ]
@@ -90,7 +90,7 @@ class StorePickingSession extends OrgAction
             $numberDeliveryNotes = 0;
             foreach ($deliveryNotes as $deliveryNote) {
                 $numberDeliveryNotes++;
-                if($queued) {
+                if ($queued) {
                     StartHandlingDeliveryNote::make()->action($deliveryNote, request()->user());
                 } else {
                     UpdateDeliveryNoteStateToInQueue::make()->action($deliveryNote, request()->user());

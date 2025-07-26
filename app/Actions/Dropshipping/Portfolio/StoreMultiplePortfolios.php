@@ -43,7 +43,7 @@ class StoreMultiplePortfolios extends OrgAction
                     continue;
                 }
 
-               StorePortfolio::make()->action(
+                StorePortfolio::make()->action(
                     customerSalesChannel: $customerSalesChannel,
                     item: $item,
                     modelData: []

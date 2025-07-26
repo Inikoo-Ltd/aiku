@@ -9,9 +9,7 @@
 namespace App\Actions\Retina\Shopify;
 
 use App\Actions\Dropshipping\Shopify\Product\StoreNewProductToCurrentShopify;
-use App\Actions\OrgAction;
 use App\Actions\RetinaAction;
-use App\Events\UploadProductToShopifyProgressEvent;
 use App\Models\Dropshipping\Portfolio;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;

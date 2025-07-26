@@ -16,7 +16,6 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
 import Image from "@/Components/Image.vue"
 import {debounce, get, set} from "lodash-es"
-import ConditionIcon from "@/Components/Utils/ConditionIcon.vue"
 import {
     faConciergeBell,
     faGarage,
@@ -37,11 +36,9 @@ import {faExclamationTriangle as fadExclamationTriangle} from "@fad"
 import {faCheck} from "@far"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import {retinaLayoutStructure} from "@/Composables/useRetinaLayoutStructure"
-import {notify} from "@kyvg/vue3-notification"
 import Modal from "@/Components/Utils/Modal.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
-import Tag from '@/Components/Tag.vue'
 
 library.add(fadExclamationTriangle, faSyncAlt, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, faClone, faLink, faScrewdriver, faTools)
 
@@ -183,48 +180,7 @@ const isOpenModal = ref(false)
 const selectedPortfolio = ref(null)
 const isLoadingSubmit = ref(false)
 const querySearchPortfolios = ref('')
-// const portfoliosList = ref<Product[]>([
-//     {
-//         "id": 124682,
-//         "slug": "aatom-13-awd",
-//         "code": "AATOM-13",
-//         "image": {
-//             "png": "https://media.aiku.io/48QAqfDxcejWuJ0IQnR6FWPWGcumudWUK52refQp-Vk/rs::0:300::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.png",
-//             "avif": "https://media.aiku.io/lK4uLZHjC09slPHtR3qOjvDKzws4TAl7Q5utWoDWGAs/rs::0:300::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.avif",
-//             "webp": "https://media.aiku.io/QZAAzKSCssL4-6KBp9IYbUxzbQPO3cazo1d4dJFQJBI/rs::0:300::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.webp",
-//             "png_2x": "https://media.aiku.io/XuTRFP1Dy89CH6txbj9hxIrK1EJzbflbnZ5ZEWutvjk/rs::0:600::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.png",
-//             "avif_2x": "https://media.aiku.io/nmU_amChUdcEXcnFF47vVX__FSHOFfb3mlju2Mv7NPo/rs::0:600::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.avif",
-//             "webp_2x": "https://media.aiku.io/C1ow5wRZtTa9gyQIDmYc9WU4qIXltOW-vJ3yhnPHlHk/rs::0:600::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.webp",
-//             "original": "https://media.aiku.io/kD5EfcuDXmcDMfdud6h67Mvt8o-rMxIuNeHuRP3IRT0/rs::0:300::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc",
-//             "original_2x": "https://media.aiku.io/TIAMo0qQH6aRbXSddGskcEmEZejFsOJXtU9SfQjnDSY/rs::0:600::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc"
-//         },
-//         "price": "24.12",
-//         "name": "Ibiza Atomiser - Infinity Lights - USB - Colour Change",
-//         "gross_weight": 750,
-//         "currency_code": "GBP",
-//         "currency_id": 23
-//     },
-//     {
-//         "id": 1111,
-//         "slug": "gggg-13-awd",
-//         "code": "GGGG-13",
-//         "image": {
-//             "png": "https://media.aiku.io/48QAqfDxcejWuJ0IQnR6FWPWGcumudWUK52refQp-Vk/rs::0:300::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.png",
-//             "avif": "https://media.aiku.io/lK4uLZHjC09slPHtR3qOjvDKzws4TAl7Q5utWoDWGAs/rs::0:300::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.avif",
-//             "webp": "https://media.aiku.io/QZAAzKSCssL4-6KBp9IYbUxzbQPO3cazo1d4dJFQJBI/rs::0:300::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.webp",
-//             "png_2x": "https://media.aiku.io/XuTRFP1Dy89CH6txbj9hxIrK1EJzbflbnZ5ZEWutvjk/rs::0:600::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.png",
-//             "avif_2x": "https://media.aiku.io/nmU_amChUdcEXcnFF47vVX__FSHOFfb3mlju2Mv7NPo/rs::0:600::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.avif",
-//             "webp_2x": "https://media.aiku.io/C1ow5wRZtTa9gyQIDmYc9WU4qIXltOW-vJ3yhnPHlHk/rs::0:600::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc.webp",
-//             "original": "https://media.aiku.io/kD5EfcuDXmcDMfdud6h67Mvt8o-rMxIuNeHuRP3IRT0/rs::0:300::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc",
-//             "original_2x": "https://media.aiku.io/TIAMo0qQH6aRbXSddGskcEmEZejFsOJXtU9SfQjnDSY/rs::0:600::/bG9jYWw6Ly9tZWRpYS9TSC9DQy82MFIzMEMxRzZNVktDQ1NIL2NlYTI3M2EzLmpwZWc"
-//         },
-//         "price": "24.12",
-//         "name": "Ibiza Atomiser - Infinity Lights - USB - Colour Change",
-//         "gross_weight": 750,
-//         "currency_code": "GBP",
-//         "currency_id": 23
-//     }
-// ])
+
 const filteredPortfolios = computed(() => {
     if (!querySearchPortfolios.value) {
         return selectedPortfolio.value?.platform_possible_matches
@@ -242,37 +198,7 @@ const onSubmitVariant = () => {
     selectedVariant.value = null
     selectedPortfolio.value = null
 
-    // Section: Submit
-    // router.post(
-    // 	'xxxx',
-    // 	{
-    // 		data: 'qqq'
-    // 	},
-    // 	{
-    // 		preserveScroll: true,
-    // 		preserveState: true,
-    // 		onStart: () => {
-    // 			isLoadingSubmit.value = true
-    // 		},
-    // 		onSuccess: () => {
-    // 			notify({
-    // 				title: trans("Success"),
-    // 				text: trans("Successfully submit the data"),
-    // 				type: "success"
-    // 			})
-    // 		},
-    // 		onError: errors => {
-    // 			notify({
-    // 				title: trans("Something went wrong"),
-    // 				text: trans("Failed to set location"),
-    // 				type: "error"
-    // 			})
-    // 		},
-    // 		onFinish: () => {
-    // 			isLoadingSubmit.value = false
-    // 		},
-    // 	}
-    // )
+
 }
 
 </script>
@@ -385,15 +311,7 @@ const onSubmitVariant = () => {
                 <FontAwesomeIcon v-else v-tooltip="trans('Platform status')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
             </div>
 
-            <!-- <div class="flex justify-center">
-				<FontAwesomeIcon
-					v-if="(item.has_valid_platform_product_id && item.exist_in_platform && item.platform_status)"
-					v-tooltip="trans('Uploaded to platform')" icon="far fa-check" class="text-green-500" fixed-width
-					aria-hidden="true"/>
-				<ConditionIcon v-else-if="get(progressToUploadToShopify, [item.id], null)"
-					:state="get(progressToUploadToShopify, [item.id], undefined)"
-					class="text-xl mx-auto"/>
-            </div> -->
+
         </template>
 
         <!-- Column: Actions (connect) -->
@@ -579,16 +497,7 @@ const onSubmitVariant = () => {
                         </div>
                     </div>
 
-                    <!-- Pagination -->
-                    <!-- <Pagination
-                        v-if="portfoliosMeta"
-                        :on-click="getPortfoliosList"
-                        :has-data="true"
-                        :meta="portfoliosMeta"
-                        xexportLinks="queryBuilderProps.exportLinks"
-                        :per-page-options="[]"
-                        xon-per-page-change="onPerPageChange"
-                    /> -->
+
 
                     <div class="mt-4">
                         <Button
