@@ -74,7 +74,8 @@ class FulfillOrderToShopify extends OrgAction
 
         $validShopifyShippingCompanies=['Yodel','DPD UK','Parcelforce'];
 
-        if(!in_array($shipperCompanyName,$validShopifyShippingCompanies)){
+
+        if(!in_array($shipperCompanyName,$validShopifyShippingCompanies) && !empty($urls)){
             $trackingInfo['urls']=$urls;
         }
 

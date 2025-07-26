@@ -75,8 +75,7 @@ const isModalShippingAddress = ref(false)
             <div class="flex-none">
                 <FontAwesomeIcon icon='fal fa-user' class='text-gray-400' fixed-width aria-hidden='true' />
             </div>
-            <dd class="text-sm text-gray-500">#{{ summary?.customer_client.reference ?? summary?.customer_client?.name
-            }}</dd>
+            <dd class="text-sm text-gray-500">#{{ summary?.customer_client.reference ?? summary?.customer_client?.name }}</dd>
             </Link>
 
             <!-- Field: Contact name -->
@@ -176,7 +175,7 @@ const isModalShippingAddress = ref(false)
                     <!-- Shipments -->
                     <div v-if="note?.shipments?.length > 0" class="mt-1 text-xs text-gray-600">
                         <p class="text-gray-700 font-medium mb-1">{{trans('Shipments')}}:</p>
-                        <ul class="list-disc pl-4 space-y-1">
+                        <ul class="pl-4 space-y-1">
                             <li v-for="(shipment, i) in note.shipments" :key="i">
                                 <template v-if="shipment?.formatted_tracking_urls?.length">
                                     <div v-for="trackingData in shipment.formatted_tracking_urls">
@@ -190,11 +189,14 @@ const isModalShippingAddress = ref(false)
                                     </div>
                                 </template>
                                 <template v-else>
-                                    <div class="text-gray-400 italic">
-                                        {{ trans('No Tracking available') }}
+                                    <div class="text-gray-400 ">
+                                        {{shipment.name}}: {{shipment.tracking}}
                                     </div>
+                                    <a class="secondaryLink" target="_parent" v-if="shipment.shipper_url" :href="shipment.shipper_url">{{trans('Tracking url')}}  </a>
+
                                 </template>
                             </li>
+
                         </ul>
                     </div>
 
