@@ -16,7 +16,7 @@ use App\Models\Catalogue\ProductCategory;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateMultipleFamiliesDepartment extends OrgAction
+class AttachFamiliesToDepartment extends OrgAction
 {
     use WithActionUpdate;
     use WithCatalogueEditAuthorisation;
@@ -48,6 +48,13 @@ class UpdateMultipleFamiliesDepartment extends OrgAction
     public function asController(ProductCategory $department, ActionRequest $request): void
     {
         $this->initialisationFromShop($department->shop, $request);
+        $this->handle($department, $this->validatedData);
+    }
+
+    public function action(ProductCategory $department, array $familiesToAttach): void
+    {
+        $this->asAction = true;
+        $this->initialisationFromShop($department->shop, $familiesToAttach);
         $this->handle($department, $this->validatedData);
     }
 }
