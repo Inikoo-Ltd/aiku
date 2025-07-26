@@ -9,7 +9,6 @@
 namespace App\Actions\Dropshipping\Shopify\Fulfilment\Callback;
 
 use App\Actions\Dropshipping\Shopify\WithShopifyApi;
-use App\Actions\Ordering\Order\CancelOrder;
 use App\Actions\OrgAction;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Console\Command;
@@ -27,19 +26,15 @@ class RetrieveShopifyCancelledOrders extends OrgAction
         return $this->retrieveOrders($shopifyUser, 'CANCELLATION_REQUEST');
     }
 
-    /**
-     * Process the fulfillment orders
-     */
+
     protected function processFulfillmentOrders(ShopifyUser $shopifyUser, array $fulfillmentOrders): array
     {
         foreach ($fulfillmentOrders as $edge) {
             $fulfillmentOrder = $edge['node'];
-
-            // TODO Put cancel order here which found by $fulfillmentOrder['id']
-            // CancelOrder::run();
+            RejectShopifyCancellationRequest::run($shopifyUser, $fulfillmentOrder['id'], __("Sorry order can not be cancelled"));
         }
 
-        return [true, 'Retrieved accepted fulfillment orders'];
+        return [true, 'Cancellations processed'];
     }
 
     public string $commandSignature = 'shopify:retrieve_cancelled_orders {customerSalesChannel}';
