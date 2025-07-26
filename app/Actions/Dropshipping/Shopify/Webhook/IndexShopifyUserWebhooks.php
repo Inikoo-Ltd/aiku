@@ -84,7 +84,7 @@ class IndexShopifyUserWebhooks
 
     public function getCommandSignature(): string
     {
-        return 'shopify:index-webhooks {customerSalesChannel}';
+        return 'shopify:webhooks {customerSalesChannel}';
     }
 
 

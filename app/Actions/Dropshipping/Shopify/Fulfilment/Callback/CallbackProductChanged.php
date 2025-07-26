@@ -38,7 +38,7 @@ class CallbackProductChanged extends OrgAction
     public function rules(): array
     {
         return [
-            'id' => ['required', 'string'],
+            'id' => ['required','numeric'],
         ];
     }
 
