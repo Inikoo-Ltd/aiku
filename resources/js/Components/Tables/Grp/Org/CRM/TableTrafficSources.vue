@@ -20,9 +20,9 @@ const props = defineProps<{
 
 function trafficRoute(trafficSource: { slug: string }) {
   switch (route().current()) {
-    case "grp.org.shops.show.crm.traffic_sources.index":
+    case "grp.org.shops.show.marketing.traffic_sources.index":
       return route(
-        "grp.org.shops.show.crm.traffic_sources.show",
+        "grp.org.shops.show.marketing.traffic_sources.show",
         [
           (route().params as RouteParams).organisation,
           (route().params as RouteParams).shop,
