@@ -15,6 +15,7 @@ use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\StorePortfolio;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
+use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolio;
 use App\Actions\Helpers\Images\GetPictureSources;
 use App\Actions\Helpers\Media\SaveModelImages;
 use App\Actions\SysAdmin\Group\CreateAccessToken;
@@ -42,6 +43,8 @@ beforeAll(function () {
 
 beforeEach(function () {
     \Tests\Helpers\setupDropshippingTest($this);
+
+
 });
 
 test('test platform were seeded', function () {
@@ -96,6 +99,9 @@ test('update customer client', function ($customerClient) {
 })->depends('create customer client');
 
 test('add product to customer portfolio', function () {
+
+
+
     $customerSalesChannel = $this->customer->customerSalesChannels()->first();
     expect($customerSalesChannel)->toBeInstanceOf(CustomerSalesChannel::class);
     $dropshippingCustomerPortfolio = StorePortfolio::make()->action(

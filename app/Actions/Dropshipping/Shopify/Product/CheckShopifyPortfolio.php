@@ -19,10 +19,7 @@ class CheckShopifyPortfolio
     public function handle(Portfolio $portfolio): Portfolio
     {
 
-
-
         $shopifyUser = $portfolio->customerSalesChannel->user;
-
 
         $hasValidProductId      = CheckIfShopifyProductIDIsValid::run($portfolio->platform_product_id);
         $productExistsInShopify = false;
