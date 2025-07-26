@@ -5,6 +5,7 @@ namespace App\Console;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\Dropshipping\Ebay\Orders\FetchEbayOrders;
 use App\Actions\Dropshipping\Ebay\Orders\FetchWooOrders;
+use App\Actions\Dropshipping\Shopify\CheckShopifyChannel;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomersHydrateStatus;
 use App\Actions\Fulfilment\UpdateCurrentRecurringBillsTemporalAggregates;
 use App\Actions\Helpers\Intervals\ResetDailyIntervals;
@@ -82,6 +83,10 @@ class Kernel extends ConsoleKernel
 
         $schedule->job(FetchWooOrders::makeJob())->cron('2,12,22,32,42,52 * * * *')->sentryMonitor(
             monitorSlug: 'FetchWooOrders',
+        );
+
+        $schedule->job(CheckShopifyChannel::makeJob())->hourly()->sentryMonitor(
+            monitorSlug: 'CheckShopifyChannel',
         );
 
         (new Schedule())->command('hydrate -s ful')->everyFourHours('23:00')->timezone('UTC');

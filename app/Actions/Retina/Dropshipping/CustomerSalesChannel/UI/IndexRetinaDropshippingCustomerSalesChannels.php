@@ -55,6 +55,9 @@ class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
                 'customer_sales_channels.platform_id',
                 'customer_sales_channels.name',
                 'customer_sales_channels.connection_status',
+                'customer_sales_channels.can_connect_to_platform',
+                'customer_sales_channels.exist_in_platform',
+                'customer_sales_channels.platform_status',
                 'platforms.name as platform_name',
                 'platforms.code as platform_code',
             ])

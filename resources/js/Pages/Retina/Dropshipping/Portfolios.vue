@@ -5,7 +5,7 @@ import {capitalize} from "@/Composables/capitalize";
 import {computed, reactive, ref} from "vue";
 import {PageHeading as PageHeadingTypes} from "@/types/PageHeading";
 import {Tabs as TSTabs} from "@/types/Tabs";
-import RetinaTablePortfolios from "@/Components/Tables/Retina/RetinaTablePortfolios.vue";
+import RetinaTablePortfoliosManual from "@/Components/Tables/Retina/RetinaTablePortfoliosManual.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import {notify} from "@kyvg/vue3-notification";
 import {trans} from "laravel-vue-i18n";
@@ -32,6 +32,8 @@ import {
 import axios from "axios"
 import {Table as TableTS} from "@/types/Table"
 import { CustomerSalesChannel } from "@/types/customer-sales-channel"
+import RetinaTablePortfoliosPlatform from "@/Components/Tables/Retina/RetinaTablePortfoliosPlatform.vue"
+import RetinaTablePortfoliosShopify from "@/Components/Tables/Retina/RetinaTablePortfoliosShopify.vue"
 
 library.add(faFileExcel, faBracketsCurly, faSyncAlt, faPawClaws, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
 
@@ -421,14 +423,14 @@ const progressToUploadToShopify = ref<{ [key: number]: string }>({})
                     type="tertiary"
                 />
 
-                <Button
-                    @click="() => bulkUpload()"
-                    v-tooltip="trans('This will create new products (if not exist in :platform) and will sync the products if exist in :platform', { platform: props.platform_data.name })"
-                    icon="fal fa-paw-claws"
-                    :label="trans('Brave mode')"
-                    type="tertiary"
-                    :loading="isLoadingBulkDeleteUpload"
-                />
+<!--                <Button-->
+<!--                    @click="() => bulkUpload()"-->
+<!--                    v-tooltip="trans('This will create new products (if not exist in :platform) or will sync the products if exist in :platform', { platform: props.platform_data.name })"-->
+<!--                    icon="fal fa-paw-claws"-->
+<!--                    :label="trans('Brave mode')"-->
+<!--                    type="tertiary"-->
+<!--                    :loading="isLoadingBulkDeleteUpload"-->
+<!--                />-->
             </div>
         </div>
     </Message>
@@ -464,9 +466,8 @@ const progressToUploadToShopify = ref<{ [key: number]: string }>({})
     </div>
 
     <div v-else class="overflow-x-auto">
-
-
-        <RetinaTablePortfolios
+        <RetinaTablePortfoliosManual
+            v-if="isPlatformManual"
             :data="props.products"
             :tab="'products'"
             :selectedData
@@ -475,6 +476,29 @@ const progressToUploadToShopify = ref<{ [key: number]: string }>({})
             :is_platform_connected
             :progressToUploadToShopify
             :isPlatformManual
+        />
+
+        <RetinaTablePortfoliosShopify
+            v-else-if="platform_data.type === 'shopify'"
+            :data="props.products"
+            :tab="'products'"
+            :selectedData
+            :platform_data
+            :platform_user_id
+            :is_platform_connected
+            :progressToUploadToShopify
+            :customerSalesChannel="customer_sales_channel"
+        />
+
+        <RetinaTablePortfoliosPlatform
+            v-else
+            :data="props.products"
+            :tab="'products'"
+            :selectedData
+            :platform_data
+            :platform_user_id
+            :is_platform_connected
+            :progressToUploadToShopify
         />
     </div>
 

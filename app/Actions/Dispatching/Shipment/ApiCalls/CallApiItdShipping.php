@@ -128,6 +128,9 @@ class CallApiItdShipping extends OrgAction
 
 
         $apiResponse = Http::withHeaders($headers)->withToken($this->getAccessToken($shipper))->post($this->getBaseUrl() . $url, $params)->json();
+
+
+
         if (Arr::get($apiResponse, 'data.status') == 'ERROR') {
             throw ValidationException::withMessages(['message' => Arr::get($apiResponse, 'data.errors.0') . ' from ITD Shipping, please try again later']);
         }
@@ -162,8 +165,14 @@ class CallApiItdShipping extends OrgAction
             $status = 'fail';
 
 
+
             $errors            = Arr::get($apiResponse, 'errors.data.0');
             $consignmentErrors = Arr::get($errors, 'errors.consignment', []);
+
+
+
+
+
             foreach ($consignmentErrors as $key => $errorArr) {
                 $code = Arr::get($errorArr, '0.code');
                 if ($code) {
@@ -193,6 +202,50 @@ class CallApiItdShipping extends OrgAction
                 }
                 $errorData[$key] = strtolower(rtrim(implode(' ', $value), ','));
             }
+
+            if(empty($errorData)){
+                $statusCode=Arr::get($apiResponse, 'statusCode');
+
+                if($statusCode==400){
+                    $errorData['address'] = 'Invalid address';
+
+
+                    $missing=false;
+                    $missingMsg='';
+
+
+                    $city=Arr::get($apiResponse, 'errors.data.0.toAddressCity');
+                    if(!$city){
+                        $missing=true;
+                        $missingMsg.='city, ';
+                    }
+
+                    $postalCode=Arr::get($apiResponse, 'errors.data.0.toAddressZip');
+                    if(!$postalCode){
+                        $missing=true;
+                        $missingMsg.='postal code, ';
+                    }
+
+
+                    $street=Arr::get($apiResponse, 'errors.data.0.toAddressStreet1');
+                    if(!$street){
+                        $missing=true;
+                        $missingMsg.='street, ';
+                    }
+
+
+                    if($missing){
+                        $errorData['address'].= ': Missing '.rtrim($missingMsg, ', ');
+                    }
+
+
+                }
+
+
+            }
+
+
+
             $errorData['message'] = $errorData['address'] ?? $errorData['others'] ?? '';
         }
 

@@ -10,11 +10,13 @@ namespace App\Actions\Dropshipping\Portfolio;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePortfolios;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydratePortfolios;
+use App\Actions\Dropshipping\Shopify\Product\DeactivateShopifyProduct;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePortfolios;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePortfolios;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\Portfolio;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
@@ -32,6 +34,7 @@ class UpdatePortfolio extends OrgAction
 
     public function handle(Portfolio $portfolio, array $modelData): Portfolio
     {
+
         if (Arr::exists($modelData, 'customer_product_name') && !Arr::exists($modelData, 'platform_handle')) {
             data_set(
                 $modelData,
@@ -57,6 +60,11 @@ class UpdatePortfolio extends OrgAction
         $portfolio = $this->update($portfolio, $modelData, ['data']);
 
         if ($portfolio->wasChanged(['status'])) {
+
+            if (!$portfolio->status && $portfolio->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
+                DeactivateShopifyProduct::run($portfolio);
+            }
+
             GroupHydratePortfolios::dispatch($portfolio->group)->delay($this->hydratorsDelay);
             OrganisationHydratePortfolios::dispatch($portfolio->organisation)->delay($this->hydratorsDelay);
             ShopHydratePortfolios::dispatch($portfolio->shop)->delay($this->hydratorsDelay);
@@ -109,7 +117,8 @@ class UpdatePortfolio extends OrgAction
             'platform_product_id'   => 'sometimes|string',
             'platform_handle'       => 'sometimes|string',
             'errors_response'       => 'sometimes|array',
-            'options'               => 'sometimes|string'
+            'options'               => 'sometimes|string',
+            'data'                  => 'sometimes|array',
         ];
 
         if (!$this->strict) {

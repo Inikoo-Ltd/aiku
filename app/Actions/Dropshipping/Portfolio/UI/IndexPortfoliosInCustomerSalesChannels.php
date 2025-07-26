@@ -50,6 +50,7 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
 
         $query = QueryBuilder::for(Portfolio::class);
         $query->where('portfolios.customer_sales_channel_id', $customerSalesChannel->id);
+        $query->leftJoin('customer_sales_channels', 'customer_sales_channels.id', 'portfolios.customer_sales_channel_id');
 
         $query->leftJoin('customers', 'customers.id', 'portfolios.customer_id');
         $query->leftJoin('platforms', 'platforms.id', 'portfolios.platform_id');
@@ -66,6 +67,11 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                 'portfolios.platform_product_id',
                 'portfolios.item_id',
                 'portfolios.customer_sales_channel_id',
+                'platform_possible_matches',
+                'portfolios.exist_in_platform',
+                'portfolios.platform_status',
+                'portfolios.has_valid_platform_product_id',
+                'customer_sales_channels.platform_status as customer_sales_channel_platform_status',
             ])
             ->defaultSort('portfolios.reference')
             ->allowedSorts(['reference', 'created_at'])
@@ -88,19 +94,46 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                 'pageHead'    => [
                     ...$this->getCustomerSalesChannelSubNavigationHead(
                         $this->customerSalesChannel,
-                        $request,
                         __('Portfolio'),
                         [
                             'icon'  => ['fal', 'fa-bookmark'],
                             'title' => __('portfolios')
                         ]
                     ),
+                    'actions' => [
+                        [
+                            'type' => 'button',
+                            'style' => 'create',
+                            'label' => __('Match With Existing Product'),
+                            'route' => [
+                                'method' => 'post',
+                                'name' => 'grp.models.shopify.batch_match',
+                                'parameters' => [
+                                    'customerSalesChannel' =>  $this->customerSalesChannel->id,
+                                ]
+                            ]
+                        ],
+                        [
+                            'type' => 'button',
+                            'style' => 'create',
+                            'label' => __('Create New Product'),
+                            'route' => [
+                                'name' => 'grp.models.shopify.batch_upload',
+                                'parameters' => [
+                                    'customerSalesChannel' =>  $this->customerSalesChannel->id,
+                                ],
+                                'method' => 'post'
+                            ]
+                        ]
+                    ]
 
                 ],
 
                 'is_show_add_products_modal' => $this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL,
                 'data'                       => PortfoliosResource::collection($portfolios),
                 'customer'                   => $this->customerSalesChannel->customer,
+                'platform'                   => $this->customerSalesChannel->platform,
+                'customerSalesChannel'       => $this->customerSalesChannel,
                 'customerSalesChannelId'     => $this->customerSalesChannel->id,
             ]
         )->table($this->tableStructure());
@@ -109,6 +142,7 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
 
     public function tableStructure(array $modelOperations = null, $prefix = null): Closure
     {
+
         return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
                 $table
@@ -120,11 +154,11 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                 ->withGlobalSearch()
                 ->column(key: 'item_code', label: __('product'), canBeHidden: false, searchable: true)
                 ->column(key: 'item_name', label: __('product name'), canBeHidden: false, searchable: true)
-                ->column(key: 'reference', label: __('customer reference'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'item_type', label: __('type'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'platform_product_id', label: __('Status'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'created_at', label: __('created at'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'action', label: __(' '), canBeHidden: false);
+                ->column(key: 'platform_status', label: __('Status'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'matches', label: __('matches'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'actions', label: __('actions'), canBeHidden: false, sortable: true, searchable: true);
+
+
         };
     }
 

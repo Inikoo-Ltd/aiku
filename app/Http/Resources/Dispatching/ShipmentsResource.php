@@ -29,10 +29,13 @@ class ShipmentsResource extends JsonResource
 
         $formattedTrackingURls = [];
         foreach ($shipment->trackings as $key => $tracking) {
-            $formattedTrackingURls[] = [
-                'url'      => Arr::get($shipment->tracking_urls, $key, __('tracking')),
-                'tracking' => $tracking
-            ];
+            $url= Arr::get($shipment->tracking_urls, $key);
+            if($url){
+                $formattedTrackingURls[] = [
+                    'url'      => Arr::get($shipment->tracking_urls, $key),
+                    'tracking' => $tracking
+                ];
+            }
         }
 
         return [

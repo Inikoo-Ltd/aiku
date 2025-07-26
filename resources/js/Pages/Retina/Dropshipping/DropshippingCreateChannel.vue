@@ -289,7 +289,7 @@ const isModalEbayDuplicate = ref(false)
                     class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <img src="https://aw.aurora.systems/art/aurora_log_v2_orange.png" alt="" class="h-12">
                     <div class="flex flex-col">
-                        <div class="font-semibold">{{ trans("Web") }}</div>
+                        <div class="font-semibold">{{ trans("Web") }}/API</div>
                         <div class="text-xs text-gray-500">{{ total_channels?.manual }} {{ trans("Channels") }}</div>
                     </div>
                 </div>
@@ -306,18 +306,16 @@ const isModalEbayDuplicate = ref(false)
             <!-- Section: Shopify -->
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                    class="mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <div v-html="ChannelLogo('shopify')" class="h-12"></div>
                     <div class="flex flex-col">
                         <div class="font-semibold">Shopify</div>
                         <div class="text-xs text-gray-500">{{ total_channels?.shopify }} {{ trans("Channels") }}</div>
                     </div>
                 </div>
-
                 <!-- Button: Connect -->
                 <div class="relative w-full">
-<!--                    <Button @click="() => isModalOpen = 'shopify'" label="Connect" type="primary" full/>-->
-                    <Button :label="trans('Coming soon')" type="tertiary" disabled full/>
+                    <Button @click="() => isModalOpen = 'shopify'" label="Connect" type="primary" full/>
                 </div>
             </div>
 
@@ -393,7 +391,7 @@ const isModalEbayDuplicate = ref(false)
                 </div>
 
                 <div class="w-full flex justify-end">
-                    
+
                     <Button
                         v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
                         :label="trans('Connect')"

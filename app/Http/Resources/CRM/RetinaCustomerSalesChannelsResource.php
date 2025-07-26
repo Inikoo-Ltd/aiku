@@ -39,6 +39,7 @@ class RetinaCustomerSalesChannelsResource extends JsonResource
             'reference'               => $this->reference,
             'name'                    => $this->name ?? $this->reference,
             'number_portfolios'       => $this->number_portfolios,
+            'number_portfolio_broken' => $this->number_portfolio_broken,
             'number_customer_clients' => $this->number_customer_clients,
             'number_orders'           => $this->number_orders,
             'type'                    => $this->type,
@@ -49,6 +50,9 @@ class RetinaCustomerSalesChannelsResource extends JsonResource
             'platform_image'          => $this->getPlatformLogo($this->platform_code),
             'connection'              => $this->connection_status,
 
+            'can_connect_to_platform' => $this->can_connect_to_platform,
+            'exist_in_platform' => $this->exist_in_platform,
+            'platform_status' => $this->platform_status,
 
             'delete_route' => [
                 'method'     => 'delete',

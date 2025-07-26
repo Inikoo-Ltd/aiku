@@ -122,6 +122,9 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
             'platform'               => $customerSalesChannel->platform,
             'platform_logo'          => $this->getPlatformLogo($customerSalesChannel->platform->code),
             'platformData'           => $this->getPlatformData($customerSalesChannel),
+            'can_connect_to_platform' => $customerSalesChannel->can_connect_to_platform,
+            'exist_in_platform' => $customerSalesChannel->exist_in_platform,
+            'platform_status' => $customerSalesChannel->platform_status,
             'step'  => $step
         ]);
     }

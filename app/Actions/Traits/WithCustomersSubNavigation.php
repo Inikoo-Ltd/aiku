@@ -9,6 +9,7 @@
 
 namespace App\Actions\Traits;
 
+use App\Models\Dropshipping\Platform;
 use Lorisleiva\Actions\ActionRequest;
 
 trait WithCustomersSubNavigation
@@ -81,6 +82,18 @@ trait WithCustomersSubNavigation
             ]
         ];
 
+        $meta[] = [
+            'route'     => [
+                'name'       => 'grp.org.shops.show.crm.platforms.index',
+                'parameters' => $request->route()->originalParameters()
+            ],
+            'number'   => Platform::all()->count(), // Fix Later with hydrators
+            'label'    => __('Platforms'),
+            'leftIcon' => [
+                'icon'    => 'fal fa-store',
+                'tooltip' => __('platforms')
+            ]
+        ];
 
         $meta[] = [
             'route'     => [

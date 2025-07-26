@@ -45,6 +45,7 @@ class CustomerSalesChannelsResourcePro extends JsonResource
             'reference'                           => $this->reference,
             'name'                                => $this->name,
             'number_portfolios'                   => $this->number_portfolios,
+            'number_portfolio_broken'             => $this->number_portfolio_broken,
             'number_clients'                      => $this->number_customer_clients,
             'number_customer_clients'             => $this->number_customer_clients,
             'number_orders'                       => $this->number_orders,
@@ -55,6 +56,11 @@ class CustomerSalesChannelsResourcePro extends JsonResource
             'platform_name'                       => $customerSalesChannels->platform->name,
             'platform_image'                      => $this->getPlatformLogo($customerSalesChannels->platform->code),
             'connection'                          => $this->getStatus($customerSalesChannels),
+
+            'can_connect_to_platform' => $customerSalesChannels->can_connect_to_platform,
+            'exist_in_platform' => $customerSalesChannels->exist_in_platform,
+            'platform_status' => $customerSalesChannels->platform_status,
+
             'update_customer_sales_channel_route' => [
                 'method'     => 'patch',
                 'name'       => 'retina.models.customer_sales_channel.update',
