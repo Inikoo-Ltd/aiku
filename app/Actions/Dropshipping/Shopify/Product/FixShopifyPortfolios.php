@@ -245,8 +245,8 @@ class FixShopifyPortfolios
         $fixLevel = (int)$command->option('fix_level');
 
         // Validate fix_level
-        if ($fixLevel < 0 || $fixLevel > 3) {
-            $command->error("Invalid fix level: $fixLevel. Fix level must be 1, 2, 3 or 4.");
+        if ($fixLevel < 0 || $fixLevel > 5) {
+            $command->error("Invalid fix level: $fixLevel. Fix level must be 1, 2, 3, 4 or 5.");
 
             return;
         }
