@@ -26,7 +26,6 @@ class FixShopifyPortfolios
 
     public function handle(Shop|CustomerSalesChannel $parent, int $fixLevel = null): array
     {
-
         $shopifyPlatform = Platform::where('type', PlatformTypeEnum::SHOPIFY)->first();
 
         $query = DB::table('portfolios')->select('id')->where('platform_id', $shopifyPlatform->id);
@@ -40,23 +39,22 @@ class FixShopifyPortfolios
         $portfoliosSynchronisation = [];
         foreach ($query->orderBy('status')->get() as $portfolioData) {
             $portfolio = Portfolio::find($portfolioData->id);
-            if(!$portfolio){
+            if (!$portfolio) {
                 continue;
             }
 
-            if(!$portfolio->customerSalesChannel){
+            if (!$portfolio->customerSalesChannel) {
                 continue;
             }
 
             /** @var ShopifyUser $shopifyUser */
             $shopifyUser = $portfolio->customerSalesChannel->user;
-            if(!$shopifyUser){
+            if (!$shopifyUser) {
                 continue;
             }
 
 
             $portfolio = CheckShopifyPortfolio::run($portfolio);
-
 
 
             /** @var Product $product */
@@ -79,11 +77,13 @@ class FixShopifyPortfolios
                 if ($fixLevel == 1) {
                     list($hasValidProductId, $productExistsInShopify, $hasVariantAtLocation) = $this->fixLevel1($portfolio, $shopifyUser, $productExistsInShopify);
                 } elseif ($fixLevel == 2) {
-                    list($hasValidProductId, $productExistsInShopify, $hasVariantAtLocation) = $this->fixLevel2($portfolio, $shopifyUser, $productExistsInShopify, $numberMatches);
+                    list($hasValidProductId, $productExistsInShopify, $hasVariantAtLocation) = $this->fixLevel2($portfolio, $shopifyUser, $productExistsInShopify, $numberMatches, $matches);
                 } elseif ($fixLevel == 3) {
                     list($hasValidProductId, $productExistsInShopify, $hasVariantAtLocation) = $this->fixLevel3($portfolio, $shopifyUser, $productExistsInShopify, $numberMatches, $matches);
                 } elseif ($fixLevel == 4) {
                     list($hasValidProductId, $productExistsInShopify, $hasVariantAtLocation) = $this->fixLevel4($portfolio, $shopifyUser, $productExistsInShopify, $numberMatches, $matches);
+                } elseif ($fixLevel == 5) {
+                    list($hasValidProductId, $productExistsInShopify, $hasVariantAtLocation) = $this->fixLevel5($portfolio, $shopifyUser, $productExistsInShopify, $numberMatches, $matches);
                 }
             }
 
@@ -118,9 +118,37 @@ class FixShopifyPortfolios
         ];
     }
 
-    public function fixLevel2(Portfolio $portfolio, ShopifyUser $shopifyUser, bool $productExistsInShopify, int $numberMatches): array
+    public function fixLevel2(Portfolio $portfolio, ShopifyUser $shopifyUser, bool $productExistsInShopify, int $numberMatches, array $matches): array
     {
         list($hasValidProductId, $productExistsInShopify, $hasVariantAtLocation) = $this->fixLevel1($portfolio, $shopifyUser, $productExistsInShopify);
+
+        if ($hasVariantAtLocation) {
+            return [$hasValidProductId, $productExistsInShopify, $hasVariantAtLocation];
+        }
+
+        if (!$productExistsInShopify && $numberMatches == 1) {
+            $firstMatch       = Arr::first($matches);
+            $shopifyProductId = Arr::get($firstMatch, 'id');
+
+            $portfolio->update([
+                'platform_product_id' => $shopifyProductId,
+            ]);
+
+            $portfolio->refresh();
+            StoreShopifyProductVariant::run($portfolio);
+        }
+
+
+        return [
+            CheckIfShopifyProductIDIsValid::run($portfolio->platform_product_id),
+            CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id),
+            CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id)
+        ];
+    }
+
+    public function fixLevel3(Portfolio $portfolio, ShopifyUser $shopifyUser, bool $productExistsInShopify, int $numberMatches, array $matches): array
+    {
+        list($hasValidProductId, $productExistsInShopify, $hasVariantAtLocation) = $this->fixLevel2($portfolio, $shopifyUser, $productExistsInShopify, $numberMatches, $matches);
 
         if ($hasVariantAtLocation) {
             return [$hasValidProductId, $productExistsInShopify, $hasVariantAtLocation];
@@ -144,9 +172,9 @@ class FixShopifyPortfolios
         ];
     }
 
-    public function fixLevel3(Portfolio $portfolio, ShopifyUser $shopifyUser, bool $productExistsInShopify, int $numberMatches, array $matches): array
+    public function fixLevel4(Portfolio $portfolio, ShopifyUser $shopifyUser, bool $productExistsInShopify, int $numberMatches, array $matches): array
     {
-        list($hasValidProductId, $productExistsInShopify, $hasVariantAtLocation) = $this->fixLevel2($portfolio, $shopifyUser, $productExistsInShopify, $numberMatches);
+        list($hasValidProductId, $productExistsInShopify, $hasVariantAtLocation) = $this->fixLevel3($portfolio, $shopifyUser, $productExistsInShopify, $numberMatches, $matches);
 
         if ($hasVariantAtLocation) {
             return [$hasValidProductId, $productExistsInShopify, $hasVariantAtLocation];
@@ -174,12 +202,12 @@ class FixShopifyPortfolios
         ];
     }
 
-    public function fixLevel4(Portfolio $portfolio, ShopifyUser $shopifyUser, bool $productExistsInShopify, int $numberMatches, array $matches): array
+    public function fixLevel5(Portfolio $portfolio, ShopifyUser $shopifyUser, bool $productExistsInShopify, int $numberMatches, array $matches): array
     {
         list(
             $hasValidProductId, $productExistsInShopify, $hasVariantAtLocation
             ) =
-            $this->fixLevel3($portfolio, $shopifyUser, $productExistsInShopify, $numberMatches, $matches);
+            $this->fixLevel4($portfolio, $shopifyUser, $productExistsInShopify, $numberMatches, $matches);
 
         if ($hasVariantAtLocation) {
             return [$hasValidProductId, $productExistsInShopify, $hasVariantAtLocation];
