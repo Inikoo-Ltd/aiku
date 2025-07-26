@@ -30,7 +30,7 @@ import {
     faExclamationCircle,
     faClone,
     faLink, faScrewdriver, faTools,
-    faRecycle,faHandPointer
+    faRecycle,faHandPointer,faHandshakeSlash,faHandshake
 } from "@fal"
 import {faStar, faFilter} from "@fas"
 import {faExclamationTriangle as fadExclamationTriangle} from "@fad"
@@ -43,7 +43,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import axios from "axios"
 
-library.add(faHandPointer,fadExclamationTriangle, faSyncAlt, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, faClone, faLink, faScrewdriver, faTools)
+library.add(faHandshake,faHandshakeSlash,faHandPointer,fadExclamationTriangle, faSyncAlt, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, faClone, faLink, faScrewdriver, faTools)
 
 interface PlatformData {
     id: number
@@ -379,8 +379,8 @@ const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
 <!--                <FontAwesomeIcon v-else v-tooltip="trans('Has valid platform product id')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />-->
 <!--                <FontAwesomeIcon v-if="item.exist_in_platform" v-tooltip="trans('Exist in platform')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />-->
 <!--                <FontAwesomeIcon v-else v-tooltip="trans('Exist in platform')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />-->
-                <FontAwesomeIcon v-if="item.platform_status" v-tooltip="trans('Product connected to shopify')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-                <FontAwesomeIcon v-else v-tooltip="trans('Not connected')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-if="item.platform_status" v-tooltip="trans('Product connected to shopify')" icon="fal fa-handshake" class="text-green-500" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-else v-tooltip="trans('Not connected')" icon="fal fa-handshake-slash" class="text-red-500" fixed-width aria-hidden="true" />
             </div>
 
             <!-- <div class="flex justify-center">
@@ -401,8 +401,8 @@ const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
 
             <template v-if="!item.platform_status">
 
-                <div class="border border-gray-300 rounded p-1">
-                <div v-if="item.platform_possible_matches?.number_matches"  class="flex gap-x-2 items-center">
+                <div v-if="item.platform_possible_matches?.number_matches"  class="border border-gray-300 rounded p-1">
+                <div  class="flex gap-x-2 items-center border border-gray-300 rounded p-1">
                     <div v-if="item.platform_possible_matches?.raw_data?.[0].images?.[0]?.src"  class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow border border-gray-300 rounded">
                         <img :src="item.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src" />
                     </div>
@@ -434,9 +434,17 @@ const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
                 </div>
 
                 <Button
-                    xv-if="portfolio.platform_possible_matches?.number_matches"
+                    v-if="item.platform_possible_matches?.number_matches"
                     @click="() => (fetchRoute(), isOpenModal = true, selectedPortfolio = item)"
                     :label="trans('Choose another product from your shop')"
+                    :capitalize="false"
+                    size="xxs"
+                    type="tertiary"
+                />
+                <Button
+                    v-else
+                    @click="() => (fetchRoute(), isOpenModal = true, selectedPortfolio = item)"
+                    :label="trans('Match it with an existing product in your shop')"
                     :capitalize="false"
                     size="xxs"
                     type="tertiary"

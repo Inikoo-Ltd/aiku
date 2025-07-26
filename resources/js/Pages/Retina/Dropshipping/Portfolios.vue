@@ -423,14 +423,14 @@ const progressToUploadToShopify = ref<{ [key: number]: string }>({})
                     type="tertiary"
                 />
 
-                <Button
-                    @click="() => bulkUpload()"
-                    v-tooltip="trans('This will create new products (if not exist in :platform) or will sync the products if exist in :platform', { platform: props.platform_data.name })"
-                    icon="fal fa-paw-claws"
-                    :label="trans('Brave mode')"
-                    type="tertiary"
-                    :loading="isLoadingBulkDeleteUpload"
-                />
+<!--                <Button-->
+<!--                    @click="() => bulkUpload()"-->
+<!--                    v-tooltip="trans('This will create new products (if not exist in :platform) or will sync the products if exist in :platform', { platform: props.platform_data.name })"-->
+<!--                    icon="fal fa-paw-claws"-->
+<!--                    :label="trans('Brave mode')"-->
+<!--                    type="tertiary"-->
+<!--                    :loading="isLoadingBulkDeleteUpload"-->
+<!--                />-->
             </div>
         </div>
     </Message>
