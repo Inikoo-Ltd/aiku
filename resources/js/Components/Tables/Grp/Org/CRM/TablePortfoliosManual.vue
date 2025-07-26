@@ -7,7 +7,6 @@
 <script setup lang="ts">
 import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
-import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -17,9 +16,7 @@ import { notify } from "@kyvg/vue3-notification"
 import { faTrashAlt } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Portfolio } from "@/types/portfolio"
-import { trans } from "laravel-vue-i18n"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+
 
 library.add(faTrashAlt)
 
@@ -70,7 +67,6 @@ const onDeletePortfolio = async (routeDelete: routeType, portfolioReference: str
 </script>
 
 <template>
-    <!-- <pre>{{ data.data[0] }}</pre> -->
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(item_code)="{ item: portfolio }">
             <Link :href="itemRoute(portfolio)" class="primaryLink">

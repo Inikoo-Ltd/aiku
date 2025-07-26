@@ -34,9 +34,6 @@ class UpdatePortfolio extends OrgAction
 
     public function handle(Portfolio $portfolio, array $modelData): Portfolio
     {
-        // dd($portfolio->id,'x');
-
-        //  DeactivateShopifyProduct::run($portfolio);
 
         if (Arr::exists($modelData, 'customer_product_name') && !Arr::exists($modelData, 'platform_handle')) {
             data_set(

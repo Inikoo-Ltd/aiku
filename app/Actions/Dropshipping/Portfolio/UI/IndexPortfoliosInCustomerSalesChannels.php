@@ -94,7 +94,6 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                 'pageHead'    => [
                     ...$this->getCustomerSalesChannelSubNavigationHead(
                         $this->customerSalesChannel,
-                        $request,
                         __('Portfolio'),
                         [
                             'icon'  => ['fal', 'fa-bookmark'],

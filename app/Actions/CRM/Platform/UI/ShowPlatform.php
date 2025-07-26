@@ -40,6 +40,7 @@ class ShowPlatform extends OrgAction
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request)->withTab(PlatformTabsEnum::values());
+
         return $this->handle($platform);
     }
 
@@ -54,15 +55,15 @@ class ShowPlatform extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'pageHead'    => [
-                    'title'     => $platform->name,
-                    'model'     => __('platform'),
-                    'icon'      =>
+                    'title' => $platform->name,
+                    'model' => __('platform'),
+                    'icon'  =>
                         [
                             'icon'  => ['fal', 'fa-code-branch'],
                             'title' => __('platform')
                         ]
                 ],
-                'tabs' => [
+                'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => PlatformTabsEnum::navigation()
                 ],

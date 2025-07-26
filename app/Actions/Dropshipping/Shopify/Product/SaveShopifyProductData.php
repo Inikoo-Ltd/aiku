@@ -24,14 +24,7 @@ class SaveShopifyProductData extends RetinaAction
     public string $jobQueue = 'shopify';
     public int $jobBackoff = 5;
 
-    /**
-     * Get product data from Shopify using GraphQL
-     *
-     * @param  Portfolio  $portfolio  The portfolio containing the Shopify product ID
-     * @param  array  $productData  Optional additional query parameters
-     *
-     * @return array|null The product data or null if retrieval failed
-     */
+
     public function handle(Portfolio $portfolio, array $productData = []): ?array
     {
 
@@ -258,7 +251,6 @@ class SaveShopifyProductData extends RetinaAction
     {
         $portfolio = Portfolio::find($command->argument('portfolio_id'));
 
-        // DeactivateShopifyProduct::run($portfolio);
         if (!$portfolio) {
             $command->error("Portfolio not found");
 

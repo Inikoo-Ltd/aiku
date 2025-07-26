@@ -45,7 +45,7 @@ class FixShopifyPortfolios
             $matches       = Arr::get($matchesData, 'raw_data', []);
 
 
-            if (!$hasVariantAtLocation and $portfolio->status) {
+            if (!$hasVariantAtLocation && $portfolio->status) {
                 if ($fixLevel == 1) {
                     list($hasValidProductId, $productExistsInShopify, $hasVariantAtLocation) = $this->fixLevel1($portfolio, $shopifyUser, $hasValidProductId, $productExistsInShopify, $hasVariantAtLocation, $numberMatches);
                 } elseif ($fixLevel == 2) {
