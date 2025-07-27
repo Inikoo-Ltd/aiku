@@ -15,7 +15,7 @@ use App\Actions\Dropshipping\Portfolio\UI\IndexPortfoliosInPlatform;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Enums\UI\CRM\PlatformTabsEnum;
-use App\Http\Resources\CRM\CustomerSalesChannelsResourcePro;
+use App\Http\Resources\CRM\CustomerSalesChannelsResource;
 use App\Http\Resources\CRM\PortfoliosResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\Platform;
@@ -69,8 +69,8 @@ class ShowPlatform extends OrgAction
                 ],
 
                 PlatformTabsEnum::CHANNELS->value => $this->tab == PlatformTabsEnum::CHANNELS->value ?
-                    fn () => CustomerSalesChannelsResourcePro::collection(IndexCustomerSalesChannels::run($platform, prefix: PlatformTabsEnum::CHANNELS->value))
-                    : Inertia::lazy(fn () => CustomerSalesChannelsResourcePro::collection(IndexCustomerSalesChannels::run($platform, prefix: PlatformTabsEnum::CHANNELS->value))),
+                    fn () => CustomerSalesChannelsResource::collection(IndexCustomerSalesChannels::run($platform, prefix: PlatformTabsEnum::CHANNELS->value))
+                    : Inertia::lazy(fn () => CustomerSalesChannelsResource::collection(IndexCustomerSalesChannels::run($platform, prefix: PlatformTabsEnum::CHANNELS->value))),
 
                 PlatformTabsEnum::PRODUCTS->value => $this->tab == PlatformTabsEnum::PRODUCTS->value ?
                     fn () => PortfoliosResource::collection(IndexPortfoliosInPlatform::run($platform, prefix: PlatformTabsEnum::PRODUCTS->value))

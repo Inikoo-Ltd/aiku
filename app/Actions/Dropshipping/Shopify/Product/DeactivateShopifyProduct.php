@@ -19,20 +19,32 @@ class DeactivateShopifyProduct
 
     public function handle(Portfolio $portfolio): bool
     {
-        $productID = $portfolio->platform_product_id;
-        $locationID = $portfolio->customerSalesChannel->user->shopify_location_id;
+        $customerSalesChannel = $portfolio->customerSalesChannel;
+        if (!$customerSalesChannel) {
+            return false;
+        }
+
+        /** @var ShopifyUser $shopifyUser */
+        $shopifyUser = $portfolio->customerSalesChannel->user;
+        if (!$shopifyUser instanceof ShopifyUser) {
+            return false;
+        }
+
+
+        $productID  = $portfolio->platform_product_id;
+        $locationID = $shopifyUser->shopify_location_id;
 
 
         if (!$productID || !$locationID) {
             return false;
         }
 
-        /** @var ShopifyUser $shopifyUser */
-        $shopifyUser = $portfolio->customerSalesChannel->user;
+
         $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
 
         if (!$client) {
             Sentry::captureMessage("Failed to initialize Shopify GraphQL client");
+
             return false;
         }
 
@@ -69,6 +81,7 @@ class DeactivateShopifyProduct
             if (!empty($response['errors']) || !isset($response['body'])) {
                 $errorMessage = 'Error in API response: '.json_encode($response['errors'] ?? []);
                 Sentry::captureMessage("Inventory level ID retrieval failed: ".$errorMessage);
+
                 return false;
             }
 
@@ -98,11 +111,11 @@ class DeactivateShopifyProduct
                 // Make the GraphQL request for the mutation
                 $mutationResponse = $client->request($mutation, $mutationVariables);
 
-                dd($mutationVariables, $mutationResponse);
 
                 if (!empty($mutationResponse['errors']) || !isset($mutationResponse['body'])) {
                     $errorMessage = 'Error in API response: '.json_encode($mutationResponse['errors'] ?? []);
                     Sentry::captureMessage("Inventory deactivation failed: ".$errorMessage);
+
                     return false;
                 }
 
@@ -110,9 +123,10 @@ class DeactivateShopifyProduct
 
                 // Check for user errors in the response
                 if (!empty($mutationBody['data']['inventoryDeactivate']['userErrors'])) {
-                    $errors = $mutationBody['data']['inventoryDeactivate']['userErrors'];
+                    $errors       = $mutationBody['data']['inventoryDeactivate']['userErrors'];
                     $errorMessage = 'User errors: '.json_encode($errors);
                     Sentry::captureMessage("Inventory deactivation failed: ".$errorMessage);
+
                     return false;
                 }
 
@@ -123,6 +137,7 @@ class DeactivateShopifyProduct
             return false;
         } catch (\Exception $e) {
             Sentry::captureException($e);
+
             return false;
         }
     }

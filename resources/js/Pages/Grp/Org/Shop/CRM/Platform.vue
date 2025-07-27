@@ -10,7 +10,7 @@
   import { faBox, faBullhorn, faCameraRetro, faCube, faFolder, faMoneyBillWave, faProjectDiagram, faRoad, faShoppingCart, faStream, faUsers } from '@fal'
   import PageHeading from '@/Components/Headings/PageHeading.vue'
   import { useTabChange } from "@/Composables/tab-change"
-  import { computed, defineAsyncComponent, ref } from "vue"
+  import { computed, ref } from "vue"
   import type { Component } from 'vue'
   import Tabs from "@/Components/Navigation/Tabs.vue"
 
@@ -34,8 +34,7 @@ import TableCustomerSalesChannels from '@/Components/Tables/Grp/Org/CRM/TableCus
       faRoad
   )
   
-  const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
-  
+
   const props = defineProps<{
       title: string
       pageHead: PageHeadingTypes,

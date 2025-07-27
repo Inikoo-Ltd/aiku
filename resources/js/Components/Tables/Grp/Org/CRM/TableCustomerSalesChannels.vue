@@ -107,10 +107,10 @@ function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
 function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesChannel) {
     confirm.require({
         target: event.currentTarget as HTMLElement,
-        message: 'Are you sure to delete this channel?',
+        message: trans('Are you sure to delete this channel?'),
         icon: 'pi pi-exclamation-triangle',
-        acceptLabel: 'Delete',
-        rejectLabel: 'Cancel',
+        acceptLabel: trans('Delete'),
+        rejectLabel: trans('Cancel'),
         acceptClass: 'p-button-danger',
         rejectClass: 'p-button-text',
         accept: () => {
@@ -186,14 +186,12 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
                 <ModalConfirmationDelete
                     v-if=" item.can_connect_to_platform &&  !item.platform_status"
                     :routeDelete="{
-                        name: 'grp.models.customer_sales_channel.shopify_reset',
+                        name: 'grp.models.customer_sales_channel.delete',
                         parameters: {
                             customerSalesChannel: item.id,
                         },
                         method: 'patch'
                     }"
-                    xtitle="trans('Are you sure you want to delete brand') + ` ${option.name}?`"
-                    xisFullLoading
                 >
                     <template #default="{ isOpenModal, changeModel }">
                         <Button @click.stop="changeModel" label="Reset channel" type="negative" icon="fal fa-undo-alt">
@@ -201,8 +199,8 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
                     </template>
                 </ModalConfirmationDelete>
 
-                <Button v-if="!item.can_connect_to_platform"  type="negative" label="Delete" :icon="faTrashAlt"
-                    @click="(event) => confirmDelete(event, customerSalesChannel)" />
+                <Button v-if="!item.platform_status"  type="negative" :label="trans('Delete')" :icon="faTrashAlt"
+                    @click="(event) => confirmDelete(event, item)" />
             </div>
         </template>
     </Table>
