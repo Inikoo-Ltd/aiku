@@ -119,6 +119,7 @@ class UpdatePortfolio extends OrgAction
             'errors_response'       => 'sometimes|array',
             'options'               => 'sometimes|string',
             'data'                  => 'sometimes|array',
+            'sku'                   => 'sometimes',
         ];
 
         if (!$this->strict) {

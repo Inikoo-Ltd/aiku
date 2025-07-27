@@ -15,6 +15,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\Portfolio;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Sentry;
 
 class SaveShopifyProductData extends RetinaAction
@@ -143,7 +144,6 @@ class SaveShopifyProductData extends RetinaAction
             $response = $client->request($query, $variables);
 
 
-
             if (!empty($response['errors']) || !isset($response['body'])) {
                 $errorMessage = 'Error in API response: '.json_encode($response['errors'] ?? []);
                 Sentry::captureMessage("Product data retrieval failed: ".$errorMessage);
@@ -165,13 +165,21 @@ class SaveShopifyProductData extends RetinaAction
             }
 
 
+            $sku=Arr::get($productData, 'variants.edges.0.node.sku');
+
+
 
             $data = $portfolio->data;
             data_set($data, 'shopify_product', $productData);
 
-            UpdatePortfolio::run($portfolio, [
+            $dataToUpdate=[
                 'data' => $data
-            ]);
+            ];
+            if($sku){
+                data_set($dataToUpdate, 'sku', $sku);
+            }
+
+            UpdatePortfolio::run($portfolio,  $dataToUpdate);
 
 
             // Format the response to match the expected structure
