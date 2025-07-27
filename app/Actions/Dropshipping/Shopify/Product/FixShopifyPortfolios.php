@@ -28,7 +28,7 @@ class FixShopifyPortfolios
     {
         $shopifyPlatform = Platform::where('type', PlatformTypeEnum::SHOPIFY)->first();
 
-        $query = DB::table('portfolios')->select('id')->where('platform_id', $shopifyPlatform->id)->where('portfolios.platform_status', false);
+        $query = DB::table('portfolios')->select('id')->where('platform_id', $shopifyPlatform->id);
 
         if ($parent instanceof Shop) {
             $query->where('shop_id', $parent->id);
@@ -47,7 +47,11 @@ class FixShopifyPortfolios
                 continue;
             }
 
-            if (!$portfolio->platform_status) {
+            if (!$portfolio->customerSalesChannel->platform_status) {
+                continue;
+            }
+
+            if ($portfolio->platform_status) {
                 continue;
             }
 
