@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Models\Dropshipping\Portfolio;
+use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -18,7 +19,16 @@ class CheckShopifyPortfolio
 
     public function handle(Portfolio $portfolio): Portfolio
     {
+        if (!$portfolio->customerSalesChannel) {
+            return $portfolio;
+        }
+
         $shopifyUser = $portfolio->customerSalesChannel->user;
+
+        if (!$shopifyUser instanceof ShopifyUser) {
+            return $portfolio;
+        }
+
 
         $hasValidProductId      = CheckIfShopifyProductIDIsValid::run($portfolio->platform_product_id);
         $productExistsInShopify = false;
