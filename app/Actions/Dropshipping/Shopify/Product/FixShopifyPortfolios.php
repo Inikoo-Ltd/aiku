@@ -99,6 +99,7 @@ class FixShopifyPortfolios
                 }
             }
 
+            $portfolio = CheckShopifyPortfolio::run($portfolio);
 
             $dataToOutput = [
                 'product_code'              => $product->code,
