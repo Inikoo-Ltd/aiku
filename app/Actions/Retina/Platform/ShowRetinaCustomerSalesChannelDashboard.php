@@ -43,9 +43,33 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
 
     public function htmlResponse(CustomerSalesChannel $customerSalesChannel): Response
     {
+
+
+
         $title = __('Channel Dashboard');
-        $step = match ($customerSalesChannel->connection_status) {
-            CustomerSalesChannelConnectionStatusEnum::PENDING, CustomerSalesChannelConnectionStatusEnum::DISCONNECTED => [
+
+        $step=[];
+        $timeline=null;
+        if(!$customerSalesChannel->platform_status){
+
+            $timeline= $customerSalesChannel->connection_status !== CustomerSalesChannelConnectionStatusEnum::CONNECTED ? [
+                'current_state' => $customerSalesChannel->state->value,
+                'options'   => [
+                    CustomerSalesChannelConnectionStatusEnum::PENDING->value => [
+                        "label" => "Connection Pending",
+                        "tooltip" => "Reconnect your account to start using our services",
+                        "key" => CustomerSalesChannelConnectionStatusEnum::PENDING->value
+                    ],
+                    CustomerSalesChannelConnectionStatusEnum::CONNECTED->value => [
+                        "label" => "Add products",
+                        "tooltip" => "Add products to your portfolio",
+                        "key" => CustomerSalesChannelConnectionStatusEnum::CONNECTED->value
+                    ]
+                ]
+                ]
+                : null;
+
+            $step= [
                 'label' => __('Great! You just complete first step.'),
                 'title' => __('Connect your store'),
                 'description' => __('Connect your store to Shopify and start selling with ease. Our platform is designed to help you manage your sales channels efficiently, so you can focus on growing your business.'),
@@ -60,13 +84,14 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                     ],
                 ],
                 'icon' => 'fal fa-link',
-            ],
-            default => []
-        };
+            ];
+        }
 
-        $renderPage = $customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL
-            ? 'Dropshipping/Platform/PlatformManualDashboard'
-            : 'Dropshipping/Platform/PlatformDashboard';
+
+
+
+
+        $renderPage = $customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL ? 'Dropshipping/Platform/PlatformManualDashboard' : 'Dropshipping/Platform/PlatformDashboard';
 
 
         $isFulfilment = $this->shop->type == ShopTypeEnum::FULFILMENT;
@@ -99,21 +124,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                 ]
 
             ],
-            'timeline' => $customerSalesChannel->connection_status !== CustomerSalesChannelConnectionStatusEnum::CONNECTED ? [
-                'current_state' => $customerSalesChannel->state->value,
-                'options'   => [
-                    CustomerSalesChannelConnectionStatusEnum::PENDING->value => [
-                        "label" => "Connection Pending",
-                        "tooltip" => "Reconnect your account to start using our services",
-                        "key" => CustomerSalesChannelConnectionStatusEnum::PENDING->value
-                    ],
-                    CustomerSalesChannelConnectionStatusEnum::CONNECTED->value => [
-                        "label" => "Add products",
-                        "tooltip" => "Add products to your portfolio",
-                        "key" => CustomerSalesChannelConnectionStatusEnum::CONNECTED->value
-                    ]
-                ],
-            ] : null,
+            'timeline' => $timeline,
             'headline'  => [
                 'title' => __('Web/API order management'),
                 'description' => '<p><span>First, add desired products to your </span><strong>My Products</strong><span> using the </span><strong>Add Products</strong><span> button. When an order comes in, find the client under the </span><strong>Clients</strong><span> tab (add them if new), then click </span><strong>Create Order.</strong><span> Finally, enter product codes and quantities to complete the order.</span></p>'
