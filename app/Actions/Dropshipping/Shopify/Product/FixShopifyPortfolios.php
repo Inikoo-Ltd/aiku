@@ -55,9 +55,6 @@ class FixShopifyPortfolios
                 continue;
             }
 
-            if ($portfolio->platform_status) {
-                continue;
-            }
 
             /** @var ShopifyUser $shopifyUser */
             $shopifyUser = $portfolio->customerSalesChannel->user;
@@ -65,8 +62,11 @@ class FixShopifyPortfolios
                 continue;
             }
 
-
             $portfolio = CheckShopifyPortfolio::run($portfolio);
+
+            if ($portfolio->platform_status) {
+                continue;
+            }
 
 
             /** @var Product $product */
