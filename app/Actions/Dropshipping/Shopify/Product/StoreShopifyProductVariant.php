@@ -78,23 +78,31 @@ class StoreShopifyProductVariant extends RetinaAction
             }
             MUTATION;
 
+
+            $inventoryItem = [
+                'cost' => $product->price,
+                'sku'  => $portfolio->sku,
+
+            ];
+
+            if ($product->marketing_weight) {
+                $inventoryItem['measurement'] = [
+                    'weight' => [
+                        'unit'  => 'GRAMS',
+                        'value' => $product->marketing_weight
+
+                    ]
+                ];
+            }
+
+
             // Prepare variables for the mutation
             $variants = [
                 [
                     'price'               => $product->rrp,
                     'barcode'             => $portfolio->barcode,
                     'compareAtPrice'      => $product->rrp,
-                    'inventoryItem'       => [
-                        'cost'        => $product->price,
-                        'sku'         => $portfolio->sku,
-                        'measurement' => [
-                            'weight' => [
-                                'unit'  => 'GRAMS',
-                                'value' => $product->marketing_weight
-
-                            ]
-                        ]
-                    ],
+                    'inventoryItem'       => $inventoryItem,
                     'inventoryQuantities' => [
                         'availableQuantity' => $product->available_quantity,
                         'locationId'        => $shopifyUser->shopify_location_id
@@ -112,6 +120,7 @@ class StoreShopifyProductVariant extends RetinaAction
             // Make the GraphQL request
             $response = $client->request($mutation, $variables);
 
+            dd($response, $variables);
 
             if (!empty($response['errors']) || !isset($response['body'])) {
                 $errorMessage = 'Error in API response: '.json_encode($response['errors'] ?? []);
