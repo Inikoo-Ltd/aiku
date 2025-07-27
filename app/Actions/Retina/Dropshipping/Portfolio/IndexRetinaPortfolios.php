@@ -45,8 +45,11 @@ class IndexRetinaPortfolios extends RetinaAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereAnyWordStartWith('portfolios.item_code', $value)
-                    ->orWhereWith('portfolios.item_name', $value);
+                $query->where(function ($query) use ($value) {
+                    $query->whereStartWith('portfolios.reference', $value)
+                        ->orWhereWith('portfolios.item_code', $value)
+                        ->orWhereWith('portfolios.item_name', $value);
+                });
             });
         });
 

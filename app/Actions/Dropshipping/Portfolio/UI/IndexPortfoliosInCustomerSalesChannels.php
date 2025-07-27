@@ -40,7 +40,9 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('portfolios.reference', $value);
+                $query->whereStartWith('portfolios.reference', $value)
+                    ->orWhereWith('portfolios.item_code', $value)
+                    ->orWhereWith('portfolios.item_name', $value);
             });
         });
 
