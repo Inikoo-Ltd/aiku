@@ -18,7 +18,6 @@ class CheckShopifyPortfolio
 
     public function handle(Portfolio $portfolio): Portfolio
     {
-
         $shopifyUser = $portfolio->customerSalesChannel->user;
 
         $hasValidProductId      = CheckIfShopifyProductIDIsValid::run($portfolio->platform_product_id);
@@ -52,10 +51,11 @@ class CheckShopifyPortfolio
 
 
         $portfolio->update([
-            'has_valid_platform_product_id' => $hasValidProductId,
-            'exist_in_platform'             => $productExistsInShopify,
-            'platform_status'               => $hasVariantAtLocation,
-            'platform_possible_matches'     => $matchData
+            'has_valid_platform_product_id'    => $hasValidProductId,
+            'exist_in_platform'                => $productExistsInShopify,
+            'platform_status'                  => $hasVariantAtLocation,
+            'platform_possible_matches'        => $matchData,
+            'number_platform_possible_matches' => $numberMatches
 
         ]);
 

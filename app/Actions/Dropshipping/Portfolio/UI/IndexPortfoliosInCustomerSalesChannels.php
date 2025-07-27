@@ -71,10 +71,11 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                 'portfolios.exist_in_platform',
                 'portfolios.platform_status',
                 'portfolios.has_valid_platform_product_id',
+                'portfolios.number_platform_possible_matches as matches',
                 'customer_sales_channels.platform_status as customer_sales_channel_platform_status',
             ])
             ->defaultSort('portfolios.reference')
-            ->allowedSorts(['reference', 'created_at'])
+            ->allowedSorts(['item_code', 'item_name', 'created_at', 'matches', 'platform_status'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -102,27 +103,27 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                     ),
                     'actions' => [
                         [
-                            'type' => 'button',
+                            'type'  => 'button',
                             'style' => 'create',
                             'label' => __('Match With Existing Product'),
                             'route' => [
-                                'method' => 'post',
-                                'name' => 'grp.models.shopify.batch_match',
+                                'method'     => 'post',
+                                'name'       => 'grp.models.shopify.batch_match',
                                 'parameters' => [
-                                    'customerSalesChannel' =>  $this->customerSalesChannel->id,
+                                    'customerSalesChannel' => $this->customerSalesChannel->id,
                                 ]
                             ]
                         ],
                         [
-                            'type' => 'button',
+                            'type'  => 'button',
                             'style' => 'create',
                             'label' => __('Create New Product'),
                             'route' => [
-                                'name' => 'grp.models.shopify.batch_upload',
+                                'name'       => 'grp.models.shopify.batch_upload',
                                 'parameters' => [
-                                    'customerSalesChannel' =>  $this->customerSalesChannel->id,
+                                    'customerSalesChannel' => $this->customerSalesChannel->id,
                                 ],
-                                'method' => 'post'
+                                'method'     => 'post'
                             ]
                         ]
                     ]
@@ -142,7 +143,6 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
 
     public function tableStructure(array $modelOperations = null, $prefix = null): Closure
     {
-
         return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
                 $table
@@ -152,13 +152,11 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
-                ->column(key: 'item_code', label: __('product'), canBeHidden: false, searchable: true)
-                ->column(key: 'item_name', label: __('product name'), canBeHidden: false, searchable: true)
+                ->column(key: 'item_code', label: __('product'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'item_name', label: __('product name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'platform_status', label: __('Status'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'matches', label: __('matches'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'actions', label: __('actions'), canBeHidden: false, sortable: true, searchable: true);
-
-
+                ->column(key: 'actions', label: __('actions'), canBeHidden: false, searchable: true);
         };
     }
 

@@ -49,7 +49,7 @@ class IndexCustomerSalesChannels extends OrgAction
         $queryBuilder = QueryBuilder::for(CustomerSalesChannel::class);
         if ($parent instanceof Customer) {
             $queryBuilder->where('customer_sales_channels.customer_id', $parent->id);
-        } else{
+        } else {
             $queryBuilder->where('customer_sales_channels.platform_id', $parent->id);
         }
 
