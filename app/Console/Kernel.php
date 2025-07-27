@@ -85,10 +85,6 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'FetchWooOrders',
         );
 
-        $schedule->job(CheckShopifyChannel::makeJob())->hourly()->sentryMonitor(
-            monitorSlug: 'CheckShopifyChannel',
-        );
-
         (new Schedule())->command('hydrate -s ful')->everyFourHours('23:00')->timezone('UTC');
         (new Schedule())->command('hydrate -s sys')->everyTwoHours('23:00')->timezone('UTC');
         (new Schedule())->command('hydrate:shops')->everyTwoHours('23:00')->timezone('UTC');
