@@ -23,6 +23,10 @@ class CheckIfProductExistsInShopify
             return false;
         }
 
+        if (!CheckIfShopifyProductIDIsValid::run($productId)) {
+            return false;
+        }
+
         $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
 
         if (!$client) {
