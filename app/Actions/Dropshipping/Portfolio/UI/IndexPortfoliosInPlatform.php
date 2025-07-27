@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\Portfolio\UI;
 
 use App\Actions\OrgAction;
 use App\InertiaTable\InertiaTable;
+use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
 use App\Services\QueryBuilder;
@@ -20,7 +21,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexPortfoliosInPlatform extends OrgAction
 {
-    public function handle(Platform $platform, $prefix = null): LengthAwarePaginator
+    public function handle(Shop $shop, Platform $platform, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -34,6 +35,8 @@ class IndexPortfoliosInPlatform extends OrgAction
 
         $query = QueryBuilder::for(Portfolio::class);
         $query->where('portfolios.platform_id', $platform->id);
+        $query->where('portfolios.shop_id', $shop->id);
+        $query->where('portfolios.status', true);
 
         $query->leftJoin('customers', 'customers.id', 'portfolios.customer_id');
         $query->leftJoin('platforms', 'platforms.id', 'portfolios.platform_id');

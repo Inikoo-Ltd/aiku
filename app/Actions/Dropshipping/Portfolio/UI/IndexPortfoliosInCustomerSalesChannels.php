@@ -50,6 +50,9 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
 
         $query = QueryBuilder::for(Portfolio::class);
         $query->where('portfolios.customer_sales_channel_id', $customerSalesChannel->id);
+
+        $query->where('portfolios.status', true);
+
         $query->leftJoin('customer_sales_channels', 'customer_sales_channels.id', 'portfolios.customer_sales_channel_id');
 
         $query->leftJoin('customers', 'customers.id', 'portfolios.customer_id');

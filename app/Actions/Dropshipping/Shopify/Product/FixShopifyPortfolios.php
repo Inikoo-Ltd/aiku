@@ -51,6 +51,10 @@ class FixShopifyPortfolios
                 continue;
             }
 
+            if (!$portfolio->status) {
+                continue;
+            }
+
             if ($portfolio->platform_status) {
                 continue;
             }
@@ -240,7 +244,7 @@ class FixShopifyPortfolios
     {
         list(
             $hasValidProductId, $productExistsInShopify, $hasVariantAtLocation
-            ) =
+        ) =
             $this->fixLevel4($portfolio, $shopifyUser, $productExistsInShopify, $numberMatches, $matches);
 
         if ($hasVariantAtLocation) {

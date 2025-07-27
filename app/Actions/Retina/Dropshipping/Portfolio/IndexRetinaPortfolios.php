@@ -172,7 +172,7 @@ class IndexRetinaPortfolios extends RetinaAction
             };
         }
 
-        // Button: Create new product to platform
+        // Button: Create a new product to platform
         $duplicateRoute = false;
         if ($platformUser) {
             $duplicateRoute = match ($this->customerSalesChannel->platform->type) {
@@ -198,8 +198,10 @@ class IndexRetinaPortfolios extends RetinaAction
                 ],
                 default => false
             };
-        };
+        }
 
+
+        $this->customerSalesChannel->platform->type;
 
         return Inertia::render(
             'Dropshipping/Portfolios',
@@ -300,10 +302,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
 
                 'step' => [
-                    'current' => match ($this->customerSalesChannel->platform->type) {
-                        // PlatformTypeEnum::SHOPIFY, PlatformTypeEnum::WOOCOMMERCE => $this->customerSalesChannel->portfolios()->whereNull('platform_product_id')->count() === 0 ? 0 : 1,
-                        default => 0
-                    }
+                    'current' => 0
                 ],
 
 
