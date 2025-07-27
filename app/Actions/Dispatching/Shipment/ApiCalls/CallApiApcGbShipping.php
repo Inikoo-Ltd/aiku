@@ -227,13 +227,12 @@ class CallApiApcGbShipping extends OrgAction
             $modelData['tracking_urls'] = [];
 
 
-            foreach(Arr::get($apiResponse, 'Orders.Order.ShipmentDetails.Items',[]) as $item) {
+            foreach (Arr::get($apiResponse, 'Orders.Order.ShipmentDetails.Items', []) as $item) {
                 $modelData['trackings'][]     = Arr::get($item, 'TrackingNumber');
             }
             $modelData['tracking']                  = implode(' ', $modelData['trackings']);
 
-        }
-        else {
+        } else {
             $status = 'fail';
 
             $errFields = Arr::get($apiResponse, 'Orders.Order.Messages.ErrorFields.ErrorField');

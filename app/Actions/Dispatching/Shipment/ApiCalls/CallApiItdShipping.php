@@ -203,39 +203,39 @@ class CallApiItdShipping extends OrgAction
                 $errorData[$key] = strtolower(rtrim(implode(' ', $value), ','));
             }
 
-            if(empty($errorData)){
-                $statusCode=Arr::get($apiResponse, 'statusCode');
+            if (empty($errorData)) {
+                $statusCode = Arr::get($apiResponse, 'statusCode');
 
-                if($statusCode==400){
+                if ($statusCode == 400) {
                     $errorData['address'] = 'Invalid address';
 
 
-                    $missing=false;
-                    $missingMsg='';
+                    $missing = false;
+                    $missingMsg = '';
 
 
-                    $city=Arr::get($apiResponse, 'errors.data.0.toAddressCity');
-                    if(!$city){
-                        $missing=true;
-                        $missingMsg.='city, ';
+                    $city = Arr::get($apiResponse, 'errors.data.0.toAddressCity');
+                    if (!$city) {
+                        $missing = true;
+                        $missingMsg .= 'city, ';
                     }
 
-                    $postalCode=Arr::get($apiResponse, 'errors.data.0.toAddressZip');
-                    if(!$postalCode){
-                        $missing=true;
-                        $missingMsg.='postal code, ';
-                    }
-
-
-                    $street=Arr::get($apiResponse, 'errors.data.0.toAddressStreet1');
-                    if(!$street){
-                        $missing=true;
-                        $missingMsg.='street, ';
+                    $postalCode = Arr::get($apiResponse, 'errors.data.0.toAddressZip');
+                    if (!$postalCode) {
+                        $missing = true;
+                        $missingMsg .= 'postal code, ';
                     }
 
 
-                    if($missing){
-                        $errorData['address'].= ': Missing '.rtrim($missingMsg, ', ');
+                    $street = Arr::get($apiResponse, 'errors.data.0.toAddressStreet1');
+                    if (!$street) {
+                        $missing = true;
+                        $missingMsg .= 'street, ';
+                    }
+
+
+                    if ($missing) {
+                        $errorData['address'] .= ': Missing '.rtrim($missingMsg, ', ');
                     }
 
 

@@ -214,7 +214,7 @@ class FixShopifyPortfolios
     {
         list(
             $hasValidProductId, $productExistsInShopify, $hasVariantAtLocation
-            ) =
+        ) =
             $this->fixLevel4($portfolio, $shopifyUser, $productExistsInShopify, $numberMatches, $matches);
 
         if ($hasVariantAtLocation) {

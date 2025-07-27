@@ -25,7 +25,8 @@ class FindShopifyProductVariant
         $shopifyUser = $customerSalesChannel->user;
 
         if (!$shopifyUser) {
-            Sentry::captureMessage("Shopify user not found");;
+            Sentry::captureMessage("Shopify user not found");
+            ;
             return null;
         }
 

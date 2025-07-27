@@ -40,7 +40,7 @@ class PayOrderWithMitCard
     public function handle(Order $order, MitSavedCard $mitSavedCard): array
     {
 
-        if($mitSavedCard->state!='success'){
+        if ($mitSavedCard->state != 'success') {
             return [];
         }
 

@@ -15,7 +15,6 @@ use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Ordering\Order;
 use Illuminate\Validation\ValidationException;
 
-
 class FulfillOrderToShopify extends OrgAction
 {
     use WithShopifyApi;
@@ -55,15 +54,15 @@ class FulfillOrderToShopify extends OrgAction
             ]);
         }
 
-        $shipper= $shipments->first()->shipper;
-        $shipperCompanyName = $shipper->trade_as??$shipper->name;
+        $shipper = $shipments->first()->shipper;
+        $shipperCompanyName = $shipper->trade_as ?? $shipper->name;
 
 
-        $numbers=[];
-        $urls=[];
+        $numbers = [];
+        $urls = [];
         foreach ($shipments as $shipment) {
-            $numbers=array_merge($numbers,$shipment->trackings);
-            $urls=array_merge($urls,$shipment->tracking_urls);
+            $numbers = array_merge($numbers, $shipment->trackings);
+            $urls = array_merge($urls, $shipment->tracking_urls);
         }
 
 
@@ -72,16 +71,16 @@ class FulfillOrderToShopify extends OrgAction
             'company' => $shipperCompanyName,
         ];
 
-        $message= 'Shipper: '.$shipperCompanyName.', '.implode(',',$numbers);
+        $message = 'Shipper: '.$shipperCompanyName.', '.implode(',', $numbers);
 
-        $validShopifyShippingCompanies=['Yodel','DPD UK','Parcelforce'];
+        $validShopifyShippingCompanies = ['Yodel','DPD UK','Parcelforce'];
 
 
-        if(!in_array($shipperCompanyName,$validShopifyShippingCompanies) && !empty($urls)){
-            $trackingInfo['urls']=$urls;
+        if (!in_array($shipperCompanyName, $validShopifyShippingCompanies) && !empty($urls)) {
+            $trackingInfo['urls'] = $urls;
         }
 
-        $variables=[
+        $variables = [
             'fulfillment' => [
                 'lineItemsByFulfillmentOrder' => [
                     [
@@ -101,8 +100,8 @@ class FulfillOrderToShopify extends OrgAction
             throw ValidationException::withMessages(['message' => $e->getMessage()]);
         }
 
-        if(!$status){
-            throw ValidationException::withMessages(['message' =>$response]);
+        if (!$status) {
+            throw ValidationException::withMessages(['message' => $response]);
         }
 
 
