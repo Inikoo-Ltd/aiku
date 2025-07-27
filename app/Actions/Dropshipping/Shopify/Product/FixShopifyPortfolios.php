@@ -24,7 +24,7 @@ class FixShopifyPortfolios
 {
     use AsAction;
 
-    public function handle(Shop|CustomerSalesChannel $parent, int $fixLevel = null): array
+    public function handle(Shop|CustomerSalesChannel $parent, int $fixLevel = null, Command $command = null): array
     {
         $shopifyPlatform = Platform::where('type', PlatformTypeEnum::SHOPIFY)->first();
 
@@ -96,7 +96,7 @@ class FixShopifyPortfolios
             }
 
 
-            $portfoliosSynchronisation[$portfolio->id] = [
+            $dataToOutput = [
                 'product_code'              => $product->code,
                 'status'                    => $portfolio->status,
                 'sku'                       => $portfolio->sku,
@@ -108,6 +108,32 @@ class FixShopifyPortfolios
                 'number_matches'            => $numberMatches,
                 'matches_labels'            => $matchesLabels,
             ];
+
+            $portfoliosSynchronisation[$portfolio->id] = $dataToOutput;
+
+
+            if ($command) {
+                $tableData = [
+                    [
+                        'channel'        => $portfolio->customerSalesChannel->slug,
+                        'status'         => $dataToOutput['status'] ? 'Open' : 'Closed',
+                        'id'             => $portfolio->id,
+                        'product_code'   => $dataToOutput['product_code'] ?? 'N/A',
+                        'valid_id'       => $dataToOutput['has_platform_product_id'] ? 'Yes' : 'No',
+                        'exists'         => $dataToOutput['product_exists_in_shopify'] ? 'Yes' : 'No',
+                        'at_location'    => $dataToOutput['has_variant_at_location'] ? 'Yes' : 'No',
+                        'number_matches' => $dataToOutput['number_matches'] ?? 0,
+                        'matches_labels' => implode(', ', $dataToOutput['matches_labels'] ?? [])
+                    ]
+                ];
+
+
+                $this->table(
+                    ['Channel', 'Status', 'ID', 'Product Code', 'Valid Product ID', 'Exists in Shopify', 'At Location', 'Matches', 'Match Labels'],
+                    $tableData,
+                    $command
+                );
+            }
         }
 
         return $portfoliosSynchronisation;
@@ -214,7 +240,7 @@ class FixShopifyPortfolios
     {
         list(
             $hasValidProductId, $productExistsInShopify, $hasVariantAtLocation
-        ) =
+            ) =
             $this->fixLevel4($portfolio, $shopifyUser, $productExistsInShopify, $numberMatches, $matches);
 
         if ($hasVariantAtLocation) {
@@ -259,7 +285,7 @@ class FixShopifyPortfolios
             return;
         }
 
-        $portfoliosSynchronisation = $this->handle($parent, $fixLevel);
+        $portfoliosSynchronisation = $this->handle($parent, $fixLevel, $command);
 
 
         if (empty($portfoliosSynchronisation)) {
@@ -268,32 +294,6 @@ class FixShopifyPortfolios
             return;
         }
 
-        $tableData = [];
-        $counter   = 1;
-
-        foreach ($portfoliosSynchronisation as $portfolioId => $portfolio) {
-            $tableData[] = [
-                'counter'        => $counter,
-                'id'             => $portfolioId,
-                'status'         => $portfolio['status'] ? 'Open' : 'Closed',
-                'product_code'   => $portfolio['product_code'] ?? 'N/A',
-                'sku'            => $portfolio['sku'] ?? 'N/A',
-                'barcode'        => $portfolio['barcode'] ?? 'N/A',
-                'valid_id'       => $portfolio['has_platform_product_id'] ? 'Yes' : 'No',
-                'exists'         => $portfolio['product_exists_in_shopify'] ? 'Yes' : 'No',
-                'at_location'    => $portfolio['has_variant_at_location'] ? 'Yes' : 'No',
-                'number_matches' => $portfolio['number_matches'] ?? 0,
-                'matches_labels' => implode(', ', $portfolio['matches_labels'] ?? [])
-            ];
-            $counter++;
-        }
-
-        // Output results in table format
-        $this->table(
-            ['#', 'Status', 'ID', 'Product Code', 'SKU', 'Barcode', 'Valid Product ID', 'Exists in Shopify', 'At Location', 'Matches', 'Match Labels'],
-            $tableData,
-            $command
-        );
 
         // Summary
         $totalPortfolios    = count($portfoliosSynchronisation);
