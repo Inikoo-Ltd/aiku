@@ -1,22 +1,22 @@
 <script setup lang="ts">
-import {Link, router} from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
-import type {Table as TableTS} from "@/types/Table"
-import {RouteParams} from "@/types/route-params"
-import {CustomerSalesChannel} from "@/types/customer-sales-channel"
+import type { Table as TableTS } from "@/types/Table"
+import { RouteParams } from "@/types/route-params"
+import { CustomerSalesChannel } from "@/types/customer-sales-channel"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import {ref} from 'vue'
-import ConfirmPopup from 'primevue/confirmpopup';
-import {useConfirm} from 'primevue/useconfirm'
-import {faExclamationTriangle} from "@far"
-import {notify} from "@kyvg/vue3-notification"
-import {trans} from "laravel-vue-i18n"
+import { ref } from "vue"
+import ConfirmPopup from "primevue/confirmpopup"
+import { useConfirm } from "primevue/useconfirm"
+import { faExclamationTriangle } from "@far"
+import { notify } from "@kyvg/vue3-notification"
+import { trans } from "laravel-vue-i18n"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 
 import customerSalesChannel from "@/Pages/Grp/Org/Dropshipping/CustomerSalesChannel.vue"
-import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
-import {faUndoAlt, faTrashAlt} from "@fal"
-import {library} from "@fortawesome/fontawesome-svg-core"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faUndoAlt, faTrashAlt } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
 
 library.add(faUndoAlt)
 
@@ -31,7 +31,7 @@ const deletingId = ref<number | null>(null)
 function customerSalesChannelRoute(customerSalesChannel: CustomerSalesChannel) {
 
     switch (route().current()) {
-        case 'grp.org.shops.show.crm.platforms.show':
+        case "grp.org.shops.show.crm.platforms.show":
             return route("grp.org.shops.show.crm.platforms.show.customer_sales_channels.show",
                 [
                     (route().params as RouteParams).organisation,
@@ -39,7 +39,7 @@ function customerSalesChannelRoute(customerSalesChannel: CustomerSalesChannel) {
                     (route().params as RouteParams).platform,
                     customerSalesChannel.slug]
             )
-            break;
+            break
         default:
             return route("grp.org.shops.show.crm.customers.show.customer_sales_channels.show",
                 [
@@ -53,8 +53,8 @@ function customerSalesChannelRoute(customerSalesChannel: CustomerSalesChannel) {
 
 function portfoliosRoute(customerSalesChannel: CustomerSalesChannel) {
     switch (route().current()) {
-        case 'grp.org.shops.show.crm.platforms.show':
-            return ''
+        case "grp.org.shops.show.crm.platforms.show":
+            return ""
 
         default:
             return route(
@@ -71,8 +71,8 @@ function portfoliosRoute(customerSalesChannel: CustomerSalesChannel) {
 
 function clientsRoute(customerSalesChannel: CustomerSalesChannel) {
     switch (route().current()) {
-        case 'grp.org.shops.show.crm.platforms.show':
-            return ''
+        case "grp.org.shops.show.crm.platforms.show":
+            return ""
 
         default:
             return route(
@@ -88,8 +88,8 @@ function clientsRoute(customerSalesChannel: CustomerSalesChannel) {
 
 function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
     switch (route().current()) {
-        case 'grp.org.shops.show.crm.platforms.show':
-            return ''
+        case "grp.org.shops.show.crm.platforms.show":
+            return ""
 
         default:
             return route(
@@ -107,16 +107,16 @@ function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
 function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesChannel) {
     confirm.require({
         target: event.currentTarget as HTMLElement,
-        message: trans('Are you sure to delete this channel?'),
-        icon: 'pi pi-exclamation-triangle',
-        acceptLabel: trans('Delete'),
-        rejectLabel: trans('Cancel'),
-        acceptClass: 'p-button-danger',
-        rejectClass: 'p-button-text',
+        message: trans("Are you sure to delete this channel?"),
+        icon: "pi pi-exclamation-triangle",
+        acceptLabel: trans("Delete"),
+        rejectLabel: trans("Cancel"),
+        acceptClass: "p-button-danger",
+        rejectClass: "p-button-text",
         accept: () => {
             deletingId.value = customerSalesChannel.id
 
-            router.delete(route('grp.models.customer_sales_channel.delete', {
+            router.delete(route("grp.models.customer_sales_channel.delete", {
                 customerSalesChannel: customerSalesChannel.id
             }), {
                 preserveScroll: true,
@@ -124,16 +124,16 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
                     deletingId.value = null
                 },
                 onError: (errors) => {
-                    console.error('Delete failed:', errors)
+                    console.error("Delete failed:", errors)
                     notify({
                         title: "Failed to Delete",
-                        text: 'error',
+                        text: "error",
                         type: "error"
                     })
-                },
+                }
             })
-        },
-    });
+        }
+    })
 }
 
 </script>
@@ -144,7 +144,7 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
         <template #cell(name)="{ item: customerSalesChannel }">
             <div class="flex items-center gap-2">
                 <img v-tooltip="customerSalesChannel.platform_name" :src="customerSalesChannel.platform_image"
-                     :alt="customerSalesChannel.platform_name" class="w-6 h-6"/>
+                     :alt="customerSalesChannel.platform_name" class="w-6 h-6" />
                 <Link :href="(customerSalesChannelRoute(customerSalesChannel) as string)" class="primaryLink">
                     {{ customerSalesChannel.name || customerSalesChannel.reference }}
                 </Link>
@@ -152,12 +152,18 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
         </template>
 
         <template #cell(platform_status)="{ item }">
-            <FontAwesomeIcon v-if="item.can_connect_to_platform" v-tooltip="trans('App installed ok')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-            <FontAwesomeIcon v-else v-tooltip="trans('Broken channel delete it an d create new one')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-            <FontAwesomeIcon v-if="item.exist_in_platform" v-tooltip="trans('Exist in platform')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-            <FontAwesomeIcon v-else v-tooltip="trans('Exist in platform')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-            <FontAwesomeIcon v-if="item.platform_status" v-tooltip="trans('Platform status')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-            <FontAwesomeIcon v-else v-tooltip="trans('Platform status')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+
+            <template v-if="item.status==='open'">
+                <FontAwesomeIcon v-if="item.can_connect_to_platform" v-tooltip="trans('App installed ok')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-else v-tooltip="trans('Broken channel delete it an d create new one')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-if="item.exist_in_platform" v-tooltip="trans('Exist in platform')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-else v-tooltip="trans('Exist in platform')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-if="item.platform_status" v-tooltip="trans('Platform status')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-else v-tooltip="trans('Platform status')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+            </template>
+            <template v-else>
+                {{ item.status }}
+            </template>
         </template>
 
         <template #cell(number_portfolios)="{ item: customerSalesChannel }">
@@ -182,7 +188,7 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
 
         <template #cell(action)="{ item }">
 
-            <div class="space-y-1">
+            <div v-if="item.status=='open'" class="space-y-1">
                 <ModalConfirmationDelete
                     v-if=" item.can_connect_to_platform &&  !item.platform_status"
                     :routeDelete="{
@@ -199,8 +205,8 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
                     </template>
                 </ModalConfirmationDelete>
 
-                <Button v-if="!item.platform_status"  type="negative" :label="trans('Delete')" :icon="faTrashAlt"
-                    @click="(event) => confirmDelete(event, item)" />
+                <Button v-if="!item.platform_status" type="negative" :label="trans('Delete')" :icon="faTrashAlt"
+                        @click="(event) => confirmDelete(event, item)" />
             </div>
         </template>
     </Table>
@@ -208,7 +214,7 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
 
     <ConfirmPopup>
         <template #icon>
-            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500"/>
+            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
         </template>
     </ConfirmPopup>
 </template>
