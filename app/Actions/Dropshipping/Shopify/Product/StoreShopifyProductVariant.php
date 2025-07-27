@@ -25,13 +25,7 @@ class StoreShopifyProductVariant extends RetinaAction
     public string $jobQueue = 'shopify';
     public int $jobBackoff = 5;
 
-    /**
-     * Get product data from Shopify using GraphQL
-     *
-     * @param  Portfolio  $portfolio  The portfolio containing the Shopify product ID
-     *
-     * @return array|null The product data or null if retrieval failed
-     */
+
     public function handle(Portfolio $portfolio): ?array
     {
         $customerSalesChannel = $portfolio->customerSalesChannel;
@@ -57,6 +51,10 @@ class StoreShopifyProductVariant extends RetinaAction
         if (!$productID) {
             Sentry::captureMessage("No Shopify product ID found in portfolio");
 
+            return null;
+        }
+
+        if (!CheckIfShopifyProductIDIsValid::run($productID)) {
             return null;
         }
 
@@ -152,7 +150,7 @@ class StoreShopifyProductVariant extends RetinaAction
                     'errors_response' => ['No product data in response']
                 ]);
                 Sentry::captureMessage("Product variant update failed C: No product data in response; variants: ".json_encode($variables)."   debugLog: ".json_encode($response));
-                ;
+
 
                 return null;
             }
