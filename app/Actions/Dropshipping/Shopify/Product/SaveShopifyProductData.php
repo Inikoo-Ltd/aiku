@@ -33,6 +33,12 @@ class SaveShopifyProductData extends RetinaAction
         /** @var \App\Models\Dropshipping\ShopifyUser $shopifyUser */
         $shopifyUser = $customerSalesChannel->user;
 
+        if(!$shopifyUser) {
+            Sentry::captureMessage("No Shopify user found for this customer sales channel");
+            return null;
+        }
+
+
         $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
 
         if (!$client) {
