@@ -102,7 +102,7 @@ class StoreShopifyProductVariant extends RetinaAction
                     'compareAtPrice'      => $product->rrp,
                     'inventoryItem'       => $inventoryItem,
                     'inventoryQuantities' => [
-                        'availableQuantity' => $product->available_quantity,
+                        'availableQuantity' => $product->available_quantity ?? 0,
                         'locationId'        => $shopifyUser->shopify_location_id
                     ]
                 ]
