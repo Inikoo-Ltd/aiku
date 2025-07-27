@@ -47,6 +47,10 @@ class FixShopifyPortfolios
                 continue;
             }
 
+            if (!$portfolio->platform_status) {
+                continue;
+            }
+
             /** @var ShopifyUser $shopifyUser */
             $shopifyUser = $portfolio->customerSalesChannel->user;
             if (!$shopifyUser) {
