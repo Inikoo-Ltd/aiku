@@ -120,8 +120,6 @@ class StoreShopifyProductVariant extends RetinaAction
             // Make the GraphQL request
             $response = $client->request($mutation, $variables);
 
-            dd($response, $variables);
-
             if (!empty($response['errors']) || !isset($response['body'])) {
                 $errorMessage = 'Error in API response: '.json_encode($response['errors'] ?? []);
                 UpdatePortfolio::run($portfolio, [
