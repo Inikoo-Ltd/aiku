@@ -38,7 +38,6 @@ class IndexPortfoliosInPlatform extends OrgAction
         $query->leftJoin('customers', 'customers.id', 'portfolios.customer_id');
         $query->leftJoin('platforms', 'platforms.id', 'portfolios.platform_id');
 
-
         return $query
             ->select([
                 'portfolios.id',

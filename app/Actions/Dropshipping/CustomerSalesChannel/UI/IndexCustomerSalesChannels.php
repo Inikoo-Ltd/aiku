@@ -69,7 +69,7 @@ class IndexCustomerSalesChannels extends OrgAction
             'customer_sales_channels.number_portfolio_broken as number_portfolio_broken',
             'customer_sales_channels.number_orders as number_orders',
             'customer_sales_channels.platform_id',
-            ])
+        ])
             ->selectSub(function ($subquery) {
                 $subquery->from('orders')
                     ->selectRaw('COALESCE(SUM(total_amount), 0)')
@@ -78,15 +78,14 @@ class IndexCustomerSalesChannels extends OrgAction
             }, 'total_amount');
 
         return $queryBuilder->defaultSort('customer_sales_channels.reference')
-                ->allowedSorts(['reference', 'number_customer_clients', 'number_portfolios','number_orders'])
-                ->allowedFilters([$globalSearch])
-                ->withPaginator($prefix, tableName: request()->route()->getName())
-                ->withQueryString();
+            ->allowedSorts(['reference', 'number_customer_clients', 'number_portfolios', 'number_orders', 'total_amount','platform_status'])
+            ->allowedFilters([$globalSearch])
+            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withQueryString();
     }
 
     public function htmlResponse(LengthAwarePaginator $platforms, ActionRequest $request): Response
     {
-
         $subNavigation = $this->getCustomerDropshippingSubNavigation($this->parent, $request);
         $icon          = ['fal', 'fa-user'];
         $title         = $this->parent->name;
@@ -100,10 +99,7 @@ class IndexCustomerSalesChannels extends OrgAction
         ];
 
 
-
-
         $actions = [];
-
 
 
         return Inertia::render(
@@ -143,9 +139,9 @@ class IndexCustomerSalesChannels extends OrgAction
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_portfolios', label: __('Portfolios'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_orders', label: __('Orders'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'amount', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'connection', label: __('Status'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'action', label: __('Actions'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'total_amount', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'platform_status', label: __('Status'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'action', label: __('Actions'), canBeHidden: false, searchable: true)
                 ->defaultSort('reference');
         };
     }

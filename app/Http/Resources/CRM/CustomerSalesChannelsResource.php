@@ -49,7 +49,7 @@ class CustomerSalesChannelsResource extends JsonResource
             'number_orders'           => $this->number_orders,
             'type'                    => $this->type,
             'status'                  => $this->status,
-            'amount'                  => $this->total_amount,
+            'total_amount'            => $this->total_amount,
             'platform_code'           => $customerSalesChannels->platform->code,
             'platform_name'           => $customerSalesChannels->platform->name,
             'platform_image'          => $this->getPlatformLogo($customerSalesChannels->platform->code),
@@ -61,7 +61,6 @@ class CustomerSalesChannelsResource extends JsonResource
 
         ];
     }
-
 
 
 }
