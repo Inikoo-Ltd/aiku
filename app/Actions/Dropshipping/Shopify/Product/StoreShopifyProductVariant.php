@@ -125,7 +125,7 @@ class StoreShopifyProductVariant extends RetinaAction
                 UpdatePortfolio::run($portfolio, [
                     'errors_response' => [$errorMessage]
                 ]);
-                Sentry::captureMessage("Product variant update failed: ".$errorMessage);
+                Sentry::captureMessage("Product variant update failed A: ".$errorMessage);
 
                 return null;
             }
@@ -139,7 +139,7 @@ class StoreShopifyProductVariant extends RetinaAction
                 UpdatePortfolio::run($portfolio, [
                     'errors_response' => [$errorMessage]
                 ]);
-                Sentry::captureMessage("Product variant update failed: ".$errorMessage);
+                Sentry::captureMessage("Product variant update failed B: ".$errorMessage);
 
                 return null;
             }
@@ -151,7 +151,8 @@ class StoreShopifyProductVariant extends RetinaAction
                 UpdatePortfolio::run($portfolio, [
                     'errors_response' => ['No product data in response']
                 ]);
-                Sentry::captureMessage("Product variant update failed: No product data in response");
+                Sentry::captureMessage("Product variant update failed C: No product data in response; variants: ".json_encode($variables)."   debugLog: ".json_encode($response));
+                ;
 
                 return null;
             }
