@@ -154,7 +154,7 @@ class SaveShopifyProductData extends RetinaAction
             if (isset($body['data']['product'])) {
                 $productData = $body['data']['product'];
             } else {
-                Sentry::captureMessage("Product data not found in response");
+                Sentry::captureMessage("Product data not found in response B");
 
             }
 

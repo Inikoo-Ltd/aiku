@@ -82,7 +82,7 @@ class CheckIfProductHasVariantAtLocation
 
             // Check if product data exists in the response
             if (!isset($body['data']['product']) || !isset($body['data']['product']['variants']['edges'])) {
-                Sentry::captureMessage("Product data not found in response");
+                Sentry::captureMessage("Product data not found in response A");
 
                 return false;
             }
