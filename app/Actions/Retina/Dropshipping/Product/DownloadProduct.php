@@ -23,6 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\Response;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Illuminate\Support\Str;
 
 class DownloadProduct extends RetinaAction
 {
@@ -33,12 +34,16 @@ class DownloadProduct extends RetinaAction
      */
     public function handle(Shop|ProductCategory|Product|Collection $parent, string $type): BinaryFileResponse|Response
     {
-        $filename =  'products' . '_' . now()->format('Ymd');
+        $baseFilename = Str::snake(class_basename($parent));
+        if ($parent instanceof ProductCategory) {
+            $baseFilename = $parent->type->value;
+        }
+        $filename =  $baseFilename . '_' . $parent->slug . '_' . now()->format('Ymd');
 
         if ($type == 'products_images') {
             $filename .= '_images.zip';
-            return response()->streamDownload(function () use ($parent) {
-                ProductZipExport::make()->handle($parent);
+            return response()->streamDownload(function () use ($parent, $filename) {
+                ProductZipExport::make()->handle($parent, $filename);
             }, $filename);
         } else {
             $filename .= '.csv';
