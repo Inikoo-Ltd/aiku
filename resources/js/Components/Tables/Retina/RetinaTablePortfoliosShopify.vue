@@ -556,19 +556,20 @@ const onDisableCheckbox = (item) => {
 
         <!-- Column: Actions 3 -->
         <template #cell(delete)="{ item }">
-<!--            <ButtonWithLink-->
-<!--                v-tooltip="trans('Unselect product')"-->
-<!--                type="negative"-->
-<!--                icon="fal fa-skull"-->
-<!--                :routeTarget="item.update_portfolio"-->
-<!--                :body="{-->
-<!--						'status': false,-->
-<!--					}"-->
-<!--                size="xs"-->
-<!--                :bindToLink="{-->
-<!--						preserveScroll: true,-->
-<!--					}"-->
-<!--            />-->
+            <ButtonWithLink
+                v-if="!item.platfrom_status"
+                v-tooltip="trans('Remove from shortlist')"
+                type="negative"
+                icon="fal fa-skull"
+                :routeTarget="item.update_portfolio"
+                :body="{
+						'status': false,
+					}"
+                size="xs"
+                :bindToLink="{
+						preserveScroll: true,
+					}"
+            />
         </template>
     </Table>
 
