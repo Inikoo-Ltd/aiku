@@ -52,8 +52,8 @@ class ShowRetinaCustomerClient extends RetinaAction
     {
 
         $actions = [];
-
-        if ($customerClient->salesChannel->platform->type == PlatformTypeEnum::MANUAL) {
+        $isManual = $customerClient->salesChannel->platform->type == PlatformTypeEnum::MANUAL;
+        if ($isManual) {
             $actions = [
                 $this->getEditActionIcon($request, null),
                 [
@@ -76,7 +76,7 @@ class ShowRetinaCustomerClient extends RetinaAction
             'Dropshipping/Client/CustomerClient',
             [
                 'title'       => __('customer client'),
-                'breadcrumbs' => $this->getBreadcrumbs($customerClient, $request->route()->originalParameters()),
+                'breadcrumbs' => $isManual ? $this->getBreadcrumbs($customerClient, $request->route()->originalParameters()) : null,
                 'pageHead'    => [
                     'title'   => $customerClient->name,
                     'icon'    => [
