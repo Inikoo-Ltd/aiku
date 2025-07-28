@@ -80,7 +80,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
 
         return $query->defaultSort('-portfolios.id')
-            ->allowedFilters([$unUploadedFilter, $globalSearch, $this->getStateFilter()])
+            ->allowedFilters([$unUploadedFilter, $globalSearch, $this->getStateFilter(), $this->getPlatformStatusFilter()])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -92,6 +92,13 @@ class IndexRetinaPortfolios extends RetinaAction
                 $subQuery->where('item_type', 'Product')
                     ->whereIn('status', (array)$value);
             });
+        });
+    }
+
+    public function getPlatformStatusFilter(): AllowedFilter
+    {
+        return AllowedFilter::callback('platform_status', function ($query, $value) {
+            $query->where('platform_status', $value);
         });
     }
 
