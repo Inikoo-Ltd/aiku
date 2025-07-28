@@ -75,6 +75,7 @@ const props = defineProps<{
     progressToUploadToShopify: {}
     isPlatformManual?: boolean
     customerSalesChannel: {}
+    useCheckBox?: boolean
 }>()
 
 function portfolioRoute(product: Product) {
@@ -313,7 +314,7 @@ const onDisableCheckbox = (item) => {
         :name="tab"
         class="mt-5"
         isCheckBox
-        :isCheckBox="true"
+        :isCheckBox="useCheckBox"
         @onChecked="(item) => onChangeCheked(true, item)" 
         @onUnchecked="(item) => onChangeCheked(false, item)"
         @onCheckedAll="(data) => onCheckedAll(data)"

@@ -456,7 +456,7 @@ const submitPortfolioAction = (action: any) => {
 
 
                 
-            <Button v-if="selectedProducts.length > 0" :type="'create'" :label="'Create New Product'"
+            <Button v-if="selectedProducts.length > 0" :type="'create'" :label="'Match With Existing Productt'"
                 :loading="loadingAction.includes('Match With Existing Product')"
                 @click="() => submitPortfolioAction({
                     label : 'Match With Existing Product',
@@ -517,6 +517,7 @@ const submitPortfolioAction = (action: any) => {
             :is_platform_connected
             :progressToUploadToShopify
             :isPlatformManual
+            :useCheckBox="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual"
         />
 
         <RetinaTablePortfoliosShopify
