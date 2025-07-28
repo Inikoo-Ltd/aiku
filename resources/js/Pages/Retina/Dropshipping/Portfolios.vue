@@ -38,6 +38,7 @@ import RetinaTablePortfoliosPlatform from "@/Components/Tables/Retina/RetinaTabl
 import RetinaTablePortfoliosShopify from "@/Components/Tables/Retina/RetinaTablePortfoliosShopify.vue"
 import ProgressBar from '@/Components/Utils/ProgressBar.vue'
 import { faCircleCheck } from "@fortawesome/free-solid-svg-icons";
+import { ulid } from "ulid";
 
 library.add(faFileExcel, faBracketsCurly, faSyncAlt, faHandPointer, faPawClaws, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
 
@@ -250,6 +251,13 @@ const loadingAction= ref([])
 const modalAddproductBluk = ref(false)
 const modalMatchproductBluk = ref(false)
 
+const debReloadPage = () => {
+    router.reload({
+        except: ['auth', 'breadcrumbs', 'flash', 'layout', 'localeData', 'pageHead', 'ziggy']
+    })
+}
+
+
 
 const onSuccessEditCheckmark = (key) => {
   console.log('sss')
@@ -289,7 +297,7 @@ const submitPortfolioAction = async (action: any) => {
   }
 }
 
-
+const tableKeyShopyfy = ulid()
 
 provide('selectedEchopersonal', useEchoRetinaPersonal())
 
@@ -464,7 +472,7 @@ provide('selectedEchopersonal', useEchoRetinaPersonal())
         <RetinaTablePortfoliosShopify v-else-if="platform_data.type === 'shopify'" :data="props.products"
             :tab="'products'" :selectedData :platform_data :platform_user_id :is_platform_connected
             :progressToUploadToShopify :customerSalesChannel="customer_sales_channel"
-            v-model:selectedProducts="selectedProducts" />
+            v-model:selectedProducts="selectedProducts" :key="tableKeyShopyfy"/>
 
         <RetinaTablePortfoliosPlatform v-else :data="props.products" :tab="'products'" :selectedData :platform_data
             :platform_user_id :is_platform_connected :progressToUploadToShopify />
@@ -501,7 +509,7 @@ provide('selectedEchopersonal', useEchoRetinaPersonal())
                 </div>
 
                 <div class="pt-4 text-center">
-                    <Button label="Got it"  full  @click="modalAddproductBluk = false"/>
+                    <Button label="Got it"  full  @click="()=>{modalAddproductBluk = false,tableKeyShopyfy = ulid()}"/>
                 </div>
             </div>
         </div>
@@ -531,7 +539,7 @@ provide('selectedEchopersonal', useEchoRetinaPersonal())
 
             <!-- Footer -->
             <div class="pt-6 text-center">
-                <Button label="Got it" full @click="modalMatchproductBluk = false"/>
+                <Button label="Got it" full @click="()=>{modalMatchproductBluk = false,tableKeyShopyfy = ulid()}"/>
             </div>
             </div>
         </div>
