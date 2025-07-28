@@ -11,8 +11,11 @@
 namespace App\Actions\Dispatching\Shipment\ApiCalls;
 
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
 use App\Http\Resources\Dispatching\ShippingDeliveryNoteResource;
+use App\Http\Resources\Dispatching\ShippingDropshippingDeliveryNoteResource;
+use App\Http\Resources\Dispatching\ShippingPalletReturnResource;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
 use App\Models\Fulfilment\PalletReturn;
@@ -53,24 +56,23 @@ class CallApiPacketaShipping extends OrgAction
     public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper): array
     {
         [$_, $apiPassword] = array_values($this->getAccessToken($shipper));
+        // dd($this->getLabel($apiPassword, 3141295364));
         // $apiPassword = $this->getAccessToken($shipper);
         $url = $this->getBaseUrl() . '/api/soap.wsdl';
 
-        $parentResource = ShippingDeliveryNoteResource::make($parent)->getArray();
-        $parcels = $parent->parcels;
-        // $packages = [
-        //     [
-        //         'packageType'   => 3,
-        //         'packageLength' => $parcels[0]['dimensions'][0] ?? 0,
-        //         'packageWidth'  => $parcels[0]['dimensions'][1] ?? 0,
-        //         'packageHeight' => $parcels[0]['dimensions'][2] ?? 0,
-        //         'packageWeight' => isset($parcels[0]['weight']) ? $parcels[0]['weight'] * 1000 : 0,
-        //     ]
-        // ];
+        if ($parent instanceof PalletReturn) {
+            $parentResource = ShippingPalletReturnResource::make($parent)->getArray();
+        } elseif ($parent->shop->type == ShopTypeEnum::DROPSHIPPING) {
+            $parentResource = ShippingDropshippingDeliveryNoteResource::make($parent)->getArray();
+        } else {
+            $parentResource = ShippingDeliveryNoteResource::make($parent)->getArray();
+        }
 
-        // Format Packeta specific packet attributes
-        // Arr::get($parentResource, 'from_address.country.code', 'EUR')
-        // dd($parent->currency);
+        $parcels = $parent->parcels;
+        $weight = collect($parcels)->sum('weight') ?? 0;
+        $order = $parent->orders->first();
+        $countryCode = Arr::get($parentResource, 'to_address.country.code', 'CZ');
+
         $packetAttributes = [
             'number' => Str::limit($parent->reference, 30),
             'name' => Arr::get($parentResource, 'to_first_name'),
@@ -78,85 +80,96 @@ class CallApiPacketaShipping extends OrgAction
             'company' => Arr::get($parentResource, 'to_company_name'),
             'email' => Arr::get($parentResource, 'to_email'),
             'phone' => Arr::get($parentResource, 'to_phone'),
-            'addressId' => 131, // carrier ID from settings
-            'value' => "131",
-            'currency' => 'EUR',
-            'eshop' => Arr::get($parentResource, 'from_company_name', 'Unknown Eshop'),
-            'weight' => $parcels[0]['weight'] ?? 0, // in kg
-            'street' => Arr::get($parentResource, 'to_address.address_line_1', "test"),
-            'houseNumber' => Arr::get($parentResource, 'to_address.address_line_2', "Test"),
-            'city' => Arr::get($parentResource, 'to_address.locality', "test"),
-            'zip' => Arr::get($parentResource, 'to_address.postal_code', "123"),
-            'note' => $parent->customer_notes ?? 'aiku_development',
+            'addressId' => $this->getAddressIdByCountryCode($countryCode),
+            'value' => '100',
+            'currency' => $order->currency?->code ?? 'EUR',
+            'eshop' => Arr::get($parentResource, 'from_company_name', 'Aiku Development'),
+            // 'eshop' => '123 Handmade',
+            // 'eshopId' => , // Default to 1 if not set
+            'weight' => $weight, // in kg
+            'street' => Arr::get($parentResource, 'to_address.address_line_1'),
+            'houseNumber' => Arr::get($parentResource, 'to_address.address_line_2'),
+            'city' => Arr::get($parentResource, 'to_address.locality'),
+            'zip' => Arr::get($parentResource, 'to_address.postal_code'),
+            'note' => $parent->shipping_notes ?? 'aiku_development',
         ];
-        // dd($packetAttributes);
 
         // Add COD (Cash on Delivery) if applicable
         if (!empty($parent->cash_on_delivery)) {
             $packetAttributes['cod'] = (float)$parent->cash_on_delivery;
         }
 
+        $errorData = [];
+        $modelData = [];
         try {
             $client = new SoapClient($url);
             $apiResponse = $client->createPacket($apiPassword, $packetAttributes);
             $apiResponseData = json_decode(json_encode($apiResponse), true);
-
-            // dd("test->",$apiResponseData);
 
             $modelData = [
                 'api_response' => $apiResponseData,
             ];
 
             $status = 'success';
-            $errorData = [];
-
-            // Store tracking information
-            $modelData['tracking'] = $apiResponse->id ?? null;
+            $id = $apiResponse->id ?? '';
+            $modelData['label']      = $this->getLabel($id, $shipper);
             $modelData['label_type'] = ShipmentLabelTypeEnum::PDF;
             $modelData['number_parcels'] = $parcels ? count($parcels) : 1;
 
-            // Get label if available
-            if (isset($apiResponse->id)) {
-                try {
-                    $labelResponse = $client->packetLabelPdf($apiPassword, [$apiResponse->id]);
-                    if (isset($labelResponse->labels)) {
-                        $modelData['label'] = base64_encode($labelResponse->labels);
-                    }
-                } catch (SoapFault $e) {
-                    $errorData['label'][] = 'Could not retrieve label: ' . $e->getMessage();
+            $modelData['trackings']     = [];
+            $modelData['tracking_urls'] = [];
+            // if (!empty($modelData['label']) && $modelData['label_type'] === ShipmentLabelTypeEnum::PDF) {
+            //     $pdfData = base64_decode($modelData['label']);
+            //     $fileName = 'packeta_labels/label_' . ($id ?: uniqid()) . '.pdf';
+            //     \Illuminate\Support\Facades\Storage::disk('local')->put($fileName, $pdfData);
+            //     $modelData['label_file_path'] = storage_path('app/' . $fileName);
+            // }
+        } catch (SoapFault $e) {
+            $status = 'fail';
+
+            if (isset($e->detail->PacketAttributesFault)) {
+                $faults = $e->detail->PacketAttributesFault->attributes->fault;
+                if (!is_array($faults)) {
+                    $faults = [$faults];
                 }
+
+                foreach ($faults as $fault) {
+                    if (in_array($fault->name, ['street', 'houseNumber', 'city', 'zip']) && !isset($errorData['address'])) {
+                        $errorData['address'] = "Invalid address for fields: ";
+                    } elseif (!isset($errorData['others'])) {
+                        $errorData['others'] = 'Invalid field: ';
+                    }
+                    switch ($fault->name) {
+                        case 'street':
+                            $errorData['address'] .= "address,";
+                            break;
+                        case 'houseNumber':
+                            $errorData['address'] .= "address line 2,";
+                            break;
+                        case 'city':
+                            $errorData['address'] .= "city,";
+                            break;
+                        case 'zip':
+                            $errorData['address'] .= "postal code,";
+                            break;
+                        default:
+                            $errorData['others'] .= "{$fault->name},";
+                            break;
+                    }
+                }
+            } elseif (isset($e->detail->IncorrectApiPasswordFault)) {
+                $errorData['others'] = 'Incorrect API password';
+            } else {
+                $errorData['others'] = 'Unknown error';
             }
 
-        } catch (SoapFault $e) {
-            // dd($e);
-            $status = 'fail';
-            $modelData = [
-                'api_response' => [
-                    'error' => $e->getMessage(),
-                ],
-            ];
-            $errorData = [];
+            if (isset($errorData['address'])) {
+                $errorData['address'] = rtrim($errorData['address'], ',');
+            } elseif (isset($errorData['others'])) {
+                $errorData['others'] = rtrim($errorData['others'], ',');
+            }
 
-            // $errorData = [];
-
-            // if (isset($e->detail->PacketAttributesFault)) {
-            //     $faults = $e->detail->PacketAttributesFault->attributes->fault;
-            //     if (!is_array($faults)) {
-            //         $faults = [$faults];
-            //     }
-
-            //     foreach ($faults as $fault) {
-            //         if (in_array($fault->attribute, ['street', 'houseNumber', 'city', 'zip'])) {
-            //             $errorData['address'][] = "Error in {$fault->attribute}: {$fault->fault}";
-            //         } else {
-            //             $errorData['others'][] = "{$fault->attribute}: {$fault->fault}";
-            //         }
-            //     }
-            // } elseif (isset($e->detail->IncorrectApiPasswordFault)) {
-            //     $errorData['authentication'][] = 'Incorrect API password';
-            // } else {
-            //     $errorData['others'][] = $e->getMessage();
-            // }
+            $errorData['message'] =  $errorData['address'] ?? $errorData['others'];
         }
 
         return [
@@ -166,18 +179,63 @@ class CallApiPacketaShipping extends OrgAction
         ];
     }
 
-    public string $commandSignature = 'xxx222';
+    public function getLabel(string $labelID, Shipper $shipper): string
+    {
+        if (empty($labelID)) {
+            return 'Label ID is empty';
+        }
+        [$_, $apiPassword] = array_values($this->getAccessToken($shipper));
+        $url = $this->getBaseUrl() . '/api/soap.wsdl';
+        $format = 'A6 on A6';
+        $offset = 0;
+        try {
+            $client = new SoapClient($url);
+            $result = $client->packetLabelPdf($apiPassword, $labelID, $format, $offset);
+            return base64_encode($result);
+        } catch (SoapFault $e) {
+            return 'Could not retrieve label: ' . $e->getMessage();
+        }
+    }
+
+    public function getAddressIdByCountryCode(string $countryCode): int
+    {
+        $addressIds = [
+            'SK' => 131, // Slovakia
+            'SI' => 19515, // Slovenia (default to first, can be adjusted)
+            'SI-1' => 19515, // Slovenia
+            'SI-2' => 25004, // Slovenia
+            'ES' => 4653, // Spain
+            'LV' => 25981, // Latvia
+            'LT' => 25982, // Lithuania
+            'PL' => 4162, // Poland
+            'PT' => 4655, // Portugal
+            'RO' => 7397, // Romania
+            'EE' => 25980, // Estonia
+            'FI' => 5060, // Finland
+            'HU' => 4159, // Hungary
+            'IT' => 9103, // Italy
+            'HR' => 10618, // Croatia
+            'CZ' => 106, // Czech Republic
+        ];
+
+        // Normalize country code to uppercase
+        $countryCode = strtoupper($countryCode);
+
+        // Special handling for Slovenia if needed
+        // if ($countryCode === 'SI') {
+        //     // You can implement logic to choose between 19515 and 25004 if needed
+        //     return $addressIds['SI'];
+        // }
+
+        return $addressIds[$countryCode] ?? 131; // Default to Czech Republic if not found
+    }
+
+    public string $commandSignature = 'xxx222x';
 
     public function asCommand($command)
     {
-        // $p = PalletReturn::find(1264);
-        $d = DeliveryNote::find(976022);
-        $s = Shipper::find(31);
+        $d = DeliveryNote::find(981605);
+        $s = Shipper::find(37);
         dd($this->handle($d, $s));
-        // $f = Organisation::find(1);
-        // $this->handle($f);
     }
-
-
-
 }
