@@ -188,6 +188,36 @@ const onClickFilterOutOfStock = (query: string) => {
         }
     )
 }
+const compTableFilterPlatformStatus = computed(() => {
+    return layout.currentQuery?.[`${props.tab}_filter`]?.platform_status
+})
+const onClickFilterPlatformStatus = (query: string) => {
+    // console.log('111111 ewew', compTableFilterPlatformStatus.value, query)
+    let xx: string | null = ''
+    if (compTableFilterPlatformStatus.value === 'true') {
+        xx = 'false'
+    } else {
+        xx = 'true'
+    }
+
+    // If query is undefined, remove the filter from the URL by setting it to null
+    router.reload(
+        {
+            data: {
+                [`${props.tab}_filter[platform_status]`]: xx === undefined ? null : xx
+            },
+            only: ['queryBuilderProps', 'products'],
+            onStart: () => {
+                isLoadingTable.value = 'not-connected'
+            },
+            onSuccess: () => {},
+            onFinish: (e) => {
+                isLoadingTable.value = null
+            },
+            onError: (e) => {}
+        }
+    )
+}
 
 // Section: Modal Shopify select variant
 const isOpenModal = ref(false)
@@ -333,30 +363,41 @@ const onDisableCheckbox = (item) => {
     </template>
     
         
-<!--        <template #add-on-button>-->
-<!--            <Button-->
-<!--                @click="onClickFilterOutOfStock('out-of-stock')"-->
-<!--                v-tooltip="trans('Filter the product that out of stock')"-->
-<!--                label="Out of stock"-->
-<!--                size="xs"-->
-<!--                :key="compTableFilterStatus"-->
-<!--                :type="compTableFilterStatus === 'out-of-stock' ? 'secondary' : 'tertiary'"-->
-<!--                :icon="compTableFilterStatus === 'out-of-stock' ? 'fas fa-filter' : 'fal fa-filter'"-->
-<!--                iconRight="fal fa-exclamation-triangle"-->
-<!--                :loading="isLoadingTable == 'out-of-stock'"-->
-<!--            />-->
-<!--            <Button-->
-<!--                @click="onClickFilterOutOfStock('discontinued')"-->
-<!--                v-tooltip="trans('Filter the product that discontinued')"-->
-<!--                label="Discontinued"-->
-<!--                size="xs"-->
-<!--                :key="compTableFilterStatus"-->
-<!--                :type="compTableFilterStatus === 'discontinued' ? 'secondary' : 'tertiary'"-->
-<!--                :icon="compTableFilterStatus === 'discontinued' ? 'fas fa-filter' : 'fal fa-filter'"-->
-<!--                iconRight="fal fa-times"-->
-<!--                :loading="isLoadingTable == 'discontinued'"-->
-<!--            />-->
-<!--        </template>-->
+        <template #add-on-button>
+            <!-- <Button
+                @click="onClickFilterOutOfStock('out-of-stock')"
+                v-tooltip="trans('Filter the product that out of stock')"
+                label="Out of stock"
+                size="xs"
+                :key="compTableFilterStatus"
+                :type="compTableFilterStatus === 'out-of-stock' ? 'secondary' : 'tertiary'"
+                :icon="compTableFilterStatus === 'out-of-stock' ? 'fas fa-filter' : 'fal fa-filter'"
+                iconRight="fal fa-exclamation-triangle"
+                :loading="isLoadingTable == 'out-of-stock'"
+            />
+            <Button
+                @click="onClickFilterOutOfStock('discontinued')"
+                v-tooltip="trans('Filter the product that discontinued')"
+                label="Discontinued"
+                size="xs"
+                :key="compTableFilterStatus"
+                :type="compTableFilterStatus === 'discontinued' ? 'secondary' : 'tertiary'"
+                :icon="compTableFilterStatus === 'discontinued' ? 'fas fa-filter' : 'fal fa-filter'"
+                iconRight="fal fa-times"
+                :loading="isLoadingTable == 'discontinued'"
+            /> -->
+            <Button
+                @click="onClickFilterPlatformStatus('true')"
+                v-tooltip="trans('Filter the product that not connected yet to :platform', { platform: props.platform_data.name })"
+                label="Not connected"
+                size="xs"
+                :key="compTableFilterPlatformStatus"
+                :type="compTableFilterPlatformStatus === 'true' ? 'secondary' : 'tertiary'"
+                :icon="compTableFilterPlatformStatus === 'true' ? 'fas fa-filter' : 'fal fa-filter'"
+                iconRight="fal fa-handshake-slash"
+                :loading="isLoadingTable == 'not-connected'"
+            />
+        </template>
 
 
         <template #cell(image)="{ item: product }">
