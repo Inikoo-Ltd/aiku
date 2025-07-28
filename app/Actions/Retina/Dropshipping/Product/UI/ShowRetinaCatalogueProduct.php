@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Product\UI;
 use App\Actions\Catalogue\Product\UI\GetProductShowcase;
 use App\Actions\Retina\Dropshipping\Catalogue\ShowRetinaCatalogue;
 use App\Actions\RetinaAction;
+use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\UI\Catalogue\RetinaProductTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\Models\Catalogue\Product;
@@ -173,14 +174,17 @@ class ShowRetinaCatalogueProduct extends RetinaAction
 
     public function getPrevious(Product $product, ActionRequest $request): ?array
     {
-        $previous = Product::where('code', '<', $product->code)->where('shop_id', $this->shop->id)->orderBy('code', 'desc')->first();
+        $previous = Product::where('code', '<', $product->code)->whereIn('state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value])->where('shop_id', $this->shop->id)->orderBy('code', 'desc')->first();
 
         return $this->getNavigation($previous, $request->route()->getName());
     }
 
     public function getNext(Product $product, ActionRequest $request): ?array
     {
-        $next = Product::where('code', '>', $product->code)->where('shop_id', $this->shop->id)->orderBy('code')->first();
+        $next = Product::where('code', '>', $product->code)->whereIn(
+            'state',
+            [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value]
+        )->where('shop_id', $this->shop->id)->orderBy('code')->first();
 
         return $this->getNavigation($next, $request->route()->getName());
     }
