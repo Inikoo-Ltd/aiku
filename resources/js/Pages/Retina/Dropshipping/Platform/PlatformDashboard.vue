@@ -5,7 +5,7 @@ import {faArrowRight, faCube, faLink} from "@fal"
 import {faArrowRight as farArrowRight} from "@far"
 import {library} from "@fortawesome/fontawesome-svg-core"
 import {Link} from "@inertiajs/vue3"
-import {inject} from "vue"
+import {inject, ref} from "vue"
 import Timeline from '@/Components/Utils/Timeline.vue'
 
 import {aikuLocaleStructure} from "@/Composables/useLocaleStructure"
@@ -14,6 +14,7 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import {ChannelLogo} from "@/Composables/Icon/ChannelLogoSvg"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 library.add(faArrowRight, faCube, faLink, farArrowRight)
 
@@ -50,6 +51,7 @@ const props = defineProps<{
 
 const locale = inject('locale', aikuLocaleStructure)
 
+const loadingIdx = ref(null)
 </script>
 
 <template>
@@ -207,8 +209,11 @@ const locale = inject('locale', aikuLocaleStructure)
             </div>
 
             <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 max-w-6xl">
-                <div v-for="platform in platformData" :key="platform.id"
-                     class="relative overflow-hidden rounded-lg ring-1 ring-gray-300 bg-white px-4 pt-5 pb-12 shadow-sm sm:px-6 sm:pt-6">
+                <Link v-for="(platform, idx) in platformData"
+                    :key="idx"
+                    :href="route(platform.route.name, platform.route.parameters)"
+                    @start="() => loadingIdx = idx"
+                     class="relative overflow-hidden rounded-lg ring-1 ring-gray-300 bg-white hover:bg-gray-50 px-4 pt-5 pb-12 shadow-sm sm:px-6 sm:pt-6">
                     <dt>
                         <div class="absolute rounded-md bg-slate-800 p-3 flex justify-center items-center">
                             <FontAwesomeIcon :icon="platform.icon" class="size-6 text-white" fixed-width
@@ -230,16 +235,20 @@ const locale = inject('locale', aikuLocaleStructure)
                         <p class="ml-2 flex items-baseline text-sm text-gray-500">
                             {{ platform.description }}
                         </p>
-                        <div class="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6 text-sm">
-                            <Link :href="route(platform.route.name, platform.route.parameters)"
+                        <div class="absolute inset-x-0 bottom-0 bg-gray-100 px-4 py-4 sm:px-6 text-sm">
+                            <div
                                   class="font-medium text-slate-600 hover:text-slate-500">
                                 View all<span class="sr-only"> {{ platform.name }} stats</span>
-                                <FontAwesomeIcon icon="fal fa-arrow-right" class="ml-1 text-gray-500 text-xs"
-                                                 fixed-width aria-hidden="true"/>
-                            </Link>
+                                <LoadingIcon
+                                    v-if="loadingIdx === idx"
+                                    class="ml-1 text-gray-500 text-xs"
+                                    xsize="16"
+                                />
+                                <FontAwesomeIcon v-else icon="fal fa-arrow-right" class="ml-1 text-gray-500 text-xs" fixed-width aria-hidden="true"/>
+                            </div>
                         </div>
                     </dd>
-                </div>
+                </Link>
             </dl>
         </div>
     </div>
