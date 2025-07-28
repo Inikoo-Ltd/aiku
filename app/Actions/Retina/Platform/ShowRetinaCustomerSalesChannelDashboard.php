@@ -96,7 +96,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
             'platformData'           => $this->getPlatformData($customerSalesChannel),
             'can_connect_to_platform' => $customerSalesChannel->can_connect_to_platform,
             'exist_in_platform' => $customerSalesChannel->exist_in_platform,
-            'platform_status' => $status,
+            // 'platform_status' => $status,
             'step'  => $step
         ]);
     }
@@ -106,6 +106,8 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
         $stats = [];
 
         $isFulfilment = $this->shop->type == ShopTypeEnum::FULFILMENT;
+
+        $isManual = $customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL;
 
         $stats['orders'] = [
             'label'       => __('Orders'),
@@ -120,18 +122,20 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
             ]
         ];
 
-        $stats['clients'] = [
-            'label'       => __('Clients'),
-            'icon'        => 'fal fa-user-friends',
-            'count'       => $customerSalesChannel->number_customer_clients,
-            'description' => __('total clients'),
-            'route'       => [
-                'name'       => $isFulfilment ? 'retina.fulfilment.dropshipping.customer_sales_channels.client.index' : 'retina.dropshipping.customer_sales_channels.client.index',
-                'parameters' => [
-                    'customerSalesChannel' => $customerSalesChannel->slug,
+        if($isManual) { 
+                $stats['clients'] = [
+                'label'       => __('Clients'),
+                'icon'        => 'fal fa-user-friends',
+                'count'       => $customerSalesChannel->number_customer_clients,
+                'description' => __('total clients'),
+                'route'       => [
+                    'name'       => $isFulfilment ? 'retina.fulfilment.dropshipping.customer_sales_channels.client.index' : 'retina.dropshipping.customer_sales_channels.client.index',
+                    'parameters' => [
+                        'customerSalesChannel' => $customerSalesChannel->slug,
+                    ]
                 ]
-            ]
-        ];
+            ];
+        }
 
         $stats['portfolios'] = [
             'label'       => __('Products'),
