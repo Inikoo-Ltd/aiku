@@ -280,7 +280,7 @@ const onDisableCheckbox = (item) => {
                         name: 'grp.models.portfolio.match_to_existing_shopify_product',
                         parameters: {
                             portfolio: portfolio.id,
-                            shopify_product_id: portfolio.platform_possible_matches.raw_data?.[0]?.id
+                            shopify_product_id: portfolio.platform_possible_matches?.raw_data?.[0]?.id
                         }
                     }"
                     :bindToLink="{

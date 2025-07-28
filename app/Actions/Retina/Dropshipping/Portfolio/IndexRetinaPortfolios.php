@@ -206,7 +206,7 @@ class IndexRetinaPortfolios extends RetinaAction
         $actions = [];
 
         if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
-            $countProductsNotSync = $this->customerSalesChannel->portfolios()->where('platform_status', true)->count();
+            $countProductsNotSync = $this->customerSalesChannel->portfolios()->where('platform_status', false)->count();
         } elseif ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
             $countProductsNotSync = 0;
         } else {

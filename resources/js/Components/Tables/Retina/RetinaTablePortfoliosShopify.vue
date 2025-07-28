@@ -321,6 +321,13 @@ const onDisableCheckbox = (item) => {
         :isChecked="(item) => selectedProducts.includes(item.id)"
         :disabledCheckbox="(item)=>onDisableCheckbox(item)"
         :isParentLoading="!!isLoadingTable"
+        :rowColorFunction="(item) => {
+			if (is_platform_connected && !item.platform_status && get(progressToUploadToShopify, [item.id], undefined) != 'success') {
+				return 'bg-yellow-50'
+			} else {
+				return ''
+			}
+		}"
     >
 
 

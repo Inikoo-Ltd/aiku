@@ -181,7 +181,7 @@ watch(() => props.idxSubmitSuccess, (newVal, oldVal) => {
                 <slot name="afterInput">
                 </slot>
             </div>
-            <div class="h-full md:h-[570px] text-base font-normal">
+            <div class="h-full md:min-h-[400px] md:max-h-[570px] text-base font-normal">
                 <!-- <div class="overflow-y-auto bg-gray-200 rounded h-full px-3 py-1">
                     <div class="font-semibold text-lg py-1">{{ trans("Suggestions") }}</div>
                     <div class="border-t border-gray-300 mb-1"></div>
