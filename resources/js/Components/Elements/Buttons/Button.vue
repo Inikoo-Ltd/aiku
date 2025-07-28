@@ -64,7 +64,7 @@ else if (props.style == "warning" || props.type == "warning") styleClass = "bord
 
 else if (props.style == "white" || props.type == "white") styleClass = "bg-white hover:bg-gray-300 text-gray-600";
 else if (props.style == "red" || props.type == "red") styleClass = "bg-red-500 hover:bg-red-600 border border-red-500 hover:border-red-600 text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:text-red-300 disabled:bg-red-600";
-else if (props.style == "green" || props.type == "green") styleClass = `bg-green-500/75 ${ props.noHover ? "" : "hover:bg-green-500 xhover:border-green-500" } border border-green-600  text-white focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2`;
+else if (props.style == "green" || props.type == "green") styleClass = `bg-green-500 ${ props.noHover ? "" : "hover:bg-green-600 xhover:border-green-500" } border border-green-600  text-white focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2`;
 else if (props.style == "gray" || props.type == "gray") styleClass = "bg-gray-300 hover:bg-gray-400 border border-gray-500 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2";
 else if (props.style == "black" || props.type == "black") styleClass = "bg-gray-800 hover:bg-gray-700 disabled:bg-gray-600 border border-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-gray-800 focus:ring-offset-2";
 else if (props.style == "indigo" || props.type == "indigo") styleClass = "bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-800 border border-indigo-500 text-teal-50 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2";
