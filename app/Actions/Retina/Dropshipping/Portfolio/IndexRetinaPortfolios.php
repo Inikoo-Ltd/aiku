@@ -207,7 +207,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
         if($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
             $actions = [
-                        [
+                       /*  [
                             'type'  => 'button',
                             'style' => 'create',
                             'label' => __('Match With Existing Product'),
@@ -230,7 +230,7 @@ class IndexRetinaPortfolios extends RetinaAction
                                 ],
                                 'method'     => 'post'
                             ]
-                        ]
+                        ] */
                     ];
         }
 
