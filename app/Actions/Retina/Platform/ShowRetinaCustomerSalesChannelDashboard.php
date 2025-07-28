@@ -50,45 +50,6 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
 
         $step=[];
         $timeline=null;
-        if(!$customerSalesChannel->platform_status){
-
-            $timeline= $customerSalesChannel->connection_status !== CustomerSalesChannelConnectionStatusEnum::CONNECTED ? [
-                'current_state' => $customerSalesChannel->state->value,
-                'options'   => [
-                    CustomerSalesChannelConnectionStatusEnum::PENDING->value => [
-                        "label" => "Connection Pending",
-                        "tooltip" => "Reconnect your account to start using our services",
-                        "key" => CustomerSalesChannelConnectionStatusEnum::PENDING->value
-                    ],
-                    CustomerSalesChannelConnectionStatusEnum::CONNECTED->value => [
-                        "label" => "Add products",
-                        "tooltip" => "Add products to your portfolio",
-                        "key" => CustomerSalesChannelConnectionStatusEnum::CONNECTED->value
-                    ]
-                ]
-                ]
-                : null;
-
-            $step= [
-                'label' => __('Great! You just complete first step.'),
-                'title' => __('Connect your store'),
-                'description' => __('Connect your store to Shopify and start selling with ease. Our platform is designed to help you manage your sales channels efficiently, so you can focus on growing your business.'),
-                'button' => [
-                    'label' => __('Connect your store'),
-                    'route_target' => [
-                        'name'       => 'retina.dropshipping.customer_sales_channels.reconnect',
-                        'parameters' => [
-                            'customerSalesChannel' => $customerSalesChannel->slug
-                        ],
-                        'method'     => 'get',
-                    ],
-                ],
-                'icon' => 'fal fa-link',
-            ];
-        }
-
-
-
 
 
         $renderPage = $customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL ? 'Dropshipping/Platform/PlatformManualDashboard' : 'Dropshipping/Platform/PlatformDashboard';
@@ -135,7 +96,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
             'platformData'           => $this->getPlatformData($customerSalesChannel),
             'can_connect_to_platform' => $customerSalesChannel->can_connect_to_platform,
             'exist_in_platform' => $customerSalesChannel->exist_in_platform,
-            'platform_status' => $customerSalesChannel->platform_status,
+            'platform_status' => $status,
             'step'  => $step
         ]);
     }

@@ -42,7 +42,6 @@ class DeleteCustomerSalesChannel extends OrgAction
                 $customerSalesChannel,
                 [
                     'status' => CustomerSalesChannelStatusEnum::CLOSED,
-                    'connection_status' => CustomerSalesChannelConnectionStatusEnum::DISCONNECTED,
                     'closed_at' => now()
                 ]
             );

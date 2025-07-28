@@ -67,7 +67,6 @@ class StoreShopifyUser extends RetinaAction
                 'platform_user_type' => class_basename($shopifyUser),
                 'platform_user_id'   => $shopifyUser->id,
                 'reference'          => Arr::get(explode('.myshopify.com', $shopifyUser->name), '0'),
-                'connection_status'  => CustomerSalesChannelConnectionStatusEnum::PENDING
             ]);
 
             $shopifyUser->update([
