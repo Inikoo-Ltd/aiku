@@ -120,7 +120,7 @@ class StoreMagentoUser extends OrgAction
             UpdateCustomerSalesChannel::run($customerSalesChannel, [
                 'name' => Arr::get($stores, '0.name'),
                 'state' => CustomerSalesChannelStateEnum::READY,
-                'connection_status' => CustomerSalesChannelConnectionStatusEnum::CONNECTED
+                'platform_status' => true
             ]);
 
             return $magentoUser;
