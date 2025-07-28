@@ -4,7 +4,7 @@ import { trans } from 'laravel-vue-i18n'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { inject } from 'vue'
+import { inject, onMounted } from 'vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { getStyles } from '@/Composables/styles'
 import { checkVisible, textReplaceVariables } from '@/Composables/Workshop'
@@ -46,6 +46,16 @@ const emits = defineEmits<{
 }>()
 
 
+// Method: generate url for Login
+const urlLoginWithRedirect = () => {
+    if (layout.currentRoute !== "retina.login.show" && layout.currentRoute !== "retina.register") {
+        return `/app/login?ref=${encodeURIComponent(window?.location.pathname)}${
+            window?.location.search ? encodeURIComponent(window?.location.search) : ""
+        }`
+    } else {
+        return "/app/login"
+    }
+}
 
 </script>
 
@@ -128,7 +138,7 @@ const emits = defineEmits<{
 
             <ButtonWithLink
                 v-if="checkVisible(model?.login?.visible || null, isLoggedIn)"
-                url="/app/login"
+                :url="urlLoginWithRedirect()"
                 icon="fal fa-sign-in"
                 type="tertiary"
             >

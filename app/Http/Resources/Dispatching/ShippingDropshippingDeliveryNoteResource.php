@@ -39,7 +39,6 @@ class ShippingDropshippingDeliveryNoteResource extends JsonResource
 
         $recipient = $deliveryNote->customerClient;
 
-
         $toCompanyName = $recipient->company_name ?? '';
         $contactName   = $recipient->contact_name ?? '';
 
@@ -50,6 +49,14 @@ class ShippingDropshippingDeliveryNoteResource extends JsonResource
 
         $toPhone = $recipient->phone ?? '';
         $toEmail = $recipient->email ?? '';
+
+        // if from shopify/ebay/etc
+        if ($toCompanyName === '') {
+            $platform = $recipient?->salesChannel?->platform_user_type;
+            if ($platform) {
+                $toCompanyName = $recipient->contact_name ?? '';
+            }
+        }
 
         return [
             'id'                 => $deliveryNote->id,

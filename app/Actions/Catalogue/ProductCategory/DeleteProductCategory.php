@@ -38,6 +38,9 @@ class DeleteProductCategory extends OrgAction
 
             $productCategory->forceDelete();
         } else {
+            if ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
+                DB::table('products')->where('family_id', $productCategory->id)->update(['family_id' => null]);
+            }
             $productCategory->webpage()->delete();
             $productCategory->delete();
         }
@@ -90,6 +93,7 @@ class DeleteProductCategory extends OrgAction
         return match ($productCategory->type) {
             ProductCategoryTypeEnum::DEPARTMENT => Redirect::route('grp.org.shops.show.catalogue.departments.index', [$productCategory->organisation, $productCategory->shop]),
             ProductCategoryTypeEnum::SUB_DEPARTMENT => Redirect::route('grp.org.shops.show.catalogue.departments.show.sub_departments.index', [$productCategory->organisation, $productCategory->shop, $productCategory->parent]),
+            ProductCategoryTypeEnum::FAMILY => Redirect::route('grp.org.shops.show.catalogue.families.index', [$productCategory->organisation, $productCategory->shop]),
             default => []
         };
     }

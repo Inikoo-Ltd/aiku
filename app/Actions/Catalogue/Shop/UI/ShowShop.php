@@ -54,55 +54,56 @@ class ShowShop extends OrgAction
         return $this->handle($shop);
     }
 
-    protected function getOrdersWidgetData(Shop $shop): array
+    protected function getOrdersWidgetData(Shop $shop): array|null
     {
         if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
-            return $this->getDropshippingOrdersWidgetData($shop);
+            // return $this->getDropshippingOrdersWidgetData($shop);
+            return null;
         } else {
             return $this->getEcomOrdersWidgetData($shop);
         }
     }
 
-    protected function getDropshippingOrdersWidgetData(Shop $shop): array
-    {
-        $platformsData = [];
-        foreach (Platform::all() as $platform) {
-            $platformsData[$platform->id] = [
-                'label'             => $platform->name,
-                'logo'              => $this->getPlatformLogo($platform->code),
-                'number_orders'     => 0,
-                'amount'            => 0,
-                'percentage_orders' => percentage(0, 1),
-                'percentage_amount' => percentage(0, 1)
-            ];
-        }
+    // protected function getDropshippingOrdersWidgetData(Shop $shop): array
+    // {
+    //     $platformsData = [];
+    //     foreach (Platform::all() as $platform) {
+    //         $platformsData[$platform->id] = [
+    //             'label'             => $platform->name,
+    //             'logo'              => $this->getPlatformLogo($platform->code),
+    //             'number_orders'     => 0,
+    //             'amount'            => 0,
+    //             'percentage_orders' => percentage(0, 1),
+    //             'percentage_amount' => percentage(0, 1)
+    //         ];
+    //     }
 
 
-        $platformOrdersDatum =
-            DB::table('orders')->selectRaw('platform_id,sum(net_amount) as net_amount, count(*) as number_orders')->where('shop_id', $shop->id)->where('submitted_at', '>=', Carbon::now()->subDays(7))->where('state', '!=', OrderStateEnum::CANCELLED)->groupBy(
-                'platform_id'
-            )->get();
+    //     $platformOrdersDatum =
+    //         DB::table('orders')->selectRaw('platform_id,sum(net_amount) as net_amount, count(*) as number_orders')->where('shop_id', $shop->id)->where('submitted_at', '>=', Carbon::now()->subDays(7))->where('state', '!=', OrderStateEnum::CANCELLED)->groupBy(
+    //             'platform_id'
+    //         )->get();
 
-        $totalOrders = 0;
-        $totalAmount = 0;
-        foreach ($platformOrdersDatum as $platformOrdersData) {
-            $platformsData[$platformOrdersData->platform_id]['amount']        = $platformOrdersData->net_amount;
-            $platformsData[$platformOrdersData->platform_id]['number_orders'] = $platformOrdersData->number_orders;
-            $totalOrders                                                      += $platformOrdersData->number_orders;
-            $totalAmount                                                      += $platformOrdersData->net_amount;
-        }
+    //     $totalOrders = 0;
+    //     $totalAmount = 0;
+    //     foreach ($platformOrdersDatum as $platformOrdersData) {
+    //         $platformsData[$platformOrdersData->platform_id]['amount']        = $platformOrdersData->net_amount;
+    //         $platformsData[$platformOrdersData->platform_id]['number_orders'] = $platformOrdersData->number_orders;
+    //         $totalOrders                                                      += $platformOrdersData->number_orders;
+    //         $totalAmount                                                      += $platformOrdersData->net_amount;
+    //     }
 
-        foreach ($platformsData as $key => $platformData) {
-            $platformsData[$key]['percentage_orders'] = percentage($platformData['number_orders'], $totalOrders);
-            $platformsData[$key]['percentage_amount'] = percentage($platformData['amount'], $totalAmount);
-        }
+    //     foreach ($platformsData as $key => $platformData) {
+    //         $platformsData[$key]['percentage_orders'] = percentage($platformData['number_orders'], $totalOrders);
+    //         $platformsData[$key]['percentage_amount'] = percentage($platformData['amount'], $totalAmount);
+    //     }
 
-        return [
-            'type'          => 'dropshipping_orders',
-            'platformsData' => $platformsData,
+    //     return [
+    //         'type'          => 'dropshipping_orders',
+    //         'platformsData' => $platformsData,
 
-        ];
-    }
+    //     ];
+    // }
 
     protected function getEcomOrdersWidgetData(Shop $shop): array
     {
@@ -170,46 +171,51 @@ class ShowShop extends OrgAction
 
     private function getDashboard(Shop $shop): array
     {
+        // dump($this->getWidget(
+        //                     data: $this->getOrdersWidgetData($shop),
+        //                 ));
+
+        $widgetComponents[] = $this->getWidget(
+            data: [
+                'value'       => $shop->crmStats->number_customers_state_active,
+                'description' => __('Visitors'),
+                'type'        => 'number',
+                'route'       => [
+                    'name'       => 'grp.org.shops.show.crm.customers.index',
+                    'parameters' => [
+                        'organisation'              => $shop->organisation->slug,
+                        'shop'                      => $shop->slug,
+                        'tab'                       => 'customers',
+                        'customers_elements[state]' => CustomerStateEnum::ACTIVE->value
+                    ]
+                ]
+            ],
+            visual: [
+                'label' => __('New Customers'),
+                'type'  => 'number_with_label',
+                'value' => $shop->orderingIntervals->registrations_1w,
+                'route' => [
+                    'name'       => 'grp.org.shops.show.crm.customers.index',
+                    'parameters' => [
+                        'organisation'               => $shop->organisation->slug,
+                        'shop'                       => $shop->slug,
+                        'tab'                        => 'customers',
+                    ]
+                ]
+            ],
+        );
+
+        if ($this->getOrdersWidgetData($shop)) {
+            $widgetComponents[] = $this->getWidget(
+                data: $this->getOrdersWidgetData($shop),
+            );
+        }
+
         return [
             'dashboard_stats' => [
                 'widgets' => [
                     'column_count' => 4,
-                    'components'   => [
-                        $this->getWidget(
-                            data: [
-                                'value'       => $shop->crmStats->number_customers_state_active,
-                                'description' => __('Visitors'),
-                                'type'        => 'number',
-                                'route'       => [
-                                    'name'       => 'grp.org.shops.show.crm.customers.index',
-                                    'parameters' => [
-                                        'organisation'              => $shop->organisation->slug,
-                                        'shop'                      => $shop->slug,
-                                        'tab'                       => 'customers',
-                                        'customers_elements[state]' => CustomerStateEnum::ACTIVE->value
-                                    ]
-                                ]
-                            ],
-                            visual: [
-                                'label' => __('New Customers'),
-                                'type'  => 'number_with_label',
-                                'value' => $shop->orderingIntervals->registrations_1w,
-                                'route' => [
-                                    'name'       => 'grp.org.shops.show.crm.customers.index',
-                                    'parameters' => [
-                                        'organisation'               => $shop->organisation->slug,
-                                        'shop'                       => $shop->slug,
-                                        'tab'                        => 'customers',
-                                    ]
-                                ]
-                            ],
-                        ),
-                        $this->getWidget(
-                            data: $this->getOrdersWidgetData($shop),
-                        ),
-
-
-                    ]
+                    'components'   => $widgetComponents
                 ]
             ],
             'statsBox'  => $this->getStatsBox($shop),

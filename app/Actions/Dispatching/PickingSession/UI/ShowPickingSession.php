@@ -4,13 +4,14 @@ namespace App\Actions\Dispatching\PickingSession\UI;
 
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSession;
 use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSessionGrouped;
+use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsInPickingSessionStateActive;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
 use App\Actions\UI\WithInertia;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
-use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
 use App\Enums\UI\Dispatch\PickingSessionTabsEnum;
 use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsGroupedResource;
+use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsStateHandlingResource;
 use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsStateUnassignedResource;
 use App\Http\Resources\Dispatching\PickingSessionResource;
 use App\Models\Catalogue\Shop;
@@ -40,7 +41,7 @@ class ShowPickingSession extends OrgAction
     public function asController(Organisation $organisation, Warehouse $warehouse, PickingSession $pickingSession, ActionRequest $request): PickingSession
     {
         $this->parent = $warehouse;
-        $this->initialisationFromWarehouse($warehouse, $request)->withTab(DeliveryNoteTabsEnum::values());
+        $this->initialisationFromWarehouse($warehouse, $request)->withTab(PickingSessionTabsEnum::values());
 
         return $this->handle($pickingSession);
     }
@@ -84,6 +85,17 @@ class ShowPickingSession extends OrgAction
 
 
         $actions   = null;
+        $navigation = PickingSessionTabsEnum::navigation();
+
+        if ($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
+            $this->tab = PickingSessionTabsEnum::ITEMS->value;
+        } elseif ($pickingSession->state == PickingSessionStateEnum::HANDLING) {
+            $this->tab = PickingSessionTabsEnum::ITEMIZED->value;
+        } else {
+            $this->tab = PickingSessionTabsEnum::GROUPED->value;
+        }
+
+
         if ($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
             $actions[] = [
                 'type'    => 'button',
@@ -99,6 +111,13 @@ class ShowPickingSession extends OrgAction
                     ]
                 ]
             ];
+            unset($navigation[PickingSessionTabsEnum::ITEMIZED->value]);
+            unset($navigation[PickingSessionTabsEnum::GROUPED->value]);
+        } elseif ($pickingSession->state == PickingSessionStateEnum::PICKING_FINISHED || $pickingSession->state == PickingSessionStateEnum::PACKING_FINISHED) {
+            unset($navigation[PickingSessionTabsEnum::ITEMIZED->value]);
+            unset($navigation[PickingSessionTabsEnum::ITEMS->value]);
+        } else {
+            unset($navigation[PickingSessionTabsEnum::ITEMS->value]);
         }
 
         $props = [
@@ -124,7 +143,7 @@ class ShowPickingSession extends OrgAction
             'timelines' => $this->getTimeline($pickingSession),
             'tabs'        => [
                 'current'    => $this->tab,
-                'navigation' => PickingSessionTabsEnum::navigation()
+                'navigation' => $navigation,
             ],
             'data' => PickingSessionResource::make($pickingSession)
         ];
@@ -137,9 +156,10 @@ class ShowPickingSession extends OrgAction
             $props
         );
         if ($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
-            $inertiaResponse->table(IndexDeliveryNoteItemsInPickingSession::make()->tableStructure(parent: $pickingSession));
+            $inertiaResponse->table(IndexDeliveryNoteItemsInPickingSession::make()->tableStructure(parent: $pickingSession, prefix: PickingSessionTabsEnum::ITEMS->value));
         } else {
-            $inertiaResponse->table(IndexDeliveryNoteItemsInPickingSessionGrouped::make()->tableStructure(parent: $pickingSession));
+            $inertiaResponse->table(IndexDeliveryNoteItemsInPickingSessionGrouped::make()->tableStructure(parent: $pickingSession, prefix: PickingSessionTabsEnum::GROUPED->value))
+                            ->table(IndexDeliveryNoteItemsInPickingSessionStateActive::make()->tableStructure(prefix: PickingSessionTabsEnum::ITEMIZED->value));
         }
 
         return $inertiaResponse;
@@ -156,9 +176,12 @@ class ShowPickingSession extends OrgAction
             ];
         } else {
             return [
-                PickingSessionTabsEnum::ITEMS->value => $this->tab == PickingSessionTabsEnum::ITEMS->value ?
+                PickingSessionTabsEnum::GROUPED->value => $this->tab == PickingSessionTabsEnum::GROUPED->value ?
                     fn () => PickingSessionDeliveryNoteItemsGroupedResource::collection(IndexDeliveryNoteItemsInPickingSessionGrouped::run($pickingSession))
                     : Inertia::lazy(fn () => PickingSessionDeliveryNoteItemsGroupedResource::collection(IndexDeliveryNoteItemsInPickingSessionGrouped::run($pickingSession))),
+                PickingSessionTabsEnum::ITEMIZED->value => $this->tab == PickingSessionTabsEnum::ITEMIZED->value ?
+                    fn () => PickingSessionDeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsInPickingSessionStateActive::run($pickingSession))
+                    : Inertia::lazy(fn () => PickingSessionDeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsInPickingSessionStateActive::run($pickingSession))),
 
             ];
         }

@@ -237,7 +237,7 @@ class StoreWebpage extends OrgAction
             'model_type'         => ['sometimes', 'string'],
             'model_id'           => ['sometimes', 'integer'],
             'title'              => ['required', 'string'],
-            'seo_structure_type' => ['sometimes', Rule::enum(WebpageSeoStructureTypeEnum::class)],
+            'seo_structure_type' => ['sometimes', 'nullable', Rule::enum(WebpageSeoStructureTypeEnum::class)],
 
 
         ];

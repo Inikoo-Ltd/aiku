@@ -5,6 +5,7 @@ namespace App\Console;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\Dropshipping\Ebay\Orders\FetchEbayOrders;
 use App\Actions\Dropshipping\Ebay\Orders\FetchWooOrders;
+use App\Actions\Dropshipping\Shopify\CheckShopifyChannel;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomersHydrateStatus;
 use App\Actions\Fulfilment\UpdateCurrentRecurringBillsTemporalAggregates;
 use App\Actions\Helpers\Intervals\ResetDailyIntervals;

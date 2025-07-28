@@ -31,6 +31,5 @@ const props = defineProps<{
 
 <template>
     <Intro v-if="props.showIntro" :shops :routes/>
-
     <WelcomeShop v-else-if="props.shop" :shop :shopUrl :data />
 </template>

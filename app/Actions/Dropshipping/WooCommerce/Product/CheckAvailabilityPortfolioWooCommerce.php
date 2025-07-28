@@ -26,6 +26,8 @@ class CheckAvailabilityPortfolioWooCommerce extends RetinaAction
      */
     public function handle(WooCommerceUser $wooCommerceUser, Portfolio $portfolio): ?array
     {
+        $customerSalesChannel = $wooCommerceUser->customerSalesChannel;
+
         try {
             $searchFields = [
                 'sku' => $portfolio->item_code,
@@ -45,6 +47,10 @@ class CheckAvailabilityPortfolioWooCommerce extends RetinaAction
                     break;
                 }
             }
+
+            $customerSalesChannel->update([
+
+            ]);
 
             return Arr::get($result, '0');
         } catch (\Exception $e) {

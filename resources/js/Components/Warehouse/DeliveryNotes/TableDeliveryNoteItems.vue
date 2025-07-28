@@ -171,6 +171,7 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
 
         <!-- Column: Quantity Required -->
         <template #cell(quantity_required)="{ item }">
+
             <span v-tooltip="item.quantity_required">
                 <FractionDisplay  v-if="item.quantity_required_fractional"   :fractionData="item.quantity_required_fractional" />
                 <span v-else>{{item.quantity_required}}</span>
@@ -263,7 +264,7 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
         </template>
 
         <!-- Column: actions -->
-        <template #cell(handing_actions)="{ item: itemValue, proxyItem }">
+        <template #cell(picking_position)="{ item: itemValue, proxyItem }">
             <!-- <pre>{{ itemValue }}</pre> -->
             <div v-if="itemValue.quantity_to_pick > 0">
                 <div v-if="findLocation(itemValue.locations, proxyItem.hehe)" class="rounded p-1 flex flex-col justify-between gap-x-6 items-center even:bg-black/5">

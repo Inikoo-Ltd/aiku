@@ -63,16 +63,40 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
 
     }
 
-    public string $commandSignature = 'aaa';
+    public string $commandSignature = 'product:hydrate-available-quantity';
 
-    public function asCommand()
+    public function asCommand(\Illuminate\Console\Command $command): void
     {
-        $product = Product::find(235799);
 
-        foreach (Product::all() as $product) {
-            $this->handle($product);
+
+
+        $chunkSize = 100; // Process 100 products at a time to save memory
+        $count = 0;
+
+        // Get total count for progress bar
+        $total = \App\Models\Catalogue\Product::count();
+
+        if ($total === 0) {
+            $command->info("No products found.");
+            return;
         }
 
+        // Create a progress bar
+        $progressBar = $command->getOutput()->createProgressBar($total);
+        $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
+        $progressBar->start();
+
+        \App\Models\Catalogue\Product::chunk($chunkSize, function ($products) use (&$count, $progressBar) {
+            foreach ($products as $product) {
+                $this->handle($product);
+                $count++;
+                $progressBar->advance();
+            }
+        });
+
+        $progressBar->finish();
+        $command->newLine();
+        $command->info("Updated available quantity for $count products.");
     }
 
 }

@@ -193,8 +193,7 @@ console.log('props', props.pickingSession)
 </script>
 
 <template>
-
-    <Table :resource="data" class="mt-5" rowAlignTop>
+    <Table :resource="data" class="mt-5" rowAlignTop :name="tab">
         <!-- Column: state -->
         <template #cell(state)="{ item }">
             <Icon :data="item.state_icon" />
@@ -458,7 +457,7 @@ console.log('props', props.pickingSession)
 
 
         <!-- Column: actions -->
-        <template #cell(handing_actions)="{ item: itemValue, proxyItem }">
+        <template #cell(picking_position)="{ item: itemValue, proxyItem }">
             <div v-if="itemValue.quantity_to_pick > 0 && pickingSession.state == 'handling'">
                 <div v-if="findLocation(itemValue.locations, proxyItem.hehe)"
                     class="rounded p-1 flex flex-col justify-between gap-x-6 items-center even:bg-black/5">

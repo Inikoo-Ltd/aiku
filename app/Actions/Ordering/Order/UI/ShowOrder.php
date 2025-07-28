@@ -96,9 +96,8 @@ class ShowOrder extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, CustomerClient $customerClient, Order $order, ActionRequest $request): Order
+    public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, CustomerClient $customerClient, Order $order, ActionRequest $request): Order
     {
-        $customerSalesChannel       = CustomerSalesChannel::where('customer_id', $customerClient->customer_id)->where('platform_id', $platform->id)->first();
         $this->parent               = $customerClient;
         $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisationFromShop($shop, $request)->withTab(OrderTabsEnum::values());

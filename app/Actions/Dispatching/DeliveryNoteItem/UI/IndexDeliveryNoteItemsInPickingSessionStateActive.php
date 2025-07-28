@@ -36,10 +36,12 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
 
         $query->where('delivery_note_items.picking_session_id', $parent->id);
         $query->leftJoin('delivery_notes', 'delivery_note_items.delivery_note_id', '=', 'delivery_notes.id');
-
         $query->leftjoin('org_stocks', 'delivery_note_items.org_stock_id', '=', 'org_stocks.id');
+        $query->leftjoin('locations', 'locations.id', '=', 'org_stocks.picking_location_id');
+        $query->leftjoin('warehouse_areas', 'warehouse_areas.id', '=', 'locations.warehouse_area_id');
 
         return $query
+            ->defaultSort('warehouse_areas.picking_position', 'locations.code', 'org_stocks.code')
             ->select([
                 'delivery_note_items.id',
                 'delivery_note_items.state',
@@ -52,12 +54,14 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
                 'org_stocks.id as org_stock_id',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
+                'org_stocks.packed_in',
                 'delivery_notes.slug as delivery_note_slug',
                 'delivery_notes.id as delivery_note_id',
                 'delivery_notes.reference as delivery_note_reference',
                 'delivery_notes.state as delivery_note_state',
+                'warehouse_areas.picking_position as picking_position',
             ])
-            ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required', 'quantity_picked', 'quantity_packed', 'state'])
+            ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required', 'quantity_picked', 'quantity_packed', 'state', 'picking_position'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -78,13 +82,14 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
                     [
                         'title' => __("delivery note empty"),
                     ]
-                );
+                )->defaultSort('picking_position');
+
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'delivery_note_reference', label: __('Delivery Note'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'pickings', label: __('Pickings'), canBeHidden: false);
-            $table->column(key: 'handing_actions', label: __('To do actions'), canBeHidden: false);
+            $table->column(key: 'picking_position', label: __('To do actions'), canBeHidden: false, sortable: true);
         };
     }
 

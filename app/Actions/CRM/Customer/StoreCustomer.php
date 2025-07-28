@@ -254,7 +254,7 @@ class StoreCustomer extends OrgAction
             'email_subscriptions.is_subscribed_to_basket_reminder_1' => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_basket_reminder_2' => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_basket_reminder_3' => ['sometimes', 'boolean'],
-            'traffic_sources'                                        => ['sometimes', 'nullable', 'string'],
+            'traffic_sources'                                        => ['sometimes', 'nullable'],
 
 
             'password' =>

@@ -126,7 +126,7 @@ class CallApiApcGbShipping extends OrgAction
                 'CompanyName'  => Str::limit(Arr::get($parentResource, 'to_company_name'), 30),
                 'AddressLine1' => Str::limit(Arr::get($parentResource, 'to_address.address_line_1'), 60),
                 'AddressLine2' => Str::limit($address2, 60),
-                'PostalCode'   => Arr::get($parentResource, 'to_address.postal_code'),
+                'PostalCode'   => $postalCode,
                 'City'         => Str::limit(Arr::get($parentResource, 'to_address.locality'), 31, ''),
                 'County'       => Str::limit(Arr::get($parentResource, 'to_address.administrative_area'), 31, ''),
                 'CountryCode'  => Arr::get($parentResource, 'to_address.country.code'),
@@ -208,6 +208,9 @@ class CallApiApcGbShipping extends OrgAction
         $errorData = [];
 
         $dataFlat = array_filter(Arr::flatten($apiResponse));
+
+
+
         if (in_array('DutyItems', $dataFlat)) {
             $errorData['address'][] = 'Address must be in United Kingdom';
             $errorData['message'][] = 'Address must be in United Kingdom';
@@ -220,8 +223,15 @@ class CallApiApcGbShipping extends OrgAction
             $modelData['label_type'] = ShipmentLabelTypeEnum::PDF;
             $modelData['number_parcels'] = (int)Arr::get($apiResponse, 'Orders.Order.ShipmentDetails.NumberOfPieces');
 
+            $modelData['trackings']     = [];
+            $modelData['tracking_urls'] = [];
 
-            $modelData['tracking'] = Arr::get($apiResponse, 'Orders.Order.WayBill');
+
+            foreach (Arr::get($apiResponse, 'Orders.Order.ShipmentDetails.Items', []) as $item) {
+                $modelData['trackings'][]     = Arr::get($item, 'TrackingNumber');
+            }
+            $modelData['tracking']                  = implode(' ', $modelData['trackings']);
+
         } else {
             $status = 'fail';
 

@@ -44,10 +44,13 @@ class DispatchDeliveryNote extends OrgAction
 
             $deliveryNote = $this->update($deliveryNote, $modelData);
 
+
+
             $deliveryNote->refresh();
             foreach ($deliveryNote->orders as $order) {
                 DispatchOrderFromDeliveryNote::make()->action($order);
             }
+
 
 
             OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)

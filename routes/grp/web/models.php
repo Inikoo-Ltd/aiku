@@ -39,7 +39,7 @@ use App\Actions\Catalogue\ProductCategory\DeleteProductCategory;
 use App\Actions\Catalogue\ProductCategory\DetachFamilyToSubDepartment;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreSubDepartment;
-use App\Actions\Catalogue\ProductCategory\UpdateMultipleFamiliesDepartment;
+use App\Actions\Catalogue\ProductCategory\AttachFamiliesToDepartment;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
@@ -82,6 +82,11 @@ use App\Actions\Dropshipping\CustomerSalesChannel\DeleteCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\DeletePortfolio;
 use App\Actions\Dropshipping\Portfolio\StoreMultiplePortfolios;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
+use App\Actions\Dropshipping\Shopify\Product\CreateNewBulkPortfoliosToShopify;
+use App\Actions\Dropshipping\Shopify\Product\MatchBulkPortfoliosToCurrentShopifyProduct;
+use App\Actions\Dropshipping\Shopify\Product\MatchPortfolioToCurrentShopifyProduct;
+use App\Actions\Dropshipping\Shopify\Product\StoreNewProductToCurrentShopify;
+use App\Actions\Dropshipping\Shopify\ResetShopifyChannel;
 use App\Actions\Fulfilment\Fulfilment\StoreFulfilmentFromUI;
 use App\Actions\Fulfilment\Fulfilment\UpdateFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\StoreFulfilmentCustomer;
@@ -331,10 +336,9 @@ Route::prefix('department/{productCategory:id}')->name('department.')->group(fun
 
 
 Route::prefix('/product_category/{productCategory:id}')->name('product_category.')->group(function () {
-    Route::patch('', UpdateProductCategory::class)->name('update');
-    Route::delete('', DeleteProductCategory::class)->name('delete');
+    Route::patch('update', UpdateProductCategory::class)->name('update');
+    Route::delete('delete', DeleteProductCategory::class)->name('delete');
 });
-
 
 Route::prefix('sub-department/{productCategory:id}')->name('sub-department.')->group(function () {
     Route::post('family', [StoreProductCategory::class, 'inSubDepartment'])->name('family.store');
@@ -346,6 +350,11 @@ Route::prefix('sub-department/{subDepartment:id}')->name('sub-department.')->gro
 
 Route::delete('portfolio/{portfolio:id}', DeletePortfolio::class)->name('portfolio.delete');
 Route::patch('portfolio/{portfolio:id}', UpdatePortfolio::class)->name('portfolio.update')->withoutScopedBindings();
+
+Route::post('portfolio/{portfolio:id}/match-to-existing-shopify-product', MatchPortfolioToCurrentShopifyProduct::class)->name('portfolio.match_to_existing_shopify_product');
+Route::post('portfolio/{portfolio:id}/store-new-shopify-product', StoreNewProductToCurrentShopify::class)->name('portfolio.store_new_shopify_product');
+Route::post('{customerSalesChannel:id}/shopify-batch-upload', CreateNewBulkPortfoliosToShopify::class)->name('shopify.batch_upload')->withoutScopedBindings();
+Route::post('{customerSalesChannel:id}/shopify-batch-match', MatchBulkPortfoliosToCurrentShopifyProduct::class)->name('shopify.batch_match')->withoutScopedBindings();
 
 Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::post("google-drive.authorize", [AuthorizeClientGoogleDrive::class, 'authorize'])->name('google_drive.authorize');
@@ -690,6 +699,9 @@ Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customer
     Route::post('portfolio-multiple-manual', StoreMultiplePortfolios::class)->name('portfolio.store_multiple_manual');
     Route::post('client', StoreCustomerClient::class)->name('client.store');
     Route::delete('delete', DeleteCustomerSalesChannel::class)->name('delete');
+    Route::patch('reset-shopify', ResetShopifyChannel::class)->name('shopify_reset');
+
+
 });
 
 Route::post('{shop:id}/purge', StorePurge::class)->name('purge.store');
@@ -811,7 +823,7 @@ Route::name('product_category.')->group(function () {
 });
 
 Route::post('family/{family:id}/move-products', UpdateMultipleProductsFamily::class)->name('family.move_products');
-Route::post('department/{department:id}/move-families', UpdateMultipleFamiliesDepartment::class)->name('department.move_families');
+Route::post('department/{department:id}/move-families', AttachFamiliesToDepartment::class)->name('department.move_families');
 
 Route::name('model_has_content.')->prefix('model-has-content/{modelHasContent:id}')->group(function () {
     Route::patch('update', UpdateModelHasContent::class)->name('update');

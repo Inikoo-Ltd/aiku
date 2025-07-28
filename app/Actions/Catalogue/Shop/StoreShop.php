@@ -13,7 +13,6 @@ use App\Actions\Accounting\PaymentAccountShop\StorePaymentAccountShop;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopOfferCampaigns;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopOutboxes;
 use App\Actions\Catalogue\Shop\Seeders\SeedShopPermissions;
-use App\Actions\Catalogue\Shop\Seeders\SeedShopTrafficSources;
 use App\Actions\CRM\TrafficSource\SeedTrafficSources;
 use App\Actions\Fulfilment\Fulfilment\StoreFulfilment;
 use App\Actions\Helpers\Colour\GetRandomColour;
@@ -240,9 +239,8 @@ class StoreShop extends OrgAction
         SeedShopOutboxes::run($shop);
         SeedJobPositions::run($organisation);
         SetIconAsShopLogo::dispatch($shop)->delay($this->hydratorsDelay);
-        SeedShopTrafficSources::run($shop);
-
         SeedShopOfferCampaigns::run($shop);
+        SeedTrafficSources::run($shop);
 
         if ($shop->master_shop_id) {
             MasterShopHydrateShops::dispatch($shop->masterShop)->delay($this->hydratorsDelay);

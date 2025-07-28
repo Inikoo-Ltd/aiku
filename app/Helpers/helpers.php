@@ -214,3 +214,22 @@ if (!function_exists('divideWithRemainder')) {
         return [$quotient, [$remainder, $divisor]];
     }
 }
+
+if (!function_exists('riseDivisor')) {
+
+    function riseDivisor(array $input, $raiser): array
+    {
+        $divisor = $input[1][1];
+        if ($divisor != 0) {
+            $factor = $raiser / $divisor;
+            $dividend = $input[1][0] * $factor;
+            $divisor = $input[1][1] * $factor;
+            $factoredRequiredFactionalData = [
+                $input[0],
+                [$dividend,$divisor]
+            ];
+            $input = $factoredRequiredFactionalData;
+        }
+        return $input;
+    }
+}

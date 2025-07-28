@@ -8,7 +8,6 @@ const props = defineProps<{
             origin?: string
             dimensions?: [number, number]
             ingredients?: Array<string>
-
         }
     }
 }>()
