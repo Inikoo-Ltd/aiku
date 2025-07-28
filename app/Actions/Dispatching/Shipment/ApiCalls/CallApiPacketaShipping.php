@@ -56,8 +56,6 @@ class CallApiPacketaShipping extends OrgAction
     public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper): array
     {
         [$_, $apiPassword] = array_values($this->getAccessToken($shipper));
-        // dd($this->getLabel($apiPassword, 3141295364));
-        // $apiPassword = $this->getAccessToken($shipper);
         $url = $this->getBaseUrl() . '/api/soap.wsdl';
 
         if ($parent instanceof PalletReturn) {
@@ -83,9 +81,7 @@ class CallApiPacketaShipping extends OrgAction
             'addressId' => $this->getAddressIdByCountryCode($countryCode),
             'value' => '100',
             'currency' => $order->currency?->code ?? 'EUR',
-            'eshop' => Arr::get($parentResource, 'from_company_name', 'Aiku Development'),
-            // 'eshop' => '123 Handmade',
-            // 'eshopId' => , // Default to 1 if not set
+            'eshop' => 'Ancient Wisom s.ro.',
             'weight' => $weight, // in kg
             'street' => Arr::get($parentResource, 'to_address.address_line_1'),
             'houseNumber' => Arr::get($parentResource, 'to_address.address_line_2'),
@@ -118,12 +114,6 @@ class CallApiPacketaShipping extends OrgAction
 
             $modelData['trackings']     = [];
             $modelData['tracking_urls'] = [];
-            // if (!empty($modelData['label']) && $modelData['label_type'] === ShipmentLabelTypeEnum::PDF) {
-            //     $pdfData = base64_decode($modelData['label']);
-            //     $fileName = 'packeta_labels/label_' . ($id ?: uniqid()) . '.pdf';
-            //     \Illuminate\Support\Facades\Storage::disk('local')->put($fileName, $pdfData);
-            //     $modelData['label_file_path'] = storage_path('app/' . $fileName);
-            // }
         } catch (SoapFault $e) {
             $status = 'fail';
 
