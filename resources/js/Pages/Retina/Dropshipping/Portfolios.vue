@@ -246,20 +246,20 @@ const loadingAction= ref([])
 
 const onSuccessEditCheckmark = () => {
   /*   router.reload({ only: ["data"] }) */
-    notify({
+    /* notify({
         title: trans("Success!"),
         text: trans("Successfully added the portfolio"),
         type: "success",
-    })
+    }) */
     selectedProducts.value = []
 }
 
 const onFailedEditCheckmark = (error: any) => {
-    notify({
+   /*  notify({
         title: "Something went wrong.",
         text: error?.products || "An error occurred.",
         type: "error",
-    })
+    }) */
 }
 
 const submitPortfolioAction = (action: any) => {

@@ -314,7 +314,7 @@ const onDisableCheckbox = (item) => {
         :name="tab"
         class="mt-5"
         isCheckBox
-        :isCheckBox="useCheckBox"
+        :isCheckBox="false"
         @onChecked="(item) => onChangeCheked(true, item)" 
         @onUnchecked="(item) => onChangeCheked(false, item)"
         @onCheckedAll="(data) => onCheckedAll(data)"
