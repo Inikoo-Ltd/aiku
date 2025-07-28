@@ -2,7 +2,7 @@
 import {Head, router} from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import {capitalize} from "@/Composables/capitalize";
-import {computed, reactive, ref} from "vue";
+import {computed, reactive, ref, provide} from "vue";
 import {PageHeading as PageHeadingTypes} from "@/types/PageHeading";
 import {Tabs as TSTabs} from "@/types/Tabs";
 import RetinaTablePortfoliosManual from "@/Components/Tables/Retina/RetinaTablePortfoliosManual.vue";
@@ -18,6 +18,7 @@ import AddPortfolios from "@/Components/Dropshipping/AddPortfolios.vue";
 import {Message, Popover} from "primevue"
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
 import {faSyncAlt, faHandPointer} from "@fas";
+import { useEchoRetinaPersonal } from '@/Stores/echo-retina-personal'
 import {
     faBracketsCurly, faPawClaws,
     faFileExcel,
@@ -34,6 +35,7 @@ import {Table as TableTS} from "@/types/Table"
 import { CustomerSalesChannel } from "@/types/customer-sales-channel"
 import RetinaTablePortfoliosPlatform from "@/Components/Tables/Retina/RetinaTablePortfoliosPlatform.vue"
 import RetinaTablePortfoliosShopify from "@/Components/Tables/Retina/RetinaTablePortfoliosShopify.vue"
+import ProgressBar from '@/Components/Utils/ProgressBar.vue'
 
 library.add(faFileExcel, faBracketsCurly, faSyncAlt, faHandPointer, faPawClaws, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
 
@@ -275,6 +277,8 @@ const submitPortfolioAction = (action: any) => {
     })
 }
 
+
+provide('selectedEchopersonal', useEchoRetinaPersonal())
 
 </script>
 
@@ -577,4 +581,7 @@ const submitPortfolioAction = (action: any) => {
             :onClickReconnect
         />
     </Modal>
+
+    
+     <!--  <ProgressBar/> -->
 </template>
