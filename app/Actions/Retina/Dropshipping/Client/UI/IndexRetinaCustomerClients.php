@@ -76,6 +76,11 @@ class IndexRetinaCustomerClients extends RetinaAction
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): LengthAwarePaginator
     {
         $this->customerSalesChannel = $customerSalesChannel;
+
+        if($customerSalesChannel->platform->type != PlatformTypeEnum::MANUAL) {
+            abort(409);
+        }
+        
         $this->initialisation($request)->withTab(RetinaCustomerClientsTabsEnum::values());
 
         return $this->handle($customerSalesChannel);
