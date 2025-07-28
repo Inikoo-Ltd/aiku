@@ -97,7 +97,7 @@ class ShowWebUser extends OrgAction
                     'subNavigation' => $subNavigation,
                     'icon'              => 'fal fa-user',
                     'iconRight' => $iconRight,
-                // 'meta'          => [
+                    // 'meta'          => [
                     //     [
                     //         'name' => $webUser->username
                     //     ]
@@ -257,6 +257,4 @@ class ShowWebUser extends OrgAction
             default => []
         };
     }
-
-
 }

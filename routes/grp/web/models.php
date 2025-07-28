@@ -71,6 +71,7 @@ use App\Actions\CRM\Poll\StorePoll;
 use App\Actions\CRM\Poll\UpdatePoll;
 use App\Actions\CRM\Prospect\ImportShopProspects;
 use App\Actions\CRM\WebUser\StoreWebUser;
+use App\Actions\CRM\WebUser\DeleteWebUserInCustomer;
 use App\Actions\CRM\WebUser\UpdateWebUser;
 use App\Actions\Dispatching\Printer\PrintShipmentLabel;
 use App\Actions\Dispatching\Shipment\DeleteShipment;
@@ -684,6 +685,7 @@ Route::name('model_has_web_block.')->prefix('model-has-web-block')->group(functi
 });
 
 Route::patch('/web-user/{webUser:id}', UpdateWebUser::class)->name('web-user.update');
+Route::delete('/web-user/{webUser:id}', DeleteWebUserInCustomer::class)->name('web-user.delete');
 
 Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
     Route::post('', [StoreWebUser::class, 'inCustomer'])->name('web-user.store');
@@ -700,8 +702,6 @@ Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customer
     Route::post('client', StoreCustomerClient::class)->name('client.store');
     Route::delete('delete', DeleteCustomerSalesChannel::class)->name('delete');
     Route::patch('reset-shopify', ResetShopifyChannel::class)->name('shopify_reset');
-
-
 });
 
 Route::post('{shop:id}/purge', StorePurge::class)->name('purge.store');
