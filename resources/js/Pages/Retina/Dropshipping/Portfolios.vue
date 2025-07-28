@@ -488,15 +488,15 @@ provide('selectedEchopersonal', useEchoRetinaPersonal())
                 <div class="flex items-center justify-center w-12 h-12 bg-green-100 text-green-600 rounded-full">
                     <FontAwesomeIcon :icon="faCircleCheck" class="w-6 h-6" />
                 </div>
-                <h2 class="text-2xl font-bold text-gray-800">Product Uploaded</h2>
+                <h2 class="text-2xl font-bold text-gray-800"> {{trans('Uploading products')}}</h2>
                 </div>
 
-                <div class="text-base text-gray-700 leading-relaxed">
+                <div class="text-base text-gray-700 leading-relaxed mt-6 mb-3">
                 <p>
-                    Your product has been successfully uploaded to <span class="font-medium">Shopify</span>.
+                    {{trans('Your product is being uploaded')}} <span class="font-medium">Shopify</span>.
                 </p>
                 <p class="mt-2 text-gray-600">
-                    In the meantime, please refresh the page after a few minutes to view the updated status
+                    {{trans('Please refresh the page after a few minutes to view the updated status')}}
                 </p>
                 </div>
 
