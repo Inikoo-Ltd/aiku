@@ -17,7 +17,7 @@ import AddPortfoliosWithUpload from "@/Components/Dropshipping/AddPortfoliosWith
 import AddPortfolios from "@/Components/Dropshipping/AddPortfolios.vue";
 import {Message, Popover} from "primevue"
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
-import {faSyncAlt} from "@fas";
+import {faSyncAlt, faHandPointer} from "@fas";
 import {
     faBracketsCurly, faPawClaws,
     faFileExcel,
@@ -35,7 +35,7 @@ import { CustomerSalesChannel } from "@/types/customer-sales-channel"
 import RetinaTablePortfoliosPlatform from "@/Components/Tables/Retina/RetinaTablePortfoliosPlatform.vue"
 import RetinaTablePortfoliosShopify from "@/Components/Tables/Retina/RetinaTablePortfoliosShopify.vue"
 
-library.add(faFileExcel, faBracketsCurly, faSyncAlt, faPawClaws, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
+library.add(faFileExcel, faBracketsCurly, faSyncAlt, faHandPointer, faPawClaws, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
 
 
 const props = defineProps<{
@@ -456,23 +456,32 @@ const submitPortfolioAction = (action: any) => {
 
 
                 
-            <Button v-if="selectedProducts.length > 0" :type="'create'" :label="'Match With Existing Product'"
-                :loading="loadingAction.includes('Match With Existing Product')"
-                @click="() => submitPortfolioAction({
-                    label : 'Match With Existing Product',
-                    name : 'retina.models.dropshipping.shopify.batch_match',
-                    parameters: { customerSalesChannel: customer_sales_channel.id }, 
-                    method: 'post',
-                })" />
-
-            <Button v-if="selectedProducts.length > 0" :type="'create'" :label="'Create New Product'"
-                :loading="loadingAction.includes('Create New Product')"
-                @click="() => submitPortfolioAction({
-                    label : 'Create New Product',
-                    name : 'retina.models.dropshipping.shopify.batch_upload',
-                    parameters: { customerSalesChannel: customer_sales_channel.id }, 
-                    method: 'post',
-                })" />
+                <div class="space-x-2">
+                    <Button v-if="selectedProducts.length > 0"
+                        type="green"
+                        icon="fas fa-hand-pointer"
+                        :label="trans('Match With Existing Product (:count)', { count: selectedProducts?.length })"
+                        :loading="loadingAction.includes('Match With Existing Product')"
+                        @click="() => submitPortfolioAction({
+                            label : 'Match With Existing Product',
+                            name : 'retina.models.dropshipping.shopify.batch_match',
+                            parameters: { customerSalesChannel: customer_sales_channel.id },
+                            method: 'post',
+                        })"
+                        size="xs"
+                    />
+                    <Button v-if="selectedProducts.length > 0" :type="'create'"
+                        :label="trans('Create New Product (:count)', { count: selectedProducts?.length })"
+                        :loading="loadingAction.includes('Create New Product')"
+                        @click="() => submitPortfolioAction({
+                            label : 'Create New Product',
+                            name : 'retina.models.dropshipping.shopify.batch_upload',
+                            parameters: { customerSalesChannel: customer_sales_channel.id },
+                            method: 'post',
+                        })" 
+                        size="xs"
+                    />
+                </div>
             </div>
         </div>
     </Message>
