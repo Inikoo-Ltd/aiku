@@ -189,6 +189,17 @@ class EditShop extends OrgAction
                                 ],
                             ],
                         ],
+                        [
+                            'label'  => __('Invoicing'),
+                            'icon'   => 'fal fa-file-invoice',
+                            'fields' => [
+                                'stand_alone_invoice_numbers' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Standalone invoice numbers'),
+                                    'value' => Arr::get($shop->settings, 'invoicing.stand_alone_invoice_numbers', false),
+                                ],
+                            ],
+                        ],
                     ],
                     'args'      => [
                         'updateRoute' => [
