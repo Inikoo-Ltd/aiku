@@ -10,6 +10,7 @@
 namespace App\Actions\Catalogue\ProductCategory\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
+use App\Enums\Catalogue\Collection\CollectionProductStatusEnum;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
@@ -46,7 +47,10 @@ class ProductCategoryHydrateCollections implements ShouldBeUnique
         foreach (CollectionStateEnum::cases() as $case) {
             $stats["number_collections_state_".$case->snake()] = Arr::get($count, $case->value, 0);
         }
-        $stats['number_current_collections'] = $stats['number_collections_state_active'] + $stats['number_collections_state_discontinuing'];
+        foreach (CollectionProductStatusEnum::cases() as $case) {
+            $stats["number_collections_product_status_".$case->snake()] = Arr::get($count, $case->value, 0);
+        }
+        $stats['number_current_collections'] = $stats['number_collections_state_active'] + $stats['number_collections_product_status_discontinuing'];
 
 
         $productCategory->stats()->update($stats);

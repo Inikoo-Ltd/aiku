@@ -18,20 +18,6 @@ trait WithCollectionsSubNavigation
         $stats = $shop->stats;
 
         return [
-
-            [
-                'label'  => __('All'),
-                'root'   => 'grp.org.shops.show.catalogue.collections.index',
-                'route'  => [
-                    'name'       => 'grp.org.shops.show.catalogue.collections.index',
-                    'parameters' => [
-                        $this->organisation->slug,
-                        $this->shop->slug
-                    ]
-                ],
-                'number' => $stats->number_collections
-            ],
-
             [
                 'label'  => __('Active'),
                 'root'   => 'grp.org.shops.show.catalogue.collections.active.index',
@@ -55,6 +41,18 @@ trait WithCollectionsSubNavigation
                     ]
                 ],
                 'number' => $stats->number_collections_state_inactive,
+            ],
+            [
+                'label'  => __('All'),
+                'root'   => 'grp.org.shops.show.catalogue.collections.index',
+                'route'  => [
+                    'name'       => 'grp.org.shops.show.catalogue.collections.index',
+                    'parameters' => [
+                        $this->organisation->slug,
+                        $this->shop->slug
+                    ]
+                ],
+                'number' => $stats->number_collections,
                 'align'  => 'right'
             ],
         ];

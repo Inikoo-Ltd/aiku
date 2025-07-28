@@ -9,6 +9,7 @@
 namespace App\Actions\SysAdmin\Group\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
+use App\Enums\Catalogue\Collection\CollectionProductStatusEnum;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\SysAdmin\Group;
@@ -43,10 +44,19 @@ class GroupHydrateCollections implements ShouldBeUnique
                 where: function ($q) use ($group) {
                     $q->where('group_id', $group->id);
                 }
+            ),
+            $this->getEnumStats(
+                model: 'collections',
+                field: 'product_status',
+                enum: CollectionProductStatusEnum::class,
+                models: Collection::class,
+                where: function ($q) use ($group) {
+                    $q->where('shop_id', $group->id);
+                }
             )
         );
 
-        $stats['number_current_collections'] = $stats['number_collections_state_active'] + $stats['number_collections_state_discontinuing'];
+        $stats['number_current_collections'] = $stats['number_collections_state_active'] + $stats['number_collections_product_status_discontinuing'];
 
         $group->catalogueStats()->update($stats);
     }

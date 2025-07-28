@@ -9,6 +9,7 @@
 namespace App\Actions\SysAdmin\Organisation\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
+use App\Enums\Catalogue\Collection\CollectionProductStatusEnum;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\SysAdmin\Organisation;
@@ -43,10 +44,19 @@ class OrganisationHydrateCollections implements ShouldBeUnique
                 where: function ($q) use ($organisation) {
                     $q->where('organisation_id', $organisation->id);
                 }
+            ),
+            $this->getEnumStats(
+                model: 'collections',
+                field: 'product_status',
+                enum: CollectionProductStatusEnum::class,
+                models: Collection::class,
+                where: function ($q) use ($organisation) {
+                    $q->where('organisation_id', $organisation->id);
+                }
             )
         );
 
-        $stats['number_current_collections'] = $stats['number_collections_state_active'] + $stats['number_collections_state_discontinuing'];
+        $stats['number_current_collections'] = $stats['number_collections_state_active'] + $stats['number_collections_product_status_discontinuing'];
 
 
         $organisation->catalogueStats()->update($stats);
