@@ -203,6 +203,12 @@ const onCheckedAll = ({ data, allChecked }) => {
     }
 }
 
+const onDisableCheckbox = (item) => {
+    if(item.platform_status && item.exist_in_platform && item.has_valid_platform_product_id) return true
+    return false
+}
+
+
 </script>
 
 <template>
@@ -213,7 +219,13 @@ const onCheckedAll = ({ data, allChecked }) => {
         @onCheckedAll="(data) => onCheckedAll(data)"
         checkboxKey='id' 
         :isChecked="(item) => selectedProducts.includes(item.id)"
+        :disabledCheckbox="(item)=>onDisableCheckbox(item)"
     >
+
+    <template #header-checkbox="data">
+        <div></div>
+    </template>
+
         <template #cell(item_code)="{ item: portfolio }">
             <Link :href="itemRoute(portfolio)" class="primaryLink">
                 {{ portfolio["item_code"] }}

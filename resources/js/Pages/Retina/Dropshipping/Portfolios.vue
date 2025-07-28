@@ -241,7 +241,7 @@ const bulkUpload = () => {
 }
 
 const progressToUploadToShopify = ref<{ [key: number]: string }>({})
-
+const selectedProducts = ref<number[]>([])
 
 
 </script>
@@ -488,6 +488,7 @@ const progressToUploadToShopify = ref<{ [key: number]: string }>({})
             :is_platform_connected
             :progressToUploadToShopify
             :customerSalesChannel="customer_sales_channel"
+            v-model:selectedProducts="selectedProducts"
         />
 
         <RetinaTablePortfoliosPlatform
