@@ -203,8 +203,36 @@ class IndexRetinaPortfolios extends RetinaAction
             };
         }
 
+        $actions = [];
 
-        $this->customerSalesChannel->platform->type;
+        if($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
+            $actions = [
+                        [
+                            'type'  => 'button',
+                            'style' => 'create',
+                            'label' => __('Match With Existing Product'),
+                            'route' => [
+                                'method'     => 'post',
+                                'name'       => 'retina.models.dropshipping.shopify.batch_match',
+                                'parameters' => [
+                                    'customerSalesChannel' => $this->customerSalesChannel->id,
+                                ]
+                            ]
+                        ],
+                        [
+                            'type'  => 'button',
+                            'style' => 'create',
+                            'label' => __('Create New Product'),
+                            'route' => [
+                                'name'       => 'retina.models.dropshipping.shopify.batch_upload',
+                                'parameters' => [
+                                    'customerSalesChannel' => $this->customerSalesChannel->id,
+                                ],
+                                'method'     => 'post'
+                            ]
+                        ]
+                    ];
+        }
 
         return Inertia::render(
             'Dropshipping/Portfolios',
@@ -217,7 +245,8 @@ class IndexRetinaPortfolios extends RetinaAction
                     'afterTitle' => [
                         'label' => '@'.$this->customerSalesChannel->name,
                     ],
-                    'icon'       => 'fal fa-cube'
+                    'icon'       => 'fal fa-cube',
+                    'actions' => $actions,
                 ],
                 'routes'         => [
                     'bulk_upload'               => $bulkUploadRoute,

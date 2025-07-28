@@ -241,7 +241,39 @@ const bulkUpload = () => {
 }
 
 const progressToUploadToShopify = ref<{ [key: number]: string }>({})
+const selectedProducts = ref<number[]>([])
+const loadingAction= ref([])
 
+const onSuccessEditCheckmark = () => {
+  /*   router.reload({ only: ["data"] }) */
+    notify({
+        title: trans("Success!"),
+        text: trans("Successfully added the portfolio"),
+        type: "success",
+    })
+    selectedProducts.value = []
+}
+
+const onFailedEditCheckmark = (error: any) => {
+    notify({
+        title: "Something went wrong.",
+        text: error?.products || "An error occurred.",
+        type: "error",
+    })
+}
+
+const submitPortfolioAction = (action: any) => {
+    loadingAction.value.push(action.label)
+    router.visit(route(action.route.name, action.route?.parameters), {
+        method: action.route?.method || "get",
+        data: { portfolios: selectedProducts.value },
+        onSuccess: onSuccessEditCheckmark,
+        onError: (error) => onFailedEditCheckmark(error),
+        onFinish: () => {
+          loadingAction.value = []
+        }
+    })
+}
 
 
 </script>
@@ -249,6 +281,20 @@ const progressToUploadToShopify = ref<{ [key: number]: string }>({})
 <template>
     <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead">
+
+        <template #button-match-with-existing-product="{ action }">
+            <Button v-if="selectedProducts.length > 0" :type="action.style" :label="action.label"
+                 :loading="loadingAction.includes(action.label)"
+                @click="() => submitPortfolioAction(action)" />
+            <div v-else></div>
+        </template>
+
+        <template #button-create-new-product="{ action }">
+            <Button v-if="selectedProducts.length > 0" :type="action.style" :label="action.label"
+                :loading="loadingAction.includes(action.label)"
+                @click="() => submitPortfolioAction(action)" />
+            <div v-else></div>
+        </template>
 
 
         <template #button-upload-to-shopify="{ action }">
@@ -488,6 +534,7 @@ const progressToUploadToShopify = ref<{ [key: number]: string }>({})
             :is_platform_connected
             :progressToUploadToShopify
             :customerSalesChannel="customer_sales_channel"
+            v-model:selectedProducts="selectedProducts"
         />
 
         <RetinaTablePortfoliosPlatform
