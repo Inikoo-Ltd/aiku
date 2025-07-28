@@ -39,7 +39,7 @@ use App\Actions\Catalogue\ProductCategory\DeleteProductCategory;
 use App\Actions\Catalogue\ProductCategory\DetachFamilyToSubDepartment;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreSubDepartment;
-use App\Actions\Catalogue\ProductCategory\UpdateMultipleFamiliesDepartment;
+use App\Actions\Catalogue\ProductCategory\AttachFamiliesToDepartment;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
@@ -822,7 +822,7 @@ Route::name('product_category.')->group(function () {
 });
 
 Route::post('family/{family:id}/move-products', UpdateMultipleProductsFamily::class)->name('family.move_products');
-Route::post('department/{department:id}/move-families', UpdateMultipleFamiliesDepartment::class)->name('department.move_families');
+Route::post('department/{department:id}/move-families', AttachFamiliesToDepartment::class)->name('department.move_families');
 
 Route::name('model_has_content.')->prefix('model-has-content/{modelHasContent:id}')->group(function () {
     Route::patch('update', UpdateModelHasContent::class)->name('update');

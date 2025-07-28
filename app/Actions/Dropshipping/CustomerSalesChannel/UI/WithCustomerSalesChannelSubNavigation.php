@@ -10,11 +10,10 @@
 namespace App\Actions\Dropshipping\CustomerSalesChannel\UI;
 
 use App\Models\Dropshipping\CustomerSalesChannel;
-use Lorisleiva\Actions\ActionRequest;
 
 trait WithCustomerSalesChannelSubNavigation
 {
-    public function getCustomerSalesChannelSubNavigationHead(CustomerSalesChannel $customerSalesChannel, ActionRequest $request, $titleRight = '', $iconRight = null): array
+    public function getCustomerSalesChannelSubNavigationHead(CustomerSalesChannel $customerSalesChannel, $titleRight = '', $iconRight = null): array
     {
         return [
             'subNavigation' => $this->getCustomerSalesChannelSubNavigation($customerSalesChannel),

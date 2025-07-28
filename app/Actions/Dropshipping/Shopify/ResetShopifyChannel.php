@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\Shopify;
 use App\Actions\Dropshipping\Shopify\FulfilmentService\DeleteAllFulfilmentServices;
 use App\Actions\Dropshipping\Shopify\FulfilmentService\StoreFulfilmentService;
 use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolios;
+use App\Actions\Dropshipping\Shopify\Webhook\CreateShopifyWebhooks;
 use App\Actions\Dropshipping\Shopify\Webhook\DeleteWebhooksFromShopify;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Console\Command;
@@ -22,9 +23,17 @@ class ResetShopifyChannel
 
     public function handle(CustomerSalesChannel $customerSalesChannel): void
     {
-        DeleteWebhooksFromShopify::run($customerSalesChannel->user);
+        if ($customerSalesChannel->user) {
+            DeleteWebhooksFromShopify::run($customerSalesChannel->user);
+        }
         DeleteAllFulfilmentServices::run($customerSalesChannel);
+
+        if (!$customerSalesChannel->user) {
+            return;
+        }
+
         StoreFulfilmentService::run($customerSalesChannel);
+        CreateShopifyWebhooks::run($customerSalesChannel->user);
         CheckShopifyChannel::run($customerSalesChannel);
         CheckShopifyPortfolios::run($customerSalesChannel);
     }

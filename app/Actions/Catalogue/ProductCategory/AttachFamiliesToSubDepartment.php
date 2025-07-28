@@ -98,4 +98,12 @@ class AttachFamiliesToSubDepartment extends OrgAction
     {
         return new SubDepartmentResource($subDepartment);
     }
+
+    public function action(ProductCategory $subDepartment, array $familiesToAttach): ProductCategory
+    {
+        $this->asAction = true;
+        $this->initialisationFromShop($subDepartment->shop, $familiesToAttach);
+        return $this->handle($subDepartment, $this->validatedData);
+
+    }
 }

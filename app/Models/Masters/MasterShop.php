@@ -8,7 +8,7 @@
 
 namespace App\Models\Masters;
 
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
@@ -131,17 +131,17 @@ class MasterShop extends Model implements Auditable
 
     public function getMasterDepartments(): LaravelCollection
     {
-        return $this->masterProductCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->get();
+        return $this->masterProductCategories()->where('type', MasterProductCategoryTypeEnum::DEPARTMENT)->get();
     }
 
-    public function getMasterSubDepartments(): LaravelCollection
+    public function subDepartments(): LaravelCollection
     {
-        return $this->masterProductCategories()->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)->get();
+        return $this->masterProductCategories()->where('type', MasterProductCategoryTypeEnum::SUB_DEPARTMENT)->get();
     }
 
     public function getMasterFamilies(): LaravelCollection
     {
-        return $this->masterProductCategories()->where('type', ProductCategoryTypeEnum::FAMILY)->get();
+        return $this->masterProductCategories()->where('type', MasterProductCategoryTypeEnum::FAMILY)->get();
     }
 
     public function getMasterProducts(): BelongsToMany

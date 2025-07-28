@@ -20,10 +20,6 @@ Route::middleware(['verify.shopify'])->group(function () {
         ->group(__DIR__."/dashboard.php");
 
 
-    Route::prefix("models")
-        ->name("models.")
-        ->group(__DIR__."/models.php");
-
 });
 
 Route::match(

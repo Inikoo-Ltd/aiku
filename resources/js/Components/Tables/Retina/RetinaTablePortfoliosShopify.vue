@@ -16,7 +16,6 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
 import Image from "@/Components/Image.vue"
 import {debounce, get, set} from "lodash-es"
-import ConditionIcon from "@/Components/Utils/ConditionIcon.vue"
 import {
     faConciergeBell,
     faGarage,
@@ -31,7 +30,7 @@ import {
     faExclamationCircle,
     faClone,
     faLink, faScrewdriver, faTools,
-    faRecycle
+    faRecycle,faHandPointer,faHandshakeSlash,faHandshake
 } from "@fal"
 import {faStar, faFilter} from "@fas"
 import {faExclamationTriangle as fadExclamationTriangle} from "@fad"
@@ -42,10 +41,9 @@ import {notify} from "@kyvg/vue3-notification"
 import Modal from "@/Components/Utils/Modal.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
-import Tag from '@/Components/Tag.vue'
 import axios from "axios"
 
-library.add(fadExclamationTriangle, faSyncAlt, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, faClone, faLink, faScrewdriver, faTools)
+library.add(faHandshake,faHandshakeSlash,faHandPointer,fadExclamationTriangle, faSyncAlt, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, faClone, faLink, faScrewdriver, faTools)
 
 interface PlatformData {
     id: number
@@ -259,7 +257,7 @@ const resultOfFetchShopifyProduct = ref<ShopifyProduct[]>([])
 const isLoadingFetchShopifyProduct = ref(false)
 const fetchRoute = async () => {
     isLoadingFetchShopifyProduct.value = true
-    
+
 
     try {
         const www = await axios.get(route('retina.json.dropshipping.customer_sales_channel.shopify_products', {
@@ -332,34 +330,37 @@ const onDisableCheckbox = (item) => {
         :isParentLoading="!!isLoadingTable"
     >
 
+
      <template #header-checkbox="data">
         <div></div>
     </template>
     
-        <template #add-on-button>
-            <Button
-                @click="onClickFilterOutOfStock('out-of-stock')"
-                v-tooltip="trans('Filter the product that out of stock')"
-                label="Out of stock"
-                size="xs"
-                :key="compTableFilterStatus"
-                :type="compTableFilterStatus === 'out-of-stock' ? 'secondary' : 'tertiary'"
-                :icon="compTableFilterStatus === 'out-of-stock' ? 'fas fa-filter' : 'fal fa-filter'"
-                iconRight="fal fa-exclamation-triangle"
-                :loading="isLoadingTable == 'out-of-stock'"
-            />
-            <Button
-                @click="onClickFilterOutOfStock('discontinued')"
-                v-tooltip="trans('Filter the product that discontinued')"
-                label="Discontinued"
-                size="xs"
-                :key="compTableFilterStatus"
-                :type="compTableFilterStatus === 'discontinued' ? 'secondary' : 'tertiary'"
-                :icon="compTableFilterStatus === 'discontinued' ? 'fas fa-filter' : 'fal fa-filter'"
-                iconRight="fal fa-times"
-                :loading="isLoadingTable == 'discontinued'"
-            />
-        </template>
+        
+<!--        <template #add-on-button>-->
+<!--            <Button-->
+<!--                @click="onClickFilterOutOfStock('out-of-stock')"-->
+<!--                v-tooltip="trans('Filter the product that out of stock')"-->
+<!--                label="Out of stock"-->
+<!--                size="xs"-->
+<!--                :key="compTableFilterStatus"-->
+<!--                :type="compTableFilterStatus === 'out-of-stock' ? 'secondary' : 'tertiary'"-->
+<!--                :icon="compTableFilterStatus === 'out-of-stock' ? 'fas fa-filter' : 'fal fa-filter'"-->
+<!--                iconRight="fal fa-exclamation-triangle"-->
+<!--                :loading="isLoadingTable == 'out-of-stock'"-->
+<!--            />-->
+<!--            <Button-->
+<!--                @click="onClickFilterOutOfStock('discontinued')"-->
+<!--                v-tooltip="trans('Filter the product that discontinued')"-->
+<!--                label="Discontinued"-->
+<!--                size="xs"-->
+<!--                :key="compTableFilterStatus"-->
+<!--                :type="compTableFilterStatus === 'discontinued' ? 'secondary' : 'tertiary'"-->
+<!--                :icon="compTableFilterStatus === 'discontinued' ? 'fas fa-filter' : 'fal fa-filter'"-->
+<!--                iconRight="fal fa-times"-->
+<!--                :loading="isLoadingTable == 'discontinued'"-->
+<!--            />-->
+<!--        </template>-->
+
 
         <template #cell(image)="{ item: product }">
             <div class="overflow-hidden w-10 h-10">
@@ -371,15 +372,15 @@ const onDisableCheckbox = (item) => {
             <Link :href="portfolioRoute(product)" class="primaryLink whitespace-nowrap">
                 {{ product["code"] }}
             </Link>
-            <div class="text-base font-semibold">
+            <div class="mt-1">
                 {{ product["name"] }}
             </div>
             <div class="text-sm text-gray-500 italic flex gap-x-10 gap-y-2">
                 <div>
-                    {{ trans("Stocks:") }} {{ locale.number(product.quantity_left) }}
+                    {{ trans("Stock:") }} {{ locale.number(product.quantity_left) }}
                 </div>
                 <div>
-                    {{ trans("Weight:") }} {{ locale.number(product.weight / 1000) }} kg
+                    {{ trans("Weight:") }}  <span v-tooltip="trans('Marketing weight')">{{ locale.number(product.marketing_weight / 1000) }}Kg</span> / <span v-tooltip="trans('Weight including packing')">{{ locale.number(product.weight / 1000) }}Kg</span>
                 </div>
             </div>
 
@@ -412,12 +413,12 @@ const onDisableCheckbox = (item) => {
         <!-- Column: Status (repair) -->
         <template #cell(status)="{ item }">
             <div class="whitespace-nowrap">
-                <FontAwesomeIcon v-if="item.has_valid_platform_product_id" v-tooltip="trans('Has valid platform product id')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-                <FontAwesomeIcon v-else v-tooltip="trans('Has valid platform product id')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-                <FontAwesomeIcon v-if="item.exist_in_platform" v-tooltip="trans('Exist in platform')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-                <FontAwesomeIcon v-else v-tooltip="trans('Exist in platform')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-                <FontAwesomeIcon v-if="item.platform_status" v-tooltip="trans('Platform status')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-                <FontAwesomeIcon v-else v-tooltip="trans('Platform status')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+<!--                <FontAwesomeIcon v-if="item.has_valid_platform_product_id" v-tooltip="trans('Has valid platform product id')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />-->
+<!--                <FontAwesomeIcon v-else v-tooltip="trans('Has valid platform product id')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />-->
+<!--                <FontAwesomeIcon v-if="item.exist_in_platform" v-tooltip="trans('Exist in platform')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />-->
+<!--                <FontAwesomeIcon v-else v-tooltip="trans('Exist in platform')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />-->
+                <FontAwesomeIcon v-if="item.platform_status" v-tooltip="trans('Product connected to shopify')" icon="fal fa-handshake" class="text-green-500" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-else v-tooltip="trans('Not connected')" icon="fal fa-handshake-slash" class="text-red-500" fixed-width aria-hidden="true" />
             </div>
 
             <!-- <div class="flex justify-center">
@@ -437,15 +438,17 @@ const onDisableCheckbox = (item) => {
             <template v-if="item.customer_sales_channel_platform_status">
 
             <template v-if="!item.platform_status">
-                <div v-if="item.platform_possible_matches?.number_matches"  class="flex gap-x-2 items-center">
-                    <div class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow">
+
+                <div v-if="item.platform_possible_matches?.number_matches"  class="border border-gray-300 rounded p-1">
+                <div  class="flex gap-x-2 items-center border border-gray-300 rounded p-1">
+                    <div v-if="item.platform_possible_matches?.raw_data?.[0].images?.[0]?.src"  class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow border border-gray-300 rounded">
                         <img :src="item.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src" />
                     </div>
                     <div>
                         <span class="mr-1">{{ item.platform_possible_matches?.matches_labels[0]}}</span>
                     </div>
                 </div>
-                
+
                 <ButtonWithLink
                     v-if="item.platform_possible_matches?.number_matches"
                     v-tooltip="trans('Match to existing Shopify product')"
@@ -460,32 +463,56 @@ const onDisableCheckbox = (item) => {
                     :bindToLink="{
                         preserveScroll: true,
                     }"
-                    type="secondary"
+                    type="primary"
                     :label="trans('Match with this product')"
                     size="xxs"
-                    icon="fal fa-tools"
+                    icon="fal fa-hand-pointer"
                 />
-                
+
+                </div>
+
                 <Button
-                    xv-if="portfolio.platform_possible_matches?.number_matches"
+                    v-if="item.platform_possible_matches?.number_matches"
                     @click="() => (fetchRoute(), isOpenModal = true, selectedPortfolio = item)"
-                    :label="trans('Select other product from Shopify')"
+                    :label="trans('Choose another product from your shop')"
+                    :capitalize="false"
+                    size="xxs"
+                    type="tertiary"
+                />
+                <Button
+                    v-else
+                    @click="() => (fetchRoute(), isOpenModal = true, selectedPortfolio = item)"
+                    :label="trans('Match it with an existing product in your shop')"
                     :capitalize="false"
                     size="xxs"
                     type="tertiary"
                 />
             </template>
             <template v-else>
-                <pre>{{item.shopify_product_data}}</pre>
+
+              <template v-if="item.shopify_product_data?.title">
+                  <div  class="flex gap-x-2 items-center">
+
+                  <div v-if="item.shopify_product_data?.images?.edges?.[0]?.node?.src" class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow border border-gray-300 rounded">
+                      <img :src="item.shopify_product_data?.images?.edges?.[0]?.node?.src" />
+                  </div>
+
+                <div>
+                    <span class="mr-1">{{ item.shopify_product_data?.title}}</span>
+                </div>
+                  </div>
+              </template>
+
+
 
                 <Button
-                    xv-if="portfolio.platform_possible_matches?.number_matches"
+                   class="mt-2"
                     @click="() => (fetchRoute(), isOpenModal = true, selectedPortfolio = item)"
-                    :label="trans('Change product')"
+                    :label="trans('Connect with other product')"
                     :capitalize="false"
                     :icon="faRecycle"
                     size="xxs"
-                    type="negative"
+                    type="tertiary"
                 />
 
             </template>
@@ -530,19 +557,19 @@ const onDisableCheckbox = (item) => {
 
         <!-- Column: Actions 3 -->
         <template #cell(delete)="{ item }">
-            <ButtonWithLink
-                v-tooltip="trans('Unselect product')"
-                type="negative"
-                icon="fal fa-skull"
-                :routeTarget="item.update_portfolio"
-                :body="{
-						'status': false,
-					}"
-                size="xs"
-                :bindToLink="{
-						preserveScroll: true,
-					}"
-            />
+<!--            <ButtonWithLink-->
+<!--                v-tooltip="trans('Unselect product')"-->
+<!--                type="negative"-->
+<!--                icon="fal fa-skull"-->
+<!--                :routeTarget="item.update_portfolio"-->
+<!--                :body="{-->
+<!--						'status': false,-->
+<!--					}"-->
+<!--                size="xs"-->
+<!--                :bindToLink="{-->
+<!--						preserveScroll: true,-->
+<!--					}"-->
+<!--            />-->
         </template>
     </Table>
 
@@ -580,7 +607,7 @@ const onDisableCheckbox = (item) => {
                     <div class="h-full md:h-[400px] overflow-auto py-2 relative">
                         <!-- Products list -->
                          <!-- {{ selectedVariant }} -->
-                           
+
                         <div v-if="querySearchPortfolios || resultOfFetchShopifyProduct?.length" class="min-h-24 relative mb-4 pb-4  p-2 xborder-b xborder-indigo-300 grid grid-cols-2 gap-3 pr-2">
                             <template v-if="resultOfFetchShopifyProduct?.length">
                                 <div
@@ -603,7 +630,7 @@ const onDisableCheckbox = (item) => {
                                         <!-- <Image v-if="item.image" :src="item.image?.[0]?.src"
                                             class="w-16 h-16 overflow-hidden mx-auto md:mx-0 mb-4 md:mb-0" imageCover
                                             :alt="item.name"/> -->
-                                        <div class="min-h-3 h-auto max-h-9 min-w-9 w-auto max-w-9">
+                                        <div class="min-h-3 h-auto max-h-9 min-w-9 w-auto max-w-9 border border-gray-300 rounded">
                                             <img :src="item.images?.[0]?.src" class="shadow" />
                                         </div>
                                         <div class="flex flex-col justify-between">
@@ -648,7 +675,7 @@ const onDisableCheckbox = (item) => {
                         <div class="text-center text-gray-500" v-else>
                             Start typing to search for products in Shopify
                         </div>
-                        
+
                     </div>
                     <!-- Pagination -->
                     <!-- <Pagination
@@ -679,4 +706,3 @@ const onDisableCheckbox = (item) => {
         </div>
     </Modal>
 </template>
-

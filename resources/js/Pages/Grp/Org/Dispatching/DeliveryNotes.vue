@@ -5,7 +5,8 @@
   -->
 
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3'
+import { Head, Link, router } from '@inertiajs/vue3'
+import { notify } from "@kyvg/vue3-notification"
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
@@ -32,6 +33,38 @@ const selectedDeliveryNotes = ref<number[]>([])
 const layoutStore = inject("layout", layoutStructure);
 const loading=ref(false)
 
+const pickingSessionRoute = {
+  name: props.picking_session_route.name,
+  parameters: props.picking_session_route.parameters,
+}
+
+function createPickingSession() {
+  if (selectedDeliveryNotes.value.length === 0) return
+
+  loading.value = true
+
+  router.post(
+    route(pickingSessionRoute.name, pickingSessionRoute.parameters),
+    { delivery_notes: selectedDeliveryNotes.value },
+    {
+      onFinish: () => {
+        loading.value = false
+      },
+      onError: (errors) => {
+        loading.value = false
+        console.log(errors.message)
+        if (errors.message) {
+          notify({
+            title: 'Validation Error',
+            text: errors.message,
+            type: 'error',
+          })
+        }
+      },
+    }
+  )
+}
+
 console.log("layoutStore", layoutStore)
 </script>
 
@@ -39,9 +72,13 @@ console.log("layoutStore", layoutStore)
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead">
     <template #other>
-      <Link v-if="selectedDeliveryNotes.length > 0" @start="loading= true" @finish="loading = false" :href="route(picking_session_route.name,picking_session_route.parameters)" method="post" as="button" :data="{ delivery_notes : selectedDeliveryNotes}">
-        <Button type="create" label="picking session"  :loading="loading"/>
-      </Link>
+        <Button
+        v-if="selectedDeliveryNotes.length > 0"
+        type="create"
+        label="picking session"
+        :loading="loading"
+        @click="createPickingSession"
+      />
     </template>
   </PageHeading>
   <HasPickTableDeliveryNote v-if="todo" :data="data" v-model:selectedDeliveryNotes="selectedDeliveryNotes"/>

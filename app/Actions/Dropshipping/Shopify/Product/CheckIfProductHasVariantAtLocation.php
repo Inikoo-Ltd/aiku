@@ -16,19 +16,16 @@ class CheckIfProductHasVariantAtLocation
 {
     use AsAction;
 
-    /**
-     * Check if a Shopify product has a variant with inventory at a specific location
-     *
-     * @param  ShopifyUser  $shopifyUser  The Shopify user account to use for API access
-     * @param  string  $productId  The Shopify product ID to check
-     *
-     * @return bool True if the product has a variant with inventory at the specified location, false otherwise
-     */
     public function handle(ShopifyUser $shopifyUser, ?string $productId): bool
     {
         if (!$productId) {
             return false;
         }
+
+        if (!CheckIfShopifyProductIDIsValid::run($productId)) {
+            return false;
+        }
+
 
         if (!$shopifyUser->shopify_location_id) {
             Sentry::captureMessage("No location ID found for Shopify user");
@@ -85,7 +82,7 @@ class CheckIfProductHasVariantAtLocation
 
             // Check if product data exists in the response
             if (!isset($body['data']['product']) || !isset($body['data']['product']['variants']['edges'])) {
-                Sentry::captureMessage("Product data not found in response");
+                Sentry::captureMessage("Product data not found in response A ".json_encode($response));
 
                 return false;
             }
@@ -93,9 +90,7 @@ class CheckIfProductHasVariantAtLocation
             // Check if any variant has inventory at the specified location
             foreach ($body['data']['product']['variants']['edges'] as $edge) {
                 $variant = $edge['node'];
-                if (isset($variant['inventoryItem']['inventoryLevel'])
-                    && isset($variant['inventoryItem']['inventoryLevel']['id'])
-                    && $variant['inventoryItem']['inventoryLevel']['id']) {
+                if (isset($variant['inventoryItem']['inventoryLevel']['id']) && $variant['inventoryItem']['inventoryLevel']['id']) {
                     return true;
                 }
             }

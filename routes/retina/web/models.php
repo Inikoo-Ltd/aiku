@@ -19,11 +19,6 @@ use App\Actions\Dropshipping\Ebay\Product\SyncronisePortfolioToEbay;
 use App\Actions\Dropshipping\Magento\Orders\GetRetinaOrdersFromMagento;
 use App\Actions\Dropshipping\Magento\Product\SyncronisePortfoliosToMagento;
 use App\Actions\Dropshipping\Magento\Product\SyncronisePortfolioToMagento;
-use App\Actions\Dropshipping\Shopify\Product\GetApiProductsFromShopify;
-use App\Actions\Dropshipping\Shopify\Product\MatchBulkPortfoliosToCurrentShopifyProduct;
-use App\Actions\Dropshipping\Shopify\Product\MatchPortfolioToCurrentShopifyProduct;
-use App\Actions\Dropshipping\Shopify\Product\StoreNewProductToCurrentShopify;
-use App\Actions\Dropshipping\Shopify\Product\CreateNewBulkPortfoliosToShopify;
 use App\Actions\Dropshipping\Shopify\ResetShopifyChannel;
 use App\Actions\Dropshipping\Tiktok\Product\GetProductsFromTiktokApi;
 use App\Actions\Dropshipping\Tiktok\Product\StoreProductToTiktok;
@@ -258,7 +253,6 @@ Route::delete('{token}/access-token', DeleteCustomerAccessToken::class)->name('a
 Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('shopify-user/{shopifyUser:id}/products', StoreRetinaProductShopify::class)->name('shopify_user.product.store')->withoutScopedBindings();
 
-    Route::get('shopify-user/{shopifyUser:id}/sync-products', GetApiProductsFromShopify::class)->name('shopify_user.product.sync')->withoutScopedBindings();
     Route::post('{customerSalesChannel:id}/shopify-batch-upload', CreateRetinaNewBulkPortfoliosToShopify::class)->name('shopify.batch_upload')->withoutScopedBindings();
     Route::post('{customerSalesChannel:id}/shopify-batch-match', MatchRetinaBulkPortfoliosToCurrentShopifyProduct::class)->name('shopify.batch_match')->withoutScopedBindings();
 

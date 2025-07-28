@@ -24,6 +24,12 @@ class FindShopifyProductVariant
         /** @var ShopifyUser $shopifyUser */
         $shopifyUser = $customerSalesChannel->user;
 
+        if (!$shopifyUser) {
+            Sentry::captureMessage("Shopify user not found");
+            ;
+            return null;
+        }
+
         $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
 
         if (!$client) {

@@ -45,8 +45,11 @@ class IndexRetinaPortfolios extends RetinaAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereAnyWordStartWith('portfolios.item_code', $value)
-                    ->orWhereWith('portfolios.item_name', $value);
+                $query->where(function ($query) use ($value) {
+                    $query->whereStartWith('portfolios.reference', $value)
+                        ->orWhereWith('portfolios.item_code', $value)
+                        ->orWhereWith('portfolios.item_name', $value);
+                });
             });
         });
 
@@ -172,7 +175,7 @@ class IndexRetinaPortfolios extends RetinaAction
             };
         }
 
-        // Button: Create new product to platform
+        // Button: Create a new product to platform
         $duplicateRoute = false;
         if ($platformUser) {
             $duplicateRoute = match ($this->customerSalesChannel->platform->type) {
@@ -198,8 +201,10 @@ class IndexRetinaPortfolios extends RetinaAction
                 ],
                 default => false
             };
-        };
+        }
 
+
+        $this->customerSalesChannel->platform->type;
 
         return Inertia::render(
             'Dropshipping/Portfolios',
@@ -300,10 +305,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
 
                 'step' => [
-                    'current' => match ($this->customerSalesChannel->platform->type) {
-                        // PlatformTypeEnum::SHOPIFY, PlatformTypeEnum::WOOCOMMERCE => $this->customerSalesChannel->portfolios()->whereNull('platform_product_id')->count() === 0 ? 0 : 1,
-                        default => 0
-                    }
+                    'current' => 0
                 ],
 
 
@@ -329,7 +331,7 @@ class IndexRetinaPortfolios extends RetinaAction
                     ->name($prefix)
                     ->pageName($prefix.'Page');
             }
-            $table->withLabelRecord([__('portfolio'), __('portfolios')]);
+            $table->withLabelRecord([__('product'), __('products')]);
             $table
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
@@ -339,13 +341,20 @@ class IndexRetinaPortfolios extends RetinaAction
                 ]);
 
             $table->column(key: 'image', label: __(''), canBeHidden: false, searchable: true);
-            $table->column(key: 'name', label: __('Item'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'name', label: __('Product'), canBeHidden: false, sortable: true, searchable: true);
 
 
             if ($this->customerSalesChannel->platform->type !== PlatformTypeEnum::MANUAL) {
+
                 $table->column(key: 'status', label: __('status'));
-                $table->column(key: 'matches', label: __('Matches'), canBeHidden: false);
-                $table->column(key: 'create_new',label:__('New'), canBeHidden: false);
+
+                $matchesLabel = __('Matches');
+                if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
+                    $matchesLabel = __('Shopify product');
+                }
+
+                $table->column(key: 'matches', label: $matchesLabel, canBeHidden: false);
+                $table->column(key: 'create_new', label:'', canBeHidden: false);
             }
 
 

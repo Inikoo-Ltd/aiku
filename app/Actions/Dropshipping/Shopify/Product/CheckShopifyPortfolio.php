@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Models\Dropshipping\Portfolio;
+use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -18,9 +19,15 @@ class CheckShopifyPortfolio
 
     public function handle(Portfolio $portfolio): Portfolio
     {
+        if (!$portfolio->customerSalesChannel) {
+            return $portfolio;
+        }
 
         $shopifyUser = $portfolio->customerSalesChannel->user;
 
+        if (!$shopifyUser instanceof ShopifyUser) {
+            return $portfolio;
+        }
 
 
         $hasValidProductId      = CheckIfShopifyProductIDIsValid::run($portfolio->platform_product_id);
@@ -32,7 +39,7 @@ class CheckShopifyPortfolio
         }
 
 
-        $numberMatches = '';
+        $numberMatches = 0;
         $matchesLabels = [];
         $matches       = [];
 
@@ -46,26 +53,29 @@ class CheckShopifyPortfolio
 
 
         $matchData = [
-            'number_matches'            => $numberMatches,
-            'matches_labels'            => $matchesLabels,
-            'raw_data' => $matches
+            'number_matches' => $numberMatches,
+            'matches_labels' => $matchesLabels,
+            'raw_data'       => $matches
 
         ];
 
 
         $portfolio->update([
-            'has_valid_platform_product_id' => $hasValidProductId,
-            'exist_in_platform' => $productExistsInShopify,
-            'platform_status' => $hasVariantAtLocation,
-            'platform_possible_matches' => $matchData
+            'has_valid_platform_product_id'    => $hasValidProductId,
+            'exist_in_platform'                => $productExistsInShopify,
+            'platform_status'                  => $hasVariantAtLocation,
+            'platform_possible_matches'        => $matchData,
+            'number_platform_possible_matches' => $numberMatches
 
         ]);
 
+        if ($hasVariantAtLocation) {
+            SaveShopifyProductData::run($portfolio);
+        }
+
 
         return $portfolio;
-
     }
-
 
 
 }

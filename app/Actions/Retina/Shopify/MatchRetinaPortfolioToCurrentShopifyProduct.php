@@ -9,11 +9,8 @@
 namespace App\Actions\Retina\Shopify;
 
 use App\Actions\Dropshipping\Shopify\Product\MatchPortfolioToCurrentShopifyProduct;
-use App\Actions\OrgAction;
 use App\Actions\RetinaAction;
-use App\Events\UploadProductToShopifyProgressEvent;
 use App\Models\Dropshipping\Portfolio;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 

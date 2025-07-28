@@ -54,37 +54,19 @@ const locale = inject('locale', aikuLocaleStructure)
 
 <template>
     <div class="relative isolate py-6 px-8 max-w-6xl">
+
+
+
         <!-- Section: Timeline -->
         <div v-if="props.timeline" class="mt-4 mb-8 sm:mt-0 border-b border-gray-200 pb-2">
             <Timeline :options="props.timeline.options" :state="props.timeline.current_state" :slidesPerView="6"/>
         </div>
 
-        <!-- <pre>{{ platform }}</pre> -->
-        <!-- <pre>{{ platformData }}</pre> -->
-        <!-- <div class="hidden sm:absolute sm:-top-10 sm:right-1/2 sm:-z-10 sm:mr-10 sm:block sm:transform-gpu sm:blur-3xl"
-            aria-hidden="true">
-            <div class="aspect-[1097/845] w-[68.5625rem] bg-gradient-to-tr from-[#ff4694] to-[#776fff] opacity-20"
-                style="clip-path: polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)" />
-        </div>
-        <div class="absolute -top-52 left-1/2 -z-10 -translate-x-1/2 transform-gpu blur-3xl sm:top-[-28rem] sm:sm:translate-x-0 sm:transform-gpu"
-            aria-hidden="true">
-            <div class="aspect-[1097/845] w-[68.5625rem] bg-gradient-to-tr from-[#ff4694] to-[#776fff] opacity-20"
-                style="clip-path: polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)" />
-        </div> -->
+
 
         <div v-if="props.timeline">
             <div class="relative isolate">
-                <!-- <svg class="absolute inset-0 -z-10 size-full stroke-gray-200 [mask-image:radial-gradient(100%_100%_at_top_right,white,transparent)]" aria-hidden="true">
-                    <defs>
-                        <pattern id="83fd4e5a-9d52-42fc-97b6-718e5d7ee527" width="200" height="200" x="50%" y="-1" patternUnits="userSpaceOnUse">
-                            <path d="M100 200V.5M.5 .5H200" fill="none" />
-                        </pattern>
-                    </defs>
-                    <svg x="50%" y="-1" class="overflow-visible fill-gray-50">
-                        <path d="M-100.5 0h201v201h-201Z M699.5 0h201v201h-201Z M499.5 400h201v201h-201Z M-300.5 600h201v201h-201Z" stroke-width="0" />
-                    </svg>
-                    <rect width="100%" height="100%" stroke-width="0" fill="url(#83fd4e5a-9d52-42fc-97b6-718e5d7ee527)" />
-                </svg> -->
+
 
                 <FontAwesomeIcon :icon="props.step.icon"
                                  class="text-[200px] absolute opacity-15 right-12 top-1/2 -translate-y-3/4 -rotate-12"
@@ -150,7 +132,7 @@ const locale = inject('locale', aikuLocaleStructure)
                             },
                             method: 'get'
                         }"
-                        :title="trans('Are you sure you want to delete channel :channel?', { channel: customer_sales_channel?.name })"
+                        :title="trans('Are you sure you want to delete channel')"
                         xdescription="trans('This will delete the products, baskets, orders and other data associated with this channel. This action cannot be undone.')"
                         isFullLoading
                         :noLabel="trans('Yes, delete channel')"

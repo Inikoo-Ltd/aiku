@@ -15,31 +15,30 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\Portfolio;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Sentry;
 
-class GetShopifyProductData extends RetinaAction
+class SaveShopifyProductData extends RetinaAction
 {
     use WithActionUpdate;
 
     public string $jobQueue = 'shopify';
     public int $jobBackoff = 5;
 
-    /**
-     * Get product data from Shopify using GraphQL
-     *
-     * @param  Portfolio  $portfolio  The portfolio containing the Shopify product ID
-     * @param  array  $productData  Optional additional query parameters
-     *
-     * @return array|null The product data or null if retrieval failed
-     */
+
     public function handle(Portfolio $portfolio, array $productData = []): ?array
     {
 
-
-
         $customerSalesChannel = $portfolio->customerSalesChannel;
 
+        /** @var \App\Models\Dropshipping\ShopifyUser $shopifyUser */
         $shopifyUser = $customerSalesChannel->user;
+
+        if(!$shopifyUser) {
+            Sentry::captureMessage("No Shopify user found for this customer sales channel");
+            return null;
+        }
+
 
         $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
 
@@ -57,10 +56,12 @@ class GetShopifyProductData extends RetinaAction
             return null;
         }
 
+        $locationID = $shopifyUser->shopify_location_id;
+
         try {
             // GraphQL query to get product data
             $query = <<<'QUERY'
-            query getProduct($id: ID!) {
+            query getProduct($id: ID!, $locationId: ID!) {
               product(id: $id) {
                 id
                 title
@@ -86,9 +87,8 @@ class GetShopifyProductData extends RetinaAction
                       inventoryQuantity
                       inventoryItem {
                         id
-                        inventoryLevel(locationId: "gid://shopify/Location/1") {
-                          id
-                        }
+                        inventoryLevel(locationId: $locationId) {
+                          id                        }
                       }
                     }
                   }
@@ -131,7 +131,8 @@ class GetShopifyProductData extends RetinaAction
 
             // Prepare variables for the query
             $variables = [
-                'id' => $productID
+                'id' => $productID,
+                'locationId' => $locationID
             ];
 
             // Merge any additional query parameters
@@ -152,39 +153,39 @@ class GetShopifyProductData extends RetinaAction
 
             $body = $response['body']->toArray();
 
-            // Check if product data exists in the response
-            if (!isset($body['data']['product'])) {
-                Sentry::captureMessage("Product data not found in response");
 
-                return null;
+            $productData = [];
+
+
+            if (isset($body['data']['product'])) {
+                $productData = $body['data']['product'];
+            } else {
+                Sentry::captureMessage("Product data not found in response B");
+
             }
 
-            // Get the product data
-            $productData = $body['data']['product'];
+
+            $sku=Arr::get($productData, 'variants.edges.0.node.sku');
+
+
 
             $data = $portfolio->data;
             data_set($data, 'shopify_product', $productData);
 
-            UpdatePortfolio::run($portfolio, [
+            $dataToUpdate=[
                 'data' => $data
-            ]);
-
-
-            if (isset($productData['variants']['edges'][0]['node']['id'])) {
-                $variantId = $productData['variants']['edges'][0]['node']['id'];
-                $portfolio->update(
-                    [
-                        'platform_product_variant_id' => $variantId
-                    ]
-                );
+            ];
+            if($sku){
+                data_set($dataToUpdate, 'sku', $sku);
             }
 
-
+            UpdatePortfolio::run($portfolio,  $dataToUpdate);
 
 
             // Format the response to match the expected structure
             return $this->formatProductResponse($productData);
         } catch (Exception $e) {
+            dd($e);
             Sentry::captureException($e);
 
             return null;
@@ -211,10 +212,7 @@ class GetShopifyProductData extends RetinaAction
             foreach ($product['variants']['edges'] as $edge) {
                 $variant = $edge['node'];
 
-                // Add inventory data if available
-                if (isset($variant['inventoryItem']['inventoryLevel'])) {
-                    $variant['inventory_quantity'] = $variant['inventoryItem']['inventoryLevel']['available'];
-                }
+
 
                 $variants[] = $variant;
             }
@@ -236,7 +234,6 @@ class GetShopifyProductData extends RetinaAction
             }
         }
 
-        // Extract metafields from the edges/node structure
         $metafields = [];
         if (isset($product['metafields']['edges'])) {
             foreach ($product['metafields']['edges'] as $edge) {
@@ -276,6 +273,7 @@ class GetShopifyProductData extends RetinaAction
 
         $result = $this->handle($portfolio);
 
+
         if (!$result) {
             $command->error("Failed to retrieve product data");
 
@@ -303,16 +301,18 @@ class GetShopifyProductData extends RetinaAction
             $variantData = [];
             foreach ($result['variants'] as $index => $variant) {
                 $variantData[] = [
-                    'Index'     => $index + 1,
-                    'ID'        => $variant['id'],
-                    'Title'     => $variant['title'],
-                    'Price'     => $variant['price'],
-                    'SKU'       => $variant['sku'] ?? 'N/A',
-                    'Barcode'   => $variant['barcode'] ?? 'N/A',
-                    'Inventory' => $variant['inventory_quantity'] ?? 'N/A'
+                    'Index'          => $index + 1,
+                    'ID'             => $variant['id'],
+                    'Title'          => $variant['title'],
+                    'Price'          => $variant['price'],
+                    'SKU'            => $variant['sku'] ?? 'N/A',
+                    'Barcode'        => $variant['barcode'] ?? 'N/A',
+                    'Inventory'      => $variant['inventory_quantity'] ?? 'N/A',
+                    'InventoryLevel' => isset($variant['inventoryItem']['inventoryLevel']) ?
+                                        $variant['inventoryItem']['inventoryLevel']['id'] : 'ERROR'
                 ];
             }
-            $command->table(['Index', 'ID', 'Title', 'Price', 'SKU', 'Barcode', 'Inventory'], $variantData);
+            $command->table(['Index', 'ID', 'Title', 'Price', 'SKU', 'Barcode', 'Inventory',  'InventoryLevel'], $variantData);
         }
 
         $command->info("\nProduct data retrieved successfully");

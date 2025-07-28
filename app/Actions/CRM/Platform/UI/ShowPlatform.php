@@ -15,7 +15,7 @@ use App\Actions\Dropshipping\Portfolio\UI\IndexPortfoliosInPlatform;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Enums\UI\CRM\PlatformTabsEnum;
-use App\Http\Resources\CRM\CustomerSalesChannelsResourcePro;
+use App\Http\Resources\CRM\CustomerSalesChannelsResource;
 use App\Http\Resources\CRM\PortfoliosResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\Platform;
@@ -40,11 +40,15 @@ class ShowPlatform extends OrgAction
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request)->withTab(PlatformTabsEnum::values());
+
         return $this->handle($platform);
     }
 
     public function htmlResponse(Platform $platform, ActionRequest $request): Response
     {
+
+
+        $shop = $this->parent;
         return Inertia::render(
             'Org/Shop/CRM/Platform',
             [
@@ -54,26 +58,26 @@ class ShowPlatform extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'pageHead'    => [
-                    'title'     => $platform->name,
-                    'model'     => __('platform'),
-                    'icon'      =>
+                    'title' => $platform->name,
+                    'model' => __('platform'),
+                    'icon'  =>
                         [
                             'icon'  => ['fal', 'fa-code-branch'],
                             'title' => __('platform')
                         ]
                 ],
-                'tabs' => [
+                'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => PlatformTabsEnum::navigation()
                 ],
 
                 PlatformTabsEnum::CHANNELS->value => $this->tab == PlatformTabsEnum::CHANNELS->value ?
-                    fn () => CustomerSalesChannelsResourcePro::collection(IndexCustomerSalesChannels::run($platform, prefix: PlatformTabsEnum::CHANNELS->value))
-                    : Inertia::lazy(fn () => CustomerSalesChannelsResourcePro::collection(IndexCustomerSalesChannels::run($platform, prefix: PlatformTabsEnum::CHANNELS->value))),
+                    fn () => CustomerSalesChannelsResource::collection(IndexCustomerSalesChannels::run($platform, prefix: PlatformTabsEnum::CHANNELS->value))
+                    : Inertia::lazy(fn () => CustomerSalesChannelsResource::collection(IndexCustomerSalesChannels::run($platform, prefix: PlatformTabsEnum::CHANNELS->value))),
 
                 PlatformTabsEnum::PRODUCTS->value => $this->tab == PlatformTabsEnum::PRODUCTS->value ?
-                    fn () => PortfoliosResource::collection(IndexPortfoliosInPlatform::run($platform, prefix: PlatformTabsEnum::PRODUCTS->value))
-                    : Inertia::lazy(fn () => PortfoliosResource::collection(IndexPortfoliosInPlatform::run($platform, prefix: PlatformTabsEnum::PRODUCTS->value))),
+                    fn () => PortfoliosResource::collection(IndexPortfoliosInPlatform::run($shop, $platform, prefix: PlatformTabsEnum::PRODUCTS->value))
+                    : Inertia::lazy(fn () => PortfoliosResource::collection(IndexPortfoliosInPlatform::run($shop, $platform, prefix: PlatformTabsEnum::PRODUCTS->value))),
 
             ]
         )->table(

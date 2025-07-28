@@ -8,20 +8,21 @@
 
 namespace App\Actions\Dropshipping\Shopify\Fulfilment;
 
+use App\Actions\Dropshipping\Shopify\WithShopifyApi;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Ordering\Order;
 use Illuminate\Validation\ValidationException;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class FulfillOrderToShopify extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
+    use WithShopifyApi;
     use WithActionUpdate;
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function handle(Order $order): void
     {
         $fulfillOrderId = $order->platform_order_id;
@@ -29,28 +30,23 @@ class FulfillOrderToShopify extends OrgAction
         /** @var ShopifyUser $shopifyUser */
         $shopifyUser = $order->customerSalesChannel->user;
 
-        $mutation = <<<'GRAPHQL'
-            mutation fulfillmentCreateV2($fulfillmentInput: FulfillmentV2Input!) {
-                fulfillmentCreateV2(fulfillment: $fulfillmentInput) {
-                    fulfillment {
-                        id
-                        status
-                        trackingInfo {
-                            company
-                            number
-                            url
-                        }
-                    }
-                    userErrors {
-                        field
-                        message
-                    }
+
+        $mutation = <<<'MUTATION'
+           mutation fulfillmentCreate($fulfillment: FulfillmentInput!, $message: String) {
+              fulfillmentCreate(fulfillment: $fulfillment, message: $message) {
+                fulfillment {
+                  id
                 }
+                userErrors {
+                  field
+                  message
+                }
+              }
             }
-        GRAPHQL;
+        MUTATION;
 
         $deliveryNotes = $order->deliveryNotes->first();
-        $shipments = $deliveryNotes->shipments;
+        $shipments     = $deliveryNotes->shipments;
 
         if (blank($shipments)) {
             throw ValidationException::withMessages([
@@ -58,27 +54,63 @@ class FulfillOrderToShopify extends OrgAction
             ]);
         }
 
-        $shipperCompanyName = $shipments->first()->shipper->name;
+        $shipper = $shipments->first()->shipper;
+        $shipperCompanyName = $shipper->trade_as ?? $shipper->name;
+
+
+        $numbers = [];
+        $urls = [];
+        foreach ($shipments as $shipment) {
+            $numbers = array_merge($numbers, $shipment->trackings);
+            $urls = array_merge($urls, $shipment->tracking_urls);
+        }
+
+
+        $trackingInfo = [
+            'numbers' => $numbers,
+            'company' => $shipperCompanyName,
+        ];
+
+        $message = 'Shipper: '.$shipperCompanyName.', '.implode(',', $numbers);
+
+        $validShopifyShippingCompanies = ['Yodel','DPD UK','Parcelforce'];
+
+
+        if (!in_array($shipperCompanyName, $validShopifyShippingCompanies) && !empty($urls)) {
+            $trackingInfo['urls'] = $urls;
+        }
+
+        $variables = [
+            'fulfillment' => [
+                'lineItemsByFulfillmentOrder' => [
+                    [
+                        'fulfillmentOrderId' => $fulfillOrderId
+                    ]
+                ],
+                'trackingInfo'                => $trackingInfo
+            ],
+            'message' => $message,
+        ];
+
+
 
         try {
-
-            $response = $shopifyUser->getShopifyClient(true)->request($mutation, [
-                'fulfillmentInput' => [
-                    'lineItemsByFulfillmentOrder' => [
-                        [
-                            'fulfillmentOrderId' => $fulfillOrderId
-                        ]
-                    ],
-                    'trackingInfo' => [
-                        'numbers' => $shipments->pluck('tracking')->toArray(),
-                        'company' => $shipperCompanyName,
-                        'urls' => $shipments->pluck('combined_label_url')->toArray(),
-                    ]
-                ]
-            ]);
-
+            list($status, $response) = $this->doPost($shopifyUser, $mutation, $variables);
         } catch (\Exception $e) {
             throw ValidationException::withMessages(['message' => $e->getMessage()]);
+        }
+
+        if (!$status) {
+            throw ValidationException::withMessages(['message' => $response]);
+        }
+
+
+        if (!empty($response['errors'][0]['message'])) {
+            throw ValidationException::withMessages([
+                'messages' => collect($response['errors'])
+                    ->pluck('message')
+                    ->join(', ')
+            ]);
         }
 
         if (!empty($response['body']['data']['fulfillmentCreateV2']['userErrors'])) {

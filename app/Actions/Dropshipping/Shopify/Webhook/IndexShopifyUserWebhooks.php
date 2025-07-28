@@ -52,10 +52,10 @@ class IndexShopifyUserWebhooks
             $response = $client->request($query);
 
             if (!empty($response['errors']) || !isset($response['body'])) {
-                return [false, 'Error in API response: ' . json_encode($response['errors'] ?? [])];
+                return [false, 'Error in API response: '.json_encode($response['errors'] ?? [])];
             }
 
-            $body = $response['body']->toArray();
+            $body     = $response['body']->toArray();
             $webhooks = $body['data']['webhookSubscriptions']['edges'] ?? [];
 
             if (empty($webhooks)) {
@@ -64,27 +64,28 @@ class IndexShopifyUserWebhooks
 
             $formattedWebhooks = [];
             foreach ($webhooks as $webhook) {
-                $node = $webhook['node'];
+                $node                = $webhook['node'];
                 $formattedWebhooks[] = [
-                    'id' => $node['id'],
-                    'topic' => $node['topic'],
+                    'id'          => $node['id'],
+                    'topic'       => $node['topic'],
                     'callbackUrl' => $node['endpoint']['callbackUrl'] ?? null,
-                    'format' => $node['format'],
-                    'createdAt' => $node['createdAt'],
-                    'updatedAt' => $node['updatedAt']
+                    'format'      => $node['format'],
+                    'createdAt'   => $node['createdAt'],
+                    'updatedAt'   => $node['updatedAt']
                 ];
             }
 
             return [true, $formattedWebhooks];
         } catch (\Exception $e) {
-            \Sentry::captureMessage('Error fetching webhook subscriptions: ' . $e->getMessage());
-            return [false, 'Exception: ' . $e->getMessage()];
+            \Sentry::captureMessage('Error fetching webhook subscriptions: '.$e->getMessage());
+
+            return [false, 'Exception: '.$e->getMessage()];
         }
     }
 
     public function getCommandSignature(): string
     {
-        return 'shopify:index-webhooks {customerSalesChannel}';
+        return 'shopify:webhooks {customerSalesChannel}';
     }
 
 
@@ -94,27 +95,29 @@ class IndexShopifyUserWebhooks
 
         list($success, $results) = $this->handle($customerSalesChannel->user);
 
-        if (!is_array($results)) {
+        if (!$success || !is_array($results)) {
             $command->info($results);
+
             return;
         }
 
         $tableData = [];
-        $counter = 1;
+        $counter   = 1;
 
         foreach ($results as $webhook) {
             $tableData[] = [
-                'counter' => $counter,
-                'topic' => $webhook['topic'] ?? 'Unknown',
+                'counter'     => $counter,
+                'topic'       => $webhook['topic'] ?? 'Unknown',
                 'callbackUrl' => $webhook['callbackUrl'] ?? 'N/A',
-                'format' => $webhook['format'] ?? 'N/A',
-                'id' => $webhook['id'] ?? 'N/A',
+                'format'      => $webhook['format'] ?? 'N/A',
+                'id'          => $webhook['id'] ?? 'N/A',
             ];
             $counter++;
         }
 
         if (empty($tableData)) {
             $command->info("No webhook subscriptions found.");
+
             return;
         }
 

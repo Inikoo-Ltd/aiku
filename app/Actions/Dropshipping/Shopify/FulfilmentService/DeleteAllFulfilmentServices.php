@@ -104,7 +104,7 @@ class DeleteAllFulfilmentServices
 
         list($success, $results) = $this->handle($customerSalesChannel);
 
-        if (!is_array($results)) {
+        if (!$success || !is_array($results)) {
             $command->info($results);
             return;
         }

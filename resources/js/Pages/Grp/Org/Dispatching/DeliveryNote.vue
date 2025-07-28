@@ -129,11 +129,18 @@ const disable = ref(props.box_stats.state);
 const isLoading = ref<{ [key: string]: boolean }>({});
 const isLoadingToQueue = ref(false);
 const onUpdatePicker = () => {
+    const isUnassigned = props.delivery_note.state == 'unassigned';
+
+    const routeName = isUnassigned ? props.routes.set_queue.name : props.routes.update.name;
+    const routeParams = {
+        ...props.routes[isUnassigned ? 'set_queue' : 'update'].parameters,
+        ...(isUnassigned ? { user: selectedPicker.value.id } : {})
+    };
+    const payload = isUnassigned ? {} : { picker_user_id: selectedPicker.value.id };
+
     router.patch(
-        route(props.routes.update.name, props.routes.update.parameters),
-        {
-            picker_user_id: selectedPicker.value.id
-        },
+        route(routeName, routeParams),
+        payload,
         {
             onError: (error) => {
                 notify({
@@ -151,7 +158,6 @@ const onUpdatePicker = () => {
         }
     );
 };
-
 
 // Section: Shipment
 const isLoadingButton = ref<string | boolean>(false);

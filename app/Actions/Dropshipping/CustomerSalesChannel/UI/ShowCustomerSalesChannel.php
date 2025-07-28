@@ -81,7 +81,7 @@ class ShowCustomerSalesChannel extends OrgAction
 //                    $request->route()->originalParameters()
 //                ),
                 'pageHead'    => [
-                    ...$this->getCustomerSalesChannelSubNavigationHead($customerSalesChannel, $request),
+                    ...$this->getCustomerSalesChannelSubNavigationHead($customerSalesChannel),
                     'actions' => $actions
                 ],
 

@@ -17,9 +17,7 @@ import { notify } from "@kyvg/vue3-notification"
 import { faTrashAlt } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Portfolio } from "@/types/portfolio"
-import { trans } from "laravel-vue-i18n"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+
 
 library.add(faTrashAlt)
 

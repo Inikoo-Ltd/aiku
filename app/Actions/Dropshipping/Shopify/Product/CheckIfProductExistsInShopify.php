@@ -16,17 +16,14 @@ class CheckIfProductExistsInShopify
 {
     use AsAction;
 
-    /**
-     * Check if a product exists in Shopify
-     *
-     * @param  ShopifyUser  $shopifyUser  The Shopify user account to use for API access
-     * @param  string  $productId  The Shopify product ID to check
-     *
-     * @return bool True if the product exists in Shopify, false otherwise
-     */
+
     public function handle(ShopifyUser $shopifyUser, ?string $productId): bool
     {
         if (!$productId) {
+            return false;
+        }
+
+        if (!CheckIfShopifyProductIDIsValid::run($productId)) {
             return false;
         }
 
@@ -59,7 +56,7 @@ class CheckIfProductExistsInShopify
 
             if (!empty($response['errors']) || !isset($response['body'])) {
                 $errorMessage = 'Error in API response: '.json_encode($response['errors'] ?? []);
-                Sentry::captureMessage("Product existence check failed: ".$errorMessage);
+                Sentry::captureMessage("Product existence check failed:  >$productId<  V2 ".$errorMessage);
 
                 return false;
             }
@@ -67,7 +64,7 @@ class CheckIfProductExistsInShopify
             $body = $response['body']->toArray();
 
             // If the product exists, the response will contain product data
-            return isset($body['data']['product']) && !empty($body['data']['product']);
+            return !empty($body['data']['product']);
         } catch (\Exception $e) {
             Sentry::captureException($e);
 

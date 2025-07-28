@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head, router, Link } from "@inertiajs/vue3"
+import { Head, router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import TablePortfolios from "@/Components/Tables/Grp/Org/CRM/TablePortfolios.vue"
 import TablePortfoliosShopify from "@/Components/Tables/Grp/Org/CRM/TablePortfoliosShopify.vue"
@@ -22,7 +22,7 @@ import { Customer } from "@/types/customer"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faBookmark } from "@fal"
 import { ulid } from "ulid"
-import {debounce, get, set} from "lodash-es"
+import {debounce} from "lodash-es"
 
 library.add(faBookmark)
 

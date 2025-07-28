@@ -25,14 +25,8 @@ class StoreShopifyProductVariant extends RetinaAction
     public string $jobQueue = 'shopify';
     public int $jobBackoff = 5;
 
-    /**
-     * Get product data from Shopify using GraphQL
-     *
-     * @param  Portfolio  $portfolio  The portfolio containing the Shopify product ID
-     *
-     * @return array|null The product data or null if retrieval failed
-     */
-    public function handle(Portfolio $portfolio): ?array
+
+    public function handle(Portfolio $portfolio): bool
     {
         $customerSalesChannel = $portfolio->customerSalesChannel;
 
@@ -44,21 +38,25 @@ class StoreShopifyProductVariant extends RetinaAction
         if (!$client) {
             Sentry::captureMessage("Failed to initialize Shopify GraphQL client");
 
-            return null;
+            return false;
         }
 
         /** @var Product $product */
-        $product  = $portfolio->item;
+        $product = $portfolio->item;
 
 
-        $productID        = $portfolio->platform_product_id;
+        $productID = $portfolio->platform_product_id;
 
 
         if (!$productID) {
             Sentry::captureMessage("No Shopify product ID found in portfolio");
-            return null;
+
+            return false;
         }
 
+        if (!CheckIfShopifyProductIDIsValid::run($productID)) {
+            return false;
+        }
 
 
         try {
@@ -78,52 +76,56 @@ class StoreShopifyProductVariant extends RetinaAction
             }
             MUTATION;
 
+
+            $inventoryItem = [
+                'cost' => $product->price,
+                'sku'  => $portfolio->sku,
+
+            ];
+
+            if ($product->marketing_weight) {
+                $inventoryItem['measurement'] = [
+                    'weight' => [
+                        'unit'  => 'GRAMS',
+                        'value' => $product->marketing_weight
+
+                    ]
+                ];
+            }
+
+
             // Prepare variables for the mutation
             $variants = [
                 [
                     'price'               => $product->rrp,
                     'barcode'             => $portfolio->barcode,
                     'compareAtPrice'      => $product->rrp,
-                    'inventoryItem'       => [
-                        'cost'        => $product->price,
-                        'sku'         => $portfolio->sku,
-                        'measurement' => [
-                            'weight' => [
-                                'unit'  => 'GRAMS',
-                                'value' => $product->marketing_weight
-
-                            ]
-                        ]
-                    ],
+                    'inventoryItem'       => $inventoryItem,
                     'inventoryQuantities' => [
-                        'availableQuantity' => $product->available_quantity,
+                        'availableQuantity' => $product->available_quantity ?? 0,
                         'locationId'        => $shopifyUser->shopify_location_id
                     ]
                 ]
             ];
 
 
-
-
             $variables = [
                 'productId' => $productID,
                 'variants'  => $variants,
-                ];
-
+            ];
 
 
             // Make the GraphQL request
             $response = $client->request($mutation, $variables);
-
 
             if (!empty($response['errors']) || !isset($response['body'])) {
                 $errorMessage = 'Error in API response: '.json_encode($response['errors'] ?? []);
                 UpdatePortfolio::run($portfolio, [
                     'errors_response' => [$errorMessage]
                 ]);
-                Sentry::captureMessage("Product variant update failed: ".$errorMessage);
+                Sentry::captureMessage("Product variant update failed A: ".$errorMessage);
 
-                return null;
+                return false;
             }
 
             $body = $response['body']->toArray();
@@ -135,39 +137,23 @@ class StoreShopifyProductVariant extends RetinaAction
                 UpdatePortfolio::run($portfolio, [
                     'errors_response' => [$errorMessage]
                 ]);
-                Sentry::captureMessage("Product variant update failed: ".$errorMessage);
+                Sentry::captureMessage("Product variant update failed B: ".$errorMessage);
 
-                return null;
+                return false;
             }
 
-            // Get the updated product
-            $updatedProduct = $body['data']['productVariantsBulkUpdate']['product'] ?? null;
 
-            if (!$updatedProduct) {
-                UpdatePortfolio::run($portfolio, [
-                    'errors_response' => ['No product data in response']
-                ]);
-                Sentry::captureMessage("Product variant update failed: No product data in response");
+            SaveShopifyProductData::run($portfolio);
 
-                return null;
-            }
 
-            $data = $portfolio->data;
-            data_set($data, 'shopify_product', $updatedProduct);
-
-            UpdatePortfolio::run($portfolio, [
-                'data' => $data
-            ]);
-
-            // Format the response to match the expected structure
-            return $this->formatProductResponse($updatedProduct);
+            return true;
         } catch (Exception $e) {
             Sentry::captureException($e);
             UpdatePortfolio::run($portfolio, [
                 'errors_response' => [$e->getMessage()]
             ]);
 
-            return null;
+            return false;
         }
     }
 
@@ -176,28 +162,6 @@ class StoreShopifyProductVariant extends RetinaAction
         return 'shopify:create_product_variant {portfolio_id}';
     }
 
-    /**
-     * Format the GraphQL response to match the expected structure
-     *
-     * @param  array  $product  The product data from GraphQL response
-     *
-     * @return array The formatted product data
-     */
-    private function formatProductResponse(array $product): array
-    {
-        $variants = [];
-        if (isset($product['variants']['edges'])) {
-            foreach ($product['variants']['edges'] as $edge) {
-                $variants[] = $edge['node'];
-            }
-        }
-
-        return [
-            'id'       => $product['id'],
-            'title'    => $product['title'],
-            'variants' => $variants
-        ];
-    }
 
     public function asCommand(Command $command): void
     {
@@ -210,38 +174,8 @@ class StoreShopifyProductVariant extends RetinaAction
         }
 
         $result = $this->handle($portfolio);
-
-        if (!$result) {
-            $command->error("Failed to update product variant");
-
-            return;
+        if ($result) {
+            $command->info("\nProduct variant updated successfully");
         }
-
-        // Display the updated product information
-        $command->info("Product Information:");
-        $command->table(['Field', 'Value'], [
-            ['ID', $result['id']],
-            ['Title', $result['title']],
-            ['Variants Count', count($result['variants'])]
-        ]);
-
-        // Display variants information
-        if (!empty($result['variants'])) {
-            $command->info("\nVariants Information:");
-            $variantData = [];
-            foreach ($result['variants'] as $index => $variant) {
-                $variantData[] = [
-                    'Index'     => $index + 1,
-                    'ID'        => $variant['id'],
-                    'Price'     => $variant['price'] ?? 'N/A',
-                    'SKU'       => $variant['sku'] ?? 'N/A',
-                    'Barcode'   => $variant['barcode'] ?? 'N/A',
-                    'Inventory' => $variant['inventoryQuantity'] ?? 'N/A'
-                ];
-            }
-            $command->table(['Index', 'ID', 'Price', 'SKU', 'Barcode', 'Inventory'], $variantData);
-        }
-
-        $command->info("\nProduct variant updated successfully");
     }
 }

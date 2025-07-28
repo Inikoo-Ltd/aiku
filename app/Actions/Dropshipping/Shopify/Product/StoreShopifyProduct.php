@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
+use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
@@ -27,18 +28,10 @@ class StoreShopifyProduct extends RetinaAction
     public string $jobQueue = 'shopify';
     public int $jobBackoff = 5;
 
-    /**
-     * Create a product in Shopify using GraphQL
-     *
-     * @param  ShopifyUser  $shopifyUser  The Shopify user account to use for API access
-     * @param  Portfolio  $portfolio  The portfolio to upload to Shopify
-     * @param  array  $productData  Optional additional data for the product
-     *
-     * @return array|null The created product data or null if creation failed
-     */
+
     public function handle(Portfolio $portfolio, array $productData = []): ?array
     {
-
+        /** @var ShopifyUser $shopifyUser */
         $shopifyUser = $portfolio->customerSalesChannel->user;
 
         $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
@@ -53,12 +46,21 @@ class StoreShopifyProduct extends RetinaAction
         $product = $portfolio->item;
 
 
+        $media = [];
+
+        foreach ($product->images as $image) {
+            $media[] = [
+                'originalSource'   => GetImgProxyUrl::run($image->getImage()->extension('jpg')),
+                'mediaContentType' => 'IMAGE'
+            ];
+        }
+
 
         try {
             // GraphQL mutation to create a product
             $mutation = <<<'MUTATION'
-            mutation productCreate($input: ProductInput!) {
-              productCreate(input: $input) {
+            mutation productCreate($product: ProductInput!, $media: [CreateMediaInput!]) {
+              productCreate(input: $product, media: $media) {
                 product {
                   id
                   title
@@ -98,24 +100,24 @@ class StoreShopifyProduct extends RetinaAction
 
             // Prepare variables for the mutation
             $variables = [
-                'input' => [
+                'product' => [
                     'title'           => $product->name,
                     'handle'          => Str::slug($product->name),
                     'descriptionHtml' => $product->description.' '.$product->description_extra,
                     'productType'     => $product->family?->name,
                     'vendor'          => $product->shop->name,
-                ]
+                ],
+                'media'   => $media,
             ];
 
             // Merge any additional product data
             if (!empty($productData)) {
-                $variables['input'] = array_merge($variables['input'], $productData);
+                $variables['product'] = array_merge($variables['product'], $productData);
             }
 
 
             // Make the GraphQL request
             $response = $client->request($mutation, $variables);
-
 
 
             if (!empty($response['errors']) || !isset($response['body'])) {
@@ -155,15 +157,8 @@ class StoreShopifyProduct extends RetinaAction
             }
 
 
-
-            $data = $portfolio->data;
-            data_set($data, 'shopify_product', $createdProduct);
-
-
-
             UpdatePortfolio::run($portfolio, [
                 'platform_product_id' => Arr::get($createdProduct, 'id'),
-                'data' => $data
             ]);
 
             StoreShopifyProductVariant::run($portfolio);
@@ -179,6 +174,8 @@ class StoreShopifyProduct extends RetinaAction
                 'platform_product_variant_id' => $variantId,
             ]);
 
+            SaveShopifyProductData::run($portfolio);
+
             // Format the response to match the expected structure
             return $this->formatProductResponse($createdProduct);
         } catch (Exception $e) {
@@ -191,14 +188,7 @@ class StoreShopifyProduct extends RetinaAction
         }
     }
 
-    /**
-     * Format the GraphQL response to match the REST API response structure
-     * This ensures compatibility with existing code that expects the REST API format
-     *
-     * @param  array  $product  The product data from GraphQL response
-     *
-     * @return array The formatted product data
-     */
+
     private function formatProductResponse(array $product): array
     {
         $variants = [];
@@ -238,6 +228,7 @@ class StoreShopifyProduct extends RetinaAction
 
         if (!$portfolio) {
             $command->error("Portfolio not found");
+
             return;
         }
 
@@ -245,6 +236,7 @@ class StoreShopifyProduct extends RetinaAction
 
         if (!$customerSalesChannel) {
             $command->error("Customer sales channel not found for this portfolio");
+
             return;
         }
 
@@ -252,10 +244,11 @@ class StoreShopifyProduct extends RetinaAction
 
         if (!$shopifyUser) {
             $command->error("Shopify user not found for this customer sales channel");
+
             return;
         }
 
-        $command->info("Creating product in Shopify for portfolio #{$portfolio->id}...");
+        $command->info("Creating product in Shopify for portfolio #$portfolio->id...");
 
         $result = $this->handle($shopifyUser, $portfolio);
 
@@ -263,6 +256,7 @@ class StoreShopifyProduct extends RetinaAction
             $command->error("Failed to create product in Shopify");
             $command->error("Errors:");
             $command->error(implode("\n", $portfolio->errors_response ?? []));
+
             return;
         }
 
@@ -284,11 +278,11 @@ class StoreShopifyProduct extends RetinaAction
             $variantData = [];
             foreach ($result['variants'] as $index => $variant) {
                 $variantData[] = [
-                    'Index' => $index + 1,
-                    'ID' => $variant['id'] ?? 'N/A',
-                    'Price' => $variant['price'] ?? 'N/A',
-                    'SKU' => $variant['sku'] ?? 'N/A',
-                    'Barcode' => $variant['barcode'] ?? 'N/A',
+                    'Index'     => $index + 1,
+                    'ID'        => $variant['id'] ?? 'N/A',
+                    'Price'     => $variant['price'] ?? 'N/A',
+                    'SKU'       => $variant['sku'] ?? 'N/A',
+                    'Barcode'   => $variant['barcode'] ?? 'N/A',
                     'Inventory' => $variant['inventoryQuantity'] ?? 'N/A'
                 ];
             }

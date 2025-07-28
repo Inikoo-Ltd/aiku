@@ -53,14 +53,11 @@ class IndexPlatforms extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(
-        Shop|Organisation $parent,
-        ?array $modelOperations = null,
-        $prefix = null,
-    ): Closure {
+    public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
+    {
         return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
-                $table->name($prefix)->pageName($prefix . 'Page');
+                $table->name($prefix)->pageName($prefix.'Page');
             }
 
             $table
@@ -127,7 +124,7 @@ class IndexPlatforms extends OrgAction
                 ],
                 'data'        => PlatformsResource::collection($platforms), // You may want to use a resource if needed
             ]
-        )->table($this->tableStructure($this->parent));
+        )->table($this->tableStructure());
     }
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator

@@ -15,7 +15,7 @@ use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Console\Command;
 use Sentry;
 
-class StoreWebhooksToShopify extends OrgAction
+class CreateShopifyWebhooks extends OrgAction
 {
     use WithActionUpdate;
 
@@ -33,13 +33,28 @@ class StoreWebhooksToShopify extends OrgAction
 
         $webhooks = [
             [
-                'topic' => 'APP_UNINSTALLED',
+                'topic'               => 'APP_UNINSTALLED',
                 'webhookSubscription' => [
-                    'uri' => "https://aiku.test/webhooks/shopify-user/{$shopifyUser->id}/app/uninstalled",
+                    'uri'    => 'https://'.config('app.domain')."/webhooks/shopify/{$shopifyUser->id}/app-uninstalled",
+                    'format' => 'JSON',
+                ]
+            ],
+            [
+                'topic'               => 'PRODUCTS_DELETE',
+                'webhookSubscription' => [
+                    'uri'    => 'https://'.config('app.domain')."/webhooks/shopify/{$shopifyUser->id}/products-deleted",
+                    'format' => 'JSON',
+                ]
+            ],
+            [
+                'topic'               => 'PRODUCTS_UPDATE',
+                'webhookSubscription' => [
+                    'uri'    => 'https://'.config('app.domain')."/webhooks/shopify/{$shopifyUser->id}/products-updated",
                     'format' => 'JSON',
                 ]
             ],
         ];
+
 
         $results = [];
         $success = true;
@@ -70,24 +85,24 @@ class StoreWebhooksToShopify extends OrgAction
                 MUTATION;
 
                 $variables = [
-                    'topic' => $webhook['topic'],
+                    'topic'               => $webhook['topic'],
                     'webhookSubscription' => [
                         'callbackUrl' => $webhook['webhookSubscription']['uri'],
-                        'format' => $webhook['webhookSubscription']['format']
+                        'format'      => $webhook['webhookSubscription']['format']
                     ]
                 ];
 
                 $response = $client->request($mutation, $variables);
 
                 if (!empty($response['errors']) || !isset($response['body'])) {
-                    $errorMessage = 'Error in API response: ' . json_encode($response['errors'] ?? []);
-                    $results[] = [
-                        'topic' => $webhook['topic'],
+                    $errorMessage = 'Error in API response: '.json_encode($response['errors'] ?? []);
+                    $results[]    = [
+                        'topic'       => $webhook['topic'],
                         'callbackUrl' => $webhook['webhookSubscription']['uri'],
-                        'success' => false,
-                        'message' => $errorMessage
+                        'success'     => false,
+                        'message'     => $errorMessage
                     ];
-                    $success = false;
+                    $success      = false;
                     continue;
                 }
 
@@ -95,15 +110,15 @@ class StoreWebhooksToShopify extends OrgAction
 
                 // Check for user errors in the response
                 if (!empty($body['data']['webhookSubscriptionCreate']['userErrors'])) {
-                    $errors = $body['data']['webhookSubscriptionCreate']['userErrors'];
-                    $errorMessage = 'User errors: ' . json_encode($errors);
-                    $results[] = [
-                        'topic' => $webhook['topic'],
+                    $errors       = $body['data']['webhookSubscriptionCreate']['userErrors'];
+                    $errorMessage = 'User errors: '.json_encode($errors);
+                    $results[]    = [
+                        'topic'       => $webhook['topic'],
                         'callbackUrl' => $webhook['webhookSubscription']['uri'],
-                        'success' => false,
-                        'message' => $errorMessage
+                        'success'     => false,
+                        'message'     => $errorMessage
                     ];
-                    $success = false;
+                    $success      = false;
                     continue;
                 }
 
@@ -112,39 +127,36 @@ class StoreWebhooksToShopify extends OrgAction
 
                 if (!$webhookSubscription) {
                     $results[] = [
-                        'topic' => $webhook['topic'],
+                        'topic'       => $webhook['topic'],
                         'callbackUrl' => $webhook['webhookSubscription']['uri'],
-                        'success' => false,
-                        'message' => 'No webhook subscription in response'
+                        'success'     => false,
+                        'message'     => 'No webhook subscription in response'
                     ];
-                    $success = false;
+                    $success   = false;
                     continue;
                 }
 
                 $results[] = [
-                    'id' => $webhookSubscription['id'],
-                    'topic' => $webhookSubscription['topic'],
+                    'id'          => $webhookSubscription['id'],
+                    'topic'       => $webhookSubscription['topic'],
                     'callbackUrl' => $webhookSubscription['endpoint']['callbackUrl'] ?? null,
-                    'format' => $webhookSubscription['format'],
-                    'success' => true,
-                    'message' => 'Webhook created successfully'
+                    'format'      => $webhookSubscription['format'],
+                    'success'     => true,
+                    'message'     => 'Webhook created successfully'
                 ];
             } catch (\Exception $e) {
-                Sentry::captureMessage('Error creating webhook subscription: ' . $e->getMessage());
+                Sentry::captureMessage('Error creating webhook subscription: '.$e->getMessage());
                 $results[] = [
-                    'topic' => $webhook['topic'],
+                    'topic'       => $webhook['topic'],
                     'callbackUrl' => $webhook['webhookSubscription']['uri'],
-                    'success' => false,
-                    'message' => 'Exception: ' . $e->getMessage()
+                    'success'     => false,
+                    'message'     => 'Exception: '.$e->getMessage()
                 ];
-                $success = false;
+                $success   = false;
             }
         }
 
         return [$success, $results];
-
-
-
     }
 
     public function getCommandSignature(): string
@@ -161,27 +173,29 @@ class StoreWebhooksToShopify extends OrgAction
 
         if (!is_array($results)) {
             $command->info($results);
+
             return;
         }
 
         $tableData = [];
-        $counter = 1;
+        $counter   = 1;
 
         foreach ($results as $result) {
             $tableData[] = [
-                'counter' => $counter,
-                'topic' => $result['topic'] ?? 'Unknown',
+                'counter'     => $counter,
+                'topic'       => $result['topic'] ?? 'Unknown',
                 'callbackUrl' => $result['callbackUrl'] ?? 'N/A',
-                'format' => $result['format'] ?? 'N/A',
-                'status' => $result['success'] ? 'Success' : 'Failed',
-                'message' => $result['message'] ?? '',
-                'id' => $result['id'] ?? 'N/A',
+                'format'      => $result['format'] ?? 'N/A',
+                'status'      => $result['success'] ? 'Success' : 'Failed',
+                'message'     => $result['message'] ?? '',
+                'id'          => $result['id'] ?? 'N/A',
             ];
             $counter++;
         }
 
         if (empty($tableData)) {
             $command->info("No webhook subscriptions created.");
+
             return;
         }
 
@@ -193,7 +207,7 @@ class StoreWebhooksToShopify extends OrgAction
         );
 
         // Summary
-        $totalWebhooks = count($results);
+        $totalWebhooks     = count($results);
         $successfulCreates = count(array_filter($results, function ($result) {
             return $result['success'] ?? false;
         }));
