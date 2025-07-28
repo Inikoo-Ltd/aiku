@@ -50,18 +50,20 @@ class CheckShopifyPortfolios
 
         foreach ($query->orderBy('status')->get() as $portfolioData) {
             $portfolio = Portfolio::find($portfolioData->id);
-            $portfolio = CheckShopifyPortfolio::run($portfolio);
+            if($portfolio) {
+                $portfolio = CheckShopifyPortfolio::run($portfolio);
 
 
-            if ($command) {
-                $this->tableData[] = [
-                    'slug'                          => $portfolio->reference ?? $portfolio->id,
-                    'status'                        => $portfolio->status ? 'Open' : 'Closed',
-                    'has_valid_platform_product_id' => $portfolio->has_valid_platform_product_id ? 'Yes' : 'No',
-                    'exist_in_platform'             => $portfolio->exist_in_platform ? 'Yes' : 'No',
-                    'platform_status'               => $portfolio->platform_status ? 'Yes' : 'No',
-                    'possible_matches'              => $portfolio->platform_possible_matches['number_matches'] ?? 0
-                ];
+                if ($command) {
+                    $this->tableData[] = [
+                        'slug'                          => $portfolio->reference ?? $portfolio->id,
+                        'status'                        => $portfolio->status ? 'Open' : 'Closed',
+                        'has_valid_platform_product_id' => $portfolio->has_valid_platform_product_id ? 'Yes' : 'No',
+                        'exist_in_platform'             => $portfolio->exist_in_platform ? 'Yes' : 'No',
+                        'platform_status'               => $portfolio->platform_status ? 'Yes' : 'No',
+                        'possible_matches'              => $portfolio->platform_possible_matches['number_matches'] ?? 0
+                    ];
+                }
             }
         }
     }
