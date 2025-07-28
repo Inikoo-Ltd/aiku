@@ -266,17 +266,27 @@ const onFailedEditCheckmark = (error: any) => {
   })
 }
 
-const submitPortfolioAction = (action: any) => {
-    loadingAction.value.push(action.label)
-    router.post(route(action.name, action?.parameters), {
-        method: action?.method || "get",
-        data: { portfolios: selectedProducts.value },
-        onSuccess: () => onSuccessEditCheckmark(action.label),
-        onError: (error) => onFailedEditCheckmark(error),
-        onFinish: () => {
-          loadingAction.value = []
-        }
+const submitPortfolioAction = async (action: any) => {
+  loadingAction.value.push(action.label)
+
+  const url = route(action.name, action?.parameters)
+  const method = action?.method?.toLowerCase() || "get"
+
+  try {
+    const response = await axios({
+      method,
+      url,
+      data: {
+        portfolios: selectedProducts.value,
+      },
     })
+
+    onSuccessEditCheckmark(action.label)
+  } catch (error) {
+    onFailedEditCheckmark(error)
+  } finally {
+    loadingAction.value = []
+  }
 }
 
 
