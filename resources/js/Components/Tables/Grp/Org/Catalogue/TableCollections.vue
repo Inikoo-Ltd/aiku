@@ -363,7 +363,8 @@ function handleUrlChange(e: string | null) {
 
 
         <template #cell(actions)="{ item }">
-            <div v-if="!item.webpage_state && item.webpage_state != 'live' && item.webpage_state != 'closed'">
+        <div class="flex gap-x-2 gap-y-2">
+            <div v-if="!item.webpage_state && item.webpage_state != 'live' && item.webpage_state != 'closed' || item.state == 'inactive'">
                 <Link v-if="item.route_delete_collection " as="button"
                       :href="route(item.route_delete_collection.name, item.route_delete_collection.parameters)"
                       :method="item.route_delete_collection.method" preserve-scroll
@@ -373,7 +374,6 @@ function handleUrlChange(e: string | null) {
                             :loading="isLoadingDetach.includes('detach' + item.id)" />
                 </Link>
             </div>
-
             <ConfirmPopup>
                 <template #icon>
                     <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
@@ -384,13 +384,11 @@ function handleUrlChange(e: string | null) {
                         @click="(e) => openOfflineModal(e, item)" :type="'negative'"
                         v-tooltip="isConfirmOpen ? '' : 'Set collection as inactive'" />
             </div>
-
             <div v-if="item.webpage_state == 'closed'">
                 <Button :icon="faPowerOff"  size="xs" :key="item.webpage_state"
                         @click="(e) => openOnlineModal(e, item)" :type="'positive'"
                         v-tooltip="isConfirmOpen ? '' : 'Set collection as active'" />
             </div>
-
             <Link v-if="routes?.detach?.name" as="button" :href="route(routes.detach.name, routes.detach.parameters)"
                   :method="routes.detach.method" :data="{
                     collection: item.id
@@ -399,6 +397,7 @@ function handleUrlChange(e: string | null) {
                 <Button icon="fal fa-times" type="negative" size="xs" v-tooltip="'Delete collection'"
                         :loading="isLoadingDetach.includes('detach' + item.id)" />
             </Link>
+        </div>
         </template>
     </Table>
 
