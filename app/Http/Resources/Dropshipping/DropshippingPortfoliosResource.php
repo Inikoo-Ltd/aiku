@@ -32,13 +32,15 @@ use Illuminate\Support\Arr;
  * @property mixed $family_name
  * @property StoredItem|Product $item
  * @property mixed $margin
+ * @property mixed $platform_product_id
+ * @property mixed $item_description
  *
  */
 class DropshippingPortfoliosResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $category = null;
+
 
         if ($department = $this->item->department) {
             $department = $department->name.', ';
