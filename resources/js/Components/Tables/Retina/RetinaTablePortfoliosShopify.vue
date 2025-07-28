@@ -42,6 +42,7 @@ import Modal from "@/Components/Utils/Modal.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import axios from "axios"
+import { RadioButton, Select } from "primevue"
 
 library.add(faHandshake,faHandshakeSlash,faHandPointer,fadExclamationTriangle, faSyncAlt, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, faClone, faLink, faScrewdriver, faTools)
 
@@ -304,6 +305,33 @@ const onCheckedAll = ({ data, allChecked }) => {
 const onDisableCheckbox = (item) => {
     if(item.platform_status && item.exist_in_platform && item.has_valid_platform_product_id) return true
     return false
+}
+
+
+// Section: Modal step
+const stepModal = ref(1)
+const selectedMatch = ref('product')
+const dummyOptions = ref([
+    {
+        label: 'Color',
+        options: [
+            { label: 'Red', value: 'red' },
+            { label: 'Green', value: 'green' },
+            { label: 'Blue', value: 'blue' }
+        ]    
+    },
+    {
+        label: 'Size',
+        options: [
+            { label: 'Small', value: 'small' },
+            { label: 'Medium', value: 'medium' },
+            { label: 'Large', value: 'large' }
+        ]
+    }
+])
+const onMatchByVariant = () => {
+    console.log('selectedMatch', selectedMatch.value)
+    console.log('dummyOptions', dummyOptions.value)
 }
 </script>
 
@@ -577,7 +605,7 @@ const onDisableCheckbox = (item) => {
 
 
     <Modal :isOpen="isOpenModal" width="w-full max-w-2xl h-full max-h-[570px]" @close="isOpenModal = false">
-        <div class="relative isolate">
+        <div v-if="stepModal === 1" class="relative isolate">
 
             <div v-if="isLoadingSubmit"
                  class="flex justify-center items-center text-7xl text-white absolute z-10 inset-0 bg-black/40">
@@ -672,8 +700,12 @@ const onDisableCheckbox = (item) => {
                             </div>
                         </div>
 
-                        <div class="text-center text-gray-500" v-else>
-                            Start typing to search for products in Shopify
+                        <div v-else-if="isLoadingFetchShopifyProduct" class="bg-black/50 text-2xl text-white inset-0 absolute flex items-center justify-center">
+                            <LoadingIcon />
+                        </div>
+
+                        <div v-else class="text-center text-gray-500">
+                            {{ trans("Start typing to search for products in Shopify") }}
                         </div>
 
                     </div>
@@ -690,6 +722,71 @@ const onDisableCheckbox = (item) => {
 
                     <div class="mt-4">
                         <Button
+                            @click="() => stepModal = 2"
+                            :disabled="!selectedVariant"
+                            v-tooltip="selectedVariant ? trans('Go Next step') : trans('Select a variant')"
+                            :label="trans('Go Next step')"
+                            type="tertiary"
+                            full
+                            iconRight="fas fa-arrow-right"
+                            xloading="isLoadingSubmit"
+                        />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div v-else-if="stepModal === 2" class="p-4">
+            <Button
+                @click="() => stepModal = 1"
+                type="tertiary"
+                size="xs"
+                class="mb-4"
+                label="Back to select product"
+                icon="fal fa-arrow-left"
+            />
+            <div
+                v-if="selectedVariant"
+                xclick="() => selectedVariant = item"
+                class="bg-green-100 border-green-400 relative h-fit rounded p-2 flex flex-col md:flex-row gap-x-2 border"
+            >
+                <slot name="product" :item="item">
+                    <div class="min-h-9 h-auto max-h-20 min-w-20 w-auto max-w-20 border border-gray-300 rounded">
+                        <img :src="selectedVariant.images?.[0]?.src" class="shadow" />
+                    </div>
+                    <div class="flex flex-col justify-between">
+                        <div class="w-fit">
+                            <div v-if="selectedVariant.title" v-tooltip="trans('Name')" class="w-fit font-semibold leading-none mb-1">
+                                {{ selectedVariant.title || 'no title' }}
+                            </div>
+                            <div v-if="selectedVariant.name" v-tooltip="trans('Name')" class="w-fit font-semibold leading-none mb-1">
+                                {{ selectedVariant.name || 'no name' }}
+                            </div>
+                            <div v-if="selectedVariant.no_code" v-tooltip="trans('Code')"
+                                    class="w-fit text-sm text-gray-400 italic">
+                                {{ selectedVariant.code || 'no code' }}
+                            </div>
+                            <div v-if="selectedVariant.reference" v-tooltip="trans('Reference')"
+                                    class="w-fit text-sm text-gray-400 italic">
+                                {{ selectedVariant.reference || 'no reference' }}
+                            </div>
+                            <div v-if="selectedVariant.gross_weight" v-tooltip="trans('Weight')"
+                                    class="w-fit text-sm text-gray-400 italic">{{ selectedVariant.gross_weight }}
+                            </div>
+                        </div>
+                    </div>
+                </slot>
+            </div>
+
+            <div class="mt-4 grid grid-cols-2 gap-x-6">
+                <div class="">
+                    <div class="flex items-center gap-2">
+                        <RadioButton v-model="selectedMatch" inputId="ingredient1" name="pizza" value="product" />
+                        <label for="ingredient1">Match by product</label>
+                    </div>
+
+                    <div class="mt-4 pl-8">
+                        <Button
                             @click="() => onSubmitVariant()"
                             xdisabled="selectedProduct.length < 1"
                             xv-tooltip="selectedProduct.length < 1 ? trans('Select at least one product') : ''"
@@ -699,9 +796,60 @@ const onDisableCheckbox = (item) => {
                             full
                             xicon="fas fa-plus"
                             :loading="isLoadingSubmit"
+                            :disabled="selectedMatch !== 'product'"
                         />
                     </div>
                 </div>
+
+                <div class="flex items-center gap-2">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <RadioButton v-model="selectedMatch" inputId="ingredient2" variant="filled" name="pizza" value="variant" />
+                            <label for="ingredient2">Match by variant</label>
+                        </div>
+
+                        <div class="pl-8">
+                            <div v-for="option in dummyOptions" class="flex flex-col gap-2 mt-2">
+                                <label for="ingredient2">{{ option.label }}</label>
+                                <Select
+                                    :modelValue="get(option, 'value', null)"
+                                    @update:modelValue="(value) => set(option, 'value', value)"
+                                    :options="option.options"
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    :disabled="selectedMatch !== 'variant'"
+                                    :placeholder="trans('Select a Size')"
+                                    class="w-full md:w-56"
+                                />
+                            </div>
+                            
+                            <div class="mt-4">
+                                <Button
+                                    @click="() => onMatchByVariant()"
+                                    label="Match by variant"
+                                    full
+                                    :disabled="selectedMatch !== 'variant'"
+                                >
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="mt-4">
+                <!-- <Button
+                    @click="() => onSubmitVariant()"
+                    xdisabled="selectedProduct.length < 1"
+                    xv-tooltip="selectedProduct.length < 1 ? trans('Select at least one product') : ''"
+                    xlabel="submitLabel ?? `${trans('Add')} ${selectedProduct.length}`"
+                    :label="trans('Match the product')"
+                    type="primary"
+                    full
+                    xicon="fas fa-plus"
+                    :loading="isLoadingSubmit"
+                /> -->
             </div>
         </div>
     </Modal>
