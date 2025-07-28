@@ -391,7 +391,7 @@ provide('selectedEchopersonal', useEchoRetinaPersonal())
                 </div>
             </div>
 
-            <div class="w-full sm:w-fit h-fit space-x-2">
+            <div class="w-full sm:w-fit h-fit space-x-2 flex justify-end">
                 <ButtonWithLink v-if="routes.duplicate?.name" :routeTarget="routes.duplicate"
                     v-tooltip="trans('This will only create new products to the :platform that not exist in :platform', { platform: props.platform_data.name })"
                     aclick="() => onClickReconnect(customer_sales_channel)" icon="far fa-plus"
@@ -403,7 +403,7 @@ provide('selectedEchopersonal', useEchoRetinaPersonal())
 
 
 
-                <div class="space-x-2">
+                <div v-if="selectedProducts.length > 0" class="space-x-2 border-r border-gray-400 pr-2">
                     <Button v-if="selectedProducts.length > 0" type="green" icon="fas fa-hand-pointer"
                         :label="trans('Match With Existing Product (:count)', { count: selectedProducts?.length })"
                         :loading="loadingAction.includes('Match With Existing Product')" @click="() => submitPortfolioAction({
@@ -412,14 +412,33 @@ provide('selectedEchopersonal', useEchoRetinaPersonal())
                             parameters: { customerSalesChannel: customer_sales_channel.id },
                             method: 'post',
                         })" size="xs" />
-                    <Button v-if="selectedProducts.length > 0" :type="'create'"
+                    <Button
+                        v-if="selectedProducts.length > 0"
+                        v-tooltip="trans('Upload as new product to the :platform', { platform: props.platform_data?.name })"
+                        :type="'create'"
                         :label="trans('Create New Product (:count)', { count: selectedProducts?.length })"
-                        :loading="loadingAction.includes('Create New Product')" @click="() => submitPortfolioAction({
+                        :loading="loadingAction.includes('Create New Product')"
+                        @click="() => submitPortfolioAction({
                             label : 'Create New Product',
                             name : 'retina.models.dropshipping.shopify.batch_upload',
                             parameters: { customerSalesChannel: customer_sales_channel.id },
                             method: 'post',
-                        })" size="xs" />
+                        })"
+                        size="xs"
+                    />
+                </div>
+
+                <div>
+                    <ButtonWithLink
+                        label="Upload all as new product"
+                        size="xs"
+                        :routeTarget="{
+                            name: 'retina.models.dropshipping.shopify.batch_all',
+                            parameters: { customerSalesChannel: customer_sales_channel.id },
+                            method: 'post'
+                        }"
+                        @success="() => modalAddproductBluk = true"
+                    />
                 </div>
             </div>
         </div>
