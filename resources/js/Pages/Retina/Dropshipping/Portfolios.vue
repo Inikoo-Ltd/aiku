@@ -456,7 +456,7 @@ const submitPortfolioAction = (action: any) => {
 
 
                 
-            <Button v-if="selectedProducts.length > 0" :type="'create'" :label="'Match With Existing Productt'"
+            <Button v-if="selectedProducts.length > 0" :type="'create'" :label="'Match With Existing Product'"
                 :loading="loadingAction.includes('Match With Existing Product')"
                 @click="() => submitPortfolioAction({
                     label : 'Match With Existing Product',
