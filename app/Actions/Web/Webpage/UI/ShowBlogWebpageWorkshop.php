@@ -52,7 +52,7 @@ class ShowBlogWebpageWorkshop extends OrgAction
         }
         // dd($webBlockTypes);
         return Inertia::render(
-            'Org/Web/WebpageWorkshop',
+            'Org/Web/BlogWorkshop',
             [
                 'title'         => $webpage->code.' '.__("workshop"),
                 'breadcrumbs'   => $this->getBreadcrumbs(
