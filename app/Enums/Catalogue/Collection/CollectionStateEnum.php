@@ -17,6 +17,8 @@ enum CollectionStateEnum: string
     case IN_PROCESS = 'in_process';
     case ACTIVE = 'active';
     case INACTIVE = 'inactive';
+    case DISCONTINUING = 'discontinuing'; //need to keep or error
+    case DISCONTINUED = 'discontinued'; //need to keep or error
 
     public static function labels(): array
     {

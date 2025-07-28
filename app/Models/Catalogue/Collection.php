@@ -8,6 +8,7 @@
 
 namespace App\Models\Catalogue;
 
+use App\Enums\Catalogue\Collection\CollectionProductStatusEnum;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -97,6 +98,7 @@ class Collection extends Model implements Auditable, HasMedia
         'data'       => 'array',
         'web_images' => 'array',
         'state'      => CollectionStateEnum::class,
+        'product_status' => CollectionProductStatusEnum::class,
     ];
 
     protected $attributes = [
