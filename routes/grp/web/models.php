@@ -23,6 +23,7 @@ use App\Actions\Catalogue\Collection\DeleteCollection;
 use App\Actions\Catalogue\Collection\DetachCollectionFromModel;
 use App\Actions\Catalogue\Collection\DetachModelFromCollection;
 use App\Actions\Catalogue\Collection\DisableCollection;
+use App\Actions\Catalogue\Collection\EnableCollection;
 use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\Collection\UpdateCollection;
 use App\Actions\Catalogue\Product\AttachImagesToProduct;
@@ -752,6 +753,7 @@ Route::name('collection.')->prefix('collection/{collection:id}')->group(function
     Route::delete('detach-models', DetachModelFromCollection::class)->name('detach-models');
     Route::delete('delete', DeleteCollection::class)->name('delete');
     Route::patch('webpage-disable', DisableCollection::class)->name('webpage_disable');
+    Route::patch('webpage-enable', EnableCollection::class)->name('webpage_enable');
 });
 
 Route::name('supplier.')->prefix('supplier/{supplier:id}')->group(function () {
