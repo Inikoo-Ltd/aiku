@@ -126,11 +126,11 @@ const locale = inject('locale', aikuLocaleStructure)
                     <ModalConfirmationDelete
                         v-if="platform.type === 'shopify'"
                         :routeDelete="{
-                            name: 'retina.dashboard.show',
+                            name: 'retina.models.customer_sales_channel.delete',
                             parameters: {
                                 customerSalesChannel: customer_sales_channel.id,
                             },
-                            method: 'get'
+                            method: 'delete'
                         }"
                         :title="trans('Are you sure you want to delete channel')"
                         xdescription="trans('This will delete the products, baskets, orders and other data associated with this channel. This action cannot be undone.')"
