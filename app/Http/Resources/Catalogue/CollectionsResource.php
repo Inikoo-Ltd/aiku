@@ -83,6 +83,13 @@ class CollectionsResource extends JsonResource
                 ],
                 'method'     => 'patch'
             ],
+            'route_enable_webpage'   => [
+                'name'       => 'grp.models.collection.webpage_enable',
+                'parameters' => [
+                    'collection' => $this->id
+                ],
+                'method'     => 'patch'
+            ],
             'parents_data'            => $this->parseCollectionParentsData($this->parents_data),
 
         ];
