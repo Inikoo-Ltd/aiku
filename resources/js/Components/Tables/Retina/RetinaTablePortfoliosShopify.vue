@@ -324,7 +324,11 @@ const onDisableCheckbox = (item) => {
     >
 
 
-     <template #header-checkbox="data">
+    <template #header-checkbox="data">
+        <div></div>
+    </template>
+
+     <template #disable-checkbox>
         <div></div>
     </template>
     

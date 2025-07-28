@@ -187,6 +187,8 @@ Route::name("families.")->prefix('families')
 Route::name("collections.")->prefix('collections')
     ->group(function () {
         Route::get('', IndexCollections::class)->name('index');
+        Route::get('active', [IndexCollections::class, 'active'])->name('active.index');
+        Route::get('inactive', [IndexCollections::class, 'inactive'])->name('inactive.index');
         Route::get('create', CreateCollection::class)->name('create');
 
         Route::prefix('{collection}')->group(function () {
