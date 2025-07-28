@@ -161,8 +161,8 @@ const loadingIdx = ref(null)
                                 customerSalesChannel: customer_sales_channel.id,
                             }
                         }"
-                        :title="trans('Are you sure you want to repair channel :channel?', { channel: customer_sales_channel?.name })"
-                        :description="trans('This will reset the products, baskets, orders and other data associated with this channel. This action cannot be undone.')"
+                        :title="trans('Are you sure you want to reset channel :channel?', { channel: customer_sales_channel?.name })"
+                        :description="trans('This will reset the products as will and will need to be re-matched, orders  associated with this channel will not be affected.')"
                         isFullLoading
                         :noLabel="trans('Yes, reset channel')"
                     >

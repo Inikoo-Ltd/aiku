@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Collection\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
+use App\Actions\Catalogue\WithCollectionsSubNavigation;
 use App\Actions\Catalogue\WithCollectionSubNavigation;
 use App\Actions\Catalogue\WithDepartmentSubNavigation;
 use App\Actions\Catalogue\WithFamilySubNavigation;
@@ -16,6 +17,8 @@ use App\Actions\Catalogue\WithSubDepartmentSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Catalogue\Collection\CollectionStateEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Catalogue\CollectionsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Collection;
@@ -38,7 +41,9 @@ class IndexCollections extends OrgAction
     use WithDepartmentSubNavigation;
     use WithSubDepartmentSubNavigation;
     use WithFamilySubNavigation;
+    use WithCollectionsSubNavigation;
 
+    private $bucket;
 
     public function handle(Shop $shop, $prefix = null): LengthAwarePaginator
     {
@@ -63,6 +68,12 @@ class IndexCollections extends OrgAction
                 $join->on('collections.id', '=', 'webpages.model_id')
                     ->where('webpages.model_type', '=', 'Collection');
             });
+        
+        if($this->bucket == 'active') {
+            $queryBuilder->where('collections.state', CollectionStateEnum::ACTIVE);
+        } elseif ($this->bucket == 'inactive') {
+            $queryBuilder->where('collections.state', CollectionStateEnum::INACTIVE);
+        } 
 
         $queryBuilder
             ->leftJoin('organisations', 'collections.organisation_id', '=', 'organisations.id')
@@ -153,7 +164,7 @@ class IndexCollections extends OrgAction
     {
         $container = null;
 
-        $subNavigation = null;
+        $subNavigation = $this->getCollectionsSubNavigation($this->shop);
 
         $title     = __('Collections');
         $icon      = [
@@ -187,6 +198,8 @@ class IndexCollections extends OrgAction
         if ($this->shop->website) {
             $websiteDomain = 'https://'.$this->shop->website->domain;
         }
+
+
 
 
         return Inertia::render(
@@ -256,6 +269,23 @@ class IndexCollections extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
+        $this->bucket = 'all';
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle(shop: $shop);
+    }
+
+    public function active(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = 'active';
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle(shop: $shop);
+    }
+
+    public function inactive(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = 'inactive';
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle(shop: $shop);
@@ -289,6 +319,28 @@ class IndexCollections extends OrgAction
                         'parameters' => $routeParameters
                     ],
                     $suffix
+                )
+            ),
+            'grp.org.shops.show.catalogue.collections.active.index' =>
+            array_merge(
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
+                    ],
+                    __('(Active)')
+                )
+            ),
+            'grp.org.shops.show.catalogue.collections.inactive.index' =>
+            array_merge(
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
+                    ],
+                    __('(Inactive)')
                 )
             ),
 

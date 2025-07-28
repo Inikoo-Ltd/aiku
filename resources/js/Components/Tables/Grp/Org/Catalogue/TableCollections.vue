@@ -80,6 +80,42 @@ function openOfflineModal(event: MouseEvent, item: any) {
     });
 }
 
+
+function openOnlineModal(event: MouseEvent, item: any) {
+    const target = event.currentTarget as HTMLElement;
+
+    isConfirmOpen.value = true;
+
+    confirm.require({
+        target,
+        message: "Are you sure you want to online this collection (webpage will set online again)?",
+        icon: "pi pi-exclamation-triangle",
+        acceptLabel: "Yes",
+        rejectLabel: "Cancel",
+        rejectProps: {
+            label: "No",
+            severity: "secondary",
+            outlined: true
+        },
+        acceptProps: {
+            label: "Yes",
+            severity: "success"
+        },
+        accept: () => {
+            selectedCollection.value = item;
+            isConfirmOpen.value = false;
+            SetOnline()
+        },
+        reject: () => {
+            isConfirmOpen.value = false;
+        },
+        onHide: () => {
+            isConfirmOpen.value = false;
+        }
+    });
+}
+
+
 // TODO: FIX TS
 function collectionRoute(collection: {}) {
     const currentRoute = route().current();
@@ -213,6 +249,38 @@ const SetOffline = () => {
 };
 
 
+const SetOnline = () => {
+    if (!selectedCollection.value) return;
+
+    const routeInfo = selectedCollection.value.route_enable_webpage;
+    if (!routeInfo) return;
+
+    router.patch(
+        route(routeInfo.name, routeInfo.parameters),
+        {},
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                resetModalState();
+                notify({
+                    title: "Success",
+                    text: "Webpage back to Online",
+                    type: "success"
+                });
+            },
+            onError: (errors) => {
+                console.error("Save failed:", errors);
+                notify({
+                    title: "Failed",
+                    text: "failed to set online",
+                    type: "error"
+                });
+            }
+        }
+    );
+};
+
+
 const onErrorDeleteCollection = (error) => {
     console.log(error);
     notify({
@@ -312,9 +380,15 @@ function handleUrlChange(e: string | null) {
                 </template>
             </ConfirmPopup>
             <div v-if="item.webpage_state == 'live'">
-                <Button :icon="faPowerOff" type="tertiary" size="xs" :key="item.webpage_state"
-                        @click="(e) => openOfflineModal(e, item)"
+                <Button :icon="faPowerOff"  size="xs" :key="item.webpage_state"
+                        @click="(e) => openOfflineModal(e, item)" :type="'negative'"
                         v-tooltip="isConfirmOpen ? '' : 'Set collection as inactive'" />
+            </div>
+
+            <div v-if="item.webpage_state == 'closed'">
+                <Button :icon="faPowerOff"  size="xs" :key="item.webpage_state"
+                        @click="(e) => openOnlineModal(e, item)" :type="'positive'"
+                        v-tooltip="isConfirmOpen ? '' : 'Set collection as active'" />
             </div>
 
             <Link v-if="routes?.detach?.name" as="button" :href="route(routes.detach.name, routes.detach.parameters)"

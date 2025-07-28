@@ -121,7 +121,6 @@ class IndexWebUsersInCRM extends OrgAction
                         ($this->canEdit && $this->parent instanceof Customer) ? [
                             'type'  => 'button',
                             'style' => 'create',
-                            'label' => $title,
                             'route' => [
                                 'name'       => 'grp.org.shops.show.crm.customers.show.web_users.create',
                                 'parameters' => $request->route()->originalParameters()
@@ -144,7 +143,7 @@ class IndexWebUsersInCRM extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
             $table
                 ->withGlobalSearch()

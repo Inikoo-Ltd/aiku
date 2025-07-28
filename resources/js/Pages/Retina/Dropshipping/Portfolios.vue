@@ -246,26 +246,26 @@ const loadingAction= ref([])
 
 const onSuccessEditCheckmark = () => {
   /*   router.reload({ only: ["data"] }) */
-    notify({
+    /* notify({
         title: trans("Success!"),
         text: trans("Successfully added the portfolio"),
         type: "success",
-    })
+    }) */
     selectedProducts.value = []
 }
 
 const onFailedEditCheckmark = (error: any) => {
-    notify({
+   /*  notify({
         title: "Something went wrong.",
         text: error?.products || "An error occurred.",
         type: "error",
-    })
+    }) */
 }
 
 const submitPortfolioAction = (action: any) => {
     loadingAction.value.push(action.label)
-    router.visit(route(action.route.name, action.route?.parameters), {
-        method: action.route?.method || "get",
+    router.visit(route(action.name, action?.parameters), {
+        method: action?.method || "get",
         data: { portfolios: selectedProducts.value },
         onSuccess: onSuccessEditCheckmark,
         onError: (error) => onFailedEditCheckmark(error),
@@ -281,21 +281,6 @@ const submitPortfolioAction = (action: any) => {
 <template>
     <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead">
-
-        <template #button-match-with-existing-product="{ action }">
-            <Button v-if="selectedProducts.length > 0" :type="action.style" :label="action.label"
-                 :loading="loadingAction.includes(action.label)"
-                @click="() => submitPortfolioAction(action)" />
-            <div v-else></div>
-        </template>
-
-        <template #button-create-new-product="{ action }">
-            <Button v-if="selectedProducts.length > 0" :type="action.style" :label="action.label"
-                :loading="loadingAction.includes(action.label)"
-                @click="() => submitPortfolioAction(action)" />
-            <div v-else></div>
-        </template>
-
 
         <template #button-upload-to-shopify="{ action }">
             <Button
@@ -469,14 +454,25 @@ const submitPortfolioAction = (action: any) => {
                     type="tertiary"
                 />
 
-<!--                <Button-->
-<!--                    @click="() => bulkUpload()"-->
-<!--                    v-tooltip="trans('This will create new products (if not exist in :platform) or will sync the products if exist in :platform', { platform: props.platform_data.name })"-->
-<!--                    icon="fal fa-paw-claws"-->
-<!--                    :label="trans('Brave mode')"-->
-<!--                    type="tertiary"-->
-<!--                    :loading="isLoadingBulkDeleteUpload"-->
-<!--                />-->
+
+                
+            <Button v-if="selectedProducts.length > 0" :type="'create'" :label="'Match With Existing Product'"
+                :loading="loadingAction.includes('Match With Existing Product')"
+                @click="() => submitPortfolioAction({
+                    label : 'Match With Existing Product',
+                    name : 'retina.models.dropshipping.shopify.batch_match',
+                    parameters: { customerSalesChannel: customer_sales_channel.id }, 
+                    method: 'post',
+                })" />
+
+            <Button v-if="selectedProducts.length > 0" :type="'create'" :label="'Create New Product'"
+                :loading="loadingAction.includes('Create New Product')"
+                @click="() => submitPortfolioAction({
+                    label : 'Create New Product',
+                    name : 'retina.models.dropshipping.shopify.batch_upload',
+                    parameters: { customerSalesChannel: customer_sales_channel.id }, 
+                    method: 'post',
+                })" />
             </div>
         </div>
     </Message>
@@ -510,7 +506,6 @@ const submitPortfolioAction = (action: any) => {
                     size="xl"/>
         </div>
     </div>
-
     <div v-else class="overflow-x-auto">
         <RetinaTablePortfoliosManual
             v-if="isPlatformManual"
@@ -522,6 +517,7 @@ const submitPortfolioAction = (action: any) => {
             :is_platform_connected
             :progressToUploadToShopify
             :isPlatformManual
+            :useCheckBox="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual"
         />
 
         <RetinaTablePortfoliosShopify

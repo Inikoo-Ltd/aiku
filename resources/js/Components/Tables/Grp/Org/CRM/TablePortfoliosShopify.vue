@@ -226,6 +226,11 @@ const onDisableCheckbox = (item) => {
         <div></div>
     </template>
 
+
+     <template #disable-checkbox>
+        <div></div>
+    </template>
+
         <template #cell(item_code)="{ item: portfolio }">
             <Link :href="itemRoute(portfolio)" class="primaryLink">
                 {{ portfolio["item_code"] }}

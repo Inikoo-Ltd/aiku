@@ -341,13 +341,19 @@ const onMatchByVariant = () => {
         :name="tab"
         class="mt-5"
         isCheckBox
-        :isCheckBox="true"
         @onChecked="(item) => onChangeCheked(true, item)" 
         @onUnchecked="(item) => onChangeCheked(false, item)"
         @onCheckedAll="(data) => onCheckedAll(data)"
         checkboxKey='id' 
         :isChecked="(item) => selectedProducts.includes(item.id)"
         :disabledCheckbox="(item)=>onDisableCheckbox(item)"
+        :rowColorFunction="(item) => {
+			if (!isPlatformManual && is_platform_connected && !item.platform_product_id && get(progressToUploadToShopify, [item.id], undefined) != 'success') {
+				return 'bg-yellow-50'
+			} else {
+				return ''
+			}
+		}"
         :isParentLoading="!!isLoadingTable"
         :rowColorFunction="(item) => {
 			if (is_platform_connected && !item.platform_status && get(progressToUploadToShopify, [item.id], undefined) != 'success') {

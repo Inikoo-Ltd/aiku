@@ -118,14 +118,14 @@ class CallApiGlsSKShipping extends OrgAction
         try {
             $client = new SoapClient($url, $soapOptions);
         } catch (SoapFault $e) {
-            $result['errorData'] = ['Soap API connection error'];
-            $result['status'] = 'fail';
-            $result['modelData'] = [
-                'api_response' => [
-                    'error' => $e->getMessage(),
-                ],
+            $errorData = [
+                'message' => 'Unknown error',
             ];
-            return $result;
+            return [
+                'status'    => 'fail',
+                'modelData' => [],
+                'errorData' => $errorData,
+            ];
         }
 
         $apiResponse = $client->PrintLabels($printLabelsRequest)->PrintLabelsResult;
