@@ -34,6 +34,7 @@ import { Root as RootWebpage } from "@/types/webpageTypes";
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 import { routeType } from "@/types/route";
 import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue";
+import Blueprint from "@/Components/CMS/Webpage/Blog/Blueprint";
 
 import {
   faExclamationTriangle, faBrowser, faDraftingCompass, faRectangleWide,
@@ -56,7 +57,7 @@ const props = defineProps<{
   pageHead: PageHeadingTypes,
   webpage: RootWebpage,
   webBlockTypes: Root
-  url : string
+  url: string
 }>();
 console.log('ss', props.webpage)
 provide('isInWorkshop', true);
@@ -80,7 +81,7 @@ const debounceTimers = ref({});
 const addBlockCancelToken = ref<Function | null>(null);
 const orderBlockCancelToken = ref<Function | null>(null);
 const deleteBlockCancelToken = ref<Function | null>(null);
-const addBlockParentIndex = ref({ parentIndex: data.value.layout.web_blocks.length ,type: "current" });
+const addBlockParentIndex = ref({ parentIndex: data.value.layout.web_blocks.length, type: "current" });
 const isLoadingDeleteBlock = ref<number | null>(null);
 const comment = ref("");
 const isLoadingPublish = ref(false);
@@ -103,23 +104,23 @@ const sendToIframe = (data: any) => {
 // Block Handlers
 const addNewBlock = async ({ block, type }) => {
   if (addBlockCancelToken.value) addBlockCancelToken.value();
-  let position  = data.value.layout.web_blocks.length
-  if(type == 'before' ) {
-    position =  addBlockParentIndex.value.parentIndex
-  }else if(type == 'after'){
-    position =  addBlockParentIndex.value.parentIndex + 1;
+  let position = data.value.layout.web_blocks.length
+  if (type == 'before') {
+    position = addBlockParentIndex.value.parentIndex
+  } else if (type == 'after') {
+    position = addBlockParentIndex.value.parentIndex + 1;
   }
 
 
   router.post(
     route(props.webpage.add_web_block_route.name, props.webpage.add_web_block_route.parameters),
-    { web_block_type_id: block.id, position  : position },
+    { web_block_type_id: block.id, position: position },
     {
       onStart: () => isAddBlockLoading.value = "addBlock" + block.id,
       onFinish: () => {
         addBlockCancelToken.value = null;
         isAddBlockLoading.value = null;
-        addBlockParentIndex.value = { parentIndex: data.value.layout.web_blocks.length ,type: "current" };
+        addBlockParentIndex.value = { parentIndex: data.value.layout.web_blocks.length, type: "current" };
       },
       onCancelToken: token => addBlockCancelToken.value = token.cancel,
       onSuccess: e => {
@@ -127,12 +128,13 @@ const addNewBlock = async ({ block, type }) => {
         sendToIframe({ key: 'reload', value: {} });
       },
       onError: error => {
-        console.log('sss',error)
+        console.log('sss', error)
         notify({
-        title: trans("Something went wrong"),
-        text: error.message,
-        type: "error"
-      })}
+          title: trans("Something went wrong"),
+          text: error.message,
+          type: "error"
+        })
+      }
     }
   );
 };
@@ -149,7 +151,7 @@ const duplicateBlock = async (modelHasWebBlock = Number) => {
       onFinish: () => {
         addBlockCancelToken.value = null;
         isAddBlockLoading.value = null;
-        addBlockParentIndex.value = { parentIndex: data.value.layout.web_blocks.length ,type: "current" }
+        addBlockParentIndex.value = { parentIndex: data.value.layout.web_blocks.length, type: "current" }
       },
       onCancelToken: token => addBlockCancelToken.value = token.cancel,
       onSuccess: e => {
@@ -194,7 +196,7 @@ const debounceSaveWorkshop = (block) => {
           },
         }
       );
-   /*    data.value = response.data.data */
+      /*    data.value = response.data.data */
       sendToIframe({ key: "reload", value: {} });
     } catch (error) {
       console.log(error)
@@ -257,7 +259,7 @@ const onSaveWorkshopFromId = (blockId, from) => {
     key: 'setWebpage',
     value: JSON.parse(JSON.stringify(data.value))
   });
-    if (block) debounceSaveWorkshop(block);
+  if (block) debounceSaveWorkshop(block);
 };
 
 provide('onSaveWorkshopFromId', onSaveWorkshopFromId);
@@ -348,13 +350,13 @@ const onPublish = async (action: routeType, popover) => {
 
 const beforePublish = (route, popover) => {
   const validation = JSON.stringify(data.value.layout);
-  if(props.webpage.type == "catalogue") onPublish(route, popover)
+  if (props.webpage.type == "catalogue") onPublish(route, popover)
   else {
-     validation.includes('<h1') || validation.includes('<H1')
-    ? onPublish(route, popover)
-    : confirmPublish(route, popover);
+    validation.includes('<h1') || validation.includes('<H1')
+      ? onPublish(route, popover)
+      : confirmPublish(route, popover);
   }
- 
+
 };
 
 const confirmPublish = (route, popover) => {
@@ -425,7 +427,7 @@ onMounted(() => {
     if (event.origin !== window.location.origin) return;
     const { key, value } = event.data;
     switch (key) {
-      case 'autosave': return onSaveWorkshop(value,false);
+      case 'autosave': return onSaveWorkshop(value, false);
       case 'activeBlock': return openedBlockSideEditor.value = value;
       case 'activeChildBlock': return openedChildSideEditor.value = value;
       case 'addBlock':
@@ -446,16 +448,19 @@ watch(filterBlock, (newValue) => sendToIframe({ key: 'isPreviewLoggedIn', value:
 
 const compUsersEditThisPage = computed(() => {
 
-	return useLiveUsers().liveUsersArray.filter(user => (user.current_page?.route_name === layout.currentRoute && user.current_page?.route_params?.webpage === layout.currentParams?.webpage)).map(user => user.name ?? user.username)
+  return useLiveUsers().liveUsersArray.filter(user => (user.current_page?.route_name === layout.currentRoute && user.current_page?.route_params?.webpage === layout.currentParams?.webpage)).map(user => user.name ?? user.username)
 })
 
 const openWebsite = () => {
   window.open(props.url, '_blank')
 }
-console.log('props',props)
+console.log('props', props)
+
+const dummyData = ref(null)
 </script>
 
 <template>
+
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead">
     <template #button-publish="{ action }">
@@ -468,25 +473,24 @@ console.log('props',props)
     </template>
 
     <template #other>
-      <div class="px-2 cursor-pointer"  v-tooltip="trans('Go to website')" @click="openWebsite">
+      <div class="px-2 cursor-pointer" v-tooltip="trans('Go to website')" @click="openWebsite">
         <FontAwesomeIcon :icon="faExternalLink" size="xl" aria-hidden="true" />
       </div>
     </template>
   </PageHeading>
 
 
-  <ConfirmDialog group="alert-publish" >
+  <ConfirmDialog group="alert-publish">
     <template #icon>
-      <FontAwesomeIcon :icon="faExclamationTriangle"  class="text-orange-500"/>
+      <FontAwesomeIcon :icon="faExclamationTriangle" class="text-orange-500" />
     </template>
   </ConfirmDialog>
 
   <div class="flex">
-    <div v-if="!fullScreen" class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1">
-  <!--    <SideEditor v-model="element.web_block.layout.data.fieldValue"
-                          :panelOpen="openedChildSideEditor" :blueprint="getBlueprint(element.type,webpage)" :block="element"
-                          @update:modelValue="() => sendBlockUpdate(element)"
-                          :uploadImageRoute="{ ...webpage.images_upload_route, parameters: { modelHasWebBlocks: element.id } }" /> -->
+    <div v-if="!fullScreen" class="hidden lg:flex lg:flex-col w-[400px] bg-gray-200 border-2 p-3 space-y-3">
+      <h2 class="text-lg font-semibold text-gray-700 border-b border-gray-400 border">Blog Settings</h2>
+      <SideEditor v-model="dummyData" :panelOpen="openedChildSideEditor" :blueprint="Blueprint.blueprint"
+        :uploadImageRoute="null" @update:modelValue="() => console.log('sss')" />
     </div>
 
     <!-- Preview Section -->
@@ -514,7 +518,7 @@ console.log('props',props)
 
         <div class="flex items-center gap-2 text-sm text-gray-700">
           <label v-if="props.webpage.allow_fetch" for="sync-toggle">Connected with aurora</label>
-            <label v-else for="sync-toggle">Disconnected from aurora</label>
+          <label v-else for="sync-toggle">Disconnected from aurora</label>
           <ToggleSwitch id="sync-toggle" v-model="props.webpage.allow_fetch"
             @update:modelValue="(e) => SyncAurora(e)" />
         </div>
@@ -524,7 +528,7 @@ console.log('props',props)
         <!-- <div v-if="isIframeLoading" class="absolute inset-0 flex items-center justify-center bg-white">
           <LoadingIcon class="w-24 h-24 text-6xl" />
         </div> -->
-       <BlogWorkshop />
+        <BlogWorkshop />
       </div>
     </div>
   </div>

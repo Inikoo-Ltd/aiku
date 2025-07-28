@@ -34,6 +34,7 @@ import {Table as TableTS} from "@/types/Table"
 import { CustomerSalesChannel } from "@/types/customer-sales-channel"
 import RetinaTablePortfoliosPlatform from "@/Components/Tables/Retina/RetinaTablePortfoliosPlatform.vue"
 import RetinaTablePortfoliosShopify from "@/Components/Tables/Retina/RetinaTablePortfoliosShopify.vue"
+import ProgressBar from "@/Components/Utils/ProgressBar.vue";
 
 library.add(faFileExcel, faBracketsCurly, faSyncAlt, faPawClaws, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
 
@@ -572,4 +573,7 @@ const submitPortfolioAction = (action: any) => {
             :onClickReconnect
         />
     </Modal>
+
+
+    <!-- <ProgressBar :progressBars="{}" :isShowProgress="true" /> -->
 </template>

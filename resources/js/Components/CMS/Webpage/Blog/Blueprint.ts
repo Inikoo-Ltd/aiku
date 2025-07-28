@@ -1,7 +1,7 @@
 export default {
 	blueprint: [
 		{
-			name: "Carousel Settings",
+			label: "Carousel Settings",
 			key: ["carousel_data"],
 			replaceForm: [
 				{
