@@ -260,6 +260,5 @@ const locale = inject('locale', aikuLocaleStructure)
                 </div>
             </dl>
         </div>
-        {{ platform_status}} {{exist_in_platform}} {{can_connect_to_platform }}
     </div>
 </template>

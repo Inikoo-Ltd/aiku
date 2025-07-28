@@ -275,6 +275,38 @@ const fetchRoute = async () => {
 
 }
 const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
+
+
+const selectedProducts = defineModel<number[]>('selectedProducts')
+
+const onChangeCheked = (checked: boolean, item: DeliveryNote) => {
+    if (!selectedProducts.value) return
+
+    if (checked) {
+        if (!selectedProducts.value.includes(item.id)) {
+            selectedProducts.value.push(item.id)
+        }
+    } else {
+        selectedProducts.value = selectedProducts.value.filter(id => id != item.id)
+    }
+}
+
+const onCheckedAll = ({ data, allChecked }) => {
+    if (!selectedProducts.value) return
+
+    if (allChecked) {
+        const newIds = data.map(row => row.id)
+        selectedProducts.value = Array.from(new Set([...selectedProducts.value, ...newIds]))
+    } else {
+        const uncheckIds = data.map(row => row.id)
+        selectedProducts.value = selectedProducts.value.filter(id => !uncheckIds.includes(id))
+    }
+}
+
+const onDisableCheckbox = (item) => {
+    if(item.platform_status && item.exist_in_platform && item.has_valid_platform_product_id) return true
+    return false
+}
 </script>
 
 <template>
@@ -282,16 +314,14 @@ const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
         :resource="data"
         :name="tab"
         class="mt-5"
-        xxisCheckBox
-        xxdisabledCheckbox="(xxx) => !!xxx.platform_product_id || xxx.platform == 'manual'"
-        @onChecked="(item) => {
-			console.log('onChecked', item)
-			props.selectedData.products.push(item.id)
-		}"
-        @onUnchecked="(item) => {
-			onUnchecked(item.id)
-		}"
-        :isChecked="(item) => props.selectedData.products.includes(item.id)"
+        isCheckBox
+        :isCheckBox="true"
+        @onChecked="(item) => onChangeCheked(true, item)" 
+        @onUnchecked="(item) => onChangeCheked(false, item)"
+        @onCheckedAll="(data) => onCheckedAll(data)"
+        checkboxKey='id' 
+        :isChecked="(item) => selectedProducts.includes(item.id)"
+        :disabledCheckbox="(item)=>onDisableCheckbox(item)"
         :rowColorFunction="(item) => {
 			if (!isPlatformManual && is_platform_connected && !item.platform_product_id && get(progressToUploadToShopify, [item.id], undefined) != 'success') {
 				return 'bg-yellow-50'
@@ -301,6 +331,11 @@ const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
 		}"
         :isParentLoading="!!isLoadingTable"
     >
+
+     <template #header-checkbox="data">
+        <div></div>
+    </template>
+    
         <template #add-on-button>
             <Button
                 @click="onClickFilterOutOfStock('out-of-stock')"

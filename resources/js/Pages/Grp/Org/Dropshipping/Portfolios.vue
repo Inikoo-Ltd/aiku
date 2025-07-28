@@ -134,11 +134,10 @@ onMounted(() => {
     })
   }
 })
-console.log(props)
+
 </script>
 
 <template>
-
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template v-if="is_show_add_products_modal" #other>
