@@ -19,6 +19,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { trans } from "laravel-vue-i18n"
 import Modal from "@/Components/Utils/Modal.vue"
 import { notify } from "@kyvg/vue3-notification"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 const props = defineProps<{
     data: TableTS,
@@ -173,15 +174,32 @@ const onCheckedAll = ({ data, allChecked }) => {
         @onCheckedAll="(data) => onCheckedAll(data)"
         checkboxKey='id' 
         :isChecked="(item) => selectedDeliveryNotes.includes(item.id)"
+        
+        :disabledCheckbox="(item) => item.picking_sessions_count > 0"
     >
+    
+        <template #header-checkbox="data">
+            <div></div>
+        </template>
+
+        <template #disable-checkbox>
+            <div></div>
+        </template>
+
         <template #cell(status)="{ item: deliveryNote }">
             <Icon :data="deliveryNote.state_icon" />
+        </template>
+
+        <template #cell(effective_weight)="{ item: deliveryNote }">
+            {{ deliveryNote.effective_weight }} kg
         </template>
 
         <template #cell(reference)="{ item: deliveryNote }">
             <Link :href="deliveryNoteRoute(deliveryNote)" class="primaryLink">
             {{ deliveryNote["reference"] }}
             </Link>
+
+            <FontAwesomeIcon v-if="deliveryNote.picking_sessions_count > 0" v-tooltip="trans('In picking sessions')" icon="fab fa-stack-overflow" class="text-yellow-500" fixed-width aria-hidden="true" />
         </template>
 
         <template #cell(date)="{ item }">

@@ -603,9 +603,9 @@ const generateRouteDeliveryNote = (slug: string) => {
         <!-- Box: Payment/Invoices/Delivery Notes  -->
         <BoxStatPallet class="py-4 px-3" icon="fal fa-user">
             <div class="text-xs md:text-sm">
-				<div class="font-semibold xmb-2 text-base">
+				<!-- <div class="font-semibold xmb-2 text-base">
 					{{ trans("Delivery Note") }}
-				</div>
+				</div> -->
 				
 				<div class="xspace-y-0.5 pl-1">
                     <!-- Field: Billing -->
