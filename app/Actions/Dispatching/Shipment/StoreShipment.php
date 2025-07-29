@@ -12,6 +12,7 @@ use App\Actions\Dispatching\Shipment\ApiCalls\CallApiApcGbShipping;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiDpdGbShipping;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiGlsSKShipping;
 use App\Actions\Dispatching\Shipment\ApiCalls\CallApiItdShipping;
+use App\Actions\Dispatching\Shipment\ApiCalls\CallApiPacketaShipping;
 use App\Actions\Dispatching\Shipment\ApiCalls\PostmenCallShipperApi;
 use App\Actions\Dispatching\Shipment\ApiCalls\WhistlGbCallShipperApi;
 use App\Actions\Dispatching\Shipment\Hydrators\ShipmentHydrateUniversalSearch;
@@ -53,6 +54,7 @@ class StoreShipment extends OrgAction
                 'apc-gb' => CallApiApcGbShipping::run($parent, $shipper),
                 'gls-sk' => CallApiGlsSKShipping::run($parent, $shipper),
                 // 'dpd-gb' => DpdGbCallShipperApi::run($parent, $shipper),
+                'packeta-sk' => CallApiPacketaShipping::run($parent, $shipper),
                 'dpd-gb' => CallApiDpdGbShipping::run($parent, $shipper),
                 'pst-mn' => PostmenCallShipperApi::run($parent, $shipper),
                 'whl-gb' => WhistlGbCallShipperApi::run($parent, $shipper),

@@ -160,7 +160,7 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
                 </template>
                 <template v-else>
                     <FontAwesomeIcon v-if="item.can_connect_to_platform" v-tooltip="trans('App installed ok')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-                    <FontAwesomeIcon v-else v-tooltip="trans('Broken channel delete it an d create new one')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-else v-tooltip="trans('Broken channel delete it and create new one')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
                     <FontAwesomeIcon v-if="item.exist_in_platform" v-tooltip="trans('Exist in platform')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
                     <FontAwesomeIcon v-else v-tooltip="trans('Exist in platform')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
                     <FontAwesomeIcon v-if="item.platform_status" v-tooltip="trans('Platform status')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
