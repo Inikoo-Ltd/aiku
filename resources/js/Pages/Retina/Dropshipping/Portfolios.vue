@@ -34,6 +34,7 @@ import {Table as TableTS} from "@/types/Table"
 import { CustomerSalesChannel } from "@/types/customer-sales-channel"
 import RetinaTablePortfoliosPlatform from "@/Components/Tables/Retina/RetinaTablePortfoliosPlatform.vue"
 import RetinaTablePortfoliosShopify from "@/Components/Tables/Retina/RetinaTablePortfoliosShopify.vue"
+import { ulid } from "ulid";
 
 library.add(faFileExcel, faBracketsCurly, faSyncAlt, faHandPointer, faPawClaws, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
 
@@ -288,6 +289,7 @@ const submitPortfolioAction = async (action: any) => {
   }
 }
 
+const key = ulid()
 
 </script>
 
@@ -479,7 +481,7 @@ const submitPortfolioAction = async (action: any) => {
         <RetinaTablePortfoliosShopify v-else-if="platform_data.type === 'shopify'" :data="props.products"
             :tab="'products'" :selectedData :platform_data :platform_user_id :is_platform_connected
             :progressToUploadToShopifyAll="progessbar" :progressToUploadToShopify :customerSalesChannel="customer_sales_channel"
-            v-model:selectedProducts="selectedProducts" />
+            v-model:selectedProducts="selectedProducts" :key="key"/>
 
         <RetinaTablePortfoliosPlatform v-else :data="props.products" :tab="'products'" :selectedData :platform_data
             :platform_user_id :is_platform_connected :progressToUploadToShopify />
@@ -491,7 +493,7 @@ const submitPortfolioAction = async (action: any) => {
             @onDone="isOpenModalPortfolios = false" :platform_user_id />
 
         <AddPortfoliosWithUpload v-else :step="step" :routes="props.routes" :platform_data
-            @onDone="isOpenModalPortfolios = false" :platform_user_id :is_platform_connected
+            @onDone="()=>{isOpenModalPortfolios = false, key = ulid()}" :platform_user_id :is_platform_connected
             :customerSalesChannel="customer_sales_channel" :onClickReconnect />
     </Modal>
 

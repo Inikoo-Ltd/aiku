@@ -43,6 +43,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import axios from "axios"
 import PureProgressBar from "@/Components/PureProgressBar.vue"
+import { ulid } from "ulid"
 
 library.add(faHandshake,faHandshakeSlash,faHandPointer,fadExclamationTriangle, faSyncAlt, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, faClone, faLink, faScrewdriver, faTools)
 
@@ -319,7 +320,7 @@ const onDisableCheckbox = (item) => {
 }
 
 const _table = ref(null)
-
+const key = ref(ulid())
 onMounted(() => {
   props.data?.data?.forEach((porto) => {
     const socketConfig = selectSocketiBasedPlatform(porto)
@@ -344,6 +345,7 @@ onMounted(() => {
         // === Shopify handling ===
         if (isShopify) {
           const pf = eventData.portfolio
+             console.log(pf)
           const isSuccess =
             pf.has_valid_platform_product_id &&
             pf.platform_status &&
@@ -355,6 +357,16 @@ onMounted(() => {
             progress.number_fails += 1
           }
 
+          /* if(_table.value){
+            console.log(_table.value)
+             _table.value.selectRow[pf.id] = false
+             porto = {...porto, is_checked : false, ...pf}
+             const index =  _table.value.data.findIndex((item) => item.id == pf.id)
+              _table.value.data[index] = { ..._table.value.data[index], is_checked : false, ...pf}
+              console.log(porto,index, _table.value.data[index])
+            }  */
+            
+
           const totalFinished = progress.number_success + progress.number_fails
           if (totalFinished == selectedProducts.value.length) {
             props.progressToUploadToShopifyAll.done = true
@@ -362,11 +374,7 @@ onMounted(() => {
               progress.number_fails = 0
             props.progressToUploadToShopifyAll.total = 0
             selectedProducts.value = []
-            if(_table.value){
-             _table.value.selectRow[pf.id] = false
-             const index =  _table.value.compResourceData.findIndex((item) => item.id == pf.id)
-              _table.value.compResourceData[index] ={ ..._table.value.compResourceData[index], is_checked : false, ...pf}
-            } 
+            debReloadPage()
           }
         }
 
@@ -377,7 +385,7 @@ onMounted(() => {
         }
       })
 
-    console.log(`Subscription porto id`, channel, porto)
+/*     console.log(`Subscription porto id`, channel, porto) */
   })
 })
 
@@ -386,8 +394,8 @@ onMounted(() => {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5" isCheckBox @onChecked="(item) => onChangeCheked(true, item)"
-        @onUnchecked="(item) => onChangeCheked(false, item)" @onCheckedAll="(data) => onCheckedAll(data)"
-        checkboxKey='id' :isChecked="(item) => selectedProducts.includes(item.id)" ref="_table"
+        @onUnchecked="(item) => onChangeCheked(false, item)" checkboxKey='id'
+        :isChecked="(item) => selectedProducts.includes(item.id)" ref="_table" 
         :disabledCheckbox="(item)=>onDisableCheckbox(item)" :isParentLoading="!!isLoadingTable">
 
         <template #header-checkbox="data">
@@ -397,6 +405,16 @@ onMounted(() => {
         <template #disable-checkbox>
             <div></div>
         </template>
+
+
+        <template #checkbox="{ checked, data }">
+            <FontAwesomeIcon v-if="selectedProducts.includes(data.id)" @click="() => onChangeCheked(false, data)" icon="fas fa-check-square"
+                class="text-green-500 p-2 cursor-pointer text-lg mx-auto block" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-else @click="() => onChangeCheked(true, data)" icon="fal fa-square"
+                class="text-gray-500 hover:text-gray-700 p-2 cursor-pointer text-lg mx-auto block" fixed-width
+                aria-hidden="true" />
+        </template>
+
 
 
         <template #add-on-button>
@@ -429,7 +447,8 @@ onMounted(() => {
                 :icon="compTableFilterPlatformStatus === 'true' ? 'fas fa-filter' : 'fal fa-filter'"
                 iconRight="fal fa-handshake-slash" :loading="isLoadingTable == 'not-connected'" />
 
-            <PureProgressBar v-if="progressToUploadToShopifyAll.total != 0" :progressBars="progressToUploadToShopifyAll" />
+            <PureProgressBar v-if="progressToUploadToShopifyAll.total != 0"
+                :progressBars="progressToUploadToShopifyAll" />
 
         </template>
 
