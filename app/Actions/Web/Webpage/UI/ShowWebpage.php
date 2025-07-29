@@ -350,6 +350,7 @@ class ShowWebpage extends OrgAction
                     'navigation' => WebpageTabsEnum::navigation()
                 ],
                 'root_active' => $subNavigationRoot,
+                'webpage_url'   => $webpage->getUrl(),
 
                 WebpageTabsEnum::SHOWCASE->value => $this->tab == WebpageTabsEnum::SHOWCASE->value ?
                     fn () => WebpageResource::make($webpage)->getArray()
