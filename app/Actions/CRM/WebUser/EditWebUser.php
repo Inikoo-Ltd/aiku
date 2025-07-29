@@ -118,6 +118,11 @@ class EditWebUser extends OrgAction
                             'icon'    => 'fa-light fa-key',
                             'current' => true,
                             'fields'  => [
+                                'contact_name' => [
+                                    'type'  => 'input',
+                                    'label' => __('Contact name'),
+                                    'value' => $webUser->contact_name
+                                ],
                                 'email' => [
                                     'type'  => 'input',
                                     'label' => __('email'),
