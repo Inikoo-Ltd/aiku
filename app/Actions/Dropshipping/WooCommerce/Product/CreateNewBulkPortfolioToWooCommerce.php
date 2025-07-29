@@ -16,7 +16,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class SyncronisePortfoliosToWooCommerce extends RetinaAction
+class CreateNewBulkPortfolioToWooCommerce extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
@@ -36,11 +36,7 @@ class SyncronisePortfoliosToWooCommerce extends RetinaAction
             ->get();
 
         foreach ($portfolios as $portfolio) {
-            match ($this->mode) {
-                PortfolioPlatformAvailabilityOptionEnum::USE_EXISTING->value => SyncExistingPortfolioWooCommerce::dispatch($wooCommerceUser, $portfolio),
-                PortfolioPlatformAvailabilityOptionEnum::DUPLICATE->value => UploadPortfolioWooCommerce::dispatch($wooCommerceUser, $portfolio),
-                default => UploadPortfolioWooCommerceBraveMode::dispatch($wooCommerceUser, $portfolio)
-            };
+            StoreWooCommerceProduct::dispatch($wooCommerceUser, $portfolio);
         }
     }
 

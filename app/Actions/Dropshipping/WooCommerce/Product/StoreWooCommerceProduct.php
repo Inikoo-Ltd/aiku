@@ -21,7 +21,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
 
-class UploadPortfolioWooCommerce extends RetinaAction
+class StoreWooCommerceProduct extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
@@ -62,13 +62,19 @@ class UploadPortfolioWooCommerce extends RetinaAction
 
             $result = $wooCommerceUser->createWooCommerceProduct($wooCommerceProduct);
 
-            $portfolio = UpdatePortfolio::run($portfolio, [
+            UpdatePortfolio::run($portfolio, [
                 'platform_product_id' => Arr::get($result, 'id')
             ]);
 
-            UploadProductToWooCommerceProgressEvent::dispatch($wooCommerceUser, $portfolio);
+            return $result;
         } catch (\Exception $e) {
             Sentry::captureMessage("Failed to upload product due to: " . $e->getMessage());
+
+            UpdatePortfolio::run($portfolio, [
+                'errors_response' => [$e->getMessage()]
+            ]);
+
+            return null;
         }
     }
 

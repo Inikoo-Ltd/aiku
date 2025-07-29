@@ -15,7 +15,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class SynchronisePortfolioToWooCommerce extends RetinaAction
+class StoreNewProductToCurrentWooCommerce extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
@@ -25,7 +25,7 @@ class SynchronisePortfolioToWooCommerce extends RetinaAction
      */
     public function handle(WooCommerceUser $wooCommerceUser, Portfolio $portfolio): void
     {
-        UploadPortfolioWooCommerceBraveMode::dispatch($wooCommerceUser, $portfolio);
+        StoreWooCommerceProduct::dispatch($wooCommerceUser, $portfolio);
     }
 
     public function asController(WooCommerceUser $wooCommerceUser, Portfolio $portfolio, ActionRequest $request): void

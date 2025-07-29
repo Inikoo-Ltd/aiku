@@ -24,8 +24,8 @@ use App\Actions\Dropshipping\Tiktok\Product\GetProductsFromTiktokApi;
 use App\Actions\Dropshipping\Tiktok\Product\StoreProductToTiktok;
 use App\Actions\Dropshipping\Tiktok\User\DeleteTiktokUser;
 use App\Actions\Dropshipping\WooCommerce\Orders\FetchWooUserOrders;
-use App\Actions\Dropshipping\WooCommerce\Product\SyncronisePortfoliosToWooCommerce;
-use App\Actions\Dropshipping\WooCommerce\Product\SynchronisePortfolioToWooCommerce;
+use App\Actions\Dropshipping\WooCommerce\Product\CreateNewBulkPortfolioToWooCommerce;
+use App\Actions\Dropshipping\WooCommerce\Product\StoreNewProductToCurrentWooCommerce;
 use App\Actions\Retina\Accounting\MitSavedCard\DeleteMitSavedCard;
 use App\Actions\Retina\Accounting\MitSavedCard\SetAsDefaultRetinaMitSavedCard;
 use App\Actions\Retina\Accounting\Payment\PlaceOrderPayByBank;
@@ -256,10 +256,10 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('{customerSalesChannel:id}/shopify-batch-upload', CreateRetinaNewBulkPortfoliosToShopify::class)->name('shopify.batch_upload')->withoutScopedBindings();
     Route::post('{customerSalesChannel:id}/shopify-batch-match', MatchRetinaBulkPortfoliosToCurrentShopifyProduct::class)->name('shopify.batch_match')->withoutScopedBindings();
 
-    Route::post('{wooCommerceUser:id}/woo-batch-upload', SyncronisePortfoliosToWooCommerce::class)->name('woo.batch_upload')->withoutScopedBindings();
-    Route::post('{wooCommerceUser:id}/woo-batch-sync', [SyncronisePortfoliosToWooCommerce::class, 'asBatchSync'])->name('woo.batch_sync')->withoutScopedBindings();
-    Route::post('{wooCommerceUser:id}/woo-batch-brave', [SyncronisePortfoliosToWooCommerce::class, 'asBraveMode'])->name('woo.batch_brave')->withoutScopedBindings();
-    Route::post('{wooCommerceUser:id}/woo-single-upload/{portfolio:id}', SynchronisePortfolioToWooCommerce::class)->name('woo.single_upload')->withoutScopedBindings();
+    Route::post('{wooCommerceUser:id}/woo-batch-upload', CreateNewBulkPortfolioToWooCommerce::class)->name('woo.batch_upload')->withoutScopedBindings();
+    Route::post('{wooCommerceUser:id}/woo-batch-sync', [CreateNewBulkPortfolioToWooCommerce::class, 'asBatchSync'])->name('woo.batch_sync')->withoutScopedBindings();
+    Route::post('{wooCommerceUser:id}/woo-batch-brave', [CreateNewBulkPortfolioToWooCommerce::class, 'asBraveMode'])->name('woo.batch_brave')->withoutScopedBindings();
+    Route::post('{wooCommerceUser:id}/woo-single-upload/{portfolio:id}', StoreNewProductToCurrentWooCommerce::class)->name('woo.single_upload')->withoutScopedBindings();
 
     Route::post('{ebayUser:id}/ebay-batch-upload', SyncronisePortfoliosToEbay::class)->name('ebay.batch_upload')->withoutScopedBindings();
     Route::post('{ebayUser:id}/ebay-single-upload/{portfolio:id}', SyncronisePortfolioToEbay::class)->name('ebay.single_upload')->withoutScopedBindings();
