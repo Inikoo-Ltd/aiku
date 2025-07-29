@@ -51,10 +51,10 @@ class CallApiGlsSKShipping extends OrgAction
      */
     public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper): array
     {
-        $creds = $this->getAccessToken($shipper);
-        $username = Arr::get($creds, 'username');
-        $password = Arr::get($creds, 'password');
-        $clientNumber = Arr::get($creds, 'client_number');
+        $credentials = $this->getAccessToken($shipper);
+        $username = Arr::get($credentials, 'username');
+        $password = Arr::get($credentials, 'password');
+        $clientNumber = Arr::get($credentials, 'client_number');
 
         $url = $this->getBaseUrl() . '/ParcelService.svc?singleWsdl';
 
@@ -77,6 +77,8 @@ class CallApiGlsSKShipping extends OrgAction
         if(!$contactName){
             $contactName = 'anonymous';
         }
+
+
 
 
 
