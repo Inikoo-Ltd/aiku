@@ -35,7 +35,8 @@ class UploadProductToShopifyProgressEvent implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel("shopify.{$this->shopifyUser->id}.upload-product.{$this->portfolio->id}")
+            new PrivateChannel("shopify.{$this->shopifyUser->id}.upload-product.{$this->portfolio->id}"),
+            new PrivateChannel("shopify.{$this->shopifyUser->id}.upload"),
         ];
     }
 
