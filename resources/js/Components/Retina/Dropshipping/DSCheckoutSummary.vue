@@ -169,7 +169,6 @@ const isModalShippingAddress = ref(false)
                      class="mb-3 pb-3 border-b border-dashed last:border-0 last:mb-0 last:pb-0">
 
                     <div class="flex items-center gap-2 text-sm text-gray-700 mb-1">
-                        <span class="font-medium">Ref:</span>
                         <span>{{ note?.reference }}</span>
                         <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
                             <Icon :data="note?.state"/>
@@ -211,26 +210,34 @@ const isModalShippingAddress = ref(false)
                 </div>
             </div>
 
-            <div v-if="summary?.invoices?.length > 0">
-                <div v-for="invoice in summary?.invoices"
-                     class="mt-1 flex items-center w-full flex-none justify-between">
-                    <Link
-                        :href="route(invoice?.routes?.show?.name, invoice?.routes?.show.parameters)"
-                        class="flex items-center gap-3 gap-x-1.5 primaryLink cursor-pointer">
-                        <div class="flex-none">
-                            <FontAwesomeIcon icon="fal fa-file-invoice-dollar" fixed-width aria-hidden="true"
-                                             class="text-gray-500"/>
-                        </div>
-                        <div class="text-gray-500 " v-tooltip="trans('Invoice')">
-                            {{ invoice?.reference }}
-                        </div>
-                    </Link>
+            <div v-if="summary?.invoices?.length > 0" class="mt-4 border rounded-lg p-4 pt-3 bg-white shadow-sm">
+                <!-- Section Title -->
+                <div class="flex items-center gap-2 border-b border-gray-200 pb-2 mb-3">
+                    <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true"/>
+                    <div class="text-sm font-semibold text-gray-800">
+                        {{ trans('Invoices') }}
+                    </div>
+                </div>
 
-                    <a v-if="invoice?.routes?.download?.name"
-                       :href="route(invoice?.routes?.download?.name, invoice?.routes?.download.parameters)"
-                       as="a" target="_blank" class="flex items-center text-gray-400 hover:text-orange-600">
-                        <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true"/>
-                    </a>
+                <!-- Delivery Note Items -->
+                <div v-for="(invoice, index) in summary.invoices" :key="index"
+                     class="mb-3 pb-3 border-b border-dashed last:border-0 last:mb-0 last:pb-0">
+
+                    <div class="flex items-center gap-2 text-sm text-gray-700 mb-1">
+                        <Link
+                            :href="route(invoice?.routes?.show?.name, invoice?.routes?.show.parameters)"
+                            class="flex items-center gap-3 gap-x-1.5 primaryLink cursor-pointer">
+                            <div class="text-gray-500 " v-tooltip="trans('Invoice')">
+                                {{ invoice?.reference }}
+                            </div>
+                        </Link>
+                        <a :href="route(invoice?.routes?.download?.name, invoice?.routes?.download?.parameters)"
+                           target="_blank"
+                           class="ml-auto text-sm p-1 bg-red-100 text-red-600 rounded cursor-pointer"
+                           v-tooltip="trans('Download invoice')">
+                            <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true"/>
+                        </a>
+                    </div>
                 </div>
             </div>
 
