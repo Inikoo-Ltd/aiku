@@ -18,7 +18,6 @@ import AddPortfolios from "@/Components/Dropshipping/AddPortfolios.vue";
 import {Message, Popover} from "primevue"
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
 import {faSyncAlt, faHandPointer} from "@fas";
-import { useEchoRetinaPersonal } from '@/Stores/echo-retina-personal'
 import {
     faBracketsCurly, faPawClaws,
     faFileExcel,
@@ -29,15 +28,12 @@ import {
     faBox,
     faEllipsisV,
     faDownload,
-    faGameConsoleHandheld
 } from "@fal";
 import axios from "axios"
 import {Table as TableTS} from "@/types/Table"
 import { CustomerSalesChannel } from "@/types/customer-sales-channel"
 import RetinaTablePortfoliosPlatform from "@/Components/Tables/Retina/RetinaTablePortfoliosPlatform.vue"
 import RetinaTablePortfoliosShopify from "@/Components/Tables/Retina/RetinaTablePortfoliosShopify.vue"
-import ProgressBar from '@/Components/Utils/ProgressBar.vue'
-import { faCircleCheck } from "@fortawesome/free-solid-svg-icons";
 
 library.add(faFileExcel, faBracketsCurly, faSyncAlt, faHandPointer, faPawClaws, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
 
@@ -247,15 +243,19 @@ const bulkUpload = () => {
 const progressToUploadToShopify = ref<{ [key: number]: string }>({})
 const selectedProducts = ref<number[]>([])
 const loadingAction= ref([])
-const modalAddproductBluk = ref(false)
-const modalMatchproductBluk = ref(false)
+
+const progessbar = ref({
+    data: {
+        number_success: 0,
+        number_fails: 0
+    },
+    done: true,
+    total: selectedProducts.value.length,
+})
 
 
 const onSuccessEditCheckmark = (key) => {
-  console.log('sss')
-  if(key == 'Match With Existing Product') modalMatchproductBluk.value = true
-  else modalAddproductBluk.value = true
-  selectedProducts.value = []
+  progessbar.value = {...progessbar.value , done : false, total : selectedProducts.value.length}
 }
 
 const onFailedEditCheckmark = (error: any) => {
@@ -266,22 +266,28 @@ const onFailedEditCheckmark = (error: any) => {
   })
 }
 
-const submitPortfolioAction = (action: any) => {
-    loadingAction.value.push(action.label)
-    router.post(route(action.name, action?.parameters), {
-        method: action?.method || "get",
-        data: { portfolios: selectedProducts.value },
-        onSuccess: () => onSuccessEditCheckmark(action.label),
-        onError: (error) => onFailedEditCheckmark(error),
-        onFinish: () => {
-          loadingAction.value = []
-        }
+const submitPortfolioAction = async (action: any) => {
+  loadingAction.value.push(action.label)
+  try {
+    const method = action?.method?.toLowerCase() || "get"
+    const url = route(action.name, action?.parameters)
+    const data = { portfolios: selectedProducts.value }
+
+    const response = await axios({
+      method,
+      url,
+      data: method === "get" ? undefined : data, 
+      params: method === "get" ? data : undefined 
     })
+
+    onSuccessEditCheckmark(action.label)
+  } catch (error: any) {
+    onFailedEditCheckmark(error)
+  } finally {
+    loadingAction.value = []
+  }
 }
 
-
-
-provide('selectedEchopersonal', useEchoRetinaPersonal())
 
 </script>
 
@@ -406,20 +412,21 @@ provide('selectedEchopersonal', useEchoRetinaPersonal())
                 <div v-if="selectedProducts.length > 0" class="space-x-2 border-r border-gray-400 pr-2">
                     <Button v-if="selectedProducts.length > 0" type="green" icon="fas fa-hand-pointer"
                         :label="trans('Match With Existing Product (:count)', { count: selectedProducts?.length })"
-                        :loading="loadingAction.includes('Match With Existing Product')" @click="() => submitPortfolioAction({
-                            label : 'Match With Existing Product',
+                        :loading="loadingAction.includes('bulk-match')" @click="() => submitPortfolioAction({
+                            label : 'bulk-match',
                             name : 'retina.models.dropshipping.shopify.batch_match',
                             parameters: { customerSalesChannel: customer_sales_channel.id },
                             method: 'post',
                         })" size="xs" />
+
                     <Button
                         v-if="selectedProducts.length > 0"
                         v-tooltip="trans('Upload as new product to the :platform', { platform: props.platform_data?.name })"
                         :type="'create'"
                         :label="trans('Create New Product (:count)', { count: selectedProducts?.length })"
-                        :loading="loadingAction.includes('Create New Product')"
+                        :loading="loadingAction.includes('bulk-create')"
                         @click="() => submitPortfolioAction({
-                            label : 'Create New Product',
+                            label : 'bulk-create',
                             name : 'retina.models.dropshipping.shopify.batch_upload',
                             parameters: { customerSalesChannel: customer_sales_channel.id },
                             method: 'post',
@@ -437,7 +444,6 @@ provide('selectedEchopersonal', useEchoRetinaPersonal())
                             parameters: { customerSalesChannel: customer_sales_channel.id },
                             method: 'post'
                         }"
-                        @success="() => modalAddproductBluk = true"
                     />
                 </div>
             </div>
@@ -472,7 +478,7 @@ provide('selectedEchopersonal', useEchoRetinaPersonal())
 
         <RetinaTablePortfoliosShopify v-else-if="platform_data.type === 'shopify'" :data="props.products"
             :tab="'products'" :selectedData :platform_data :platform_user_id :is_platform_connected
-            :progressToUploadToShopify :customerSalesChannel="customer_sales_channel"
+            :progressToUploadToShopifyAll="progessbar" :progressToUploadToShopify :customerSalesChannel="customer_sales_channel"
             v-model:selectedProducts="selectedProducts" />
 
         <RetinaTablePortfoliosPlatform v-else :data="props.products" :tab="'products'" :selectedData :platform_data
@@ -489,64 +495,4 @@ provide('selectedEchopersonal', useEchoRetinaPersonal())
             :customerSalesChannel="customer_sales_channel" :onClickReconnect />
     </Modal>
 
-
-    <Modal :isOpen="modalAddproductBluk" @onClose="modalAddproductBluk = false"  width="w-full max-w-2xl">
-       <div class="flex items-center justify-center">
-            <div>
-                <div class="flex items-center space-x-4">
-                <div class="flex items-center justify-center w-12 h-12 bg-green-100 text-green-600 rounded-full">
-                    <FontAwesomeIcon :icon="faCircleCheck" class="w-6 h-6" />
-                </div>
-                <h2 class="text-2xl font-bold text-gray-800">Product Uploaded</h2>
-                </div>
-
-                <div class="text-base text-gray-700 leading-relaxed">
-                <p>
-                    Your product has been successfully uploaded to <span class="font-medium">Shopify</span>.
-                </p>
-                <p class="mt-2 text-gray-600">
-                    In the meantime, please refresh the page after a few minutes to view the updated status
-                </p>
-                </div>
-
-                <div class="pt-4 text-center">
-                    <Button label="Got it"  full  @click="modalAddproductBluk = false"/>
-                </div>
-            </div>
-        </div>
-    </Modal>
-
-
-   <Modal :isOpen="modalMatchproductBluk" @onClose="modalMatchproductBluk = false" width="w-full max-w-2xl">
-        <div class="flex items-center justify-center">
-            <div>
-            <!-- Header Success -->
-            <div class="flex items-center space-x-4">
-                <div class="flex items-center justify-center w-12 h-12 bg-green-100 text-green-600 rounded-full">
-                <FontAwesomeIcon :icon="faCircleCheck" class="w-6 h-6" />
-                </div>
-                <h2 class="text-2xl font-bold text-gray-800">Product Successfully Matched</h2>
-            </div>
-
-            <!-- Content -->
-            <div class="text-base text-gray-700 leading-relaxed mt-4">
-                <p>
-                Your product has been successfully uploaded and matched on <span class="font-medium">Shopify</span>.
-                </p>
-                <p class="mt-2 text-gray-600">
-                Please refresh the page after a few minutes to see the latest update.
-                </p>
-            </div>
-
-            <!-- Footer -->
-            <div class="pt-6 text-center">
-                <Button label="Got it" full @click="modalMatchproductBluk = false"/>
-            </div>
-            </div>
-        </div>
-    </Modal>
-
-
-
-    <!--  <ProgressBar/> -->
 </template>

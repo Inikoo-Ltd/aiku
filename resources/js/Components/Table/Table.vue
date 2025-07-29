@@ -707,7 +707,8 @@ watch(selectRow, () => {
 defineExpose({
     data : props.resource.data,
     queryBuilderData : queryBuilderData,
-    selectRow : selectRow
+    selectRow : selectRow,
+    compResourceData : compResourceData.value
 })
 
 const isLoading = ref<string | boolean>(false)
