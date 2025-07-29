@@ -30,7 +30,8 @@ import {
     faExclamationCircle,
     faClone,
     faLink, faScrewdriver, faTools,
-    faRecycle,faHandPointer,faHandshakeSlash,faHandshake
+    faRecycle,faHandPointer,faHandshakeSlash,faHandshake,
+    faTimes
 } from "@fal"
 import {faStar, faFilter} from "@fas"
 import {faExclamationTriangle as fadExclamationTriangle} from "@fad"
@@ -44,6 +45,7 @@ import PureInput from "@/Components/Pure/PureInput.vue"
 import axios from "axios"
 import PureProgressBar from "@/Components/PureProgressBar.vue"
 import { ulid } from "ulid"
+import {Message, Popover} from "primevue"
 
 library.add(faHandshake,faHandshakeSlash,faHandPointer,fadExclamationTriangle, faSyncAlt, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, faClone, faLink, faScrewdriver, faTools)
 
@@ -320,6 +322,7 @@ const onDisableCheckbox = (item) => {
     return false
 }
 
+const errorBluk = ref([])
 const _table = ref(null)
 const key = ref(ulid())
 onMounted(() => {
@@ -346,6 +349,7 @@ onMounted(() => {
         // === Shopify handling ===
         if (isShopify) {
           const pf = eventData.portfolio
+          errorBluk.value = []
           console.log('data from event : ',pf)
           const isSuccess =
             pf.has_valid_platform_product_id &&
@@ -356,6 +360,7 @@ onMounted(() => {
             progress.number_success += 1
           } else {
             progress.number_fails += 1
+            errorBluk.value.push(pf.item_code)
           }
 
           /* if(_table.value){
@@ -369,14 +374,21 @@ onMounted(() => {
             
 
           const totalFinished = progress.number_success + progress.number_fails
-          if (totalFinished == selectedProducts.value.length || totalFinished == props.count_product_not_synced) {
-            props.progressToUploadToShopifyAll.done = true
-              progress.number_success = 0
-              progress.number_fails = 0
-            props.progressToUploadToShopifyAll.total = 0
-            selectedProducts.value = []
-            debReloadPage()
-          }
+            if (
+                totalFinished === selectedProducts.value.length ||
+                totalFinished === props.count_product_not_synced
+            ) {
+                props.progressToUploadToShopifyAll.done = true
+                // Tunda pengosongan total selama 3 detik
+                setTimeout(() => {
+                    progress.number_success = 0
+                    progress.number_fails = 0
+                    selectedProducts.value = []
+                    props.progressToUploadToShopifyAll.total = 0
+                }, 5000)
+
+                debReloadPage()
+            }
         }
 
         // === Non-shopify handling ===
@@ -394,6 +406,23 @@ onMounted(() => {
 </script>
 
 <template>
+    <Message v-if="errorBluk.length > 0 && progressToUploadToShopifyAll.total == 0" severity="error" class="relative m-4 pr-10">
+        <!-- Close Button -->
+        <button @click="errorBluk = []" class="absolute top-0 right-2 text-red-400 hover:text-red-600 transition"
+            aria-label="Close">
+            <FontAwesomeIcon :icon="faTimes" class="w-4 h-4" />
+        </button>
+
+        <!-- Message Content -->
+        <h3 class="font-semibold mb-2 text-red-700">Upload Error(s):</h3>
+        <ul class="list-disc list-inside text-sm text-red-800">
+            <li v-for="(item, index) in errorBluk" :key="index">
+                {{ `Error when uploading item with code: ${item}` }}
+            </li>
+        </ul>
+    </Message>
+
+
     <Table :resource="data" :name="tab" class="mt-5" isCheckBox @onChecked="(item) => onChangeCheked(true, item)"
         @onUnchecked="(item) => onChangeCheked(false, item)" checkboxKey='id'
         :isChecked="(item) => selectedProducts.includes(item.id)" ref="_table"
@@ -428,9 +457,10 @@ onMounted(() => {
 
 
         <template #add-on-button-in-before>
-            <PureProgressBar v-if="progressToUploadToShopifyAll.total != 0"
-                :progressBars="progressToUploadToShopifyAll" />
-
+            <div class="border-r px-4">
+                <PureProgressBar v-if="progressToUploadToShopifyAll.total != 0"
+                    :progressBars="progressToUploadToShopifyAll" />
+            </div>
         </template>
 
         <template #add-on-button>
