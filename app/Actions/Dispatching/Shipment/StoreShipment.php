@@ -21,6 +21,7 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipment;
 use App\Models\Dispatching\Shipper;
 use App\Models\Fulfilment\PalletReturn;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Illuminate\Validation\ValidationException;
@@ -60,9 +61,9 @@ class StoreShipment extends OrgAction
                 'whl-gb' => WhistlGbCallShipperApi::run($parent, $shipper),
                 'itd' => CallApiItdShipping::run($parent, $shipper),
                 default => [
-                    'status' => 'error',
+                    'status'    => 'error',
                     'errorData' => [
-                        'message' => 'Unsupported API Shipper ' . $shipper->name,
+                        'message' => 'Unsupported API Shipper '.$shipper->name,
                     ],
                 ]
             };
@@ -74,6 +75,11 @@ class StoreShipment extends OrgAction
                     $shipmentData['errorData']
                 );
             }
+        } else {
+            data_set($modelData, 'trackings', [
+                Arr::get($modelData, 'tracking')
+            ]);
+            data_set($modelData, 'tracking_urls', []);
         }
         /** @var Shipment $shipment */
         $shipment = $shipper->shipments()->create($modelData);
@@ -88,8 +94,8 @@ class StoreShipment extends OrgAction
     public function rules(): array
     {
         return [
-            'reference'      => ['sometimes', 'max:1000', 'string'],
-            'tracking'       => ['sometimes', 'max:1000', 'string'],
+            'reference' => ['sometimes', 'max:1000', 'string'],
+            'tracking'  => ['sometimes', 'max:1000', 'string'],
         ];
     }
 
