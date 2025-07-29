@@ -11,20 +11,18 @@ use App\Events\AppVersionWebsocketEvent;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GenerateAppVersion
+class RefreshVueAfterDeployment
 {
-
     use AsAction;
-
 
     public function getCommandSignature(): string
     {
-        return 'deploy:generate-app-version';
+        return 'deploy:refresh_vue';
     }
 
     public function asCommand(Command $command): void
     {
         AppVersionWebsocketEvent::dispatch();
-        $command->info('App version generated.');
+        $command->info('Refresh vue.');
     }
 }
