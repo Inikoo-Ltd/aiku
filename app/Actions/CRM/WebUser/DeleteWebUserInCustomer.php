@@ -15,6 +15,7 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateWebUsers;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebUsers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWebUsers;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\CRM\WebUser;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Catalogue\Shop;
@@ -77,13 +78,25 @@ class DeleteWebUserInCustomer extends OrgAction
 
     public function htmlResponse(WebUser $webUser): RedirectResponse
     {
-        return redirect()->route(
-            'grp.org.shops.show.crm.customers.show.web_users.index',
-            [
-                'organisation' => $webUser->organisation->slug,
-                'shop'         => $webUser->shop->slug,
-                'customer'    => $webUser->customer->slug,
-            ]
-        );
+        if ($webUser->shop->type === ShopTypeEnum::FULFILMENT) {
+            return redirect()->route(
+                'grp.org.fulfilments.show.crm.customers.show.web_users.index',
+                [
+                    'organisation' => $webUser->organisation->slug,
+                    'fulfilment'   => $webUser->shop->fulfilment->slug,
+                    'shop'         => $webUser->shop->slug,
+                    'fulfilmentCustomer' => $webUser->customer->fulfilmentCustomer->slug,
+                ]
+            );
+        } else {
+            return redirect()->route(
+                'grp.org.shops.show.crm.customers.show.web_users.index',
+                [
+                    'organisation' => $webUser->organisation->slug,
+                    'shop'         => $webUser->shop->slug,
+                    'customer'    => $webUser->customer->slug,
+                ]
+            );
+        }
     }
 }
