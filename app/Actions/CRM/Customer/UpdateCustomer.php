@@ -193,6 +193,7 @@ class UpdateCustomer extends OrgAction
             'internal_notes'           => ['sometimes', 'nullable', 'string'],
             'warehouse_internal_notes' => ['sometimes', 'nullable', 'string'],
             'warehouse_public_notes'   => ['sometimes', 'nullable', 'string'],
+            'tax_number'               => ['sometimes', 'nullable', 'array'],
 
             'email_subscriptions'                                    => ['sometimes', 'array'],
             'email_subscriptions.is_subscribed_to_newsletter'        => ['sometimes', 'boolean'],
