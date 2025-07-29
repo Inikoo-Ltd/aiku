@@ -446,6 +446,7 @@ const key = ulid()
                             parameters: { customerSalesChannel: customer_sales_channel.id },
                             method: 'post'
                         }"
+                        @success="() => {progessbar = {...progessbar , done : false, total : count_product_not_synced}, selectedProducts = []}"
                     />
                 </div>
             </div>
@@ -481,7 +482,7 @@ const key = ulid()
         <RetinaTablePortfoliosShopify v-else-if="platform_data.type === 'shopify'" :data="props.products"
             :tab="'products'" :selectedData :platform_data :platform_user_id :is_platform_connected
             :progressToUploadToShopifyAll="progessbar" :progressToUploadToShopify :customerSalesChannel="customer_sales_channel"
-            v-model:selectedProducts="selectedProducts" :key="key"/>
+            v-model:selectedProducts="selectedProducts" :key="key" :count_product_not_synced="count_product_not_synced"/>
 
         <RetinaTablePortfoliosPlatform v-else :data="props.products" :tab="'products'" :selectedData :platform_data
             :platform_user_id :is_platform_connected :progressToUploadToShopify />

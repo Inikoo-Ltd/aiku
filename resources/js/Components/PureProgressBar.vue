@@ -45,7 +45,7 @@ const statusClass = computed(() => {
 </script>
 
 <template>
-  <div class="w-72 text-sm text-gray-700 space-y-1 py-2">
+  <div class="w-72 text-sm text-gray-700 space-y-1 py-2 flex gap-2">
     <!-- Progress Bar with Centered Text -->
     <div class="relative h-5 w-full bg-gray-200 rounded overflow-hidden ring-1 ring-gray-300 flex">
       <!-- Success bar -->
@@ -68,13 +68,13 @@ const statusClass = computed(() => {
     </div>
 
     <!-- Count Labels with Icons -->
-    <div class="flex justify-between text-xs">
+    <div class="flex justify-between text-xs gap-4">
       <span class="flex items-center gap-1 text-lime-600">
-        <FontAwesomeIcon :icon="faCheck" class="w-3.5 h-3.5" />
+        <FontAwesomeIcon :icon="faCheck" class="w-3.5 h-3.5" v-tooltip="'success to upload'"/>
         {{ success }}
       </span>
       <span class="flex items-center gap-1 text-red-500">
-        <FontAwesomeIcon :icon="faTimes" class="w-3.5 h-3.5" />
+        <FontAwesomeIcon :icon="faTimes" class="w-3.5 h-3.5" v-tooltip="'failed to upload'"/>
         {{ fails }}
       </span>
     </div>

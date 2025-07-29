@@ -833,6 +833,9 @@ const isLoading = ref<string | boolean>(false)
                             </slot>
                         </div> -->
 
+                        <slot name="add-on-button-in-before">
+                        </slot>
+
                         <!-- Filter: date between -->
                         <div v-if="queryBuilderProps?.betweenDates?.length" class="w-fit flex gap-x-2">
                             <TableBetweenFilter :optionsList="queryBuilderProps?.betweenDates"

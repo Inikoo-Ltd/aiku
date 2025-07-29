@@ -79,6 +79,7 @@ const props = defineProps<{
     customerSalesChannel: {}
     useCheckBox?: boolean
     progressToUploadToShopifyAll : {}
+    count_product_not_synced : number
 }>()
 
 console.log(props)
@@ -345,7 +346,7 @@ onMounted(() => {
         // === Shopify handling ===
         if (isShopify) {
           const pf = eventData.portfolio
-             console.log(pf)
+          console.log('data from event : ',pf)
           const isSuccess =
             pf.has_valid_platform_product_id &&
             pf.platform_status &&
@@ -368,7 +369,7 @@ onMounted(() => {
             
 
           const totalFinished = progress.number_success + progress.number_fails
-          if (totalFinished == selectedProducts.value.length) {
+          if (totalFinished == selectedProducts.value.length || totalFinished == props.count_product_not_synced) {
             props.progressToUploadToShopifyAll.done = true
               progress.number_success = 0
               progress.number_fails = 0
@@ -410,7 +411,7 @@ onMounted(() => {
         <template #checkbox="{ checked, data }">
             <!-- Spinner ketika sedang upload -->
             <FontAwesomeIcon v-if="progressToUploadToShopifyAll.total !== 0 && selectedProducts.includes(data.id)"
-                icon="fad fa-spinner-third" class="animate-spin  p-2 text-lg mx-auto block" fixed-width
+                icon="fad fa-spinner-third" class="animate-spin text-blue-500 p-2 text-lg mx-auto block" fixed-width
                 aria-hidden="true" />
 
             <!-- Checkbox aktif -->
@@ -426,6 +427,11 @@ onMounted(() => {
 
 
 
+        <template #add-on-button-in-before>
+            <PureProgressBar v-if="progressToUploadToShopifyAll.total != 0"
+                :progressBars="progressToUploadToShopifyAll" />
+
+        </template>
 
         <template #add-on-button>
             <!-- <Button
@@ -456,9 +462,6 @@ onMounted(() => {
                 :type="compTableFilterPlatformStatus === 'true' ? 'secondary' : 'tertiary'"
                 :icon="compTableFilterPlatformStatus === 'true' ? 'fas fa-filter' : 'fal fa-filter'"
                 iconRight="fal fa-handshake-slash" :loading="isLoadingTable == 'not-connected'" />
-
-            <PureProgressBar v-if="progressToUploadToShopifyAll.total != 0"
-                :progressBars="progressToUploadToShopifyAll" />
 
         </template>
 
