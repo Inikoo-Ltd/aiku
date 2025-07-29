@@ -25,7 +25,7 @@ class ResetOrderTaxCategory
             $taxNumber = $customer->taxNumber;
 
             $command->info("Resetting tax category for order $order->slug");
-            $command->info("New tax number $taxNumber->number");
+         //   $command->info("New tax number $taxNumber->number");
 
             $tacCategory = GetTaxCategory::run(
                 country: $order->organisation->country,
