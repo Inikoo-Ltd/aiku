@@ -8,7 +8,7 @@
 
 
 <script setup lang="ts">
-import { ref, provide, defineAsyncComponent, watch } from "vue";
+import { onMounted, ref, provide, defineAsyncComponent, watch } from "vue";
 import { initialiseApp } from "@/Composables/initialiseApp";
 import { usePage } from "@inertiajs/vue3";
 import Footer from "@/Components/Footer/Footer.vue";
@@ -25,7 +25,7 @@ import RightSideBar from "@/Layouts/Grp/RightSideBar.vue";
 import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue";
 import Notification from "@/Components/Utils/Notification.vue";
 import {
-    faPoll,
+    faPoll, faSadTear,
     faParking, faBoxCheck,
     faUsers,
     faTachometerAltFast,
@@ -52,7 +52,7 @@ import { trans } from "laravel-vue-i18n";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import Modal from "@/Components/Utils/Modal.vue";
 
-library.add(faPoll, faPauseCircle, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faUsers, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faStore, faClock, faTransporter, faParking, faBoxCheck, faRulerTriangle, faRulerCombined, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faTimes, faCheck, faAsterisk);
+library.add(faPoll, faSadTear, faPauseCircle, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faUsers, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faStore, faClock, faTransporter, faParking, faBoxCheck, faRulerTriangle, faRulerCombined, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faTimes, faCheck, faAsterisk);
 
 provide("layout", useLayoutStore());
 provide("locale", useLocaleStore());
@@ -94,6 +94,46 @@ watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
     selectedModal.value = modal;
     isModalOpen.value = true;
 });
+
+// Method: listen if app recently deployed
+const isModalNeedToRefresh = ref(false)
+const onCheckAppVersion = () => {
+    const xxx = window.Echo.private('app.general').listen(
+        '.post-deployed',
+        (eventData) => {
+            if (route().current()?.includes('dashboard.show')) {
+                onRefreshPage()
+            } else {
+                isModalNeedToRefresh.value = true
+            }
+            console.log('---------- App version check:', eventData)
+        }
+    )
+
+    console.log('Websocket:', xxx)
+    
+
+    // setInterval(async () => {
+    //     try {
+    //         const response = await fetch('/verdonk.json', {
+    //             cache: 'no-store' // Hindari cache
+    //         });
+    //         const data = await response.json();
+
+    //         console.log('Current version:', data?.version == window?.appDeployed);
+
+    //     } catch (error) {
+    //         console.error('Gagal memeriksa versi aplikasi:', error);
+    //     }
+    // }, 2000); // Cek setiap 30 detik (atur sesuai kebutuhan)
+        
+}
+const onRefreshPage = () => {
+    window.location.reload()
+}
+onMounted(() => {
+    onCheckAppVersion()
+})
 </script>
 
 <template>
@@ -172,6 +212,35 @@ watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
                     <Button
                         @click="() => isModalOpen = false"
                         :label="trans('Ok, Get it')"
+                        full
+                    />
+                </div>
+            </div>
+        </div>
+    </Modal>
+
+    <Modal :isOpen="isModalNeedToRefresh" aonClose="isModalNeedToRefresh = false" width="w-full max-w-lg">
+        <div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
+            <div class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
+                <div>
+                    <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-gray-100">
+                        <FontAwesomeIcon icon="fal fa-sad-tear" class="text-amber-500 text-2xl" fixed-width aria-hidden="true" />
+                    </div>
+
+                    <div class="mt-3 text-center sm:mt-5">
+                        <div as="h3" class="font-semibold text-2xl">
+                            {{ trans('Hey, sorry for your incovenience.') }}
+                        </div>
+                        <div class="mt-2 text-sm text-gray-500">
+                            {{ trans("Our app has new version. Please refresh the page to get the latest updates and avoid any issues happen.") }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-5 sm:mt-6">
+                    <Button
+                        @click="() => onRefreshPage()"
+                        :label="trans('Refresh page')"
                         full
                     />
                 </div>
