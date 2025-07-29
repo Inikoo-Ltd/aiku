@@ -200,6 +200,7 @@ const onCheckedAll = ({ data, allChecked }) => {
             </Link>
 
             <FontAwesomeIcon v-if="deliveryNote.picking_sessions_count > 0" v-tooltip="trans('In picking sessions')" icon="fab fa-stack-overflow" class="text-yellow-500" fixed-width aria-hidden="true" />
+
         </template>
 
         <template #cell(date)="{ item }">

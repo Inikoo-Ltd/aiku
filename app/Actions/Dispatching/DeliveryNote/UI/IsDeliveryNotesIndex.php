@@ -107,6 +107,15 @@ trait IsDeliveryNotesIndex
                   ->from('picking_session_has_delivery_notes')
                   ->whereColumn('picking_session_has_delivery_notes.delivery_note_id', 'delivery_notes.id');
         };
+        
+        // Subquery to concatenate picking session IDs for each delivery note
+        // Using STRING_AGG PostgreSQL function to concatenate values with comma separator
+        // COALESCE is used to handle NULL values, returning an empty string if no picking sessions exist
+        $pickingSessionIdsSubquery = function ($query) {
+            $query->selectRaw("COALESCE(STRING_AGG(CAST(picking_session_id AS VARCHAR), ','), '')")
+                  ->from('picking_session_has_delivery_notes')
+                  ->whereColumn('picking_session_has_delivery_notes.delivery_note_id', 'delivery_notes.id');
+        };
 
         return $query->defaultSort('-delivery_notes.date')
             ->select([
@@ -132,6 +141,7 @@ trait IsDeliveryNotesIndex
                 'organisations.slug as organisation_slug',
             ])
             ->selectSub($pickingSessionsCountSubquery, 'picking_sessions_count')
+            ->selectSub($pickingSessionIdsSubquery, 'picking_session_ids')
             ->allowedSorts(['reference', 'date', 'number_items', 'customer_name', 'type', 'effective_weight', 'picking_sessions_count'])
             ->allowedFilters([$globalSearch])
             ->withBetweenDates(['date'])
