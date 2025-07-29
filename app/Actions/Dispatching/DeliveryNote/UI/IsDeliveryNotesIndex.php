@@ -100,6 +100,14 @@ trait IsDeliveryNotesIndex
         }
 
 
+        // Subquery to count the number of picking sessions for each delivery note
+        // Using a correlated subquery to ensure we only get one row per delivery note
+        $pickingSessionsCountSubquery = function ($query) {
+            $query->selectRaw('COALESCE(COUNT(picking_session_id), 0)')
+                  ->from('picking_session_has_delivery_notes')
+                  ->whereColumn('picking_session_has_delivery_notes.delivery_note_id', 'delivery_notes.id');
+        };
+
         return $query->defaultSort('-delivery_notes.date')
             ->select([
                 'delivery_notes.id',
@@ -123,7 +131,8 @@ trait IsDeliveryNotesIndex
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
             ])
-            ->allowedSorts(['reference', 'date', 'number_items', 'customer_name', 'type', 'effective_weight'])
+            ->selectSub($pickingSessionsCountSubquery, 'picking_sessions_count')
+            ->allowedSorts(['reference', 'date', 'number_items', 'customer_name', 'type', 'effective_weight', 'picking_sessions_count'])
             ->allowedFilters([$globalSearch])
             ->withBetweenDates(['date'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
