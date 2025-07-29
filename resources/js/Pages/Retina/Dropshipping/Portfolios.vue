@@ -412,14 +412,14 @@ const key = ulid()
 
 
                 <div v-if="selectedProducts.length > 0" class="space-x-2 border-r border-gray-400 pr-2">
-                    <Button v-if="selectedProducts.length > 0" type="green" icon="fas fa-hand-pointer"
+                  <!--   <Button v-if="selectedProducts.length > 0" type="green" icon="fas fa-hand-pointer"
                         :label="trans('Match With Existing Product (:count)', { count: selectedProducts?.length })"
                         :loading="loadingAction.includes('bulk-match')" @click="() => submitPortfolioAction({
                             label : 'bulk-match',
                             name : 'retina.models.dropshipping.shopify.batch_match',
                             parameters: { customerSalesChannel: customer_sales_channel.id },
                             method: 'post',
-                        })" size="xs" />
+                        })" size="xs" /> -->
 
                     <Button
                         v-if="selectedProducts.length > 0"
