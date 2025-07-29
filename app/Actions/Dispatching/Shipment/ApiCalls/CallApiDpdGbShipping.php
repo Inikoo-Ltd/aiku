@@ -161,6 +161,7 @@ class CallApiDpdGbShipping extends OrgAction
         $params = $this->prepareShipmentParams($parentResource, $parcels);
 
         $response = Http::withHeaders($this->getHeaders($shipper))
+            ->retry(3, 100)
             ->post($this->getBaseUrl() . $url, $params);
 
         $apiResponse = $response->json();
@@ -317,7 +318,7 @@ class CallApiDpdGbShipping extends OrgAction
 
         $response = Http::withHeaders($this->getHeaders($shipper, $output))
             ->timeout(120)
-            ->retry(3, 5000)
+            ->retry(3, 100)
             ->get($this->getBaseUrl() . 'shipping/shipment/' . $shipmentId . '/label');
 
         if ($response->successful()) {
