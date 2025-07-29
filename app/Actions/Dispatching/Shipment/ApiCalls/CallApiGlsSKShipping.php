@@ -51,7 +51,11 @@ class CallApiGlsSKShipping extends OrgAction
      */
     public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper): array
     {
-        [$username, $password, $clientNumber] = array_values($this->getAccessToken($shipper));
+        $creds = $this->getAccessToken($shipper);
+        $username = Arr::get($creds, 'username');
+        $password = Arr::get($creds, 'password');
+        $clientNumber = Arr::get($creds, 'client_number');
+
         $url = $this->getBaseUrl() . '/ParcelService.svc?singleWsdl';
 
         if ($parent instanceof PalletReturn) {
