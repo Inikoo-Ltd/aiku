@@ -17,9 +17,6 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebUsers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWebUsers;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\CRM\WebUser;
-use App\Models\SysAdmin\Organisation;
-use App\Models\Catalogue\Shop;
-use App\Models\CRM\Customer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
@@ -30,6 +27,22 @@ class DeleteWebUserInCustomer extends OrgAction
 {
     use AsAction;
     use WithAttributes;
+
+    protected WebUser $webUser;
+
+    public function authorize(ActionRequest $request): bool
+    {
+        $shop = $this->webUser->shop;
+        if ($shop->type == ShopTypeEnum::FULFILMENT) {
+            $fulfilmentCustomer = $this->webUser?->customer?->fulfilmentCustomer;
+            return $request->user()->authTo("fulfilment-shop.{$fulfilmentCustomer->fulfilment_id}.edit");
+        } elseif (in_array($shop->type, [ShopTypeEnum::DROPSHIPPING, ShopTypeEnum::B2B])) {
+            return
+                $this->canEdit   = $request->user()->authTo("crm.{$shop->id}.edit");
+        }
+
+        return false;
+    }
 
     /**
      * @throws \Throwable
@@ -63,6 +76,7 @@ class DeleteWebUserInCustomer extends OrgAction
      */
     public function action(WebUser $webUser, bool $forceDelete = false): WebUser
     {
+        $this->webUser = $webUser;
         return $this->handle($webUser, $forceDelete);
     }
 
@@ -71,6 +85,7 @@ class DeleteWebUserInCustomer extends OrgAction
      */
     public function asController(WebUser $webUser, ActionRequest $request): WebUser
     {
+        $this->webUser = $webUser;
         $this->initialisation($webUser->organisation, $request);
 
         return $this->handle($webUser, true);
