@@ -156,8 +156,9 @@ const fetchProductExistInChannel = async () => {
     }
 }
 
+
 onMounted(() => {
-    if (layout.iris?.customer) {
+    if (layout.iris?.customer && layout?.iris?.is_logged_in) {
         fetchProductExistInChannel()
     }
     requestAnimationFrame(() => {
