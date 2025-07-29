@@ -41,7 +41,8 @@ import {
     faDraftingCompass,
     faCheck,
     faTimes,
-    faAsterisk,faPauseCircle, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble
+    faAsterisk,faPauseCircle, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble,
+    faSmile
 } from "@fal";
 import { faSearch, faBell } from "@far";
 import { faAsterisk as fasAsterisk, faExclamation, faInfo, faPlay, faGlobe as fasGlobe } from "@fas";
@@ -110,7 +111,7 @@ const onCheckAppVersion = () => {
         }
     )
 
-    console.log('Websocket:', xxx)
+    console.log('Websocket subscription:', xxx.subscription.subscribed)
     
 
     // setInterval(async () => {
@@ -223,8 +224,8 @@ onMounted(() => {
         <div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
             <div class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
                 <div>
-                    <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-gray-100">
-                        <FontAwesomeIcon icon="fal fa-sad-tear" class="text-amber-500 text-2xl" fixed-width aria-hidden="true" />
+                    <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-green-100">
+                        <FontAwesomeIcon :icon="faSmile" class="text-green-500 text-2xl" fixed-width aria-hidden="true" />
                     </div>
 
                     <div class="mt-3 text-center sm:mt-5">
