@@ -30,7 +30,7 @@ const dataCompany = [
     {
         label: trans('Contact name'),
         key: 'contact',
-        value: props.data.customer?.contact_name
+        value: props.data.contact_name
     },
     {
         label: trans('Username'),
@@ -40,17 +40,17 @@ const dataCompany = [
     {
         label: trans('Email'),
         key: 'email',
-        value: props.data.customer?.email
+        value: props.data.email
     },
     {
         label: trans('Last login'),
         key: 'last_login',
-        value: '-'
+        value: props.data.last_login
     },
     {
         label: trans('Created at'),
         key: 'created_At',
-        value: useFormatTime(props.data.customer?.created_at)
+        value: useFormatTime(props.data.created_at)
     },
     {
         label: trans('Status'),
