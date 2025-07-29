@@ -199,7 +199,7 @@ const onCloneManualPortfolio = async (sourceCustomerSalesChannelId: string | num
                 router.reload({only: ["pageHead", "products"]});
                 notify({
                     title: trans("Success!"),
-                    text: `Portfolios successfully cloned.`,
+                    text: `Portfolios been cloned in the background.`,
                     type: "success"
                 });
                 props.step.current = 1;
