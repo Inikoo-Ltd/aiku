@@ -324,7 +324,7 @@ const onDisableCheckbox = (item) => {
 
 const errorBluk = ref([])
 const _table = ref(null)
-const key = ref(ulid())
+
 onMounted(() => {
   props.data?.data?.forEach((porto) => {
     const socketConfig = selectSocketiBasedPlatform(porto)
