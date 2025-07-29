@@ -8,17 +8,20 @@
 import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faGlobe } from '@fal'
+import { faGlobe, faTrashAlt } from '@fal'
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import ShowcaseStats from '@/Components/ShowcaseStats.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { trans } from 'laravel-vue-i18n'
+import { RouteParams } from "@/types/route-params";
 import AddressLocation from '@/Components/Elements/Info/AddressLocation.vue'
 import Tag from '@/Components/Tag.vue'
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue";
+import Button from "@/Components/Elements/Buttons/Button.vue";
 
 
-library.add(faGlobe)
+library.add(faGlobe, faTrashAlt)
 
 const props = defineProps<{
     title: string
@@ -69,7 +72,25 @@ console.log(props)
 
 <template>
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead"></PageHeading>
+    <PageHeading :data="pageHead">
+    
+        <template #otherBefore>
+            <ModalConfirmationDelete
+                :routeDelete="props.data.delete_route"
+                :title="trans('Are you sure you want to delete this web user?')"
+                isFullLoading
+            >
+                <template #default="{ isOpenModal, changeModel }">
+                    <Button
+                        icon="fal fa-trash-alt"
+                        type="negative"
+                        @click="changeModel"
+                    />
+                </template>
+            </ModalConfirmationDelete>
+
+        </template>
+    </PageHeading>
     <div class="grid grid-cols-2 py-4 px-6">
 
         <!-- Section: field data -->
