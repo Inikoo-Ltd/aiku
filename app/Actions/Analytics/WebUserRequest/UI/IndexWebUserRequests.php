@@ -10,8 +10,8 @@
 
 namespace App\Actions\Analytics\WebUserRequest\UI;
 
-use App\Actions\CRM\WebUser\WithAuthorizeWebUserScope;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Web\Website\UI\ShowWebsiteAnalyticsDashboard;
 use App\Actions\Web\Website\WithWebsiteAnalyticsSubNavigation;
 use App\Http\Resources\CRM\WebUserRequestsResource;
@@ -33,7 +33,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexWebUserRequests extends OrgAction
 {
-    use WithAuthorizeWebUserScope;
+    use WithCRMAuthorisation;
     use WithWebsiteAnalyticsSubNavigation;
 
 

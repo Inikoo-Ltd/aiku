@@ -88,8 +88,6 @@ class IndexWebUsersInCRM extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $webUsers, ActionRequest $request): Response
     {
-
-
         $icon       = ['fal', 'fa-terminal'];
         $title      = __('web users');
         $afterTitle = null;
@@ -118,12 +116,12 @@ class IndexWebUsersInCRM extends OrgAction
         return Inertia::render(
             'Org/Shop/CRM/WebUsers',
             [
-                'breadcrumbs'                     => $this->getBreadcrumbs(
+                'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
-                'title'                           => $title,
-                'pageHead'                        => [
+                'title'       => $title,
+                'pageHead'    => [
                     'title'         => $title,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
@@ -143,7 +141,6 @@ class IndexWebUsersInCRM extends OrgAction
                 ],
 
 
-
                 'data' => WebUsersResource::collection($webUsers),
 
             ]
@@ -156,7 +153,7 @@ class IndexWebUsersInCRM extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix . 'Page');
+                    ->pageName($prefix.'Page');
             }
             $table
                 ->withGlobalSearch()
