@@ -51,7 +51,11 @@ class CallApiGlsSKShipping extends OrgAction
      */
     public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper): array
     {
-        [$username, $password, $clientNumber] = array_values($this->getAccessToken($shipper));
+        $credentials = $this->getAccessToken($shipper);
+        $username = Arr::get($credentials, 'username');
+        $password = Arr::get($credentials, 'password');
+        $clientNumber = Arr::get($credentials, 'client_number');
+
         $url = $this->getBaseUrl() . '/ParcelService.svc?singleWsdl';
 
         if ($parent instanceof PalletReturn) {
@@ -66,6 +70,18 @@ class CallApiGlsSKShipping extends OrgAction
         $shippingNotes = $parent->shipping_notes ?? '';
         $shippingNotes = Str::limit(preg_replace("/[^A-Za-z0-9 \-]/", '', strip_tags($shippingNotes), 60));
 
+        $contactName = Str::limit(Arr::get($parentResource, 'to_contact_name'), 60);
+        if(!$contactName){
+            $contactName = Str::limit(Arr::get($parentResource, 'to_company_name'), 60);
+        }
+        if(!$contactName){
+            $contactName = 'anonymous';
+        }
+
+
+
+
+
         $prepareParams = (object)[
             'ClientNumber' => $clientNumber,
             'ClientReference' => Str::limit($parent->reference, 30),
@@ -75,7 +91,7 @@ class CallApiGlsSKShipping extends OrgAction
                 'ContactEmail' => Arr::get($parentResource, 'to_email'),
                 'ContactName' => Arr::get($parentResource, 'to_contact_name'),
                 'ContactPhone' => Arr::get($parentResource, 'to_phone'),
-                'Name' => Arr::get($parentResource, 'to_company_name'),
+                'Name' => $contactName,
                 'Street' => Arr::get($parentResource, 'to_address.address_line_1') . ' ' . Arr::get($parentResource, 'to_address.address_line_2'),
                 'City' => Arr::get($parentResource, 'to_address.locality'),
                 'ZipCode' => Arr::get($parentResource, 'to_address.postal_code'),
@@ -144,14 +160,33 @@ class CallApiGlsSKShipping extends OrgAction
             $status                      = 'success';
             $modelData['label']      = base64_encode($apiResponse->Labels);
             $modelData['label_type'] = ShipmentLabelTypeEnum::PDF;
-            $tracking_number = $apiResponse->PrintLabelsInfoList->PrintLabelsInfo->ParcelNumber;
+
+            $modelData['trackings']     = [];
+            $modelData['tracking_urls'] = [];
+            $trackingDatum=$apiResponse->PrintLabelsInfoList->PrintLabelsInfo;
+            if(is_array($trackingDatum)){
+
+                foreach($trackingDatum as $trackingData){
+                    $modelData['trackings'][]=$trackingData->ParcelNumber;
+                }
+                $modelData['tracking'] = implode(' ', $modelData['trackings']);
+            }else{
+                $tracking_number = $apiResponse->PrintLabelsInfoList->PrintLabelsInfo->ParcelNumber;
+                $modelData['trackings'][]=$tracking_number;
+                $modelData['tracking'] = $tracking_number;
+            }
+
+
             $modelData['number_parcels'] = $parcels ? count($parcels) : 1;
 
-            $modelData['tracking'] = $tracking_number;
+
+
+
         } else {
             $status = 'fail';
 
             $errFields = Arr::get($apiResponseData, 'PrintLabelsErrorList.ErrorInfo');
+
             if ($errFields) {
 
                 if (!isset($errFields[0])) {

@@ -60,7 +60,6 @@ class IndexCustomerSalesChannels extends OrgAction
             'customer_sales_channels.name',
             'customer_sales_channels.slug',
             'customer_sales_channels.status',
-            'customer_sales_channels.connection_status',
             'customer_sales_channels.can_connect_to_platform',
             'customer_sales_channels.exist_in_platform',
             'customer_sales_channels.platform_status',

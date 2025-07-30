@@ -19,7 +19,6 @@ import { faHome } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Breadcrumbs from '@/Components/Navigation/Breadcrumbs.vue'
-import { getStyles } from '@/Composables/styles'
 library.add(faHome, faExclamationTriangle, faWhatsapp)
 
 initialiseIrisApp()
@@ -138,7 +137,7 @@ onBeforeUnmount(() => {
         </div>
     </div>
 
-    <notifications dangerously-set-inner-html :max="3" xwidth="500" classes="custom-style-notification"
+    <notifications dangerously-set-inner-html :max="3" width="500" classes="custom-style-notification"
         :pauseOnHover="true">
         <template #body="props">
             <Notification :notification="props" />

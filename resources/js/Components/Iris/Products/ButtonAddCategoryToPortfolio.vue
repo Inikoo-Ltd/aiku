@@ -220,6 +220,7 @@ const fetchProductExistInChannel = async () => {
 }
 
 onMounted(() => {
+    if(layout?.iris?.is_logged_in)
     fetchProductExistInChannel()
 })
 

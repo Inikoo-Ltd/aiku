@@ -206,7 +206,7 @@ class IndexRetinaPortfolios extends RetinaAction
         $actions = [];
 
         if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
-            $countProductsNotSync = $this->customerSalesChannel->portfolios()->where('platform_status', true)->count();
+            $countProductsNotSync = $this->customerSalesChannel->portfolios()->where('portfolios.status',true)->where('platform_status', false)->count();
         } elseif ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
             $countProductsNotSync = 0;
         } else {
@@ -355,7 +355,7 @@ class IndexRetinaPortfolios extends RetinaAction
                 'platform_user_id'         => $platformUser?->id,
                 'platform_data'            => PlatformsResource::make($this->customerSalesChannel->platform)->toArray(request()),
                 'products'                 => DropshippingPortfoliosResource::collection($portfolios),
-                'is_platform_connected'    => $this->customerSalesChannel->connection_status === CustomerSalesChannelConnectionStatusEnum::CONNECTED,
+                'is_platform_connected'    => $this->customerSalesChannel->platform_status,
                 'customer_sales_channel'   => RetinaCustomerSalesChannelResource::make($this->customerSalesChannel)->toArray(request()),
                 'manual_channels'          => CustomerSalesChannelsResourceTOFIX::collection($manualChannels)//  Do now use the resource. Use an array of necessary data
             ]

@@ -55,19 +55,21 @@ class GetRetinaDropshippingCustomerSalesChannelNavigation
 
         ];
 
-        $platformNavigation['client'] = [
-            'label' => __('Clients'),
-            'icon'  => ['fal', 'fa-user-friends'],
-            'root'  => 'retina.dropshipping.customer_sales_channels.client.',
-            'route' => [
-                'name'       => 'retina.dropshipping.customer_sales_channels.client.index',
-                'parameters' => [$customerSalesChannel->slug]
-            ],
-            'right_label' => [
-                'number'        => $customerSalesChannel->number_customer_clients,
-                'class'        => 'text-white',
-            ],
-        ];
+        if($isManual) {
+            $platformNavigation['client'] = [
+                        'label' => __('Clients'),
+                        'icon'  => ['fal', 'fa-user-friends'],
+                        'root'  => 'retina.dropshipping.customer_sales_channels.client.',
+                        'route' => [
+                            'name'       => 'retina.dropshipping.customer_sales_channels.client.index',
+                            'parameters' => [$customerSalesChannel->slug]
+                        ],
+                        'right_label' => [
+                            'number'        => $customerSalesChannel->number_customer_clients,
+                            'class'        => 'text-white',
+                        ],
+                    ];
+        }
 
         $platformNavigation['orders'] = [
             'label' => __('Orders'),

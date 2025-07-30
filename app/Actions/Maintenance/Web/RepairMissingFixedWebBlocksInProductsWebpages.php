@@ -61,10 +61,8 @@ class RepairMissingFixedWebBlocksInProductsWebpages
 
             DB::table('model_has_web_blocks')->where('id', $webBlockData->model_has_web_blocks_id)->delete();
             DB::table('model_has_web_blocks')->where('web_block_id', $webBlockData->id)->delete();
-
             DB::table('model_has_media')->where('model_type', 'WebBlock')->where('model_id', $webBlockData->id)->delete();
             DB::table('web_block_has_models')->where('web_block_id', $webBlockData->id)->delete();
-
             DB::table('web_blocks')->where('id', $webBlockData->id)->delete();
         }
 
@@ -72,7 +70,7 @@ class RepairMissingFixedWebBlocksInProductsWebpages
         if (count($webBlocksDataNew) == 0) {
             $command->error('Webpage '.$webpage->code.' Product Web Block not found');
 
-            $this->createWebBlock($webpage, 'product-1', $product);
+            $this->createWebBlock($webpage, 'product-1');
         }
 
 
