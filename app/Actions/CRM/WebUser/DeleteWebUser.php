@@ -19,6 +19,9 @@ use App\Models\CRM\WebUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Support\Facades\Event;
+use OwenIt\Auditing\Events\AuditCustom;
+
 
 class DeleteWebUser extends OrgAction
 {
@@ -44,6 +47,7 @@ class DeleteWebUser extends OrgAction
             $webUser->delete();
         }
 
+        Event::dispatch(new AuditCustom($webUser));
         GroupHydrateWebUsers::dispatch($webUser->group);
         OrganisationHydrateWebUsers::dispatch($webUser->organisation);
         ShopHydrateWebUsers::dispatch($webUser->shop);
