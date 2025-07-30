@@ -196,8 +196,12 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                 ],
             ];
 
-
-            $routeDownload = null;
+            $routeDownload = [
+                'name'       => 'retina.dropshipping.invoices.pdf',
+                'parameters' => [
+                    'invoice' => $invoice->slug,
+                ],
+            ];
 
             $invoicesData[] = [
                 'reference' => $invoice->reference,

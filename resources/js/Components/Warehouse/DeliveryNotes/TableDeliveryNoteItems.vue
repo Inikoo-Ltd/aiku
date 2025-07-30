@@ -209,6 +209,12 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
 
         </template>
 
+        <template #cell(quantity_packed)="{ item: item, proxyItem }">
+            <FractionDisplay  v-if="item.quantity_packed_fractional"   :fractionData="item.quantity_packed_fractional" />
+            <span v-else>{{item.quantity_packed}}</span>
+
+        </template>
+
 
         <template #cell(quantity_to_pick)="{ item: item }">
             {{ item.quantity_to_pick }}

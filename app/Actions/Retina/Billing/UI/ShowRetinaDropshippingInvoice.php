@@ -118,12 +118,12 @@ class ShowRetinaDropshippingInvoice extends RetinaAction
                     ],
                 ],
 
-                // 'exportPdfRoute'          => [
-                //     'name'       => 'retina.fulfilment.billing.invoices.download',
-                //     'parameters' => [
-                //         'invoice' => $invoice->slug
-                //     ]
-                // ],
+                 'exportPdfRoute'          => [
+                     'name'       => 'retina.dropshipping.invoices.pdf',
+                     'parameters' => [
+                         'invoice' => $invoice->slug
+                     ]
+                 ],
                 // 'exportTransactionsRoute' => [
                 //     'name'       => 'retina.fulfilment.billing.invoices.invoice-transactions.export',
                 //     'parameters' => [

@@ -15,9 +15,6 @@ trait WithOrderExchanges
 {
     protected function processExchanges($modelData, $shop, $field = 'net_amount'): array
     {
-
-
-
         if (!Arr::exists($modelData, 'org_exchange')) {
             $orgExchange = GetCurrencyExchange::run($shop->currency, $shop->organisation->currency);
         } else {
@@ -33,14 +30,19 @@ trait WithOrderExchanges
         data_set($modelData, 'org_exchange', $orgExchange, overwrite: false);
         data_set($modelData, 'grp_exchange', $grpExchange, overwrite: false);
 
+        $amount = Arr::get($modelData, $field);
+        if (!is_numeric($amount)) {
+            $amount = 0;
+        }
+
         if ($orgExchange) {
-            $orgAmount = Arr::get($modelData, $field) * $orgExchange;
+            $orgAmount = $amount * $orgExchange;
         } else {
             $orgAmount = null;
         }
 
         if ($grpExchange) {
-            $grpAmount = Arr::get($modelData, $field) * $grpExchange;
+            $grpAmount = $amount * $grpExchange;
         } else {
             $grpAmount = null;
         }

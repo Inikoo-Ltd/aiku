@@ -16,7 +16,6 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\StoredItem;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreMultiplePortfolios extends OrgAction
@@ -28,29 +27,29 @@ class StoreMultiplePortfolios extends OrgAction
      */
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): void
     {
-        DB::transaction(function () use ($customerSalesChannel, $modelData) {
-            foreach (Arr::get($modelData, 'items') as $itemID) {
-                $itemID = (int)$itemID;
-                if ($customerSalesChannel->customer->is_fulfilment) {
-                    /** @var StoredItem $item */
-                    $item = StoredItem::find($itemID);
-                } else {
-                    /** @var Product $item */
-                    $item = Product::find($itemID);
-                }
-
-                if ($item->portfolios()->where('customer_sales_channel_id', $customerSalesChannel->id)->exists()) {
-                    continue;
-                }
-
-                StorePortfolio::make()->action(
-                    customerSalesChannel: $customerSalesChannel,
-                    item: $item,
-                    modelData: []
-                );
-
+        foreach (Arr::get($modelData, 'items') as $itemID) {
+            $itemID = (int)$itemID;
+            if ($customerSalesChannel->customer->is_fulfilment) {
+                /** @var StoredItem $item */
+                $item = StoredItem::find($itemID);
+            } else {
+                /** @var Product $item */
+                $item = Product::find($itemID);
             }
-        });
+
+            if ($item->portfolios()->where('customer_sales_channel_id', $customerSalesChannel->id)->exists()) {
+                continue;
+            }
+
+            StorePortfolio::make()->action(
+                customerSalesChannel: $customerSalesChannel,
+                item: $item,
+                modelData: []
+            );
+
+
+        }
+
 
         CustomerSalesChannelsHydratePortfolios::run($customerSalesChannel);
     }

@@ -43,7 +43,7 @@ trait WithUpdateWebImages
         }
 
         $imageOriginal  = $media->getImage();
-        $imageGallery   = $media->getImage()->resize(0, 300);
+        $imageGallery   = $media->getImage()->resize(0, 600);
         $imageThumbnail = $media->getImage()->resize(0, 48);
 
         return [

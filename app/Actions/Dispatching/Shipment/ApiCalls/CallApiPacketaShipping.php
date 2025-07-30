@@ -70,7 +70,26 @@ class CallApiPacketaShipping extends OrgAction
         $weight = collect($parcels)->sum('weight') ?? 0;
         $order = $parent->orders->first();
         $countryCode = Arr::get($parentResource, 'to_address.country.code', 'CZ');
-
+        $addressId = $this->getAddressIdByCountryCode($countryCode, $weight);
+        if (is_null($addressId)) {
+            return [
+                'status' => 'fail',
+                'errorData' => [
+                    'message' => "No address ID found for country code {$countryCode} and weight {$weight} kg.",
+                ],
+                'modelData' => [],
+            ];
+        }
+        $value = $this->getValueByCountryCode($countryCode, $weight, !empty($parent->cash_on_delivery));
+        if (is_null($value)) {
+            return [
+                'status' => 'fail',
+                'errorData' => [
+                    'message' => "No value found for country code {$countryCode} and weight {$weight} kg.",
+                ],
+                'modelData' => [],
+            ];
+        }
         $packetAttributes = [
             'number' => Str::limit($parent->reference, 30),
             'name' => Arr::get($parentResource, 'to_first_name'),
@@ -78,10 +97,10 @@ class CallApiPacketaShipping extends OrgAction
             'company' => Arr::get($parentResource, 'to_company_name'),
             'email' => Arr::get($parentResource, 'to_email'),
             'phone' => Arr::get($parentResource, 'to_phone'),
-            'addressId' => $this->getAddressIdByCountryCode($countryCode),
-            'value' => '100',
+            'addressId' => $addressId,
+            'value' => $value,
             'currency' => $order->currency?->code ?? 'EUR',
-            'eshop' => 'Ancient Wisom s.ro.',
+            'eshop' => 'AWGifts Europe',
             'weight' => $weight, // in kg
             'street' => Arr::get($parentResource, 'to_address.address_line_1'),
             'houseNumber' => Arr::get($parentResource, 'to_address.address_line_2'),
@@ -105,15 +124,13 @@ class CallApiPacketaShipping extends OrgAction
             $modelData = [
                 'api_response' => $apiResponseData,
             ];
-
             $status = 'success';
             $id = $apiResponse->id ?? '';
             $modelData['label']      = $this->getLabel($id, $shipper);
             $modelData['label_type'] = ShipmentLabelTypeEnum::PDF;
             $modelData['number_parcels'] = $parcels ? count($parcels) : 1;
 
-            $modelData['trackings']     = [];
-            $modelData['tracking_urls'] = [];
+            $modelData['tracking'] = $apiResponse->id;
         } catch (SoapFault $e) {
             $status = 'fail';
 
@@ -187,37 +204,459 @@ class CallApiPacketaShipping extends OrgAction
         }
     }
 
-    public function getAddressIdByCountryCode(string $countryCode): int
+    public function roles(): array
     {
-        $addressIds = [
-            'SK' => 131, // Slovakia
-            'SI' => 19515, // Slovenia (default to first, can be adjusted)
-            'SI-1' => 19515, // Slovenia
-            'SI-2' => 25004, // Slovenia
-            'ES' => 4653, // Spain
-            'LV' => 25981, // Latvia
-            'LT' => 25982, // Lithuania
-            'PL' => 4162, // Poland
-            'PT' => 4655, // Portugal
-            'RO' => 7397, // Romania
-            'EE' => 25980, // Estonia
-            'FI' => 5060, // Finland
-            'HU' => 4159, // Hungary
-            'IT' => 9103, // Italy
-            'HR' => 10618, // Croatia
-            'CZ' => 106, // Czech Republic
-        ];
+        return [
+            'AT' => [
+                ['id' => 6830, 'ranges' => [[0, 1], [1, 2], [2, 5]], 'prices' => [5.10, 5.30, 5.70]],
+            ],
+            'BG' => [
+                [
+                    'id' => 26066,
+                    'ranges' => [
+                        [0, 1],
+                        [1, 2],
+                        [2, 5],
+                        [5, 10],
+                        [10, 15],
+                        [15, 30]
+                    ],
+                    'prices' => [
+                        5.30,  // 0-1 kg
+                        5.60,  // 1-2 kg
+                        6.35,  // 2-5 kg
+                        8.55,  // 5-10 kg
+                        9.70,  // 10-15 kg
+                        11.40  // 15-30 kg
+                    ]
+                ],
+            ],
+            'HR' => [
+                [
+                    'id' => 10618,
+                    'ranges' => [
+                        [0, 1],
+                        [1, 2],
+                        [2, 5],
+                        [5, 10],
+                        [10, 30]
+                    ],
+                    'prices' => [
+                        4.90,  // 0-1 kg
+                        5.80,  // 1-2 kg
+                        5.95,  // 2-5 kg
+                        6.30,  // 5-10 kg
+                        6.90   // 10-30 kg
+                    ]
+                ],
+            ],
+            'CZ' => [
+                [
+                    'id' => 106,
+                    'ranges' => [
+                        [0, 1],
+                        [1, 2],
+                        [2, 5],
+                        [5, 10]
+                    ],
+                    'prices' => [
+                        3.90,  // 0-1 kg
+                        4.30,  // 1-2 kg
+                        4.85,  // 2-5 kg
+                        5.85   // 5-10 kg
+                    ]
+                ],
+            ],
+            'EE' => [
+                [
+                    'id' => 25980,
+                    'ranges' => [
+                        [0, 2],   // €8.60
+                        [2, 5],   // €9.40
+                    ],
+                    'prices' => [
+                        8.60,     // 0-2 kg
+                        9.40,     // 2-5 kg
+                    ]
+                ],
+                [
+                    'id' => 5060,
+                    'ranges' => [
+                        [5, 10],  // €11.90
+                        [10, 15], // €12.70
+                        [15, 30], // €14.30
+                    ],
+                    'prices' => [
+                        11.90,    // 5-10 kg
+                        12.70,    // 10-15 kg
+                        14.30,    // 15-30 kg
+                    ]
+                ],
+            ],
+            'FR' => [
+                [
+                    'id' => 4309,
+                    'ranges' => [
+                        [0, 0.25],  // 0-0.25 kg
+                        [2, 5],     // 2-5 kg
+                    ],
+                    'prices' => [
+                        7.50,   // 0-0.25 kg
+                        12.90,  // 2-5 kg
+                    ]
+                ],
+            ],
+            'GR' => [
+                [
+                    'id' => 17465,
+                    'ranges' => [
+                        [0, 1],    // €6.10
+                        [1, 2],    // €6.80
+                        [2, 5],    // €9.15
+                        [5, 10],   // €13.30
+                        [10, 15],  // €18.35
+                        [15, 30],  // €22.99
+                    ],
+                    'prices' => [
+                        6.10,   // 0-1 kg
+                        6.80,   // 1-2 kg
+                        9.15,   // 2-5 kg
+                        13.30,  // 5-10 kg
+                        18.35,  // 10-15 kg
+                        22.99,  // 15-30 kg
+                    ]
+                ],
+            ],
+            'HU' => [
+                [
+                    'id' => 4159,
+                    'ranges' => [
+                        [0, 1],   // 0-1 kg
+                        [1, 2],   // 1-2 kg
+                    ],
+                    'prices' => [
+                        4.50,     // 0-1 kg
+                        4.70,     // 1-2 kg
+                    ]
+                ],
+                [
+                    'id' => 3828,
+                    'ranges' => [
+                        [2, 5],   // 2-5 kg
+                        [5, 10],  // 5-10 kg
+                    ],
+                    'prices' => [
+                        4.80,     // 2-5 kg
+                        5.60,     // 5-10 kg
+                    ]
+                ],
+            ],
+            'IE' => [
+                [
+                    'id' => 9990,
+                    'ranges' => [
+                        [2, 5], // 2-5 kg
+                    ],
+                    'prices' => [
+                        14.60, // €14.60 for 2-5 kg
+                    ]
+                ],
+            ],
+            'IT' => [
+                [
+                    'id' => 9103,
+                    'ranges' => [
+                        [0, 2],   // 0-2 kg
+                        [2, 5],   // 2-5 kg
+                    ],
+                    'prices' => [
+                        7.80,    // 0-2 kg
+                        9.20,    // 2-5 kg
+                    ]
+                ],
+            ],
+            'LV' => [
+                [
+                    'id' => 25981,
+                    'ranges' => [
+                        [0, 2],   // 0-2 kg
+                        [2, 5],   // 2-5 kg
+                    ],
+                    'prices' => [
+                        6.30,    // 0-2 kg
+                        7.50,    // 2-5 kg
+                    ]
+                ],
+                [
+                    'id' => 18807,
+                    'ranges' => [
+                        [5, 10],   // 5-10 kg
+                        [10, 15],  // 10-15 kg
+                        [15, 30],  // 15-30 kg
+                    ],
+                    'prices' => [
+                        8.20,    // 5-10 kg
+                        8.90,    // 10-15 kg
+                        12.00,   // 15-30 kg
+                    ]
+                ],
+            ],
+            'LT' => [
+                [
+                    'id' => 25982,
+                    'ranges' => [
+                        [0, 2],   // 0-2 kg
+                        [2, 5],   // 2-5 kg
+                    ],
+                    'prices' => [
+                        6.30,    // 0-2 kg
+                        6.80,    // 2-5 kg
+                    ]
+                ],
+                [
+                    'id' => 18808,
+                    'ranges' => [
+                        [5, 10],   // 5-10 kg
+                        [10, 30],  // 10-30 kg
+                    ],
+                    'prices' => [
+                        8.40,    // 5-10 kg
+                        9.50,    // 10-30 kg
+                    ]
+                ],
+            ],
+            'PL' => [
+                [
+                    'id' => 4162,
+                    'ranges' => [
+                        [0, 1],    // 0-1 kg
+                        [1, 2],    // 1-2 kg
+                        [2, 5],    // 2-5 kg
+                        [5, 10],   // 5-10 kg
+                        [10, 15],  // 10-15 kg
+                        [15, 30],  // 15-30 kg
+                    ],
+                    'prices' => [
+                        4.40,   // 0-1 kg
+                        4.80,   // 1-2 kg
+                        5.00,   // 2-5 kg
+                        6.00,   // 5-10 kg
+                        7.00,   // 10-15 kg
+                        7.50,   // 15-30 kg
+                    ]
+                ],
+            ],
+            'PT' => [
+                [
+                    'id' => 4655,
+                    'ranges' => [
+                        [0, 2],    // 0-2 kg
+                        [2, 5],    // 2-5 kg
+                        [5, 10],   // 5-10 kg
+                        [10, 15],  // 10-15 kg
+                    ],
+                    'prices' => [
+                        7.80,   // 0-2 kg
+                        8.20,   // 2-5 kg
+                        10.90,  // 5-10 kg
+                        11.70,  // 10-15 kg
+                    ]
+                ],
+            ],
+            'RO' => [
+                [
+                    'id' => 7397,
+                    'ranges' => [
+                        [2, 5], // 2-5 kg
+                    ],
+                    'prices' => [
+                        9.90, // €9.90 for 2-5 kg
+                    ]
+                ],
+            ],
+            'SK' => [
+                [
+                    'id' => 131,
+                    'ranges' => [
+                        [0, 1],    // 0-1 kg
+                        [1, 2],    // 1-2 kg
+                        [2, 5],    // 2-5 kg
+                        [5, 15],   // 5-15 kg
+                        [15, 30],  // 15-30 kg
+                    ],
+                    'prices' => [
+                        2.80,   // 0-1 kg
+                        2.70,   // 1-2 kg
+                        2.90,   // 2-5 kg
+                        3.00,   // 5-15 kg
+                        3.50,   // 15-30 kg
+                    ]
+                ],
+            ],
+            'SI' => [
+                [
+                    'id' => 19515,
+                    'ranges' => [
+                        [0, 2],    // 0-2 kg
+                        [2, 5],    // 2-5 kg
+                        [15, 30],  // 15-30 kg
+                    ],
+                    'prices' => [
+                        5.40,   // 0-2 kg
+                        5.50,   // 2-5 kg
+                        8.20,   // 15-30 kg
+                    ]
+                ],
+                [
+                    'id' => 25004,
+                    'ranges' => [
+                        [5, 10],   // 5-10 kg
+                        [10, 15],  // 10-15 kg
+                    ],
+                    'prices' => [
+                        6.56,   // 5-10 kg
+                        6.80,   // 10-15 kg
+                    ]
+                ],
+            ],
+            'ES' => [
+                [
+                    'id' => 4653,
+                    'ranges' => [
+                        [0, 2],    // 0-2 kg
+                        [2, 5],    // 2-5 kg
+                        [5, 10],   // 5-10 kg
+                        [10, 15],  // 10-15 kg
+                    ],
+                    'prices' => [
+                        7.85,   // 0-2 kg
+                        8.20,   // 2-5 kg
+                        9.90,   // 5-10 kg
+                        10.80,  // 10-15 kg
+                    ]
+                ],
+            ],
+            'SE' => [
+                [
+                    'id' => 4827,
+                    'ranges' => [
+                        [2, 5],   // 2-5 kg
+                        [5, 10],  // 5-10 kg
+                    ],
+                    'prices' => [
+                        15.10,   // 2-5 kg
+                        16.30,   // 5-10 kg
+                    ]
+                ],
+            ],
 
-        // Normalize country code to uppercase
+        ];
+    }
+
+    /**
+     * sources https://client.packeta.com/en/user-conversions
+     * Returns the COD and max packet value limits per country.
+     * Format: [ 'COUNTRY_CODE' => ['cod' => value, 'cod_currency' => 'CUR', 'max' => value, 'max_currency' => 'CUR'] ]
+     */
+    public function rolesLimitValueByTOS(): array
+    {
+        return [
+            'BE' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
+            'BG' => ['cod' => 1500,    'cod_currency' => 'BGN', 'max' => 1500,     'max_currency' => 'BGN'],
+            'CZ' => ['cod' => 20000,   'cod_currency' => 'CZK', 'max' => 20000,    'max_currency' => 'CZK'],
+            'DK' => ['cod' => 5200,    'cod_currency' => 'DKK', 'max' => 5200,     'max_currency' => 'DKK'],
+            'EE' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
+            'FI' => ['cod' => 500,     'cod_currency' => 'EUR', 'max' => 500,      'max_currency' => 'EUR'],
+            'FR' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
+            'HR' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
+            'IE' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
+            'IT' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
+            'IL' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
+            'QA' => ['cod' => 500,     'cod_currency' => 'USD', 'max' => 800,      'max_currency' => 'USD'],
+            'CY' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
+            'LT' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
+            'LV' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
+            'LU' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
+            'HU' => ['cod' => 250000,  'cod_currency' => 'HUF', 'max' => 250000,   'max_currency' => 'HUF'],
+            'DE' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
+            'NL' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
+            'OM' => ['cod' => 500,     'cod_currency' => 'USD', 'max' => 800,      'max_currency' => 'USD'],
+            'PL' => ['cod' => 3000,    'cod_currency' => 'PLN', 'max' => 3000,     'max_currency' => 'PLN'],
+            'PT' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
+            'AT' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
+            'RO' => ['cod' => 3500,    'cod_currency' => 'RON', 'max' => 3500,     'max_currency' => 'RON'],
+            'RU' => ['cod' => 52000,   'cod_currency' => 'RUB', 'max' => 52000,    'max_currency' => 'RUB'],
+            'GR' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
+            'SA' => ['cod' => 500,     'cod_currency' => 'USD', 'max' => 800,      'max_currency' => 'USD'],
+            'SK' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
+            'SI' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
+            'AE' => ['cod' => 700,     'cod_currency' => 'AED', 'max' => 700,      'max_currency' => 'AED'],
+            'GB' => ['cod' => 630,     'cod_currency' => 'GBP', 'max' => 630,      'max_currency' => 'GBP'],
+            'US' => ['cod' => 500,     'cod_currency' => 'USD', 'max' => 800,      'max_currency' => 'USD'],
+            'ES' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
+            'SE' => ['cod' => 7500,    'cod_currency' => 'SEK', 'max' => 7500,     'max_currency' => 'SEK'],
+            'CH' => ['cod' => 800,     'cod_currency' => 'CHF', 'max' => 800,      'max_currency' => 'CHF'],
+            'TR' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
+            'UA' => ['cod' => 20500,   'cod_currency' => 'UAH', 'max' => 20500,    'max_currency' => 'UAH'],
+        ];
+    }
+
+    /**
+     * Determine the address ID based on country code and weight.
+     * Returns null if the weight is not in the allowed range.
+     */
+    public function getAddressIdByCountryCode(string $countryCode, float $weight): ?int
+    {
         $countryCode = strtoupper($countryCode);
 
-        // Special handling for Slovenia if needed
-        // if ($countryCode === 'SI') {
-        //     // You can implement logic to choose between 19515 and 25004 if needed
-        //     return $addressIds['SI'];
-        // }
+        $roles = $this->roles();
 
-        return $addressIds[$countryCode] ?? 131; // Default to Czech Republic if not found
+        if (!isset($roles[$countryCode])) {
+            return null;
+        }
+
+        foreach ($roles[$countryCode] as $rule) {
+            foreach ($rule['ranges'] as [$min, $max]) {
+                if ($weight >= $min && $weight < $max) {
+                    return $rule['id'];
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public function getValueByCountryCode(string $countryCode, float $weight, bool $isCod = false): ?float
+    {
+        $countryCode = strtoupper($countryCode);
+
+        $roles = $this->roles();
+
+        if (!isset($roles[$countryCode])) {
+            return null;
+        }
+
+        $value = 0;
+        foreach ($roles[$countryCode] as $rule) {
+            foreach ($rule['ranges'] as $index => [$min, $max]) {
+                if ($weight >= $min && $weight < $max) {
+                    $value = $rule['prices'][$index];
+                    break 2;
+                }
+            }
+        }
+        if ($value > 0) {
+            $limits = $this->rolesLimitValueByTOS()[$countryCode] ?? null;
+            if ($limits) {
+                $max = $isCod ? ($limits['cod'] ?? null) : ($limits['max'] ?? null);
+                if ($max !== null && $value > $max) {
+                    return $max;
+                }
+            }
+            return $value;
+        }
+
+        return null;
     }
 
     public string $commandSignature = 'xxx222x';

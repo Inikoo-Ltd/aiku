@@ -1,11 +1,10 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 07-04-2025-15h-31m
- * github: https://github.com/KirinZero0
- * copyright 2025
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Tue, 29 Jul 2025 13:06:21 Central European Summer Time, Trnava, Slovakia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Ordering\Order\UI;
 
@@ -15,7 +14,7 @@ use App\Models\Ordering\Order;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class GetOrderAddressManagement
+class GetOrderDeliveryAddressManagement
 {
     use AsObject;
 

@@ -75,6 +75,7 @@ const props = defineProps<{
     progressToUploadToShopify: {}
     isPlatformManual?: boolean
     customerSalesChannel: {}
+    useCheckBox?: boolean
 }>()
 
 function portfolioRoute(product: Product) {
@@ -313,7 +314,6 @@ const onDisableCheckbox = (item) => {
         :name="tab"
         class="mt-5"
         isCheckBox
-        :isCheckBox="true"
         @onChecked="(item) => onChangeCheked(true, item)" 
         @onUnchecked="(item) => onChangeCheked(false, item)"
         @onCheckedAll="(data) => onCheckedAll(data)"
@@ -436,35 +436,37 @@ const onDisableCheckbox = (item) => {
 
             <template v-if="!item.platform_status">
 
-                <div v-if="item.platform_possible_matches?.number_matches"  class="border border-gray-300 rounded p-1">
-                <div  class="flex gap-x-2 items-center border border-gray-300 rounded p-1">
-                    <div v-if="item.platform_possible_matches?.raw_data?.[0].images?.[0]?.src"  class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow border border-gray-300 rounded">
-                        <img :src="item.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src" />
+                <div v-if="item.platform_possible_matches?.number_matches" class="border  rounded p-1"
+                    :class="selectedProducts?.includes(item.id) ? 'bg-green-200 border-green-400' : 'border-gray-300'"
+                >
+                    <div  class="flex gap-x-2 items-center border border-gray-300 rounded p-1">
+                        <div v-if="item.platform_possible_matches?.raw_data?.[0].images?.[0]?.src"  class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow border border-gray-300 rounded">
+                            <img :src="item.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src" />
+                        </div>
+                        <div>
+                            <span class="mr-1">{{ item.platform_possible_matches?.matches_labels[0]}}</span>
+                        </div>
                     </div>
-                    <div>
-                        <span class="mr-1">{{ item.platform_possible_matches?.matches_labels[0]}}</span>
-                    </div>
-                </div>
 
-                <ButtonWithLink
-                    v-if="item.platform_possible_matches?.number_matches"
-                    v-tooltip="trans('Match to existing Shopify product')"
-                    :routeTarget="{
-                        method: 'post',
-                            name: 'retina.models.portfolio.match_to_existing_shopify_product',
-                            parameters: {
-                                portfolio: item.id,
-                                shopify_product_id: item.platform_possible_matches.raw_data?.[0]?.id
-                            }
+                    <ButtonWithLink
+                        v-if="item.platform_possible_matches?.number_matches"
+                        v-tooltip="trans('Match to existing Shopify product')"
+                        :routeTarget="{
+                            method: 'post',
+                                name: 'retina.models.portfolio.match_to_existing_shopify_product',
+                                parameters: {
+                                    portfolio: item.id,
+                                    shopify_product_id: item.platform_possible_matches.raw_data?.[0]?.id
+                                }
+                            }"
+                        :bindToLink="{
+                            preserveScroll: true,
                         }"
-                    :bindToLink="{
-                        preserveScroll: true,
-                    }"
-                    type="primary"
-                    :label="trans('Match with this product')"
-                    size="xxs"
-                    icon="fal fa-hand-pointer"
-                />
+                        type="primary"
+                        :label="trans('Match with this product')"
+                        size="xxs"
+                        icon="fal fa-hand-pointer"
+                    />
 
                 </div>
 
@@ -554,19 +556,20 @@ const onDisableCheckbox = (item) => {
 
         <!-- Column: Actions 3 -->
         <template #cell(delete)="{ item }">
-<!--            <ButtonWithLink-->
-<!--                v-tooltip="trans('Unselect product')"-->
-<!--                type="negative"-->
-<!--                icon="fal fa-skull"-->
-<!--                :routeTarget="item.update_portfolio"-->
-<!--                :body="{-->
-<!--						'status': false,-->
-<!--					}"-->
-<!--                size="xs"-->
-<!--                :bindToLink="{-->
-<!--						preserveScroll: true,-->
-<!--					}"-->
-<!--            />-->
+            <ButtonWithLink
+                v-if="!item.platfrom_status"
+                v-tooltip="trans('Remove from shortlist')"
+                type="negative"
+                icon="fal fa-skull"
+                :routeTarget="item.update_portfolio"
+                :body="{
+						'status': false,
+					}"
+                size="xs"
+                :bindToLink="{
+						preserveScroll: true,
+					}"
+            />
         </template>
     </Table>
 

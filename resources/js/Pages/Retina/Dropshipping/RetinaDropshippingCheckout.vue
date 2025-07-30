@@ -1,24 +1,15 @@
 <script setup lang="ts">
-import CheckoutSummary from "@/Components/Retina/Ecom/CheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
-import { faPaypal } from "@fortawesome/free-brands-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { computed, inject, onMounted, ref } from "vue"
+import { computed, inject, ref } from "vue"
 import type { Component } from "vue"
-import { data } from "autoprefixer";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { trans } from "laravel-vue-i18n"
-
 import CheckoutPaymentBankTransfer from "@/Components/Retina/Ecom/CheckoutPaymentBankTransfer.vue"
 import CheckoutPaymentCard from "@/Components/Retina/Ecom/CheckoutPaymentCard.vue"
-import Button from "@/Components/Elements/Buttons/Button.vue"
-import Modal from "@/Components/Utils/Modal.vue"
-
-
 import { faArrowLeft, faCreditCardFront, faUniversity, faInfoCircle } from "@fal"
 import { faExclamationTriangle } from "@fas"
 import { Head } from "@inertiajs/vue3"
-import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { routeType } from "@/types/route"
 import DSCheckoutSummary from "@/Components/Retina/Dropshipping/DSCheckoutSummary.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -61,14 +52,12 @@ const props = defineProps<{
     currency_code: string
 }>()
 
-// console.log('prporpor', props)
 
 const currentTab = ref({
     index: 0,
     key: props.paymentMethods?.[0]?.key
 })
 
-const layout = inject('layout', retinaLayoutStructure)
 const locale = inject('locale', {})
 
 
@@ -82,24 +71,7 @@ const component = computed(() => {
     return components[currentTab.value.key];
 })
 
-// const isModalConfirmationOrder = ref(false)
-// const onProcessOrder = () => {
-//     console.log('onProcessOrder')
-//     isModalConfirmationOrder.value = false
-//     // router.post(route('retina.models.top_up_payment_api_point.store'), {
-//     //     amount: amount.value,
-//     //     // notes: privateNote.value,
-//     // }, {
-//     //     preserveState: true,
-//     //     preserveScroll: true,
-//     //     onStart: () => {
-//     //         isLoading.value = true
-//     //     },
-//     //     onFinish: () => {
-//     //         isLoading.value = false
-//     //     }
-//     // })
-// }
+
 </script>
 
 <template>
@@ -107,7 +79,6 @@ const component = computed(() => {
 
     <PageHeading :data="pageHead"> </PageHeading>
 
-    <!-- <pre>{{ to_pay_data }}</pre> -->
     <div class="xflex xjustify-end gap-x-4 mt-4 px-4">
         <ButtonWithLink
             :icon="faArrowLeft"
@@ -223,34 +194,6 @@ const component = computed(() => {
             />
         </div>
 
-        <!-- <Modal
-            :isOpen="isModalConfirmationOrder"
-            @close="() => isModalConfirmationOrder = false"
-            width="w-full max-w-lg"
-        >
-            <div class="px-3">
-                <div>
-                    <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-amber-100">
-                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-amber-600 text-xl" fixed-width aria-hidden="true" />
-                    </div>
-                    <div class="mt-3 text-center sm:mt-2">
-                        <div as="h3" class="text-base font-semibold">
-                            Final confirmation
-                        </div>
-                        <div class="mt-2">
-                            <p class="text-sm text-gray-500">
-                                
-                            </p>
-                        </div>
-                    </div>
-                </div>
 
-                <div class="mt-5 sm:mt-6 flex gap-x-4">
-                    <Button @click="isModalConfirmationOrder = false" label="cancel" type="tertiary" />
-                    <Button @click="onProcessOrder" label="Yes, process order" icon="" full />
-                </div>
-            </div>
-
-        </Modal> -->
     </div>
 </template>

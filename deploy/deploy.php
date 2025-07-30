@@ -35,6 +35,11 @@ task('deploy:sync-octane-anchor', function () {
 desc('Stops inertia SSR server');
 task('artisan:inertia:stop-ssr', artisan('inertia:stop-ssr'))->select('env=prod');
 
+
+desc('Refresh vue after deployment');
+task('artisan:refresh_vue', artisan('deploy:refresh_vue'))->select('env=prod');
+
+
 set('keep_releases', 15);
 
 set('shared_dirs', ['storage', 'private']);
@@ -89,4 +94,5 @@ task('deploy', [
     'deploy:sync-octane-anchor',
     'artisan:octane:reload',
     'artisan:inertia:stop-ssr',
+    'artisan:refresh_vue',
 ]);
