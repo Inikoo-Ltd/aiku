@@ -72,8 +72,7 @@ class DeleteWebUser extends OrgAction
     public function asController(WebUser $webUser, ActionRequest $request): WebUser
     {
         $this->webUser = $webUser;
-        $this->initialisation($webUser->organisation, $request);
-
+        $this->initialisationFromShop($webUser->shop, $request);
         return $this->handle($webUser, true);
     }
 
