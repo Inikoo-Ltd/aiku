@@ -13,13 +13,9 @@ use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class CreateRetinaNewAllPortfoliosToShopify extends RetinaAction
 {
-    use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
 
     /**
