@@ -9,7 +9,7 @@
 namespace App\Actions\Catalogue\Shop\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
-use App\Enums\Catalogue\Collection\CollectionProductStatusEnum;
+use App\Enums\Catalogue\Collection\CollectionProductsStatusEnum;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Shop;
@@ -46,7 +46,7 @@ class ShopHydrateCollections implements ShouldBeUnique
             $this->getEnumStats(
                 model: 'collections',
                 field: 'product_status',
-                enum: CollectionProductStatusEnum::class,
+                enum: CollectionProductsStatusEnum::class,
                 models: Collection::class,
                 where: function ($q) use ($shop) {
                     $q->where('shop_id', $shop->id);
@@ -54,7 +54,7 @@ class ShopHydrateCollections implements ShouldBeUnique
             )
         );
 
-        $stats['number_current_collections'] = $stats['number_collections_state_active'] + $stats['number_collections_product_status_discontinuing'];
+        $stats['number_current_collections'] = $stats['number_collections_state_active'] + $stats['number_collections_products_status_discontinuing'];
 
 
         $shop->stats()->update($stats);

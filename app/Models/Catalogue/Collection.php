@@ -8,7 +8,7 @@
 
 namespace App\Models\Catalogue;
 
-use App\Enums\Catalogue\Collection\CollectionProductStatusEnum;
+use App\Enums\Catalogue\Collection\CollectionProductsStatusEnum;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -55,7 +55,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $master_collection_id
  * @property string|null $description_title
  * @property string|null $description_extra
- * @property CollectionProductStatusEnum $product_status
+ * @property CollectionProductsStatusEnum $products_status
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Collection> $collections
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $departments
@@ -99,7 +99,7 @@ class Collection extends Model implements Auditable, HasMedia
         'data'           => 'array',
         'web_images'     => 'array',
         'state'          => CollectionStateEnum::class,
-        'product_status' => CollectionProductStatusEnum::class,
+        'products_status' => CollectionProductsStatusEnum::class,
     ];
 
     protected $attributes = [

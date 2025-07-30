@@ -10,7 +10,7 @@ namespace App\Enums\Catalogue\Collection;
 
 use App\Enums\EnumHelperTrait;
 
-enum CollectionProductStatusEnum: string
+enum CollectionProductsStatusEnum: string
 {
     use EnumHelperTrait;
 

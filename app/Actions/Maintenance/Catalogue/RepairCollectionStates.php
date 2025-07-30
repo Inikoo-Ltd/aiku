@@ -10,7 +10,7 @@
 namespace App\Actions\Maintenance\Catalogue;
 
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Catalogue\Collection\CollectionProductStatusEnum;
+use App\Enums\Catalogue\Collection\CollectionProductsStatusEnum;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Models\Catalogue\Collection as CatalogueCollection;
 use Illuminate\Console\Command;
@@ -27,12 +27,12 @@ class RepairCollectionStates
         if ($collection->state == CollectionStateEnum::DISCONTINUING) {
             $data = [
                 'state' => CollectionStateEnum::ACTIVE,
-                'product_status' => CollectionProductStatusEnum::DISCONTINUING
+                'product_status' => CollectionProductsStatusEnum::DISCONTINUING
             ];
         } elseif ($collection->state == CollectionStateEnum::DISCONTINUED) {
             $data = [
                 'state' => CollectionStateEnum::INACTIVE,
-                'product_status' => CollectionProductStatusEnum::DISCONTINUED
+                'product_status' => CollectionProductsStatusEnum::DISCONTINUED
             ];
         }
 
