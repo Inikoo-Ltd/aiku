@@ -42,6 +42,18 @@ trait WithCollectionsSubNavigation
                 'number' => $stats->number_collections_state_inactive,
             ],
             [
+                'label'  => __('In Process'),
+                'root'   => 'grp.org.shops.show.catalogue.collections.in_process.index',
+                'route'  => [
+                    'name'       => 'grp.org.shops.show.catalogue.collections.in_process.index',
+                    'parameters' => [
+                        $this->organisation->slug,
+                        $this->shop->slug
+                    ]
+                ],
+                'number' => $stats->number_collections_state_inactive,
+            ],
+            [
                 'label'  => __('All'),
                 'root'   => 'grp.org.shops.show.catalogue.collections.index',
                 'route'  => [

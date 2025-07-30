@@ -72,6 +72,8 @@ class IndexCollections extends OrgAction
             $queryBuilder->where('collections.state', CollectionStateEnum::ACTIVE);
         } elseif ($this->bucket == 'inactive') {
             $queryBuilder->where('collections.state', CollectionStateEnum::INACTIVE);
+        } elseif ($this->bucket == 'in_process') {
+            $queryBuilder->where('collections.state', CollectionStateEnum::IN_PROCESS);
         }
 
         $queryBuilder
@@ -84,6 +86,7 @@ class IndexCollections extends OrgAction
                 'collections.id',
                 'collections.code',
                 'collections.state',
+                'collections.products_status',
                 'collections.name',
                 'collections.description',
                 'collections.created_at',
@@ -290,6 +293,14 @@ class IndexCollections extends OrgAction
         return $this->handle(shop: $shop);
     }
 
+    public function inProcess(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = 'in_process';
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle(shop: $shop);
+    }
+
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
     {
@@ -340,6 +351,17 @@ class IndexCollections extends OrgAction
                         'parameters' => $routeParameters
                     ],
                     __('(Inactive)')
+                )
+            ),
+            'grp.org.shops.show.catalogue.collections.in_process.index' =>
+            array_merge(
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
+                    ],
+                    __('(In Process)')
                 )
             ),
 

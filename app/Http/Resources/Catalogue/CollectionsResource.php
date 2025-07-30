@@ -29,6 +29,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $number_families
  * @property mixed $number_products
  * @property mixed $number_collections
+ * @property mixed $products_status
  * @property mixed $website_slug
  * @property mixed $state
  * @property mixed $webpage_state
@@ -60,6 +61,7 @@ class CollectionsResource extends JsonResource
 
             'state'      => $this->state,
             'state_icon' => $this->state ? CollectionStateEnum::from($this->state->value)->stateIcon()[$this->state->value] : null,
+            'products_status'  => $this->products_status,
 
             'number_parents'          => $this->number_parents,
             'number_families'         => $this->number_families,

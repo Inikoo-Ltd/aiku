@@ -316,9 +316,26 @@ function handleUrlChange(e: string | null) {
             <Icon :data="collection.state_icon" />
         </template>
         <template #cell(code)="{ item: collection }">
-            <Link :href="collectionRoute(collection) as string" class="primaryLink">
-                {{ collection["code"] }}
-            </Link>
+             <div class="flex items-center gap-2">
+                <Link :href="collectionRoute(collection) as string" class="primaryLink">
+                    {{ collection["code"] }}
+                </Link>
+
+                <template v-if="collection.state === 'active'">
+                    <FontAwesomeIcon
+                        v-if="collection.products_status === 'discontinuing'"
+                        :icon="faExclamationTriangle"
+                        class="text-orange-500"
+                        v-tooltip="'Products are being discontinued'"
+                    />
+                    <FontAwesomeIcon
+                        v-else-if="collection.products_status === 'discontinued'"
+                        :icon="faExclamationTriangle"
+                        class="text-red-600"
+                        v-tooltip="'Products are discontinued'"
+                    />
+                </template>
+            </div>
         </template>
 
 

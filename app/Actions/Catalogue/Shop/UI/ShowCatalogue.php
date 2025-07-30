@@ -397,7 +397,7 @@ class ShowCatalogue extends OrgAction
                     [
                         'label' => __('Collections'),
                         'route' => [
-                            'name'       => 'grp.org.shops.show.catalogue.collections.index',        // TODO
+                            'name'       => 'grp.org.shops.show.catalogue.collections.active.index',        // TODO
                             'parameters' => [
                                 'organisation' => $shop->organisation->slug,
                                 'shop'         => $shop->slug
