@@ -161,6 +161,7 @@ class CallApiDpdGbShipping extends OrgAction
         $params = $this->prepareShipmentParams($parentResource, $parcels);
 
         $response = Http::withHeaders($this->getHeaders($shipper))
+            ->retry(3, 100)
             ->post($this->getBaseUrl() . $url, $params);
 
         $apiResponse = $response->json();
@@ -181,6 +182,8 @@ class CallApiDpdGbShipping extends OrgAction
             $modelData['label'] = $htmlBase64;
             $modelData['label_type'] = ShipmentLabelTypeEnum::HTML;
             $modelData['number_parcels'] = count($parcels);
+            $modelData['trackings'] = [$trackingNumber];
+            $modelData['tracking_urls'] = [];
             try {
                 $htmlContent = base64_decode($htmlBase64);
                 $pdfContent = Browsershot::html($htmlContent)
@@ -205,7 +208,6 @@ class CallApiDpdGbShipping extends OrgAction
                 }
             }
         }
-
         return [
             'status' => $status,
             'modelData' => $modelData,
@@ -301,7 +303,7 @@ class CallApiDpdGbShipping extends OrgAction
                     'shippingRef3' => null,
                     'customsValue' => null,
                     'deliveryInstructions' => Str::limit(preg_replace("/[^A-Za-z0-9 \-]/", '', strip_tags($shippingNotes), 60)),
-                    'parcelDescription' => 'test_development_aiku',
+                    'parcelDescription' => app()->isProduction() ? '' : 'test_development_aiku',
                     'liabilityValue' => null,
                     'liability' => false
                 ]
@@ -317,7 +319,7 @@ class CallApiDpdGbShipping extends OrgAction
 
         $response = Http::withHeaders($this->getHeaders($shipper, $output))
             ->timeout(120)
-            ->retry(3, 5000)
+            ->retry(3, 100)
             ->get($this->getBaseUrl() . 'shipping/shipment/' . $shipmentId . '/label');
 
         if ($response->successful()) {

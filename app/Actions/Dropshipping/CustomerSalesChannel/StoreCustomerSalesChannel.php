@@ -27,7 +27,6 @@ class StoreCustomerSalesChannel extends OrgAction
         $modelData['organisation_id']   = $customer->organisation_id;
         $modelData['shop_id']           = $customer->shop_id;
         $modelData['platform_id']       = $platform->id;
-        $modelData['connection_status'] = $platform->type == PlatformTypeEnum::MANUAL ? CustomerSalesChannelConnectionStatusEnum::NO_APPLICABLE : CustomerSalesChannelConnectionStatusEnum::PENDING;
         $customerSalesChannel           = $customer->customerSalesChannels()->create($modelData);
 
         PlatformHydrateCustomers::dispatch($platform)->delay($this->hydratorsDelay);

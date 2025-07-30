@@ -15,9 +15,7 @@ Route::middleware(['verify.shopify'])->group(function () {
     Route::get('/', ShowPupilDashboard::class)->name('home');
     Route::post('shopify-user/{shopifyUser:id}/get-started', SetupShopifyAccount::class)->name('shopify_user.get_started.store')->withoutScopedBindings();
 
-    Route::prefix("dashboard")
-        ->name("dashboard.")
-        ->group(__DIR__."/dashboard.php");
+    Route::prefix("dashboard")->name("dashboard.")->group(__DIR__."/dashboard.php");
 
 
 });

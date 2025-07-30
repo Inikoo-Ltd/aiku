@@ -39,6 +39,8 @@ class ShopifyAppInstalledListener
         CreateShopifyWebhooks::run($shopifyUser);
 
         if ($shopifyUser->customerSalesChannel) {
+
+
             StoreFulfilmentService::run($shopifyUser->customerSalesChannel);
 
         }

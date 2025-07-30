@@ -38,7 +38,7 @@ class GetTaxCategory
         $gbCountryId      = Country::where('code', 'GB')->first()->id;
         $taxableCountries = ['GB', 'IM'];
 
-        if (in_array($billingAddress->country_code, $taxableCountries) or in_array($deliveryAddress->country_code, $taxableCountries)) {
+        if (in_array($billingAddress->country_code, $taxableCountries) || in_array($deliveryAddress->country_code, $taxableCountries)) {
             return TaxCategory::where('type', TaxCategoryTypeEnum::STANDARD)->where('country_id', $gbCountryId)->where('status', true)->first();
         }
 
@@ -48,10 +48,11 @@ class GetTaxCategory
 
     protected function euTaxCategory(Country $country, Address $billingAddress, ?Address $deliveryAddress, ?TaxNumber $taxNumber, bool $isRe = false): TaxCategory
     {
-        if ($billingAddress->country_code == $country->code or $deliveryAddress->country_code == $country->code) {
+
+        if ($billingAddress->country_code == $country->code || $deliveryAddress->country_code == $country->code) {
             if ($country->code == 'ES') {
                 $esCountryId = Country::where('code', 'ES')->first()->id;
-                if ($deliveryAddress->country_code == 'ES' and preg_match('/^(35|38|51|52)/', $deliveryAddress->postal_code)) {
+                if ($deliveryAddress->country_code == 'ES' && preg_match('/^(35|38|51|52)/', $deliveryAddress->postal_code)) {
                     return $this->getOutsideTaxCategory();
                 }
 
@@ -63,14 +64,16 @@ class GetTaxCategory
                 } else {
                     return TaxCategory::where('type', TaxCategoryTypeEnum::STANDARD)->where('country_id', $country->id)->where('status', true)->first();
                 }
-            } else {
+            }
+            else {
                 return TaxCategory::where('type', TaxCategoryTypeEnum::STANDARD)->where('country_id', $country->id)->where('status', true)->first();
             }
         }
 
-        if (IsEuropeanUnion::run($billingAddress->country_code)  and
-            IsEuropeanUnion::run($deliveryAddress->country_code) and
-            $taxNumber                                           and
+
+        if (IsEuropeanUnion::run($billingAddress->country_code)  &&
+            IsEuropeanUnion::run($deliveryAddress->country_code) &&
+            $taxNumber                                           &&
             $taxNumber->valid
         ) {
             return $this->getEuValidTaxNumber();

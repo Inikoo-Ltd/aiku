@@ -61,7 +61,7 @@ function outboxRoute(outbox: Outbox) {
                 'grp.org.fulfilments.show.operations.comms.outboxes.show',
                 [route().params['organisation'], route().params['fulfilment'], outbox.slug])
         default:
-            return null
+            return ''
     }
 }
 
@@ -72,7 +72,7 @@ function outboxRoute(outbox: Outbox) {
 <template>
     <Table :resource="data" :name="tab">
         <template #cell(name)="{ item: outbox }">
-            <Link :href="outboxRoute(outbox)" class="primaryLink">
+            <Link v-if="outboxRoute(outbox)" :href="outboxRoute(outbox)" class="primaryLink">
                 {{ outbox["name"] }}
             </Link>
         </template>

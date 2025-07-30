@@ -80,3 +80,7 @@ Broadcast::channel('webpage.{webpage}.preview', function (User $user) {
 Broadcast::channel("header-footer.{website}.preview", function (User $user) {
     return true;
 });
+
+Broadcast::channel("app.general", function () {
+    return true;
+});
