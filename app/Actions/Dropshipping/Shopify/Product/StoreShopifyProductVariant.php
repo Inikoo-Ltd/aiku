@@ -130,8 +130,6 @@ class StoreShopifyProductVariant extends RetinaAction
 
             $body = $response['body']->toArray();
 
-            // Check for user errors in the response
-            //    dd($body['data']['productVariantsBulkCreate']['userErrors']);
             if (!empty($body['data']['productVariantsBulkCreate']['userErrors'])) {
                 $errors       = $body['data']['productVariantsBulkCreate']['userErrors'];
                 $errorMessage = 'User errors: '.json_encode($errors);
