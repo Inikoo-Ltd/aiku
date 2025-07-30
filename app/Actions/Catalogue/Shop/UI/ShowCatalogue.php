@@ -397,7 +397,7 @@ class ShowCatalogue extends OrgAction
                     [
                         'label' => __('Collections'),
                         'route' => [
-                            'name'       => 'grp.org.shops.show.catalogue.collections.active.index',        // TODO
+                            'name'       => 'grp.org.shops.show.catalogue.collections.active.index',
                             'parameters' => [
                                 'organisation' => $shop->organisation->slug,
                                 'shop'         => $shop->slug
@@ -408,6 +408,7 @@ class ShowCatalogue extends OrgAction
                         'value' => $shop->stats->number_collections_state_active,
                         'metas' => [
                             [
+                                'hide'    => $shop->stats->number_collections_products_status_discontinuing==0,
                                 'tooltip' => __('Discontinuing collections'),
                                 'icon'    => [
                                     'icon'  => 'fas fa-times-circle',
@@ -416,6 +417,7 @@ class ShowCatalogue extends OrgAction
                                 'count'   => $shop->stats->number_collections_products_status_discontinuing,
                             ],
                             [
+                                'hide'    => $shop->stats->number_collections_products_status_discontinued==0,
                                 'tooltip' => __('Discontinued collections'),
                                 'icon'    => [
                                     'icon'  => 'fas fa-times-circle',
