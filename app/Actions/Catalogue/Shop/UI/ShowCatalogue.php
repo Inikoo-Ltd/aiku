@@ -414,6 +414,14 @@ class ShowCatalogue extends OrgAction
                                     'class' => 'text-amber-500'
                                 ],
                                 'count'   => $shop->stats->number_collections_products_status_discontinuing,
+                                 'route' => [
+                                    'name'       => 'grp.org.shops.show.catalogue.collections.active.index',        // TODO
+                                    'parameters' => [
+                                        'organisation' => $shop->organisation->slug,
+                                        'shop'         => $shop->slug,
+                                        'elements[state]' => 'discontinuing'
+                                    ]
+                                ],
                             ],
                             [
                                 'tooltip' => __('Discontinued collections'),
@@ -422,6 +430,14 @@ class ShowCatalogue extends OrgAction
                                     'class' => 'text-red-500'
                                 ],
                                 'count'   => $shop->stats->number_collections_products_status_discontinued,
+                                'route' => [
+                                    'name'       => 'grp.org.shops.show.catalogue.collections.active.index',        // TODO
+                                    'parameters' => [
+                                        'organisation' => $shop->organisation->slug,
+                                        'shop'         => $shop->slug,
+                                        'elements[state]' => 'discontinued'
+                                    ]
+                                ],
                             ],
                         ]
                     ],
