@@ -25,7 +25,7 @@ import Modal from "@/Components/Utils/Modal.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import axios from "axios"
-import { debounce, set } from "lodash"
+import { debounce } from "lodash-es"
 import PureProgressBar from "@/Components/PureProgressBar.vue"
 import { Message } from "primevue"
 
@@ -35,7 +35,7 @@ interface ShopifyProduct {
     id: string // "gid://shopify/Product/12148498727252"
     title: string // "Aarhus Atomiser - Classic Pod - USB - Colour Change - Timer"
     handle: string // "aarhus-atomiser-classic-pod-usb-colour-change-timer"
-    vendor: string // "AW-Dropship"
+    vendor: string //
     images: {
         src: string
     }[] // []

@@ -39,7 +39,7 @@ class StoreShopifyProduct extends RetinaAction
         if (!$client) {
             Sentry::captureMessage("Failed to initialize Shopify GraphQL client");
 
-            return [false, 'Failed to initialize Shopify GraphQL client'];;
+            return [false, 'Failed to initialize Shopify GraphQL client'];
         }
 
         /** @var Product $product */
