@@ -121,6 +121,8 @@ class CallApiPacketaShipping extends OrgAction
             $modelData['label']      = $this->getLabel($id, $shipper);
             $modelData['label_type'] = ShipmentLabelTypeEnum::PDF;
             $modelData['number_parcels'] = $parcels ? count($parcels) : 1;
+            $modelData['trackings'] = [$id];
+            $modelData['tracking_urls'] = [];
 
             $modelData['tracking'] = $apiResponse->id;
         } catch (SoapFault $e) {
