@@ -45,7 +45,7 @@ class ShopHydrateCollections implements ShouldBeUnique
             ),
             $this->getEnumStats(
                 model: 'collections',
-                field: 'product_status',
+                field: 'products_status',
                 enum: CollectionProductsStatusEnum::class,
                 models: Collection::class,
                 where: function ($q) use ($shop) {
