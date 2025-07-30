@@ -53,8 +53,8 @@ class IndexCustomerSalesChannels extends OrgAction
             $queryBuilder->where('customer_sales_channels.platform_id', $parent->id);
         }
 
-        if($shop) {
-             $queryBuilder->where('customer_sales_channels.shop_id', $shop->id);
+        if ($shop) {
+            $queryBuilder->where('customer_sales_channels.shop_id', $shop->id);
         }
 
         $queryBuilder->select([

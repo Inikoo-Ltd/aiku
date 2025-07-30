@@ -34,7 +34,6 @@ use Spatie\Permission\Traits\HasPermissions;
 use Spatie\Sluggable\SlugOptions;
 use App\Models\Traits\HasHistory;
 
-
 /**
  * App\Models\CRM\WebUser
  *

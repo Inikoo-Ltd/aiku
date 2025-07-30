@@ -47,7 +47,7 @@ class ShowPlatform extends OrgAction
     public function htmlResponse(Platform $platform, ActionRequest $request): Response
     {
 
-        
+
         $shop = $this->parent;
 
         return Inertia::render(

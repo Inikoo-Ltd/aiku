@@ -85,7 +85,7 @@ class ShowShop extends OrgAction
             ->where('shop_id', $shop->id)
             ->get();
         $totalPlatforms   = $customerChannels->count();
-        
+
         $metas         = [];
         foreach (PlatformTypeEnum::cases() as $platformType) {
             $platformTypeName = $platformType->value;
@@ -94,7 +94,7 @@ class ShowShop extends OrgAction
                 return $channel->platform->type->value === $platformTypeName;
             });
             $platformData = Platform::where('type', $platformType->value)->first();
-            
+
             $metas[] = [
                 'tooltip'   => __($platformType->labels()[$platformTypeName]),
                 'icon'      => [

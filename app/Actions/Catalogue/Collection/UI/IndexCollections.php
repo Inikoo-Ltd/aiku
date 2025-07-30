@@ -98,13 +98,13 @@ class IndexCollections extends OrgAction
         }
 
         foreach ($this->getElementGroups($shop) as $key => $elementGroup) {
-                $queryBuilder->whereElementGroup(
-                    key: $key,
-                    allowedElements: array_keys($elementGroup['elements']),
-                    engine: $elementGroup['engine'],
-                    prefix: $prefix
-                );
-            }
+            $queryBuilder->whereElementGroup(
+                key: $key,
+                allowedElements: array_keys($elementGroup['elements']),
+                engine: $elementGroup['engine'],
+                prefix: $prefix
+            );
+        }
 
         $queryBuilder
             ->leftJoin('organisations', 'collections.organisation_id', '=', 'organisations.id')
@@ -165,11 +165,11 @@ class IndexCollections extends OrgAction
             }
 
             foreach ($this->getElementGroups($shop) as $key => $elementGroup) {
-                    $table->elementGroup(
-                        key: $key,
-                        label: $elementGroup['label'],
-                        elements: $elementGroup['elements']
-                    );
+                $table->elementGroup(
+                    key: $key,
+                    label: $elementGroup['label'],
+                    elements: $elementGroup['elements']
+                );
             }
 
             $table

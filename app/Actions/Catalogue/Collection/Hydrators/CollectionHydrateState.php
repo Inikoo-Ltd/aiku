@@ -9,7 +9,6 @@
 namespace App\Actions\Catalogue\Collection\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
-use App\Enums\Catalogue\Collection\CollectionProductsStatusEnum;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\CollectionStats;

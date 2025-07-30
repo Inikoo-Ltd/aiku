@@ -52,7 +52,7 @@ enum CollectionProductsStatusEnum: string
     public static function count(Shop $parent): array
     {
         $stats = $parent->stats;
-        
+
         return [
             'normal'         => $stats->number_collections_products_status_normal,
             'discontinuing'  => $stats->number_collections_products_status_discontinuing,
