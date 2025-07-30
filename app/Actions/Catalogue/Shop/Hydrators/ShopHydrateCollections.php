@@ -29,7 +29,7 @@ class ShopHydrateCollections implements ShouldBeUnique
     public function handle(Shop $shop): void
     {
         $stats = [
-            'number_collections' => $shop->collections()->count(),
+            'number_collections' => $shop->shopCollections()->count(),
         ];
 
         $stats = array_merge(
