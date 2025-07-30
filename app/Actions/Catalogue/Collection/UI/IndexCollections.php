@@ -85,7 +85,8 @@ class IndexCollections extends OrgAction
         $queryBuilder
             ->leftJoin('webpages', function ($join) {
                 $join->on('collections.id', '=', 'webpages.model_id')
-                    ->where('webpages.model_type', '=', 'Collection');
+                    ->where('webpages.model_type', '=', 'Collection')
+                    ->whereNull('webpages.deleted_at');
             });
 
         if ($this->bucket == 'active') {
@@ -237,9 +238,6 @@ class IndexCollections extends OrgAction
         if ($this->shop->website) {
             $websiteDomain = 'https://'.$this->shop->website->domain;
         }
-
-
-
 
         return Inertia::render(
             'Org/Catalogue/Collections',

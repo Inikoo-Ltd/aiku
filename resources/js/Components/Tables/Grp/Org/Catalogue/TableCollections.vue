@@ -381,7 +381,7 @@ function handleUrlChange(e: string | null) {
 
         <template #cell(actions)="{ item }">
         <div class="flex gap-x-2 gap-y-2">
-            <div v-if="!item.webpage_state && item.webpage_state != 'live' && item.webpage_state != 'closed' || item.state == 'inactive'">
+            <div v-if="!item.webpage_state && item.webpage_state != 'live' && item.webpage_state != 'closed' || item.state == 'inactive' || item.state == 'in_process'">
                 <Link v-if="item.route_delete_collection " as="button"
                       :href="route(item.route_delete_collection.name, item.route_delete_collection.parameters)"
                       :method="item.route_delete_collection.method" preserve-scroll
