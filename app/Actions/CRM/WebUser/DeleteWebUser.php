@@ -8,38 +8,96 @@
 
 namespace App\Actions\CRM\WebUser;
 
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateWebUsers;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateWebUsers;
-use App\Actions\Traits\WithActionUpdate;
+use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebUsers;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWebUsers;
+use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\CRM\WebUser;
-use Illuminate\Console\Command;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
+use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Support\Facades\Event;
+use OwenIt\Auditing\Events\AuditCustom;
 
-class DeleteWebUser
+
+class DeleteWebUser extends OrgAction
 {
-    use WithActionUpdate;
+    use WithCRMEditAuthorisation;
 
-    public string $commandSignature = 'delete:web-user  {web_user}';
+    protected WebUser $webUser;
 
-    public function handle(WebUser $webUser, array $deletedData = [], bool $skipHydrate = false): WebUser
+
+    /**
+     * @throws \Throwable
+     */
+    public function handle(WebUser $webUser, bool $forceDelete = false): WebUser
     {
-        $webUser->delete();
-        $webUser = $this->update($webUser, $deletedData, ['data']);
-
-        if (!$skipHydrate) {
-            CustomerHydrateWebUsers::dispatch($webUser->customer);
+        if ($forceDelete) {
+            $webUser = DB::transaction(function () use ($webUser) {
+                DB::table('web_user_requests')->where('web_user_id', $webUser->id)->delete();
+                DB::table('web_user_password_resets')->where('web_user_id', $webUser->id)->delete();
+                DB::table('web_user_stats')->where('web_user_id', $webUser->id)->delete();
+                $webUser->forceDelete();
+                return $webUser;
+            });
+        } else {
+            $webUser->delete();
         }
+
+        Event::dispatch(new AuditCustom($webUser));
+        GroupHydrateWebUsers::dispatch($webUser->group);
+        OrganisationHydrateWebUsers::dispatch($webUser->organisation);
+        ShopHydrateWebUsers::dispatch($webUser->shop);
+        CustomerHydrateWebUsers::dispatch($webUser->customer);
+
         return $webUser;
     }
 
-    public function asCommand(Command $command): int
+    /**
+     * @throws \Throwable
+     */
+    public function action(WebUser $webUser, bool $forceDelete = false): WebUser
     {
-        try {
-            $webUser = WebUser::withTrashed()->findOrFail($command->argument('web_user'));
-            $this->handle($webUser);
-            $command->info('Web User deleted');
-            return 0;
-        } catch (\Exception $e) {
-            $command->error($e->getMessage());
-            return 1;
+        $this->webUser = $webUser;
+
+        return $this->handle($webUser, $forceDelete);
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function asController(WebUser $webUser, ActionRequest $request): WebUser
+    {
+        $this->webUser = $webUser;
+        $this->initialisation($webUser->organisation, $request);
+
+        return $this->handle($webUser, true);
+    }
+
+    public function htmlResponse(WebUser $webUser): RedirectResponse
+    {
+        if ($webUser->shop->type === ShopTypeEnum::FULFILMENT) {
+            return redirect()->route(
+                'grp.org.fulfilments.show.crm.customers.show.web_users.index',
+                [
+                    'organisation' => $webUser->organisation->slug,
+                    'fulfilment' => $webUser->shop->fulfilment->slug,
+                    'shop' => $webUser->shop->slug,
+                    'fulfilmentCustomer' => $webUser->customer->fulfilmentCustomer->slug,
+                ]
+            );
+        } else {
+            return redirect()->route(
+                'grp.org.shops.show.crm.customers.show.web_users.index',
+                [
+                    'organisation' => $webUser->organisation->slug,
+                    'shop'         => $webUser->shop->slug,
+                    'customer'     => $webUser->customer->slug,
+                ]
+            );
         }
     }
 }
