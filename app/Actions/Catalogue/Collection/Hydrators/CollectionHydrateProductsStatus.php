@@ -16,7 +16,7 @@ use App\Models\Catalogue\CollectionStats;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class CollectionHydrateState implements ShouldBeUnique
+class CollectionHydrateProductsStatus implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
@@ -33,33 +33,36 @@ class CollectionHydrateState implements ShouldBeUnique
             return;
         }
 
-        $data = $this->getCollectionStateFromChildren($collection->stats);
+        $data = $this->getCollectionProductStatus($collection->stats);
 
         $collection->update($data);
     }
 
-
-    public function getCollectionStateFromChildren(CollectionStats $stats): array
+    public function getCollectionProductStatus(CollectionStats $stats): array
     {
-        if ($stats->number_products_state_active > 0 || $stats->number_families_state_active > 0 || $stats->number_products_state_discontinuing > 0 || $stats->number_families_state_discontinuing > 0
-
-        ) {
+        if ($stats->number_products_state_active > 0 || $stats->number_families_state_active > 0) {
             return [
-                'state' => CollectionStateEnum::ACTIVE
+                'products_status' => CollectionProductsStatusEnum::NORMAL
             ];
         }
 
+        if ($stats->number_products_state_discontinuing > 0 || $stats->number_families_state_discontinuing > 0) {
+            return [
+                'products_status' => CollectionProductsStatusEnum::DISCONTINUING
+            ];
+        }
 
         if ($stats->number_products_state_discontinued == 0 && $stats->number_families_state_discontinued == 0 && $stats->number_families_state_inactive == 0) {
             return [
-                'state' => CollectionStateEnum::IN_PROCESS
+                'products_status' => CollectionProductsStatusEnum::NORMAL
             ];
         }
 
         return [
-            'state' => CollectionStateEnum::ACTIVE
+            'products_status' => CollectionProductsStatusEnum::DISCONTINUED
         ];
     }
+
 
 
 }

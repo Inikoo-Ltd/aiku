@@ -40,8 +40,8 @@ class UpdateOrderDeliveryAddress extends OrgAction
 
         UpdateOrderFixedAddress::make()->action($order, $modelData);
         foreach ($order->deliveryNotes as $deliveryNote) {
-            if($this->canModifyDeliveryNoteAddress($deliveryNote)) {
-               UpdateDeliveryNoteFixedAddress::make()->action($deliveryNote, $modelData);
+            if ($this->canModifyDeliveryNoteAddress($deliveryNote)) {
+                UpdateDeliveryNoteFixedAddress::make()->action($deliveryNote, $modelData);
             }
         }
 

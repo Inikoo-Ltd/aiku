@@ -64,8 +64,7 @@ class GetTaxCategory
                 } else {
                     return TaxCategory::where('type', TaxCategoryTypeEnum::STANDARD)->where('country_id', $country->id)->where('status', true)->first();
                 }
-            }
-            else {
+            } else {
                 return TaxCategory::where('type', TaxCategoryTypeEnum::STANDARD)->where('country_id', $country->id)->where('status', true)->first();
             }
         }

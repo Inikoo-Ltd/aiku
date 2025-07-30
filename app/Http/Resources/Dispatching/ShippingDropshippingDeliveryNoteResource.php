@@ -26,14 +26,14 @@ class ShippingDropshippingDeliveryNoteResource extends JsonResource
         $shop     = $deliveryNote->shop;
 
 
-        $fromCompany=$customer->company_name;
-        if(!$fromCompany){
-            $fromCompany=$customer->name;
+        $fromCompany = $customer->company_name;
+        if (!$fromCompany) {
+            $fromCompany = $customer->name;
         }
 
-        $fromContactName=$customer->contact_name;
-        if(!$fromContactName){
-            $fromContactName=$customer->name;
+        $fromContactName = $customer->contact_name;
+        if (!$fromContactName) {
+            $fromContactName = $customer->name;
         }
 
 
@@ -44,14 +44,14 @@ class ShippingDropshippingDeliveryNoteResource extends JsonResource
 
         $fromFirstName = explode(' ', $fromContactName)[0];
 
-        $fromPhone=$customer->phone;
-        if(!$fromPhone){
-            $fromPhone=$shop->phone;
+        $fromPhone = $customer->phone;
+        if (!$fromPhone) {
+            $fromPhone = $shop->phone;
         }
 
-        $fromEmail=$customer->email;
-        if(!$fromEmail){
-            $fromEmail=$shop->email;
+        $fromEmail = $customer->email;
+        if (!$fromEmail) {
+            $fromEmail = $shop->email;
         }
 
 

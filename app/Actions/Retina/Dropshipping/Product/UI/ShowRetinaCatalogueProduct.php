@@ -110,8 +110,8 @@ class ShowRetinaCatalogueProduct extends RetinaAction
 
 
                 RetinaProductTabsEnum::SHOWCASE->value => $this->tab == RetinaProductTabsEnum::SHOWCASE->value ?
-                    fn() => GetProductShowcase::run($product)
-                    : Inertia::lazy(fn() => GetProductShowcase::run($product)),
+                    fn () => GetProductShowcase::run($product)
+                    : Inertia::lazy(fn () => GetProductShowcase::run($product)),
 
             ]
         );

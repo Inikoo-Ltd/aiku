@@ -11,7 +11,6 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithPlatformStatusCheck;
-use App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\RetinaCustomerSalesChannelResource;
@@ -213,7 +212,7 @@ class IndexRetinaPortfolios extends RetinaAction
         $actions = [];
 
         if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
-            $countProductsNotSync = $this->customerSalesChannel->portfolios()->where('portfolios.status',true)->where('platform_status', false)->count();
+            $countProductsNotSync = $this->customerSalesChannel->portfolios()->where('portfolios.status', true)->where('platform_status', false)->count();
         } elseif ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
             $countProductsNotSync = 0;
         } else {

@@ -8,11 +8,6 @@
 
 namespace App\Http\Resources\Dispatching;
 
-use App\Enums\Dispatching\Picking\PickingTypeEnum;
-use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
-use App\Http\Resources\Inventory\LocationOrgStocksResource;
-use App\Models\Dispatching\DeliveryNoteItem;
-use App\Models\Inventory\OrgStock;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -37,8 +32,11 @@ class DeliveryNoteItemsResource extends JsonResource
         $requiredFactionalData = riseDivisor(
             divideWithRemainder(
                 findSmallestFactors(
-                    $this->quantity_required)),
-            $this->packed_in);
+                    $this->quantity_required
+                )
+            ),
+            $this->packed_in
+        );
 
 
 
