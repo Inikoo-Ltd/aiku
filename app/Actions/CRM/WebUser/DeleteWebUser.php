@@ -24,7 +24,7 @@ use OwenIt\Auditing\Events\AuditCustom;
 
 class DeleteWebUser extends OrgAction
 {
-    use WithCRMEditAuthorisation;
+    // use WithCRMEditAuthorisation;
 
     protected WebUser $webUser;
 
@@ -45,6 +45,17 @@ class DeleteWebUser extends OrgAction
         } else {
             $webUser->delete();
         }
+
+        $webUser->auditEvent     = 'delete';
+        $webUser->isCustomEvent  = true;
+        $webUser->auditCustomOld = [
+            'username' => $webUser->username,
+            'contact_name' => $webUser->contact_name,
+            'email' => $webUser->email,
+        ];
+        $webUser->auditCustomNew = [
+            'web_user' => __('web user deleted')
+        ];
 
         Event::dispatch(new AuditCustom($webUser));
         GroupHydrateWebUsers::dispatch($webUser->group);
