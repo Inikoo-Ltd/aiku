@@ -13,9 +13,6 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Collection\CollectionProductStatusEnum;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Models\Catalogue\Collection as CatalogueCollection;
-use App\Models\Catalogue\Product;
-use App\Models\Catalogue\ProductCategory;
-use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 
@@ -27,7 +24,7 @@ class RepairCollectionStates
     public function handle(CatalogueCollection $collection): void
     {
         $data = [];
-        if($collection->state == CollectionStateEnum::DISCONTINUING) {
+        if ($collection->state == CollectionStateEnum::DISCONTINUING) {
             $data = [
                 'state' => CollectionStateEnum::ACTIVE,
                 'product_status' => CollectionProductStatusEnum::DISCONTINUING
@@ -47,20 +44,20 @@ class RepairCollectionStates
 
     public function asCommand(Command $command): void
     {
-            $count = CatalogueCollection::whereIn('state', ['discontinued', 'discontinuing'])->count();
+        $count = CatalogueCollection::whereIn('state', ['discontinued', 'discontinuing'])->count();
 
-            $bar = $command->getOutput()->createProgressBar($count);
-            $bar->setFormat('debug');
-            $bar->start();
+        $bar = $command->getOutput()->createProgressBar($count);
+        $bar->setFormat('debug');
+        $bar->start();
 
-            CatalogueCollection::orderBy('id')->whereIn('state', ['discontinued', 'discontinuing'])
-                ->chunk(100, function (Collection $models) use ($bar) {
-                    foreach ($models as $model) {
-                        $this->handle($model);
-                        $bar->advance();
-                    }
-                });
-        }
-    
+        CatalogueCollection::orderBy('id')->whereIn('state', ['discontinued', 'discontinuing'])
+            ->chunk(100, function (Collection $models) use ($bar) {
+                foreach ($models as $model) {
+                    $this->handle($model);
+                    $bar->advance();
+                }
+            });
+    }
+
 
 }

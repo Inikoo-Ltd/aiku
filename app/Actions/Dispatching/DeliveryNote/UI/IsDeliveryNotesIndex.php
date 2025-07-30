@@ -107,7 +107,7 @@ trait IsDeliveryNotesIndex
                   ->from('picking_session_has_delivery_notes')
                   ->whereColumn('picking_session_has_delivery_notes.delivery_note_id', 'delivery_notes.id');
         };
-        
+
         // Subquery to concatenate picking session IDs for each delivery note
         // Using STRING_AGG PostgreSQL function to concatenate values with comma separator
         // COALESCE is used to handle NULL values, returning an empty string if no picking sessions exist

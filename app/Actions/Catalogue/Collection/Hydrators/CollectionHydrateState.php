@@ -54,8 +54,8 @@ class CollectionHydrateState implements ShouldBeUnique
         }
 
         if ($stats->number_products_state_discontinued == 0 && $stats->number_families_state_discontinued == 0 && $stats->number_families_state_inactive == 0) {
-             return [
-                'state' => CollectionStateEnum::IN_PROCESS
+            return [
+               'state' => CollectionStateEnum::IN_PROCESS
             ];
         }
 

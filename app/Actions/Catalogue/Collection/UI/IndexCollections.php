@@ -18,7 +18,6 @@ use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
-use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Catalogue\CollectionsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Collection;
@@ -68,12 +67,12 @@ class IndexCollections extends OrgAction
                 $join->on('collections.id', '=', 'webpages.model_id')
                     ->where('webpages.model_type', '=', 'Collection');
             });
-        
-        if($this->bucket == 'active') {
+
+        if ($this->bucket == 'active') {
             $queryBuilder->where('collections.state', CollectionStateEnum::ACTIVE);
         } elseif ($this->bucket == 'inactive') {
             $queryBuilder->where('collections.state', CollectionStateEnum::INACTIVE);
-        } 
+        }
 
         $queryBuilder
             ->leftJoin('organisations', 'collections.organisation_id', '=', 'organisations.id')

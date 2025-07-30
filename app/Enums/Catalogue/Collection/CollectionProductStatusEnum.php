@@ -21,7 +21,7 @@ enum CollectionProductStatusEnum: string
     public static function labels(): array
     {
         return [
-            'normal'    => __('Normal'),
+            'normal'        => __('Normal'),
             'discontinuing' => __('Discontinuing'),
             'discontinued'  => __('Discontinued'),
         ];
@@ -30,7 +30,7 @@ enum CollectionProductStatusEnum: string
     public static function stateIcon(): array
     {
         return [
-            'normal' => [
+            'normal'        => [
                 'tooltip' => __('normal'),
                 'icon'    => 'fas fa-play',
                 'class'   => 'text-green-700'
@@ -40,7 +40,7 @@ enum CollectionProductStatusEnum: string
                 'icon'    => 'fal fa-sunset',
                 'class'   => 'text-amber-500'
             ],
-            'discontinued' => [
+            'discontinued'  => [
                 'tooltip' => __('discontinued'),
                 'icon'    => 'fal fa-skull',
                 'class'   => 'text-red-700'

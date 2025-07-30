@@ -71,10 +71,10 @@ class CallApiGlsSKShipping extends OrgAction
         $shippingNotes = Str::limit(preg_replace("/[^A-Za-z0-9 \-]/", '', strip_tags($shippingNotes), 60));
 
         $contactName = Str::limit(Arr::get($parentResource, 'to_contact_name'), 60);
-        if(!$contactName){
+        if (!$contactName) {
             $contactName = Str::limit(Arr::get($parentResource, 'to_company_name'), 60);
         }
-        if(!$contactName){
+        if (!$contactName) {
             $contactName = 'anonymous';
         }
 
@@ -163,16 +163,16 @@ class CallApiGlsSKShipping extends OrgAction
 
             $modelData['trackings']     = [];
             $modelData['tracking_urls'] = [];
-            $trackingDatum=$apiResponse->PrintLabelsInfoList->PrintLabelsInfo;
-            if(is_array($trackingDatum)){
+            $trackingDatum = $apiResponse->PrintLabelsInfoList->PrintLabelsInfo;
+            if (is_array($trackingDatum)) {
 
-                foreach($trackingDatum as $trackingData){
-                    $modelData['trackings'][]=$trackingData->ParcelNumber;
+                foreach ($trackingDatum as $trackingData) {
+                    $modelData['trackings'][] = $trackingData->ParcelNumber;
                 }
                 $modelData['tracking'] = implode(' ', $modelData['trackings']);
-            }else{
+            } else {
                 $tracking_number = $apiResponse->PrintLabelsInfoList->PrintLabelsInfo->ParcelNumber;
-                $modelData['trackings'][]=$tracking_number;
+                $modelData['trackings'][] = $tracking_number;
                 $modelData['tracking'] = $tracking_number;
             }
 

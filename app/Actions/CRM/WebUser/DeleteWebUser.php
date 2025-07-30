@@ -22,7 +22,6 @@ use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Support\Facades\Event;
 use OwenIt\Auditing\Events\AuditCustom;
 
-
 class DeleteWebUser extends OrgAction
 {
     use WithCRMEditAuthorisation;

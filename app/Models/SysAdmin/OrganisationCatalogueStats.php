@@ -163,6 +163,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_collections_state_inactive
  * @property int $number_collections_state_discontinuing
  * @property int $number_collections_state_discontinued
+ * @property int $number_collections_product_status_normal
+ * @property int $number_collections_product_status_discontinuing
+ * @property int $number_collections_product_status_discontinued
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @method static Builder<static>|OrganisationCatalogueStats newModelQuery()
  * @method static Builder<static>|OrganisationCatalogueStats newQuery()
