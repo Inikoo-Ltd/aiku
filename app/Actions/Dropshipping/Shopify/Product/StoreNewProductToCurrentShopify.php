@@ -21,24 +21,15 @@ class StoreNewProductToCurrentShopify extends OrgAction
     public function handle(Portfolio $portfolio, array $modelData): void
     {
 
-        $result1=StoreShopifyProduct::run($portfolio, $modelData);
+        $result1 = StoreShopifyProduct::run($portfolio, $modelData);
 
-        if($result1[0]){
-            $result2=StoreShopifyProductVariant::run($portfolio);
+        if ($result1[0]) {
+            $result2 = StoreShopifyProductVariant::run($portfolio);
 
-            if($result2[0]){
-
+            if ($result2[0]) {
                 $portfolio = CheckShopifyPortfolio::run($portfolio);
-
-            }else{
-                dd($result2[1]);
             }
-
-
         }
-
-
-
 
         UploadProductToShopifyProgressEvent::dispatch($portfolio->customerSalesChannel->user, $portfolio);
     }
