@@ -17,6 +17,7 @@ use App\Actions\Catalogue\WithSubDepartmentSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Catalogue\Collection\CollectionProductsStatusEnum;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Http\Resources\Catalogue\CollectionsResource;
 use App\InertiaTable\InertiaTable;
@@ -43,6 +44,25 @@ class IndexCollections extends OrgAction
     use WithCollectionsSubNavigation;
 
     private $bucket;
+
+    protected function getElementGroups(Shop $parent): array
+    {
+        return [
+            'state' => [
+                'label'    => __('State'),
+                'elements' => array_merge_recursive(
+                    CollectionProductsStatusEnum::labels(),
+                    CollectionProductsStatusEnum::count($parent)
+                ),
+
+                'engine' => function ($query, $elements) {
+                    $query->whereIn('collections.products_status', $elements);
+                }
+            ],
+
+
+        ];
+    }
 
     public function handle(Shop $shop, $prefix = null): LengthAwarePaginator
     {
@@ -75,6 +95,15 @@ class IndexCollections extends OrgAction
         } elseif ($this->bucket == 'in_process') {
             $queryBuilder->where('collections.state', CollectionStateEnum::IN_PROCESS);
         }
+
+        foreach ($this->getElementGroups($shop) as $key => $elementGroup) {
+                $queryBuilder->whereElementGroup(
+                    key: $key,
+                    allowedElements: array_keys($elementGroup['elements']),
+                    engine: $elementGroup['engine'],
+                    prefix: $prefix
+                );
+            }
 
         $queryBuilder
             ->leftJoin('organisations', 'collections.organisation_id', '=', 'organisations.id')
@@ -132,6 +161,14 @@ class IndexCollections extends OrgAction
         return function (InertiaTable $table) use ($shop, $prefix) {
             if ($prefix) {
                 $table->name($prefix)->pageName($prefix.'Page');
+            }
+
+            foreach ($this->getElementGroups($shop) as $key => $elementGroup) {
+                    $table->elementGroup(
+                        key: $key,
+                        label: $elementGroup['label'],
+                        elements: $elementGroup['elements']
+                    );
             }
 
             $table

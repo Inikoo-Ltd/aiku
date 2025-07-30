@@ -405,7 +405,25 @@ class ShowCatalogue extends OrgAction
                         ],
                         'icon'  => 'fal fa-album-collection',
                         "color" => "#4f46e5",
-                        'value' => $shop->stats->number_collections,
+                        'value' => $shop->stats->number_collections_state_active,
+                        'metas' => [
+                            [
+                                'tooltip' => __('Discontinuing collections'),
+                                'icon'    => [
+                                    'icon'  => 'fas fa-times-circle',
+                                    'class' => 'text-amber-500'
+                                ],
+                                'count'   => $shop->stats->number_collections_products_status_discontinuing,
+                            ],
+                            [
+                                'tooltip' => __('Discontinued collections'),
+                                'icon'    => [
+                                    'icon'  => 'fas fa-times-circle',
+                                    'class' => 'text-red-500'
+                                ],
+                                'count'   => $shop->stats->number_collections_products_status_discontinued,
+                            ],
+                        ]
                     ],
                     [
                         'label' => __('Stray Families'),
