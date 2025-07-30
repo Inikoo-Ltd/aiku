@@ -11,10 +11,8 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { faGlobe, faTrashAlt } from '@fal'
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
-import ShowcaseStats from '@/Components/ShowcaseStats.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { trans } from 'laravel-vue-i18n'
-import { RouteParams } from "@/types/route-params";
 import AddressLocation from '@/Components/Elements/Info/AddressLocation.vue'
 import Tag from '@/Components/Tag.vue'
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue";
@@ -110,22 +108,5 @@ console.log(props)
             </div>
         </div>
 
-        <!-- Company Data -->
-        <!-- <div class="justify-self-end bg-slate-50 px-6 py-4 space-y-4 w-80 border border-gray-200 rounded-md shadow">
-            <div v-for="print,index in dataWebUser" class="">
-                <div class="font-semibold text-sm">{{ print.label }}</div>
-                <template v-if="print.key !== 'location'">
-                    <div class="text-gray-500">
-                        {{ print.value }}
-                    </div>
-                </template>
-                <div v-else>
-                    <AddressLocation :data="print.value" />
-                </div>
-            </div>
-        </div> -->
-
-
     </div>
-        <!-- <pre>{{ data }}</pre> -->
 </template>
