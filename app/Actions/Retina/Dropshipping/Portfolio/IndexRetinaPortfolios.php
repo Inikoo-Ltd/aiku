@@ -11,7 +11,6 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithPlatformStatusCheck;
-use App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\RetinaCustomerSalesChannelResource;
@@ -80,7 +79,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
 
         return $query->defaultSort('-portfolios.id')
-            ->allowedFilters([$unUploadedFilter, $globalSearch, $this->getStateFilter()])
+            ->allowedFilters([$unUploadedFilter, $globalSearch, $this->getStateFilter(), $this->getPlatformStatusFilter()])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -92,6 +91,13 @@ class IndexRetinaPortfolios extends RetinaAction
                 $subQuery->where('item_type', 'Product')
                     ->whereIn('status', (array)$value);
             });
+        });
+    }
+
+    public function getPlatformStatusFilter(): AllowedFilter
+    {
+        return AllowedFilter::callback('platform_status', function ($query, $value) {
+            $query->where('platform_status', $value);
         });
     }
 
@@ -206,7 +212,7 @@ class IndexRetinaPortfolios extends RetinaAction
         $actions = [];
 
         if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
-            $countProductsNotSync = $this->customerSalesChannel->portfolios()->where('portfolios.status',true)->where('platform_status', false)->count();
+            $countProductsNotSync = $this->customerSalesChannel->portfolios()->where('portfolios.status', true)->where('platform_status', false)->count();
         } elseif ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
             $countProductsNotSync = 0;
         } else {

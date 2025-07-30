@@ -11,10 +11,10 @@ import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { computed, ref } from "vue"
+import { computed, ref, onMounted } from "vue"
 import { routeType } from "@/types/route"
 import { notify } from "@kyvg/vue3-notification"
-import { faTrashAlt, faTools } from "@fal"
+import { faTrashAlt, faTools, faTimes } from "@fal"
 import { faCheckCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Portfolio } from "@/types/portfolio"
@@ -25,7 +25,9 @@ import Modal from "@/Components/Utils/Modal.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import axios from "axios"
-import { debounce } from "lodash"
+import { debounce } from "lodash-es"
+import PureProgressBar from "@/Components/PureProgressBar.vue"
+import { Message } from "primevue"
 
 library.add(faTrashAlt, faTools, faCheckCircle)
 
@@ -33,7 +35,7 @@ interface ShopifyProduct {
     id: string // "gid://shopify/Product/12148498727252"
     title: string // "Aarhus Atomiser - Classic Pod - USB - Colour Change - Timer"
     handle: string // "aarhus-atomiser-classic-pod-usb-colour-change-timer"
-    vendor: string // "AW-Dropship"
+    vendor: string //
     images: {
         src: string
     }[] // []
@@ -43,6 +45,7 @@ const props = defineProps<{
     data: {}
     tab?: string
     customerSalesChannel:{}
+    progressToUploadToShopifyAll : {}
 }>()
 
 const locale = useLocaleStore()
@@ -209,10 +212,98 @@ const onDisableCheckbox = (item) => {
 }
 
 
+// Real-time Shopify Upload Listener
+const debReloadPage = debounce(() => {
+  router.reload({
+    except: ['auth', 'breadcrumbs', 'flash', 'layout', 'localeData', 'pageHead', 'ziggy']
+  })
+}, 1200)
+
+const selectShopifyEvent = (portfolio: { id: number }) => {
+  return {
+    event: `shopify.${props.customerSalesChannel?.platform_user_id}.upload-product.${portfolio.id}`,
+    action: '.shopify-upload-progress',
+  }
+}
+
+const errorBluk = ref([])
+const _table = ref(null)
+
+
+onMounted(() => {
+  props.data?.data?.forEach((portfolio) => {
+    const { event, action } = selectShopifyEvent(portfolio)
+
+    if (event && action) {
+      window.Echo.private(event).listen(action, (eventData) => {
+        console.log('Socket received for portfolio:', portfolio.id, eventData)
+        const progress = props.progressToUploadToShopifyAll.data
+
+        // Tangani error dari respons event
+        if (eventData.errors_response) {
+          console.log("failed to get data")
+          return
+        }
+
+        const pf = eventData.portfolio
+        errorBluk.value = [] // Kosongkan error sebelumnya
+        console.log('Data dari event:', pf)
+
+        const isSuccess =
+          pf.has_valid_platform_product_id &&
+          pf.platform_status &&
+          pf.exist_in_platform
+
+        if (isSuccess) {
+          progress.number_success += 1
+        } else {
+          progress.number_fails += 1
+          errorBluk.value.push(pf.item_code)
+        }
+
+        const totalFinished = progress.number_success + progress.number_fails
+        const totalToSync = selectedProducts.value.length || props.count_product_not_synced
+
+        if (totalFinished === totalToSync) {
+          props.progressToUploadToShopifyAll.done = true
+
+          // Reset total upload state setelah 5 detik
+          setTimeout(() => {
+            progress.number_success = 0
+            progress.number_fails = 0
+            selectedProducts.value = []
+            props.progressToUploadToShopifyAll.total = 0
+          }, 5000)
+
+          debReloadPage()
+        }
+      })
+    }
+  })
+})
+
+
+
 </script>
 
 <template>
     <!-- <pre>{{ data.data[0] }}</pre> -->
+
+      <Message v-if="errorBluk.length > 0 && progressToUploadToShopifyAll.total == 0" severity="error" class="relative m-4 pr-10">
+        <!-- Close Button -->
+        <button @click="errorBluk = []" class="absolute top-0 right-2 text-red-400 hover:text-red-600 transition"
+            aria-label="Close">
+            <FontAwesomeIcon :icon="faTimes" class="w-4 h-4" />
+        </button>
+
+        <!-- Message Content -->
+        <h3 class="font-semibold mb-2 text-red-700">Upload Error(s):</h3>
+        <ul class="list-disc list-inside text-sm text-red-800">
+            <li v-for="(item, index) in errorBluk" :key="index">
+                {{ `Error when uploading item with code: ${item}` }}
+            </li>
+        </ul>
+    </Message>
     <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="true"
         @onChecked="(item) => onChangeCheked(true, item)" 
         @onUnchecked="(item) => onChangeCheked(false, item)"
@@ -230,6 +321,33 @@ const onDisableCheckbox = (item) => {
      <template #disable-checkbox>
         <div></div>
     </template>
+
+
+       <template #checkbox="{ checked, data }">
+            <!-- Spinner ketika sedang upload -->
+            <FontAwesomeIcon v-if="progressToUploadToShopifyAll.total !== 0 && selectedProducts.includes(data.id)"
+                icon="fad fa-spinner-third" class="animate-spin text-blue-500 p-2 text-lg mx-auto block" fixed-width
+                aria-hidden="true" />
+
+            <!-- Checkbox aktif -->
+            <FontAwesomeIcon v-else-if="selectedProducts.includes(data.id)" @click="() => onChangeCheked(false, data)"
+                icon="fas fa-check-square" class="text-green-500 p-2 cursor-pointer text-lg mx-auto block" fixed-width
+                aria-hidden="true" />
+
+            <!-- Checkbox kosong -->
+            <FontAwesomeIcon v-else @click="() => onChangeCheked(true, data)" icon="fal fa-square"
+                class="text-gray-500 hover:text-gray-700 p-2 cursor-pointer text-lg mx-auto block" fixed-width
+                aria-hidden="true" />
+        </template>
+
+
+
+        <template #add-on-button-in-before>
+            <div class="border-r px-4">
+                <PureProgressBar v-if="progressToUploadToShopifyAll.total != 0"
+                    :progressBars="progressToUploadToShopifyAll" />
+            </div>
+        </template>
 
         <template #cell(item_code)="{ item: portfolio }">
             <Link :href="itemRoute(portfolio)" class="primaryLink">

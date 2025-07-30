@@ -55,7 +55,8 @@ class CallApiPacketaShipping extends OrgAction
      */
     public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper): array
     {
-        [$_, $apiPassword] = array_values($this->getAccessToken($shipper));
+        $creds = $this->getAccessToken($shipper);
+        $apiPassword = Arr::get($creds, 'api_password');
         $url = $this->getBaseUrl() . '/api/soap.wsdl';
 
         if ($parent instanceof PalletReturn) {
@@ -80,16 +81,7 @@ class CallApiPacketaShipping extends OrgAction
                 'modelData' => [],
             ];
         }
-        $value = $this->getValueByCountryCode($countryCode, $weight, !empty($parent->cash_on_delivery));
-        if (is_null($value)) {
-            return [
-                'status' => 'fail',
-                'errorData' => [
-                    'message' => "No value found for country code {$countryCode} and weight {$weight} kg.",
-                ],
-                'modelData' => [],
-            ];
-        }
+        $value = $this->getInsuranceValueByCountryCode($countryCode, $weight, !empty($parent->cash_on_delivery));
         $packetAttributes = [
             'number' => Str::limit($parent->reference, 30),
             'name' => Arr::get($parentResource, 'to_first_name'),
@@ -106,7 +98,7 @@ class CallApiPacketaShipping extends OrgAction
             'houseNumber' => Arr::get($parentResource, 'to_address.address_line_2'),
             'city' => Arr::get($parentResource, 'to_address.locality'),
             'zip' => Arr::get($parentResource, 'to_address.postal_code'),
-            'note' => $parent->shipping_notes ?? 'aiku_development',
+            'note' => $parent->shipping_notes,
         ];
 
         // Add COD (Cash on Delivery) if applicable
@@ -129,6 +121,8 @@ class CallApiPacketaShipping extends OrgAction
             $modelData['label']      = $this->getLabel($id, $shipper);
             $modelData['label_type'] = ShipmentLabelTypeEnum::PDF;
             $modelData['number_parcels'] = $parcels ? count($parcels) : 1;
+            $modelData['trackings'] = [$id];
+            $modelData['tracking_urls'] = [];
 
             $modelData['tracking'] = $apiResponse->id;
         } catch (SoapFault $e) {
@@ -191,7 +185,8 @@ class CallApiPacketaShipping extends OrgAction
         if (empty($labelID)) {
             return 'Label ID is empty';
         }
-        [$_, $apiPassword] = array_values($this->getAccessToken($shipper));
+        $creds = $this->getAccessToken($shipper);
+        $apiPassword = Arr::get($creds, 'api_password');
         $url = $this->getBaseUrl() . '/api/soap.wsdl';
         $format = 'A6 on A6';
         $offset = 0;
@@ -626,37 +621,9 @@ class CallApiPacketaShipping extends OrgAction
         return null;
     }
 
-    public function getValueByCountryCode(string $countryCode, float $weight, bool $isCod = false): ?float
+    public function getInsuranceValueByCountryCode(string $countryCode, float $weight, bool $isCod = false): ?float
     {
-        $countryCode = strtoupper($countryCode);
-
-        $roles = $this->roles();
-
-        if (!isset($roles[$countryCode])) {
-            return null;
-        }
-
-        $value = 0;
-        foreach ($roles[$countryCode] as $rule) {
-            foreach ($rule['ranges'] as $index => [$min, $max]) {
-                if ($weight >= $min && $weight < $max) {
-                    $value = $rule['prices'][$index];
-                    break 2;
-                }
-            }
-        }
-        if ($value > 0) {
-            $limits = $this->rolesLimitValueByTOS()[$countryCode] ?? null;
-            if ($limits) {
-                $max = $isCod ? ($limits['cod'] ?? null) : ($limits['max'] ?? null);
-                if ($max !== null && $value > $max) {
-                    return $max;
-                }
-            }
-            return $value;
-        }
-
-        return null;
+        return 100;
     }
 
     public string $commandSignature = 'xxx222x';

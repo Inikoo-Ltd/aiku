@@ -73,8 +73,8 @@ class CalculateOrderShipping
 
         list($shippingAmount, $shippingZone) = $this->getShippingAmountAndShippingZone($order, $shippingZoneSchema);
 
-        if(!is_numeric($shippingAmount)){
-            $shippingAmount=0;
+        if (!is_numeric($shippingAmount)) {
+            $shippingAmount = 0;
         }
 
         $shippingTransaction = $order->transactions()->where('model_type', 'ShippingZone')->first();

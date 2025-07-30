@@ -50,7 +50,7 @@ class CheckShopifyPortfolios
 
         foreach ($query->orderBy('status')->get() as $portfolioData) {
             $portfolio = Portfolio::find($portfolioData->id);
-            if($portfolio) {
+            if ($portfolio) {
                 $portfolio = CheckShopifyPortfolio::run($portfolio);
 
 

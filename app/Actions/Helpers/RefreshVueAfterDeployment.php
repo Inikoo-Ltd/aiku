@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Tue, 29 Jul 2025 10:06:49 Central European Summer Time, Trnava, Slovakia

@@ -46,11 +46,11 @@ class StoreTransaction extends OrgAction
         }
 
 
-        if(!is_numeric($net)){
-            $net=0;
+        if (!is_numeric($net)) {
+            $net = 0;
         }
-        if(!is_numeric($gross)){
-            $gross=0;
+        if (!is_numeric($gross)) {
+            $gross = 0;
         }
 
 
