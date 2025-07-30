@@ -26,7 +26,7 @@ class StoreShopifyProductVariant extends RetinaAction
     public int $jobBackoff = 5;
 
 
-    public function handle(Portfolio $portfolio): bool
+    public function handle(Portfolio $portfolio): array
     {
         $customerSalesChannel = $portfolio->customerSalesChannel;
 
@@ -38,7 +38,7 @@ class StoreShopifyProductVariant extends RetinaAction
         if (!$client) {
             Sentry::captureMessage("Failed to initialize Shopify GraphQL client");
 
-            return false;
+            return [false, 'Failed to initialize Shopify GraphQL client'];
         }
 
         /** @var Product $product */
@@ -51,11 +51,11 @@ class StoreShopifyProductVariant extends RetinaAction
         if (!$productID) {
             Sentry::captureMessage("No Shopify product ID found in portfolio");
 
-            return false;
+            return [false, 'No Shopify product ID found in portfolio'];
         }
 
         if (!CheckIfShopifyProductIDIsValid::run($productID)) {
-            return false;
+            return [false, 'Invalid Shopify product ID'];
         }
 
 
@@ -125,35 +125,37 @@ class StoreShopifyProductVariant extends RetinaAction
                 ]);
                 Sentry::captureMessage("Product variant update failed A: ".$errorMessage);
 
-                return false;
+                return [false, $errorMessage];
             }
 
             $body = $response['body']->toArray();
 
             // Check for user errors in the response
-            if (!empty($body['data']['productVariantsBulkUpdate']['userErrors'])) {
-                $errors       = $body['data']['productVariantsBulkUpdate']['userErrors'];
+            //    dd($body['data']['productVariantsBulkCreate']['userErrors']);
+            if (!empty($body['data']['productVariantsBulkCreate']['userErrors'])) {
+                $errors       = $body['data']['productVariantsBulkCreate']['userErrors'];
                 $errorMessage = 'User errors: '.json_encode($errors);
+
                 UpdatePortfolio::run($portfolio, [
                     'errors_response' => [$errorMessage]
                 ]);
                 Sentry::captureMessage("Product variant update failed B: ".$errorMessage);
 
-                return false;
+
+                return [false, $errorMessage];
             }
 
 
             SaveShopifyProductData::run($portfolio);
 
-
-            return true;
+            return [true, ''];
         } catch (Exception $e) {
             Sentry::captureException($e);
             UpdatePortfolio::run($portfolio, [
                 'errors_response' => [$e->getMessage()]
             ]);
 
-            return false;
+            return [false, $e->getMessage()];
         }
     }
 
@@ -173,9 +175,10 @@ class StoreShopifyProductVariant extends RetinaAction
             return;
         }
 
-        $result = $this->handle($portfolio);
-        if ($result) {
+        list($status, $result) = $this->handle($portfolio);
+        if ($status) {
             $command->info("\nProduct variant updated successfully");
+            print_r($result);
         }
     }
 }
