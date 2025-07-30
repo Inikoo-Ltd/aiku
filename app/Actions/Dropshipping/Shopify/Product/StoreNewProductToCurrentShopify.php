@@ -34,6 +34,8 @@ class StoreNewProductToCurrentShopify extends OrgAction
         UploadProductToShopifyProgressEvent::dispatch($portfolio->customerSalesChannel->user, $portfolio);
     }
 
+
+
     public function asController(Portfolio $portfolio, ActionRequest $request): void
     {
 
