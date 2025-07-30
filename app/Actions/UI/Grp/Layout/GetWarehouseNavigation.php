@@ -218,7 +218,7 @@ class GetWarehouseNavigation
                         $user->hasPermissionTo("dispatching.$warehouse->id.view") ?
                         [
                             'label' => __('picking sessions'),
-                            'icon'  => ['fal', 'fa-truck'],
+                            'icon'  => ['fab', 'fa-stack-overflow'],
                             'root'  => 'grp.org.warehouses.show.dispatching.picking_sessions.',
                             'route' => [
                                 "name"       => "grp.org.warehouses.show.dispatching.picking_sessions.index",

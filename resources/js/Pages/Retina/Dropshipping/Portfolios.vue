@@ -195,7 +195,7 @@ const onCloneManualPortfolio = async (sourceCustomerSalesChannelId: string | num
                 router.reload({only: ["pageHead", "products"]});
                 notify({
                     title: trans("Success!"),
-                    text: `Portfolios successfully cloned.`,
+                    text: `Portfolios been cloned in the background.`,
                     type: "success"
                 });
                 props.step.current = 1;
@@ -254,6 +254,13 @@ const progessbar = ref({
     total: selectedProducts.value.length,
 })
 
+const debReloadPage = () => {
+    router.reload({
+        except: ['auth', 'breadcrumbs', 'flash', 'layout', 'localeData', 'pageHead', 'ziggy']
+    })
+}
+
+
 
 const onSuccessEditCheckmark = (key) => {
   progessbar.value = {...progessbar.value , done : false, total : selectedProducts.value.length}
@@ -277,8 +284,8 @@ const submitPortfolioAction = async (action: any) => {
     const response = await axios({
       method,
       url,
-      data: method === "get" ? undefined : data, 
-      params: method === "get" ? data : undefined 
+      data: method === "get" ? undefined : data,
+      params: method === "get" ? data : undefined
     })
 
     onSuccessEditCheckmark(action.label)

@@ -52,7 +52,7 @@ class CallApiApcGbShipping extends OrgAction
     public function getHeaders(Shipper $shipper): array
     {
         return [
-            'remote-user'  => 'Basic '.$this->getAccessToken($shipper),
+            'remote-user'  => 'Basic ' . $this->getAccessToken($shipper),
             'Content-Type' => 'application/json',
         ];
     }
@@ -90,7 +90,7 @@ class CallApiApcGbShipping extends OrgAction
             $postalCode = Arr::get($parentResource, 'to_address.postal_code');
         } else {
             $postalCode = 'INT';
-            $address2   = trim($address2.' '.trim(Arr::get($shipTo, 'sorting_code').' '.Arr::get($shipTo, 'postal_code')));
+            $address2   = trim($address2 . ' ' . trim(Arr::get($shipTo, 'sorting_code') . ' ' . Arr::get($shipTo, 'postal_code')));
         }
 
         $items = [];
@@ -207,7 +207,7 @@ class CallApiApcGbShipping extends OrgAction
         ];
 
 
-        $response    = Http::withHeaders($this->getHeaders($shipper))->post($this->getBaseUrl().$url, $params);
+        $response    = Http::withHeaders($this->getHeaders($shipper))->retry(3, 100)->post($this->getBaseUrl() . $url, $params);
         $apiResponse = $response->json();
         $statusCode  = $response->status();
 
@@ -257,19 +257,19 @@ class CallApiApcGbShipping extends OrgAction
 
                         if (count($fieldParts) > 1) {
                             if (Str::contains($fieldParts[0], 'Delivery')) {
-                                $errorData['address'][] = Str::headline($fieldParts[1]).' '.$error['ErrorMessage'].',';
+                                $errorData['address'][] = Str::headline($fieldParts[1]) . ' ' . $error['ErrorMessage'] . ',';
                                 if (!isset($errorData['message'])) {
-                                    $errorData['message'][] = Str::headline($fieldParts[1]).' '.$error['ErrorMessage'].',';
+                                    $errorData['message'][] = Str::headline($fieldParts[1]) . ' ' . $error['ErrorMessage'] . ',';
                                 }
                                 continue;
                             }
-                            $errorData[strtolower($fieldParts[0])] .= Str::headline($fieldParts[1]).' '.$error['ErrorMessage'].',';
+                            $errorData[strtolower($fieldParts[0])] .= Str::headline($fieldParts[1]) . ' ' . $error['ErrorMessage'] . ',';
                             continue;
                         }
 
-                        $errorData['others'][] = Str::headline($error['FieldName']).' '.$error['ErrorMessage'].',';
+                        $errorData['others'][] = Str::headline($error['FieldName']) . ' ' . $error['ErrorMessage'] . ',';
                         if (!isset($errorData['message'])) {
-                            $errorData['message'][] = Str::headline($error['FieldName']).' '.$error['ErrorMessage'].',';
+                            $errorData['message'][] = Str::headline($error['FieldName']) . ' ' . $error['ErrorMessage'] . ',';
                         }
                     }
                 }
@@ -293,7 +293,18 @@ class CallApiApcGbShipping extends OrgAction
      */
     public function getLabel(string $labelID, Shipper $shipper): string
     {
-        $apiResponse = Http::withHeaders($this->getHeaders($shipper))->timeout(120)->retry(3, 5000)->get($this->getBaseUrl().'/api/3.0/Orders/'.$labelID.'.json')->json();
+        $apiResponse = Http::withHeaders($this->getHeaders($shipper))
+            ->timeout(120)
+            ->retry(3, 100, function ($exception, $request, $response) {
+                if ($exception) {
+                    return true; // retry on exception (timeout, network error, etc.)
+                }
+
+                $res = optional($response)->json();
+                return !Arr::get($res, 'Orders.Order.Label.Content'); // retry if label content is missing
+            })
+            ->get($this->getBaseUrl() . '/api/3.0/Orders/' . $labelID . '.json')
+            ->json();
 
         return Arr::get($apiResponse, 'Orders.Order.Label.Content', '');
     }

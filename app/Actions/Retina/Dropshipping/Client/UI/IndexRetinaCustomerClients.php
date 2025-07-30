@@ -38,8 +38,8 @@ class IndexRetinaCustomerClients extends RetinaAction
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereAnyWordStartWith('customer_clients.name', $value)
-                    ->orWhereStartWith('customer_clients.email', $value)
-                    ->orWhere('customer_clients.reference', '=', $value);
+                    ->orWhereAnyWordStartWith('customer_clients.email', $value)
+                    ->orWhereAnyWordStartWith('customer_clients.phone', $value);
             });
         });
 
@@ -63,11 +63,13 @@ class IndexRetinaCustomerClients extends RetinaAction
                 'customer_clients.reference',
                 'customer_clients.id',
                 'customer_clients.name',
+                'customer_clients.phone',
+                'customer_clients.email',
                 'customer_clients.ulid',
                 'customer_clients.status',
                 'customer_clients.created_at'
             ])
-            ->allowedSorts(['reference', 'name', 'created_at'])
+            ->allowedSorts(['reference', 'phone', 'email', 'name', 'created_at'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -77,13 +79,13 @@ class IndexRetinaCustomerClients extends RetinaAction
     {
         $this->customerSalesChannel = $customerSalesChannel;
 
-        if($customerSalesChannel->platform->type != PlatformTypeEnum::MANUAL) {
+        if ($customerSalesChannel->platform->type != PlatformTypeEnum::MANUAL) {
             abort(409);
         }
-        
+
         $this->initialisation($request)->withTab(RetinaCustomerClientsTabsEnum::values());
 
-        return $this->handle($customerSalesChannel);
+        return $this->handle($customerSalesChannel, prefix: RetinaCustomerClientsTabsEnum::ACTIVE->value);
     }
 
     public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
@@ -92,18 +94,19 @@ class IndexRetinaCustomerClients extends RetinaAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
             $table->withLabelRecord([__('client'), __('clients')]);
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'email', label: __('email'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'phone', label: __('phone'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'location', label: __('location'), canBeHidden: false, searchable: true)
                 ->column(key: 'created_at', label: __('since'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'action', label:'', canBeHidden: false, sortable: false, searchable: false);
+                ->column(key: 'action', label: '', canBeHidden: false, sortable: false, searchable: false);
         };
-
     }
 
     public function jsonResponse(LengthAwarePaginator $customerClients): AnonymousResourceCollection
@@ -164,7 +167,7 @@ class IndexRetinaCustomerClients extends RetinaAction
 
             $spreadsheetRoute = [
                 'event'           => 'action-progress',
-                'channel'         => 'grp.personal.'.$this->organisation->group->id,
+                'channel'         => 'grp.personal.' . $this->organisation->group->id,
                 'required_fields' => ["contact_name", "company_name", "email", "phone", "address_line_1", "address_line_2", "postal_code", "locality", "country_code"],
                 'route'           => [
                     'upload'   => [
@@ -199,7 +202,7 @@ class IndexRetinaCustomerClients extends RetinaAction
                         'title' => __('customer client')
                     ],
                     'afterTitle'    => [
-                        'label'     => '@'.$this->customerSalesChannel->name,
+                        'label'     => '@' . $this->customerSalesChannel->name,
                     ],
                     'actions'    => $actions
                 ],
@@ -212,16 +215,16 @@ class IndexRetinaCustomerClients extends RetinaAction
                 ],
 
                 RetinaCustomerClientsTabsEnum::ACTIVE->value => $this->tab == RetinaCustomerClientsTabsEnum::ACTIVE->value ?
-                    fn () => CustomerClientResource::collection($customerClients)
-                    : Inertia::lazy(fn () => CustomerClientResource::collection($customerClients)),
+                    fn() => CustomerClientResource::collection($customerClients)
+                    : Inertia::lazy(fn() => CustomerClientResource::collection($customerClients)),
 
                 RetinaCustomerClientsTabsEnum::INACTIVE->value => $this->tab == RetinaCustomerClientsTabsEnum::INACTIVE->value ?
-                    fn () => CustomerClientResource::collection($this->handle($this->customerSalesChannel, false))
-                    : Inertia::lazy(fn () => CustomerClientResource::collection($this->handle($this->customerSalesChannel, false))),
+                    fn() => CustomerClientResource::collection($this->handle($this->customerSalesChannel, false, RetinaCustomerClientsTabsEnum::INACTIVE->value))
+                    : Inertia::lazy(fn() => CustomerClientResource::collection($this->handle($this->customerSalesChannel, false, RetinaCustomerClientsTabsEnum::INACTIVE->value))),
 
             ]
         )->table($this->tableStructure(prefix: RetinaCustomerClientsTabsEnum::ACTIVE->value))
-        ->table($this->tableStructure(prefix: RetinaCustomerClientsTabsEnum::INACTIVE->value));
+            ->table($this->tableStructure(prefix: RetinaCustomerClientsTabsEnum::INACTIVE->value));
     }
 
     public function getBreadcrumbs(CustomerSalesChannel $customerSalesChannel): array

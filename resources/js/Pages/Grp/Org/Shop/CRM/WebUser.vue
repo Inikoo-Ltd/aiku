@@ -26,11 +26,11 @@ const props = defineProps<{
     data: {}
 }>()
 
-const dataCompany = [
+const dataWebUser = [
     {
         label: trans('Contact name'),
         key: 'contact',
-        value: props.data.customer?.contact_name
+        value: props.data.contact_name || '-'
     },
     {
         label: trans('Username'),
@@ -40,28 +40,28 @@ const dataCompany = [
     {
         label: trans('Email'),
         key: 'email',
-        value: props.data.customer?.email
+        value: props.data.email
     },
     {
         label: trans('Last login'),
         key: 'last_login',
-        value: '-'
+        value: props.data.last_login
     },
     {
         label: trans('Created at'),
         key: 'created_At',
-        value: useFormatTime(props.data.customer?.created_at)
+        value: useFormatTime(props.data.created_at)
     },
     {
         label: trans('Status'),
         key: 'status',
         value: props.data.status
     },
-    {
-        label: trans('Location'),
-        key: 'location',
-        value: props.data.customer?.location
-    },
+    // {
+    //     label: trans('Location'),
+    //     key: 'location',
+    //     value: props.data.customer?.location
+    // },
 ]
 console.log(props)
 </script>
@@ -76,7 +76,7 @@ console.log(props)
         <div>
             <div class="text-xl font-bold mb-2">{{ trans('Web user details') }}</div>
             <div class="h-fit w-80 relative grid grid-cols-1 divide-y divide-gray-300 border border-gray-300 rounded-md">
-                <div v-for="(print, index) in dataCompany" :key="index" class="py-2.5 px-4">
+                <div v-for="(print, index) in dataWebUser" :key="index" class="py-2.5 px-4">
                     <div class="text-gray-400 text-xs">
                         {{ print.label }}
                     </div>
@@ -91,7 +91,7 @@ console.log(props)
 
         <!-- Company Data -->
         <!-- <div class="justify-self-end bg-slate-50 px-6 py-4 space-y-4 w-80 border border-gray-200 rounded-md shadow">
-            <div v-for="print,index in dataCompany" class="">
+            <div v-for="print,index in dataWebUser" class="">
                 <div class="font-semibold text-sm">{{ print.label }}</div>
                 <template v-if="print.key !== 'location'">
                     <div class="text-gray-500">

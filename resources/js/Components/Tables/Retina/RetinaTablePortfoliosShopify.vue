@@ -371,7 +371,7 @@ onMounted(() => {
               _table.value.data[index] = { ..._table.value.data[index], is_checked : false, ...pf}
               console.log(porto,index, _table.value.data[index])
             }  */
-            
+
 
           const totalFinished = progress.number_success + progress.number_fails
             if (

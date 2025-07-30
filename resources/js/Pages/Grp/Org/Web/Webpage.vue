@@ -45,8 +45,8 @@ const props = defineProps<{
     redirects?: {},
     external_links?: {}
     analytics:any
-
     webpage_url?: string
+
 }>()
 
 
