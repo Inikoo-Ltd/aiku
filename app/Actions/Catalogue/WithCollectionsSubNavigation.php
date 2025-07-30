@@ -51,7 +51,7 @@ trait WithCollectionsSubNavigation
                         $this->shop->slug
                     ]
                 ],
-                'number' => $stats->number_collections_state_inactive,
+                'number' => $stats->number_collections_state_in_process,
             ],
             [
                 'label'  => __('All'),
