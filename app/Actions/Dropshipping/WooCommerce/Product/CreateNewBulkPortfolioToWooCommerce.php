@@ -9,7 +9,6 @@
 namespace App\Actions\Dropshipping\WooCommerce\Product;
 
 use App\Actions\RetinaAction;
-use App\Enums\Catalogue\Portfolio\PortfolioPlatformAvailabilityOptionEnum;
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
@@ -20,8 +19,6 @@ class CreateNewBulkPortfolioToWooCommerce extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
-
-    private string $mode = PortfolioPlatformAvailabilityOptionEnum::BRAVE->value;
 
     /**
      * @throws \Exception
@@ -50,23 +47,6 @@ class CreateNewBulkPortfolioToWooCommerce extends RetinaAction
 
     public function asController(WooCommerceUser $wooCommerceUser, ActionRequest $request)
     {
-        $this->mode = PortfolioPlatformAvailabilityOptionEnum::DUPLICATE->value;
-        $this->initialisation($request);
-
-        $this->handle($wooCommerceUser, $this->validatedData);
-    }
-
-    public function asBatchSync(WooCommerceUser $wooCommerceUser, ActionRequest $request)
-    {
-        $this->mode = PortfolioPlatformAvailabilityOptionEnum::USE_EXISTING->value;
-        $this->initialisation($request);
-
-        $this->handle($wooCommerceUser, $this->validatedData);
-    }
-
-    public function asBraveMode(WooCommerceUser $wooCommerceUser, ActionRequest $request)
-    {
-        $this->mode = PortfolioPlatformAvailabilityOptionEnum::BRAVE->value;
         $this->initialisation($request);
 
         $this->handle($wooCommerceUser, $this->validatedData);
