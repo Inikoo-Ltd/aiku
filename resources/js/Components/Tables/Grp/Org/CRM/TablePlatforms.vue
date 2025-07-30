@@ -32,9 +32,17 @@ function platformRoute(platform) {
         </template>
 
         <template #cell(number_customer_sales_channels)="{ item: platform }">
-            <span class="text-red-500">{{
-                    platform.number_customer_sales_channel_broken
-                }}</span>/{{ platform.number_customer_sales_channels }}
+            <span v-if="platform.number_customer_sales_channel_broken === 0 && platform.number_customer_sales_channels === 0" 
+                >
+                {{ platform.number_customer_sales_channels }}
+            </span>
+            <span v-else-if="platform.number_customer_sales_channel_broken === platform.number_customer_sales_channels" 
+                class="text-red-500">
+                {{ platform.number_customer_sales_channel_broken }}
+            </span>
+            <span v-else>
+                <span class="text-red-500">{{ platform.number_customer_sales_channel_broken }}</span>/{{ platform.number_customer_sales_channels }}
+            </span>
         </template>
     </Table>
 </template>

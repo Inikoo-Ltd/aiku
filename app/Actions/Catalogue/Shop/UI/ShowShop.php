@@ -23,6 +23,7 @@ use App\Http\Resources\Catalogue\ShopResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\Platform;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -84,7 +85,7 @@ class ShowShop extends OrgAction
             ->where('shop_id', $shop->id)
             ->get();
         $totalPlatforms   = $customerChannels->count();
-
+        
         $metas         = [];
         foreach (PlatformTypeEnum::cases() as $platformType) {
             $platformTypeName = $platformType->value;
@@ -92,7 +93,8 @@ class ShowShop extends OrgAction
             $platform = $customerChannels->filter(function ($channel) use ($platformTypeName) {
                 return $channel->platform->type->value === $platformTypeName;
             });
-
+            $platformData = Platform::where('type', $platformType->value)->first();
+            
             $metas[] = [
                 'tooltip'   => __($platformType->labels()[$platformTypeName]),
                 'icon'      => [
@@ -102,6 +104,14 @@ class ShowShop extends OrgAction
                 ],
                 'logo_icon' => $platformType->value,
                 'count'     => $platform->count(),
+                'route'     => $platformData ? [
+                    'name' => 'grp.org.shops.show.crm.platforms.show',
+                    'parameters' => [
+                        'organisation' => $this->organisation->slug,
+                        'shop'  => $this->shop->slug,
+                        'platform' => $platformData->slug
+                    ]
+                ] : null
             ];
         }
 

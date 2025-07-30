@@ -31,8 +31,8 @@ class PlatformHydrateCustomerSalesChannel implements ShouldBeUnique
             ->where('platform_id', $platform->id);
 
         $stats = [
-            'number_customer_sales_channel_broken' => $query->where('platform_status', false)->count(),
             'number_customer_sales_channels' => $query->count(),
+            'number_customer_sales_channel_broken' => $query->where('platform_status', false)->count(),
         ];
 
         $platform->stats()->update($stats);

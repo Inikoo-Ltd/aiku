@@ -174,9 +174,17 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
 
         <template #cell(number_portfolios)="{ item: customerSalesChannel }">
             <Link :href="(portfoliosRoute(customerSalesChannel) as string)" class="secondaryLink">
-                <span class="text-red-500">{{
-                        customerSalesChannel.number_portfolio_broken
-                    }}</span>/{{ customerSalesChannel.number_portfolios }}
+                <span v-if="customerSalesChannel.number_portfolio_broken === 0 && customerSalesChannel.number_portfolios === 0" 
+                    >
+                    {{ customerSalesChannel.number_portfolios }}
+                </span>
+                <span v-else-if="customerSalesChannel.number_portfolio_broken === customerSalesChannel.number_portfolios" 
+                    class="text-red-500">
+                    {{ customerSalesChannel.number_portfolio_broken }}
+                </span>
+                <span v-else>
+                    <span class="text-red-500">{{ customerSalesChannel.number_portfolio_broken }}</span>/{{ customerSalesChannel.number_portfolios }}
+                </span>
             </Link>
         </template>
 

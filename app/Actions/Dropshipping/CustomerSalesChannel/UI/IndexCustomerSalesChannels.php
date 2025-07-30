@@ -34,7 +34,7 @@ class IndexCustomerSalesChannels extends OrgAction
 
     private Customer|Platform $parent;
 
-    public function handle(Customer|Platform $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Customer|Platform $parent, Shop $shop = null, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -53,6 +53,9 @@ class IndexCustomerSalesChannels extends OrgAction
             $queryBuilder->where('customer_sales_channels.platform_id', $parent->id);
         }
 
+        if($shop) {
+             $queryBuilder->where('customer_sales_channels.shop_id', $shop->id);
+        }
 
         $queryBuilder->select([
             'customer_sales_channels.id',
