@@ -42,9 +42,7 @@ class GetFirstLoadProps
 
             'layout'      => GetLayout::run($user),
             'environment' => app()->environment(),
-
-
-
+            'help_portal_url'=>config('app.help_portal_url'),
 
         ];
     }

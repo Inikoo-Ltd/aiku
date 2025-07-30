@@ -28,7 +28,6 @@
         }
     </style>
     <script data-jsd-embedded data-key="efb5edc3-6921-4d19-8fa2-300ec340b897" data-base-url="https://jsd-widget.atlassian.com" src="https://jsd-widget.atlassian.com/assets/embed.js"></script>
-
 </head>
 <body class="font-sans antialiased h-full text-slate-700">
 @inertia

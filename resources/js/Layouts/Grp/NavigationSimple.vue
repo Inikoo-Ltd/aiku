@@ -5,7 +5,6 @@
   -->
 
 <script setup lang='ts'>
-// import { useLayoutStore } from '@/Stores/layout'
 import { Navigation } from '@/types/Navigation'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faRoute } from '@fal'
