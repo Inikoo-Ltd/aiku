@@ -410,7 +410,7 @@ class ShowCatalogue extends OrgAction
                             [
                                 'tooltip' => __('Discontinuing collections'),
                                 'icon'    => [
-                                    'icon'  => 'fas fa-times-circle',
+                                    'icon'  => 'fas fa-exclamation-triangle',
                                     'class' => 'text-amber-500'
                                 ],
                                 'count'   => $shop->stats->number_collections_products_status_discontinuing,
@@ -418,7 +418,7 @@ class ShowCatalogue extends OrgAction
                             [
                                 'tooltip' => __('Discontinued collections'),
                                 'icon'    => [
-                                    'icon'  => 'fas fa-times-circle',
+                                    'icon'  => 'fas fa-exclamation-triangle',
                                     'class' => 'text-red-500'
                                 ],
                                 'count'   => $shop->stats->number_collections_products_status_discontinued,
