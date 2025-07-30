@@ -15,7 +15,7 @@ import {aikuLocaleStructure} from "@/Composables/useLocaleStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
 import Image from "@/Components/Image.vue"
-import {debounce, get, set} from "lodash-es"
+import {debounce, set} from "lodash-es"
 import {
     faConciergeBell,
     faGarage,
@@ -44,8 +44,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import axios from "axios"
 import PureProgressBar from "@/Components/PureProgressBar.vue"
-import { ulid } from "ulid"
-import {Message, Popover} from "primevue"
+import {Message} from "primevue"
 
 library.add(faHandshake,faHandshakeSlash,faHandPointer,fadExclamationTriangle, faSyncAlt, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, faClone, faLink, faScrewdriver, faTools)
 
