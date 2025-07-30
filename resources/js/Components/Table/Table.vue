@@ -707,7 +707,8 @@ watch(selectRow, () => {
 defineExpose({
     data : props.resource.data,
     queryBuilderData : queryBuilderData,
-    selectRow : selectRow
+    selectRow : selectRow,
+    compResourceData : compResourceData.value
 })
 
 const isLoading = ref<string | boolean>(false)
@@ -831,6 +832,9 @@ const isLoading = ref<string | boolean>(false)
                                     :filters="queryBuilderProps.filters" :on-filter-change="changeFilterValue" />
                             </slot>
                         </div> -->
+
+                        <slot name="add-on-button-in-before">
+                        </slot>
 
                         <!-- Filter: date between -->
                         <div v-if="queryBuilderProps?.betweenDates?.length" class="w-fit flex gap-x-2">
@@ -975,6 +979,7 @@ const isLoading = ref<string | boolean>(false)
 
 
                                                 <template v-else>
+                                                      <slot :name="`checkbox`" :checked="{props : props.isChecked(item), item :item.is_checked, row : selectRow[item[checkboxKey]]}" :data="item">
                                                     <FontAwesomeIcon
                                                         v-show="props.isChecked(item) || item.is_checked || selectRow[item[checkboxKey]]"
                                                         @click="async () => (setLodash(selectRow, [item.id], false), setLodash(item, ['is_checked'], false), emits('onUnchecked', item))"
@@ -987,6 +992,8 @@ const isLoading = ref<string | boolean>(false)
                                                         icon='fal fa-square'
                                                         class='text-gray-500 hover:text-gray-700 p-2 cursor-pointer text-lg mx-auto block'
                                                         fixed-width aria-hidden='true' />
+                                                      </slot>
+                                                   
                                                 </template>
                                             </td>
 

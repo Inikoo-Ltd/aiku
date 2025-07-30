@@ -23,6 +23,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faBookmark } from "@fal"
 import { ulid } from "ulid"
 import {debounce} from "lodash-es"
+import axios from "axios"
 
 library.add(faBookmark)
 
@@ -71,19 +72,21 @@ const loadingAction= ref([])
 const selectedProducts = ref<number[]>([])
 const key = ref(ulid())
 
+const progessbar = ref({
+    data: {
+        number_success: 0,
+        number_fails: 0
+    },
+    done: true,
+    total: selectedProducts.value.length,
+})
+
+
 const onSuccessEditCheckmark = () => {
-  /*   router.reload({ only: ["data"] }) */
-    key.value = ulid()
-    notify({
-        title: trans("Success!"),
-        text: trans("Successfully added the portfolio"),
-        type: "success",
-    })
-    selectedProducts.value = []
+  progessbar.value = {...progessbar.value , done : false, total : selectedProducts.value.length}
 }
 
 const onFailedEditCheckmark = (error: any) => {
-    key.value = ulid()
     notify({
         title: "Something went wrong.",
         text: error?.products || "An error occurred.",
@@ -91,49 +94,33 @@ const onFailedEditCheckmark = (error: any) => {
     })
 }
 
-const submitPortfolioAction = (action: any) => {
+
+const submitPortfolioAction = async (action: any) => {
+  try {
     loadingAction.value.push(action.label)
-    router.visit(route(action.route.name, action.route?.parameters), {
-        method: action.route?.method || "get",
-        data: { portfolios: selectedProducts.value },
-        onSuccess: onSuccessEditCheckmark,
-        onError: (error) => onFailedEditCheckmark(error),
-        onFinish: () => {
-          loadingAction.value = []
-        }
-    })
-}
 
+    const method = action.route?.method?.toLowerCase() || 'get'
+    const url = route(action.route.name, action.route?.parameters)
 
-// Real-time Shopify Upload Listener
-const debReloadPage = debounce(() => {
-  router.reload({
-    except: ['auth', 'breadcrumbs', 'flash', 'layout', 'localeData', 'pageHead', 'ziggy']
-  })
-}, 1200)
+    const payload = { portfolios: selectedProducts.value }
 
-const selectShopifyEvent = (portfolio: { id: number }) => {
-  return {
-    event: `shopify.${props.customerSalesChannel?.platform_user_id}.upload-product.${portfolio.id}`,
-    action: '.shopify-upload-progress',
+    let response
+
+    if (method === 'get') {
+      response = await axios.get(url, { params: payload })
+    } else {
+      response = await axios[method](url, payload)
+    }
+
+    onSuccessEditCheckmark(response.data)
+  } catch (error: any) {
+    onFailedEditCheckmark(error)
+  } finally {
+    loadingAction.value = []
   }
 }
 
-onMounted(() => {
-  if (props.platform?.type === 'shopify') {
-    props.data?.data?.forEach(portfolio => {
-      const { event, action } = selectShopifyEvent(portfolio)
-      if (event && action) {
-        window.Echo.private(event).listen(action, (eventData) => {
-          console.log('socket in: ', portfolio.id, eventData)
-          if (!eventData?.errors_response) {
-            debReloadPage()
-          }
-        })
-      }
-    })
-  }
-})
+
 
 </script>
 
@@ -161,7 +148,7 @@ onMounted(() => {
     </PageHeading>
 
     <TablePortfoliosShopify v-if="platform.type === 'shopify'" :data="data" :customerSalesChannel
-        v-model:selectedProducts="selectedProducts" :key="key" />
+        v-model:selectedProducts="selectedProducts" :key="key" :progressToUploadToShopifyAll="progessbar"/>
     <TablePortfoliosManual v-else-if="platform.type === 'manual'" :data="data" :customerSalesChannel />
     <TablePortfolios v-else :data="data" :customerSalesChannel />
 

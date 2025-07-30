@@ -6,49 +6,41 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Dropshipping\Shopify\Product;
+namespace App\Actions\Retina\Shopify;
 
-use App\Actions\OrgAction;
+use App\Actions\Dropshipping\Shopify\Product\CreateNewBulkPortfoliosToShopify;
+use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
-class CreateNewBulkPortfoliosToShopify extends OrgAction
+class CreateRetinaNewAllPortfoliosToShopify extends RetinaAction
 {
     use WithActionUpdate;
 
     /**
      * @throws \Exception
      */
-    public function handle(CustomerSalesChannel $customerSalesChannel, array $attributes): void
+    public function handle(CustomerSalesChannel $customerSalesChannel): void
     {
-
         $portfolios = $customerSalesChannel
             ->portfolios()
             ->where('status', true)
-            ->whereIn('id', Arr::get($attributes, 'portfolios'))
-            ->get();
+            ->where('platform_status', false)
+            ->pluck('id');
 
-        foreach ($portfolios as $portfolio) {
-            StoreNewProductToCurrentShopify::dispatch($portfolio, []);
-        }
-    }
-
-    public function rules(): array
-    {
-        return [
-            'portfolios' => ['required', 'array'],
-            'portfolios.*' => ['required', 'integer'],
+        $payload = [
+            'portfolios' => $portfolios->toArray(),
         ];
-    }
 
+        CreateNewBulkPortfoliosToShopify::run($customerSalesChannel, $payload);
+    }
     /**
      * @throws \Exception
      */
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): void
     {
-        $this->initialisation($customerSalesChannel->organisation, $request);
+        $this->initialisation($request);
 
         $this->handle($customerSalesChannel, $this->validatedData);
     }

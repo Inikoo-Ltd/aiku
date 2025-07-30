@@ -29,7 +29,7 @@ class StoreShopifyProduct extends RetinaAction
     public int $jobBackoff = 5;
 
 
-    public function handle(Portfolio $portfolio, array $productData = []): ?array
+    public function handle(Portfolio $portfolio, array $productData = []): array
     {
         /** @var ShopifyUser $shopifyUser */
         $shopifyUser = $portfolio->customerSalesChannel->user;
@@ -39,7 +39,7 @@ class StoreShopifyProduct extends RetinaAction
         if (!$client) {
             Sentry::captureMessage("Failed to initialize Shopify GraphQL client");
 
-            return null;
+            return [false, 'Failed to initialize Shopify GraphQL client'];
         }
 
         /** @var Product $product */
@@ -127,7 +127,7 @@ class StoreShopifyProduct extends RetinaAction
                 ]);
                 Sentry::captureMessage("Product creation failed: ".$errorMessage);
 
-                return null;
+                return [false, $errorMessage];
             }
 
             $body = $response['body']->toArray();
@@ -141,7 +141,7 @@ class StoreShopifyProduct extends RetinaAction
                 ]);
                 Sentry::captureMessage("Product creation failed: ".$errorMessage);
 
-                return null;
+                return [false, $errorMessage];
             }
 
             // Get the created product
@@ -153,7 +153,7 @@ class StoreShopifyProduct extends RetinaAction
                 ]);
                 Sentry::captureMessage("Product creation failed: No product data in response");
 
-                return null;
+                return [false, 'No product data in response'];
             }
 
 
@@ -177,14 +177,14 @@ class StoreShopifyProduct extends RetinaAction
             SaveShopifyProductData::run($portfolio);
 
             // Format the response to match the expected structure
-            return $this->formatProductResponse($createdProduct);
+            return [true, $this->formatProductResponse($createdProduct)];
         } catch (Exception $e) {
             Sentry::captureException($e);
             UpdatePortfolio::run($portfolio, [
                 'errors_response' => [$e->getMessage()]
             ]);
 
-            return null;
+            return [false, $e->getMessage()];
         }
     }
 
@@ -250,9 +250,9 @@ class StoreShopifyProduct extends RetinaAction
 
         $command->info("Creating product in Shopify for portfolio #$portfolio->id...");
 
-        $result = $this->handle($shopifyUser, $portfolio);
+        [$status, $result] = $this->handle($shopifyUser, $portfolio);
 
-        if (!$result) {
+        if (!$status) {
             $command->error("Failed to create product in Shopify");
             $command->error("Errors:");
             $command->error(implode("\n", $portfolio->errors_response ?? []));
