@@ -98,7 +98,7 @@ class CallApiPacketaShipping extends OrgAction
             'houseNumber' => Arr::get($parentResource, 'to_address.address_line_2'),
             'city' => Arr::get($parentResource, 'to_address.locality'),
             'zip' => Arr::get($parentResource, 'to_address.postal_code'),
-            'note' => $parent->shipping_notes ?? 'aiku_development',
+            'note' => $parent->shipping_notes,
         ];
 
         // Add COD (Cash on Delivery) if applicable
