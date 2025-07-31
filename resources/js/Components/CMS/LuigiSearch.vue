@@ -14,7 +14,18 @@ library.add(faSearch)
 // &language=en
 // &currency_symbol=£
 
+const props = defineProps<{
+    id: string
+}>()
+
 const inputValue = ref('')
+
+onBeforeMount(() => {
+    // Read query param 'q' from URL if present
+    const params = new URLSearchParams(window.location.search)
+    const q = params.get('q')
+    if (q) inputValue.value = q
+})
 
 
 const layout = inject('layout', {})
@@ -98,17 +109,8 @@ const LBInitAutocompleteNew = async () => {
                 },
             ],
             ShowAllTitle: 'View all results', // Show All Product: Button label
-            ShowAllCallback: () => {  // Called when 'Show All Product' clicked
-                if (inputValue.value) {
-                    // console.log('query:', stringQuery)
-                    window.location.href = `/search?q=${encodeURIComponent(inputValue.value)}`;
-                } else {
-                    notify({
-                        title: trans("Something went wrong"),
-                        text: trans("The query must be filled"),
-                        type: "error",
-                    })
-                }
+            ShowAllCallback: (q) => {  // Called when 'Show All Product' clicked
+                visitSearchPage()
             },
             ShowBuyTitle: 'Detail', // Top Product: Button label
             Actions: [  // Action for Top Product 'Add To Basket'
@@ -132,10 +134,10 @@ const LBInitAutocompleteNew = async () => {
                 }
             ]
         },
-        "#inputLuigi"
+        `#${props.id || 'inputLuigi'}`
     )
 
-    console.log("Init autocomplete")
+    console.log("Init autocomplete", props.id)
 }
 
 
@@ -170,24 +172,32 @@ onMounted(() => {
 })
 
 const visitSearchPage = () => {
+    console.log('visit', inputValue.value)
     if (inputValue.value) {
         router.get(`/search?q=${encodeURIComponent(inputValue.value)}`)
+    } else {
+        notify({
+            title: trans("Something went wrong"),
+            text: trans("The query must be filled"),
+            type: "error",
+        })
     }
 }
 </script>
 
 <template>
-    <div class="w-full relative ">
+    <div class="w-full relative group">
         <input
-            v-model="inputValue"
+            :value="inputValue"
+            @input="(q) => (inputValue = q?.target?.value, console.log('inputValue', inputValue))"
             xdisabled
             class="h-12 min-w-28 focus:border-transparent focus:ring-2 focus:ring-gray-700 w-full md:min-w-0 md:w-full rounded-full border border-[#d1d5db] disabled:bg-gray-200 disabled:cursor-not-allowed pl-10"
-            id="inputLuigi"
+            :id="id || 'inputLuigi'"
             xstyle="height: 35px"
             :placeholder="trans('Search')"
             @keydown.enter="() => visitSearchPage()"
         />
-        <FontAwesomeIcon icon="far fa-search" class="text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon icon="far fa-search" class="group-focus-within:text-gray-700 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" fixed-width aria-hidden="true" />
     </div>
 </template>
 
@@ -206,7 +216,7 @@ const visitSearchPage = () => {
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
-    padding-left: 0px !important;
+  /*  padding-left: 0px !important; */
     padding-bottom: 2px !important;
 }
 .luigi-ac-others {

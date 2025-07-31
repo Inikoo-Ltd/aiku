@@ -124,6 +124,8 @@ class EditWebpage extends OrgAction
                                     'label_no_capitalize' => true,
                                     'value'               => $webpage->description,
                                     'required'            => true,
+                                    "maxLength"     => 150,
+                                    "counter"       => true,
                                 ],
                                 'allow_fetch' => [
                                     'type'  => 'toggle',
