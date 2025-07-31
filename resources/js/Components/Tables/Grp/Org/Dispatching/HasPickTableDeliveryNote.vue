@@ -199,7 +199,7 @@ const onCheckedAll = ({ data, allChecked }) => {
         </template>
 
         <template #cell(effective_weight)="{ item: deliveryNote }">
-            {{ deliveryNote.effective_weight }} kg
+            {{ deliveryNote.effective_weight }} g
         </template>
 
         <template #cell(reference)="{ item: deliveryNote }">
