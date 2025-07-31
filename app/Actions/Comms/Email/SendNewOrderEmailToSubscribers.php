@@ -65,8 +65,17 @@ class SendNewOrderEmailToSubscribers extends OrgAction
                 $emailHtmlBody,
                 '',
                 additionalData: [
+                    'shop_name'     => $order->shop->name,
+                    'currency'      => $order->shop->currency->symbol,
                     'customer_name' => $customer->name,
                     'order_reference' => $order->reference,
+                    'order_total'   => $order->total_amount,
+                    'goods_amount'   => $order->goods_amount,
+                    'charges_amount'   => $order->charges_amount,
+                    'shipping_amount'   => $order->shipping_amount,
+                    'net_amount'   => $order->net_amount,
+                    'tax_amount'   => $order->tax_amount,
+                    'order_transactions' => $order->transactions()->where('model_type', 'Product')->get(),
                     'date' => $order->created_at->format('F jS, Y'),
                     'order_link' => route('grp.org.shops.show.crm.customers.show.orders.show', [
                         $order->organisation->slug,
