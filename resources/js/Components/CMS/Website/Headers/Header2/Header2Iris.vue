@@ -67,7 +67,7 @@ const layout = inject('layout', layoutStructure)
 
 				<!-- Search Bar -->
 				<div class="relative justify-self-center w-full max-w-80 flex items-center h-full">
-					<LuigiSearch v-if="layout.iris?.luigisbox_tracker_id"></LuigiSearch>
+					<LuigiSearch v-if="layout.iris?.luigisbox_tracker_id" id="luigi_header_2" />
                 </div>
 
 				<div class="xcol-span-2 relative w-full h-auto">
@@ -75,7 +75,8 @@ const layout = inject('layout', layoutStructure)
 				</div>
 			</div>
 		</div>
-		<MobileHeader :header-data="fieldValue" :menu-data="{}" :screenType="screenType" />
+
+		<!-- <MobileHeader :header-data="fieldValue" :menu-data="{}" :screenType="screenType" /> -->
 	</div>
 </template>
 
