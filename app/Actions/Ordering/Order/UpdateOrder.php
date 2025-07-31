@@ -9,6 +9,7 @@
 namespace App\Actions\Ordering\Order;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdateIntervals;
+use App\Actions\Dispatching\DeliveryNote\CopyOrderNotesToDeliveryNote;
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateOrders;
 use App\Actions\Ordering\Order\Search\OrderRecordSearch;
 use App\Actions\OrgAction;
@@ -56,6 +57,25 @@ class UpdateOrder extends OrgAction
                 GroupHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->group, $intervalsExceptHistorical, []);
                 OrganisationHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->organisation, $intervalsExceptHistorical, []);
                 ShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->shop, $intervalsExceptHistorical, []);
+            }
+            
+            $deliveryNote = $order->deliveryNotes->first();
+            if (Arr::has($changes, 'customer_notes')) {
+                $deliveryNote = CopyOrderNotesToDeliveryNote::make()->action($deliveryNote, [
+                        'customer_notes' => true,
+                ], true);
+            } elseif (Arr::has($changes, 'public_notes')) {
+                $deliveryNote = CopyOrderNotesToDeliveryNote::make()->action($deliveryNote, [
+                        'public_notes' => true,
+                ], true);
+            } elseif (Arr::has($changes, 'internal_notes')) {
+                $deliveryNote = CopyOrderNotesToDeliveryNote::make()->action($deliveryNote, [
+                        'internal_notes' => true,
+                ], true);
+            } elseif (Arr::has($changes, 'shipping_notes')) {
+                $deliveryNote = CopyOrderNotesToDeliveryNote::make()->action($deliveryNote, [
+                        'shipping_notes' => true,
+                ], true);
             }
 
 
