@@ -31,19 +31,30 @@ class GetLastOrders extends OrgAction
                           ->where('state', $state);
 
             // Apply ordering based on timeline rules
+            $dateKey = '';
             if ($state === OrderStateEnum::CREATING) {
                 $query->orderBy('created_at', 'desc');
+                $dateKey = 'created_at';
             } elseif ($state === OrderStateEnum::HANDLING_BLOCKED) {
                 $query->orderBy('updated_at', 'desc');
+                $dateKey = 'updated_at';
             } else {
                 $timestampColumn = $state->snake() . '_at';
                 $query->whereNotNull($timestampColumn)
                       ->orderBy($timestampColumn, 'desc');
+                $dateKey = $timestampColumn;
             }
 
             $stateOrders = $query->take(5)->get();
+
+
             
-            $orders[$state->value] = OrderResource::collection($stateOrders)->resolve();
+            $orders[$state->value] = [
+                'label' => $state->labels()[$state->value],
+                'icon' => $state->stateIcon()[$state->value],
+                'date_key'  => $dateKey,
+                'data' => OrderResource::collection($stateOrders)->resolve()
+            ];
         }
 
         return $orders;
