@@ -15,7 +15,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faChevronLeft } from "@far"
 import { faSignOutAlt, faSensor, faLifeRing } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { inject, ref } from "vue"
+import { capitalize, inject, ref } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 
@@ -89,11 +89,35 @@ const onLogoutAuth = () => {
 
         <div class="absolute bottom-20 w-full">
 
-            <div class="ml-1.5 w-full rounded-md" :class="[open ? 'bg-black/25' : '']">
-                <NavigationSimple :nav="helpData" />
-            </div>
 
-            <div class="flex justify-center">
+            <div class="flex flex-col justify-center">
+                <a
+                    v-if="layout.help_portal_url"
+                    :href="layout.help_portal_url"
+                    class="relative group hover:underline px-4 rounded-md py-2 w-full group flex items-center text-sm gap-x-2" xclass="[open ? 'bg-black/25' : '']"
+                    v-tooltip="{ content: capitalize(helpData.tooltip), delay: { show: layout.leftSidebar.show ? 500 : 100, hide: 100 } }"
+                    :style="{
+                        color: layout?.app?.theme[1],
+                    }"
+                    target="_blank"
+                >
+                    <FontAwesomeIcon aria-hidden="true" class="flex-shrink-0 h-4 w-4" fixed-width :icon="helpData.icon" />
+                    
+                    <Transition name="slide-to-left">
+                        <span v-if="layout.leftSidebar.show" class="py-0.5 capitalize leading-none whitespace-nowrap "
+                            :class="[layout.leftSidebar.show ? 'truncate block md:block' : 'block md:hidden']">
+                            {{ helpData.label }}
+                        </span>
+                        <span v-else class="capitalize leading-none whitespace-nowrap block md:hidden">
+                            {{ helpData.label }}
+                        </span>
+                    </Transition>
+
+                    <FontAwesomeIcon icon="fal fa-external-link-alt" class="opacity-50 group-hover:opacity-100 absolute right-4" fixed-width aria-hidden="true" :style="{
+                        color: layout?.app?.theme[1],
+                    }"/>
+                </a>
+
                 <Popover class="relative w-full " v-slot="{ open }">
                     <PopoverButton class="flex w-full focus:outline-none focus:ring-0 focus:border-none px-2">
                         <div class="w-full rounded-md" :class="[open ? 'bg-black/25' : '']">

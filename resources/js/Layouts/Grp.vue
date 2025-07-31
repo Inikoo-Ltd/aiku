@@ -39,7 +39,7 @@ import {
     faAtom,
     faFileInvoice,
     faPaperPlane,
-    faDraftingCompass,
+    faDraftingCompass, faExternalLinkAlt,
     faCheck,
     faTimes,
     faAsterisk,faPauseCircle, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble,
@@ -54,7 +54,7 @@ import { trans } from "laravel-vue-i18n";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import Modal from "@/Components/Utils/Modal.vue";
 
-library.add(faPoll, faSadTear, faPauseCircle, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faUsers, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faStore, faClock, faTransporter, faParking, faBoxCheck, faStackOverflow, faRulerTriangle, faRulerCombined, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faTimes, faCheck, faAsterisk);
+library.add(faPoll, faSadTear, faPauseCircle, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faUsers, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faStore, faClock, faTransporter, faParking, faBoxCheck, faStackOverflow, faRulerTriangle, faRulerCombined, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faExternalLinkAlt, faTimes, faCheck, faAsterisk);
 
 provide("layout", useLayoutStore());
 provide("locale", useLocaleStore());
@@ -112,23 +112,7 @@ const onCheckAppVersion = () => {
         }
     )
 
-    console.log('Websocket subscription:', xxx.subscription.subscribed)
-    
-
-    // setInterval(async () => {
-    //     try {
-    //         const response = await fetch('/verdonk.json', {
-    //             cache: 'no-store' // Hindari cache
-    //         });
-    //         const data = await response.json();
-
-    //         console.log('Current version:', data?.version == window?.appDeployed);
-
-    //     } catch (error) {
-    //         console.error('Gagal memeriksa versi aplikasi:', error);
-    //     }
-    // }, 2000); // Cek setiap 30 detik (atur sesuai kebutuhan)
-        
+    // console.log('Websocket subscription:', xxx.subscription.subscribed)
 }
 const onRefreshPage = () => {
     window.location.reload()
