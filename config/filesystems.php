@@ -121,6 +121,11 @@ return [
             'driver' => 'local',
             'root'   => storage_path('app'),
             'throw'  => false,
+        ],
+        'excel-exports' => [
+            'driver' => 'local',
+            'root'   => storage_path('app/excel-exports'),
+            'throw'  => false,
         ]
 
     ],

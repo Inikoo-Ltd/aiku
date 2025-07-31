@@ -22,6 +22,7 @@ import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
 import { faCheck } from "@far"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
+import { notify } from "@kyvg/vue3-notification"
 library.add( fadExclamationTriangle, faSyncAlt, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, faClone, faLink )
 
 interface PlatformData {
@@ -253,31 +254,10 @@ const onClickFilterOutOfStock = (query: string) => {
 		<!-- Column: Actions -->
 		<template #cell(actions)="{ item }">
 			<div class="mx-auto flex flex-wrap justify-center gap-2">
-				<!-- {{ item.platform_product_id }} -->
 				<ButtonWithLink
-					v-if="
-						!isPlatformManual
-						&& is_platform_connected
-						&& !item.platform_product_id
-						&& get(progressToUploadToShopify, [item.id], undefined) != 'success'
-					"
-					:routeTarget="item.platform_upload_portfolio"
-					label="Upload"
-					icon="fal fa-upload"
-					type="positive"
-					size="xs"
-					:bindToLink="{
-						preserveScroll: true,
-					}"
-					@success="() => set(progressToUploadToShopify, [item.id], 'loading')"
-					:disabled="get(progressToUploadToShopify, [item.id], null)"
-				/>
-
-				
-				<ButtonWithLink
-					v-tooltip="trans('Unselect product')"
+					v-tooltip="trans('Remove product from list')"
 					type="negative"
-					icon="fal fa-skull"
+					icon="fal fa-times"
 					:routeTarget="item.update_portfolio"
 					:body="{
 						'status': false,
