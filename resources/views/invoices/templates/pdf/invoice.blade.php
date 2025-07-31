@@ -182,12 +182,12 @@
                 </div>
             </div>
         </td>
-        {{--<td width="50%" style="vertical-align:bottom;border: 0mm solid #888888;text-align: right">
+        <td width="50%" style="vertical-align:bottom;border: 0mm solid #888888;text-align: right">
             <div style="text-align:right;">
                 <b>1 box</b>
             </div>
-            <div style="text-align: right">Weight: <b>2Kg</b></div>
-        </td>--}}
+            <div style="text-align: right">Weight: <b>{{ $deliveryNote?->weight }}grams</b></div>
+        </td>
     </tr>
 </table>
 <table width="100%" style="font-family: sans-serif;" cellpadding="10">
