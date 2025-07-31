@@ -98,6 +98,8 @@ trait WithSendBulkEmails
             'goods-amount' => Arr::get($additionalData, 'goods_amount'),
             'charges-amount' => Arr::get($additionalData, 'charges_amount'),
             'shipping-amount' => Arr::get($additionalData, 'shipping_amount'),
+            'payment-amount' => Arr::get($additionalData, 'payment_amount'),
+            'payment-type' => Arr::get($additionalData, 'payment_type'),
             'net-amount' => Arr::get($additionalData, 'net_amount'),
             'tax-amount' => Arr::get($additionalData, 'tax_amount'),
             'shop-name' => Arr::get($additionalData, 'shop_name'),
