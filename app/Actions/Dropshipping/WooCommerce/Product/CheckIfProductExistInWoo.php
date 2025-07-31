@@ -16,7 +16,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
 
-class CheckAvailabilityPortfolioWooCommerce extends RetinaAction
+class CheckIfProductExistInWoo extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
@@ -26,11 +26,9 @@ class CheckAvailabilityPortfolioWooCommerce extends RetinaAction
      */
     public function handle(WooCommerceUser $wooCommerceUser, Portfolio $portfolio): ?array
     {
-        $customerSalesChannel = $wooCommerceUser->customerSalesChannel;
-
         try {
             $searchFields = [
-                'sku' => $portfolio->item_code,
+                'sku' => $portfolio->sku,
                 'slug' => $portfolio->platform_handle,
                 'search' => $portfolio->item_name
             ];
@@ -48,11 +46,7 @@ class CheckAvailabilityPortfolioWooCommerce extends RetinaAction
                 }
             }
 
-            $customerSalesChannel->update([
-
-            ]);
-
-            return Arr::get($result, '0');
+            return $result;
         } catch (\Exception $e) {
             Sentry::captureMessage("Failed to upload product due to: " . $e->getMessage());
 
