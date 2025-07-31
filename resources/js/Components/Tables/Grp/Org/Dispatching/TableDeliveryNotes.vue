@@ -157,7 +157,7 @@ const onClickPick = () => {
         </template>
         
         <template #cell(effective_weight)="{ item: deliveryNote }">
-            {{ deliveryNote.effective_weight }} kg
+            {{ deliveryNote.effective_weight }} g
         </template>
         
         <template #cell(customer_name)="{ item: deliveryNote }">
