@@ -23,10 +23,8 @@ import { setIframeView } from "@/Composables/Workshop";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import Publish from "@/Components/Publish.vue";
 import ScreenView from "@/Components/ScreenView.vue";
-import WebpageSideEditor from "@/Components/Workshop/WebpageSideEditor.vue";
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
 import ConfirmDialog from 'primevue/confirmdialog';
-import ToggleSwitch from 'primevue/toggleswitch';
 import BlogWorkshop from "@/Components/CMS/Webpage/Blog/BlogWorkshop.vue";
 
 import { Root, Daum } from "@/types/webBlockTypes";
@@ -454,6 +452,7 @@ const compUsersEditThisPage = computed(() => {
 const openWebsite = () => {
   window.open(props.url, '_blank')
 }
+
 console.log('props', props)
 
 const dummyData = ref(null)
@@ -462,6 +461,7 @@ const dummyData = ref(null)
 <template>
 
   <Head :title="capitalize(title)" />
+
   <PageHeading :data="pageHead">
     <template #button-publish="{ action }">
       <Publish :isLoading="isLoadingPublish" :is_dirty="data.is_dirty" v-model="comment"
@@ -473,12 +473,13 @@ const dummyData = ref(null)
     </template>
 
     <template #other>
-      <div class="px-2 cursor-pointer" v-tooltip="trans('Go to website')" @click="openWebsite">
-        <FontAwesomeIcon :icon="faExternalLink" size="xl" aria-hidden="true" />
-      </div>
+      <button class="flex items-center gap-1 px-3 py-1 text-sm text-blue-600 hover:underline"
+        v-tooltip="trans('Go to website')" @click="openWebsite">
+        <FontAwesomeIcon :icon="faExternalLink" size="lg" />
+        <span>{{ trans('Open Site') }}</span>
+      </button>
     </template>
   </PageHeading>
-
 
   <ConfirmDialog group="alert-publish">
     <template #icon>
@@ -486,53 +487,43 @@ const dummyData = ref(null)
     </template>
   </ConfirmDialog>
 
-  <div class="flex">
-    <div v-if="!fullScreen" class="hidden lg:flex lg:flex-col w-[400px] bg-gray-200 border-2 p-3 space-y-3">
-      <h2 class="text-lg font-semibold text-gray-700 border-b border-gray-400 border">Blog Settings</h2>
+  <div class="flex h-[calc(100vh-5rem)] bg-gray-100">
+    <!-- Sidebar Settings -->
+    <aside v-if="!fullScreen" class="hidden lg:flex lg:flex-col w-[380px] bg-white border-r p-4 shadow-sm space-y-4">
+      <h2 class="text-lg font-bold text-gray-700 border-b pb-2">
+        {{ trans('Blog Settings') }}
+      </h2>
       <SideEditor v-model="dummyData" :panelOpen="openedChildSideEditor" :blueprint="Blueprint.blueprint"
-        :uploadImageRoute="null" @update:modelValue="() => console.log('sss')" />
-    </div>
+        :uploadImageRoute="null" @update:modelValue="() => console.log('updated')" />
+    </aside>
 
-    <!-- Preview Section -->
-    <div class="h-[calc(100vh-16vh)] w-full flex flex-col bg-gray-200 overflow-x-auto">
-      <div class="flex justify-between items-center px-2 py-1">
-        <div class="flex items-center gap-2 text-gray-500">
-          <ScreenView @screenView="(e) => { currentView = e }" v-model="currentView" />
-          <div v-tooltip="trans('Open preview in new tab')" @click="openFullScreenPreview"
-            class="cursor-pointer hover:text-amber-600">
-            <FontAwesomeIcon :icon="faEye" fixed-width />
-          </div>
-          <div v-tooltip="'Full screen'" @click="fullScreen = !fullScreen" class="cursor-pointer">
-            <FontAwesomeIcon :icon="!fullScreen ? faExpandWide : faCompressWide" fixed-width />
-          </div>
+    <!-- Main Preview Panel -->
+    <main class="flex-1 flex flex-col">
+      <!-- Top Toolbar -->
+      <div class="flex items-center justify-between bg-white border-b px-4 py-2 shadow-sm">
+        <div class="flex items-center gap-3 text-gray-600">
+          <ScreenView v-model="currentView" @screenView="(e) => (currentView = e)" />
+          <FontAwesomeIcon :icon="faEye" fixed-width class="cursor-pointer hover:text-blue-600"
+            v-tooltip="trans('Open preview in new tab')" @click="openFullScreenPreview" />
+          <FontAwesomeIcon :icon="!fullScreen ? faExpandWide : faCompressWide" fixed-width
+            class="cursor-pointer hover:text-blue-600" v-tooltip="'Full screen'" @click="fullScreen = !fullScreen" />
         </div>
 
         <div v-if="compUsersEditThisPage?.length > 1"
-          class="flex items-center gap-2 px-2 bg-yellow-300 text-yellow-700 rounded">
+          class="flex items-center gap-2 px-3 py-1 rounded bg-yellow-100 text-yellow-800 border border-yellow-300">
           <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width />
-          <span>
-            {{ compUsersEditThisPage.length }} {{ trans("users edit this page.") }}
-          </span>
+          <span>{{ compUsersEditThisPage.length }} {{ trans("users edit this page.") }}</span>
           <FontAwesomeIcon :icon="faExclamationTriangle" fixed-width />
-        </div>
-
-        <div class="flex items-center gap-2 text-sm text-gray-700">
-          <label v-if="props.webpage.allow_fetch" for="sync-toggle">Connected with aurora</label>
-          <label v-else for="sync-toggle">Disconnected from aurora</label>
-          <ToggleSwitch id="sync-toggle" v-model="props.webpage.allow_fetch"
-            @update:modelValue="(e) => SyncAurora(e)" />
         </div>
       </div>
 
-      <div class="relative border-2 h-full w-full bg-white overflow-auto">
-        <!-- <div v-if="isIframeLoading" class="absolute inset-0 flex items-center justify-center bg-white">
-          <LoadingIcon class="w-24 h-24 text-6xl" />
-        </div> -->
+      <div class="relative flex-1 overflow-auto bg-white border-t">
         <BlogWorkshop />
       </div>
-    </div>
+    </main>
   </div>
 </template>
+
 
 
 <style lang="scss" scoped>
@@ -540,24 +531,16 @@ const dummyData = ref(null)
   @apply border border-transparent border-dashed cursor-pointer;
 }
 
-
 :deep(.loading-overlay) {
-  position: block;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.8);
-  z-index: 1000;
+  position: absolute;
+  inset: 0;
+  @apply flex items-center justify-center bg-white bg-opacity-80 z-[999];
 }
 
 :deep(.spinner) {
   border: 4px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
   border-top: 4px solid #3498db;
+  border-radius: 50%;
   width: 40px;
   height: 40px;
   animation: spin 1s linear infinite;
