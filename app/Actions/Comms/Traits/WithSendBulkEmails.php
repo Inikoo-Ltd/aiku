@@ -26,7 +26,6 @@ trait WithSendBulkEmails
 
         $html = $this->processStyles($html);
 
-
         if (preg_match_all("/{{(.*?)}}/", $html, $matches)) {
             foreach ($matches[1] as $i => $placeholder) {
                 $placeholder = $this->replaceMergeTags($placeholder, $dispatchedEmail, $unsubscribeUrl, $passwordToken, $invoiceUrl, $additionalData);
@@ -41,7 +40,6 @@ trait WithSendBulkEmails
         }
 
         $html = preg_replace('/\R+/', '', $html);
-
 
         return SendSesEmail::run(
             subject: $subject,
@@ -88,12 +86,21 @@ trait WithSendBulkEmails
             'pallet-reference' => Arr::get($additionalData, 'pallet_reference'),
             'pallet-link' => Arr::get($additionalData, 'pallet_link'),
             'order' => Arr::get($additionalData, 'order'),
+            'order-transactions' => $this->generateOrderTransactionsHtml(Arr::get($additionalData, 'order_transactions')),
             'tracking' => Arr::get($additionalData, 'tracking'),
             'deletion-date',
             'delivered-date',
             'returned-date',
             'order-date' => Arr::get($additionalData, 'date'),
             'tracking-url' => Arr::get($additionalData, 'tracking_url'),
+            'currency' => Arr::get($additionalData, 'currency'),
+            'order-total' => Arr::get($additionalData, 'order_total'),
+            'goods-amount' => Arr::get($additionalData, 'goods_amount'),
+            'charges-amount' => Arr::get($additionalData, 'charges_amount'),
+            'shipping-amount' => Arr::get($additionalData, 'shipping_amount'),
+            'net-amount' => Arr::get($additionalData, 'net_amount'),
+            'tax-amount' => Arr::get($additionalData, 'tax_amount'),
+            'shop-name' => Arr::get($additionalData, 'shop_name'),
             default => $originalPlaceholder,
         };
     }
@@ -116,6 +123,39 @@ trait WithSendBulkEmails
         } else {
             return $recipient->company_name ?? $recipient->username;
         }
+    }
+
+    private function generateOrderTransactionsHtml($transactions): string
+    {
+        if (!$transactions) {
+            return '';
+        }
+        
+        if (is_string($transactions)) {
+            $transactions = json_decode($transactions, true);
+        }
+        
+        $html = '';
+        foreach ($transactions as $transaction) {
+            $historicAsset = $transaction->historicAsset;
+            
+            $html .= sprintf(
+                '<tr style="border-bottom: 1px solid #e9e9e9;">
+                    <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: left;">
+                        <strong>%s</strong><br/>
+                        <span style="color: #666;">%s</span>
+                    </td>
+                    <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: center;">%s</td>
+                    <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: right;">£%s</td>
+                </tr>',
+                $historicAsset->code ?? 'N/A',
+                $historicAsset->name ?? 'N/A',
+                $transaction->quantity_ordered ?? '0',
+                $transaction->net_amount ?? '0'
+            );
+        }
+
+        return $html;
     }
 
 
