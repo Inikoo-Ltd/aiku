@@ -180,14 +180,14 @@ class EditProduct extends OrgAction
                         'label' => __('code'),
                         'value' => $product->code
                     ],
-                    /* 'name' => [
+                    'name' => [
                         'type'  => 'input',
                         'label' => __('name'),
                         'value' => $product->name
-                    ], */
+                    ],
 
                     //translation input raul request 7/24/25
-                    'name' => [
+                  /*   'name' => [
                         'type'  => 'input_translation',
                         'label' => __('name'),
                         'value' => [
@@ -202,7 +202,7 @@ class EditProduct extends OrgAction
                                 'value' => '',
                             ]
                         ]
-                    ],
+                    ], */
                     'description_title' => [
                         'type'  => 'input',
                         'label' => __('description title'),
