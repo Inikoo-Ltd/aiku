@@ -176,21 +176,18 @@
                     <span class="address_label">{{ __('Phone') }}:</span> <span
                         class="address_value">{{ $invoice->customer['phone'] }}</span>
                 </div>
+                <div class=" {if !$customer->get('Customer Main Plain Telephone')}hide{/if}">
+                    <span class="address_label">{{ __('Tax Number') }}:</span> <span
+                        class="address_value">{{ $invoice->tax_number }}</span>
+                </div>
             </div>
         </td>
-        <!--        <td width="50%" style="vertical-align:bottom;border: 0mm solid #888888;text-align: right">
-
-                    <div style="text-align:right;">
-                        <b>1 box</b>
-                    </div>
-                    <div style="text-align: right">Weight: <b>2Kg</b></div>
-
-                    <div style="text-align: right">
-                        Courier: <b> <span
-                                id="formatted_consignment">XIWSKU</span></b>
-                    </div>
-
-                </td>-->
+        {{--<td width="50%" style="vertical-align:bottom;border: 0mm solid #888888;text-align: right">
+            <div style="text-align:right;">
+                <b>1 box</b>
+            </div>
+            <div style="text-align: right">Weight: <b>2Kg</b></div>
+        </td>--}}
     </tr>
 </table>
 <table width="100%" style="font-family: sans-serif;" cellpadding="10">
@@ -317,7 +314,7 @@
 
     <tr>
         <td style="border:none" colspan="4"></td>
-        <td class="totals">{{ __('TAX') }} <br> <small></small></td>
+        <td class="totals">{{ __('TAX') }} <br> <small>Valid tax number: {{ $invoice->tax_number }}</small></td>
         <td class="totals">{{ $invoice->currency->symbol . $invoice->tax_amount }}</td>
     </tr>
 
