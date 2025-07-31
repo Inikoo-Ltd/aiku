@@ -146,15 +146,15 @@ trait WithSendBulkEmails
         if (!$transactions) {
             return '';
         }
-        
+
         if (is_string($transactions)) {
             $transactions = json_decode($transactions, true);
         }
-        
+
         $html = '';
         foreach ($transactions as $transaction) {
             $historicAsset = $transaction->historicAsset;
-            
+
             $html .= sprintf(
                 '<tr style="border-bottom: 1px solid #e9e9e9;">
                     <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: left;">
@@ -177,18 +177,18 @@ trait WithSendBulkEmails
     public function generateOrderDetailsHtml(Order $order): string
     {
         $html = '';
-        
+
         // Product Line Items Section with padding wrapper
         $html .= '<div style="padding: 18px;">';
         $html .= '<table width="100%" cellpadding="8" cellspacing="0" style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0; border-collapse: collapse;">';
-        
+
 
         $html .= '<tr style="border-bottom: 1px solid #e9e9e9;">
             <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 12px 8px; text-align: left; font-weight: bold; color: #777;">Product</td>
             <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 12px 8px; text-align: center; font-weight: bold; color: #777;">Qty</td>
             <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 12px 8px; text-align: right; font-weight: bold; color: #777;">Amount</td>
         </tr>';
-        
+
 
         $productTransactions = $order->transactions()
             ->where('model_type', 'Product')
@@ -211,14 +211,14 @@ trait WithSendBulkEmails
                 number_format($transaction->net_amount, 2)
             );
         }
-        
+
         $html .= '</table>';
         $html .= '</div>'; // Close padding wrapper
-        
+
         // Totals Section with padding wrapper
         $html .= '<div style="padding: 0 22px 22px 22px;">';
         $html .= '<table width="100%" cellpadding="8" cellspacing="0" style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 20px 0 0 0;">';
-        
+
         $html .= sprintf(
             '<tr>
                 <td style="width: 70%%; padding: 8px;"></td>
@@ -228,7 +228,7 @@ trait WithSendBulkEmails
             $currency,
             number_format($order->goods_amount ?? 0, 2)
         );
-        
+
         $html .= sprintf(
             '<tr>
                 <td style="width: 70%%; padding: 8px;"></td>
@@ -238,7 +238,7 @@ trait WithSendBulkEmails
             $currency,
             number_format($order->charges_amount ?? 0, 2)
         );
-        
+
         $html .= sprintf(
             '<tr>
                 <td style="width: 70%%; padding: 8px;"></td>
@@ -248,7 +248,7 @@ trait WithSendBulkEmails
             $currency,
             number_format($order->shipping_amount ?? 0, 2)
         );
-        
+
         $html .= sprintf(
             '<tr>
                 <td style="width: 70%%; padding: 8px;"></td>
@@ -258,7 +258,7 @@ trait WithSendBulkEmails
             $currency,
             number_format($order->net_amount ?? 0, 2)
         );
-        
+
         $html .= sprintf(
             '<tr>
                 <td style="width: 70%%; padding: 8px;"></td>
@@ -268,7 +268,7 @@ trait WithSendBulkEmails
             $currency,
             number_format($order->tax_amount ?? 0, 2)
         );
-        
+
         $html .= sprintf(
             '<tr style="background-color: #f9f9f9;">
                 <td style="width: 70%%; padding: 12px 8px;"></td>
@@ -278,7 +278,7 @@ trait WithSendBulkEmails
             $currency,
             number_format($order->total_amount ?? 0, 2)
         );
-        
+
         $html .= sprintf(
             '<tr style="background-color: #f9f9f9;">
                 <td style="width: 70%%; padding: 12px 8px;"></td>
@@ -288,7 +288,7 @@ trait WithSendBulkEmails
             $currency,
             number_format($order->payment_amount ?? 0, 2)
         );
-        
+
         $html .= sprintf(
             '<tr style="background-color: #f9f9f9;">
                 <td style="width: 70%%; padding: 12px 8px;"></td>
@@ -298,10 +298,10 @@ trait WithSendBulkEmails
             $currency,
             number_format(($order->total_amount ?? 0) - ($order->payment_amount ?? 0), 2)
         );
-        
+
         $html .= '</table>';
         $html .= '</div>'; // Close padding wrapper
-        
+
         return $html;
     }
 
@@ -315,7 +315,7 @@ trait WithSendBulkEmails
         $shopType = $shop->type;
         $baseUrl  = '';
         $orderUrl = '';
-        
+
         if ($shopType == ShopTypeEnum::DROPSHIPPING) {
             $baseUrl = 'https://ds.test';
             if (app()->isProduction()) {
@@ -323,7 +323,7 @@ trait WithSendBulkEmails
             }
 
             $orderUrl = $baseUrl.'/app/dropshipping/channels/'.$order->customerSalesChannel->slug.'/orders/'.$order->slug;
-            
+
             return sprintf(
                 '<a href="%s" target="_blank" style="color: #3498DB; text-decoration: underline; font-weight: 500;">%s</a>',
                 $orderUrl,
@@ -348,19 +348,19 @@ trait WithSendBulkEmails
 
         $html = '';
         $currency = $order->shop->currency->symbol;
-        
+
         $html .= '<div style="margin-top: 30px;">
             <h3 style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 16px; font-weight: bold; color: #555; margin: 0 0 15px 0;">Payments</h3>
         </div>';
-        
+
         $html .= '<table width="100%" cellpadding="8" cellspacing="0" style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0; border-collapse: collapse;">';
-        
+
         $html .= '<tr style="border-bottom: 1px solid #e9e9e9;">
             <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: left; font-weight: bold; color: #777;">Reference</td>
             <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: center; font-weight: bold; color: #777;">Method</td>
             <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: right; font-weight: bold; color: #777;">Amount</td>
         </tr>';
-        
+
         foreach ($payments as $payment) {
             $html .= sprintf(
                 '<tr style="border-bottom: 1px solid #e9e9e9;">
@@ -378,7 +378,7 @@ trait WithSendBulkEmails
                 number_format($payment->amount ?? 0, 2)
             );
         }
-        
+
         $html .= '</table>';
 
         return $html;

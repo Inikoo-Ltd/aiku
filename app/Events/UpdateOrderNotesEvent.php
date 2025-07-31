@@ -8,10 +8,7 @@
 
 namespace App\Events;
 
-use App\Http\Resources\Helpers\UploadProgressResource;
 use App\Models\Dispatching\DeliveryNote;
-use App\Models\Helpers\Upload;
-use App\Models\SysAdmin\User;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;

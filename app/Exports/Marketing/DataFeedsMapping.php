@@ -13,11 +13,10 @@ use App\Models\Web\Webpage;
 
 trait DataFeedsMapping
 {
-
     public function map($row): array
     {
         /** @var \App\Models\Catalogue\Product $product */
-        $product=$row;
+        $product = $row;
 
 
 

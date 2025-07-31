@@ -48,8 +48,8 @@ class CopyOrderNotesToDeliveryNote extends OrgAction
         ]);
 
         $deliveryNote->refresh();
-        
-        if($fromOrder) {
+
+        if ($fromOrder) {
             UpdateOrderNotesEvent::dispatch($deliveryNote);
         }
 

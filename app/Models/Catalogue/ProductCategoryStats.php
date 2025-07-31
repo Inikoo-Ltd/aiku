@@ -88,9 +88,6 @@ use Illuminate\Database\Eloquent\Model;
  * @property float $public_images_size
  * @property float $average_image_size
  * @property float|null $max_image_size
- * @property int $number_collections_products_status_normal
- * @property int $number_collections_products_status_discontinuing
- * @property int $number_collections_products_status_discontinued
  * @method static Builder<static>|ProductCategoryStats newModelQuery()
  * @method static Builder<static>|ProductCategoryStats newQuery()
  * @method static Builder<static>|ProductCategoryStats query()
