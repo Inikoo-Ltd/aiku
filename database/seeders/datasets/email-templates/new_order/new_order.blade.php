@@ -118,7 +118,9 @@
                       valign="top">
                     <strong>Order Reference:</strong> <a href="[Order Link]" target="_blank" style="color: #3498DB; text-decoration: underline;">[Order Reference]</a><br/>
                     <strong>Customer:</strong> <a href="[Customer Link]" target="_blank" style="color: #3498DB; text-decoration: underline;">[Customer Name]</a><br/>
-                    <strong>Order Date:</strong> [Order Date]
+                    <strong>Order Date:</strong> [Order Date]<br/>
+                    <br>
+                    [Payment Type] [Currency][Payment Amount]
                   </td>
                 </tr>
               </table>
@@ -139,7 +141,7 @@
                               <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: center; font-weight: bold;">Qty</td>
                               <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: right; font-weight: bold;">Amount</td>
                           </tr>
-                          
+
                           [Order Transactions]
                       </table> 
 
