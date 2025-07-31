@@ -455,6 +455,10 @@ class IndexOrders extends OrgAction
                 OrdersTabsEnum::ORDERS->value => $this->tab == OrdersTabsEnum::ORDERS->value ?
                     fn () => OrdersResource::collection($orders)
                     : Inertia::lazy(fn () => OrdersResource::collection($orders)),
+
+                OrdersTabsEnum::LAST_ORDERS->value => $this->tab == OrdersTabsEnum::LAST_ORDERS->value ?
+                    fn () => GetLastOrders::run($shop)
+                    : Inertia::lazy(fn () => GetLastOrders::run($shop)),
             ]
         )->table($this->tableStructure($this->parent, OrdersTabsEnum::ORDERS->value, $this->bucket));
     }
