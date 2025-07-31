@@ -8,39 +8,46 @@
 
 import LeftSidebarNavigation from "@/Layouts/Grp/LeftSidebarNavigation.vue"
 import LeftSidebarBottomNav from "@/Layouts/Grp/LeftSidebarBottomNav.vue"
-import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
-import NavigationSimple from '@/Layouts/Grp/NavigationSimple.vue'
+import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue"
+import NavigationSimple from "@/Layouts/Grp/NavigationSimple.vue"
 import { useLogoutAuth } from "@/Composables/useAppMethod"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faChevronLeft } from "@far"
-import { faSignOutAlt,faSensor } from "@fal"
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { inject, ref } from "vue"
+import { faSignOutAlt, faSensor, faLifeRing } from "@fal"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { capitalize, inject, ref } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-library.add(faChevronLeft, faSignOutAlt,faSensor)
 
-const layout = inject('layout', layoutStructure)
+library.add(faChevronLeft, faSignOutAlt, faSensor, faLifeRing)
+
+const layout = inject("layout", layoutStructure)
 
 // Set the LeftSidebar value to local storage
 const handleToggleLeftBar = () => {
     if (typeof window !== "undefined") {
-        localStorage.setItem('leftSideBar', (!layout.leftSidebar.show).toString())
+        localStorage.setItem("leftSideBar", (!layout.leftSidebar.show).toString())
     }
     layout.leftSidebar.show = !layout.leftSidebar.show
 }
 
 const logoutData = {
-    label: 'Logout',
-    tooltip: 'Logout the app',
-    icon: 'fal fa-sign-out-alt',
+    label: "Logout",
+    tooltip: "Logout the app",
+    icon: "fal fa-sign-out-alt"
+}
+
+const helpData = {
+    label: "Help",
+    tooltip: "Open help portal",
+    icon: "fal fa-life-ring"
 }
 
 const isLoadingLogout = ref(false)
 const onLogoutAuth = () => {
     useLogoutAuth(layout.user, {
         onStart: () => isLoadingLogout.value = true,
-        onError: () => isLoadingLogout.value = false,
+        onError: () => isLoadingLogout.value = false
     })
 }
 
@@ -48,30 +55,30 @@ const onLogoutAuth = () => {
 
 <template>
     <div class="pb-32 lg:pb-40 fixed md:flex md:flex-col md:inset-y-0 h-full transition-all duration-300 ease-in-out"
-        :style="{
+         :style="{
             'background-color': layout.app.theme[0],
             'color': layout.app.theme[2]
         }"
-        :class="[
+         :class="[
             layout.leftSidebar.show ? 'w-8/12 md:w-48' : 'w-8/12 md:w-12',
             layout.app.environment === 'staging' ? 'mt-11 lg:mt-16' : 'mt-11 lg:mt-10'
         ]"
-        id="leftSidebar"
+         id="leftSidebar"
     >
         <!-- Toggle: collapse-expand LeftSideBar -->
         <div @click="handleToggleLeftBar"
-            class="hidden absolute z-10 right-0 top-2/4 -translate-y-full translate-x-1/2 w-5 aspect-square border border-gray-300 rounded-full md:flex md:justify-center md:items-center cursor-pointer"
-            :title="layout.leftSidebar.show ? 'Collapse the bar' : 'Expand the bar'"
-            :style="{
+             class="hidden absolute z-10 right-0 top-2/4 -translate-y-full translate-x-1/2 w-5 aspect-square border border-gray-300 rounded-full md:flex md:justify-center md:items-center cursor-pointer"
+             :title="layout.leftSidebar.show ? 'Collapse the bar' : 'Expand the bar'"
+             :style="{
                 'background-color':  `color-mix(in srgb, ${layout.app.theme[0]} 85%, black)`,
                 'color': layout.app.theme[1]
             }"
         >
             <div class="flex items-center justify-center transition-all duration-300 ease-in-out"
-                :class="{'rotate-180': !layout.leftSidebar.show}"
+                 :class="{'rotate-180': !layout.leftSidebar.show}"
             >
-                <FontAwesomeIcon icon='far fa-chevron-left' class='h-[10px] leading-none' aria-hidden='true'
-                    :class="layout.leftSidebar.show ? '-translate-x-[1px]' : ''"
+                <FontAwesomeIcon icon="far fa-chevron-left" class="h-[10px] leading-none" aria-hidden="true"
+                                 :class="layout.leftSidebar.show ? '-translate-x-[1px]' : ''"
                 />
             </div>
         </div>
@@ -80,9 +87,37 @@ const onLogoutAuth = () => {
             <LeftSidebarNavigation />
         </div>
 
-        <!-- Section: LogoutRetina -->
         <div class="absolute bottom-20 w-full">
-            <div class="flex justify-center">
+
+
+            <div class="flex flex-col justify-center">
+                <a
+                    v-if="layout.help_portal_url"
+                    :href="layout.help_portal_url"
+                    class="relative group hover:underline px-4 rounded-md py-2 w-full group flex items-center text-sm gap-x-2" xclass="[open ? 'bg-black/25' : '']"
+                    v-tooltip="{ content: capitalize(helpData.tooltip), delay: { show: layout.leftSidebar.show ? 500 : 100, hide: 100 } }"
+                    :style="{
+                        color: layout?.app?.theme[1],
+                    }"
+                    target="_blank"
+                >
+                    <FontAwesomeIcon aria-hidden="true" class="flex-shrink-0 h-4 w-4" fixed-width :icon="helpData.icon" />
+                    
+                    <Transition name="slide-to-left">
+                        <span v-if="layout.leftSidebar.show" class="py-0.5 capitalize leading-none whitespace-nowrap "
+                            :class="[layout.leftSidebar.show ? 'truncate block md:block' : 'block md:hidden']">
+                            {{ helpData.label }}
+                        </span>
+                        <span v-else class="capitalize leading-none whitespace-nowrap block md:hidden">
+                            {{ helpData.label }}
+                        </span>
+                    </Transition>
+
+                    <FontAwesomeIcon icon="fal fa-external-link-alt" class="opacity-50 group-hover:opacity-100 absolute right-4" fixed-width aria-hidden="true" :style="{
+                        color: layout?.app?.theme[1],
+                    }"/>
+                </a>
+
                 <Popover class="relative w-full " v-slot="{ open }">
                     <PopoverButton class="flex w-full focus:outline-none focus:ring-0 focus:border-none px-2">
                         <div class="w-full rounded-md" :class="[open ? 'bg-black/25' : '']">
@@ -90,7 +125,8 @@ const onLogoutAuth = () => {
                         </div>
                     </PopoverButton>
 
-                    <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95" >
+                    <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150 ease-in"
+                                leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
                         <PopoverPanel class="absolute -top-3 left-1/2 -translate-y-full bg-white rounded-md px-4 py-3 border border-gray-200 shadow">
                             <div class="min-w-32 flex flex-col justify-center gap-y-2">
                                 <div class="whitespace-nowrap text-gray-500 text-xs">Are you sure want to logout?</div>
@@ -113,11 +149,11 @@ const onLogoutAuth = () => {
 <style>
 /* Hide scrollbar for Chrome, Safari and Opera */
 .custom-hide-scrollbar::-webkit-scrollbar {
-  display: none;
+    display: none;
 }
 
 /* Hide scrollbar for IE, Edge and Firefox */
 .custom-hide-scrollbar {
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
 }</style>

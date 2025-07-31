@@ -28,6 +28,8 @@ class OrderResource extends JsonResource
             'public_notes'        => $order->public_notes,
             'customer_name'        => $order->customer->name ?? '',
             'customer_slug'        => $order->customer->slug ?? '',
+            'currency_code'      => $order->currency->code,
+            'net_amount'           => $order->net_amount,
             'customer_notes'        => $order->customer_notes,
             'shipping_notes'        => $order->shipping_notes,
             'payment_amount'      => $order->payment_amount,
