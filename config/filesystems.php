@@ -122,9 +122,9 @@ return [
             'root'   => storage_path('app'),
             'throw'  => false,
         ],
-        'excel-exports' => [
+        'data-feeds' => [
             'driver' => 'local',
-            'root'   => storage_path('app/excel-exports'),
+            'root'   => storage_path('app/data-feeds'),
             'throw'  => false,
         ]
 
