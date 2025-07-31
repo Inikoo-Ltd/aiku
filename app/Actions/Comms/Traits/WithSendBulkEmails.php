@@ -8,6 +8,7 @@
 
 namespace App\Actions\Comms\Traits;
 
+use App\Actions\Comms\EmailCopy\StoreEmailCopy;
 use App\Actions\Comms\Ses\SendSesEmail;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Comms\DispatchedEmail;
@@ -43,6 +44,11 @@ trait WithSendBulkEmails
         }
 
         $html = preg_replace('/\R+/', '', $html);
+
+        StoreEmailCopy::make()->action($dispatchedEmail, [
+            'subject' => $subject,
+            'body' => $html
+        ]);
 
         return SendSesEmail::run(
             subject: $subject,
