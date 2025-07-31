@@ -52,6 +52,7 @@ const updateIrisLayout = (isLoggedIn: boolean) => {
     currency: defaultCurrency,
     is_logged_in: isLoggedIn,
   }
+  router.reload()
 }
 
 const showWebpage = (activityItem) => {
