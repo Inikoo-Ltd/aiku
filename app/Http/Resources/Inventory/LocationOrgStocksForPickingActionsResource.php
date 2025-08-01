@@ -42,9 +42,9 @@ class LocationOrgStocksForPickingActionsResource extends JsonResource
             'location_id'     => $this->location_id,
             'location_code'   => $this->location_code,
             'location_slug'   => $this->location_slug,
-            'quantity'        => (int) $this->quantity,
+            'quantity'        => $this->quantity,
             'type'            => $this->type,
-            'quantity_picked' => (int) $quantityPicked,
+            'quantity_picked' => $quantityPicked,
             'picking_id'      => $pickingId,
         ];
     }

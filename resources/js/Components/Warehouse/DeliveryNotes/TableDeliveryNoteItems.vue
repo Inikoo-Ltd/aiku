@@ -291,7 +291,7 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
                                         v-tooltip="trans('Total stock in this location')"
                                         class="whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-gray-300 rounded px-1">
                                             <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width aria-hidden="true" />
-                                        {{ findLocation(itemValue.locations, proxyItem.hehe).quantity }}
+                                        {{ locale.number(findLocation(itemValue.locations, proxyItem.hehe).quantity) }}
                                     </span>
 
                                     <span
