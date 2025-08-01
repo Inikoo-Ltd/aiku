@@ -44,6 +44,7 @@ use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use Spatie\Translatable\HasTranslations;
 
 /**
  *
@@ -136,6 +137,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $available_quantity_updated_at
  * @property string|null $images_updated_at
  * @property string|null $unit_price price per unit
+ * @property array<array-key, mixed>|null $name_i8n
+ * @property array<array-key, mixed>|null $description_i8n
+ * @property array<array-key, mixed>|null $description_title_i8n
+ * @property array<array-key, mixed>|null $description_extra_i8n
  * @property-read \App\Models\Catalogue\Asset|null $asset
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, BackInStockReminder> $backInStockReminders
@@ -190,8 +195,12 @@ class Product extends Model implements Auditable, HasMedia
     use HasHistory;
     use HasFactory;
     use HasImage;
+    use HasTranslations;
 
     protected $guarded = [];
+
+    public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
+
 
     protected $casts = [
         'variant_ratio'          => 'decimal:3',
@@ -253,7 +262,7 @@ class Product extends Model implements Auditable, HasMedia
     {
         return SlugOptions::create()
             ->generateSlugsFrom(function () {
-                return $this->code . '-' . $this->shop->code;
+                return $this->code.'-'.$this->shop->code;
             })
             ->saveSlugsTo('slug')
             ->doNotGenerateSlugsOnUpdate()

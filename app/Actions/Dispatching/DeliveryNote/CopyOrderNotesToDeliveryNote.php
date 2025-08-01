@@ -10,6 +10,7 @@ namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Events\UpdateOrderNotesEvent;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
@@ -18,7 +19,7 @@ class CopyOrderNotesToDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
 
-    public function handle(DeliveryNote $deliveryNote, array $modelData)
+    public function handle(DeliveryNote $deliveryNote, array $modelData, bool $fromOrder = false)
     {
         $order = $deliveryNote->orders->first();
         $customerNotes = $deliveryNote->customer_notes;
@@ -47,6 +48,10 @@ class CopyOrderNotesToDeliveryNote extends OrgAction
         ]);
 
         $deliveryNote->refresh();
+
+        if ($fromOrder) {
+            UpdateOrderNotesEvent::dispatch($deliveryNote);
+        }
 
         return $deliveryNote;
     }
@@ -77,5 +82,12 @@ class CopyOrderNotesToDeliveryNote extends OrgAction
         $this->initialisationFromShop($deliveryNote->shop, $request);
 
         return $this->handle($deliveryNote, $this->validatedData);
+    }
+
+    public function action(DeliveryNote $deliveryNote, array $modelData, bool $fromOrder)
+    {
+        $this->initialisationFromShop($deliveryNote->shop, $modelData);
+
+        return $this->handle($deliveryNote, $this->validatedData, $fromOrder);
     }
 }

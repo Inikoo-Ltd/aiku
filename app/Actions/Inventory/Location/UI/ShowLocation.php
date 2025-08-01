@@ -110,6 +110,10 @@ class ShowLocation extends OrgAction
                     fn () => GetLocationShowcase::run($location)
                     : Inertia::lazy(fn () => GetLocationShowcase::run($location)),
 
+                LocationTabsEnum::ORG_STOCKS->value => $this->tab == LocationTabsEnum::ORG_STOCKS->value ?
+                    fn () => OrgStockResource::collection(IndexOrgStocksInLocation::run($location))
+                    : Inertia::lazy(fn () => OrgStockResource::collection(IndexOrgStocksInLocation::run($location))),
+
                 LocationTabsEnum::PALLETS->value => $this->tab == LocationTabsEnum::PALLETS->value ?
                     fn () => PalletsResource::collection(IndexPalletsInWarehouse::run($location))
                     : Inertia::lazy(fn () => PalletsResource::collection(IndexPalletsInWarehouse::run($location))),

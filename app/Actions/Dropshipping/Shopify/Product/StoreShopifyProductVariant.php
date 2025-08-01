@@ -97,9 +97,7 @@ class StoreShopifyProductVariant extends RetinaAction
             // Prepare variables for the mutation
             $variants = [
                 [
-                    // 'price'               => $product->rrp,
                     'barcode'             => $portfolio->barcode,
-                    // 'compareAtPrice'      => $product->rrp,
                     'inventoryItem'       => $inventoryItem,
                     'inventoryQuantities' => [
                         'availableQuantity' => $product->available_quantity ?? 0,
