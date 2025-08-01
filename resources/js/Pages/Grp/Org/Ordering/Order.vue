@@ -48,7 +48,7 @@ import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.v
 import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
 import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
 import { faExclamationTriangle, faExclamation } from "@fas"
-import { faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faTruck, faFilePdf, faPaperclip } from "@fal"
+import { faDollarSign, faIdCardAlt, faRepeat1Alt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faTruck, faFilePdf, faPaperclip } from "@fal"
 import { Currency } from "@/types/LayoutRules"
 import TableInvoices from "@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue"
 import ModalProductList from "@/Components/Utils/ModalProductList.vue"
@@ -60,8 +60,10 @@ import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.
 
 import Icon from "@/Components/Icon.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import ShipmentSection from "@/Components/Warehouse/DeliveryNotes/ShipmentSection.vue"
+import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
 
-library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird)
+library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faRepeat1Alt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird)
 
 interface UploadSection {
     title: {
@@ -475,6 +477,35 @@ const generateRouteDeliveryNote = (slug: string) => {
                 </template>
             </Popover>
         </template>
+
+        <template #button-replacement="{ action }">
+            <ModalConfirmation
+                :routeYes="action.route"
+                :title="trans('Create Replacement Order?')"
+                :description="trans('This will create a replacement for the current Delivery Note (do this when the user requests replacement of items)')"
+            >
+                <template #default="{ changeModel }">
+                    <Button
+                        @click="() => changeModel()"
+                        :label="trans('Replacement')"
+                        xsize="xs"
+                        icon="fal fa-repeat-1-alt"
+                        type="secondary"
+                        key="1"
+                        v-tooltip="trans('Create replacement if the user requests replacement of items')"
+                    />
+                </template>
+
+                <template #btn-yes="{ isLoadingdelete, clickYes}">
+                    <Button
+                        :loading="isLoadingdelete"
+                        @click="() => clickYes()"
+                        :label="trans('Yes, Create Replacement')"
+                    />
+                </template>
+            </ModalConfirmation>
+        </template>
+
         <template #other>
             <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
                     icon="upload" />
@@ -514,7 +545,7 @@ const generateRouteDeliveryNote = (slug: string) => {
 				<div class="font-semibold xmb-2 text-base">
 					{{ trans("Order") }}
 				</div>
-				
+
 				<div class="space-y-0.5 pl-1">
                     <!-- Field: Reference Number -->
                     <Link as="a" v-if="box_stats?.customer.reference"
@@ -525,7 +556,7 @@ const generateRouteDeliveryNote = (slug: string) => {
                         </div>
                         <dd class="text-sm text-gray-500">#{{ box_stats?.customer.reference }}</dd>
                     </Link>
-        
+
                     <!-- Field: Customer -->
                     <Link as="a" v-if="!box_stats?.customer.reference"
                         :href="box_stats?.customer?.route?.name ? route(box_stats?.customer.route.name, box_stats?.customer.route.parameters) : '#'"
@@ -535,7 +566,7 @@ const generateRouteDeliveryNote = (slug: string) => {
                         </div>
                         <dd class="text-sm text-gray-500">{{ box_stats?.customer.contact_name }}</dd>
                     </Link>
-        
+
                     <!-- Field: Client -->
                     <Link as="a" v-if="box_stats?.customer_client"
                         :href="box_stats?.customer_client?.route?.name ? route(box_stats?.customer_client.route.name, box_stats?.customer_client.route.parameters) : '#'"
@@ -545,7 +576,7 @@ const generateRouteDeliveryNote = (slug: string) => {
                         </div>
                         <dd class="text-sm text-gray-500">{{ box_stats?.customer_client.contact_name }}</dd>
                     </Link>
-        
+
                     <!-- Field: Contact name -->
                     <dl v-else-if="box_stats?.customer.contact_name"
                         class="pl-1 flex items-center w-fit flex-none gap-x-2">
@@ -554,7 +585,7 @@ const generateRouteDeliveryNote = (slug: string) => {
                         </dt>
                         <dd class="text-sm text-gray-500">{{ box_stats?.customer.contact_name }}</dd>
                     </dl>
-        
+
                     <!-- Field: Company name -->
                     <dl v-if="box_stats?.customer.company_name"
                         class="pl-1 flex items-center w-full flex-none gap-x-2">
@@ -563,7 +594,7 @@ const generateRouteDeliveryNote = (slug: string) => {
                         </dt>
                         <dd class="text-sm text-gray-500">{{ box_stats?.customer.company_name }}</dd>
                     </dl>
-        
+
                     <!-- Field: Email -->
                     <dl v-if="box_stats?.customer.email" class="pl-1 flex items-center w-full flex-none gap-x-2">
                         <dt v-tooltip="trans('Email')" class="flex-none">
@@ -572,7 +603,7 @@ const generateRouteDeliveryNote = (slug: string) => {
                         <a :href="`mailto:${box_stats?.customer.email}`" v-tooltip="'Click to send email'"
                             class="text-sm text-gray-500 hover:text-gray-700 truncate">{{ box_stats?.customer.email }}</a>
                     </dl>
-        
+
                     <!-- Field: Phone -->
                     <dl v-if="box_stats?.customer.phone" class="pl-1 flex items-center w-full flex-none gap-x-2">
                         <dt v-tooltip="trans('Phone')" class="flex-none">
@@ -581,7 +612,7 @@ const generateRouteDeliveryNote = (slug: string) => {
                         <a :href="`tel:${box_stats?.customer.phone}`" v-tooltip="'Click to make a phone call'"
                             class="text-sm text-gray-500 hover:text-gray-700">{{ box_stats?.customer.phone }}</a>
                     </dl>
-        
+
                     <!-- Field: Billing Address -->
                     <dl v-if="box_stats?.customer?.addresses?.billing?.formatted_address !== box_stats?.customer?.addresses?.delivery?.formatted_address"
                         class="pl-1 flex items w-full flex-none gap-x-2">
@@ -607,7 +638,7 @@ const generateRouteDeliveryNote = (slug: string) => {
                             </div>
                         </dd>
                     </dl>
-        
+
                     <!-- Field: Billing Address -->
                     <dl v-if="box_stats?.customer?.addresses?.delivery?.formatted_address === box_stats?.customer?.addresses?.billing?.formatted_address"
                         class="mt-2 pl-1 flex items w-full flex-none gap-x-2">
@@ -630,14 +661,14 @@ const generateRouteDeliveryNote = (slug: string) => {
         <BoxStatPallet class="py-4 px-3" icon="fal fa-user">
             <div class="text-xs md:text-sm">
 
-				
+
 				<div class="xspace-y-0.5 pl-1">
                     <!-- Field: Billing -->
                     <dl class="relative flex items-start w-full flex-none gap-x-1">
                         <dt class="flex-none pt-0.5 pl-1">
                             <FontAwesomeIcon icon="fal fa-dollar-sign" fixed-width aria-hidden="true" class="text-gray-500" />
                         </dt>
-        
+
                         <div>
                             <NeedToPay
                                 @click="onPayClick"
@@ -650,7 +681,7 @@ const generateRouteDeliveryNote = (slug: string) => {
                                 <template #default>
                                 </template>
                             </NeedToPay>
-        
+
                             <div v-if="last_payment" class="text-xs text-gray-500">
                                 {{ trans("Last payments:") }}
                                 <Link :href="route('grp.org.accounting.payments.show', {
@@ -661,7 +692,7 @@ const generateRouteDeliveryNote = (slug: string) => {
                             </div>
                         </div>
                     </dl>
-        
+
                     <!-- Field: weight -->
                     <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
                         <dt class="flex-none pl-1">
@@ -671,8 +702,8 @@ const generateRouteDeliveryNote = (slug: string) => {
                             {{ box_stats?.products.estimated_weight || 0 }} kilograms
                         </dd>
                     </dl>
-        
-        
+
+
                     <div v-if="box_stats?.invoice" class="mt-1 flex items-center w-full flex-none justify-between">
                         <Link
                             :href="route(box_stats?.invoice?.routes?.show?.name, box_stats?.invoice?.routes?.show.parameters)"
@@ -684,15 +715,15 @@ const generateRouteDeliveryNote = (slug: string) => {
                                 {{ box_stats?.invoice?.reference }}
                             </div>
                         </Link>
-        
+
                         <a v-if="box_stats?.invoice?.routes?.download?.name" :href="route(box_stats?.invoice?.routes?.download?.name, box_stats?.invoice?.routes?.download.parameters)"
                             as="a" target="_blank" class="flex items-center text-gray-400 hover:text-orange-600">
                             <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true" />
                         </a>
                     </div>
-        
 
-                    
+
+
                     <div v-if="box_stats?.delivery_notes?.length" class="mt-4 border rounded-lg p-4 pt-3 bg-white shadow-sm">
                         <!-- Section Title -->
                         <div class="flex items-center gap-2 border-b border-gray-200 pb-2 mb-3">
@@ -701,11 +732,11 @@ const generateRouteDeliveryNote = (slug: string) => {
                                 {{ trans('Delivery Notes') }}
                             </div>
                         </div>
-        
+
                         <!-- Delivery Note Items -->
                         <div v-for="(note, index) in box_stats?.delivery_notes" :key="index"
                             class="mb-3 pb-3 border-b border-dashed last:border-0 last:mb-0 last:pb-0">
-        
+
                             <div class="flex items-center gap-2 text-sm text-gray-700 mb-1">
                                 <span class="font-medium">Ref:</span>
                                 <Link :href="generateRouteDeliveryNote(note?.slug)" class="secondaryLink">{{ note?.reference }}</Link>
@@ -713,7 +744,7 @@ const generateRouteDeliveryNote = (slug: string) => {
                                     <Icon :data="note?.state" />
                                 </span>
                             </div>
-        
+
                             <!-- Shipments -->
                             <div v-if="note?.shipments?.length > 0" class="mt-1 text-xs text-gray-600">
                                 <p class="text-gray-700 font-medium mb-1">{{trans('Shipments')}}:</p>
@@ -722,7 +753,7 @@ const generateRouteDeliveryNote = (slug: string) => {
                                         <template v-if="shipment?.formatted_tracking_urls?.length">
                                             {{ shipment.name }}
                                             <div v-for="trackingData in shipment.formatted_tracking_urls">
-        
+
                                                 <a :href="trackingData.url" target="_blank" rel="noopener noreferrer"
                                                     class="secondaryLink"
                                                     v-tooltip="trans('Click to track shipment')">
@@ -730,7 +761,7 @@ const generateRouteDeliveryNote = (slug: string) => {
                                                 </a>
                                             </div>
                                         </template>
-        
+
                                         <span v-else-if="shipment.name" class="">
                                             {{ shipment.name }}
                                         </span>
@@ -740,7 +771,7 @@ const generateRouteDeliveryNote = (slug: string) => {
                                     </li>
                                 </ul>
                             </div>
-        
+
                             <div v-else class="mt-1 text-xs italic text-gray-400">
                                 {{ trans('No shipments') }}
                             </div>
@@ -756,7 +787,7 @@ const generateRouteDeliveryNote = (slug: string) => {
 				<div class="px-3 font-semibold xmb-2 text-base">
 					{{ trans("Summary") }}
 				</div>
-				
+
                 <section aria-labelledby="summary-heading" class="rounded-lg px-4 py-4 sm:px-6 lg:mt-0">
                     <OrderSummary :order_summary="box_stats.order_summary" :currency_code="currency.code" />
                 </section>

@@ -15,6 +15,7 @@ use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\ActionRequest;
@@ -47,7 +48,9 @@ class SetDeliveryNoteStateAsPacked extends OrgAction
 
         data_set($modelData, 'parcels', $defaultParcel);
 
-        UpdateOrderStateToPacked::make()->action($deliveryNote->orders->first());
+        if($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
+            UpdateOrderStateToPacked::make()->action($deliveryNote->orders->first());
+        }
 
         $deliveryNote = $this->update($deliveryNote, $modelData);
 
