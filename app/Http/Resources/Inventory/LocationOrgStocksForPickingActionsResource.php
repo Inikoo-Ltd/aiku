@@ -19,6 +19,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $location_id
  * @property mixed $picked
  * @property mixed $pickings_data
+ * @property mixed $org_stock_packed_in
  */
 class LocationOrgStocksForPickingActionsResource extends JsonResource
 {
@@ -38,11 +39,18 @@ class LocationOrgStocksForPickingActionsResource extends JsonResource
         }
 
         return [
-            'id'              => $this->id,
-            'location_id'     => $this->location_id,
-            'location_code'   => $this->location_code,
-            'location_slug'   => $this->location_slug,
-            'quantity'        => $this->quantity,
+            'id'                  => $this->id,
+            'location_id'         => $this->location_id,
+            'location_code'       => $this->location_code,
+            'location_slug'       => $this->location_slug,
+            'quantity'            => $this->quantity,
+            'quantity_fractional' => riseDivisor(
+                divideWithRemainder(
+                    findSmallestFactors($this->quantity)
+                ),
+                $this->org_stock_packed_in
+            ),
+
             'type'            => $this->type,
             'quantity_picked' => $quantityPicked,
             'picking_id'      => $pickingId,
