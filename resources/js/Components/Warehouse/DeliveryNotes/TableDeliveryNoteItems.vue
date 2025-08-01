@@ -290,8 +290,9 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
                                     <span
                                         v-tooltip="trans('Total stock is :quantity in location :location_code', {quantity: locale.number(findLocation(itemValue.locations, proxyItem.hehe)?.quantity), location_code: findLocation(itemValue.locations, proxyItem.hehe)?.location_code})"
                                         class="whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-gray-300 rounded px-1">
-                                            <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width aria-hidden="true" />
-                                        {{ locale.number(findLocation(itemValue.locations, proxyItem.hehe).quantity) }}
+                                        <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width aria-hidden="true" />
+                                        <FractionDisplay v-if="findLocation(itemValue.locations, proxyItem.hehe)?.quantity_fractional" :fractionData="findLocation(itemValue.locations, proxyItem.hehe)?.quantity_fractional" />
+                                        <template v-else>{{ locale.number(findLocation(itemValue.locations, proxyItem.hehe).quantity) }}</template>
                                     </span>
 
                                     <span
@@ -517,8 +518,9 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
                     <span
                         v-tooltip="trans('Total stock is :quantity in location :location_code', {quantity: locale.number(location.quantity), location_code: location.location_code})"
                         class="ml-1 whitespace-nowrap text-gray-400 tabular-nums border border-gray-300 rounded px-1">
-                            <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width aria-hidden="true" />
-                        {{ location.quantity }}
+                        <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width aria-hidden="true" />
+                        <FractionDisplay v-if="location.quantity_fractional" :fractionData="location.quantity_fractional" />
+                        <template v-else>{{ location.quantity }}</template>
                     </span>
                 </label>
                 <RadioButton
