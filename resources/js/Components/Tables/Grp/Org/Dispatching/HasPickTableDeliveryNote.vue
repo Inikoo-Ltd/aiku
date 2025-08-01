@@ -182,13 +182,12 @@ const onCheckedAll = ({ data, allChecked }) => {
         @onCheckedAll="(data) => onCheckedAll(data)"
         checkboxKey='id' 
         :isChecked="(item) => selectedDeliveryNotes.includes(item.id)"
-        
         :disabledCheckbox="(item) => item.picking_sessions_count > 0"
     >
     
-        <template #header-checkbox="data">
+       <!--  <template #header-checkbox="data">
             <div></div>
-        </template>
+        </template> -->
 
         <template #disable-checkbox>
             <div></div>
