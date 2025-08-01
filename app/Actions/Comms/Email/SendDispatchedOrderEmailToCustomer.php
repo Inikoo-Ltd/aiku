@@ -132,7 +132,6 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
                 'date'            => $order->created_at->format('F jS, Y'),
                 'order_link'      => $orderUrl,
                 'invoice_link'    => $invoiceUrl,
-                'tracking_url'    => $this->getTrackingUrl($order),
             ]
         );
     }
@@ -143,7 +142,7 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
 
     public function asCommand(): void
     {
-        $order = Order::where('slug', 'awd150915')->first();
+        $order = Order::where('slug', 'awd151487')->first();
 
         $this->handle($order);
     }

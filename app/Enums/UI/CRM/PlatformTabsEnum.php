@@ -34,7 +34,8 @@ enum PlatformTabsEnum: string
             ],
             PlatformTabsEnum::CHANNELS => [
                 'title' => __('Channels'),
-                'icon'  => 'fal fa-user-friends',
+                'icon'  => 'fal fa-code-branch',
+                'icon_rotation' => '90',
             ],
         };
     }
