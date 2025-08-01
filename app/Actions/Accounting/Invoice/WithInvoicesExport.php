@@ -68,7 +68,7 @@ trait WithInvoicesExport
                 'shop'          => $invoice->shop,
                 'invoice'       => $invoice,
                 'deliveryNote'  => $deliveryNote,
-                'deliveryAddress'  => $deliveryNote->deliveryAddress,
+                'deliveryAddress'  => $deliveryNote?->deliveryAddress,
                 'context'       => $invoice->original_invoice_id ? 'Refund' : 'Invoice',
                 'transactions'  => $transactions,
                 'totalNet'      => number_format($totalNet, 2, '.', ''),

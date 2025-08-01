@@ -186,7 +186,9 @@
             </div>
         </td>
         <td width="50%" style="vertical-align:bottom;border: 0mm solid #888888;text-align: right">
-            <div style="text-align: right">Weight: <b>{{ $deliveryNote?->estimated_weight }} g</b></div>
+            @if($deliveryNote?->estimated_weight)
+                <div style="text-align: right">Weight: <b>{{ $deliveryNote?->estimated_weight }} g</b></div>
+            @endif
         </td>
     </tr>
 </table>
