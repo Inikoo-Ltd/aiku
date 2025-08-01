@@ -4,6 +4,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { ref, onMounted } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
+import Image from "@/Components/Image.vue"
 
 library.add(faCube, faLink, faImage)
 
@@ -34,6 +35,8 @@ onMounted(() => {
     titleTextarea.value.style.height = titleTextarea.value.scrollHeight + 'px'
   }
 })
+
+console.log(props.modelValue)
 </script>
 
 
@@ -41,15 +44,10 @@ onMounted(() => {
   <article class="max-w-3xl mx-auto px-4 py-8 text-gray-800">
     <!-- Title as textarea -->
     <div class="mb-4">
-      <textarea
-        v-model="modelValue.title"
-        @input="autoResize($event)"
-        @change="emits('autoSave')"
+      <textarea v-model="modelValue.title" @input="autoResize($event)" @change="emits('autoSave')"
         placeholder="Blog Title"
         class="resize-none overflow-hidden w-full bg-transparent border-none p-0 m-0 text-4xl font-extrabold leading-tight text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-0"
-        rows="1"
-        ref="titleTextarea"
-      ></textarea>
+        rows="1" ref="titleTextarea"></textarea>
     </div>
 
     <!-- Date -->
@@ -64,34 +62,22 @@ onMounted(() => {
     </div>
 
     <!-- Hero Image or Placeholder -->
-    <div class="w-full mb-8 rounded-xl shadow-md overflow-hidden aspect-[2/1] bg-gray-100 flex items-center justify-center">
-      <img
-        v-if="modelValue.Image"
-        :src="modelValue.Image"
-        alt="Gambar Sampul"
-        class="w-full h-full object-cover"
-      />
-      <FontAwesomeIcon
-        v-else
-        :icon="['fas', 'image']"
-        class="text-gray-400 text-6xl"
-      />
+    <div
+      class="w-full mb-8 rounded-xl shadow-md overflow-hidden aspect-[2/1] bg-gray-100 flex items-center justify-center">
+      <Image v-if="modelValue.image.source" :src="modelValue.image.source" :alt="modelValue.image.alt"
+        :imageCover="true" class="w-full h-full object-cover" />
+      <FontAwesomeIcon v-else :icon="['fas', 'image']" class="text-gray-400 text-6xl" />
     </div>
 
     <!-- Content Editor -->
-    <Editor
-      v-model="modelValue.content"
-      @update:modelValue="() => emits('autoSave')"
-      class="mb-6"
-      placeholder="Blog content"
-      :uploadImageRoute="{
+    <Editor v-model="modelValue.content" @update:modelValue="() => emits('autoSave')" class="mb-6"
+      placeholder="Blog content" :uploadImageRoute="{
         name: webpageData.images_upload_route.name,
         parameters: {
           ...webpageData.images_upload_route.parameters,
           modelHasWebBlocks: blockData?.id,
         }
-      }"
-    />
+      }" />
   </article>
 </template>
 
@@ -101,8 +87,8 @@ textarea::placeholder {
   font-weight: 500;
   opacity: 0.5;
 }
+
 .prose img {
   border-radius: 0.5rem;
 }
 </style>
-

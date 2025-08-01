@@ -114,6 +114,7 @@ watch(() => props.webpage, (val) => {
 watch(filterBlock, () => {
   updateIrisLayout()
 }, { immediate: true });
+
 </script>
 
 <template>

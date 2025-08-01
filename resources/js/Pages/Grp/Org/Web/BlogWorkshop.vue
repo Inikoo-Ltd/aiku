@@ -82,7 +82,6 @@ const isLoadingDeleteBlock = ref<number | null>(null);
 const cancelTokens = ref<Record<string, Function>>({});
 const debounceTimers = ref({});
 const filterBlock = ref('all');
-const dummyData = ref(null);
 
 // Provide global state
 provide('currentView', currentView);
@@ -201,25 +200,9 @@ const onPublish = async (action: routeType, popover) => {
 };
 
 const beforePublish = (route, popover) => {
-  const layoutJson = JSON.stringify(data.value.layout);
-  if (props.webpage.type === "catalogue" || layoutJson.includes('<h1') || layoutJson.includes('<H1')) {
-    onPublish(route, popover);
-  } else {
-    confirmPublish(route, popover);
-  }
+  onPublish(route, popover);
 };
 
-const confirmPublish = (route, popover) => {
-  confirm.require({
-    message: 'You don’t have a title (H1) in your code. Are you sure you want to publish?',
-    header: 'Confirmation',
-    icon: 'pi pi-exclamation-triangle',
-    group: "alert-publish",
-    rejectProps: { label: 'Cancel', severity: 'secondary', outlined: true },
-    acceptProps: { label: 'Publish' },
-    accept: () => onPublish(route, popover)
-  });
-};
 
 const iframeSrc = route("grp.websites.webpage.preview", [
   route().params["website"],
@@ -269,9 +252,13 @@ onMounted(() => {
 watch(currentView, (newVal) => {
   iframeClass.value = setIframeView(newVal);
 });
+
+
+
 </script>
 
 <template>
+
   <Head :title="capitalize(title)" />
 
   <PageHeading :data="pageHead">
@@ -301,13 +288,14 @@ watch(currentView, (newVal) => {
     <!-- Sidebar -->
     <aside v-if="!fullScreen" class="hidden lg:flex lg:flex-col w-[380px] bg-white border-r p-4 shadow-sm space-y-4">
       <h2 class="text-lg font-bold text-gray-700 border-b pb-2">{{ trans('Blog Settings') }}</h2>
-      <SideEditor
-        v-model="dummyData"
-        :panelOpen="openedChildSideEditor"
-        :blueprint="Blueprint.blueprint"
-        :uploadImageRoute="{ ...webpage.images_upload_route, parameters: { modelHasWebBlocks: webpage.layout.web_blocks[0].id } }"
-        @update:modelValue="() => onSaveWorkshop(webpage.layout.web_blocks[0])"
-      />
+      <div class="h-[calc(100vh-4rem)] bg-gray-100 overflow-auto">
+        <SideEditor v-model="data.layout.web_blocks[0].web_block.layout.data.fieldValue" :panelOpen="openedChildSideEditor"
+          :blueprint="Blueprint.blueprint"
+          :uploadImageRoute="{ ...webpage.images_upload_route, parameters: { modelHasWebBlocks: webpage.layout.web_blocks[0].id } }"
+          @update:modelValue="() => onSaveWorkshop(webpage.layout.web_blocks[0])" />
+
+      </div>
+
     </aside>
 
     <!-- Main Content -->

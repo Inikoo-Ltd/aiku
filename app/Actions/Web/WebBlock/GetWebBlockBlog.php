@@ -21,7 +21,10 @@ class GetWebBlockBlog
     {
 
         $permissions = ['edit'];
+
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.published_date', []);
+
         return $webBlock;
     }
 }
