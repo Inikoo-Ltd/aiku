@@ -67,6 +67,7 @@ class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
                 'locations.code as location_code',
                 'locations.slug as location_slug',
             ])
+            ->selectRaw('\''.$this->packed_in.'\' as org_stock_packed_in')
             ->selectRaw(
                 '(
         SELECT concat(sum(quantity),\';\',string_agg(id::char,\',\')) FROM pickings
