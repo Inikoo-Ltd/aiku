@@ -66,8 +66,9 @@ class CategoriseInvoice extends OrgAction
         $invoiceCategories = $invoice->organisation->invoiceCategories()->where('state', InvoiceCategoryStateEnum::ACTIVE)->orderBy('priority', 'desc')->get();
         /** @var InvoiceCategory $invoiceCategory */
         foreach ($invoiceCategories as $invoiceCategory) {
+
             $invoiceCategory = match ($invoiceCategory->type) {
-                InvoiceCategoryTypeEnum::SHOP_TYPE => $this->inHaystack($invoiceCategory, 'shop_types', $invoice->type->value),
+                InvoiceCategoryTypeEnum::SHOP_TYPE => $this->inHaystack($invoiceCategory, 'shop_types', $invoice->shop->type->value),
                 InvoiceCategoryTypeEnum::SHOP_FALLBACK => $this->shopFallback($invoice, $invoiceCategory),
                 InvoiceCategoryTypeEnum::IN_COUNTRY => $this->inHaystack($invoiceCategory, 'country_ids', $invoice->billing_country_id),
                 InvoiceCategoryTypeEnum::NOT_IN_COUNTRY => $this->notInHaystack($invoiceCategory, 'country_ids', $invoice->billing_country_id),
@@ -84,7 +85,6 @@ class CategoriseInvoice extends OrgAction
                 break;
             }
         }
-
 
         return $invoiceCategory;
     }
@@ -137,6 +137,7 @@ class CategoriseInvoice extends OrgAction
 
     public function asCommand(Command $command): int
     {
+        $command->info("Categorise invoices");
         $query = DB::table('invoices')->select('id')->orderBy('id');
 
         if ($command->hasOption('shop') && $command->option('shop')) {
@@ -156,29 +157,31 @@ class CategoriseInvoice extends OrgAction
 
 
         $count = $query->count();
+        $command->info("Count: $count");
 
-        $bar = $command->getOutput()->createProgressBar($count);
-        $bar->setFormat('debug');
-        $bar->start();
+        $bar=null;
+
+        if($count>1000){
+            $bar = $command->getOutput()->createProgressBar($count);
+            $bar->setFormat('debug');
+            $bar->start();
+        }
+
 
         $query->chunk(1000, function (Collection $modelsData) use ($bar, $command) {
             foreach ($modelsData as $modelId) {
                 $invoice         = Invoice::withTrashed()->find($modelId->id);
                 $invoiceCategory = $this->getInvoiceCategory($invoice);
-
-                if ($invoice->invoiceCategory && $invoiceCategory != $invoice->invoiceCategory) {
-                    $command->error('>>'.$invoice->id.' '.$invoice->invoiceCategory->slug.' diff '.$invoiceCategory?->slug);
-                    exit;
-                }
+                $command->info("Invoice: $invoice->id $invoice->reference Category: $invoiceCategory?->slug");
 
 
-                $bar->advance();
+                $bar?->advance();
             }
         });
-
-        $bar->finish();
-        $command->info("");
-
+        if($bar) {
+            $bar->finish();
+            $command->info("");
+        }
         return 0;
     }
 
