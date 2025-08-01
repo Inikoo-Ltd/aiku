@@ -104,7 +104,7 @@ const onSubmitSubscribe = async () => {
 						v-if="modelValue?.logo?.source"
 						:is="'span'"
 						rel="noopener noreferrer"
-						class="block w-fit h-auto">
+						class="block w-fit h-auto pt-3">
 						<Image
 							:style="getStyles(modelValue.logo.properties, screenType)"
 							:alt="modelValue?.logo?.alt"
