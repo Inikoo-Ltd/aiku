@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { faCube, faLink, faImage } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { ref, onMounted } from "vue"
+import { ref, onMounted, computed } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import Image from "@/Components/Image.vue"
+import { useFormatTime } from "@/Composables/useFormatTime";
 
 library.add(faCube, faLink, faImage)
 
@@ -36,7 +37,10 @@ onMounted(() => {
   }
 })
 
-console.log(props.modelValue)
+const displayDate = computed(() => {
+  return props.modelValue.published_date ? props.modelValue.published_date : new Date();
+});
+
 </script>
 
 
@@ -52,13 +56,7 @@ console.log(props.modelValue)
 
     <!-- Date -->
     <div class="text-sm text-gray-500 mb-6">
-      <time :datetime="modelValue.date">
-        {{ new Date(modelValue.date).toLocaleDateString('id-ID', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        }) }}
-      </time>
+      {{ useFormatTime(displayDate) }}
     </div>
 
     <!-- Hero Image or Placeholder -->
