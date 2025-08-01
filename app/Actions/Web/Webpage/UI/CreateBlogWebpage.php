@@ -21,7 +21,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
 
-class CreateWebpage extends OrgAction
+class CreateBlogWebpage extends OrgAction
 {
     use WithWebAuthorisation;
 
@@ -38,32 +38,14 @@ class CreateWebpage extends OrgAction
         return $website;
     }
 
-
-
-    /** @noinspection PhpUnusedParameterInspection */
-    public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, ActionRequest $request): Website
-    {
-        $this->scope  = $fulfilment;
-        $this->parent = $website;
-        $this->initialisationFromFulfilment($fulfilment, $request);
-
-        return $website;
-    }
-
     public function htmlResponse(Webpage|Website $parent, ActionRequest $request): Response
     {
-        $route = [];
-        if ($this->scope instanceof Fulfilment) {
+
             $route = [
-                'name'       => 'grp.models.fulfilment.webpage.store',
+                'name'       => 'grp.models.shop.blog_webpage.store',
                 'parameters' => [$this->scope->id, $parent->id]
             ];
-        } else {
-            $route = [
-                'name'       => 'grp.models.shop.webpage.store',
-                'parameters' => [$this->scope->id, $parent->id]
-            ];
-        }
+        
         return Inertia::render(
             'CreateModel',
             [
@@ -78,23 +60,10 @@ class CreateWebpage extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'route' =>
-                                match ($request->route()->getName()) {
-                                    'org.websites.show.webpages.show.webpages.create' => [
-                                        'name'       => 'org.websites.show.webpages.show' ,
-                                        'parameters' => array_values($request->route()->originalParameters())
-                                    ],
-                                    'grp.org.shops.show.web.blogs.create' => [
+                            'route' =>  [
                                         'name'       => 'grp.org.shops.show.web.blogs.index' ,
                                         'parameters' => array_values($request->route()->originalParameters())
                                     ],
-                                    default => [
-                                        'name'       => preg_replace('/create$/', 'index', $request->route()->getName()),
-                                        'parameters' => array_values($request->route()->originalParameters())
-                                    ]
-                                }
-
-
                         ]
                     ]
 
@@ -149,7 +118,7 @@ class CreateWebpage extends OrgAction
                                         'required'  => true,
                                         'label'    => __('seo structure type'),
                                         'options'  => Options::forEnum(WebpageSeoStructureTypeEnum::class),
-                                        'value'    => null,
+                                        'value'    => '',
                                         'required' => false,
                                 ],
 
@@ -169,33 +138,9 @@ class CreateWebpage extends OrgAction
     {
 
         return match ($routeName) {
-            'org.websites.show.webpages.show.webpages.create' =>
-            array_merge(
-                ShowWebpage::make()->getBreadcrumbs('org.websites.show.webpages.show.webpages.show', $routeParameters),
-                [
-                    [
-                        'type'          => 'creatingModel',
-                        'creatingModel' => [
-                            'label' => __("webpage"),
-                        ]
-                    ]
-                ]
-            ),
             'grp.org.shops.show.web.blogs.create' =>
             array_merge(
                 IndexBlogWebpages::make()->getBreadcrumbs('grp.org.shops.show.web.blogs.index', $routeParameters),
-                [
-                    [
-                        'type'          => 'creatingModel',
-                        'creatingModel' => [
-                            'label' => __("webpage"),
-                        ]
-                    ]
-                ]
-            ),
-            'org.websites.show.webpages.create' =>
-            array_merge(
-                IndexWebpages::make()->getBreadcrumbs($routeName, $routeParameters),
                 [
                     [
                         'type'          => 'creatingModel',

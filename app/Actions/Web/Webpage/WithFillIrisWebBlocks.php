@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Webpage;
 
 use App\Actions\Web\WebBlock\GetBanner;
+use App\Actions\Web\WebBlock\GetWebBlockBlog;
 use App\Actions\Web\WebBlock\GetWebBlockCollections;
 use App\Actions\Web\WebBlock\GetWebBlockDepartments;
 use App\Actions\Web\WebBlock\GetWebBlockFamilies;
@@ -43,6 +44,8 @@ trait WithFillIrisWebBlocks
             $parsedWebBlocks[$key] = GetWebBlockCollections::run($webpage, $webBlock);
         } elseif (in_array($webBlockType, ['see-also-1'])) {
             $parsedWebBlocks[$key] = GetWebBlockSeeAlso::run($webpage, $webBlock);
+        } elseif (in_array($webBlockType, ['blog'])) {
+            $parsedWebBlocks[$key] = GetWebBlockBlog::run($webpage, $webBlock);
         } else {
             $parsedWebBlocks[$key] = $webBlock;
         }
