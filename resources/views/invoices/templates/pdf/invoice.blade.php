@@ -161,32 +161,32 @@
         <td width="50%" style="vertical-align:bottom;border: 0mm solid #888888;">
             <div>
                 <div>
-                    {{ __('Payment State') }}: <b>{{ $invoice->order?->payment }}</b>
+                    {{ __('Payment State') }}: <b>{{ $invoice->pay_status->labels()[$invoice->pay_status->value] }}</b>
                 </div>
                 <div>
                     {{ __('Customer') }}: <b>{{ $invoice->customer['name'] }}</b>
                     ({{ $invoice->customer['reference'] }})
                 </div>
-                <div class=" {if !$customer->get('Customer Main Plain Mobile')}hide{/if}">
-                    <span class="address_label">{{ __('Mobile') }}:</span> <span
-                        class="address_value">{{ $invoice->customer['phone'] }}</span>
+
+                <div>
+                    <span class="address_label">{{ __('Email') }}:</span> <span
+                        class="address_value">{{ $invoice->customer['email'] }}</span>
                 </div>
 
-                <div class=" {if !$customer->get('Customer Main Plain Telephone')}hide{/if}">
+                <div>
                     <span class="address_label">{{ __('Phone') }}:</span> <span
                         class="address_value">{{ $invoice->customer['phone'] }}</span>
                 </div>
-                <div class=" {if !$customer->get('Customer Main Plain Telephone')}hide{/if}">
-                    <span class="address_label">{{ __('Tax Number') }}:</span> <span
-                        class="address_value">{{ $invoice->tax_number }}</span>
-                </div>
+                @if($invoice->tax_number)
+                    <div>
+                        <span class="address_label">{{ __('Tax Number') }}:</span> <span
+                            class="address_value">{{ $invoice->tax_number }}</span>
+                    </div>
+                @endif
             </div>
         </td>
         <td width="50%" style="vertical-align:bottom;border: 0mm solid #888888;text-align: right">
-            <div style="text-align:right;">
-                <b>1 box</b>
-            </div>
-            <div style="text-align: right">Weight: <b>{{ $deliveryNote?->weight }}grams</b></div>
+            <div style="text-align: right">Weight: <b>{{ $deliveryNote?->estimated_weight }} g</b></div>
         </td>
     </tr>
 </table>
@@ -216,27 +216,27 @@
             </td>
             <td width="10%">&nbsp;</td>
         @endif
-        @if($invoice->deliveryAddress)
+        @if($deliveryAddress)
             <td width="45%" style="border: 0.1mm solid #888888;">
                 <span
                     style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('Delivery address') }}:</span>
                 <div>
-                    {{ $invoice->deliveryAddress->address_line_1 }}
+                    {{ $deliveryAddress->address_line_1 }}
                 </div>
                 <div>
-                    {{ $invoice->deliveryAddress->address_line_2 }}
+                    {{ $deliveryAddress->address_line_2 }}
                 </div>
                 <div>
-                    {{ $invoice->deliveryAddress->administrative_area }}
+                    {{ $deliveryAddress->administrative_area }}
                 </div>
                 <div>
-                    {{ $invoice->deliveryAddress->locality }}
+                    {{ $deliveryAddress->locality }}
                 </div>
                 <div>
-                    {{ $invoice->deliveryAddress->postal_code }}
+                    {{ $deliveryAddress->postal_code }}
                 </div>
                 <div>
-                    {{ $invoice->deliveryAddress->country->name }}
+                    {{ $deliveryAddress->country->name }}
                 </div>
             </td>
         @else
@@ -286,7 +286,7 @@
                 @endif
             </td>
 
-            <td style="text-align:right">{{  $transaction->quantity }}</td>
+            <td style="text-align:right">{{  (int) $transaction->quantity }}</td>
 
             <td style="text-align:right">{{ $invoice->currency->symbol . $transaction->net_amount }}</td>
         </tr>
@@ -314,7 +314,9 @@
 
     <tr>
         <td style="border:none" colspan="4"></td>
-        <td class="totals">{{ __('TAX') }} <br> <small>Valid tax number: {{ $invoice->tax_number }}</small></td>
+        <td class="totals">{{ __('TAX') }} <br> @if($invoice->tax_number)
+                <small>Valid tax number: {{ $invoice->tax_number }}</small>
+            @endif</td>
         <td class="totals">{{ $invoice->currency->symbol . $invoice->tax_amount }}</td>
     </tr>
 
