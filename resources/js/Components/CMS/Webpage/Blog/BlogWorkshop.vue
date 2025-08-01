@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { faCube, faLink, faImage } from "@fortawesome/free-solid-svg-icons"
+import { faCube, faLink, faImage } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { computed } from "vue"
+import { ref, onMounted } from "vue"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 
 library.add(faCube, faLink, faImage)
 
@@ -13,59 +15,94 @@ const props = defineProps<{
   screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
-// Dummy data fallback
-const post = computed(() => props.modelValue ?? {
-  title: "Mengenal Web3: Masa Depan Internet yang Terdesentralisasi",
-  date: "2025-07-25",
-  category: "Teknologi",
-  coverImage: "https://source.unsplash.com/1200x600/?blockchain,technology",
-  content: `
-    <p>Web3 adalah evolusi dari internet saat ini, di mana teknologi blockchain memungkinkan interaksi tanpa perantara. Dengan Web3, pengguna memiliki kendali lebih atas data pribadi mereka dan dapat berpartisipasi dalam ekosistem digital secara langsung.</p>
-    
-    <h2>Apa Itu Web3?</h2>
-    <p>Web3 mengandalkan smart contract, token digital, dan protokol terbuka untuk menciptakan dunia digital yang lebih adil. Ini berbeda dengan Web2 yang berpusat pada platform besar seperti Google atau Facebook.</p>
-    
-    <blockquote>
-      "Web3 is not just a technology shift. It’s a change in how we think about ownership and trust on the internet." – Vitalik Buterin
-    </blockquote>
-    
-    <p>Contoh aplikasi Web3 termasuk wallet crypto, NFT marketplace, dan DAO (Decentralized Autonomous Organization).</p>
-  `,
-  tags: ["Web3", "Blockchain", "Internet", "Teknologi", "MasaDepan"]
+const emits = defineEmits<{
+  (e: "update:modelValue", value: string): void
+  (e: "autoSave"): void
+}>()
+
+const titleTextarea = ref<HTMLTextAreaElement | null>(null)
+
+const autoResize = (event: Event) => {
+  const target = event.target as HTMLTextAreaElement
+  target.style.height = 'auto'
+  target.style.height = target.scrollHeight + 'px'
+}
+
+onMounted(() => {
+  if (titleTextarea.value) {
+    titleTextarea.value.style.height = 'auto'
+    titleTextarea.value.style.height = titleTextarea.value.scrollHeight + 'px'
+  }
 })
 </script>
 
+
 <template>
   <article class="max-w-3xl mx-auto px-4 py-8 text-gray-800">
-    <!-- SEO Optimized Title -->
-    <h1 class="text-4xl font-extrabold leading-tight mb-2">
-      {{ post.title }}
-    </h1>
-
-    <!-- Date & Category -->
-    <div class="text-sm text-gray-500 mb-6">
-      <time :datetime="post.date">{{ new Date(post.date).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) }}</time>
+    <!-- Title as textarea -->
+    <div class="mb-4">
+      <textarea
+        v-model="modelValue.title"
+        @input="autoResize($event)"
+        @change="emits('autoSave')"
+        placeholder="Blog Title"
+        class="resize-none overflow-hidden w-full bg-transparent border-none p-0 m-0 text-4xl font-extrabold leading-tight text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-0"
+        rows="1"
+        ref="titleTextarea"
+      ></textarea>
     </div>
 
-    <!-- Hero Image -->
-    <img
-      v-if="post.coverImage"
-      :src="post.coverImage"
-      alt="Gambar sampul artikel"
-      class="rounded-xl shadow-md w-full mb-8"
-    />
+    <!-- Date -->
+    <div class="text-sm text-gray-500 mb-6">
+      <time :datetime="modelValue.date">
+        {{ new Date(modelValue.date).toLocaleDateString('id-ID', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        }) }}
+      </time>
+    </div>
 
-    <!-- Article Content -->
-    <div
-      class="prose prose-blue max-w-none"
-      v-html="post.content"
-    />
+    <!-- Hero Image or Placeholder -->
+    <div class="w-full mb-8 rounded-xl shadow-md overflow-hidden aspect-[2/1] bg-gray-100 flex items-center justify-center">
+      <img
+        v-if="modelValue.Image"
+        :src="modelValue.Image"
+        alt="Gambar Sampul"
+        class="w-full h-full object-cover"
+      />
+      <FontAwesomeIcon
+        v-else
+        :icon="['fas', 'image']"
+        class="text-gray-400 text-6xl"
+      />
+    </div>
 
+    <!-- Content Editor -->
+    <Editor
+      v-model="modelValue.content"
+      @update:modelValue="() => emits('autoSave')"
+      class="mb-6"
+      placeholder="Blog content"
+      :uploadImageRoute="{
+        name: webpageData.images_upload_route.name,
+        parameters: {
+          ...webpageData.images_upload_route.parameters,
+          modelHasWebBlocks: blockData?.id,
+        }
+      }"
+    />
   </article>
 </template>
 
+
 <style scoped>
+textarea::placeholder {
+  font-weight: 500;
+  opacity: 0.5;
+}
 .prose img {
   border-radius: 0.5rem;
 }
 </style>
+
