@@ -142,7 +142,7 @@
                               <td style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: right; font-weight: bold;">Amount</td>
                           </tr>
 
-                          [Order Transactions]
+                          [Blade New Order Transactions]
                       </table> 
 
                       <!-- Totals Section -->
