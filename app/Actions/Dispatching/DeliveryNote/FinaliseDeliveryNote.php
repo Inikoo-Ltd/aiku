@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
@@ -32,8 +33,10 @@ class FinaliseDeliveryNote extends OrgAction
 
 
             $deliveryNote->refresh();
-            foreach ($deliveryNote->orders as $order) {
-                InvoiceOrderFromDeliveryNoteFinalisation::make()->action($order);
+            if($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
+                foreach ($deliveryNote->orders as $order) {
+                    InvoiceOrderFromDeliveryNoteFinalisation::make()->action($order);
+                }
             }
 
             return $this->update($deliveryNote, $modelData);
