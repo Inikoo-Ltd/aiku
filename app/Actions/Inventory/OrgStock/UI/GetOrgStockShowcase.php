@@ -8,7 +8,9 @@
 
 namespace App\Actions\Inventory\OrgStock\UI;
 
+use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
 use App\Http\Resources\Inventory\OrgStockResource;
+use App\Models\Goods\TradeUnit;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -20,9 +22,13 @@ class GetOrgStockShowcase
     public function handle(Warehouse $warehouse, OrgStock $orgStock)
     {
         $orgStock->load('locationOrgStocks');
-
+        $dataTradeUnits = [];
+        if ($orgStock->tradeUnits) {
+            $dataTradeUnits = $this->getDataTradeUnit($orgStock->tradeUnits);
+        }
         return collect(
             [
+                'trade_units' => $dataTradeUnits,
                 'contactCard'              => OrgStockResource::make($orgStock)->getArray(),
                 'locationRoute'            => [
                     'name'       => 'grp.org.warehouses.show.infrastructure.locations.index',
@@ -52,5 +58,12 @@ class GetOrgStockShowcase
                 ]
             ]
         );
+    }
+
+    private function getDataTradeUnit($tradeUnits): array
+    {
+        return $tradeUnits->map(function (TradeUnit $tradeUnit) {
+            return GetTradeUnitShowcase::run($tradeUnit);
+        })->toArray();
     }
 }

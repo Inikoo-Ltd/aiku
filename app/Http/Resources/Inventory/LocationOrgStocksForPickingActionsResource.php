@@ -38,6 +38,12 @@ class LocationOrgStocksForPickingActionsResource extends JsonResource
             }
         }
 
+        $orgStockPackedIn = $this->org_stock_packed_in;
+
+        if($orgStockPackedIn == '') {
+            $orgStockPackedIn = null;
+        }
+
         return [
             'id'                  => $this->id,
             'location_id'         => $this->location_id,
@@ -48,7 +54,7 @@ class LocationOrgStocksForPickingActionsResource extends JsonResource
                 divideWithRemainder(
                     findSmallestFactors($this->quantity)
                 ),
-                $this->org_stock_packed_in
+                $orgStockPackedIn
             ),
 
             'type'            => $this->type,

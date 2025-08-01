@@ -42,16 +42,17 @@ defineProps<{
 const locale = inject("locale", aikuLocaleStructure);
 
 function orgStockRoute(deliveryNoteItem: DeliverNoteItem) {
-    // console.log(route().current())
+    console.log(deliveryNoteItem.org_stock_slug)
     switch (route().current()) {
         case "grp.org.warehouses.show.dispatching.delivery_notes.show":
-        // return route(
-        //     "grp.org.shops.show.discounts.campaigns.show",
-        //     [route().params["organisation"], , route().params["shop"], route().params["customer"], deliveryNote.slug])
+         return route(
+            "grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show",
+           [route().params["organisation"], route().params["warehouse"], deliveryNoteItem.org_stock_slug])
         default:
             return "";
     }
 }
+
 
 const isMounted = ref(false);
 onMounted(() => {
