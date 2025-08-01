@@ -15,6 +15,7 @@ use App\Enums\UI\Ordering\OrdersTabsEnum;
 use App\Http\Resources\Catalogue\ShopResource;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -40,6 +41,10 @@ class ShowOrderingDashboard extends OrgAction
     public function htmlResponse(Shop $shop, ActionRequest $request): Response
     {
 
+        $excessOrderCount = DB::table('orders')
+            ->whereColumn('payment_amount', '>', 'total_amount')
+            ->where('shop_id', $shop->id)
+            ->count();
 
         return Inertia::render(
             'Org/Ordering/OrderingDashboard',
@@ -74,7 +79,7 @@ class ShowOrderingDashboard extends OrgAction
                         ],
                         'icon'            => 'fal fa-shopping-cart',
                         "backgroundColor" => "#ff000011",
-                        'value'           => 99999999999,  // TODO: Kirin
+                        'value'           => $excessOrderCount,
                     ],
                 ],
 
