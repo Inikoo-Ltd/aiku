@@ -36,7 +36,7 @@ trait WithOrderingCustomerNotification
         return '';
     }
 
-    public function getTrackingUrl(Order $order): string
+    public function getTrackingUrl(Order $order): ?string
     {
         $deliveryNote = $order->deliveryNotes->first();
 
