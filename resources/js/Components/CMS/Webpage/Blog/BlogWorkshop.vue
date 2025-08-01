@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import Image from "@/Components/Image.vue"
 import { useFormatTime } from "@/Composables/useFormatTime";
+import { getStyles } from "@/Composables/styles"
 
 library.add(faCube, faLink, faImage)
 
@@ -47,11 +48,15 @@ const displayDate = computed(() => {
 <template>
   <article class="max-w-3xl mx-auto px-4 py-8 text-gray-800">
     <!-- Title as textarea -->
-    <div class="mb-4">
-      <textarea v-model="modelValue.title" @input="autoResize($event)" @change="emits('autoSave')"
-        placeholder="Blog Title"
-        class="resize-none overflow-hidden w-full bg-transparent border-none p-0 m-0 text-4xl font-extrabold leading-tight text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-0"
-        rows="1" ref="titleTextarea"></textarea>
+    <div class="mb-4" :style="getStyles(modelValue.properties, screenType)">
+        <Editor v-model="modelValue.title" @update:modelValue="() => emits('autoSave')" class="mb-6"
+          placeholder="Blog Title" :uploadImageRoute="{
+            name: webpageData.images_upload_route.name,
+            parameters: {
+              ...webpageData.images_upload_route.parameters,
+              modelHasWebBlocks: blockData?.id,
+            }
+          }" />
     </div>
 
     <!-- Date -->
@@ -68,14 +73,18 @@ const displayDate = computed(() => {
     </div>
 
     <!-- Content Editor -->
-    <Editor v-model="modelValue.content" @update:modelValue="() => emits('autoSave')" class="mb-6"
-      placeholder="Blog content" :uploadImageRoute="{
-        name: webpageData.images_upload_route.name,
-        parameters: {
-          ...webpageData.images_upload_route.parameters,
-          modelHasWebBlocks: blockData?.id,
-        }
-      }" />
+    <div :style="getStyles(modelValue.properties, screenType)">
+      <Editor v-model="modelValue.content" @update:modelValue="() => emits('autoSave')" class="mb-6"
+        placeholder="Blog content" :uploadImageRoute="{
+          name: webpageData.images_upload_route.name,
+          parameters: {
+            ...webpageData.images_upload_route.parameters,
+            modelHasWebBlocks: blockData?.id,
+          }
+        }" />
+
+    </div>
+
   </article>
 </template>
 

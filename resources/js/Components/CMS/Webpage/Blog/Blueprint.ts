@@ -94,7 +94,7 @@ export default {
 		},
 		{
 			name: "Text",
-			key: ["text"],
+			key: ["properties","text"],
 			type: "textProperty",
 		},
 	],

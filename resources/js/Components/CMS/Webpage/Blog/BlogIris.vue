@@ -1,71 +1,235 @@
 <script setup lang="ts">
-import { faCube, faLink, faImage } from "@fortawesome/free-solid-svg-icons"
+import { ref, computed, onMounted, nextTick, inject } from "vue"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { computed } from "vue"
+import {
+  faCube,
+  faLink,
+  faImage,
+  faEnvelope
+} from "@fortawesome/free-solid-svg-icons"
+import {
+  faFacebook,
+  faTwitter,
+  faLinkedin,
+  faXTwitter,
+  faInstagram
+} from "@fortawesome/free-brands-svg-icons"
 
-library.add(faCube, faLink, faImage)
+import Image from "@/Components/Image.vue"
+import { useFormatTime } from "@/Composables/useFormatTime"
+import { getStyles } from "@/Composables/styles"
+
+library.add(faCube, faLink, faImage, faEnvelope, faFacebook, faTwitter, faLinkedin)
 
 const props = defineProps<{
-  modelValue?: any
-  webpageData?: any
-  blockData?: Object
-  indexBlock: number
-  screenType: 'mobile' | 'tablet' | 'desktop'
+  fieldValue: {
+    title: string
+    published_date?: string
+    image?: {
+      source?: string
+      alt?: string
+    }
+    content: string
+  }
 }>()
 
-// Dummy data fallback
-const post = computed(() => props.modelValue ?? {
-  title: "Mengenal Web3: Masa Depan Internet yang Terdesentralisasi",
-  date: "2025-07-25",
-  category: "Teknologi",
-  coverImage: "https://source.unsplash.com/1200x600/?blockchain,technology",
-  content: `
-    <p>Web3 adalah evolusi dari internet saat ini, di mana teknologi blockchain memungkinkan interaksi tanpa perantara. Dengan Web3, pengguna memiliki kendali lebih atas data pribadi mereka dan dapat berpartisipasi dalam ekosistem digital secara langsung.</p>
-    
-    <h2>Apa Itu Web3?</h2>
-    <p>Web3 mengandalkan smart contract, token digital, dan protokol terbuka untuk menciptakan dunia digital yang lebih adil. Ini berbeda dengan Web2 yang berpusat pada platform besar seperti Google atau Facebook.</p>
-    
-    <blockquote>
-      "Web3 is not just a technology shift. It’s a change in how we think about ownership and trust on the internet." – Vitalik Buterin
-    </blockquote>
-    
-    <p>Contoh aplikasi Web3 termasuk wallet crypto, NFT marketplace, dan DAO (Decentralized Autonomous Organization).</p>
-  `,
-  tags: ["Web3", "Blockchain", "Internet", "Teknologi", "MasaDepan"]
+const layout: any = inject("layout", {})
+
+const primaryColor = computed(() => {
+  return layout?.iris?.theme?.color?.[4] || "#3b82f6"
 })
+
+const displayDate = computed(() => {
+  return props.fieldValue.published_date
+    ? new Date(props.fieldValue.published_date)
+    : new Date()
+})
+
+const contentRef = ref<HTMLElement | null>(null)
+const headings = ref<{ id: string; text: string; level: number }[]>([])
+const currentHeadingId = ref<string | null>(null)
+
+onMounted(async () => {
+  await nextTick()
+  if (!contentRef.value) return
+
+  headings.value = []
+
+  const headingElements = contentRef.value.querySelectorAll("h1, h2, h3")
+
+  headingElements.forEach((el, index) => {
+    const id = `heading-${index}`
+    el.setAttribute("id", id)
+    headings.value.push({
+      id,
+      text: el.textContent || `Section ${index + 1}`,
+      level: parseInt(el.tagName.replace("H", ""))
+    })
+  })
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          currentHeadingId.value = entry.target.id
+        }
+      })
+    },
+    {
+      rootMargin: "0px 0px -70% 0px",
+      threshold: 0.1
+    }
+  )
+
+  headingElements.forEach((el) => observer.observe(el))
+})
+
+const shareUrl = encodeURIComponent(window.location.href)
+
+const latestPosts = ref([
+  {
+    id: 1,
+    title: "Understanding Vue 3 Composition API",
+    image: "https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png"
+  },
+  {
+    id: 2,
+    title: "Getting Started with PrimeVue",
+    image: "https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png"
+  },
+  {
+    id: 3,
+    title: "Advanced TypeScript Patterns",
+    image: "https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png"
+  },
+  {
+    id: 4,
+    title: "Deploying Vue Apps with Vite",
+    image: "https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png"
+  }
+])
 </script>
 
 <template>
-  <article class="max-w-3xl mx-auto px-4 py-8 text-gray-800">
-    <!-- SEO Optimized Title -->
-    <h1 class="text-4xl font-extrabold leading-tight mb-2">
-      {{ post.title }}
-    </h1>
+  <div class="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-12 max-w-7xl mx-auto px-4 py-10 text-gray-800">
+    <!-- Sidebar -->
+    <aside class="lg:sticky lg:top-10 max-h-[80vh] overflow-y-auto hidden lg:block border-r border-gray-100 pr-6">
+      <div class="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">
+        Content
+      </div>
 
-    <!-- Date & Category -->
-    <div class="text-sm text-gray-500 mb-6">
-      <time :datetime="post.date">{{ new Date(post.date).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) }}</time>
-    </div>
+      <ul class="text-sm no-bullets" v-if="headings.length">
+        <li v-for="heading in headings" :key="heading.id">
+          <a :href="`#${heading.id}`" :style="currentHeadingId === heading.id ? {
+            color: primaryColor,
+            borderLeftColor: primaryColor,
+            backgroundColor: `${primaryColor}15`
+          } : {}" :class="[
+            'block px-3 py-1.5 border-l-2 rounded-sm transition-all duration-150',
+            heading.level === 2 ? 'ml-3' : '',
+            heading.level === 3 ? 'ml-6 text-[0.95rem]' : '',
+            currentHeadingId === heading.id
+              ? 'font-semibold'
+              : 'text-gray-600 hover:bg-gray-50'
+          ]">
+            {{ heading.text }}
+          </a>
+        </li>
+      </ul>
 
-    <!-- Hero Image -->
-    <img
-      v-if="post.coverImage"
-      :src="post.coverImage"
-      alt="Gambar sampul artikel"
-      class="rounded-xl shadow-md w-full mb-8"
-    />
+      <div class="mt-10">
+        <div class="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">Latest Posts</div>
+        <div class="space-y-3">
+          <div v-for="post in latestPosts" :key="post.id"
+            class="flex items-center gap-3 group hover:bg-gray-50 p-2 rounded-md transition">
+            <img :src="post.image" :alt="post.title"
+              class="w-16 h-14 object-cover rounded-md border border-gray-200 shadow-sm" />
+            <div class="text-sm font-medium text-gray-700 group-hover:text-gray-900">
+              {{ post.title }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
 
-    <!-- Article Content -->
-    <div
-      class="prose prose-blue max-w-none"
-      v-html="post.content"
-    />
+    <!-- Main Content -->
+    <article class="max-w-3xl mx-auto">
+      <!--  <h1 class="text-4xl font-bold tracking-tight mb-3 leading-snug text-gray-900">
+        {{ fieldValue.title }}
+      </h1> -->
 
-  </article>
+      <div v-html="fieldValue.title" :style="getStyles(fieldValue.properties, screenType)" class="mb-3" />
+
+      <div class="text-sm text-gray-500 mb-6">
+        {{ useFormatTime(displayDate) }}
+      </div>
+
+      <div
+        class="w-full mb-8 rounded-xl overflow-hidden aspect-[2/1] bg-gray-100 flex items-center justify-center shadow-sm">
+        <Image v-if="fieldValue.image?.source" :src="fieldValue.image.source" :alt="fieldValue.image.alt"
+          :imageCover="true" class="w-full h-full object-cover" />
+        <FontAwesomeIcon v-else :icon="['fas', 'image']" class="text-gray-300 text-6xl" />
+      </div>
+
+      <!-- Article Content -->
+      <div :style="getStyles(fieldValue.properties, screenType)">
+        <div class="prose prose-blue max-w-none scroll-smooth mb-10" ref="contentRef" v-html="fieldValue.content" />
+      </div>
+
+
+      <!-- Share Buttons Section -->
+
+      <div class="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">Share : </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+        <a :href="`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`" target="_blank" rel="noopener"
+          class="flex items-center justify-center gap-2 w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
+          <FontAwesomeIcon :icon="['fab', 'facebook']" />
+          Facebook
+        </a>
+
+        <a :href="`https://twitter.com/intent/tweet?url=${shareUrl}&text=${encodeURIComponent(fieldValue.title)}`"
+          target="_blank" rel="noopener"
+          class="flex items-center justify-center gap-2 w-full py-2 px-4 bg-gray-800 text-white rounded-md hover:bg-sky-600 transition">
+          <FontAwesomeIcon :icon="faXTwitter" />
+          Twitter
+        </a>
+
+        <a :href="`https://www.linkedin.com/shareArticle?url=${shareUrl}&title=${encodeURIComponent(fieldValue.title)}`"
+          target="_blank" rel="noopener"
+          class="flex items-center justify-center gap-2 w-full py-2 px-4 bg-blue-800 text-white rounded-md hover:bg-blue-900 transition">
+          <FontAwesomeIcon :icon="['fab', 'linkedin']" />
+          LinkedIn
+        </a>
+
+        <a :href="`https://www.instagram.com/YOUR_INSTAGRAM_USERNAME/`" target="_blank" rel="noopener"
+          class="flex items-center justify-center gap-2 w-full py-3 px-4 bg-pink-500 text-white rounded-md hover:bg-pink-600 transition">
+          <FontAwesomeIcon :icon="faInstagram" />
+          Instagram
+        </a>
+
+        <a :href="`mailto:?subject=${encodeURIComponent(fieldValue.title)}&body=${shareUrl}`"
+          class="flex items-center justify-center gap-2 w-full py-2 px-4 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition">
+          <FontAwesomeIcon :icon="['fas', 'envelope']" />
+          Email
+        </a>
+      </div>
+    </article>
+  </div>
 </template>
 
 <style scoped>
 .prose img {
   border-radius: 0.5rem;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+.no-bullets {
+  list-style: none !important;
+  padding-left: 0 !important;
+  margin-left: 0 !important;
 }
 </style>
