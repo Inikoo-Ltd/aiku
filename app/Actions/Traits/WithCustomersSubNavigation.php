@@ -90,7 +90,7 @@ trait WithCustomersSubNavigation
             'number'   => Platform::all()->count(), // Fix Later with hydrators
             'label'    => __('Platforms'),
             'leftIcon' => [
-                'icon'    => 'fal fa-store',
+                'icon'    => 'fal fa-route',
                 'tooltip' => __('platforms')
             ]
         ];
