@@ -40,7 +40,7 @@ class SetDeliveryNoteStateAsPacked extends OrgAction
         }
         $defaultParcel = [
             [
-                'weight' => $deliveryNote->effective_weight,
+                'weight' => $deliveryNote->effective_weight/1000,
                 'dimensions' => [5, 5, 5]
             ]
         ];
