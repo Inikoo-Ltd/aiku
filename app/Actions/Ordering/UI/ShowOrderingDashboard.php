@@ -58,7 +58,22 @@ class ShowOrderingDashboard extends OrgAction
                         'title' => __('Ordering'),
                         'icon'  => 'fal fa-chart-network'
                     ],
-
+                ],
+                'stats'       => [  // TODO: Kirin
+                    [
+                        'label'           => __('Orders excesses payment'),
+                        'is_negative'     => true,
+                        'route'           => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.orphan_products.index',
+                            'parameters' => [
+                                'organisation' => $shop->organisation->slug,
+                                'shop'         => $shop->slug
+                            ]
+                        ],
+                        'icon'            => 'fal fa-cube',
+                        "backgroundColor" => "#ff000011",
+                        'value'           => $shop->stats->number_products_no_family,
+                    ],
                 ],
 
 
