@@ -111,22 +111,6 @@ class GetOrderActions
                                 ]
                             ]
                         ] : [],
-                        ] : [],
-                        [
-                            'type'    => 'button',
-                            'style'   => 'save',
-                            'icon'    => 'fal fa-plus',
-                            'tooltip' => __('Create Replacement Delivery Note'),
-                            'label'   => __('Replacement'),
-                            'key'     => 'replacement',
-                            'route'   => [
-                                'method'     => 'post',
-                                'name'       => 'grp.models.order.replacement_delivery_note.store',
-                                'parameters' => [
-                                    'order' => $order->id
-                                ]
-                            ]
-                        ]
                 ],
 
                OrderStateEnum::DISPATCHED => [
@@ -146,6 +130,21 @@ class GetOrderActions
                                 ]
                             ]
                         ] : [],
+                        [
+                            'type'    => 'button',
+                            'style'   => 'save',
+                            'icon'    => 'fal fa-plus',
+                            'tooltip' => __('Create Replacement Delivery Note'),
+                            'label'   => __('Replacement'),
+                            'key'     => 'replacement',
+                            'route'   => [
+                                'method'     => 'post',
+                                'name'       => 'grp.models.order.replacement_delivery_note.store',
+                                'parameters' => [
+                                    'order' => $order->id
+                                ]
+                            ]
+                        ],
                         [
                             'type'    => 'button',
                             'style'   => '',
