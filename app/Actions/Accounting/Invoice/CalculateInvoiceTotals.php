@@ -24,16 +24,16 @@ class CalculateInvoiceTotals extends OrgAction
         $taxRate = $invoice->taxCategory->rate;
 
 
-        $rentalNet    = $transactions->whereIn('model_type', ['Pallet', 'StoredItem', 'Space', 'Rental'])->sum('net_amount');
-        $rentalGross  = $transactions->whereIn('model_type', ['Pallet', 'StoredItem', 'Space', 'Rental'])->sum('gross_amount');
-        $goodsNet     = $transactions->where('model_type', 'Product')->sum('net_amount');
-        $goodsGross   = $transactions->where('model_type', 'Product')->sum('gross_amount');
-        $serviceNet   = $transactions->where('model_type', 'Service')->sum('net_amount');
-        $serviceGross = $transactions->where('model_type', 'Service')->sum('gross_amount');
+        $rentalNet     = $transactions->whereIn('model_type', ['Pallet', 'StoredItem', 'Space', 'Rental'])->sum('net_amount');
+        $rentalGross   = $transactions->whereIn('model_type', ['Pallet', 'StoredItem', 'Space', 'Rental'])->sum('gross_amount');
+        $goodsNet      = $transactions->where('model_type', 'Product')->sum('net_amount');
+        $goodsGross    = $transactions->where('model_type', 'Product')->sum('gross_amount');
+        $serviceNet    = $transactions->where('model_type', 'Service')->sum('net_amount');
+        $serviceGross  = $transactions->where('model_type', 'Service')->sum('gross_amount');
         $shippingNet   = $transactions->where('model_type', 'ShippingZone')->sum('net_amount');
         $shippingGross = $transactions->where('model_type', 'ShippingZone')->sum('gross_amount');
-        $chargeNet   = $transactions->where('model_type', 'Charge')->sum('net_amount');
-        $chargeGross = $transactions->where('model_type', 'Charge')->sum('gross_amount');
+        $chargeNet     = $transactions->where('model_type', 'Charge')->sum('net_amount');
+        $chargeGross   = $transactions->where('model_type', 'Charge')->sum('gross_amount');
 
 
         $netAmount   = $rentalNet + $goodsNet + $serviceNet + $shippingNet + $chargeNet;
@@ -43,8 +43,15 @@ class CalculateInvoiceTotals extends OrgAction
 
         data_set($modelData, 'rental_amount', $rentalNet);
         data_set($modelData, 'net_amount', $netAmount);
+
+        data_set($modelData, 'grp_net_amount', $netAmount * $invoice->grp_exchange);
+        data_set($modelData, 'org_net_amount', $netAmount * $invoice->grp_exchange);
+
+
         data_set($modelData, 'total_amount', $totalAmount);
         data_set($modelData, 'tax_amount', $taxAmount);
+
+
         data_set($modelData, 'services_amount', $serviceNet);
         data_set($modelData, 'goods_amount', $goodsNet);
         data_set($modelData, 'gross_amount', $grossAmount);
