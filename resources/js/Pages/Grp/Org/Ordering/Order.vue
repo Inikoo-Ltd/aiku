@@ -399,7 +399,7 @@ const generateRouteDeliveryNote = (slug: string) => {
                 <ModalConfirmationDelete
                     :routeDelete="action.route"
                     :title="trans('Are you sure you want to rollback the Order??')"
-                    :description="trans('The state of the Order will go back to packed, but not delete it.')"
+                    :description="trans('The state of the Order will go back to finalised state.')"
                     isFullLoading
                     :noLabel="trans('Yes, rollback')"
                     noIcon="far fa-undo-alt"
