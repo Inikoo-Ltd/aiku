@@ -17,29 +17,29 @@ use Lorisleiva\Actions\ActionRequest;
 
 class RollbackDispatchedOrder extends OrgAction
 {
-    public function handle(Order $order)
+    public function handle(Order $order): void
     {
-        if($order->invoices) {
-            $order->invoices()->delete();
-        }
-
-        if($order->deliveryNotes) {
-            foreach($order->deliveryNotes as $deliveryNote) {
-                UpdateDeliveryNote::make()->action($deliveryNote,  [
-                    'state' => DeliveryNoteStateEnum::PACKED
-                ]);
+        if ($order->deliveryNotes) {
+            foreach ($order->deliveryNotes as $deliveryNote) {
+                if ($deliveryNote->state == DeliveryNoteStateEnum::DISPATCHED) {
+                    UpdateDeliveryNote::make()->action($deliveryNote, [
+                        'state' => DeliveryNoteStateEnum::FINALISED,
+                        'dispatched_at' => null,
+                    ]);
+                }
             }
         }
 
         UpdateOrder::make()->action($order, [
-            'state' => OrderStateEnum::PACKED
+            'state' => OrderStateEnum::FINALISED,
+
         ]);
     }
 
-    public function asController(Order $order, ActionRequest $request)
+    public function asController(Order $order, ActionRequest $request): void
     {
         $this->initialisationFromShop($order->shop, $request);
 
-        return $this->handle($order);
+        $this->handle($order);
     }
 }

@@ -113,7 +113,6 @@ class GetOrderActions
                             ]
                         ] : [],
                         [
-                            // TODO VIKTOR
                             'type'    => 'button',
                             'style'   => '',
                             'tooltip' => __('Rollback'),
