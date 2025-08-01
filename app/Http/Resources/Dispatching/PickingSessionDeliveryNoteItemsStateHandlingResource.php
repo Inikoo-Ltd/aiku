@@ -32,9 +32,14 @@ use Illuminate\Support\Facades\DB;
  * @property mixed $delivery_note_slug
  * @property mixed $delivery_note_id
  * @property mixed $delivery_note_state
+ * @property mixed $picking_position
+ * @property mixed $warehouse_area_code
+ * @property mixed $warehouse_area_picking_position
  */
 class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
 {
+
+
     public function toArray($request): array
     {
         $requiredFactionalData = riseDivisor(
@@ -89,6 +94,20 @@ class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
 
         $pickings = Picking::where('delivery_note_item_id', $this->id)->get();
 
+
+        $warehouseArea = '';
+        if ($this->warehouse_area_picking_position) {
+            $warehouseArea = __('Sort:').': '.$this->warehouse_area_picking_position.' ';
+        }
+
+        if ($this->warehouse_area_code) {
+            $warehouseArea .= __('Area').': '.$this->warehouse_area_code;
+        }
+        if ($warehouseArea == '') {
+            $warehouseArea = __('No Area');
+        }
+
+
         return [
             'id'                           => $this->id,
             'is_picked'                    => $isPicked,
@@ -115,7 +134,9 @@ class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
             'delivery_note_state'          => $this->delivery_note_state,
             'is_packed'                    => $isPacked,
             'quantity_required_fractional' => $requiredFactionalData,
+            'picking_position'             => $this->picking_position.'<',
 
+            'warehouse_area'       => $warehouseArea,
             'upsert_picking_route' => [
                 'name'       => 'grp.models.delivery_note_item.picking.upsert',
                 'parameters' => [
