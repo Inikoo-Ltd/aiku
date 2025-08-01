@@ -11,6 +11,7 @@ namespace App\Actions\Ordering\UI;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
+use App\Enums\UI\Ordering\OrdersTabsEnum;
 use App\Http\Resources\Catalogue\ShopResource;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -59,20 +60,21 @@ class ShowOrderingDashboard extends OrgAction
                         'icon'  => 'fal fa-chart-network'
                     ],
                 ],
-                'stats'       => [  // TODO: Kirin
+                'stats'       => [
                     [
                         'label'           => __('Orders excesses payment'),
                         'is_negative'     => true,
                         'route'           => [
-                            'name'       => 'grp.org.shops.show.catalogue.products.orphan_products.index',
+                            'name'       => 'grp.org.shops.show.ordering.orders.index',
                             'parameters' => [
                                 'organisation' => $shop->organisation->slug,
-                                'shop'         => $shop->slug
+                                'shop'         => $shop->slug,
+                                'tab'          => OrdersTabsEnum::EXCESS_ORDERS->value,
                             ]
                         ],
-                        'icon'            => 'fal fa-cube',
+                        'icon'            => 'fal fa-shopping-cart',
                         "backgroundColor" => "#ff000011",
-                        'value'           => $shop->stats->number_products_no_family,
+                        'value'           => 99999999999,  // TODO: Kirin
                     ],
                 ],
 
