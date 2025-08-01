@@ -114,7 +114,11 @@ export const initialiseRetinaApp = () => {
 
         if (usePage().props.auth?.user) {
             layout.user = usePage().props.auth.user
+             if(usePage().props.auth?.customerSalesChannels) {
+                layout.user.customerSalesChannels = usePage().props.auth?.customerSalesChannels
+             }
         }
+
 
         if (usePage().props.retina) {
             layout.retina = usePage().props.retina

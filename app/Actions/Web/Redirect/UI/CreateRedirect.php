@@ -58,28 +58,39 @@ class CreateRedirect extends OrgAction
                 'title'       => $title,
                 'pageHead'    => [
                     'title' => $title,
+                    'actions' => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'cancel',
+                            'label' => __('cancel'),
+                            'route' => [
+                                'name'       => preg_replace('/redirect.create$/', 'show', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters())
+                            ],
+                        ]
+                    ]
                 ],
                 'formData'    => [
                     'fullLayout' => true,
                     'blueprint'  =>
+                    [
                         [
-                            [
-                                'title'  => $title,
-                                'fields' => [
-                                    'type' => [
-                                        'type'     => 'select',
-                                        'label'    => __('type'),
-                                        'required' => true,
-                                        'options'  => Options::forEnum(RedirectTypeEnum::class),
-                                    ],
-                                    'path' => [
-                                        'type'     => 'input',
-                                        'label'    => __('path'),
-                                        'required' => true
-                                    ],
-                                ]
+                            'title'  => $title,
+                            'fields' => [
+                                'type' => [
+                                    'type'     => 'select',
+                                    'label'    => __('type'),
+                                    'required' => true,
+                                    'options'  => Options::forEnum(RedirectTypeEnum::class),
+                                ],
+                                'path' => [
+                                    'type'     => 'input',
+                                    'label'    => __('path'),
+                                    'required' => true
+                                ],
                             ]
-                        ],
+                        ]
+                    ],
                     'route'      => $route
                 ],
 
@@ -126,5 +137,4 @@ class CreateRedirect extends OrgAction
             ]
         );
     }
-
 }

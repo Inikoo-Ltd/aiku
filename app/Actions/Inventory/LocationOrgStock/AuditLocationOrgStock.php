@@ -10,6 +10,7 @@ namespace App\Actions\Inventory\LocationOrgStock;
 
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
 use App\Actions\Inventory\OrgStockAuditDelta\StoreOrgStockAuditDelta;
+use App\Actions\Maintenance\Dispatching\RepairOrgStockMissingLocationIds;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Inventory\LocationOrgStock;
@@ -38,7 +39,7 @@ class AuditLocationOrgStock extends OrgAction
             'original_quantity' => $newStock,
             'audited_quantity'  => $stockDiff,
         ]);
-
+        RepairOrgStockMissingLocationIds::dispatch($locationOrgStock->orgStock);
         OrgStockHydrateQuantityInLocations::dispatch($locationOrgStock->orgStock);
 
         return $locationOrgStock;

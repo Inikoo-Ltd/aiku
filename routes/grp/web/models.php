@@ -23,6 +23,7 @@ use App\Actions\Catalogue\Collection\DeleteCollection;
 use App\Actions\Catalogue\Collection\DetachCollectionFromModel;
 use App\Actions\Catalogue\Collection\DetachModelFromCollection;
 use App\Actions\Catalogue\Collection\DisableCollection;
+use App\Actions\Catalogue\Collection\EnableCollection;
 use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\Collection\UpdateCollection;
 use App\Actions\Catalogue\Product\AttachImagesToProduct;
@@ -39,7 +40,7 @@ use App\Actions\Catalogue\ProductCategory\DeleteProductCategory;
 use App\Actions\Catalogue\ProductCategory\DetachFamilyToSubDepartment;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreSubDepartment;
-use App\Actions\Catalogue\ProductCategory\UpdateMultipleFamiliesDepartment;
+use App\Actions\Catalogue\ProductCategory\AttachFamiliesToDepartment;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
@@ -69,6 +70,7 @@ use App\Actions\CRM\Poll\DeletePoll;
 use App\Actions\CRM\Poll\StorePoll;
 use App\Actions\CRM\Poll\UpdatePoll;
 use App\Actions\CRM\Prospect\ImportShopProspects;
+use App\Actions\CRM\WebUser\DeleteWebUser;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\CRM\WebUser\UpdateWebUser;
 use App\Actions\Dispatching\Printer\PrintShipmentLabel;
@@ -82,6 +84,11 @@ use App\Actions\Dropshipping\CustomerSalesChannel\DeleteCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\DeletePortfolio;
 use App\Actions\Dropshipping\Portfolio\StoreMultiplePortfolios;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
+use App\Actions\Dropshipping\Shopify\Product\CreateNewBulkPortfoliosToShopify;
+use App\Actions\Dropshipping\Shopify\Product\MatchBulkPortfoliosToCurrentShopifyProduct;
+use App\Actions\Dropshipping\Shopify\Product\MatchPortfolioToCurrentShopifyProduct;
+use App\Actions\Dropshipping\Shopify\Product\StoreNewProductToCurrentShopify;
+use App\Actions\Dropshipping\Shopify\ResetShopifyChannel;
 use App\Actions\Fulfilment\Fulfilment\StoreFulfilmentFromUI;
 use App\Actions\Fulfilment\Fulfilment\UpdateFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\StoreFulfilmentCustomer;
@@ -260,6 +267,7 @@ use App\Actions\Web\Website\BreakWebsiteCache;
 use App\Actions\Web\Website\LaunchWebsite;
 use App\Actions\Web\Website\PublishWebsiteMarginal;
 use App\Actions\Web\Website\PublishWebsiteProductTemplate;
+use App\Actions\Web\Website\ReindexWebsiteLuigiData;
 use App\Actions\Web\Website\StoreWebsite;
 use App\Actions\Web\Website\UpdateWebsite;
 use App\Actions\Web\Website\UploadImagesToWebsite;
@@ -331,10 +339,9 @@ Route::prefix('department/{productCategory:id}')->name('department.')->group(fun
 
 
 Route::prefix('/product_category/{productCategory:id}')->name('product_category.')->group(function () {
-    Route::patch('', UpdateProductCategory::class)->name('update');
-    Route::delete('', DeleteProductCategory::class)->name('delete');
+    Route::patch('update', UpdateProductCategory::class)->name('update');
+    Route::delete('delete', DeleteProductCategory::class)->name('delete');
 });
-
 
 Route::prefix('sub-department/{productCategory:id}')->name('sub-department.')->group(function () {
     Route::post('family', [StoreProductCategory::class, 'inSubDepartment'])->name('family.store');
@@ -346,6 +353,11 @@ Route::prefix('sub-department/{subDepartment:id}')->name('sub-department.')->gro
 
 Route::delete('portfolio/{portfolio:id}', DeletePortfolio::class)->name('portfolio.delete');
 Route::patch('portfolio/{portfolio:id}', UpdatePortfolio::class)->name('portfolio.update')->withoutScopedBindings();
+
+Route::post('portfolio/{portfolio:id}/match-to-existing-shopify-product', MatchPortfolioToCurrentShopifyProduct::class)->name('portfolio.match_to_existing_shopify_product');
+Route::post('portfolio/{portfolio:id}/store-new-shopify-product', StoreNewProductToCurrentShopify::class)->name('portfolio.store_new_shopify_product');
+Route::post('{customerSalesChannel:id}/shopify-batch-upload', CreateNewBulkPortfoliosToShopify::class)->name('shopify.batch_upload')->withoutScopedBindings();
+Route::post('{customerSalesChannel:id}/shopify-batch-match', MatchBulkPortfoliosToCurrentShopifyProduct::class)->name('shopify.batch_match')->withoutScopedBindings();
 
 Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::post("google-drive.authorize", [AuthorizeClientGoogleDrive::class, 'authorize'])->name('google_drive.authorize');
@@ -674,6 +686,7 @@ Route::name('model_has_web_block.')->prefix('model-has-web-block')->group(functi
 });
 
 Route::patch('/web-user/{webUser:id}', UpdateWebUser::class)->name('web-user.update');
+Route::delete('/web-user/{webUser:id}', DeleteWebUser::class)->name('web-user.delete');
 
 Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
     Route::post('', [StoreWebUser::class, 'inCustomer'])->name('web-user.store');
@@ -689,6 +702,7 @@ Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customer
     Route::post('portfolio-multiple-manual', StoreMultiplePortfolios::class)->name('portfolio.store_multiple_manual');
     Route::post('client', StoreCustomerClient::class)->name('client.store');
     Route::delete('delete', DeleteCustomerSalesChannel::class)->name('delete');
+    Route::patch('reset-shopify', ResetShopifyChannel::class)->name('shopify_reset');
 });
 
 Route::post('{shop:id}/purge', StorePurge::class)->name('purge.store');
@@ -740,6 +754,7 @@ Route::name('collection.')->prefix('collection/{collection:id}')->group(function
     Route::delete('detach-models', DetachModelFromCollection::class)->name('detach-models');
     Route::delete('delete', DeleteCollection::class)->name('delete');
     Route::patch('webpage-disable', DisableCollection::class)->name('webpage_disable');
+    Route::patch('webpage-enable', EnableCollection::class)->name('webpage_enable');
 });
 
 Route::name('supplier.')->prefix('supplier/{supplier:id}')->group(function () {
@@ -810,7 +825,7 @@ Route::name('product_category.')->group(function () {
 });
 
 Route::post('family/{family:id}/move-products', UpdateMultipleProductsFamily::class)->name('family.move_products');
-Route::post('department/{department:id}/move-families', UpdateMultipleFamiliesDepartment::class)->name('department.move_families');
+Route::post('department/{department:id}/move-families', AttachFamiliesToDepartment::class)->name('department.move_families');
 
 Route::name('model_has_content.')->prefix('model-has-content/{modelHasContent:id}')->group(function () {
     Route::patch('update', UpdateModelHasContent::class)->name('update');
@@ -845,6 +860,7 @@ Route::name('poll.')->prefix('poll')->group(function () {
 
 Route::post('website/{website:id}/break-cache', BreakWebsiteCache::class)->name('website.break_cache')->withoutScopedBindings();
 Route::post('website/{website:id}/redirect', StoreRedirectFromWebsite::class)->name('website.redirect.store')->withoutScopedBindings();
+Route::post('website/{website:id}/reindex-luigi', ReindexWebsiteLuigiData::class)->name('website_luigi.reindex')->withoutScopedBindings();
 
 
 Route::delete('/shipment/{shipment:id}', DeleteShipment::class)->name('shipment.delete');

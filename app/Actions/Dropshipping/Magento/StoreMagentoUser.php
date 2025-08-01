@@ -11,7 +11,6 @@ namespace App\Actions\Dropshipping\Magento;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\OrgAction;
-use App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
@@ -120,7 +119,7 @@ class StoreMagentoUser extends OrgAction
             UpdateCustomerSalesChannel::run($customerSalesChannel, [
                 'name' => Arr::get($stores, '0.name'),
                 'state' => CustomerSalesChannelStateEnum::READY,
-                'connection_status' => CustomerSalesChannelConnectionStatusEnum::CONNECTED
+                'platform_status' => true
             ]);
 
             return $magentoUser;

@@ -17,7 +17,8 @@ enum PickingSessionTabsEnum: string
     use HasTabs;
 
     case ITEMS = 'items';
-    // case PICKINGS = 'pickings';
+    case ITEMIZED = 'itemized';
+    case GROUPED = 'grouped';
 
 
     public function blueprint(): array
@@ -27,6 +28,14 @@ enum PickingSessionTabsEnum: string
             PickingSessionTabsEnum::ITEMS => [
                 'title' => __('Items'),
                 'icon'  => 'fal fa-bars',
+            ],
+            PickingSessionTabsEnum::ITEMIZED => [
+                'title' => __('Pick by location'),
+                'icon'  => 'fal fa-inventory',
+            ],
+            PickingSessionTabsEnum::GROUPED => [
+                'title' => __('Group by delivery'),
+                'icon'  => 'fal fa-truck',
             ],
         };
     }

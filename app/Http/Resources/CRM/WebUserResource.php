@@ -31,7 +31,12 @@ class WebUserResource extends JsonResource
             'created_at' => $webUser->created_at,
             'updated_at' => $webUser->updated_at,
             'customer'   => CustomersResource::make($webUser->customer),
-
+            'delete_route' => [
+                'name' => 'grp.models.web-user.delete',
+                'parameters' => [
+                    'webUser' => $this->id
+                ]
+            ]
         ];
     }
 }

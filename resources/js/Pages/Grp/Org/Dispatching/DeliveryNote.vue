@@ -5,9 +5,9 @@
   -->
 
 <script setup lang="ts">
-import { Head, router, useForm } from "@inertiajs/vue3";
+import { Head, router, useForm, Link} from "@inertiajs/vue3";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faSmileWink,faRecycle, faCube, faChair, faHandPaper, faExternalLink, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faTired, faFilePdf, faBoxOpen } from "@fal";
+import { faSmileWink,faRecycle, faCube, faChair, faHandPaper, faExternalLink, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faTired, faFilePdf, faBoxOpen, faExclamation, faExclamationTriangle } from "@fal";
 import { faArrowRight, faCheck } from "@fas";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import { capitalize } from "@/Composables/capitalize";
@@ -17,7 +17,7 @@ import AlertMessage from "@/Components/Utils/AlertMessage.vue";
 import BoxNote from "@/Components/Pallet/BoxNote.vue";
 import Timeline from "@/Components/Utils/Timeline.vue";
 import { Timeline as TSTimeline } from "@/types/Timeline";
-import { computed, provide, ref, watch  } from "vue";
+import { computed, provide, ref, watch, onMounted  } from "vue";
 import type { Component } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
 import BoxStatsDeliveryNote from "@/Components/Warehouse/DeliveryNotes/BoxStatsDeliveryNote.vue";
@@ -37,6 +37,8 @@ import { get, set } from 'lodash-es';
 import PureInput from "@/Components/Pure/PureInput.vue";
 import ToggleSwitch from 'primevue/toggleswitch';
 import PureAddress from "@/Components/Pure/PureAddress.vue"
+import Message from 'primevue/message';
+import { debounce } from "lodash-es";
 
 
 library.add(faSmileWink,faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck);
@@ -47,6 +49,10 @@ const props = defineProps<{
     tabs: TSTabs
     items?: {}
     pickings?: {}
+    warning?:{
+        text : string
+        picking_sessions : routeType
+    }
     alert?: {
         status: string
         title?: string
@@ -124,11 +130,18 @@ const disable = ref(props.box_stats.state);
 const isLoading = ref<{ [key: string]: boolean }>({});
 const isLoadingToQueue = ref(false);
 const onUpdatePicker = () => {
+    const isUnassigned = props.delivery_note.state == 'unassigned';
+
+    const routeName = isUnassigned ? props.routes.set_queue.name : props.routes.update.name;
+    const routeParams = {
+        ...props.routes[isUnassigned ? 'set_queue' : 'update'].parameters,
+        ...(isUnassigned ? { user: selectedPicker.value.id } : {})
+    };
+    const payload = isUnassigned ? {} : { picker_user_id: selectedPicker.value.id };
+
     router.patch(
-        route(props.routes.update.name, props.routes.update.parameters),
-        {
-            picker_user_id: selectedPicker.value.id
-        },
+        route(routeName, routeParams),
+        payload,
         {
             onError: (error) => {
                 notify({
@@ -146,7 +159,6 @@ const onUpdatePicker = () => {
         }
     );
 };
-
 
 // Section: Shipment
 const isLoadingButton = ref<string | boolean>(false);
@@ -265,6 +277,39 @@ if (storedPickingView !== null) {
 watch(pickingView, (val) => {
   localStorage.setItem('delivery-note:pickingView', String(val));
 });
+
+console.log(props)
+const showWarningMessage = ref(true);
+
+
+const debReloadPage = debounce(() => {
+    router.reload({
+        except: ['auth', 'breadcrumbs', 'flash', 'layout', 'localeData', 'pageHead', 'ziggy']
+    })
+}, 1200)
+
+const selectSocketBasedPlatform = (porto) => {
+    return {
+      event: `grp.dn.${porto.id}`,
+      action: '.dn-note-update'
+    }
+}
+
+onMounted(() => {
+  const socketConfig = selectSocketBasedPlatform(props.delivery_note)
+
+  if (!socketConfig) {
+    console.warn('Socket config not found for platform:', props.delivery_note.id)
+    return
+  }
+
+  const channel = window.Echo
+    .private(socketConfig.event)
+    .listen(socketConfig.action, (eventData: any) => {
+      debReloadPage()
+    })
+  console.log('Subscribed to channel for porto ID:', props.delivery_note.id, 'Channel:', channel)
+})
 </script>
 
 
@@ -317,27 +362,54 @@ watch(pickingView, (val) => {
 
 
     </PageHeading>
-
     <!-- Section: Pallet Warning -->
     <div v-if="alert?.status" class="p-2 pb-0">
         <AlertMessage :alert />
     </div>
+
+  <div v-if="warning && showWarningMessage" class="p-1">
+  <Message 
+    severity="warn"
+    class="p-1 rounded-md border-l-4 border-yellow-500 bg-yellow-50 text-yellow-800"
+    :closable="true"
+    @close="showWarningMessage = false"
+  >
+    <div class="flex items-start gap-3">
+      <!-- Icon -->
+      <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500 w-4 h-4 flex-shrink-0" />
+
+      <!-- Main Content -->
+      <div class="flex gap-2 flex-wrap items-center">
+        <!-- Warning Text -->
+        <div class="text-sm font-medium">
+          {{ warning?.text }}
+        </div>
+
+        <!-- Session Links in One Line -->
+        <div class="flex flex-wrap items-center gap-2 font-bold underline">
+          <template v-for="(item, idx) in warning?.picking_sessions" :key="idx">
+            <Link :href="route(item.route.name, item.route.parameters)" class="text-sm hover:underline">
+              {{ item.reference }}
+            </Link>
+          </template>
+        </div>
+      </div>
+    </div>
+  </Message>
+</div>
+
 
     <!-- Section: Box Note -->
     <div v-if="pickingView" class="relative">
         <Transition name="headlessui">
             <div xv-if="notes?.note_list?.some(item => !!(item?.note?.trim()))"
                 class="p-2 grid grid-cols-2 sm:grid-cols-4 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
-                <BoxNote v-for="(note, index) in notes.note_list"
-                    :key="index+note.label"
-                    :noteData="note"
-                    :updateRoute="routes.update"
-                    :fetchRoute="{
+                <BoxNote v-for="(note, index) in notes.note_list" :key="index+note.label" :noteData="note"
+                    :updateRoute="routes.update" :fetchRoute="{
                         name: 'grp.models.delivery_note.copy_notes',
                         parameters: { deliveryNote: props.delivery_note.id },
                         method: 'patch'
-                    }"
-                />
+                    }" />
             </div>
         </Transition>
     </div>
@@ -349,14 +421,8 @@ watch(pickingView, (val) => {
     </div>
 
 
-      <BoxStatsDeliveryNote
-        v-if="box_stats && pickingView"
-        :boxStats="box_stats"
-        :routes
-        :deliveryNote="delivery_note"
-        :updateRoute="routes.update"
-        :shipments
-    />
+    <BoxStatsDeliveryNote v-if="box_stats && pickingView" :boxStats="box_stats" :routes :deliveryNote="delivery_note"
+        :updateRoute="routes.update" :shipments />
 
     <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
 
@@ -454,11 +520,10 @@ watch(pickingView, (val) => {
                 </div>
 
                 <div class="">
-                    <PureMultiselectInfiniteScroll
-                        v-if="shipments?.fetch_route"
-                        v-model="formTrackingNumber.shipping_id"
-                        :fetchRoute="shipments?.fetch_route" required :disabled="isLoadingButton == 'addTrackingNumber'"
-                        :placeholder="trans('Select shipping')" object @optionsList="(e) => optionShippingList = e">
+                    <PureMultiselectInfiniteScroll v-if="shipments?.fetch_route"
+                        v-model="formTrackingNumber.shipping_id" :fetchRoute="shipments?.fetch_route" required
+                        :disabled="isLoadingButton == 'addTrackingNumber'" :placeholder="trans('Select shipping')"
+                        object @optionsList="(e) => optionShippingList = e">
                         <template #singlelabel="{ value }">
                             <div class="w-full text-left pl-4">
                                 {{ value.name }}

@@ -58,6 +58,9 @@ class SendNewOrderEmailToSubscribers extends OrgAction
                 $emailHtmlBody = $outbox->emailOngoingRun?->email?->liveSnapshot?->compiled_layout;
             }
 
+
+            $transactions=$order->transactions()->where('model_type', 'Product')->get();
+
             $this->sendEmailWithMergeTags(
                 $dispatchedEmail,
                 $outbox->emailOngoingRun->sender(),
@@ -65,8 +68,19 @@ class SendNewOrderEmailToSubscribers extends OrgAction
                 $emailHtmlBody,
                 '',
                 additionalData: [
+                    'shop_name'     => $order->shop->name,
+                    'currency'      => $order->shop->currency->symbol,
                     'customer_name' => $customer->name,
                     'order_reference' => $order->reference,
+                    'order_total'   => $order->total_amount,
+                    'goods_amount'   => $order->goods_amount,
+                    'charges_amount'   => $order->charges_amount,
+                    'shipping_amount'   => $order->shipping_amount,
+                    'net_amount'   => $order->net_amount,
+                    'tax_amount'   => $order->tax_amount,
+                    'payment_amount' => $order->payment_amount,
+                    'payment_type' => $order->payments()->first()->paymentAccount->name,
+                    'blade_new_order_transactions' => $this->generateOrderTransactionsHtml($transactions),
                     'date' => $order->created_at->format('F jS, Y'),
                     'order_link' => route('grp.org.shops.show.crm.customers.show.orders.show', [
                         $order->organisation->slug,
@@ -86,6 +100,39 @@ class SendNewOrderEmailToSubscribers extends OrgAction
                 ]
             );
         }
+    }
+
+    private function generateOrderTransactionsHtml($transactions): string
+    {
+        if (!$transactions) {
+            return '';
+        }
+
+        if (is_string($transactions)) {
+            $transactions = json_decode($transactions, true);
+        }
+
+        $html = '';
+        foreach ($transactions as $transaction) {
+            $historicAsset = $transaction->historicAsset;
+
+            $html .= sprintf(
+                '<tr style="border-bottom: 1px solid #e9e9e9;">
+                    <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: left;">
+                        <strong>%s</strong><br/>
+                        <span style="color: #666;">%s</span>
+                    </td>
+                    <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: center;">%s</td>
+                    <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: right;">£%s</td>
+                </tr>',
+                $historicAsset->code ?? 'N/A',
+                $historicAsset->name ?? 'N/A',
+                $transaction->quantity_ordered ?? '0',
+                $transaction->net_amount ?? '0'
+            );
+        }
+
+        return $html;
     }
 
 }

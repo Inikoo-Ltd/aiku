@@ -89,8 +89,11 @@ class ShowFamily extends OrgAction
                 'type'  => 'button',
                 'style' => 'delete',
                 'route' => [
-                    'name'       => 'shops.show.families.remove',
-                    'parameters' => $request->route()->originalParameters()
+                    'name'       => 'grp.models.product_category.delete',
+                    'method' => 'delete',
+                    'parameters' => [
+                        'productCategory' => $family->id
+                        ]
                 ]
             ] : false
         ]);

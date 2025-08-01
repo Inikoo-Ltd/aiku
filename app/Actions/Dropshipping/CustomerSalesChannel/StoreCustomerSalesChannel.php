@@ -10,9 +10,7 @@ namespace App\Actions\Dropshipping\CustomerSalesChannel;
 
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateCustomers;
 use App\Actions\OrgAction;
-use App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
@@ -27,7 +25,6 @@ class StoreCustomerSalesChannel extends OrgAction
         $modelData['organisation_id']   = $customer->organisation_id;
         $modelData['shop_id']           = $customer->shop_id;
         $modelData['platform_id']       = $platform->id;
-        $modelData['connection_status'] = $platform->type == PlatformTypeEnum::MANUAL ? CustomerSalesChannelConnectionStatusEnum::NO_APPLICABLE : CustomerSalesChannelConnectionStatusEnum::PENDING;
         $customerSalesChannel           = $customer->customerSalesChannels()->create($modelData);
 
         PlatformHydrateCustomers::dispatch($platform)->delay($this->hydratorsDelay);

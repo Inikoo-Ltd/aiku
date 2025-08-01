@@ -13,7 +13,6 @@ use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshipp
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -44,85 +43,56 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
     public function htmlResponse(CustomerSalesChannel $customerSalesChannel): Response
     {
         $title = __('Channel Dashboard');
-        $step = match ($customerSalesChannel->connection_status) {
-            CustomerSalesChannelConnectionStatusEnum::PENDING, CustomerSalesChannelConnectionStatusEnum::DISCONNECTED => [
-                'label' => __('Great! You just complete first step.'),
-                'title' => __('Connect your store'),
-                'description' => __('Connect your store to Shopify and start selling with ease. Our platform is designed to help you manage your sales channels efficiently, so you can focus on growing your business.'),
-                'button' => [
-                    'label' => __('Connect your store'),
-                    'route_target' => [
-                        'name'       => 'retina.dropshipping.customer_sales_channels.reconnect',
-                        'parameters' => [
-                            'customerSalesChannel' => $customerSalesChannel->slug
-                        ],
-                        'method'     => 'get',
-                    ],
-                ],
-                'icon' => 'fal fa-link',
-            ],
-            default => []
-        };
 
-        $renderPage = $customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL
-            ? 'Dropshipping/Platform/PlatformManualDashboard'
-            : 'Dropshipping/Platform/PlatformDashboard';
+        $step     = [];
+        $timeline = null;
+
+        $renderPage = $customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL ? 'Dropshipping/Platform/PlatformManualDashboard' : 'Dropshipping/Platform/PlatformDashboard';
 
 
         $isFulfilment = $this->shop->type == ShopTypeEnum::FULFILMENT;
 
         return Inertia::render($renderPage, [
-            'title'                  => $title,
-            'breadcrumbs'            => $this->getBreadcrumbs($customerSalesChannel),
-            'pageHead'               => [
+            'title'                   => $title,
+            'breadcrumbs'             => $this->getBreadcrumbs($customerSalesChannel),
+            'pageHead'                => [
 
-                'title' => $customerSalesChannel->name ?? $customerSalesChannel->reference,
-                'model' => $customerSalesChannel->platform->name,
-                'icon'  => [
-                    'icon'  => ['fal', 'fa-code-branch'],
-                    'icon_rotation'  => 90,
-                    'title' => $title
+                'title'   => $customerSalesChannel->name ?? $customerSalesChannel->reference,
+                'model'   => $customerSalesChannel->platform->name,
+                'icon'    => [
+                    'icon'          => ['fal', 'fa-code-branch'],
+                    'icon_rotation' => 90,
+                    'title'         => $title
                 ],
-                'actions'    => [
-                        [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'label' => __('Edit'),
-                            'route' => [
-                                'name'       => $isFulfilment ? 'retina.fulfilment.dropshipping.customer_sales_channels.edit' : 'retina.dropshipping.customer_sales_channels.edit',
-                                'parameters' => [
-                                    'customerSalesChannel' => $customerSalesChannel->slug,
-                                ],
-                                'method'     => 'get'
-                            ]
+                'actions' => [
+                    [
+                        'type'  => 'button',
+                        'style' => 'edit',
+                        'label' => __('Edit'),
+                        'route' => [
+                            'name'       => $isFulfilment ? 'retina.fulfilment.dropshipping.customer_sales_channels.edit' : 'retina.dropshipping.customer_sales_channels.edit',
+                            'parameters' => [
+                                'customerSalesChannel' => $customerSalesChannel->slug,
+                            ],
+                            'method'     => 'get'
                         ]
+                    ]
                 ]
 
             ],
-            'timeline' => $customerSalesChannel->connection_status !== CustomerSalesChannelConnectionStatusEnum::CONNECTED ? [
-                'current_state' => $customerSalesChannel->state->value,
-                'options'   => [
-                    CustomerSalesChannelConnectionStatusEnum::PENDING->value => [
-                        "label" => "Connection Pending",
-                        "tooltip" => "Reconnect your account to start using our services",
-                        "key" => CustomerSalesChannelConnectionStatusEnum::PENDING->value
-                    ],
-                    CustomerSalesChannelConnectionStatusEnum::CONNECTED->value => [
-                        "label" => "Add products",
-                        "tooltip" => "Add products to your portfolio",
-                        "key" => CustomerSalesChannelConnectionStatusEnum::CONNECTED->value
-                    ]
-                ],
-            ] : null,
-            'headline'  => [
-                'title' => __('Web/API order management'),
+            'timeline'                => $timeline,
+            'headline'                => [
+                'title'       => __('Web/API order management'),
                 'description' => '<p><span>First, add desired products to your </span><strong>My Products</strong><span> using the </span><strong>Add Products</strong><span> button. When an order comes in, find the client under the </span><strong>Clients</strong><span> tab (add them if new), then click </span><strong>Create Order.</strong><span> Finally, enter product codes and quantities to complete the order.</span></p>'
             ],
-            'customer_sales_channel' => $customerSalesChannel,
-            'platform'               => $customerSalesChannel->platform,
-            'platform_logo'          => $this->getPlatformLogo($customerSalesChannel->platform->code),
-            'platformData'           => $this->getPlatformData($customerSalesChannel),
-            'step'  => $step
+            'customer_sales_channel'  => $customerSalesChannel,
+            'platform'                => $customerSalesChannel->platform,
+            'platform_logo'           => $this->getPlatformLogo($customerSalesChannel->platform->code),
+            'platformData'            => $this->getPlatformData($customerSalesChannel),
+            'can_connect_to_platform' => $customerSalesChannel->can_connect_to_platform,
+            'exist_in_platform'       => $customerSalesChannel->exist_in_platform,
+            'platform_status'         => $customerSalesChannel->platform_status,
+            'step'                    => $step
         ]);
     }
 
@@ -131,6 +101,8 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
         $stats = [];
 
         $isFulfilment = $this->shop->type == ShopTypeEnum::FULFILMENT;
+
+        $isManual = $customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL;
 
         $stats['orders'] = [
             'label'       => __('Orders'),
@@ -145,18 +117,20 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
             ]
         ];
 
-        $stats['clients'] = [
-            'label'       => __('Clients'),
-            'icon'        => 'fal fa-user-friends',
-            'count'       => $customerSalesChannel->number_customer_clients,
-            'description' => __('total clients'),
-            'route'       => [
-                'name'       => $isFulfilment ? 'retina.fulfilment.dropshipping.customer_sales_channels.client.index' : 'retina.dropshipping.customer_sales_channels.client.index',
-                'parameters' => [
-                    'customerSalesChannel' => $customerSalesChannel->slug,
+        if ($isManual) {
+            $stats['clients'] = [
+                'label'       => __('Clients'),
+                'icon'        => 'fal fa-user-friends',
+                'count'       => $customerSalesChannel->number_customer_clients,
+                'description' => __('total clients'),
+                'route'       => [
+                    'name'       => $isFulfilment ? 'retina.fulfilment.dropshipping.customer_sales_channels.client.index' : 'retina.dropshipping.customer_sales_channels.client.index',
+                    'parameters' => [
+                        'customerSalesChannel' => $customerSalesChannel->slug,
+                    ]
                 ]
-            ]
-        ];
+            ];
+        }
 
         $stats['portfolios'] = [
             'label'       => __('Products'),

@@ -58,6 +58,12 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property array<array-key, mixed>|null $platform_product_availabilities
  * @property string|null $sku
  * @property string|null $barcode
+ * @property bool $has_valid_platform_product_id
+ * @property bool $exist_in_platform
+ * @property bool $platform_status for shopify: variant has correct location
+ * @property array<array-key, mixed>|null $platform_possible_matches
+ * @property string|null $platform_product_variant_id
+ * @property int $number_platform_possible_matches
  * @property PortfolioTypeEnum $type
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Customer $customer
@@ -67,7 +73,6 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Dropshipping\Platform|null $platform
  * @property-read \App\Models\Catalogue\Shop|null $shop
- * @property-read \App\Models\Dropshipping\ShopifyUserHasProduct|null $shopifyPortfolio
  * @property-read \App\Models\Dropshipping\PortfolioStats|null $stats
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Portfolio newModelQuery()
@@ -82,21 +87,23 @@ class Portfolio extends Model implements Auditable
     use HasUniversalSearch;
 
     protected $casts = [
-        'type'       => PortfolioTypeEnum::class,
-        'data'       => 'array',
-        'settings'   => 'array',
-        'errors_response'   => 'array',
-        'platform_product_availabilities'   => 'array',
-        'status'     => 'boolean',
-        'added_at'   => 'datetime',
-        'removed_at' => 'datetime'
+        'type'                            => PortfolioTypeEnum::class,
+        'data'                            => 'array',
+        'settings'                        => 'array',
+        'errors_response'                 => 'array',
+        'platform_product_availabilities' => 'array',
+        'status'                          => 'boolean',
+        'added_at'                        => 'datetime',
+        'removed_at'                      => 'datetime',
+        'platform_possible_matches'       => 'array',
     ];
 
     protected $attributes = [
-        'data'     => '{}',
-        'settings' => '{}',
-        'errors_response' => '{}',
-        'platform_product_availabilities' => '{}'
+        'data'                            => '{}',
+        'settings'                        => '{}',
+        'errors_response'                 => '{}',
+        'platform_product_availabilities' => '{}',
+        'platform_possible_matches'       => '{}',
     ];
 
     protected $guarded = [];
@@ -129,10 +136,6 @@ class Portfolio extends Model implements Auditable
         return $this->hasOne(PortfolioStats::class);
     }
 
-    public function shopifyPortfolio(): HasOne
-    {
-        return $this->hasOne(ShopifyUserHasProduct::class, 'portfolio_id');
-    }
 
     public function platform(): BelongsTo
     {

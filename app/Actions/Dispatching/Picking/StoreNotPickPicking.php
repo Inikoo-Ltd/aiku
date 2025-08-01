@@ -19,7 +19,6 @@ use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
 use App\Models\SysAdmin\User;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -89,7 +88,7 @@ class StoreNotPickPicking extends OrgAction
 
     public function action(DeliveryNoteItem $deliveryNoteItem, User $user, array $modelData): Picking
     {
-        $this->cancel = $cancel;
+        $this->asAction         = true;
         $this->user             = $user;
         $this->deliveryNoteItem = $deliveryNoteItem;
 

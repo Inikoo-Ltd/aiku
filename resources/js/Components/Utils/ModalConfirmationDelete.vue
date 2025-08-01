@@ -35,6 +35,7 @@ const props = defineProps<{
 const emits = defineEmits<{
     (e: 'onNo'): void
     (e: 'onYes'): void
+    (e: 'success'): void
 }>()
 
 const isOpenModal = ref(false)
@@ -57,6 +58,7 @@ const onClickDelete = () => {
                     },
                     onSuccess: () => {
                         isOpenModal.value = false
+                        emits('success')
                     },
                     onFinish: () => {
                         if (props.isFullLoading) {
@@ -167,7 +169,7 @@ const messageDelete = ref('')
                                                     full
                                                 >
                                                     <template #label>
-                                                        <span class="whitespace-nowrap">{{ props.noLabel ?? trans('Delete') }}</span>
+                                                        <span class="whitespace-nowrap">{{ props.noLabel ?? trans('Delete')}}</span>
                                                     </template>
                                                 </Button>
                                             </div>

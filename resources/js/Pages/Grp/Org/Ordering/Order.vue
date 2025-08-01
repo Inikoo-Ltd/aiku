@@ -57,10 +57,7 @@ import { faSpinnerThird } from "@far"
 import DeliveryAddressManagementModal from "@/Components/Utils/DeliveryAddressManagementModal.vue"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.vue"
-import { useTruncate } from "@/Composables/useTruncate"
-import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
-import ShipmentSection from "@/Components/Warehouse/DeliveryNotes/ShipmentSection.vue"
+
 import Icon from "@/Components/Icon.vue"
 
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird)
@@ -112,7 +109,7 @@ const props = defineProps<{
     }
 
     upload_spreadsheet?: UploadPallet
-    address_management: {
+    delivery_address_management: {
         can_open_address_management: boolean
         updateRoute: routeType
         addresses: AddressManagement
@@ -631,9 +628,9 @@ const generateRouteDeliveryNote = (slug: string) => {
         <!-- Box: Payment/Invoices/Delivery Notes  -->
         <BoxStatPallet class="py-4 px-3" icon="fal fa-user">
             <div class="text-xs md:text-sm">
-				<div class="font-semibold xmb-2 text-base">
+				<!-- <div class="font-semibold xmb-2 text-base">
 					{{ trans("Delivery Note") }}
-				</div>
+				</div> -->
 				
 				<div class="xspace-y-0.5 pl-1">
                     <!-- Field: Billing -->
@@ -808,9 +805,9 @@ const generateRouteDeliveryNote = (slug: string) => {
 
     <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)" width="w-full max-w-5xl">
         <DeliveryAddressManagementModal
-            :address_modal_title="address_management.address_modal_title"
-            :addresses="address_management.addresses"
-            :updateRoute="address_management.address_update_route"
+            :address_modal_title="delivery_address_management.address_modal_title"
+            :addresses="delivery_address_management.addresses"
+            :updateRoute="delivery_address_management.address_update_route"
             keyPayloadEdit="address"
             @onDone="() => (isModalAddress = false)"
         />
