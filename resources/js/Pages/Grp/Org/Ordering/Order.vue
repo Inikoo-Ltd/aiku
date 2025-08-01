@@ -59,6 +59,7 @@ import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.vue"
 
 import Icon from "@/Components/Icon.vue"
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird)
 
@@ -148,6 +149,10 @@ const props = defineProps<{
                 total_amount: number
                 paid_amount: number
                 pay_amount: number
+            }
+            excesses_payment?: {
+                amount: number
+                route_to_add_balance?: routeType
             }
             estimated_weight: number
         }
@@ -613,14 +618,30 @@ const generateRouteDeliveryNote = (slug: string) => {
         
                         <div>
                             <NeedToPay
-                                @click="onPayClick"
+                                @click="() => box_stats.products.payment.pay_amount ? onPayClick : ''"
                                 :totalAmount="box_stats.products.payment.total_amount"
                                 :paidAmount="box_stats.products.payment.paid_amount"
                                 :payAmount="box_stats.products.payment.pay_amount"
                                 :class="[box_stats.products.payment.pay_amount ? 'hover:bg-gray-100 cursor-pointer' : '']"
                                 :currencyCode="currency.code"
                             >
-                                <template #default>
+                                <template v-if="box_stats.products.excesses_payment?.amount" #default>
+                                    <div class="pt-1 border-t border-green-300 text-xxs">
+                                        <p class="text-gray-500">
+                                            {{ trans("You have some excesses balance") }}:
+                                            <span class="text-gray-700">
+                                                {{ locale.currencyFormat(currency.code, Number(box_stats.products.excesses_payment?.amount)) }}
+                                            </span>
+                                        </p>
+
+                                        <ButtonWithLink
+                                            v-if="box_stats.products.excesses_payment?.route_to_add_balance?.name"
+                                            :routeTarget="box_stats.products.excesses_payment?.route_to_add_balance"
+                                            icon="far fa-plus"
+                                            label="Add to customer balance"
+                                            size="xxs"
+                                        />
+                                    </div>
                                 </template>
                             </NeedToPay>
         

@@ -162,6 +162,14 @@ trait IsOrder
                     'pay_amount'   => $roundedDiff,
                     'pay_status'   => $order->pay_status,
                 ],
+                'excesses_payment'  => [  // TODO
+                    'amount'    => 5.5,
+                    'route_to_add_balance' => [
+                        'name'       => 'grp.dashboard.show',
+                        'parameters' => [
+                        ]
+                    ]
+                ],
                 'estimated_weight' => $estWeight,
             ],
 
