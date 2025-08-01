@@ -33,7 +33,6 @@ const props = defineProps<{
 }>()
 
 const locale = inject('locale', {})
-// console.log('dataa', props.data?.data?.payment_session_token)
 
 const isLoading = ref(false)
 onMounted(async () => {

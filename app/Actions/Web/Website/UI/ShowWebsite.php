@@ -238,6 +238,12 @@ class ShowWebsite extends OrgAction
                     ],
                 ],
 
+                'luigi_data' => [
+                    'luigisbox_tracker_id' => Arr::get($website->settings, "luigisbox.tracker_id"),
+                    'luigisbox_private_key'    => Arr::get($website->settings, "luigisbox.private_key"),
+                    'luigisbox_lbx_code'       => Arr::get($website->settings, "luigisbox.lbx_code"),
+                ],
+
                 WebsiteTabsEnum::SHOWCASE->value => $this->tab == WebsiteTabsEnum::SHOWCASE->value ? array_merge(WebsiteResource::make($website)->getArray(), ['layout' => GetWebsiteWorkshopLayout::run($this->parent, $website)['routeList']], ['stats' => $stats, 'content_blog_stats' => $content_blog_stats])
                     : Inertia::lazy(fn () => WebsiteResource::make($website)->getArray()),
 

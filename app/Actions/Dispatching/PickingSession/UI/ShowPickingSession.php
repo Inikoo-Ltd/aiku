@@ -186,7 +186,7 @@ class ShowPickingSession extends OrgAction
             ];
         }
 
-        return [];
+
     }
 
     public function getBreadcrumbs(PickingSession $pickingSession, string $routeName, array $routeParameters, string $suffix = ''): array

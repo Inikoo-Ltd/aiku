@@ -206,6 +206,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, Service> $services
  * @property-read LaravelCollection<int, ShippingZoneSchema> $shippingZoneSchemas
  * @property-read LaravelCollection<int, ShippingZone> $shippingZones
+ * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $shopCollections
  * @property-read \App\Models\Catalogue\ShopStats|null $stats
  * @property-read LaravelCollection<int, Task> $tasks
  * @property-read TaxNumber|null $taxNumber
@@ -519,6 +520,11 @@ class Shop extends Model implements HasMedia, Auditable
     public function collections(): MorphToMany
     {
         return $this->morphToMany(Collection::class, 'model', 'model_has_collections')->withTimestamps();
+    }
+
+    public function shopCollections(): HasMany
+    {
+        return $this->hasMany(Collection::class);
     }
 
     public function services(): HasMany

@@ -25,14 +25,34 @@ class ShippingDropshippingDeliveryNoteResource extends JsonResource
         $customer = $deliveryNote->customer;
         $shop     = $deliveryNote->shop;
 
-        $shopContactName = $shop->contact_name;
-        if (!$shop->contact_name) {
-            $shopContactName = 'A B';
+
+        $fromCompany = $customer->company_name;
+        if (!$fromCompany) {
+            $fromCompany = $customer->name;
         }
 
-        $shopLastName = (strpos($shopContactName, ' ') !== false)
-            ? substr($shopContactName, strpos($shopContactName, ' ') + 1)
+        $fromContactName = $customer->contact_name;
+        if (!$fromContactName) {
+            $fromContactName = $customer->name;
+        }
+
+
+
+        $fromLastName = (strpos($fromContactName, ' ') !== false)
+            ? substr($fromContactName, strpos($fromContactName, ' ') + 1)
             : 'Unknown';
+
+        $fromFirstName = explode(' ', $fromContactName)[0];
+
+        $fromPhone = $customer->phone;
+        if (!$fromPhone) {
+            $fromPhone = $shop->phone;
+        }
+
+        $fromEmail = $customer->email;
+        if (!$fromEmail) {
+            $fromEmail = $shop->email;
+        }
 
 
         $address = $deliveryNote->deliveryAddress;
@@ -60,13 +80,13 @@ class ShippingDropshippingDeliveryNoteResource extends JsonResource
 
         return [
             'id'                 => $deliveryNote->id,
-            'customer_reference' => $customer->reference,
-            'from_first_name'    => explode(' ', $shopContactName)[0],
-            'from_last_name'     => $shopLastName,
-            'from_company_name'  => $shop->company_name,
-            'from_contact_name'  => $shopContactName,
-            'from_phone'         => $shop->phone,
-            'from_email'         => $shop->email,
+            'customer_reference' => $deliveryNote->reference,
+            'from_first_name'    => $fromFirstName,
+            'from_last_name'     => $fromLastName,
+            'from_company_name'  => $fromCompany,
+            'from_contact_name'  => $fromContactName,
+            'from_phone'         => $fromPhone,
+            'from_email'         => $fromEmail,
             'from_address'       => AddressResource::make($shop->address)->getArray(),
             'to_address'         => AddressResource::make($address)->getArray(),
             'to_contact_name'    => $contactName,

@@ -38,19 +38,19 @@ trait WithWebpageSubNavigation
                     "tooltip" => __("Homepage"),
                 ],
             ],
-            [
-                "isAnchor" => true,
-                "label"    => __("Structure"),
+            // [
+            //     "isAnchor" => true,
+            //     "label"    => __("Structure"),
 
-                "route"    => [
-                    "name"       => "grp.org.shops.show.web.webpages.tree",
-                    "parameters" => [$shop->organisation->slug, $shop->slug, $website->slug],
-                ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-code-branch"],
-                    "tooltip" => __("Tree view of the webpages"),
-                ],
-            ],
+            //     "route"    => [
+            //         "name"       => "grp.org.shops.show.web.webpages.tree",
+            //         "parameters" => [$shop->organisation->slug, $shop->slug, $website->slug],
+            //     ],
+            //     "leftIcon" => [
+            //         "icon"    => ["fal", "fa-code-branch"],
+            //         "tooltip" => __("Tree view of the webpages"),
+            //     ],
+            // ],
             [
                 "number"   => $website->webStats->number_webpages_type_catalogue,
                 "label"    => __("Catalogue"),

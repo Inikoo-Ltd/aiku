@@ -5,7 +5,6 @@ namespace App\Console;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\Dropshipping\Ebay\Orders\FetchEbayOrders;
 use App\Actions\Dropshipping\Ebay\Orders\FetchWooOrders;
-use App\Actions\Dropshipping\Shopify\CheckShopifyChannel;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomersHydrateStatus;
 use App\Actions\Fulfilment\UpdateCurrentRecurringBillsTemporalAggregates;
 use App\Actions\Helpers\Intervals\ResetDailyIntervals;
@@ -62,6 +61,11 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'DeleteTempIsdoc',
         );
 
+
+        $schedule->command('data_feeds:save')->everyTwoHours()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'SaveDataFeeds',
+        );
+
         $schedule->command('fetch:orders -w full -B')->everyFiveMinutes()->timezone('UTC')->sentryMonitor(
             monitorSlug: 'FetchOrdersInBasket',
         );
@@ -84,6 +88,8 @@ class Kernel extends ConsoleKernel
         $schedule->job(FetchWooOrders::makeJob())->cron('2,12,22,32,42,52 * * * *')->sentryMonitor(
             monitorSlug: 'FetchWooOrders',
         );
+
+
 
         (new Schedule())->command('hydrate -s ful')->everyFourHours('23:00')->timezone('UTC');
         (new Schedule())->command('hydrate -s sys')->everyTwoHours('23:00')->timezone('UTC');

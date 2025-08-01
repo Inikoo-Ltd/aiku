@@ -4,7 +4,7 @@ import { faSearch, faThLarge, faListUl, faStar as falStar } from '@fal'
 import { faStar } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Intro from '../Intro.vue'
-import WelcomeShop from '../WelcomeShop.vue'
+import ShopifyApp from '../ShopifyApp.vue'
 library.add(faSearch, faThLarge, faListUl, faStar, falStar)
 
 declare global {
@@ -31,5 +31,5 @@ const props = defineProps<{
 
 <template>
     <Intro v-if="props.showIntro" :shops :routes/>
-    <WelcomeShop v-else-if="props.shop" :shop :shopUrl :data />
+    <ShopifyApp v-else-if="props.shop" :shop :shopUrl :data />
 </template>

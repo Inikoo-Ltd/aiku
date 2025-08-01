@@ -121,6 +121,11 @@ return [
             'driver' => 'local',
             'root'   => storage_path('app'),
             'throw'  => false,
+        ],
+        'data-feeds' => [
+            'driver' => 'local',
+            'root'   => storage_path('app/data-feeds'),
+            'throw'  => false,
         ]
 
     ],

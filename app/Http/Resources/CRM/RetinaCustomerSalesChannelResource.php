@@ -27,7 +27,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $total_amount
  * @property mixed $platform_code
  * @property mixed $platform_name
- * @property mixed $connection_status
  */
 class RetinaCustomerSalesChannelResource extends JsonResource
 {
@@ -70,7 +69,6 @@ class RetinaCustomerSalesChannelResource extends JsonResource
             'platform_code'           => $this->platform_code,
             'platform_name'           => $this->platform_name,
             'platform_image'          => $this->getPlatformLogo($customerSalesChannels->platform->code),
-            'connection'              => $this->connection_status,
 
             'reconnect_route' => $reconnectRoute,
 

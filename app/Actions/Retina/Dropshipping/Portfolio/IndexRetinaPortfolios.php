@@ -11,7 +11,6 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithPlatformStatusCheck;
-use App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\RetinaCustomerSalesChannelResource;
@@ -80,7 +79,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
 
         return $query->defaultSort('-portfolios.id')
-            ->allowedFilters([$unUploadedFilter, $globalSearch, $this->getStateFilter()])
+            ->allowedFilters([$unUploadedFilter, $globalSearch, $this->getStateFilter(), $this->getPlatformStatusFilter()])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -90,8 +89,15 @@ class IndexRetinaPortfolios extends RetinaAction
         return AllowedFilter::callback('status', function ($query, $value) {
             $query->whereHas('item', function ($subQuery) use ($value) {
                 $subQuery->where('item_type', 'Product')
-                        ->whereIn('status', (array)$value);
+                    ->whereIn('status', (array)$value);
             });
+        });
+    }
+
+    public function getPlatformStatusFilter(): AllowedFilter
+    {
+        return AllowedFilter::callback('platform_status', function ($query, $value) {
+            $query->where('platform_status', $value);
         });
     }
 
@@ -205,9 +211,19 @@ class IndexRetinaPortfolios extends RetinaAction
 
         $actions = [];
 
-        if($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
+        if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
+            $countProductsNotSync = $this->customerSalesChannel->portfolios()->where('portfolios.status', true)->where('platform_status', false)->count();
+        } elseif ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
+            $countProductsNotSync = 0;
+        } else {
+            // todo review this for other platforms , we shuuld use platform_status
+            $countProductsNotSync = $this->customerSalesChannel->portfolios()->where('platform_product_id', null)->count();
+        }
+
+
+        if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
             $actions = [
-                        [
+                       /*  [
                             'type'  => 'button',
                             'style' => 'create',
                             'label' => __('Match With Existing Product'),
@@ -230,7 +246,7 @@ class IndexRetinaPortfolios extends RetinaAction
                                 ],
                                 'method'     => 'post'
                             ]
-                        ]
+                        ] */
                     ];
         }
 
@@ -246,7 +262,7 @@ class IndexRetinaPortfolios extends RetinaAction
                         'label' => '@'.$this->customerSalesChannel->name,
                     ],
                     'icon'       => 'fal fa-cube',
-                    'actions' => $actions,
+                    'actions'    => $actions,
                 ],
                 'routes'         => [
                     'bulk_upload'               => $bulkUploadRoute,
@@ -341,11 +357,11 @@ class IndexRetinaPortfolios extends RetinaAction
                 'product_count' => $this->customerSalesChannel->number_portfolios,
 
 
-                'count_product_not_synced' => $this->customerSalesChannel->portfolios()->whereNull('platform_product_id')->count(),
+                'count_product_not_synced' => $countProductsNotSync,
                 'platform_user_id'         => $platformUser?->id,
                 'platform_data'            => PlatformsResource::make($this->customerSalesChannel->platform)->toArray(request()),
                 'products'                 => DropshippingPortfoliosResource::collection($portfolios),
-                'is_platform_connected'    => $this->customerSalesChannel->connection_status === CustomerSalesChannelConnectionStatusEnum::CONNECTED,
+                'is_platform_connected'    => $this->customerSalesChannel->platform_status,
                 'customer_sales_channel'   => RetinaCustomerSalesChannelResource::make($this->customerSalesChannel)->toArray(request()),
                 'manual_channels'          => CustomerSalesChannelsResourceTOFIX::collection($manualChannels)//  Do now use the resource. Use an array of necessary data
             ]
@@ -371,10 +387,10 @@ class IndexRetinaPortfolios extends RetinaAction
 
             $table->column(key: 'image', label: __(''), canBeHidden: false, searchable: true);
             $table->column(key: 'name', label: __('Product'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'actions', label: '', canBeHidden: false, sortable: false, searchable: false);
 
 
             if ($this->customerSalesChannel->platform->type !== PlatformTypeEnum::MANUAL) {
-
                 $table->column(key: 'status', label: __('status'));
 
                 $matchesLabel = __('Matches');
@@ -383,7 +399,7 @@ class IndexRetinaPortfolios extends RetinaAction
                 }
 
                 $table->column(key: 'matches', label: $matchesLabel, canBeHidden: false);
-                $table->column(key: 'create_new', label:'', canBeHidden: false);
+                $table->column(key: 'create_new', label: '', canBeHidden: false);
             }
 
 

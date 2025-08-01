@@ -17,7 +17,6 @@ use App\Actions\Traits\WithDashboard;
 use App\Actions\UI\WithInertia;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
-use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Catalogue\ShopTabsEnum;
 use App\Http\Resources\Catalogue\ShopResource;
@@ -27,8 +26,6 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -57,53 +54,13 @@ class ShowShop extends OrgAction
     protected function getOrdersWidgetData(Shop $shop): array|null
     {
         if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
-            // return $this->getDropshippingOrdersWidgetData($shop);
             return null;
         } else {
             return $this->getEcomOrdersWidgetData($shop);
         }
     }
 
-    // protected function getDropshippingOrdersWidgetData(Shop $shop): array
-    // {
-    //     $platformsData = [];
-    //     foreach (Platform::all() as $platform) {
-    //         $platformsData[$platform->id] = [
-    //             'label'             => $platform->name,
-    //             'logo'              => $this->getPlatformLogo($platform->code),
-    //             'number_orders'     => 0,
-    //             'amount'            => 0,
-    //             'percentage_orders' => percentage(0, 1),
-    //             'percentage_amount' => percentage(0, 1)
-    //         ];
-    //     }
 
-
-    //     $platformOrdersDatum =
-    //         DB::table('orders')->selectRaw('platform_id,sum(net_amount) as net_amount, count(*) as number_orders')->where('shop_id', $shop->id)->where('submitted_at', '>=', Carbon::now()->subDays(7))->where('state', '!=', OrderStateEnum::CANCELLED)->groupBy(
-    //             'platform_id'
-    //         )->get();
-
-    //     $totalOrders = 0;
-    //     $totalAmount = 0;
-    //     foreach ($platformOrdersDatum as $platformOrdersData) {
-    //         $platformsData[$platformOrdersData->platform_id]['amount']        = $platformOrdersData->net_amount;
-    //         $platformsData[$platformOrdersData->platform_id]['number_orders'] = $platformOrdersData->number_orders;
-    //         $totalOrders                                                      += $platformOrdersData->number_orders;
-    //         $totalAmount                                                      += $platformOrdersData->net_amount;
-    //     }
-
-    //     foreach ($platformsData as $key => $platformData) {
-    //         $platformsData[$key]['percentage_orders'] = percentage($platformData['number_orders'], $totalOrders);
-    //         $platformsData[$key]['percentage_amount'] = percentage($platformData['amount'], $totalAmount);
-    //     }
-
-    //     return [
-    //         'type'          => 'dropshipping_orders',
-    //         'platformsData' => $platformsData,
-
-    //     ];
-    // }
 
     protected function getEcomOrdersWidgetData(Shop $shop): array
     {
@@ -124,7 +81,7 @@ class ShowShop extends OrgAction
 
     private function getStatsBox(Shop $shop): array
     {
-        $customerChannels = CustomerSalesChannel::where('connection_status', 'connected')
+        $customerChannels = CustomerSalesChannel::where('platform_status', true)
             ->where('shop_id', $shop->id)
             ->get();
         $totalPlatforms   = $customerChannels->count();
@@ -136,6 +93,7 @@ class ShowShop extends OrgAction
             $platform = $customerChannels->filter(function ($channel) use ($platformTypeName) {
                 return $channel->platform->type->value === $platformTypeName;
             });
+            $platformData = Platform::where('type', $platformType->value)->first();
 
             $metas[] = [
                 'tooltip'   => __($platformType->labels()[$platformTypeName]),
@@ -146,16 +104,20 @@ class ShowShop extends OrgAction
                 ],
                 'logo_icon' => $platformType->value,
                 'count'     => $platform->count(),
+                'route'     => $platformData ? [
+                    'name' => 'grp.org.shops.show.crm.platforms.show',
+                    'parameters' => [
+                        'organisation' => $this->organisation->slug,
+                        'shop'  => $this->shop->slug,
+                        'platform' => $platformData->slug
+                    ]
+                ] : null
             ];
         }
 
         return [
             [
                 'label' => __('Customers Channels'),
-                // 'route' => [
-                //     'name'       => 'retina.dropshipping.customer_sales_channels.index',
-                //     'parameters' => []
-                // ],
                 'color' => '#E87928',
                 'icon'  => [
                     'icon'          => 'fal fa-code-branch',
@@ -171,9 +133,7 @@ class ShowShop extends OrgAction
 
     private function getDashboard(Shop $shop): array
     {
-        // dump($this->getWidget(
-        //                     data: $this->getOrdersWidgetData($shop),
-        //                 ));
+
 
         $widgetComponents[] = $this->getWidget(
             data: [

@@ -80,6 +80,42 @@ function openOfflineModal(event: MouseEvent, item: any) {
     });
 }
 
+
+function openOnlineModal(event: MouseEvent, item: any) {
+    const target = event.currentTarget as HTMLElement;
+
+    isConfirmOpen.value = true;
+
+    confirm.require({
+        target,
+        message: "Are you sure you want to online this collection (webpage will set online again)?",
+        icon: "pi pi-exclamation-triangle",
+        acceptLabel: "Yes",
+        rejectLabel: "Cancel",
+        rejectProps: {
+            label: "No",
+            severity: "secondary",
+            outlined: true
+        },
+        acceptProps: {
+            label: "Yes",
+            severity: "success"
+        },
+        accept: () => {
+            selectedCollection.value = item;
+            isConfirmOpen.value = false;
+            SetOnline()
+        },
+        reject: () => {
+            isConfirmOpen.value = false;
+        },
+        onHide: () => {
+            isConfirmOpen.value = false;
+        }
+    });
+}
+
+
 // TODO: FIX TS
 function collectionRoute(collection: {}) {
     const currentRoute = route().current();
@@ -213,6 +249,38 @@ const SetOffline = () => {
 };
 
 
+const SetOnline = () => {
+    if (!selectedCollection.value) return;
+
+    const routeInfo = selectedCollection.value.route_enable_webpage;
+    if (!routeInfo) return;
+
+    router.patch(
+        route(routeInfo.name, routeInfo.parameters),
+        {},
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                resetModalState();
+                notify({
+                    title: "Success",
+                    text: "Webpage back to Online",
+                    type: "success"
+                });
+            },
+            onError: (errors) => {
+                console.error("Save failed:", errors);
+                notify({
+                    title: "Failed",
+                    text: "failed to set online",
+                    type: "error"
+                });
+            }
+        }
+    );
+};
+
+
 const onErrorDeleteCollection = (error) => {
     console.log(error);
     notify({
@@ -248,9 +316,26 @@ function handleUrlChange(e: string | null) {
             <Icon :data="collection.state_icon" />
         </template>
         <template #cell(code)="{ item: collection }">
-            <Link :href="collectionRoute(collection) as string" class="primaryLink">
-                {{ collection["code"] }}
-            </Link>
+             <div class="flex items-center gap-2">
+                <Link :href="collectionRoute(collection) as string" class="primaryLink">
+                    {{ collection["code"] }}
+                </Link>
+
+                <template v-if="collection.state === 'active'">
+                    <FontAwesomeIcon
+                        v-if="collection.products_status === 'discontinuing'"
+                        :icon="faExclamationTriangle"
+                        class="text-orange-500"
+                        v-tooltip="'Products are being discontinued'"
+                    />
+                    <FontAwesomeIcon
+                        v-else-if="collection.products_status === 'discontinued'"
+                        :icon="faExclamationTriangle"
+                        class="text-red-600"
+                        v-tooltip="'Products are discontinued'"
+                    />
+                </template>
+            </div>
         </template>
 
 
@@ -295,7 +380,8 @@ function handleUrlChange(e: string | null) {
 
 
         <template #cell(actions)="{ item }">
-            <div v-if="!item.webpage_state && item.webpage_state != 'live' && item.webpage_state != 'closed'">
+        <div class="flex gap-x-2 gap-y-2">
+            <div v-if="!item.webpage_state && item.webpage_state != 'live' && item.webpage_state != 'closed' || item.state == 'inactive' || item.state == 'in_process'">
                 <Link v-if="item.route_delete_collection " as="button"
                       :href="route(item.route_delete_collection.name, item.route_delete_collection.parameters)"
                       :method="item.route_delete_collection.method" preserve-scroll
@@ -305,18 +391,21 @@ function handleUrlChange(e: string | null) {
                             :loading="isLoadingDetach.includes('detach' + item.id)" />
                 </Link>
             </div>
-
             <ConfirmPopup>
                 <template #icon>
                     <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
                 </template>
             </ConfirmPopup>
             <div v-if="item.webpage_state == 'live'">
-                <Button :icon="faPowerOff" type="tertiary" size="xs" :key="item.webpage_state"
-                        @click="(e) => openOfflineModal(e, item)"
+                <Button :icon="faPowerOff"  size="xs" :key="item.webpage_state"
+                        @click="(e) => openOfflineModal(e, item)" :type="'negative'"
                         v-tooltip="isConfirmOpen ? '' : 'Set collection as inactive'" />
             </div>
-
+            <div v-if="item.webpage_state == 'closed'">
+                <Button :icon="faPowerOff"  size="xs" :key="item.webpage_state"
+                        @click="(e) => openOnlineModal(e, item)" :type="'positive'"
+                        v-tooltip="isConfirmOpen ? '' : 'Set collection as active'" />
+            </div>
             <Link v-if="routes?.detach?.name" as="button" :href="route(routes.detach.name, routes.detach.parameters)"
                   :method="routes.detach.method" :data="{
                     collection: item.id
@@ -325,6 +414,7 @@ function handleUrlChange(e: string | null) {
                 <Button icon="fal fa-times" type="negative" size="xs" v-tooltip="'Delete collection'"
                         :loading="isLoadingDetach.includes('detach' + item.id)" />
             </Link>
+        </div>
         </template>
     </Table>
 

@@ -9,21 +9,19 @@
 namespace App\Actions\Web\Webpage;
 
 use App\Actions\Web\WebBlock\StoreWebBlock;
-use App\Models\Catalogue\Collection;
-use App\Models\Catalogue\Product;
-use App\Models\Catalogue\ProductCategory;
+use App\Models\Dropshipping\ModelHasWebBlocks;
 use App\Models\Web\WebBlockType;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Arr;
 
 trait WithStoreWebpage
 {
-    protected function createWebBlock(Webpage $webpage, string $webBlockCode, Product|ProductCategory|Collection|Webpage $model): Webpage
+    protected function createWebBlock(Webpage $webpage, string $webBlockCode): ?ModelHasWebBlocks
     {
         $webBlockType = WebBlockType::where('code', $webBlockCode)->first();
 
         if (!$webBlockType) {
-            return $webpage;
+            return null;
         }
 
         $newLayout = [];
@@ -56,12 +54,12 @@ trait WithStoreWebpage
             "web_block_id"    => $webBlock->id,
             'show'            => true
         ];
-        $webpage->modelHasWebBlocks()->create($modelHasWebBlocksData);
+        $modelHasWebBlock      = $webpage->modelHasWebBlocks()->create($modelHasWebBlocksData);
 
 
         $webpage->refresh();
         UpdateWebpageContent::run($webpage);
 
-        return $webpage;
+        return $modelHasWebBlock;
     }
 }

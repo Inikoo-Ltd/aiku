@@ -131,21 +131,21 @@ class StoreWebpage extends OrgAction
 
             if ($this->strict) {
                 if ($model instanceof Product) {
-                    $this->createWebBlock($webpage, 'product-1', $model);
+                    $this->createWebBlock($webpage, 'product-1');
                 } elseif ($model instanceof Collection) {
-                    $webpage = $this->createWebBlock($webpage, 'families-1', $model);
-                    $webpage = $this->createWebBlock($webpage, 'products-1', $model);
+                    $this->createWebBlock($webpage, 'families-1');
+                    $this->createWebBlock($webpage, 'products-1');
                 } elseif ($model instanceof ProductCategory) {
                     if ($model->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
-                        $webpage = $this->createWebBlock($webpage, 'families-1', $model);
-                        $webpage = $this->createWebBlock($webpage, 'products-1', $model);
+                        $this->createWebBlock($webpage, 'families-1');
+                        $this->createWebBlock($webpage, 'products-1');
                     } elseif ($model->type == ProductCategoryTypeEnum::DEPARTMENT) {
-                        $webpage = $this->createWebBlock($webpage, 'sub-departments-1', $model);
-                        $webpage = $this->createWebBlock($webpage, 'products-1', $model);
-                        $webpage = $this->createWebBlock($webpage, 'families-1', $model);
+                        $this->createWebBlock($webpage, 'sub-departments-1');
+                        $this->createWebBlock($webpage, 'products-1');
+                        $this->createWebBlock($webpage, 'families-1');
                     } elseif ($model->type == ProductCategoryTypeEnum::FAMILY) {
-                        $webpage = $this->createWebBlock($webpage, 'family-1', $model);
-                        $webpage = $this->createWebBlock($webpage, 'products-1', $model);
+                        $this->createWebBlock($webpage, 'family-1');
+                        $this->createWebBlock($webpage, 'products-1');
                     }
                 } 
 

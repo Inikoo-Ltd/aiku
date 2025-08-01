@@ -124,6 +124,10 @@ export const initialiseApp = () => {
     watchEffect(() => {
         // Aiku
 
+        if (usePage().props.help_portal_url) {
+            layout.help_portal_url = usePage().props.help_portal_url
+        }
+
         // Set group
         if (usePage().props.layout?.group) {
             layout.group = usePage().props.layout.group

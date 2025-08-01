@@ -219,6 +219,11 @@ if (!function_exists('riseDivisor')) {
 
     function riseDivisor(array $input, $raiser): array
     {
+
+        if ($raiser === null) {
+            return $input;
+        }
+
         $divisor = $input[1][1];
         if ($divisor != 0) {
             $factor = $raiser / $divisor;

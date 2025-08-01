@@ -26,6 +26,8 @@ class GetOrderAddressManagement
 
         $addresses = $order->customer->addresses;
 
+
+
         $processedAddresses = $addresses->map(function ($address) {
             if (!DB::table('model_has_addresses')->where('address_id', $address->id)->where('model_type', '=', 'Customer')->exists()) {
                 return $address->setAttribute('can_delete', false)
@@ -73,6 +75,7 @@ class GetOrderAddressManagement
                     'customer' => $order->customer_id
                 ]
             ],
+
             'addresses'            => [
                 'isCannotSelect'                 => true,
                 'address_list'                   => $addressCollection,
