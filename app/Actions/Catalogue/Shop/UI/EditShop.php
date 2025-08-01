@@ -200,6 +200,18 @@ class EditShop extends OrgAction
                                 ],
                             ],
                         ],
+                        [
+                            'label'  => __('invoices footer'),
+                            'icon'   => 'fa-light fa-shoe-prints',
+                            'fields' => [
+                                'invoice_footer'  => [
+                                    'type'        => 'textEditor',
+                                    'label'       => __('invoice footer'),
+                                    'full'      => true,
+                                    'value'       => $shop->invoice_footer
+                                ],
+                            ],
+                        ],
                     ],
                     'args'      => [
                         'updateRoute' => [

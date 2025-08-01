@@ -13,6 +13,7 @@ use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Http\Resources\Dispatching\ShipmentsResource;
 use App\Models\Accounting\Invoice;
 use App\Models\Comms\Outbox;
 use App\Models\Fulfilment\Fulfilment;
@@ -76,6 +77,21 @@ trait IsInvoiceUI
 
     public function getBoxStats(Invoice $invoice): array
     {
+        $deliveryNotes     = $invoice->order->deliveryNotes;
+        $deliveryNotesData = [];
+
+        if ($deliveryNotes) {
+            foreach ($deliveryNotes as $deliveryNote) {
+                $deliveryNotesData[] = [
+                    'id'        => $deliveryNote->id,
+                    'slug'        => $deliveryNote->slug,
+                    'reference' => $deliveryNote->reference,
+                    'state'     => $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
+                    'shipments' => $deliveryNote?->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null
+                ];
+            }
+        }
+
         return  [
             'customer'    => [
                 'slug'         => $invoice->customer->slug,
@@ -87,6 +103,7 @@ trait IsInvoiceUI
                 'phone'        => $invoice->customer->phone,
                 // 'address'      => AddressResource::collection($invoice->customer->addresses),
             ],
+            'delivery_notes'   => $deliveryNotesData,
             'information' => [
                 'paid_amount'    => $invoice->payment_amount,
                 'pay_amount'     => round($invoice->total_amount - $invoice->payment_amount, 2)

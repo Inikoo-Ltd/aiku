@@ -62,10 +62,13 @@ trait WithInvoicesExport
                 'auto_page_break_margin' => 10,
             ];
 
+            $deliveryNote = $invoice->order?->deliveryNotes?->first();
             $filename = $invoice->slug . '-' . now()->format('Y-m-d');
             $pdf      = PDF::loadView('invoices.templates.pdf.invoice', [
                 'shop'          => $invoice->shop,
                 'invoice'       => $invoice,
+                'deliveryNote'  => $deliveryNote,
+                'deliveryAddress'  => $deliveryNote?->deliveryAddress,
                 'context'       => $invoice->original_invoice_id ? 'Refund' : 'Invoice',
                 'transactions'  => $transactions,
                 'totalNet'      => number_format($totalNet, 2, '.', ''),
