@@ -26,7 +26,6 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import axios from "axios";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
-import deliveryNote from "@/Pages/Grp/Org/Dispatching/DeliveryNote.vue";
 import Modal from "@/Components/Utils/Modal.vue"
 import { RadioButton } from "primevue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
@@ -172,6 +171,7 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
 
         <!-- Column: Quantity Required -->
         <template #cell(quantity_required)="{ item }">
+
             <span v-tooltip="item.quantity_required">
                 <FractionDisplay  v-if="item.quantity_required_fractional"   :fractionData="item.quantity_required_fractional" />
                 <span v-else>{{item.quantity_required}}</span>
@@ -206,6 +206,12 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
         <template #cell(quantity_picked)="{ item: item, proxyItem }">
             <FractionDisplay  v-if="item.quantity_picked_fractional"   :fractionData="item.quantity_picked_fractional" />
             <span v-else>{{item.quantity_picked}}</span>
+
+        </template>
+
+        <template #cell(quantity_packed)="{ item: item, proxyItem }">
+            <FractionDisplay  v-if="item.quantity_packed_fractional"   :fractionData="item.quantity_packed_fractional" />
+            <span v-else>{{item.quantity_packed}}</span>
 
         </template>
 
@@ -264,7 +270,7 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
         </template>
 
         <!-- Column: actions -->
-        <template #cell(handing_actions)="{ item: itemValue, proxyItem }">
+        <template #cell(picking_position)="{ item: itemValue, proxyItem }">
             <!-- <pre>{{ itemValue }}</pre> -->
             <div v-if="itemValue.quantity_to_pick > 0">
                 <div v-if="findLocation(itemValue.locations, proxyItem.hehe)" class="rounded p-1 flex flex-col justify-between gap-x-6 items-center even:bg-black/5">
@@ -282,10 +288,11 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
                                         ({{ trans("Unknown") }})
                                     </span>
                                     <span
-                                        v-tooltip="trans('Total stock in this location')"
+                                        v-tooltip="trans('Total stock is :quantity in location :location_code', {quantity: locale.number(findLocation(itemValue.locations, proxyItem.hehe)?.quantity), location_code: findLocation(itemValue.locations, proxyItem.hehe)?.location_code})"
                                         class="whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-gray-300 rounded px-1">
-                                            <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width aria-hidden="true" />
-                                        {{ findLocation(itemValue.locations, proxyItem.hehe).quantity }}
+                                        <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width aria-hidden="true" />
+                                        <FractionDisplay v-if="findLocation(itemValue.locations, proxyItem.hehe)?.quantity_fractional" :fractionData="findLocation(itemValue.locations, proxyItem.hehe)?.quantity_fractional" />
+                                        <template v-else>{{ locale.number(findLocation(itemValue.locations, proxyItem.hehe).quantity) }}</template>
                                     </span>
 
                                     <span
@@ -509,10 +516,11 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
                     <span v-else  v-tooltip="trans('Unknown location')" class="text-gray-400 italic">({{ trans("Unknown") }})</span>
 
                     <span
-                        v-tooltip="trans('Total stock in this location')"
+                        v-tooltip="trans('Total stock is :quantity in location :location_code', {quantity: locale.number(location.quantity), location_code: location.location_code})"
                         class="ml-1 whitespace-nowrap text-gray-400 tabular-nums border border-gray-300 rounded px-1">
-                            <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width aria-hidden="true" />
-                        {{ location.quantity }}
+                        <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width aria-hidden="true" />
+                        <FractionDisplay v-if="location.quantity_fractional" :fractionData="location.quantity_fractional" />
+                        <template v-else>{{ location.quantity }}</template>
                     </span>
                 </label>
                 <RadioButton

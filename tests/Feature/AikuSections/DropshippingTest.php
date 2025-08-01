@@ -42,6 +42,8 @@ beforeAll(function () {
 
 beforeEach(function () {
     \Tests\Helpers\setupDropshippingTest($this);
+
+
 });
 
 test('test platform were seeded', function () {
@@ -96,6 +98,9 @@ test('update customer client', function ($customerClient) {
 })->depends('create customer client');
 
 test('add product to customer portfolio', function () {
+
+
+
     $customerSalesChannel = $this->customer->customerSalesChannels()->first();
     expect($customerSalesChannel)->toBeInstanceOf(CustomerSalesChannel::class);
     $dropshippingCustomerPortfolio = StorePortfolio::make()->action(

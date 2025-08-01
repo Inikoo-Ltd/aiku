@@ -1,63 +1,113 @@
-
-<!--
-  - Author: Raul Perusquia <raul@inikoo.com>
-  - Created: Thu, 14 Sep 2023 00:06:48 Malaysia Time, Pantai Lembeng, Bali, Indonesia
-  - Copyright (c) 2023, Raul A Perusquia Flores
-  -->
-
 <script setup lang="ts">
-import { getIrisComponent } from '@/Composables/getIrisComponents'
+import { ref, watch } from 'vue'
 import BrowserView from '@/Components/Pure/BrowserView.vue'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faHome, faSignIn, faHammer, faCheckCircle, faBroadcastTower, faSkull } from '@fal'
-import { library } from '@fortawesome/fontawesome-svg-core'
-import { ref } from 'vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
+import InputSwitch from 'primevue/inputswitch'
+import SelectButton from 'primevue/selectbutton'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import {
+  faUser,
+  faUserSlash,
+  faDesktop,
+  faTabletAlt,
+  faMobileAlt
+} from '@fal'
+import { library } from '@fortawesome/fontawesome-svg-core'
 
-library.add(faHome, faSignIn, faHammer, faCheckCircle, faBroadcastTower, faSkull)
+library.add(faUser, faUserSlash, faDesktop, faTabletAlt, faMobileAlt)
 
 const props = defineProps<{
-    data: {
-        slug: string
-        state: string
-        status: string
-        created_at: string
-        updated_at: string
-        domain: string
+  data: {
+    slug: string
+    state: string
+    status: string
+    created_at: string
+    updated_at: string
+    domain: string
+    code: string
+    typeIcon: string
+    url: string
+    layout: {
+      web_blocks?: any[]
     }
+  }
 }>()
 
-
-const iframeSrc = 
-	route("grp.websites.preview", [
-		route().params["website"],
-		route().params["webpage"],
-		{
-			organisation: route().params["organisation"],
-			shop: route().params["shop"],
-			fulfilment : route().params["fulfilment"]
-		},
-	]
-)
-
+const filterBlock = ref<Boolean>(true)
+const screenMode = ref<'desktop' | 'tablet' | 'mobile'>('desktop')
 const isIframeLoading = ref(true)
+const _iframe = ref<HTMLIFrameElement | null>(null)
+
+const iframeSrc = route('grp.websites.preview', [
+  route().params['website'],
+  route().params['webpage'],
+  {
+    organisation: route().params['organisation'],
+    shop: route().params['shop'],
+    fulfilment: route().params['fulfilment']
+  }
+])
+
+const sendToIframe = (data: any) => {
+  _iframe.value?.contentWindow?.postMessage(data, '*')
+}
+
+watch(filterBlock, (newValue) => {
+  sendToIframe({ key: 'isPreviewLoggedIn', value: newValue })
+})
+
+const screenModeOptions = [
+  { label: 'Desktop', value: 'desktop', icon: ['fal', 'desktop'] },
+  { label: 'Tablet', value: 'tablet', icon: ['fal', 'tablet-alt'] },
+  { label: 'Mobile', value: 'mobile', icon: ['fal', 'mobile-alt'] }
+]
 </script>
 
 <template>
-    <div class="px-6 py-0 sm:py-5 lg:px-8">
-        <div class="grid grid-cols-2">
-            <BrowserView
-                :tab="{
-                    icon: data.typeIcon,
-                    label: data.code
-                }"
-                :url="{
-                    domain: data.domain,
-                    page: data.url
-                }"
+  <div class="px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <!-- Left: Controls + Preview -->
+      <div class="space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <!-- Logged In / Logged Out Switch -->
+          <div class="flex items-center gap-3">
+            <FontAwesomeIcon :icon="['fal', filterBlock  ? 'user' : 'user-slash']" />
+            <InputSwitch
+              v-model="filterBlock"
+              :true-value="true"
+              :false-value="false"
+            />
+            <span class="text-sm font-medium text-gray-800">
+              {{ filterBlock  ? 'Logged In' : 'Logged Out' }}
+            </span>
+          </div>
 
+          <!-- Screen Mode SelectButton -->
+          <div class="flex items-center">
+            <SelectButton
+              v-model="screenMode"
+              :options="screenModeOptions"
+              optionLabel="label"
+              optionValue="value"
+              class="p-button-outlined"
             >
-                <template #page v-if="data.layout.web_blocks?.length">
+              <template #option="slotProps">
+                <div class="flex items-center gap-2">
+                  <FontAwesomeIcon :icon="slotProps.option.icon" />
+                  <span>{{ slotProps.option.label }}</span>
+                </div>
+              </template>
+            </SelectButton>
+          </div>
+        </div>
+
+        <!-- Browser View -->
+        <BrowserView
+          :screenMode="screenMode"
+          :tab="{ icon: data.typeIcon, label: data.code }"
+          :url="{ domain: data.domain, page: data.url }"
+        >
+          <template #page v-if="data.layout.web_blocks?.length">
                     <div class="relative w-full h-full">
                         <div v-if="isIframeLoading"
                             class="absolute inset-0 flex items-center justify-center bg-white">
@@ -71,34 +121,20 @@ const isIframeLoading = ref(true)
                             @load="isIframeLoading = false"
                         />
                     </div>
-                   <!--  <template v-if="data.layout.web_blocks?.length">
-                        <div class="px-10">
-                            <div v-for="(activityItem, activityItemIdx) in data.layout.web_blocks"
-                                :key="'block' + activityItem.id"
-                                class="w-full"
-                            >
-                                <component
-                                    v-if="activityItem.web_block?.layout?.data?.fieldValue"
-                                    :is="getIrisComponent(activityItem.type)"
-                                    :key="activityItemIdx"
-                                    :properties="activityItem?.web_block?.layout?.properties"
-                                    :isEditable="false"
-                                    :fieldValue="activityItem.web_block.layout.data.fieldValue"
-                                />
-                            </div>
-                        </div>
-                    </template>
-                    <div v-else class="text-center text-2xl sm:text-4xl font-bold text-gray-400 mt-16">
-                        This page have no data
-                    </div> -->
                 </template>
-            </BrowserView>
-            <div>
-                <!-- <pre>{{ data }}</pre> -->
-            </div>
+        </BrowserView>
+      </div>
 
-           
-        </div>
-
+      <!-- Right Panel (Optional) -->
+      <div class="hidden xl:block">
+        <!-- Optional sidebar -->
+      </div>
     </div>
+  </div>
 </template>
+
+<style scoped>
+iframe {
+  background-color: white;
+}
+</style>

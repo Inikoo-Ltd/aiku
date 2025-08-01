@@ -251,7 +251,7 @@ onMounted(() => {
             <div class="relative">
             </div>
             <div class="col-span-2 mx-auto text-center text-2xl font-semibold pb-4">
-                {{ trans('Add new products to your shop') }}
+                {{ trans('Select products to be added to shop') }}
             </div>
 <!--            <div class="relative text-right">-->
 <!--                <Button-->

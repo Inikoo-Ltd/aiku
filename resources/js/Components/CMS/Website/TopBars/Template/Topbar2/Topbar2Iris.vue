@@ -71,7 +71,16 @@ const emits = defineEmits<{
     (e: 'setPanelActive', value: string | number): void
 }>()
 
-
+// Method: generate url for Login
+const urlLoginWithRedirect = () => {
+    if (layout.currentRoute !== "retina.login.show" && layout.currentRoute !== "retina.register") {
+        return `/app/login?ref=${encodeURIComponent(window?.location.pathname)}${
+            window?.location.search ? encodeURIComponent(window?.location.search) : ""
+        }`
+    } else {
+        return "/app/login"
+    }
+}
 
 </script>
 
@@ -312,7 +321,7 @@ const emits = defineEmits<{
                 </a> -->
 
                 <ButtonWithLink
-                    url="/app/login"
+                    :url="urlLoginWithRedirect()"
                     icon="fal fa-sign-in"
                 >
                     <template #label>

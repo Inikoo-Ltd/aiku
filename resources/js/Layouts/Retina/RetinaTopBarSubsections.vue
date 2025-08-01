@@ -6,11 +6,12 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faDotCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { SubSection } from "@/types/Navigation"
-import {faPallet, faTruck, faTruckCouch, faTruckRamp} from "@fal";
-import { ref } from "vue"
+import { faPallet, faTruck, faTruckCouch, faTruckRamp } from "@fal";
+import { faFolderTree, faBooks, faFolder, faCube, faAlbumCollection, faDotCircle as FarDotCircle } from "@far";
+import { ref, computed } from "vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
-library.add(faDotCircle, faTruck, faPallet, faTruckRamp, faTruckCouch)
+library.add(faDotCircle, faTruck, faPallet, faTruckRamp, faTruckCouch, faFolderTree, faBooks, faFolder, faCube, faAlbumCollection, FarDotCircle)
 
 const layoutStore = useLayoutStore()
 
@@ -20,39 +21,39 @@ const props = defineProps<{
 
 // Check current Route have provided routeName
 const isSubSectionActive = (routeName: string) => {
-    if(!routeName) return false
+    if (!routeName) return false
 
     return (layoutStore.currentRoute).includes(routeName)
 }
 
 const isLoading = ref<string | boolean>(false)
+
+// Build color from theme with tailwind-safe fallback
+const mainColor = computed(() => {
+    const raw = layoutStore.app.theme[0] || "#3B82F6" // default to Tailwind blue-500
+    return "#" + raw.replace("#", "") // remove '#' if present
+})
+
 </script>
 
 <template>
-    <template v-for="(subSection, idxSubSec) in subSections">
-        <component v-if="subSection"
-            :is="subSection.route?.name ? Link : 'div'"
-            :href="subSection.route?.name ? route(subSection.route.name, subSection.route.parameters) : '#'"
-            class="group relative text-gray-700 group text-l font-bold flex justify-end items-center cursor-pointer py-3 gap-x-2 px-4 md:px-4 lg:px-4"
-            :class="[
-                isSubSectionActive(subSection.root)
-                    ? 'topbarNavigationActive'
-                    : 'topbarNavigation'
-            ]"
-            :title="capitalize(subSection.tooltip ?? subSection.label ?? '')"
-            @start="() => isLoading = 'subSection' + idxSubSec"
-            @finish="() => isLoading = false"
-        >
-            <div :class="[
-                isSubSectionActive(subSection.root)
-                    ? 'bottomNavigationActive'
-                    : 'bottomNavigation'
-            ]" />
-            
-            <LoadingIcon v-if="isLoading === 'subSection' + idxSubSec" class="h-5 lg:h-5 w-auto " />
-            <FontAwesomeIcon v-else-if="subSection.icon" :icon="subSection.icon" fixed-width class="h-5 lg:h-5 w-auto group-hover:opacity-100 opacity-70 transition duration-100 ease-in-out" aria-hidden="true" />
-            <FontAwesomeIcon v-else icon="fas fa-dot-circle" fixed-width class="h-5 lg:h-5" aria-hidden="true" />
-            <span v-if="subSection.label" class="hidden lg:inline capitalize whitespace-nowrap">{{ subSection.label }}</span>
-        </component>
-    </template>
+    <nav class="flex items-center space-x-4 border-b border-gray-200 px-4 w-full">
+        <template v-for="(subSection, idxSubSec) in subSections" :key="idxSubSec">
+            <component :is="subSection.route?.name ? Link : 'div'"
+                :href="subSection.route?.name ? route(subSection.route.name, subSection.route.parameters) : '#'" :class="[
+                    'relative flex items-center gap-2 px-4 py-2 font-medium text-sm transition duration-150 ease-in-out border-b-2 rounded-t-md',
+                    isSubSectionActive(subSection.root)
+                        ? `text-[${mainColor}] border-[${mainColor}] bg-[${mainColor}1A]`
+                        : `text-gray-600 border-transparent hover:text-[${mainColor}] hover:border-[${mainColor}] hover:bg-[${mainColor}0D]`
+                ]" :title="capitalize(subSection.tooltip ?? subSection.label ?? '')"
+                @start="() => isLoading = 'subSection' + idxSubSec" @finish="() => isLoading = false">
+                <LoadingIcon v-if="isLoading === 'subSection' + idxSubSec" class="h-4 w-4" />
+                <FontAwesomeIcon v-else-if="subSection.icon" :icon="subSection.icon" class="h-4 w-4" />
+                <FontAwesomeIcon v-else icon="fas fa-dot-circle" class="h-4 w-4" />
+                <span class="whitespace-nowrap">
+                    {{ capitalize(subSection.label || '') }}
+                </span>
+            </component>
+        </template>
+    </nav>
 </template>

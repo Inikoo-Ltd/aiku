@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { faCube, faLink, faHeart } from "@fal"
-import { faBox } from "@far"
 import { faCircle, faHeart as fasHeart, faDotCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -157,13 +156,16 @@ const fetchProductExistInChannel = async () => {
     }
 }
 
+
 onMounted(() => {
-    fetchProductExistInChannel()
-  requestAnimationFrame(() => {
-    if (contentRef.value.scrollHeight > 100) {
-      showButton.value = true
+    if (layout.iris?.customer && layout?.iris?.is_logged_in) {
+        fetchProductExistInChannel()
     }
-  })
+    requestAnimationFrame(() => {
+        if (contentRef.value.scrollHeight > 100) {
+            showButton.value = true
+        }
+    })
 })
 
 const toggleExpanded = () => {
@@ -218,12 +220,12 @@ const toggleExpanded = () => {
                     <div class="h-full flex items-start">
                         <!-- Favorite Icon -->
                         <template v-if="layout?.retina?.type != 'dropshipping' && layout.iris?.is_logged_in">
-                            <div v-if="isLoadingFavourite" class="xabsolute top-2 right-2 text-gray-500 text-2xl">
+                            <div v-if="isLoadingFavourite" class="top-2 right-2 text-gray-500 text-2xl">
                                 <LoadingIcon />
                             </div>
                             <div v-else
                                 @click="() => fieldValue.product.is_favourite ? onUnselectFavourite(fieldValue.product) : onAddFavourite(fieldValue.product)"
-                                class="cursor-pointer xabsolute top-2 right-2 group text-2xl ">
+                                class="cursor-pointer top-2 right-2 group text-2xl ">
                                 <FontAwesomeIcon v-if="fieldValue.product.is_favourite" :icon="fasHeart" fixed-width
                                     class="text-pink-500" />
                                 <span v-else class="">
@@ -261,7 +263,7 @@ const toggleExpanded = () => {
                     />
 
                     <!-- Skeleton loading -->
-                    <div v-if="isLoadingFetchExistenceChannels" class="absolute h-full w-full z-10 xopacity-40">
+                    <div v-if="isLoadingFetchExistenceChannels" class="absolute h-full w-full z-10">
                         <div class="h-full w-full skeleton rounded" />
                     </div>
 

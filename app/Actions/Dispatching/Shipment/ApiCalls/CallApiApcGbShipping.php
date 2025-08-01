@@ -11,8 +11,11 @@
 namespace App\Actions\Dispatching\Shipment\ApiCalls;
 
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
 use App\Http\Resources\Dispatching\ShippingDeliveryNoteResource;
+use App\Http\Resources\Dispatching\ShippingDropshippingDeliveryNoteResource;
+use App\Http\Resources\Dispatching\ShippingPalletReturnResource;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
 use App\Models\Fulfilment\PalletReturn;
@@ -61,10 +64,18 @@ class CallApiApcGbShipping extends OrgAction
     {
         $url = '/api/3.0/Orders.json';
 
-        $parentResource = ShippingDeliveryNoteResource::make($parent)->getArray();
-        $parcels        = $parent->parcels;
 
-        $shipTo = Arr::get($parentResource, 'to_address');
+        if ($parent instanceof PalletReturn) {
+            $parentResource = ShippingPalletReturnResource::make($parent)->getArray();
+        } elseif ($parent->shop->type == ShopTypeEnum::DROPSHIPPING) {
+            $parentResource = ShippingDropshippingDeliveryNoteResource::make($parent)->getArray();
+        } else {
+            $parentResource = ShippingDeliveryNoteResource::make($parent)->getArray();
+        }
+
+        $parcels = $parent->parcels;
+
+        $shipTo   = Arr::get($parentResource, 'to_address');
         $address2 = Arr::get($shipTo, 'address_line_2');
 
         if (in_array(
@@ -106,25 +117,34 @@ class CallApiApcGbShipping extends OrgAction
             $pickupDate = $pickupDate->addDay();
         }
 
+        $contactName = Str::limit(Arr::get($parentResource, 'to_contact_name'), 60);
+        $companyName = Str::limit(Arr::get($parentResource, 'to_company_name'), 30);
+        if (!$companyName) {
+            $companyName = $contactName;
+        }
+        if (!$companyName) {
+            $companyName = 'anonymous';
+        }
+
         $prepareParams = [
             'CollectionDate'  => $pickupDate->format('d/m/Y'),
             'ReadyAt'         => $readyAt->format('H:i'),
             'ClosedAt'        => $closedAt->format('H:i'),
             'Reference'       => Str::limit($parent->reference, 30),
             'Delivery'        => [
-                'CompanyName'  => Str::limit(Arr::get($parentResource, 'to_company_name'), 30),
+                'CompanyName'  => $companyName,
                 'AddressLine1' => Str::limit(Arr::get($parentResource, 'to_address.address_line_1'), 60),
                 'AddressLine2' => Str::limit($address2, 60),
-                'PostalCode'   => Arr::get($parentResource, 'to_address.postal_code'),
+                'PostalCode'   => $postalCode,
                 'City'         => Str::limit(Arr::get($parentResource, 'to_address.locality'), 31, ''),
                 'County'       => Str::limit(Arr::get($parentResource, 'to_address.administrative_area'), 31, ''),
                 'CountryCode'  => Arr::get($parentResource, 'to_address.country.code'),
                 'Contact'      => [
-                    'PersonName'  => Str::limit(Arr::get($parentResource, 'to_contact_name'), 60),
+                    'PersonName'  => $contactName,
                     'PhoneNumber' => Str::limit(Arr::get($parentResource, 'to_phone'), 15, ''),
                     'Email'       => Arr::get($parentResource, 'to_email'),
                 ],
-                'Instructions' => Str::limit(preg_replace("/[^A-Za-z0-9 \-]/", '', strip_tags($parent->customer_notes), 60)),
+                'Instructions' => Str::limit(preg_replace("/[^A-Za-z0-9 \-]/", '', strip_tags($parent?->shipping_notes), 60)),
 
             ],
             'ShipmentDetails' => [
@@ -187,7 +207,7 @@ class CallApiApcGbShipping extends OrgAction
         ];
 
 
-        $response    = Http::withHeaders($this->getHeaders($shipper))->post($this->getBaseUrl() . $url, $params);
+        $response    = Http::withHeaders($this->getHeaders($shipper))->retry(3, 100)->post($this->getBaseUrl() . $url, $params);
         $apiResponse = $response->json();
         $statusCode  = $response->status();
 
@@ -197,19 +217,28 @@ class CallApiApcGbShipping extends OrgAction
         $errorData = [];
 
         $dataFlat = array_filter(Arr::flatten($apiResponse));
+
+
         if (in_array('DutyItems', $dataFlat)) {
             $errorData['address'][] = 'Address must be in United Kingdom';
+            $errorData['message'][] = 'Address must be in United Kingdom';
         }
 
         if ($statusCode == 200 && Arr::get($apiResponse, 'Orders.Messages.Code') == 'SUCCESS') {
             $status                      = 'success';
             $orderNumber                 = Arr::get($apiResponse, 'Orders.Order.OrderNumber');
-            $modelData['label']      = $this->getLabel($orderNumber, $shipper);
-            $modelData['label_type'] = ShipmentLabelTypeEnum::PDF;
+            $modelData['label']          = $this->getLabel($orderNumber, $shipper);
+            $modelData['label_type']     = ShipmentLabelTypeEnum::PDF;
             $modelData['number_parcels'] = (int)Arr::get($apiResponse, 'Orders.Order.ShipmentDetails.NumberOfPieces');
 
+            $modelData['trackings']     = [];
+            $modelData['tracking_urls'] = [];
 
-            $modelData['tracking'] = Arr::get($apiResponse, 'Orders.Order.WayBill');
+
+            foreach (Arr::get($apiResponse, 'Orders.Order.ShipmentDetails.Items', []) as $item) {
+                $modelData['trackings'][] = Arr::get($item, 'TrackingNumber');
+            }
+            $modelData['tracking'] = implode(' ', $modelData['trackings']);
         } else {
             $status = 'fail';
 
@@ -221,13 +250,17 @@ class CallApiApcGbShipping extends OrgAction
                 }
                 foreach ($errFields as $error) {
                     if ($error['FieldName'] == 'Delivery PostalCode') {
-                        $errorData['others'][] = 'Invalid postcode,';
+                        $errorData['address'][] = 'Invalid address';
+                        $errorData['message'][] = 'Invalid address';
                     } else {
                         $fieldParts = explode(' ', $error['FieldName']);
 
                         if (count($fieldParts) > 1) {
                             if (Str::contains($fieldParts[0], 'Delivery')) {
                                 $errorData['address'][] = Str::headline($fieldParts[1]) . ' ' . $error['ErrorMessage'] . ',';
+                                if (!isset($errorData['message'])) {
+                                    $errorData['message'][] = Str::headline($fieldParts[1]) . ' ' . $error['ErrorMessage'] . ',';
+                                }
                                 continue;
                             }
                             $errorData[strtolower($fieldParts[0])] .= Str::headline($fieldParts[1]) . ' ' . $error['ErrorMessage'] . ',';
@@ -235,6 +268,9 @@ class CallApiApcGbShipping extends OrgAction
                         }
 
                         $errorData['others'][] = Str::headline($error['FieldName']) . ' ' . $error['ErrorMessage'] . ',';
+                        if (!isset($errorData['message'])) {
+                            $errorData['message'][] = Str::headline($error['FieldName']) . ' ' . $error['ErrorMessage'] . ',';
+                        }
                     }
                 }
 
@@ -257,7 +293,18 @@ class CallApiApcGbShipping extends OrgAction
      */
     public function getLabel(string $labelID, Shipper $shipper): string
     {
-        $apiResponse = Http::withHeaders($this->getHeaders($shipper))->get($this->getBaseUrl() . '/api/3.0/Orders/' . $labelID . '.json')->json();
+        $apiResponse = Http::withHeaders($this->getHeaders($shipper))
+            ->timeout(120)
+            ->retry(3, 100, function ($exception, $request, $response) {
+                if ($exception) {
+                    return true; // retry on exception (timeout, network error, etc.)
+                }
+
+                $res = optional($response)->json();
+                return !Arr::get($res, 'Orders.Order.Label.Content'); // retry if label content is missing
+            })
+            ->get($this->getBaseUrl() . '/api/3.0/Orders/' . $labelID . '.json')
+            ->json();
 
         return Arr::get($apiResponse, 'Orders.Order.Label.Content', '');
     }

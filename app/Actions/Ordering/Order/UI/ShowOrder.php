@@ -22,6 +22,7 @@ use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Ordering\OrderTabsEnum;
@@ -96,9 +97,8 @@ class ShowOrder extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, CustomerClient $customerClient, Order $order, ActionRequest $request): Order
+    public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, CustomerClient $customerClient, Order $order, ActionRequest $request): Order
     {
-        $customerSalesChannel       = CustomerSalesChannel::where('customer_id', $customerClient->customer_id)->where('platform_id', $platform->id)->first();
         $this->parent               = $customerClient;
         $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisationFromShop($shop, $request)->withTab(OrderTabsEnum::values());
@@ -163,25 +163,36 @@ class ShowOrder extends OrgAction
         return [
             "note_list" => [
                 [
-                    "label"    => __("Customer"),
-                    "note"     => $order->customer_notes ?? '',
-                    "editable" => false,
-                    "bgColor"  => "#FF7DBD",
-                    "field"    => "customer_notes"
+                    "label"       => __("Delivery Instructions"),
+                    "note"        => $order->shipping_notes ?? '',
+                    "information" => __("This note is from the customer. Will be printed in the shipping label."),
+                    "editable"    => true,
+                    "bgColor"     => "#38bdf8",
+                    "field"       => "shipping_notes"
                 ],
                 [
-                    "label"    => __("Public"),
-                    "note"     => $order->public_notes ?? '',
-                    "editable" => true,
-                    "bgColor"  => "#94DB84",
-                    "field"    => "public_notes"
+                    "label"       => __("Customer"),
+                    "note"        => $order->customer_notes ?? '',
+                    "information" => __("This note is from customer in the platform. Not editable."),
+                    "editable"    => false,
+                    "bgColor"     => "#FF7DBD",
+                    "field"       => "customer_notes"
                 ],
                 [
-                    "label"    => __("Private"),
-                    "note"     => $order->internal_notes ?? '',
-                    "editable" => true,
-                    "bgColor"  => "#FCF4A3",
-                    "field"    => "internal_notes"
+                    "label"       => __("Public"),
+                    "note"        => $order->public_notes ?? '',
+                    "information" => __("This note will be visible to public, both staff and the customer can see."),
+                    "editable"    => true,
+                    "bgColor"     => "#94DB84",
+                    "field"       => "public_notes"
+                ],
+                [
+                    "label"       => __("Private"),
+                    "note"        => $order->internal_notes ?? '',
+                    "information" => __("This note is only visible to staff members. You can communicate each other about the order."),
+                    "editable"    => true,
+                    "bgColor"     => "#FCF4A3",
+                    "field"       => "internal_notes"
                 ]
             ]
         ];
@@ -245,19 +256,20 @@ class ShowOrder extends OrgAction
                     'next'     => $this->getNext($order, $request),
                 ],
                 'pageHead'    => [
-                    'title'    => $order->reference,
-                    'model'    => __('Order'),
-                    'icon'     => [
+                    'title'      => $order->reference,
+                    'model'      => __('Order'),
+                    'icon'       => [
                         'icon'  => 'fal fa-shopping-cart',
                         'title' => __('customer client')
                     ],
                     'afterTitle' => [
                         'label' => $order->state->labels()[$order->state->value],
                     ],
-                    'actions'  => $actions,
-                    'platform' => $platform ? [
+                    'actions'    => $actions,
+                    'platform'   => $platform ? [
                         'icon'  => $platform->imageSources(24, 24),
-                        'title' => $platform->name,
+                        'type'  => $platform->type,
+                        'title' => __('Platform :platform', ['platform' => $platform->name]),
                     ] : null,
                 ],
                 'tabs'        => [
@@ -281,10 +293,10 @@ class ShowOrder extends OrgAction
                     'delivery_note'    => $deliveryNoteRoute
                 ],
 
-                'notes'              => $this->getOrderNotes($order),
-                'timelines'          => $finalTimeline,
-                'readonly'           => $readonly,
-                'address_management' => GetOrderAddressManagement::run(order: $order),
+                'notes'                       => $this->getOrderNotes($order),
+                'timelines'                   => $finalTimeline,
+                'readonly'                    => $readonly,
+                'delivery_address_management' => $this->shop->type == ShopTypeEnum::DROPSHIPPING ? GetDropshippingOrderDeliveryAddressManagement::run(order: $order) : GetOrderAddressManagement::run(order: $order),
 
                 'box_stats'     => $this->getOrderBoxStats($order),
                 'currency'      => CurrencyResource::make($order->currency)->toArray(request()),

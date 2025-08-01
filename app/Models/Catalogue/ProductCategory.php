@@ -36,6 +36,7 @@ use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use Spatie\Translatable\HasTranslations;
 
 /**
  *
@@ -75,6 +76,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $top_seller
  * @property string|null $description_title
  * @property string|null $description_extra
+ * @property array<array-key, mixed>|null $name_i8n
+ * @property array<array-key, mixed>|null $description_i8n
+ * @property array<array-key, mixed>|null $description_title_i8n
+ * @property array<array-key, mixed>|null $description_extra_i8n
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
@@ -96,6 +101,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Catalogue\ProductCategoryStats|null $stats
  * @property-read ProductCategory|null $subDepartment
  * @property-read LaravelCollection<int, \App\Models\Catalogue\ProductCategoryTimeSeries> $timeSeries
+ * @property-read mixed $translations
  * @property-read UniversalSearch|null $universalSearch
  * @property-read Webpage|null $webpage
  * @method static \Database\Factories\Catalogue\ProductCategoryFactory factory($count = null, $state = [])
@@ -103,6 +109,10 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|ProductCategory newQuery()
  * @method static Builder<static>|ProductCategory onlyTrashed()
  * @method static Builder<static>|ProductCategory query()
+ * @method static Builder<static>|ProductCategory whereJsonContainsLocale(string $column, string $locale, ?mixed $value, string $operand = '=')
+ * @method static Builder<static>|ProductCategory whereJsonContainsLocales(string $column, array $locales, ?mixed $value, string $operand = '=')
+ * @method static Builder<static>|ProductCategory whereLocale(string $column, string $locale)
+ * @method static Builder<static>|ProductCategory whereLocales(string $column, array $locales)
  * @method static Builder<static>|ProductCategory withTrashed()
  * @method static Builder<static>|ProductCategory withoutTrashed()
  * @mixin Eloquent
@@ -116,8 +126,11 @@ class ProductCategory extends Model implements Auditable, HasMedia
     use HasHistory;
     use InShop;
     use HasImage;
+    use HasTranslations;
 
     protected $guarded = [];
+
+    public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
 
     protected $casts = [
         'data'             => 'array',

@@ -46,5 +46,9 @@ export const useIrisLayoutStore = defineStore('irisLayout', () => {
         environment: null // 'local' | 'staging'
     })
 
-    return { user, app }
+    const currentRoute = ref<string | undefined>("iris.login") // Define value to avoid route null at the first load
+    const currentParams = ref<{[key: string]: string}>({})
+    const currentQuery = ref<{[key: string]: string}>({})
+
+    return { user, app, currentRoute, currentParams, currentQuery }
 })

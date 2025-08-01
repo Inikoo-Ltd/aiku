@@ -11,8 +11,11 @@
 namespace App\Actions\Dispatching\Shipment\ApiCalls;
 
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
 use App\Http\Resources\Dispatching\ShippingDeliveryNoteResource;
+use App\Http\Resources\Dispatching\ShippingDropshippingDeliveryNoteResource;
+use App\Http\Resources\Dispatching\ShippingPalletReturnResource;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
 use App\Models\Fulfilment\PalletReturn;
@@ -48,22 +51,47 @@ class CallApiGlsSKShipping extends OrgAction
      */
     public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper): array
     {
-        [$username, $password, $clientNumber] = array_values($this->getAccessToken($shipper));
+        $credentials = $this->getAccessToken($shipper);
+        $username = Arr::get($credentials, 'username');
+        $password = Arr::get($credentials, 'password');
+        $clientNumber = Arr::get($credentials, 'client_number');
+
         $url = $this->getBaseUrl() . '/ParcelService.svc?singleWsdl';
 
-        $parentResource = ShippingDeliveryNoteResource::make($parent)->getArray();
+        if ($parent instanceof PalletReturn) {
+            $parentResource = ShippingPalletReturnResource::make($parent)->getArray();
+        } elseif ($parent->shop->type == ShopTypeEnum::DROPSHIPPING) {
+            $parentResource = ShippingDropshippingDeliveryNoteResource::make($parent)->getArray();
+        } else {
+            $parentResource = ShippingDeliveryNoteResource::make($parent)->getArray();
+        }
         $parcels        = $parent->parcels;
+
+        $shippingNotes = $parent->shipping_notes ?? '';
+        $shippingNotes = Str::limit(preg_replace("/[^A-Za-z0-9 \-]/", '', strip_tags($shippingNotes), 60));
+
+        $contactName = Str::limit(Arr::get($parentResource, 'to_contact_name'), 60);
+        if (!$contactName) {
+            $contactName = Str::limit(Arr::get($parentResource, 'to_company_name'), 60);
+        }
+        if (!$contactName) {
+            $contactName = 'anonymous';
+        }
+
+
+
+
 
         $prepareParams = (object)[
             'ClientNumber' => $clientNumber,
             'ClientReference' => Str::limit($parent->reference, 30),
-            'Content' => app()->isProduction() ? '' : 'test_development_aiku_' . ($parent->customer_notes ?? ''),
+            'Content' => app()->isProduction() ? $shippingNotes : 'test_development_aiku_' . ($shippingNotes ?? ''),
             'Count' => $parcels ? count($parcels) : 1,
             'DeliveryAddress' => (object)[
                 'ContactEmail' => Arr::get($parentResource, 'to_email'),
                 'ContactName' => Arr::get($parentResource, 'to_contact_name'),
                 'ContactPhone' => Arr::get($parentResource, 'to_phone'),
-                'Name' => Arr::get($parentResource, 'to_company_name'),
+                'Name' => $contactName,
                 'Street' => Arr::get($parentResource, 'to_address.address_line_1') . ' ' . Arr::get($parentResource, 'to_address.address_line_2'),
                 'City' => Arr::get($parentResource, 'to_address.locality'),
                 'ZipCode' => Arr::get($parentResource, 'to_address.postal_code'),
@@ -106,14 +134,14 @@ class CallApiGlsSKShipping extends OrgAction
         try {
             $client = new SoapClient($url, $soapOptions);
         } catch (SoapFault $e) {
-            $result['errorData'] = ['Soap API connection error'];
-            $result['status'] = 'fail';
-            $result['modelData'] = [
-                'api_response' => [
-                    'error' => $e->getMessage(),
-                ],
+            $errorData = [
+                'message' => 'Unknown error',
             ];
-            return $result;
+            return [
+                'status'    => 'fail',
+                'modelData' => [],
+                'errorData' => $errorData,
+            ];
         }
 
         $apiResponse = $client->PrintLabels($printLabelsRequest)->PrintLabelsResult;
@@ -132,14 +160,33 @@ class CallApiGlsSKShipping extends OrgAction
             $status                      = 'success';
             $modelData['label']      = base64_encode($apiResponse->Labels);
             $modelData['label_type'] = ShipmentLabelTypeEnum::PDF;
-            $tracking_number = $apiResponse->PrintLabelsInfoList->PrintLabelsInfo->ParcelNumber;
+
+            $modelData['trackings']     = [];
+            $modelData['tracking_urls'] = [];
+            $trackingDatum = $apiResponse->PrintLabelsInfoList->PrintLabelsInfo;
+            if (is_array($trackingDatum)) {
+
+                foreach ($trackingDatum as $trackingData) {
+                    $modelData['trackings'][] = $trackingData->ParcelNumber;
+                }
+                $modelData['tracking'] = implode(' ', $modelData['trackings']);
+            } else {
+                $tracking_number = $apiResponse->PrintLabelsInfoList->PrintLabelsInfo->ParcelNumber;
+                $modelData['trackings'][] = $tracking_number;
+                $modelData['tracking'] = $tracking_number;
+            }
+
+
             $modelData['number_parcels'] = $parcels ? count($parcels) : 1;
 
-            $modelData['tracking'] = $tracking_number;
+
+
+
         } else {
             $status = 'fail';
 
             $errFields = Arr::get($apiResponseData, 'PrintLabelsErrorList.ErrorInfo');
+
             if ($errFields) {
 
                 if (!isset($errFields[0])) {
@@ -148,11 +195,16 @@ class CallApiGlsSKShipping extends OrgAction
 
                 foreach ($errFields as $error) {
                     if (Str::contains($error['ErrorDescription'] ?? '', ['Pickup', 'Delivery'])) {
-                        $errorData['address'][] = $error['ErrorDescription'] ?? 'Error in address';
+                        if (isset($errorData['address'])) {
+                            continue;
+                        }
+                        $errorData['address'] = 'Invalid address';
                     } else {
                         $errorData['others'][] =  $error['ErrorDescription'] ?? 'Unknown error';
                     }
                 }
+
+                $errorData['message'] = $errorData['address'] ?? $errorData['others'] ?? '';
             }
         }
 
@@ -162,5 +214,4 @@ class CallApiGlsSKShipping extends OrgAction
             'errorData' => $errorData,
         ];
     }
-
 }

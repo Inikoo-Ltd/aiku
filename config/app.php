@@ -277,6 +277,8 @@ return [
     'test_email_to_address'               => env('TEST_EMAIL_TO_ADDRESS'),
     'unpaid_invoices_unknown_before'      => env('UNPAID_INVOICES_UNKNOWN_BEFORE'),
 
+    'help_portal_url' => env('JIRA_HELP_PORTAL'),
+
     'sandbox' => [
 
         'shipper_itd_token' => env('ITD_TOKEN'),

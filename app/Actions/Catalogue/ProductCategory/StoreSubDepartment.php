@@ -24,6 +24,7 @@ class StoreSubDepartment extends OrgAction
         data_set($modelData, 'type', ProductCategoryTypeEnum::SUB_DEPARTMENT);
 
         return StoreProductCategory::run($department, $modelData);
+
     }
 
     public function rules(): array
@@ -42,8 +43,7 @@ class StoreSubDepartment extends OrgAction
                 ),
             ],
             'name'        => ['required', 'max:250', 'string'],
-            'description' => ['sometimes', 'required', 'max:1500'],
-
+            'description' => ['sometimes', 'max:1500'],
         ];
     }
 
@@ -64,6 +64,17 @@ class StoreSubDepartment extends OrgAction
             'department'    => $productCategory->parent->slug,
             'subDepartment' => $productCategory->slug,
         ]);
+    }
+
+    public function action(ProductCategory $department, array $modelData, int $hydratorsDelay = 0): ProductCategory
+    {
+
+        $this->asAction       = true;
+        $this->hydratorsDelay = $hydratorsDelay;
+
+        $this->initialisationFromShop($department->shop, $modelData);
+
+        return $this->handle($department, $this->validatedData);
     }
 
 

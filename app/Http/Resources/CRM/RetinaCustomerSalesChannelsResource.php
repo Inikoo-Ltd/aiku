@@ -25,7 +25,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $total_amount
  * @property mixed $platform_code
  * @property mixed $platform_name
- * @property mixed $connection_status
+ * @property mixed $can_connect_to_platform
+ * @property mixed $exist_in_platform
+ * @property mixed $platform_status
  */
 class RetinaCustomerSalesChannelsResource extends JsonResource
 {
@@ -39,6 +41,7 @@ class RetinaCustomerSalesChannelsResource extends JsonResource
             'reference'               => $this->reference,
             'name'                    => $this->name ?? $this->reference,
             'number_portfolios'       => $this->number_portfolios,
+            'number_portfolio_broken' => $this->number_portfolio_broken,
             'number_customer_clients' => $this->number_customer_clients,
             'number_orders'           => $this->number_orders,
             'type'                    => $this->type,
@@ -47,8 +50,10 @@ class RetinaCustomerSalesChannelsResource extends JsonResource
             'platform_code'           => $this->platform_code,
             'platform_name'           => $this->platform_name,
             'platform_image'          => $this->getPlatformLogo($this->platform_code),
-            'connection'              => $this->connection_status,
 
+            'can_connect_to_platform' => $this->can_connect_to_platform,
+            'exist_in_platform' => $this->exist_in_platform,
+            'platform_status' => $this->platform_status,
 
             'delete_route' => [
                 'method'     => 'delete',

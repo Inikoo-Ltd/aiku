@@ -274,18 +274,18 @@ class IndexDepartments extends OrgAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ] : false,
-                        [
-                            'type'  => 'button',
-                            'style' => 'secondary',
-                            'label' => __('blueprint'),
-                            'route' => [
-                                'name'       => 'grp.org.shops.show.catalogue.departments.index.blueprints',
-                                'parameters' => [
-                                    'organisation' => $this->organisation->slug,
-                                    'shop'         => $this->shop->slug,
-                                ]
-                            ]
-                        ],
+                        // [
+                        //     'type'  => 'button',
+                        //     'style' => 'secondary',
+                        //     'label' => __('blueprint'),
+                        //     'route' => [
+                        //         'name'       => 'grp.org.shops.show.catalogue.departments.index.blueprints',
+                        //         'parameters' => [
+                        //             'organisation' => $this->organisation->slug,
+                        //             'shop'         => $this->shop->slug,
+                        //         ]
+                        //     ]
+                        // ],
                         class_basename($this->parent) == 'Collection' ? [
                             'type'    => 'button',
                             'style'   => 'secondary',

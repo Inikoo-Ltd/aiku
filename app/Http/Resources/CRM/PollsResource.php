@@ -28,7 +28,6 @@ class PollsResource extends JsonResource
             $percentage = ($this->number_customers / ($this->total_customers > 0 ? $this->total_customers : 1)) * 100;
         }
 
-
         return [
             'id'                       => $poll->id,
             'slug'                     => $poll->slug,
@@ -36,8 +35,9 @@ class PollsResource extends JsonResource
             'label'                    => $poll->label,
             'position'                 => $poll->position,
             'number_customers'         => $poll->number_customers ?? 0,
-            'type'                     => $poll->type,
-            'percentage'               => round($percentage, 2).'%',
+            'type'                     => $poll->type->label(),
+            'type_icon'                => $poll->type->stateIcon(),
+            'percentage'               => round($percentage, 3) . '%',
             'in_registration'          => $poll->in_registration,
             'in_registration_required' => $poll->in_registration_required,
             'in_iris'                  => $poll->in_iris,

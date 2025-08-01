@@ -61,6 +61,11 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'DeleteTempIsdoc',
         );
 
+
+        $schedule->command('data_feeds:save')->everyTwoHours()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'SaveDataFeeds',
+        );
+
         $schedule->command('fetch:orders -w full -B')->everyFiveMinutes()->timezone('UTC')->sentryMonitor(
             monitorSlug: 'FetchOrdersInBasket',
         );
@@ -84,6 +89,8 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'FetchWooOrders',
         );
 
+
+
         (new Schedule())->command('hydrate -s ful')->everyFourHours('23:00')->timezone('UTC');
         (new Schedule())->command('hydrate -s sys')->everyTwoHours('23:00')->timezone('UTC');
         (new Schedule())->command('hydrate:shops')->everyTwoHours('23:00')->timezone('UTC');
@@ -97,7 +104,7 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'SaveWebsitesSitemap',
         );
 
-        $schedule->command('schedule:platform-orders')->everyTenMinutes()->timezone('UTC')->sentryMonitor('GetPlatformOrders');
+        $schedule->command('schedule:platform-orders')->everyMinute()->timezone('UTC')->sentryMonitor('GetPlatformOrders');
 
     }
 

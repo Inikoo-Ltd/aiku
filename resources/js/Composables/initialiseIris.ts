@@ -16,8 +16,14 @@ export const initialiseIrisApp = () => {
     const layout = useIrisLayoutStore()
     const locale = useLocaleStore()
 
-    console.log('init Iris props', usePage().props)
+    console.log('Init Iris: ', usePage().props)
 
+    router.on('navigate', (event) => {
+        console.log('on nav')
+        layout.currentParams = route().v().params  // current params
+        layout.currentQuery = route().v().query  // current query
+        layout.currentRoute = route().current()  // current route
+    })
 
     watchEffect(() => {
         // Set currency to used by global

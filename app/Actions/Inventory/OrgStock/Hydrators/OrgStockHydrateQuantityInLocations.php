@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStock\Hydrators;
 
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -27,6 +28,10 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
             'quantity_in_locations' =>
                 $orgStock->locationOrgStocks()->sum('quantity')
         ]);
+
+        foreach ($orgStock->products as $product) {
+            ProductHydrateAvailableQuantity::dispatch($product);
+        }
     }
 
 

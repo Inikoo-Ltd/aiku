@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\Location;
 
+use App\Actions\Inventory\Location\Hydrators\LocationHydrateSortCode;
 use App\Actions\Inventory\Location\Search\LocationRecordSearch;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateLocations;
 use App\Actions\Inventory\WarehouseArea\Hydrators\WarehouseAreaHydrateLocations;
@@ -41,6 +42,10 @@ class UpdateLocation extends OrgAction
             if ($location->warehouse_area_id) {
                 WarehouseAreaHydrateLocations::dispatch($location->warehouseArea)->delay($this->hydratorsDelay);
             }
+        }
+
+        if ($location->wasChanged('code')) {
+            $location = LocationHydrateSortCode::run($location);
         }
 
         LocationRecordSearch::dispatch($location);

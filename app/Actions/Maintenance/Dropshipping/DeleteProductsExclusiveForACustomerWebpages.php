@@ -8,7 +8,6 @@
 
 namespace App\Actions\Maintenance\Dropshipping;
 
-use App\Actions\Dropshipping\CustomerSalesChannel\WithExternalPlatforms;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -21,7 +20,6 @@ class DeleteProductsExclusiveForACustomerWebpages
 {
     use AsAction;
     use WithActionUpdate;
-    use WithExternalPlatforms;
 
 
     public function getCommandSignature(): string

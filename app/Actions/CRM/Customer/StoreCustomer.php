@@ -13,6 +13,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomerInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRegistrationIntervals;
 use App\Actions\CRM\Customer\Search\CustomerRecordSearch;
+use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceHydrateCustomers;
 use App\Actions\Fulfilment\FulfilmentCustomer\StoreFulfilmentCustomerFromCustomer;
 use App\Actions\Helpers\Address\ParseCountryID;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
@@ -166,6 +167,9 @@ class StoreCustomer extends OrgAction
         GroupHydrateRegistrationIntervals::dispatch($customer->group, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
 
         CustomerRecordSearch::dispatch($customer);
+        if ($customer?->trafficSource) {
+            TrafficSourceHydrateCustomers::dispatch($customer->trafficSource);
+        }
 
 
         return $customer;
@@ -230,18 +234,17 @@ class StoreCustomer extends OrgAction
             ],
             'identity_document_number' => ['sometimes', 'nullable', 'string'],
             'contact_website'          => ['sometimes', 'nullable', 'string', 'max:255'],
-            'contact_address'          => ['sometimes','required', new ValidAddress()],
+            'contact_address'          => ['sometimes', 'required', new ValidAddress()],
             'delivery_address'         => ['sometimes', 'required', new ValidAddress()],
 
 
-            'timezone_id'              => ['nullable', 'exists:timezones,id'],
-            'language_id'              => ['nullable', 'exists:languages,id'],
-            'data'                     => ['sometimes', 'array'],
-            'registered_at'            => ['sometimes', 'nullable', 'date'],
-            'internal_notes'           => ['sometimes', 'nullable', 'string'],
-            'warehouse_internal_notes' => ['sometimes', 'nullable', 'string'],
-            'warehouse_public_notes'   => ['sometimes', 'nullable', 'string'],
-
+            'timezone_id'                                            => ['nullable', 'exists:timezones,id'],
+            'language_id'                                            => ['nullable', 'exists:languages,id'],
+            'data'                                                   => ['sometimes', 'array'],
+            'registered_at'                                          => ['sometimes', 'nullable', 'date'],
+            'internal_notes'                                         => ['sometimes', 'nullable', 'string'],
+            'warehouse_internal_notes'                               => ['sometimes', 'nullable', 'string'],
+            'warehouse_public_notes'                                 => ['sometimes', 'nullable', 'string'],
             'email_subscriptions'                                    => ['sometimes', 'array'],
             'email_subscriptions.is_subscribed_to_newsletter'        => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_marketing'         => ['sometimes', 'boolean'],
@@ -251,6 +254,8 @@ class StoreCustomer extends OrgAction
             'email_subscriptions.is_subscribed_to_basket_reminder_1' => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_basket_reminder_2' => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_basket_reminder_3' => ['sometimes', 'boolean'],
+            'traffic_sources'                                        => ['sometimes', 'nullable'],
+            'tax_number'                                             => ['sometimes', 'nullable', 'array'],
 
 
             'password' =>
@@ -300,7 +305,7 @@ class StoreCustomer extends OrgAction
             $lastName  = trim($this->get('last_name'));
 
             if ($firstName || $lastName) {
-                $this->set('contact_name', trim($firstName . ' ' . $lastName));
+                $this->set('contact_name', trim($firstName.' '.$lastName));
             }
         }
     }

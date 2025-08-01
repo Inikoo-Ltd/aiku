@@ -25,6 +25,8 @@ import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue"
 import ButtonWithLink from "../Elements/Buttons/ButtonWithLink.vue"
 import LoadingIcon from "../Utils/LoadingIcon.vue"
 import Icon from "../Icon.vue"
+import { ChannelLogo } from "@/Composables/Icon/ChannelLogoSvg"
+import ButtonExport from "@/Components/ButtonExport.vue"
 
 library.add(faTruckCouch, faUpload, faFilePdf, faMapSigns, faNarwhal, faReceipt, faLayerPlus, faPallet, faWarehouse, faEmptySet, faMoneyBillWave)
 
@@ -133,8 +135,7 @@ const isShowDummySlotName = false
                             </div>
                         </slot>
                         <slot name="platform">
-                            <div v-if="data.platform" class="text-gray-400 font-normal text-lg leading-none">
-                                {{ data.platform.title }}
+                            <div v-if="data.platform" v-tooltip="data.platform.title || data.platform.name" class=" h-6 max-w-7 min-w-5 w-auto text-gray-400 font-normal text-lg leading-none" v-html="ChannelLogo(data.platform.type)">
                             </div>
 
                         </slot>
@@ -163,6 +164,7 @@ const isShowDummySlotName = false
                 </div>
             </div>
         </div>
+
 
         <!-- Section: Button and/or ButtonGroup -->
         <slot name="button" :dataPageHead="{ ...props }">
@@ -273,8 +275,11 @@ const isShowDummySlotName = false
                         </PopoverPanel>
                     </Transition>
                 </Popover>
+
+                <ButtonExport v-if="data?.exports" :data="data?.exports"/>
             </div>
         </slot>
+
 
 
     </div>

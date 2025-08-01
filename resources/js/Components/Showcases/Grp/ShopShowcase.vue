@@ -37,7 +37,11 @@ defineProps<{
                 <StatsBox
                     v-for="(stat, idxStat) in data.statsBox"
                     :stat="stat"
-                />
+                >
+                    <template #background>
+                        <div></div>
+                    </template>
+                </StatsBox>
             </div>
         </div>
     </div>

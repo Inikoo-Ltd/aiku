@@ -15,7 +15,6 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\MagentoUser;
 use App\Models\Ordering\Order;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -31,7 +30,7 @@ class FulfillOrderToMagento extends OrgAction
      */
     public function handle(Order $order): void
     {
-        $fulfillOrderId = Arr::get($order->data, 'entity_id');
+        $fulfillOrderId = $order->platform_order_id;
 
         /** @var MagentoUser $magentoUser */
         $magentoUser = $order->customerSalesChannel->user;

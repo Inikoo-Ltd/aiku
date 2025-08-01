@@ -399,7 +399,8 @@ class IndexWebpages extends OrgAction
                 ),
                 'title'       => __('webpages'),
                 'pageHead'    => [
-                    'title'         => __('webpages'),
+                    'model'         => __('webpages'),
+                    'title'         => ucfirst($this->bucket),
                     'icon'          => [
                         'icon'  => ['fal', 'fa-browser'],
                         'title' => __('webpage')
@@ -494,6 +495,60 @@ class IndexWebpages extends OrgAction
                             'parameters' => $routeParameters
                         ],
                         trim('('.__('Content').') '.$suffix)
+                    )
+                );
+            case 'grp.org.shops.show.web.webpages.index.type.info':
+                /** @var Website $website */
+                $website = request()->route()->parameter('website');
+
+                return array_merge(
+                    ShowWebsite::make()->getBreadcrumbs(
+                        $website,
+                        'grp.org.shops.show.web.websites.show',
+                        $routeParameters
+                    ),
+                    $headCrumb(
+                        [
+                            'name'       => 'grp.org.shops.show.web.webpages.index.type.info',
+                            'parameters' => $routeParameters
+                        ],
+                        trim('('.__('Info').') '.$suffix)
+                    )
+                );
+            case 'grp.org.shops.show.web.webpages.index.type.operations':
+                /** @var Website $website */
+                $website = request()->route()->parameter('website');
+
+                return array_merge(
+                    ShowWebsite::make()->getBreadcrumbs(
+                        $website,
+                        'grp.org.shops.show.web.websites.show',
+                        $routeParameters
+                    ),
+                    $headCrumb(
+                        [
+                            'name'       => 'grp.org.shops.show.web.webpages.index.type.operations',
+                            'parameters' => $routeParameters
+                        ],
+                        trim('('.__('Operations').') '.$suffix)
+                    )
+                );
+            case 'grp.org.shops.show.web.webpages.index.type.blog':
+                /** @var Website $website */
+                $website = request()->route()->parameter('website');
+
+                return array_merge(
+                    ShowWebsite::make()->getBreadcrumbs(
+                        $website,
+                        'grp.org.shops.show.web.websites.show',
+                        $routeParameters
+                    ),
+                    $headCrumb(
+                        [
+                            'name'       => 'grp.org.shops.show.web.webpages.index.type.blog',
+                            'parameters' => $routeParameters
+                        ],
+                        trim('('.__('Blog').') '.$suffix)
                     )
                 );
             case 'grp.org.shops.show.web.webpages.index.type.small-print':

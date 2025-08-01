@@ -94,8 +94,42 @@ class GetOrderActions
                     ]
                 ],
 
+                OrderStateEnum::FINALISED=> [
 
-                OrderStateEnum::FINALISED, OrderStateEnum::DISPATCHED => [
+                    $order->invoices->count() == 0 ?
+                        [
+                            'type'    => 'button',
+                            'style'   => '',
+                            'tooltip' => $generateInvoiceLabel,
+                            'label'   => $generateInvoiceLabel,
+                            'key'     => 'action',
+                            'route'   => [
+                                'method'     => 'patch',
+                                'name'       => 'grp.models.order.generate_invoice',
+                                'parameters' => [
+                                    'order' => $order->id
+                                ]
+                            ]
+                        ] : [],
+                        ] : [],
+                        [
+                            'type'    => 'button',
+                            'style'   => 'save',
+                            'icon'    => 'fal fa-plus',
+                            'tooltip' => __('Create Replacement Delivery Note'),
+                            'label'   => __('Replacement'),
+                            'key'     => 'replacement',
+                            'route'   => [
+                                'method'     => 'post',
+                                'name'       => 'grp.models.order.replacement_delivery_note.store',
+                                'parameters' => [
+                                    'order' => $order->id
+                                ]
+                            ]
+                        ]
+                ],
+
+               OrderStateEnum::DISPATCHED => [
 
                     $order->invoices->count() == 0 ?
                         [
@@ -114,20 +148,20 @@ class GetOrderActions
                         ] : [],
                         [
                             'type'    => 'button',
-                            'style'   => 'save',
-                            'icon'    => 'fal fa-plus',
-                            'tooltip' => __('Create Replacement Delivery Note'),
-                            'label'   => __('Replacement'),
-                            'key'     => 'replacement',
+                            'style'   => '',
+                            'tooltip' => __('Rollback'),
+                            'label'   => __('Rollback'),
+                            'key'     => 'rollback',
                             'route'   => [
-                                'method'     => 'post',
-                                'name'       => 'grp.models.order.replacement_delivery_note.store',
+                                'method'     => 'patch',
+                                'name'       => 'grp.models.order.rollback_dispatch',
                                 'parameters' => [
                                     'order' => $order->id
                                 ]
                             ]
                         ]
                 ],
+
                 default => []
             };
             $showCancel = true;

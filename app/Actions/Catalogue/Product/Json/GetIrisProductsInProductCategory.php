@@ -33,7 +33,8 @@ class GetIrisProductsInProductCategory extends IrisAction
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $queryBuilder->where('sub_department_id', $productCategory->id);
         }
-        $queryBuilder->selectRaw('\''.request()->path().'\' as parent_url');
+        $baseUrl = $productCategory?->url ?? '';
+        $queryBuilder->selectRaw('\'' . $baseUrl . '\' as parent_url');
         return $this->getData($queryBuilder, $perPage);
     }
 
@@ -44,5 +45,4 @@ class GetIrisProductsInProductCategory extends IrisAction
 
         return $this->handle(productCategory: $productCategory);
     }
-
 }

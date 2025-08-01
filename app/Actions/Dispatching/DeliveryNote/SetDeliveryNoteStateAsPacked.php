@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\Dispatching\Packing\StorePacking;
+use App\Actions\Dispatching\PickingSession\AutoFinishPackingPickingSession;
 use App\Actions\Ordering\Order\UpdateOrderStateToPacked;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
@@ -39,7 +40,7 @@ class SetDeliveryNoteStateAsPacked extends OrgAction
         }
         $defaultParcel = [
             [
-                'weight' => 1,
+                'weight' => $deliveryNote->effective_weight/1000,
                 'dimensions' => [5, 5, 5]
             ]
         ];
@@ -49,6 +50,12 @@ class SetDeliveryNoteStateAsPacked extends OrgAction
         UpdateOrderStateToPacked::make()->action($deliveryNote->orders->first());
 
         $deliveryNote = $this->update($deliveryNote, $modelData);
+
+        if ($deliveryNote->pickingSessions) {
+            foreach ($deliveryNote->pickingSessions as $pickingSession) {
+                AutoFinishPackingPickingSession::run($pickingSession);
+            }
+        }
 
         OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
             ->delay($this->hydratorsDelay);

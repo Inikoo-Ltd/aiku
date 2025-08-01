@@ -16,6 +16,7 @@ import { faCheck } from '@far'
 import { faEllipsisV } from '@fas'
 import { faCheckDouble, faPlus } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { routeType } from '@/types/route'
 library.add(faCheckDouble)
 
 
@@ -40,13 +41,21 @@ interface ProductResource {
 const props = withDefaults(defineProps<{
     // product: ProductResource
     products: ProductResource[]
-    // category: {
-
-    // }
     categoryId: number
     categoryHasChannels?: number[]
+    routeAddPortfolios?: routeType
+    routeGetCategoryChannels?: routeType
+
 }>(), {
-    categoryHasChannels: () => []
+    categoryHasChannels: () => [],
+    routeAddPortfolios : {
+        name: 'iris.models.multi_channels.product_category.portfolio.store',
+        parameters: {}
+    },
+    routeGetCategoryChannels : {
+        name: 'iris.json.customer.product_category.channel_ids.index',
+        parameters: {}
+    }
 })
 
 const emits = defineEmits<{
@@ -109,8 +118,9 @@ const onAddCategoryToChannel = (channel: {}) => {
     // console.log(`Adding product with ID ${product.id} to portfolio for channel ID ${channelId}`)
 
     router.post(
-        route('iris.models.multi_channels.product_category.portfolio.store',
+        route(props.routeAddPortfolios.name, 
             {
+                ...props.routeAddPortfolios.parameters,
                 productCategory: props.categoryId,
             }
         ),
@@ -178,18 +188,20 @@ watch(() => props.categoryHasChannels, (newVal) => {
 const isLoadingFetchExistenceChannels = ref(false)
 // const categoryExistenceInChannels = ref<number[]>([])
 const fetchProductExistInChannel = async () => {
+    console.log('Fetching product existence in channels for category ID:', props.categoryId)
     isLoadingFetchExistenceChannels.value = true
     try {
         const response = await axios.get(
             route(
-                'iris.json.customer.product_category.channel_ids.index',
+                props.routeGetCategoryChannels.name,
                 {
+                    ...props.routeGetCategoryChannels.parameters,
                     customer: layout.iris?.customer?.id,
                     productCategory: props.categoryId,
                 }
             )
         )
-
+                console.log('Xxx product exist in channel response:', response.data)
         if (response.status !== 200) {
             throw new Error('Failed to fetch product existence in channel')
         }
@@ -208,6 +220,7 @@ const fetchProductExistInChannel = async () => {
 }
 
 onMounted(() => {
+    if(layout?.iris?.is_logged_in)
     fetchProductExistInChannel()
 })
 

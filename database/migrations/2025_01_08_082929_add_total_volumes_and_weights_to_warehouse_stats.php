@@ -14,16 +14,16 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::table('location_stats', function (Blueprint $table) {
-            $table->decimal('total_volume')->default(0)->comment('cbm');
-            $table->decimal('total_weight')->default(0)->comment('kg');
+            $table->decimal('total_volume', 18)->default(0)->comment('cbm');
+            $table->decimal('total_weight', 18)->default(0)->comment('kg');
         });
         Schema::table('warehouse_area_stats', function (Blueprint $table) {
-            $table->decimal('total_volume')->default(0)->comment('cbm');
-            $table->decimal('total_weight')->default(0)->comment('kg');
+            $table->decimal('total_volume', 18)->default(0)->comment('cbm');
+            $table->decimal('total_weight', 18)->default(0)->comment('kg');
         });
         Schema::table('warehouse_stats', function (Blueprint $table) {
-            $table->decimal('total_volume')->default(0)->comment('cbm');
-            $table->decimal('total_weight')->default(0)->comment('kg');
+            $table->decimal('total_volume', 18)->default(0)->comment('cbm');
+            $table->decimal('total_weight', 18)->default(0)->comment('kg');
         });
     }
 

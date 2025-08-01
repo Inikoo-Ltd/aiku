@@ -51,6 +51,8 @@ const EmployeePosition = defineAsyncComponent(() => import('@/Components/Forms/F
 const MailshotRecipient = defineAsyncComponent(() => import('@/Components/Forms/Fields/MailshotRecipients.vue'))
 import ToggleStateWebpage from '@/Components/Forms/Fields/ToggleStateWebpage.vue'
 import DeleteWebpage from '@/Components/Forms/Fields/DeleteWebpage.vue'
+import InputTranslation from '@/Components/Forms/Fields/InputTranslation.vue'
+import TextEditorTranslation from '@/Components/Forms/Fields/TextEditorTranslation.vue'
 
 
 export const componentsList: {[key: string]: Component} = {
@@ -100,8 +102,9 @@ export const componentsList: {[key: string]: Component} = {
     'toggle_state_webpage': ToggleStateWebpage,
     'delete_webpage': DeleteWebpage,
     'button' : ButtonForm,
-
-    'select_infinite': SelectInfiniteScroll
+    'input_translation' : InputTranslation,
+    'select_infinite': SelectInfiniteScroll,
+    'textEditor_translation' : TextEditorTranslation
 }
 
 export const getComponent = (componentName: string) => {
