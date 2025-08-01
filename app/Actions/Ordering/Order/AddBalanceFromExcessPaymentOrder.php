@@ -31,6 +31,12 @@ class AddBalanceFromExcessPaymentOrder extends OrgAction
         $order = $this->update($order, [
             'payment_amount' => $order->total_amount
         ]);
+
+        request()->session()->flash('modal', [
+            'status'  => 'success',
+            'title'   => __('Success!'),
+            'description' => __('Your order has been submitted.'),
+        ]);
     }
 
     public function asController(Order $order)

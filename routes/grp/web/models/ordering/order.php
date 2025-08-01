@@ -55,7 +55,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     });
 
     Route::patch('send-back-to-Basket', SendOrderBackToBasket::class)->name('send_back_to_basket');
-    Route::patch('return-excess', AddBalanceFromExcessPaymentOrder::class)->name('return_excess_payment');
+    Route::post('return-excess', AddBalanceFromExcessPaymentOrder::class)->name('return_excess_payment');
 
     Route::name('state.')->prefix('state')->group(function () {
         Route::patch('creating', SendOrderBackToBasket::class)->name('creating');
