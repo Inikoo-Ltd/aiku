@@ -23,7 +23,11 @@
     @inertiaHead
     <style>
         iframe[name='JSD widget'] {
-            margin-bottom: 16px;
+            display: block;
+            top:50px;
+            right: 50px;
+            margin-right: 15px;
+
             opacity: .85;
         }
     </style>
