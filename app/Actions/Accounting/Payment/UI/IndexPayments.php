@@ -120,7 +120,7 @@ class IndexPayments extends OrgAction
             ])
             ->leftJoin('payment_accounts', 'payments.payment_account_id', 'payment_accounts.id')
             ->leftJoin('payment_service_providers', 'payment_accounts.payment_service_provider_id', 'payment_service_providers.id')
-            ->allowedSorts(['reference', 'status', 'type' ,'date'])
+            ->allowedSorts(['reference', 'status', 'type' ,'date', 'amount', 'payment_account_name'])
             ->withBetweenDates(['date'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())

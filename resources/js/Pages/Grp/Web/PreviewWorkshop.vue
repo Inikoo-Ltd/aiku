@@ -152,7 +152,7 @@ watch(isPreviewLoggedIn, (value) => {
 
 
 
-<style scoped lang="scss">
+<style  lang="scss">
 :deep(.hover-dashed) {
     @apply relative;
 
@@ -169,5 +169,9 @@ watch(isPreviewLoggedIn, (value) => {
         content: "";
         @apply -z-10 absolute inset-0 hover:bg-yellow-500/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
     }
+}
+
+#jsd-widget{
+    display: none !important;
 }
 </style>

@@ -472,15 +472,15 @@ const isModalEbayDuplicate = ref(false)
     </div>
 
     <!-- Modal: Shopify -->
-    <Modal :isOpen="!!isModalOpen" @onClose="isModalOpen = false" width="w-[500px]">
+    <Modal :isOpen="!!isModalOpen" @onClose="isModalOpen = false" width="w-[600px]">
         <div class="h-fit">
-            <div class="mb-4">
+            <div class="mb-6">
                 <div class="text-center font-semibold text-xl">
-                    {{ trans("Enter your Shopify store name") }}
+                    {{ trans("Please enter your Shopify unique domain name") }}
                 </div>
 
                 <div class="text-center text-xs text-gray-500 w-9/12 mx-auto">
-                    {{ trans("This is the store name that you already have in Shopify. You can find it in Shopify Settings") }}
+                    {{ trans("You will be able to find it in your Shopify settings under domains section.") }}
                 </div>
             </div>
 

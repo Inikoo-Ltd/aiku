@@ -49,18 +49,29 @@ const fontFamilies = [...useFontFamilyList];
         <div class="pb-2">
             <div class="px-3 flex justify-between items-center mb-2">
                 <div class="text-xs">{{ trans('Text Color') }}</div>
-                <ColorPicker :color="get(localModel, 'color', 'rgba(0, 0, 0, 1)')"
-                    @changeColor="(newColor) => (set(localModel, 'color', `rgba(${newColor.rgba.r}, ${newColor.rgba.g}, ${newColor.rgba.b}, ${newColor.rgba.a}`), emits('update:modelValue', localModel))"
-                    closeButton>
+                <ColorPicker :color="get(localModel, 'color', null)" @changeColor="(newColor) => {
+                    const finalColor = newColor ? `rgba(${newColor.rgba.r}, ${newColor.rgba.g}, ${newColor.rgba.b}, ${newColor.rgba.a})` : null
+                    set(localModel, 'color', finalColor)
+                    emits('update:modelValue', localModel)
+                }" closeButton>
                     <template #button>
                         <div v-bind="$attrs"
-                            class="overflow-hidden h-7 w-7 rounded-md border border-gray-300 shadow cursor-pointer flex justify-center items-center"
-                            :style="{
-                                background: `${get(localModel, 'color', 'transparent')}`
-                            }">
+                            class="relative h-7 w-7 rounded-md border border-gray-300 shadow cursor-pointer flex justify-center items-center"
+                            :style="{ background: localModel.color || 'transparent' }">
+                            <span v-if="!localModel.color" class="text-gray-400 text-xs">—</span>
+
+                            <!-- Tombol reset -->
+                            <button v-if="localModel.color"
+                                @click.stop.prevent="set(localModel, 'color', null); emits('update:modelValue', localModel)"
+                                class="absolute -top-2 -right-2 bg-white rounded-full text-xs text-red-500 shadow p-1 leading-none"
+                                title="Reset color">
+                                ×
+                            </button>
                         </div>
                     </template>
+
                 </ColorPicker>
+
             </div>
 
             <div class="px-3 items-center mb-2">

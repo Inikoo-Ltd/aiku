@@ -44,7 +44,7 @@ class DownloadProduct extends RetinaAction
                 ProductZipExport::make()->handle($parent, $filename);
             }, $filename);
         } else {
-            return Storage::disk('excel-exports')->download($path);
+            return Storage::disk('data-feeds')->download($path);
         }
     }
     /**

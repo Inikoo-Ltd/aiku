@@ -17,7 +17,7 @@ import AlertMessage from "@/Components/Utils/AlertMessage.vue";
 import BoxNote from "@/Components/Pallet/BoxNote.vue";
 import Timeline from "@/Components/Utils/Timeline.vue";
 import { Timeline as TSTimeline } from "@/types/Timeline";
-import { computed, provide, ref, watch  } from "vue";
+import { computed, provide, ref, watch, onMounted  } from "vue";
 import type { Component } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
 import BoxStatsDeliveryNote from "@/Components/Warehouse/DeliveryNotes/BoxStatsDeliveryNote.vue";
@@ -38,6 +38,7 @@ import PureInput from "@/Components/Pure/PureInput.vue";
 import ToggleSwitch from 'primevue/toggleswitch';
 import PureAddress from "@/Components/Pure/PureAddress.vue"
 import Message from 'primevue/message';
+import { debounce } from "lodash-es";
 
 
 library.add(faSmileWink,faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck);
@@ -279,6 +280,36 @@ watch(pickingView, (val) => {
 
 console.log(props)
 const showWarningMessage = ref(true);
+
+
+const debReloadPage = debounce(() => {
+    router.reload({
+        except: ['auth', 'breadcrumbs', 'flash', 'layout', 'localeData', 'pageHead', 'ziggy']
+    })
+}, 1200)
+
+const selectSocketBasedPlatform = (porto) => {
+    return {
+      event: `grp.dn.${porto.id}`,
+      action: '.dn-note-update'
+    }
+}
+
+onMounted(() => {
+  const socketConfig = selectSocketBasedPlatform(props.delivery_note)
+
+  if (!socketConfig) {
+    console.warn('Socket config not found for platform:', props.delivery_note.id)
+    return
+  }
+
+  const channel = window.Echo
+    .private(socketConfig.event)
+    .listen(socketConfig.action, (eventData: any) => {
+      debReloadPage()
+    })
+  console.log('Subscribed to channel for porto ID:', props.delivery_note.id, 'Channel:', channel)
+})
 </script>
 
 
@@ -331,7 +362,6 @@ const showWarningMessage = ref(true);
 
 
     </PageHeading>
-
     <!-- Section: Pallet Warning -->
     <div v-if="alert?.status" class="p-2 pb-0">
         <AlertMessage :alert />
