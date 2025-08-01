@@ -27,7 +27,6 @@ use Illuminate\Support\Str;
 
 class SaveDataFeeds extends RetinaAction
 {
-
     /**
      * @throws \PhpOffice\PhpSpreadsheet\Exception
      * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception

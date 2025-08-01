@@ -99,7 +99,13 @@ const links = ref([
                             parameters: {
                                 website: data?.id
                             }
-                        }" method="post" :icon="faFragile" type="tertiary" :label="trans('Break cache')" full />
+                        }" method="post" :icon="faFragile" type="tertiary" :label="trans('Break cache')" full>
+                            <template #iconRight>
+                                <div v-tooltip="trans('If you made some changes but didn\'t updated yet in the website, use this feature')" class="text-gray-400 hover:text-gray-700">
+                                    <FontAwesomeIcon icon="fal fa-info-circle" class="" fixed-width aria-hidden="true" />
+                                </div>
+                            </template>
+                        </ButtonWithLink>
                     </div>
                 </div>
             </div>

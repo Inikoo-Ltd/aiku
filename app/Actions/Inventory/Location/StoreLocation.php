@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\Location;
 
+use App\Actions\Inventory\Location\Hydrators\LocationHydrateSortCode;
 use App\Actions\Inventory\Location\Search\LocationRecordSearch;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateLocations;
 use App\Actions\Inventory\WarehouseArea\Hydrators\WarehouseAreaHydrateLocations;
@@ -50,7 +51,8 @@ class StoreLocation extends OrgAction
             $location = $parent->locations()->create($modelData);
             $location->stats()->create();
             $location->updateQuietly(['barcode' => $location->slug]);
-            return $location;
+            return LocationHydrateSortCode::run($location);
+
         });
 
         GroupHydrateLocations::dispatch($organisation->group)->delay($this->hydratorsDelay);

@@ -36,6 +36,7 @@ use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use Spatie\Translatable\HasTranslations;
 
 /**
  *
@@ -75,6 +76,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $top_seller
  * @property string|null $description_title
  * @property string|null $description_extra
+ * @property array<array-key, mixed>|null $name_i8n
+ * @property array<array-key, mixed>|null $description_i8n
+ * @property array<array-key, mixed>|null $description_title_i8n
+ * @property array<array-key, mixed>|null $description_extra_i8n
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
@@ -121,8 +126,11 @@ class ProductCategory extends Model implements Auditable, HasMedia
     use HasHistory;
     use InShop;
     use HasImage;
+    use HasTranslations;
 
     protected $guarded = [];
+
+    public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
 
     protected $casts = [
         'data'             => 'array',

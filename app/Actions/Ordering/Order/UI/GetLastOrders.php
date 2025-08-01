@@ -11,7 +11,6 @@ namespace App\Actions\Ordering\Order\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Http\Resources\Ordering\OrdersResource;
 use App\Http\Resources\Sales\OrderResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Ordering\Order;
@@ -24,7 +23,7 @@ class GetLastOrders extends OrgAction
 
     public function handle(Shop $shop): array
     {
-       $orders = [];
+        $orders = [];
 
         foreach (OrderStateEnum::cases() as $state) {
             $query = Order::where('shop_id', $shop->id)
@@ -48,7 +47,7 @@ class GetLastOrders extends OrgAction
             $stateOrders = $query->take(5)->get();
 
 
-            
+
             $orders[$state->value] = [
                 'label' => $state->labels()[$state->value],
                 'icon' => $state->stateIcon()[$state->value],

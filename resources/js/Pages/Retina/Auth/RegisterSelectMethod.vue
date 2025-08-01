@@ -6,6 +6,7 @@
   -->
 
 <script setup lang="ts">
+import { Head } from "@inertiajs/vue3"
 import { Link, router } from "@inertiajs/vue3"
 import { ref } from "vue"
 import { trans } from "laravel-vue-i18n"
@@ -83,6 +84,7 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 </script>
 
 <template>
+    <Head :title="trans('Register')" />
 	<div class="rounded-md flex items-center justify-center w-full px-4 py-20 lg:px-8">
         <div class="relative w-full max-w-lg bg-white border border-gray-200 rounded-md shadow-lg px-8 py-10">
             <div v-if="isLoadingGoogle" class="absolute inset-0 bg-black/50 text-white z-10 flex justify-center items-center">
