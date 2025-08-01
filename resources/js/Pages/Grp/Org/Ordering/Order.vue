@@ -810,7 +810,7 @@ const generateRouteDeliveryNote = (slug: string) => {
     <Modal :isOpen="isOpenModalPayment" @onClose="isOpenModalPayment = false" width="w-[600px]">
         <div class="isolate bg-white px-6 lg:px-8">
             <div class="mx-auto max-w-2xl text-center">
-                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans("Invoice Payment") }}</h2>
+                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans("Order Payment") }}</h2>
                 <p class="text-xs leading-5 text-gray-400">
                     {{ trans("Information about payment from customer") }}
                 </p>
