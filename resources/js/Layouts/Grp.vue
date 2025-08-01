@@ -45,7 +45,7 @@ import {
     faAsterisk,faPauseCircle, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble,
     faSmile
 } from "@fal";
-import { faSearch, faBell } from "@far";
+import { faSearch, faUndoAlt, faBell } from "@far";
 import { faAsterisk as fasAsterisk, faExclamation, faInfo, faPlay, faGlobe as fasGlobe } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { notify } from "@kyvg/vue3-notification";

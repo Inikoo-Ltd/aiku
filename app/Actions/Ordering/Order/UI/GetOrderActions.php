@@ -94,8 +94,7 @@ class GetOrderActions
                     ]
                 ],
 
-
-                OrderStateEnum::FINALISED, OrderStateEnum::DISPATCHED => [
+                OrderStateEnum::FINALISED=> [
 
                     $order->invoices->count() == 0 ?
                         [
@@ -111,8 +110,42 @@ class GetOrderActions
                                     'order' => $order->id
                                 ]
                             ]
-                        ] : []
+                        ] : [],
                 ],
+
+               OrderStateEnum::DISPATCHED => [
+
+                    $order->invoices->count() == 0 ?
+                        [
+                            'type'    => 'button',
+                            'style'   => '',
+                            'tooltip' => $generateInvoiceLabel,
+                            'label'   => $generateInvoiceLabel,
+                            'key'     => 'action',
+                            'route'   => [
+                                'method'     => 'patch',
+                                'name'       => 'grp.models.order.generate_invoice',
+                                'parameters' => [
+                                    'order' => $order->id
+                                ]
+                            ]
+                        ] : [],
+                        [
+                            'type'    => 'button',
+                            'style'   => '',
+                            'tooltip' => __('Rollback'),
+                            'label'   => __('Rollback'),
+                            'key'     => 'rollback',
+                            'route'   => [
+                                'method'     => 'patch',
+                                'name'       => 'grp.models.order.rollback_dispatch',
+                                'parameters' => [
+                                    'order' => $order->id
+                                ]
+                            ]
+                        ]
+                ],
+                
                 default => []
             };
             $showCancel = true;
