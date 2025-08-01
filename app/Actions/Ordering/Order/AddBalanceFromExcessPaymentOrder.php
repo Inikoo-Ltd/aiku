@@ -35,7 +35,7 @@ class AddBalanceFromExcessPaymentOrder extends OrgAction
         request()->session()->flash('modal', [
             'status'  => 'success',
             'title'   => __('Success!'),
-            'description' => __('Your order has been submitted.'),
+            'description' => __('Excess payment has been returned as balance.'),
         ]);
     }
 
