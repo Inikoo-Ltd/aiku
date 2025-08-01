@@ -19,11 +19,10 @@ class GetWebBlockBlog
 
     public function handle(Webpage $webpage, array $webBlock): array
     {
-
         $permissions = ['edit'];
 
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
-        data_set($webBlock, 'web_block.layout.data.fieldValue.published_date', []);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.published_date', $webpage->snapshots()->latest()->first()->published_at);
 
         return $webBlock;
     }
