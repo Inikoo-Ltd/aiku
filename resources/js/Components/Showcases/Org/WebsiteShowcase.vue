@@ -14,6 +14,8 @@ import { trans } from "laravel-vue-i18n"
 import { StatsBoxTS } from "@/types/Components/StatsBox"
 import StatsBox from "@/Components/Stats/StatsBox.vue"
 import { routeType } from "@/types/route"
+import axios from "axios"
+import { notify } from "@kyvg/vue3-notification"
 
 library.add(faGlobe, faLink)
 
@@ -31,6 +33,11 @@ const props = defineProps<{
         content_blog_stats: StatsBoxTS[]
     }
     route_storefront: routeType
+    luigi_data: {
+        luigisbox_tracker_id: string
+        luigisbox_private_key: string
+        luigisbox_lbx_code: string
+    }
 }>()
 
 const links = ref([
@@ -38,6 +45,32 @@ const links = ref([
     { label: trans("Edit Menu"), route_target: props.data.layout.menuRoute, icon: faPencil },
     { label: trans("Edit Footer"), route_target: props.data.layout.footerRoute, icon: faPencil }
 ]);
+
+window.reindexwebsite = async () => {
+    try {
+        const response = await axios.post(
+            route(
+                'grp.models.website_luigi.reindex',
+                {
+                    website: props.data?.id
+                }
+            ),
+            { }
+        )
+
+        console.log('success reindex website', response.data)
+        if (response.status !== 200) {
+            
+        }
+    } catch (error: any) {
+        notify({
+            title: trans("Something went wrong"),
+            text: error.message || trans("Please try again or contact administrator"),
+            type: 'error'
+        })
+    }
+}
+
 
 </script>
 <template>
@@ -88,12 +121,12 @@ const links = ref([
                         <ButtonWithLink :routeTarget="route_storefront" icon="fal fa-home" type="tertiary" :label="trans('Storefront')" full />
                     </div>
 
-                    <div v-for="(item, index) in links" :key="index" class="p-2">
+                    <div v-for="(item, index) in links" :key="index" class="px-2 py-1">
                         <ButtonWithLink :routeTarget="item.route_target" full :icon="item.icon" :label="item.label"
                             type="secondary" />
                     </div>
 
-                    <div class="p-2">
+                    <div class="p-2 space-y-2">
                         <ButtonWithLink :routeTarget="{
                             name: 'grp.models.website.break_cache',
                             parameters: {
@@ -106,6 +139,29 @@ const links = ref([
                                 </div>
                             </template>
                         </ButtonWithLink>
+
+                        <!-- <ButtonWithLink
+                            v-if="luigi_data?.luigisbox_tracker_id"
+                            :routeTarget="{
+                                name: 'grp.models.website_luigi.reindex',
+                                parameters: {
+                                    website: data?.id
+                                }
+                            }"
+                            method="post"
+                            :type="luigi_data?.luigisbox_private_key ? 'tertiary' : 'warning'"
+                            :label="trans('Reindex Website Search')"
+                            full
+                        >
+                            <template #iconRight>
+                                <div v-if="luigi_data?.luigisbox_private_key" v-tooltip="trans('This will reindexing the product that will appear in the search feature')" class="text-gray-400 hover:text-gray-700">
+                                    <FontAwesomeIcon icon="fal fa-info-circle" class="" fixed-width aria-hidden="true" />
+                                </div>
+                                <div v-else v-tooltip="trans('Please input Luigi Private Key do start reindexing')" class="text-amber-500">
+                                    <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
+                                </div>
+                            </template>
+                        </ButtonWithLink> -->
                     </div>
                 </div>
             </div>
