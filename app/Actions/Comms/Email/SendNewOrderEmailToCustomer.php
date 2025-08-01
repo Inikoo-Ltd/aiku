@@ -49,9 +49,12 @@ class SendNewOrderEmailToCustomer extends OrgAction
             '',
             additionalData: [
                 'customer_name' => $order->customer->name,
-                'order_reference' => $order->reference,
+                'order' => $order,
                 'date' => $order->created_at->format('F jS, Y'),
                 'order_link' => $this->getOrderLink($order),
+                'delivery_address' => $order->deliveryAddress->getHtml(),
+                'invoice_address' => $order->billingAddress->getHtml(),
+                'customer_note' => $order->customer_notes
             ]
         );
     }

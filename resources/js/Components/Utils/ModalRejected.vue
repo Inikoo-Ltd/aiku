@@ -37,6 +37,7 @@ const isRejectDisabled = computed(() => {
 })
 
 const onReject = () => {
+	
 	if (!selectedOption.value) return
 	const reason = selectedOption.value
 

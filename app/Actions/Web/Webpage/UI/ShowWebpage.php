@@ -256,13 +256,13 @@ class ShowWebpage extends OrgAction
                 ];
             }
 
-           /*  $actions[] = [
-                'type'    => 'button',
-                'style'   => 'edit',
-                'icon'    => ["fal", "fa-object-group"],
-                'tooltip' => __('Blueprint'),
-                'route'   => $workshopRoute
-            ]; */
+            /*  $actions[] = [
+                 'type'    => 'button',
+                 'style'   => 'edit',
+                 'icon'    => ["fal", "fa-object-group"],
+                 'tooltip' => __('Blueprint'),
+                 'route'   => $workshopRoute
+             ]; */
         }
 
 

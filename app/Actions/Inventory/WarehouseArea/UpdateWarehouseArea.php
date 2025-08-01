@@ -28,6 +28,12 @@ class UpdateWarehouseArea extends OrgAction
     public function handle(WarehouseArea $warehouseArea, array $modelData): WarehouseArea
     {
         $warehouseArea = $this->update($warehouseArea, $modelData, ['data']);
+
+        $changed = $warehouseArea->getChanges();
+        if (isset($changed['code'])  || isset($changed['picking_position'])) {
+            HydrateWarehouseAreaLocationsSortLocations::dispatch($warehouseArea);
+        }
+
         WarehouseAreaRecordSearch::dispatch($warehouseArea);
 
         return $warehouseArea;

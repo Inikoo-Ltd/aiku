@@ -164,9 +164,14 @@ onMounted(() => {
                       :class="[Object.values(layout.rightSidebar).some(value => value.show) ? 'right-0' : '-right-44']" />
 
         <Teleport to="body">
-            <Transition name="stacked-component">
-                <StackedComponents v-if="layout.stackedComponents?.length" />
-            </Transition>
+            <div>
+                <Transition>
+                    <div v-if="layout.stackedComponents?.length" @click="layout.stackedComponents.pop()" class="fixed top-0 left-0 h-screen w-screen bg-black/40 z-[99] cursor-pointer" />
+                </Transition>
+                <Transition name="stacked-component">
+                    <StackedComponents v-if="layout.stackedComponents?.length" />
+                </Transition>
+            </div>
         </Teleport>
 
     </div>

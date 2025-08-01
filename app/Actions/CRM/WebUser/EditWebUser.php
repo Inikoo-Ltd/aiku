@@ -20,6 +20,8 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
+use function Laravel\Prompts\password;
+
 class EditWebUser extends OrgAction
 {
     private Fulfilment|Shop $parent;
@@ -32,7 +34,6 @@ class EditWebUser extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-
         if ($this->parent instanceof Fulfilment) {
             return $request->user()->authTo("fulfilment.{$this->fulfilment->id}.view");
         } elseif ($this->parent instanceof Shop) {
@@ -45,7 +46,7 @@ class EditWebUser extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, WebUser $webUser, ActionRequest $request): WebUser
     {
         $this->parent = $shop;
-        $this->scope = $customer;
+        $this->scope  = $customer;
 
         $this->initialisationFromShop($shop, $request);
 
@@ -56,12 +57,11 @@ class EditWebUser extends OrgAction
     public function inFulfilmentCustomer(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, WebUser $webUser, ActionRequest $request): WebUser
     {
         $this->parent = $fulfilment;
-        $this->scope = $fulfilmentCustomer;
+        $this->scope  = $fulfilmentCustomer;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
         return $this->handle($webUser);
     }
-
 
 
     public function htmlResponse(WebUser $webUser, ActionRequest $request): Response
@@ -81,7 +81,6 @@ class EditWebUser extends OrgAction
                 'label'   => Str::possessive($scope->customer->name)
             ];
         }
-
         return Inertia::render(
             'EditModel',
             [
@@ -123,22 +122,22 @@ class EditWebUser extends OrgAction
                                     'label' => __('Contact name'),
                                     'value' => $webUser->contact_name
                                 ],
-                                'email' => [
+                                'email'        => [
                                     'type'  => 'input',
                                     'label' => __('email'),
                                     'value' => $webUser->email
                                 ],
-                                'username' => [
+                                'username'     => [
                                     'type'  => 'input',
                                     'label' => __('username'),
                                     'value' => $webUser->username
                                 ],
-                                'password' => [
-                                    'type'  => 'password',
-                                    'label' => __('password'),
-                                    'value' => ''
+                                'password'     => [
+                                    'type'                 => 'password',
+                                    'label'                => __('Set new password'),
+                                    'value'                => '',
                                 ],
-                                'is_root' => [
+                                'is_root'      => [
                                     'type'  => 'toggle',
                                     'label' => __('Admin'),
                                     'value' => $webUser->is_root
