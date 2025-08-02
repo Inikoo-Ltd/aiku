@@ -39,11 +39,8 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
         } else {
             $pickedWeight = (int)$totalPicked * $deliveryNoteItem->orgStock->stock->gross_weight;
         }
-        $pickedWeight=0.4;
-        if($pickedWeight<1){
-            $pickedWeight=1;
-        }
-        $pickedWeight=intval($pickedWeight);
+
+        $pickedWeight = intval($pickedWeight);
 
         $dataToUpdate = [
             'quantity_picked'         => $totalPicked,
