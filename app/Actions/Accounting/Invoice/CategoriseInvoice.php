@@ -159,9 +159,9 @@ class CategoriseInvoice extends OrgAction
         $count = $query->count();
         $command->info("Count: $count");
 
-        $bar=null;
+        $bar = null;
 
-        if($count>1000){
+        if ($count > 1000) {
             $bar = $command->getOutput()->createProgressBar($count);
             $bar->setFormat('debug');
             $bar->start();
@@ -178,7 +178,7 @@ class CategoriseInvoice extends OrgAction
                 $bar?->advance();
             }
         });
-        if($bar) {
+        if ($bar) {
             $bar->finish();
             $command->info("");
         }

@@ -31,8 +31,8 @@ class RollbackDispatchedOrder extends OrgAction
                         'dispatched_at' => null,
                     ]);
 
-                    foreach($deliveryNote->deliveryNoteItems as $item) {
-                        if($item->state == DeliveryNoteItemStateEnum::DISPATCHED) {
+                    foreach ($deliveryNote->deliveryNoteItems as $item) {
+                        if ($item->state == DeliveryNoteItemStateEnum::DISPATCHED) {
                             UpdateDeliveryNoteItem::make()->action($item, [
                                 'state' => DeliveryNoteItemStateEnum::FINALISED,
                                 'dispatched_at' => null,
@@ -43,13 +43,13 @@ class RollbackDispatchedOrder extends OrgAction
             }
         }
 
-        if($order->state == OrderStateEnum::DISPATCHED) {
+        if ($order->state == OrderStateEnum::DISPATCHED) {
             $order = UpdateOrder::make()->action($order, [
                 'state' => OrderStateEnum::FINALISED,
                 'dispatched_at' => null
             ]);
-            foreach($order->transactions as $transaction) {
-                if($transaction->state == TransactionStateEnum::DISPATCHED) {
+            foreach ($order->transactions as $transaction) {
+                if ($transaction->state == TransactionStateEnum::DISPATCHED) {
                     UpdateTransaction::make()->action($transaction, [
                         'state' => TransactionStateEnum::FINALISED,
                     ]);

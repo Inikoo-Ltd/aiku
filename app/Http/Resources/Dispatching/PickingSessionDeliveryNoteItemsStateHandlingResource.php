@@ -38,8 +38,6 @@ use Illuminate\Support\Facades\DB;
  */
 class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
 {
-
-
     public function toArray($request): array
     {
         $requiredFactionalData = riseDivisor(

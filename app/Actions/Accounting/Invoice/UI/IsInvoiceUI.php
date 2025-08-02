@@ -81,8 +81,8 @@ trait IsInvoiceUI
         $deliveryNotesData = [];
 
 
-        $order= $invoice->order;
-        if($order) {
+        $order = $invoice->order;
+        if ($order) {
             $deliveryNotes = $invoice->order->deliveryNotes;
 
 

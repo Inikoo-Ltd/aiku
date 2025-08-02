@@ -12,7 +12,6 @@ use App\Actions\Helpers\CurrencyExchange\GetHistoricCurrencyExchange;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\Invoice;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Artisan;
 
 class RepairRefundCurrencyExchanges
 {

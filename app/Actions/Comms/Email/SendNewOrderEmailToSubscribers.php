@@ -59,7 +59,7 @@ class SendNewOrderEmailToSubscribers extends OrgAction
             }
 
 
-            $transactions=$order->transactions()->where('model_type', 'Product')->get();
+            $transactions = $order->transactions()->where('model_type', 'Product')->get();
 
             $this->sendEmailWithMergeTags(
                 $dispatchedEmail,

@@ -11,7 +11,6 @@ namespace App\Actions\Maintenance\Accounting;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\Invoice;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Artisan;
 
 class RepairInvoiceMissingTaxNumber
 {
@@ -21,7 +20,7 @@ class RepairInvoiceMissingTaxNumber
     {
         $customer = $invoice->customer;
 
-        if($customer->taxNumber){
+        if ($customer->taxNumber) {
             $invoice->update([
                 'tax_number' => $customer->taxNumber->number
             ]);

@@ -11,7 +11,6 @@ namespace App\Actions\Maintenance\Accounting;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\Invoice;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Artisan;
 
 class RepairInvoiceMissingFooter
 {
