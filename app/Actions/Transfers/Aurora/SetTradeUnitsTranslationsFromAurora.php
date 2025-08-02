@@ -32,24 +32,41 @@ class SetTradeUnitsTranslationsFromAurora extends OrgAction
         $code = $tradeUnit->code;
 
         $translationName = [];
+        $translationDescription = [];
         foreach ($this->getOrganisationSourceShop() as $lang => $organisationShopIds) {
             $translationName[$lang] = null;
-
+            $translationDescription[$lang] = null;
             foreach ($organisationShopIds as $organisationId => $shopId) {
                 $auroraProduct = DB::connection('aurora_'.$organisationId)
                     ->table('Product Dimension')
-                    ->select('Product Name')
+                    ->select(['Product Name', 'Product Description'])
                     ->where('Product Store Key', $shopId)
                     ->whereRaw('LOWER(`Product Code`) = LOWER(?)', [$code])
                     ->first();
                 if ($auroraProduct) {
-                    $translationName[$lang] = $auroraProduct->{'Product Name'};
-                    break;
+                    $name = $auroraProduct->{'Product Name'};
+                    $description = $auroraProduct->{'Product Description'};
+
+                    if($name){
+                        if ($translationName[$lang] === null) {
+                            $translationName[$lang] = $name;
+                        }
+                    }
+
+                    if($description){
+                        if ($translationDescription[$lang] === null) {
+                            $translationDescription[$lang] = $description;
+                        }
+                    }
+
+
                 }
             }
         }
 
         $tradeUnit->setTranslations('name_i8n', $translationName);
+        $tradeUnit->setTranslations('description_i8n', $translationDescription);
+
         $tradeUnit->save();
 
         return $tradeUnit;
@@ -70,6 +87,7 @@ class SetTradeUnitsTranslationsFromAurora extends OrgAction
 
         // Create a progress bar
         $bar = $command->getOutput()->createProgressBar(TradeUnit::count());
+        $bar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
         $bar->start();
 
         // Process trade units in chunks to avoid memory issues

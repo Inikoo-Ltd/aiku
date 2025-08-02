@@ -81,6 +81,7 @@ class SetMasterProductCategoriesTranslationsFromAurora extends OrgAction
         )->count();
 
         $bar = $command->getOutput()->createProgressBar($count);
+        $bar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
         $bar->start();
 
         MasterProductCategory::whereIn(
