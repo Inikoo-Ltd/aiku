@@ -10,9 +10,9 @@ namespace App\Actions\Transfers\Aurora;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithOrganisationSource;
+use App\Actions\Traits\WithOrganisationSourceShop;
 use App\Models\Goods\TradeUnit;
-use App\Models\SysAdmin\Organisation;
-use App\Transfers\AuroraOrganisationService;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -21,20 +21,14 @@ class SetTradeUnitsTranslationsFromAurora extends OrgAction
 {
     use AsAction;
     use WithOrganisationSource;
-
-    /**
-     * @var \App\Transfers\AuroraOrganisationService|\App\Transfers\WowsbarOrganisationService|null
-     */
-    private \App\Transfers\WowsbarOrganisationService|null|AuroraOrganisationService $organisationSource;
+    use WithOrganisationSourceShop;
 
 
     /**
      * @throws \Exception
      */
-    public function handle(TradeUnit $tradeUnit)
+    public function handle(TradeUnit $tradeUnit): TradeUnit
     {
-
-
         $code = $tradeUnit->code;
 
         $translationName = [];
@@ -42,88 +36,25 @@ class SetTradeUnitsTranslationsFromAurora extends OrgAction
             $translationName[$lang] = null;
 
             foreach ($organisationShopIds as $organisationId => $shopId) {
-
-                $organisation = Organisation::where('id', $organisationId)->first();
-
-                $this->setSource($organisation);
-
-                $auroraProduct = DB::connection('aurora')->table('Product Dimension')->select('Product Name')->where('Product Store Key', $shopId)->where('Product Code', $code)->first();
-
+                $auroraProduct = DB::connection('aurora_'.$organisationId)
+                    ->table('Product Dimension')
+                    ->select('Product Name')
+                    ->where('Product Store Key', $shopId)
+                    ->whereRaw('LOWER(`Product Code`) = LOWER(?)', [$code])
+                    ->first();
                 if ($auroraProduct) {
                     $translationName[$lang] = $auroraProduct->{'Product Name'};
                     break;
                 }
-                exit;
             }
         }
-        print_r($translationName);
 
+        $tradeUnit->setTranslations('name_i8n', $translationName);
+        $tradeUnit->save();
 
         return $tradeUnit;
     }
 
-
-
-
-    public function getOrganisationSourceShop(): array
-    {
-        return [
-            'es' => [
-                3 => 1
-            ],
-            'fr' => [
-                2 => 6,
-                3 => 6,
-            ],
-            'de' => [
-                2 => 4,
-                3 => 7,
-            ],
-            'it' => [
-                2 => 8,
-            ],
-            'pl' => [
-                2 => 10,
-            ],
-            'sk' => [
-                2 => 12,
-            ],
-            'pt' => [
-                3 => 2,
-            ],
-            'cs' => [
-                2 => 14,
-            ],
-            'hu' => [
-                2 => 16,
-            ],
-            'nl' => [
-                2 => 20,
-            ],
-            'ro' => [
-                2 => 21,
-            ],
-            'sv' => [
-                2 => 23,
-            ],
-            'hr' => [
-                2 => 24,
-            ],
-            'bg' => [
-                2 => 25,
-            ]
-        ];
-    }
-
-
-    /**
-     * @throws \Exception
-     */
-    private function setSource(Organisation $organisation): void
-    {
-        $this->organisationSource = $this->getOrganisationSource($organisation);
-        $this->organisationSource->initialisation($organisation);
-    }
 
     public function getCommandSignature(): string
     {
@@ -142,14 +73,20 @@ class SetTradeUnitsTranslationsFromAurora extends OrgAction
         $bar->start();
 
         // Process trade units in chunks to avoid memory issues
-        TradeUnit::where('id', 10844)->where('source_id', '!=', null)
-            ->chunk($chunkSize, function ($tradeUnits) use (&$count, $bar) {
+        TradeUnit::chunk(
+            $chunkSize,
+            function ($tradeUnits) use (&$count, $bar, $command) {
                 foreach ($tradeUnits as $tradeUnit) {
-                    $this->handle($tradeUnit);
+                    try {
+                        $this->handle($tradeUnit);
+                    } catch (Exception $e) {
+                        $command->error($e->getMessage());
+                    }
                     $count++;
                     $bar->advance();
                 }
-            });
+            }
+        );
 
         $bar->finish();
         $command->newLine();

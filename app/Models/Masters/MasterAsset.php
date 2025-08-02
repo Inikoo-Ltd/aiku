@@ -24,6 +24,7 @@ use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use Spatie\Translatable\HasTranslations;
 
 /**
  *
@@ -59,6 +60,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
+ * @property string|null $name_i8n
+ * @property string|null $description_i8n
+ * @property string|null $description_title_i8n
+ * @property string|null $description_extra_i8n
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Group $group
  * @property-read \App\Models\Helpers\Media|null $image
@@ -93,6 +98,9 @@ class MasterAsset extends Model implements Auditable, HasMedia
     use HasUniversalSearch;
     use HasHistory;
     use HasImage;
+    use HasTranslations;
+
+    public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
 
     protected $guarded = [];
 

@@ -25,6 +25,7 @@ use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use Spatie\Translatable\HasTranslations;
 
 /**
  *
@@ -51,6 +52,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_department_id
  * @property string|null $source_family_id
  * @property bool $show_in_website
+ * @property string|null $name_i8n
+ * @property string|null $description_i8n
+ * @property string|null $description_title_i8n
+ * @property string|null $description_extra_i8n
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, MasterProductCategory> $children
  * @property-read Group $group
@@ -86,8 +91,11 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
     use HasHistory;
     use HasImage;
     use InGroup;
+    use HasTranslations;
 
     protected $guarded = [];
+
+    public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
 
     protected $casts = [
         'data'            => 'array',
