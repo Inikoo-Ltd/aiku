@@ -60,10 +60,10 @@ use Spatie\Translatable\HasTranslations;
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
- * @property string|null $name_i8n
- * @property string|null $description_i8n
- * @property string|null $description_title_i8n
- * @property string|null $description_extra_i8n
+ * @property array<array-key, mixed>|null $name_i8n
+ * @property array<array-key, mixed>|null $description_i8n
+ * @property array<array-key, mixed>|null $description_title_i8n
+ * @property array<array-key, mixed>|null $description_extra_i8n
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Group $group
  * @property-read \App\Models\Helpers\Media|null $image
@@ -82,11 +82,16 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \App\Models\Masters\MasterAssetStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Stock> $stocks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Masters\MasterAssetTimeSeries> $timeSeries
+ * @property-read mixed $translations
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset whereJsonContainsLocale(string $column, string $locale, ?mixed $value, string $operand = '=')
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset whereJsonContainsLocales(string $column, array $locales, ?mixed $value, string $operand = '=')
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset whereLocale(string $column, string $locale)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset whereLocales(string $column, array $locales)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset withTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset withoutTrashed()
  * @mixin \Eloquent

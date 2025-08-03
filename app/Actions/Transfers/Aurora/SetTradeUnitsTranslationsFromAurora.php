@@ -47,13 +47,13 @@ class SetTradeUnitsTranslationsFromAurora extends OrgAction
                     $name = $auroraProduct->{'Product Name'};
                     $description = $auroraProduct->{'Product Description'};
 
-                    if($name){
+                    if ($name) {
                         if ($translationName[$lang] === null) {
                             $translationName[$lang] = $name;
                         }
                     }
 
-                    if($description){
+                    if ($description) {
                         if ($translationDescription[$lang] === null) {
                             $translationDescription[$lang] = $description;
                         }

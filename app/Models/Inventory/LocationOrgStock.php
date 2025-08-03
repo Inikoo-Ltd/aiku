@@ -98,4 +98,6 @@ class LocationOrgStock extends Model implements Auditable
     {
         return $this->belongsTo(Location::class);
     }
+
+
 }

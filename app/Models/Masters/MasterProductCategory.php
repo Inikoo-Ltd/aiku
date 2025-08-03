@@ -52,10 +52,10 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $source_department_id
  * @property string|null $source_family_id
  * @property bool $show_in_website
- * @property string|null $name_i8n
- * @property string|null $description_i8n
- * @property string|null $description_title_i8n
- * @property string|null $description_extra_i8n
+ * @property array<array-key, mixed>|null $name_i8n
+ * @property array<array-key, mixed>|null $description_i8n
+ * @property array<array-key, mixed>|null $description_title_i8n
+ * @property array<array-key, mixed>|null $description_extra_i8n
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, MasterProductCategory> $children
  * @property-read Group $group
@@ -74,11 +74,16 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Masters\MasterProductCategoryStats|null $stats
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategoryTimeSeries> $timeSeries
+ * @property-read mixed $translations
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory whereJsonContainsLocale(string $column, string $locale, ?mixed $value, string $operand = '=')
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory whereJsonContainsLocales(string $column, array $locales, ?mixed $value, string $operand = '=')
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory whereLocale(string $column, string $locale)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory whereLocales(string $column, array $locales)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory withTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory withoutTrashed()
  * @mixin \Eloquent

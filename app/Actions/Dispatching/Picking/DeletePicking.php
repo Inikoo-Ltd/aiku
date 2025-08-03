@@ -10,6 +10,7 @@
 namespace App\Actions\Dispatching\Picking;
 
 use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
+use App\Actions\Inventory\OrgStockMovement\DeleteOrgStockMovement;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\Picking;
 use Lorisleiva\Actions\ActionRequest;
@@ -18,7 +19,13 @@ class DeletePicking extends OrgAction
 {
     public function handle(Picking $picking): bool
     {
+
         $deliveryNoteItem = $picking->deliveryNoteItem;
+
+        if ($picking->org_stock_movement_id) {
+            DeleteOrgStockMovement::run($picking->orgStockMovement);
+        }
+
         $picking->delete();
 
         $deliveryNoteItem->refresh();

@@ -24,7 +24,7 @@ class FetchAuroraOrgStockMovement extends FetchAurora
             return;
         }
 
-        if($this->auroraModelData->aiku_picking_id){
+        if ($this->auroraModelData->aiku_picking_id) {
             return;
         }
 
