@@ -24,7 +24,7 @@ class FetchAuroraOrgStockMovement extends FetchAurora
             return;
         }
 
-        if ($this->auroraModelData->{'Inventory Transaction Type'} != 'Audit') {
+        if ($this->auroraModelData->{'Inventory Transaction Record Type'}=='Info' && $this->auroraModelData->{'Inventory Transaction Type'} != 'Audit') {
             return;
         }
 
@@ -97,7 +97,7 @@ class FetchAuroraOrgStockMovement extends FetchAurora
             $quantity = 0;
         }
 
-        if ($quantity == 0 and !in_array($type, [
+        if ($quantity == 0 && !in_array($type, [
                 OrgStockMovementTypeEnum::ASSOCIATE,
                 OrgStockMovementTypeEnum::DISASSOCIATE,
                 OrgStockMovementTypeEnum::AUDIT,
@@ -105,11 +105,11 @@ class FetchAuroraOrgStockMovement extends FetchAurora
             return;
         }
 
-        if ($quantity > 0 and $type == OrgStockMovementTypeEnum::WRITE_OFF) {
+        if ($quantity > 0 && $type == OrgStockMovementTypeEnum::WRITE_OFF) {
             $type = OrgStockMovementTypeEnum::FOUND;
         }
 
-        if ($quantity < 0 and $type == OrgStockMovementTypeEnum::PURCHASE) {
+        if ($quantity < 0 && $type == OrgStockMovementTypeEnum::PURCHASE) {
             $type = OrgStockMovementTypeEnum::FOUND;
         }
 
