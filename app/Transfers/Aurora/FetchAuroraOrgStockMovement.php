@@ -24,8 +24,11 @@ class FetchAuroraOrgStockMovement extends FetchAurora
             return;
         }
 
+        if($this->auroraModelData->aiku_picking_id){
+            return;
+        }
 
-        if (in_array($this->auroraModelData->{'Inventory Transaction Type'}, ['Move Out', 'Move In']) and
+        if (in_array($this->auroraModelData->{'Inventory Transaction Type'}, ['Move Out', 'Move In']) &&
             $this->auroraModelData->{'Inventory Transaction Quantity'} == 0) {
             return;
         }
@@ -143,9 +146,7 @@ class FetchAuroraOrgStockMovement extends FetchAurora
             'last_fetched_at' => now()
         ];
 
-        //dd($this->parsedData['orgStockMovement']);
-        // print_r($this->auroraModelData);
-        // exit;
+
     }
 
 
