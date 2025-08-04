@@ -51,7 +51,6 @@ class StorePicking extends OrgAction
         $picking->refresh();
 
 
-        // Only dispatch to Aurora in production environment
         if (app()->environment('production')) {
             SavePickingInAurora::Dispatch($picking);
         }
