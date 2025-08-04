@@ -106,7 +106,7 @@ class EditCustomer extends OrgAction
                                 ],
                                     'vat'      => [
                                     'type'    => 'tax_number',
-                                    'label'   => __('vat'),
+                                    'label'   => __('Tax Number'),
                                     'value'   => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->resolve() : null,
                                     'country' => $customer->address->country_code,
                                     'route_validate' => [
