@@ -8,9 +8,7 @@
 
 namespace App\Actions\Dispatching\Picking;
 
-use App\Actions\Traits\WithAuroraApi;
 use App\Models\Dispatching\Picking;
-use App\Models\Inventory\Location;
 use App\Models\Inventory\OrgStock;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
@@ -23,28 +21,28 @@ class DeletePickingInAurora implements ShouldBeUnique
     use AsAction;
     use WithAuroraApi;
 
-    public function getJobUniqueId(Picking $picking): string
+    public function getJobUniqueId(int $pickingID, Organisation $organisation): string
     {
-        return $picking->id;
+        return $organisation->id.$pickingID;
     }
 
 
     /**
      * @throws \Illuminate\Http\Client\ConnectionException
      */
-    public function handle(Picking $picking): void
+    public function handle(int $pickingID, Organisation $organisation, string $name, OrgStock $orgStock): void
     {
-        $apiUrl = $this->getApiUrl($picking->organisation);
+        $apiUrl = $this->getApiUrl($organisation);
 
 
         Http::withHeaders([
-            'secret' => $this->getApiToken($picking->organisation),
+            'secret' => $this->getApiToken($organisation),
         ])->withQueryParameters(
             [
-                'picker_name' => $picking->picker->contact_name,
+                'picker_name' => $name,
                 'action'      => 'aiku_delete_picking',
-                'part_sku'    => $this->getAuroraObjectKey($picking->orgStock),
-                'picking_key' => $picking->id
+                'part_sku'    => $this->getAuroraObjectKey($orgStock),
+                'picking_key' => $pickingID
 
             ]
         )->get($apiUrl);
@@ -56,6 +54,9 @@ class DeletePickingInAurora implements ShouldBeUnique
         return 'picking:aurora_delete {pickingID}';
     }
 
+    /**
+     * @throws \Illuminate\Http\Client\ConnectionException
+     */
     public function asCommand(Command $command): int
     {
         $pickingID = $command->argument('pickingID');
@@ -63,7 +64,12 @@ class DeletePickingInAurora implements ShouldBeUnique
 
         $command->info("Processing picking ID: $pickingID");
         $picking = Picking::findOrFail($pickingID);
-        $this->handle($picking);
+        $this->handle(
+            $picking->id,
+            $picking->organisation,
+            $picking->picker->contact_name,
+            $picking->orgStock
+        );
         $command->info("Picking ID: $pickingID processed successfully");
 
 
