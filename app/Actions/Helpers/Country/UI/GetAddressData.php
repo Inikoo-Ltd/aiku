@@ -23,7 +23,10 @@ class GetAddressData
         /** @var Country $country */
         foreach (Country::all() as $country) {
             $fields = Arr::get($country->data, 'fields', []);
-            unset($fields['address_line_3']); // TODO: remove this if the column already exist in addresses table
+            // TODO: remove this if the column already exist in addresses table
+            if (isset($fields['address_line_3'])) {
+                unset($fields['address_line_3']);
+            }
             $selectOptions[$country->id] =
                 [
                     'label'               => $country->name . ' (' . $country->code . ')',
