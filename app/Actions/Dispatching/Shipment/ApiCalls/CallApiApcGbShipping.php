@@ -23,6 +23,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Sentry;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -293,19 +294,21 @@ class CallApiApcGbShipping extends OrgAction
      */
     public function getLabel(string $labelID, Shipper $shipper): string
     {
-        $apiResponse = Http::withHeaders($this->getHeaders($shipper))
-            ->timeout(120)
-            ->retry(3, 100, function ($exception, $request, $response) {
-                if ($exception) {
-                    return true; // retry on exception (timeout, network error, etc.)
-                }
-
-                $res = optional($response)->json();
-                return !Arr::get($res, 'Orders.Order.Label.Content'); // retry if label content is missing
-            })
-            ->get($this->getBaseUrl() . '/api/3.0/Orders/' . $labelID . '.json')
-            ->json();
-
-        return Arr::get($apiResponse, 'Orders.Order.Label.Content', '');
+        $content = '';
+        $count = 0;
+        do {
+            try {
+                $apiResponse = Http::withHeaders($this->getHeaders($shipper))
+                    ->timeout(120)
+                    ->get($this->getBaseUrl() . '/api/3.0/Orders/' . $labelID . '.json')
+                    ->json();
+                $content = Arr::get($apiResponse, 'Orders.Order.Label.Content', '');
+            } catch (\Exception $e) {
+                Sentry::captureException($e);
+                $content = '';
+            }
+            $count++;
+        } while (empty($content) && $count < 3);
+        return $content;
     }
 }
