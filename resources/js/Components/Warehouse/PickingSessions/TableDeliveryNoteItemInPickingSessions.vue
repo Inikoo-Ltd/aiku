@@ -604,7 +604,9 @@ console.log('props', props.pickingSession)
 
             <Button v-if="itemValue.delivery_note_state == 'packed'" :icon="faPencil" label="Edit Detail" size="sm"
                 @click="onOpenModalDetail(itemValue)" />
-
+            <div>
+                <!-- Empty div to avoid print unexpected from BE -->
+            </div>
         </template>
     </Table>
 
