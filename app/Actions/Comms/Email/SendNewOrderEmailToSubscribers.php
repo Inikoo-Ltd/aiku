@@ -81,7 +81,7 @@ class SendNewOrderEmailToSubscribers extends OrgAction
                     'payment_amount' => $order->payment_amount,
                     'payment_type' => $order->payments()->first()->paymentAccount->name ?? 'N/A',
                     'blade_new_order_transactions' => $this->generateOrderTransactionsHtml($transactions),
-                    'date' => $order->created_at->format('F jS, Y'),
+                    'date' => $order->submitted_at->format('F jS, Y'),
                     'order_link' => route('grp.org.shops.show.crm.customers.show.orders.show', [
                         $order->organisation->slug,
                         $order->shop->slug,
