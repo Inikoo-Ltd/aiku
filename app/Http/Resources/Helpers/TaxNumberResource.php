@@ -31,7 +31,8 @@ class TaxNumberResource extends JsonResource
             'number'  => $this->number,
             'type' => $this->type,
             'status' => $this->status,
-            'valid' => $this->valid
+            'valid' => $this->valid,
+            'country_id' => $this->country_id
         ];
     }
 }

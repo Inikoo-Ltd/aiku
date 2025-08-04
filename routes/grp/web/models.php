@@ -182,6 +182,7 @@ use App\Actions\Helpers\Tag\DeleteTag;
 use App\Actions\Helpers\Tag\DetachTagFromModel;
 use App\Actions\Helpers\Tag\StoreTag;
 use App\Actions\Helpers\Tag\UpdateTag;
+use App\Actions\Helpers\TaxNumber\ValidateTaxNumber;
 use App\Actions\HumanResources\ClockingMachine\DeleteClockingMachine;
 use App\Actions\HumanResources\ClockingMachine\StoreClockingMachine;
 use App\Actions\HumanResources\ClockingMachine\UpdateClockingMachine;
@@ -865,6 +866,7 @@ Route::post('website/{website:id}/reindex-luigi', ReindexWebsiteLuigiData::class
 
 Route::delete('/shipment/{shipment:id}', DeleteShipment::class)->name('shipment.delete');
 
+Route::post('/tax-number/{taxNumber:id}', ValidateTaxNumber::class)->name('tax_number.validate');
 
 require __DIR__ . "/models/inventory/warehouse.php";
 require __DIR__ . "/models/inventory/location_org_stock.php";

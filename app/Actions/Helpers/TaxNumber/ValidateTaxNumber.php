@@ -56,4 +56,9 @@ class ValidateTaxNumber
 
         return 0;
     }
+
+    public function asController(TaxNumber $taxNumber)
+    {
+        return $this->handle($taxNumber);
+    }
 }
