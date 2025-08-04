@@ -20,7 +20,7 @@ import { Collapse } from "vue-collapsed";
 import { ref, onMounted, reactive, inject } from "vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl } from "@fal";
+import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faFragile } from "@fal";
 import { faSkull } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import axios from "axios";
@@ -38,6 +38,10 @@ defineProps<{
     tab?: string
     state: string
 }>();
+
+const emits = defineEmits<{
+    (e: 'openModalIssue', value:  number): void
+}>()
 
 const locale = inject("locale", aikuLocaleStructure);
 
@@ -424,6 +428,11 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
                                     :routeTarget="itemValue.not_picking_route"
                                     :bindToLink="{preserveScroll: true}"
                                 />
+                            </div>
+
+                             <div class="hidden md:block">
+                                <Button v-tooltip="'Picking Issue'" @click="()=>emits('openModalIssue', itemValue.id)"
+                                    :icon="faFragile" type="warning" />
                             </div>
 
                             <!-- Section: Errors list -->

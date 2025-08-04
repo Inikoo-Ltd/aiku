@@ -310,11 +310,59 @@ onMounted(() => {
     })
   console.log('Subscribed to channel for porto ID:', props.delivery_note.id, 'Channel:', channel)
 })
+
+const modalIssue = ref(false)
+const issue = ref({
+    id : null,
+    type : 
+})
+const Dummy = ref('')
+const IssueLoading = ref(false)
+
+const openModalIssue = (id : Number) =>{
+    modalIssue.value = true
+    issue.value = id
+}
+
+const closeModalIssue = () =>{
+    modalIssue.value = false
+    issue.value = null
+}
+
+
+
+const onIssueSubmit = () => {
+    router.post(
+        route('grp.models.delivery_note_item.issue.store',{ deliveryNoteItem : issue.value}),
+        {},
+        {
+            preserveState: true,
+            preserveScroll: true,
+            onStart : () => IssueLoading.value = true,
+            onFinish : () => IssueLoading.value = false,
+            onSuccess: () => {
+                IssueLoading.value = false
+                notify({
+                    title: trans("Success"),
+                    text: "",
+                    type: "success"
+                });
+            },
+            onError: (error) => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: error,
+                    type: "error"
+                });
+            }
+        }
+    );
+};
+
 </script>
 
 
 <template>
-
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" isButtonGroupWithBorder>
         <template #otherBefore>
@@ -428,7 +476,7 @@ onMounted(() => {
 
     <div class="pb-12">
         <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" :routes
-            :state="delivery_note.state" />
+            :state="delivery_note.state"  @openModalIssue="openModalIssue"/>
     </div>
 
     <!-- Modal: Select picker -->
@@ -584,6 +632,35 @@ onMounted(() => {
                     <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-5xl" fixed-width
                         aria-hidden="true" />
                 </div>
+            </div>
+        </div>
+    </Modal>
+
+
+        <Modal :isOpen="modalIssue" @onClose="closeModalIssue" width="w-full max-w-2xl">
+        <div class="px-2 space-y-2">
+            <!-- Header -->
+            <div class="text-lg font-semibold text-gray-800">
+                {{ trans('Picking Issue') }}
+            </div>
+
+            <!-- Form Fields -->
+            <div class="space-y-4">
+                <PureInput v-model="Dummy" :placeholder="trans('Describe the issue...')" />
+                <!-- 
+      Uncomment if needed
+      <PureMultiselectInfiniteScroll
+        v-model=""
+        :fetchRoute="routeIndexUser"
+        :placeholder="trans('Select User')"
+        valueProp="id"
+      />
+      -->
+            </div>
+
+            <!-- Actions -->
+            <div class="pt-4">
+                <Button :label="trans('Save')" type="save" full @click="onIssueSubmit" :loading="IssueLoading" />
             </div>
         </div>
     </Modal>
