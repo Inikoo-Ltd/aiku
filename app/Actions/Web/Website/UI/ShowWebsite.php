@@ -150,6 +150,14 @@ class ShowWebsite extends OrgAction
             ],
         ];
 
+        $route_reindex = [
+            'method' => 'post',
+            'name'       => 'grp.models.website_luigi.reindex',
+            'parameters' => [
+                'website'      => $website->id
+            ]
+        ];
+
         $route_storefront = [
             'name'       => 'grp.org.shops.show.web.webpages.show',
             'parameters' => [
@@ -220,6 +228,7 @@ class ShowWebsite extends OrgAction
                 ],
 
                 'route_storefront' => $route_storefront,
+                'route_reindex' => $route_reindex,
 
                 'route_redirects' => [
                     'submit' => [
