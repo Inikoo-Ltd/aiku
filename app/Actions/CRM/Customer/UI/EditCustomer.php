@@ -109,7 +109,7 @@ class EditCustomer extends OrgAction
                                     'vat'      => [
                                     'type'    => 'tax_number',
                                     'label'   => __('Tax number'),
-                                    'value'   => $customer->taxNumber?TaxNumberResource::make($customer->taxNumber)->getArray():null,
+                                    'value'   => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : null,
                                     'country' => $customer->address->country_code,
                                 ]
                             ]
