@@ -51,7 +51,7 @@ class SendNewOrderEmailToCustomer extends OrgAction
                 'customer_name' => $order->customer->name,
                 'order' => $this->generateOrderDetailsHtml($order),
                 'pay_info' => $this->generateOrderPaymentsHtml($order),
-                'date' => $order->created_at->format('F jS, Y'),
+                'date' => $order->submitted_at->format('F jS, Y'),
                 'order_link' => $this->getOrderLink($order),
                 'delivery_address' => $order->deliveryAddress->getHtml(),
                 'invoice_address' => $order->billingAddress->getHtml(),
