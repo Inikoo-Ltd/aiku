@@ -8,6 +8,7 @@
 
 namespace App\Transfers\Aurora;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use Illuminate\Support\Facades\DB;
 
 class FetchAuroraShippingZone extends FetchAurora
@@ -16,6 +17,10 @@ class FetchAuroraShippingZone extends FetchAurora
     {
         $shippingZoneSchema = $this->parseShippingZoneSchema($this->organisation->id.':'.$this->auroraModelData->{'Shipping Zone Shipping Zone Schema Key'});
 
+
+        if($shippingZoneSchema->shop->type==ShopTypeEnum::DROPSHIPPING){
+            return;
+        }
 
         $this->parsedData['shipping-zone-schema'] = $shippingZoneSchema;
         $this->parsedData['shipping-zone']        = [

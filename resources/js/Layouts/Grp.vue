@@ -151,7 +151,7 @@ onMounted(() => {
 
         <!-- Main Content -->
         <main
-            class="h-full relative flex flex-col pt-[76px] md:pt-[70px] lg:pt-20 xl:pt-16 pb-6 text-gray-700 transition-all duration-200 ease-in-out"
+            class="h-full relative flex flex-col pt-[76px] md:pt-[70px] lg:pt-20 xl:pt-16 pb-6 md:pb-24 text-gray-700 transition-all duration-200 ease-in-out"
             :class="[
                 layout.leftSidebar.show ? 'ml-0 md:ml-48' : 'ml-0 md:ml-12',
                 layout.app.environment === 'staging' ? 'mt-6' : ''

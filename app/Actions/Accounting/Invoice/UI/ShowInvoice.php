@@ -187,7 +187,7 @@ class ShowInvoice extends OrgAction
         $deliveryNoteRoute    = null;
 
         /** @var DeliveryNote $firstDeliveryNote */
-        $firstDeliveryNote = $invoice->order->deliveryNotes()->first();
+        $firstDeliveryNote = $invoice->order?->deliveryNotes()->first();
 
         if ($firstDeliveryNote) {
             $deliveryNoteRoute = [

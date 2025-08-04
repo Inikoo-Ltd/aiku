@@ -27,5 +27,6 @@ enum OrgStockMovementTypeEnum: string
 
     case ASSOCIATE    = 'associate';
     case DISASSOCIATE = 'disassociate';
+    case AUDIT = 'audit';
 
 }
