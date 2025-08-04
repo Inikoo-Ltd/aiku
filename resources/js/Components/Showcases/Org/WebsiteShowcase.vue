@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { faFragile, faGlobe, faLink, faPencil } from "@fal"
-import { ref } from "vue"
+import { computed, ref } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
@@ -16,6 +16,7 @@ import StatsBox from "@/Components/Stats/StatsBox.vue"
 import { routeType } from "@/types/route"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
+import { useFormatTime, useRangeFromNow } from "@/Composables/useFormatTime"
 
 library.add(faGlobe, faLink)
 
@@ -34,6 +35,7 @@ const props = defineProps<{
     }
     route_storefront: routeType
     luigi_data: {
+        last_reindexed: string
         luigisbox_tracker_id: string
         luigisbox_private_key: string
         luigisbox_lbx_code: string
@@ -71,8 +73,18 @@ window.reindexwebsite = async () => {
     }
 }
 
+// Section: Button reindex website search
+const isAbleReindex = computed(() => {
+    const lastReindexed30Minutes = new Date(props.luigi_data.last_reindexed)
+    lastReindexed30Minutes.setMinutes(lastReindexed30Minutes.getMinutes() + 30)
+
+    return lastReindexed30Minutes < new Date()
+})
+const lastReindexed30Minutes = new Date(props.luigi_data.last_reindexed)
+lastReindexed30Minutes.setMinutes(lastReindexed30Minutes.getMinutes() + 30) 
 
 </script>
+
 <template>
     <!-- Box: Url and Buttons in a single row -->
     <div class="px-6 py-12 lg:px-8">
@@ -140,8 +152,10 @@ window.reindexwebsite = async () => {
                             </template>
                         </ButtonWithLink>
 
-                        <!-- <ButtonWithLink
+                        <ButtonWithLink
                             v-if="luigi_data?.luigisbox_tracker_id"
+                            v-tooltip="isAbleReindex ? '' : trans('You can reindex again at :date', { date: useFormatTime(lastReindexed30Minutes, { formatTime: 'hm' }) })"
+                            :disabled="!isAbleReindex"
                             :routeTarget="{
                                 name: 'grp.models.website_luigi.reindex',
                                 parameters: {
@@ -149,11 +163,11 @@ window.reindexwebsite = async () => {
                                 }
                             }"
                             method="post"
-                            :type="luigi_data?.luigisbox_private_key ? 'tertiary' : 'warning'"
+                            :type="!isAbleReindex || luigi_data?.luigisbox_private_key ? 'tertiary' : 'warning'"
                             :label="trans('Reindex Website Search')"
                             full
                         >
-                            <template #iconRight>
+                            <template v-if="isAbleReindex" #iconRight>
                                 <div v-if="luigi_data?.luigisbox_private_key" v-tooltip="trans('This will reindexing the product that will appear in the search feature')" class="text-gray-400 hover:text-gray-700">
                                     <FontAwesomeIcon icon="fal fa-info-circle" class="" fixed-width aria-hidden="true" />
                                 </div>
@@ -161,7 +175,13 @@ window.reindexwebsite = async () => {
                                     <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
                                 </div>
                             </template>
-                        </ButtonWithLink> -->
+                        </ButtonWithLink>
+
+                        <!-- {{ useFormatTime(lastReindexed30Minutes, {
+                            formatTime: 'hm'
+                        }) }}
+                        <br>
+                        {{ props.luigi_data.last_reindexed }} -->
                     </div>
                 </div>
             </div>
