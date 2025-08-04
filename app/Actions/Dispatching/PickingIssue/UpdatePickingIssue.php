@@ -60,4 +60,13 @@ class UpdatePickingIssue extends OrgAction
 
         $this->handle($pickingIssue, $this->validatedData);
     }
+    /**
+     * @throws \Throwable
+     */
+    public function action(PickingIssue $pickingIssue, array $modelData): void
+    {
+        $this->initialisationFromWarehouse($pickingIssue->warehouse, $modelData);
+
+        $this->handle($pickingIssue, $this->validatedData);
+    }
 }

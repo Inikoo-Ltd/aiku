@@ -12,6 +12,7 @@ namespace App\Actions\Dispatching\PickingIssue;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
+use App\Models\SysAdmin\User;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -21,7 +22,7 @@ class StorePickingIssue extends OrgAction
 {
     use AsAction;
     use WithAttributes;
-
+    protected User $user;
     /**
      * @throws \Throwable
      */
