@@ -78,6 +78,10 @@ class ShippingDropshippingDeliveryNoteResource extends JsonResource
             }
         }
 
+        if ($toEmail == '') {
+            $toEmail = 'anonymous@gmail.com';
+        }
+
         return [
             'id'                 => $deliveryNote->id,
             'customer_reference' => $deliveryNote->reference,

@@ -13,40 +13,55 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
+        if (Schema::hasColumn('org_stock_stats', 'number_org_stock_movements_flow_no_change')) {
+            Schema::table('org_stock_stats', function (Blueprint $table) {
+                $table->renameColumn('number_org_stock_movements_flow_no_change', 'number_org_stock_movements_flow_audit');
+            });
+        }
 
-        Schema::table('org_stock_stats', function (Blueprint $table) {
-            $table->renameColumn('number_org_stock_movements_flow_no_change', 'number_org_stock_movements_flow_audit');
-        });
+        if (Schema::hasColumn('warehouse_stats', 'number_org_stock_movements_flow_no_change')) {
+            Schema::table('warehouse_stats', function (Blueprint $table) {
+                $table->renameColumn('number_org_stock_movements_flow_no_change', 'number_org_stock_movements_flow_audit');
+            });
+        }
 
-        Schema::table('warehouse_stats', function (Blueprint $table) {
-            $table->renameColumn('number_org_stock_movements_flow_no_change', 'number_org_stock_movements_flow_audit');
-        });
+        if (Schema::hasColumn('organisation_inventory_stats', 'number_org_stock_movements_flow_no_change')) {
+            Schema::table('organisation_inventory_stats', function (Blueprint $table) {
+                $table->renameColumn('number_org_stock_movements_flow_no_change', 'number_org_stock_movements_flow_audit');
+            });
+        }
 
-        Schema::table('organisation_inventory_stats', function (Blueprint $table) {
-            $table->renameColumn('number_org_stock_movements_flow_no_change', 'number_org_stock_movements_flow_audit');
-        });
-
-        Schema::table('group_inventory_stats', function (Blueprint $table) {
-            $table->renameColumn('number_org_stock_movements_flow_no_change', 'number_org_stock_movements_flow_audit');
-        });
+        if (Schema::hasColumn('group_inventory_stats', 'number_org_stock_movements_flow_no_change')) {
+            Schema::table('group_inventory_stats', function (Blueprint $table) {
+                $table->renameColumn('number_org_stock_movements_flow_no_change', 'number_org_stock_movements_flow_audit');
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('org_stock_stats', function (Blueprint $table) {
-            $table->renameColumn('number_org_stock_movements_flow_audit', 'number_org_stock_movements_flow_no_change');
-        });
+        if (Schema::hasColumn('org_stock_stats', 'number_org_stock_movements_flow_audit')) {
+            Schema::table('org_stock_stats', function (Blueprint $table) {
+                $table->renameColumn('number_org_stock_movements_flow_audit', 'number_org_stock_movements_flow_no_change');
+            });
+        }
 
-        Schema::table('warehouse_stats', function (Blueprint $table) {
-            $table->renameColumn('number_org_stock_movements_flow_audit', 'number_org_stock_movements_flow_no_change');
-        });
+        if (Schema::hasColumn('warehouse_stats', 'number_org_stock_movements_flow_audit')) {
+            Schema::table('warehouse_stats', function (Blueprint $table) {
+                $table->renameColumn('number_org_stock_movements_flow_audit', 'number_org_stock_movements_flow_no_change');
+            });
+        }
 
-        Schema::table('organisation_inventory_stats', function (Blueprint $table) {
-            $table->renameColumn('number_org_stock_movements_flow_audit', 'number_org_stock_movements_flow_no_change');
-        });
+        if (Schema::hasColumn('organisation_inventory_stats', 'number_org_stock_movements_flow_audit')) {
+            Schema::table('organisation_inventory_stats', function (Blueprint $table) {
+                $table->renameColumn('number_org_stock_movements_flow_audit', 'number_org_stock_movements_flow_no_change');
+            });
+        }
 
-        Schema::table('group_inventory_stats', function (Blueprint $table) {
-            $table->renameColumn('number_org_stock_movements_flow_audit', 'number_org_stock_movements_flow_no_change');
-        });
+        if (Schema::hasColumn('group_inventory_stats', 'number_org_stock_movements_flow_audit')) {
+            Schema::table('group_inventory_stats', function (Blueprint $table) {
+                $table->renameColumn('number_org_stock_movements_flow_audit', 'number_org_stock_movements_flow_no_change');
+            });
+        }
     }
 };
