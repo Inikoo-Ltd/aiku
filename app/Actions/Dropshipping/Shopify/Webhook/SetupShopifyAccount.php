@@ -16,12 +16,9 @@ use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class SetupShopifyAccount extends OrgAction
 {
-
     use WithActionUpdate;
 
 
