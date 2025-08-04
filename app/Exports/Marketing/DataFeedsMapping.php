@@ -84,7 +84,7 @@ trait DataFeedsMapping
             $row->available_quantity_updated_at ?? '',
             $row->price_updated_at ?? '',
             $row->images_updated_at ?? '',
-            $row->available_quantity,
+            $availableQuantity
 
 
         ];
