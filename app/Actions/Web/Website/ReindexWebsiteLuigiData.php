@@ -12,6 +12,7 @@ namespace App\Actions\Web\Website;
 
 use App\Actions\Web\WithLuigis;
 use App\Models\Web\Website;
+use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ReindexWebsiteLuigiData
@@ -27,6 +28,8 @@ class ReindexWebsiteLuigiData
     public function handle(Website $website): void
     {
         $this->reindex($website);
+
+        Cache::put('last_reindex_at_' . $website->id, now());
     }
 
     public function asController(Website $website): void
