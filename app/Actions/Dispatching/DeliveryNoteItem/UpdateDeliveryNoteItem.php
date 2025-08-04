@@ -50,6 +50,7 @@ class UpdateDeliveryNoteItem extends OrgAction
             'quantity_picked'     => ['sometimes', 'numeric'],
             'quantity_packed'     => ['sometimes', 'numeric'],
             'state'               => ['sometimes', new Enum(DeliveryNoteItemStateEnum::class)],
+            'dispatched_at'       => ['sometimes', 'nullable', 'date'],
             'cancel_state'               => ['sometimes', new Enum(DeliveryNoteItemCancelStateEnum::class)],
             'picking_session_id'  => ['sometimes']
         ];

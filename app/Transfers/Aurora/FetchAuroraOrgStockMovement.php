@@ -19,16 +19,100 @@ class FetchAuroraOrgStockMovement extends FetchAurora
     {
         if (!in_array(
             $this->auroraModelData->{'Inventory Transaction Record Type'},
-            ['Movement', 'Helper']
+            ['Movement', 'Helper', 'Info']
         )) {
             return;
         }
 
-
-        if (in_array($this->auroraModelData->{'Inventory Transaction Type'}, ['Move Out', 'Move In']) and
-            $this->auroraModelData->{'Inventory Transaction Quantity'} == 0) {
+        if ($this->auroraModelData->{'Inventory Transaction Record Type'}=='Info' && $this->auroraModelData->{'Inventory Transaction Type'} != 'Audit') {
             return;
         }
+
+
+        if ($this->auroraModelData->aiku_picking_id) {
+            return;
+        }
+
+        if (in_array($this->auroraModelData->{'Inventory Transaction Type'}, ['Move Out', 'Move In']) && $this->auroraModelData->{'Inventory Transaction Quantity'} == 0) {
+            return;
+        }
+
+
+        $type        = null;
+        $isDelivered = false;
+
+        $quantity = $this->auroraModelData->{'Inventory Transaction Quantity'};
+
+
+        if ($this->auroraModelData->{'Inventory Transaction Type'} == 'Sale') {
+            $type        = OrgStockMovementTypeEnum::PICKED;
+            $isDelivered = true;
+        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Adjust') {
+            $type = OrgStockMovementTypeEnum::ADJUSTMENT;
+        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'In') {
+            $type = OrgStockMovementTypeEnum::PURCHASE;
+        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Found') {
+            $type = OrgStockMovementTypeEnum::FOUND;
+        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Restock') {
+            $type = OrgStockMovementTypeEnum::RETURN_PICKED;
+        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Other Out') {
+            if ($this->auroraModelData->{'Inventory Transaction Section'} == 'Lost') {
+                $type = OrgStockMovementTypeEnum::WRITE_OFF;
+            }
+        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'FailSale') {
+            if ($this->auroraModelData->{'Inventory Transaction Record Type'} == 'Movement') {
+                $type = OrgStockMovementTypeEnum::PICKED;
+            } else {
+                return;
+            }
+        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Production') {
+            if ($this->auroraModelData->{'Inventory Transaction Section'} == 'In') {
+                $type = OrgStockMovementTypeEnum::RETURN_CONSUMPTION;
+            } else {
+                $type = OrgStockMovementTypeEnum::CONSUMPTION;
+            }
+        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Move In') {
+            $type = OrgStockMovementTypeEnum::LOCATION_TRANSFER;
+        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Move Out') {
+            $type = OrgStockMovementTypeEnum::LOCATION_TRANSFER;
+        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Lost') {
+            $type = OrgStockMovementTypeEnum::WRITE_OFF;
+        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Broken') {
+            $type = OrgStockMovementTypeEnum::WRITE_OFF;
+        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Associate') {
+            $quantity = 0;
+            $type     = OrgStockMovementTypeEnum::ASSOCIATE;
+        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Disassociate') {
+            $quantity = 0;
+            $type     = OrgStockMovementTypeEnum::DISASSOCIATE;
+        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Audit') {
+            $quantity = $this->auroraModelData->{'Part Location Stock'};
+            $type     = OrgStockMovementTypeEnum::AUDIT;
+        }
+        if (!$type) {
+            dd($this->auroraModelData);
+        }
+
+        if (abs($quantity) < 0.001) {
+            $quantity = 0;
+        }
+
+        if ($quantity == 0 && !in_array($type, [
+                OrgStockMovementTypeEnum::ASSOCIATE,
+                OrgStockMovementTypeEnum::DISASSOCIATE,
+                OrgStockMovementTypeEnum::AUDIT,
+            ])) {
+            return;
+        }
+
+        if ($quantity > 0 && $type == OrgStockMovementTypeEnum::WRITE_OFF) {
+            $type = OrgStockMovementTypeEnum::FOUND;
+        }
+
+        if ($quantity < 0 && $type == OrgStockMovementTypeEnum::PURCHASE) {
+            $type = OrgStockMovementTypeEnum::FOUND;
+        }
+
 
         $orgStock = $this->parseOrgStock($this->organisation->id.':'.$this->auroraModelData->{'Part SKU'});
         if (!$orgStock) {
@@ -78,55 +162,6 @@ class FetchAuroraOrgStockMovement extends FetchAurora
 
         $date = $this->parseDatetime($this->auroraModelData->{'Date'});
 
-        $type        = null;
-        $isDelivered = false;
-
-        if ($this->auroraModelData->{'Inventory Transaction Type'} == 'Sale') {
-            $type        = OrgStockMovementTypeEnum::PICKED;
-            $isDelivered = true;
-        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Adjust') {
-            $type = OrgStockMovementTypeEnum::ADJUSTMENT;
-        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'In') {
-            $type = OrgStockMovementTypeEnum::PURCHASE;
-        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Found') {
-            $type = OrgStockMovementTypeEnum::FOUND;
-        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Restock') {
-            $type = OrgStockMovementTypeEnum::RETURN_PICKED;
-        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Other Out') {
-            if ($this->auroraModelData->{'Inventory Transaction Section'} == 'Lost') {
-                $type = OrgStockMovementTypeEnum::WRITE_OFF;
-            }
-        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'FailSale') {
-            if ($this->auroraModelData->{'Inventory Transaction Record Type'} == 'Movement') {
-                $type = OrgStockMovementTypeEnum::PICKED;
-            } else {
-                return;
-            }
-        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Production') {
-            if ($this->auroraModelData->{'Inventory Transaction Section'} == 'In') {
-                $type = OrgStockMovementTypeEnum::RETURN_CONSUMPTION;
-            } else {
-                $type = OrgStockMovementTypeEnum::CONSUMPTION;
-            }
-        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Move In') {
-            $type = OrgStockMovementTypeEnum::LOCATION_TRANSFER;
-        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Move Out') {
-            $type = OrgStockMovementTypeEnum::LOCATION_TRANSFER;
-        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Lost') {
-            $type = OrgStockMovementTypeEnum::WRITE_OFF;
-        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Broken') {
-            $type = OrgStockMovementTypeEnum::WRITE_OFF;
-        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Associate') {
-            $type = OrgStockMovementTypeEnum::ASSOCIATE;
-        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Disassociate') {
-            $type = OrgStockMovementTypeEnum::DISASSOCIATE;
-        } elseif ($this->auroraModelData->{'Inventory Transaction Type'} == 'Audit') {
-            $type = OrgStockMovementTypeEnum::DISASSOCIATE;
-        }
-        if (!$type) {
-            dd($this->auroraModelData);
-        }
-
 
         $this->parsedData['orgStock'] = $orgStock;
         $this->parsedData['location'] = $location;
@@ -135,17 +170,13 @@ class FetchAuroraOrgStockMovement extends FetchAurora
         $this->parsedData['orgStockMovement'] = [
             'is_delivered'    => $isDelivered,
             'type'            => $type,
-            'quantity'        => $this->auroraModelData->{'Inventory Transaction Quantity'},
+            'quantity'        => $quantity,
             'org_amount'      => $this->auroraModelData->{'Inventory Transaction Amount'},
             'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Inventory Transaction Key'},
             'date'            => $date,
             'fetched_at'      => now(),
             'last_fetched_at' => now()
         ];
-
-        //dd($this->parsedData['orgStockMovement']);
-        // print_r($this->auroraModelData);
-        // exit;
     }
 
 

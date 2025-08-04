@@ -66,7 +66,7 @@ class FetchAuroraOrgStockMovements extends FetchAuroraAction
         $query = DB::connection('aurora')
             ->table('Inventory Transaction Fact')
             ->select('Inventory Transaction Key as source_id')
-            ->whereIn('Inventory Transaction Record Type', ['Movement', 'Helper']);
+            ->whereIn('Inventory Transaction Record Type', ['Movement', 'Helper','Info']);
         if ($this->onlyNew) {
             $query->whereNull('aiku_id');
         }
@@ -79,7 +79,7 @@ class FetchAuroraOrgStockMovements extends FetchAuroraAction
     public function count(): ?int
     {
         $query = DB::connection('aurora')->table('Inventory Transaction Fact')
-            ->whereIn('Inventory Transaction Record Type', ['Movement', 'Helper']);
+            ->whereIn('Inventory Transaction Record Type', ['Movement', 'Helper','Info']);
         if ($this->onlyNew) {
             $query->whereNull('aiku_id');
         }

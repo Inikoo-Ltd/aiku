@@ -8,7 +8,6 @@
 <script setup lang="ts">
 import { Link, router } from "@inertiajs/vue3";
 import Table from "@/Components/Table/Table.vue";
-import { Order } from "@/types/order";
 import type { Table as TableTS } from "@/types/Table";
 import Icon from "@/Components/Icon.vue";
 import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue";
@@ -16,9 +15,7 @@ import { debounce, get, set } from 'lodash-es';
 import { notify } from "@kyvg/vue3-notification";
 import { trans } from "laravel-vue-i18n";
 import { routeType } from "@/types/route";
-import { Collapse } from "vue-collapsed";
 import { ref, onMounted, reactive, inject } from "vue";
-import Button from "@/Components/Elements/Buttons/Button.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl } from "@fal";
 import { faSkull } from "@fas";
@@ -42,16 +39,17 @@ defineProps<{
 const locale = inject("locale", aikuLocaleStructure);
 
 function orgStockRoute(deliveryNoteItem: DeliverNoteItem) {
-    // console.log(route().current())
+    console.log(deliveryNoteItem.org_stock_slug)
     switch (route().current()) {
         case "grp.org.warehouses.show.dispatching.delivery_notes.show":
-        // return route(
-        //     "grp.org.shops.show.discounts.campaigns.show",
-        //     [route().params["organisation"], , route().params["shop"], route().params["customer"], deliveryNote.slug])
+         return route(
+            "grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show",
+           [route().params["organisation"], route().params["warehouse"], deliveryNoteItem.org_stock_slug])
         default:
             return "";
     }
 }
+
 
 const isMounted = ref(false);
 onMounted(() => {
@@ -127,9 +125,8 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
             route(routeTarget.name, routeTarget.parameters)
         );
         pallet_stored_item.state = "picking";
-        // console.log('qqqqq', pallet_stored_item)
     } catch (error) {
-        console.error("hehehe", error);
+        console.error("error:", error);
 
     } finally {
         set(isLoadingUndoPick, loadingKey, false);
@@ -137,7 +134,7 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
 
 };
 
-// Section: Modal for location list
+// Section: Modal for a location list
 const isModalLocation = ref(false) 
 const selectedItemValue = ref()
 const selectedItemProxy = ref()
@@ -149,7 +146,7 @@ const onCloseModal = () => {
     }, 300);
 }
 
-// Method: to find location that Alt ed, fallback is index 0
+// Method: to find the location that Alt ed, fallback is index 0
 const findLocation = (locationsList: {location_code: string}[], selectedHehe: string) => {
     return locationsList.find(x => x.location_code == selectedHehe) || locationsList[0]
 }
@@ -223,7 +220,6 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
 
         <!-- Column: Pickings -->
         <template #cell(pickings)="{ item }">
-            <!-- <pre>{{ item.pickings }}</pre> -->
             <div v-if="item.pickings?.length" class="space-y-1">
                 <div v-for="picking in item.pickings" :key="picking.id" class="flex gap-x-2 w-fit">
                     <!-- {{ picking.location_code }} -->
@@ -271,7 +267,7 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
 
         <!-- Column: actions -->
         <template #cell(picking_position)="{ item: itemValue, proxyItem }">
-            <!-- <pre>{{ itemValue }}</pre> -->
+
             <div v-if="itemValue.quantity_to_pick > 0">
                 <div v-if="findLocation(itemValue.locations, proxyItem.hehe)" class="rounded p-1 flex flex-col justify-between gap-x-6 items-center even:bg-black/5">
                     <!-- Action: decrease and increase quantity -->
@@ -280,7 +276,10 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
                             <Transition name="spin-to-right">
                                 <div :key="findLocation(itemValue.locations, proxyItem.hehe).location_code">
                                     <span v-if="findLocation(itemValue.locations, proxyItem.hehe)">
-                                        <Link :href="generateLocationRoute(findLocation(itemValue.locations, proxyItem.hehe))" class="secondaryLink">
+                                        <Link
+                                            v-tooltip="`${itemValue.warehouse_area}`"
+                                            :href="generateLocationRoute(findLocation(itemValue.locations, proxyItem.hehe))"
+                                              class="secondaryLink">
                                             {{ findLocation(itemValue.locations, proxyItem.hehe).location_code }}
                                         </Link>
                                     </span>
@@ -432,62 +431,14 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
                         </div>
                     </div>
 
-                    <!-- <Button
-                        v-if="itemValue.locations?.length > 1"
-                        @click="() => {
-                            isModalLocation = true;
-                            selectedItemValue = itemValue;
-                            selectedItemProxy = proxyItem;
-                        }"
-                        xlabel="See another locations"
-                        type="tertiary"
-                        full
-                    >
-                        <template #label>
-                            <div v-if="itemValue.locations?.length > 1" class="text-gray-500">Other {{ itemValue.locations?.length - 1 }} locations</div>
-                        </template>
-                    </Button> -->
+
                 </div>
 
-                <div v-if="!itemValue.locations.every(location => {return location.quantity > 0})" class="">
-                    <!-- <Collapse as="section" :when="get(proxyItem, ['is_open_collapsed'], false)" class="">
-                        <div :id="`row-${itemValue.id}`">
-                        </div>
-                    </Collapse> -->
 
-                    <!-- <div class="w-full mt-2">
-                        <Button
-                            v-if="!itemValue.locations.every(location => {return location.quantity > 0})"
-                            @click="() => set(proxyItem, ['is_open_collapsed'], !get(proxyItem, ['is_open_collapsed'], false))"
-                            type="dashed"
-                            full
-                            size="sm"
-                        >
-                            <div class="py-1 text-gray-500">
-                                <FontAwesomeIcon icon="fal fa-arrow-down" class="transition-all" :class="get(proxyItem, ['is_open_collapsed'], false) ? 'rotate-180' : ''" fixed-width aria-hidden="true" />
-                                {{ get(proxyItem, ["is_open_collapsed"], false) ? trans("Close") : trans("Open hidden locations") }}
-                            </div>
-                        </Button>
-                    </div> -->
-                </div>
             </div>
 
 
-            <!-- Button: Pack -->
-          <!--   <div v-if="itemValue.is_picked && !itemValue.is_packed" class="w-full max-w-32 mx-auto">
-                <ButtonWithLink
-                    
-                    :routeTarget="itemValue.packing_route"
-                    :bindToLink="{
-                        preserveScroll: true,
-                        preserveState: true,
-                    }"
-                    full
-                    type="secondary"
-                    size="xs"
-                    :label="trans('Pack')"
-                />
-            </div> -->
+
 
         </template>
     </Table>
@@ -497,7 +448,7 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
     }">
         <div class="text-center font-semibold mb-4 text-2xl">
             Location list for {{ selectedItemValue?.org_stock_code }}:
-            <!-- <pre>{{ selectedItemValue }}</pre> -->
+
         </div>
 
         <div class="rounded p-1 grid grid-cols-3 justify-between gap-x-6 items-center divide-x divide-gray-300">

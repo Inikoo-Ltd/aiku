@@ -35,11 +35,12 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
         $isCompleted = $isFullyPicked || $isMarkedAsUnpickable;
 
         if ($deliveryNoteItem->quantity_required > 0) {
-            $pickedWeight = $totalPicked * $deliveryNoteItem->weight / $deliveryNoteItem->quantity_required;
+            $pickedWeight = $totalPicked * $deliveryNoteItem->estimated_required_weight / $deliveryNoteItem->quantity_required;
         } else {
             $pickedWeight = (int)$totalPicked * $deliveryNoteItem->orgStock->stock->gross_weight;
         }
 
+        $pickedWeight = intval($pickedWeight);
 
         $dataToUpdate = [
             'quantity_picked'         => $totalPicked,

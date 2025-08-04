@@ -252,12 +252,12 @@ console.log('props', props.pickingSession)
 
         <!-- Column: Pickings -->
         <template #cell(pickings)="{ item }">
-            <!-- <pre>{{ item.pickings }}</pre> -->
+
             <div v-if="item.pickings?.length" class="space-y-1">
                 <div v-for="picking in item.pickings" :key="picking.id" class="flex gap-x-2 w-fit">
                     <!-- {{ picking.location_code }} -->
                     <div v-if="picking.type === 'pick'" class="flex gap-x-2 items-center">
-                        <Link :href="generateLocationRoute(picking)" class="secondaryLink">
+                        <Link :href="generateLocationRoute(picking)" class="secondaryLink" >
                         {{ picking.location_code }}
                         </Link>
 
@@ -467,7 +467,7 @@ console.log('props', props.pickingSession)
                             <Transition name="spin-to-right">
                                 <div :key="findLocation(itemValue.locations, proxyItem.hehe).location_code">
                                     <span v-if="findLocation(itemValue.locations, proxyItem.hehe)">
-                                        <Link
+                                        <Link v-tooltip="`${itemValue.warehouse_area}`"
                                             :href="generateLocationRoute(findLocation(itemValue.locations, proxyItem.hehe))"
                                             class="secondaryLink">
                                         {{ findLocation(itemValue.locations, proxyItem.hehe).location_code }}

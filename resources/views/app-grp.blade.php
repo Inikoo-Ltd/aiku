@@ -24,11 +24,12 @@
     <style>
         iframe[name='JSD widget'] {
             display: block;
-            top:50px;
-            right: 50px;
-            margin-right: 15px;
+            bottom:50px;
+            right: 0;
+            margin-right: 55px;
+            margin-bottom: 15px;
 
-            opacity: .85;
+            opacity: .80;
         }
     </style>
     <script data-jsd-embedded data-key="efb5edc3-6921-4d19-8fa2-300ec340b897" data-base-url="https://jsd-widget.atlassian.com" src="https://jsd-widget.atlassian.com/assets/embed.js"></script>
