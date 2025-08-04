@@ -239,7 +239,7 @@ class ShowWebsite extends OrgAction
                 ],
 
                 'luigi_data' => [
-                    'last_reindexed'           => '2025-08-04T03:06:52.080470Z',  // TODO: change to correct value
+                    'last_reindexed'           => Arr::get($website->settings, "luigisbox.last_reindex_at"),
                     'luigisbox_tracker_id' => Arr::get($website->settings, "luigisbox.tracker_id"),
                     'luigisbox_private_key'    => Arr::get($website->settings, "luigisbox.private_key"),
                     'luigisbox_lbx_code'       => Arr::get($website->settings, "luigisbox.lbx_code"),

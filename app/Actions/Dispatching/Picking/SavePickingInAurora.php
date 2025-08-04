@@ -23,23 +23,13 @@ class SavePickingInAurora implements ShouldBeUnique
 {
     use AsAction;
 
-    public function getJobUniqueId(Picking $pickingID): string
+    public function getJobUniqueId(Picking $picking): string
     {
-        return $pickingID;
+        return $picking->id;
     }
 
 
-    /**
-     * @throws \Illuminate\Http\Client\ConnectionException
-     */
-    public function asJob(int $pickingID)
-    {
-        $picking = Picking::find($pickingID);
-        if (!$picking) {
-            return null;
-        }
-        $this->handle($picking);
-    }
+
 
 
     /**
