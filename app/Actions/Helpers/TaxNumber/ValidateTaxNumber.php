@@ -35,11 +35,13 @@ class ValidateTaxNumber
         ];
     }
 
-    public function handle(TaxNumber $taxNumber): void
+    public function handle(TaxNumber $taxNumber): TaxNumber
     {
         if ($taxNumber->type == TaxNumberTypeEnum::EU_VAT) {
-            ValidateEuropeanTaxNumber::run($taxNumber);
+            $taxNumber = ValidateEuropeanTaxNumber::run($taxNumber);
         }
+        
+        return $taxNumber;
     }
 
 
