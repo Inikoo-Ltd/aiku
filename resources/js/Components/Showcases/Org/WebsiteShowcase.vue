@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { faFragile, faGlobe, faLink, faPencil } from "@fal"
+import { faFragile, faGlobe, faLink, faSearch, faPencil } from "@fal"
 import { computed, ref } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -18,7 +18,7 @@ import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import { useFormatTime, useRangeFromNow } from "@/Composables/useFormatTime"
 
-library.add(faGlobe, faLink)
+library.add(faGlobe, faLink, faSearch)
 
 const props = defineProps<{
     data: {
@@ -162,11 +162,16 @@ lastReindexed30Minutes.setMinutes(lastReindexed30Minutes.getMinutes() + 30)
                                     website: data?.id
                                 }
                             }"
+                            icon="fal fa-search"
                             method="post"
                             :type="!isAbleReindex || luigi_data?.luigisbox_private_key ? 'tertiary' : 'warning'"
-                            :label="trans('Reindex Website Search')"
                             full
                         >
+                            <template #label>
+                                <span class="text-xs">
+                                    {{ trans('Reindex Website Search') }}
+                                </span>
+                            </template>
                             <template v-if="isAbleReindex" #iconRight>
                                 <div v-if="luigi_data?.luigisbox_private_key" v-tooltip="trans('This will reindexing the product that will appear in the search feature')" class="text-gray-400 hover:text-gray-700">
                                     <FontAwesomeIcon icon="fal fa-info-circle" class="" fixed-width aria-hidden="true" />
