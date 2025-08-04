@@ -37,7 +37,7 @@ class StorePickingIssue extends OrgAction
             data_set('org_stock_id', $modelData, $parent->org_stock_id);
         }
 
-        $pickingIssue = $parent->pickingIssues()->create($modelData);
+        $parent->pickingIssues()->create($modelData);
     }
 
     public function rules(): array
@@ -50,6 +50,10 @@ class StorePickingIssue extends OrgAction
             'delivery_note_item_issue' => ['sometimes', 'string'],
             'issuer_user_id'        => [
                 'required',
+                Rule::Exists('users', 'id')->where('group_id', $this->group->id)
+            ],
+            'resolver_user_id'        => [
+                'sometimes',
                 Rule::Exists('users', 'id')->where('group_id', $this->group->id)
             ],
 
