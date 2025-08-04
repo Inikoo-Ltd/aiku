@@ -17,6 +17,7 @@ class UpdateTaxNumber
 
     public function handle(TaxNumber $taxNumber, array $modelData): TaxNumber
     {
+        $taxNumber = ValidateTaxNumber::run($taxNumber);
         return $this->update($taxNumber, $modelData, ['data']);
     }
 }

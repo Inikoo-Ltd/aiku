@@ -14,6 +14,7 @@ use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Helpers\TaxNumber\DeleteTaxNumber;
 use App\Actions\Helpers\TaxNumber\StoreTaxNumber;
 use App\Actions\Helpers\TaxNumber\UpdateTaxNumber;
+use App\Actions\Helpers\TaxNumber\ValidateTaxNumber;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCustomers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCustomers;
@@ -84,10 +85,12 @@ class UpdateCustomer extends OrgAction
                     if (!Arr::get($taxNumberData, 'data.address')) {
                         Arr::forget($taxNumberData, 'data.address');
                     }
-                    StoreTaxNumber::run(
+                    $taxNumber = StoreTaxNumber::run(
                         owner: $customer,
                         modelData: $taxNumberData
                     );
+
+                    ValidateTaxNumber::run($taxNumber);
                 } else {
                     UpdateTaxNumber::run($customer->taxNumber, $taxNumberData);
                 }
