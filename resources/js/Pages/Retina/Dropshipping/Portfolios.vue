@@ -485,12 +485,12 @@ provide('selectedEchopersonal', useEchoRetinaPersonal())
             @onDone="isOpenModalPortfolios = false" :platform_user_id />
 
         <AddPortfoliosWithUpload v-else :step="step" :routes="props.routes" :platform_data
-            @onDone="isOpenModalPortfolios = false" :platform_user_id :is_platform_connected
-            :customerSalesChannel="customer_sales_channel" :onClickReconnect />
+            @onDone="isOpenModalPortfolios = false" :platform_user_id :is_platform_connected     
+            :customerSalesChannel="customer_sales_channel" :onClickReconnect />          
     </Modal>
 
 
-    <Modal :isOpen="modalAddproductBluk" @onClose="modalAddproductBluk = false"  width="w-full max-w-2xl">
+    <Modal :isOpen="modalAddproductBluk" @onClose="modalAddproductBluk = false"  width="w-full max-w-2xl xx">
        <div class="flex items-center justify-center">
             <div>
                 <div class="flex items-center space-x-4">
