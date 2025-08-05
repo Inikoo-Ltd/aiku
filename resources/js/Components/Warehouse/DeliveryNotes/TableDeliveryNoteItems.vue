@@ -431,7 +431,7 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
                             </div>
 
                              <div class="hidden md:block">
-                                <Button v-tooltip="'Picking Issue'" @click="()=>emits('openModalIssue', itemValue.id)"
+                                <Button v-tooltip="'Picking Issue'" @click="()=>emits('openModalIssue', itemValue)"
                                     :icon="faFragile" type="warning" />
                             </div>
 
