@@ -24,7 +24,7 @@ class FetchAuroraOrgStockMovement extends FetchAurora
             return;
         }
 
-        if ($this->auroraModelData->{'Inventory Transaction Record Type'}=='Info' && $this->auroraModelData->{'Inventory Transaction Type'} != 'Audit') {
+        if ($this->auroraModelData->{'Inventory Transaction Record Type'} == 'Info' && $this->auroraModelData->{'Inventory Transaction Type'} != 'Audit') {
             return;
         }
 

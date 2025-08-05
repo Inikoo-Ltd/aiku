@@ -4,11 +4,10 @@ namespace App\Exports\Marketing;
 
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Models\Catalogue\Asset;
-use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\Exportable;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
@@ -27,24 +26,23 @@ class ProductsInProductCategoryExport implements FromQuery, WithMapping, ShouldA
         $this->productCategory = $productCategory;
     }
 
-    public function query(): Relation|\Illuminate\Database\Eloquent\Builder|Asset|Builder
+    public function query(): Relation|\Illuminate\Database\Eloquent\Builder|\Laravel\Scout\Builder|Builder
     {
+        $query = DB::table('products')
+            ->select('products.*', 'product_categories.name as family_name')
+            ->leftJoin('product_categories', 'products.family_id', '=', 'product_categories.id')
+            ->whereIn('products.state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value]);
+
+
         if ($this->productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
-            $query = Product::query()->where('department_id', $this->productCategory->id)->whereIn('state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value]);
+            $query->where('products.department_id', $this->productCategory->id);
         } elseif ($this->productCategory->type == ProductCategoryTypeEnum::FAMILY) {
-            $query = Product::query()->where('family_id', $this->productCategory->id)->whereIn('state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value]);
+            $query->where('products.family_id', $this->productCategory->id);
         } else {
-            $query = Product::query()->where('sub_department_id', $this->productCategory->id)->whereIn('state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value]);
+            $query->where('products.sub_department_id', $this->productCategory->id);
         }
 
-        $query->with([
-            'family',
-            'currency',
-            'images',
-        ]);
-
-
-        return $query;
+        return $query->orderBy('products.id');
     }
 
 }

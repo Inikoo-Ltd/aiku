@@ -14,7 +14,6 @@ use App\Actions\OrgAction;
 use App\Models\Web\Website;
 use Lorisleiva\Actions\ActionRequest;
 
-
 class ReindexWebsiteLuigi extends OrgAction
 {
     /**
@@ -23,6 +22,10 @@ class ReindexWebsiteLuigi extends OrgAction
     public function handle(Website $website): void
     {
         ReindexWebsiteLuigiData::dispatch($website);
+
+        UpdateWebsite::run($website, [
+            'last_reindex_at' => now()
+        ]);
     }
 
     public function asController(Website $website, ActionRequest $request): void

@@ -88,6 +88,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $number_current_master_product_categories_type_sub_department
  * @property int $number_master_product_categories_type_family
  * @property int $number_current_master_product_categories_type_family
+ * @property int $number_current_collections state=active+discontinuing
  * @method static Builder<static>|MasterProductCategoryStats newModelQuery()
  * @method static Builder<static>|MasterProductCategoryStats newQuery()
  * @method static Builder<static>|MasterProductCategoryStats query()

@@ -45,8 +45,8 @@ enum DeliveryNoteStateEnum: string
             'unassigned' => [
                 'tooltip' => __('Unassigned'),
                 'icon'    => 'fal fa-chair',
-                'class'   => 'text-grey-500',  // Color for normal icon (Aiku)
-                'color'   => 'grey',  // Color for box (Retina)
+                'class'   => 'text-gray-500',  // Color for normal icon (Aiku)
+                'color'   => 'gray',  // Color for box (Retina)
                 'app'     => [
                     'name' => 'chair',
                     'type' => 'font-awesome-5'
@@ -54,9 +54,9 @@ enum DeliveryNoteStateEnum: string
             ],
             'queued'     => [
                 'tooltip' => __('In Queue'),
-                'icon'    => 'fal fa-chair',
-                'class'   => 'text-lime-500',
-                'color'   => 'lime',
+                'icon'    => 'fal fa-hourglass-start',
+                'class'   => 'text-gray-500',
+                'color'   => 'gray',
                 'app'     => [
                     'name' => 'chair',
                     'type' => 'font-awesome-5'
@@ -74,9 +74,9 @@ enum DeliveryNoteStateEnum: string
             ],
             'handling_blocked' => [
                 'tooltip' => __('Handling Blocked'),
-                'icon'    => 'fal fa-hand-paper',
-                'class'   => 'text-gray-500',
-                'color'   => 'gray',
+                'icon'    => 'fal fa-allergies',
+                'class'   => 'text-red-300',
+                'color'   => 'red',
                 'app'     => [
                     'name' => 'check',
                     'type' => 'font-awesome-5'
@@ -95,8 +95,8 @@ enum DeliveryNoteStateEnum: string
             'finalised'  => [
                 'tooltip' => __('Finalised'),
                 'icon'    => 'fal fa-box-check',
-                'class'   => 'text-gray-500',
-                'color'   => 'gray',
+                'class'   => 'text-indigo-500',
+                'color'   => 'indigo',
                 'app'     => [
                     'name' => 'times',
                     'type' => 'font-awesome-5'
@@ -106,8 +106,8 @@ enum DeliveryNoteStateEnum: string
             'dispatched' => [
                 'tooltip' => __('Dispatched'),
                 'icon'    => 'fal fa-check-double',
-                'class'   => 'text-gray-500',
-                'color'   => 'gray',
+                'class'   => 'text-green-500',
+                'color'   => 'green',
                 'app'     => [
                     'name' => 'check-double',
                     'type' => 'font-awesome-5'
@@ -116,8 +116,8 @@ enum DeliveryNoteStateEnum: string
             'cancelled'  => [
                 'tooltip' => __('Cancelled'),
                 'icon'    => 'fal fa-times',
-                'class'   => 'text-gray-500',
-                'color'   => 'gray',
+                'class'   => 'text-red-500',
+                'color'   => 'red',
                 'app'     => [
                     'name' => 'times',
                     'type' => 'font-awesome-5'

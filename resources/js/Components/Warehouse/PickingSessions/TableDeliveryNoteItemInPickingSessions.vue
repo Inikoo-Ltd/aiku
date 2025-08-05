@@ -592,19 +592,15 @@ console.log('props', props.pickingSession)
             </div>
 
 
-            <!-- <Link v-if="pickingSession.state == 'picking_finished' && itemValue.delivery_note_state == 'handling'"
-                method="patch" @start="packedLoading.add(delivery_note_id)"
-                :href="route('grp.models.delivery_note.state.packed', { deliveryNote: itemValue.delivery_note_id })"
-                @finish="packedLoading.delete(delivery_note_id)" class="mx-3">
-            <Button type="save" label="Set as packed" size="sm" :loading="isPacking(itemValue.delivery_note_id)" />
-            </Link> -->
 
               <Button  v-if="pickingSession.state === 'picking_finished' && itemValue.delivery_note_state === 'handling'" type="save" label="Set as packed" size="sm"  @click="onOpenModalDetail(itemValue)"/>
 
 
             <Button v-if="itemValue.delivery_note_state == 'packed'" :icon="faPencil" label="Edit Detail" size="sm"
                 @click="onOpenModalDetail(itemValue)" />
-
+            <div>
+                <!-- Empty div to avoid print unexpected from BE -->
+            </div>
         </template>
     </Table>
 

@@ -28,7 +28,6 @@ use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -240,7 +239,7 @@ class ShowWebsite extends OrgAction
                 ],
 
                 'luigi_data' => [
-                    'last_reindexed'           => Cache::get('last_reindex_at_' . $website->id),
+                    'last_reindexed'           => Arr::get($website->settings, "luigisbox.last_reindex_at"),
                     'luigisbox_tracker_id' => Arr::get($website->settings, "luigisbox.tracker_id"),
                     'luigisbox_private_key'    => Arr::get($website->settings, "luigisbox.private_key"),
                     'luigisbox_lbx_code'       => Arr::get($website->settings, "luigisbox.lbx_code"),

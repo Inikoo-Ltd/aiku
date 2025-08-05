@@ -1,17 +1,17 @@
 <?php
 
 /*
- *  Author: Raul Perusquia <raul@inikoo.com>
- *  Created: Wed, 09 Feb 2022 15:04:15 Malaysia Time, Kuala Lumpur, Malaysia
- *  Copyright (c) 2022, Inikoo
- *  Version 4.0
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 04 Aug 2025 20:28:01 Central European Summer Time, Trnava, Slovakia
+ * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Goods;
+namespace App\Actions\Goods\TradeUnit;
 
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitHydrateImages;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitHydrateStatus;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateCustomerExclusiveProducts;
+use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateMarketingIngredients;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateOrgStocks;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateProducts;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateStocks;
@@ -37,6 +37,7 @@ class HydrateTradeUnits
         TradeUnitsHydrateStocks::run($tradeUnit);
         TradeUnitHydrateStatus::run($tradeUnit);
         TradeUnitHydrateImages::run($tradeUnit);
+        TradeUnitsHydrateMarketingIngredients::run($tradeUnit);
     }
 
 }

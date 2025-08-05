@@ -75,7 +75,7 @@ class ShowMastersDashboard extends OrgAction
                                 'icon'  => 'fal fa-folder-tree',
                                 'class' => ''
                             ],
-                            'count'   => $group->goodsStats->number_master_product_categories_type_department_sub_departments,
+                            'count'   => $group->goodsStats->number_current_master_product_categories_type_sub_department,
                         ],
                     ],
                     [

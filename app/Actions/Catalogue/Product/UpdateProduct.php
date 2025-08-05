@@ -132,6 +132,17 @@ class UpdateProduct extends OrgAction
             BreakProductInWebpagesCache::dispatch($product);
         }
 
+        if (Arr::has($changed, 'available_quantity')) {
+            $product->updateQuietly([
+                'available_quantity_updated_at' => now()
+            ]);
+        }
+
+        if (Arr::has($changed, 'price')) {
+            $product->updateQuietly([
+                'price_updated_at' => now()
+            ]);
+        }
 
         return $product;
     }

@@ -14,6 +14,7 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoFavourited
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoFavouritedInCategories;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoReminded;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoRemindedInCategories;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingIngredientsFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTradeUnitsFields;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateForSale;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUnits;
@@ -47,6 +48,7 @@ class HydrateProducts
         ProductHydrateGrossWeightFromTradeUnits::run($product);
         ProductHydrateMarketingWeightFromTradeUnits::run($product);
         ProductHydrateMarketingDimensionFromTradeUnits::run($product);
+        ProductHydrateMarketingIngredientsFromTradeUnits::run($product);
         ProductHydrateBarcodeFromTradeUnit::run($product);
         ProductHydrateImages::run($product);
         ProductHydrateTradeUnitsFields::run($product);

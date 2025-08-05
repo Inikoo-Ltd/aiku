@@ -10,36 +10,21 @@ namespace App\Actions\Dispatching\Picking;
 
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dispatching\Picking;
-use App\Models\Inventory\Location;
-use App\Models\Inventory\OrgStock;
-use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class SavePickingInAurora implements ShouldBeUnique
 {
     use AsAction;
+    use WithAuroraApi;
 
-    public function getJobUniqueId(Picking $pickingID): string
+    public function getJobUniqueId(Picking $picking): string
     {
-        return $pickingID;
+        return $picking->id;
     }
 
-
-    /**
-     * @throws \Illuminate\Http\Client\ConnectionException
-     */
-    public function asJob(int $pickingID)
-    {
-        $picking = Picking::find($pickingID);
-        if (!$picking) {
-            return null;
-        }
-        $this->handle($picking);
-    }
 
 
     /**
@@ -85,28 +70,6 @@ class SavePickingInAurora implements ShouldBeUnique
         )->get($apiUrl);
     }
 
-    public function getAuroraObjectKey(OrgStock|Location $object): ?string
-    {
-        $sourceID = $object->source_id;
-
-        if ($sourceID) {
-            $sourceID = explode(':', $sourceID);
-
-            return $sourceID[1] ?? null;
-        }
-
-        return null;
-    }
-
-    public function getApiUrl(Organisation $organisation): string
-    {
-        return Arr::get($organisation->source, 'url').'/api/stock';
-    }
-
-    public function getApiToken(Organisation $organisation): string
-    {
-        return config('app.aurora.api_keys.'.$organisation->id);
-    }
 
     public function getCommandSignature(): string
     {
