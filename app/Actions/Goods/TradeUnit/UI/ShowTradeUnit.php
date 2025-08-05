@@ -168,8 +168,6 @@ class ShowTradeUnit extends GrpAction
                     'navigation' => TradeUnitTabsEnum::navigation()
 
                 ],
-                'trade_unit' => TradeUnitResource::make($tradeUnit),
-
                 'images_category_box' => $this->getImagesData($tradeUnit),
                 'images_update_route' => [
                     'name'       => 'grp.models.trade-unit.update_images',
