@@ -2,6 +2,7 @@
 
 namespace App\Listeners;
 
+use App\Actions\Dropshipping\Shopify\CheckShopifyChannel;
 use App\Actions\Dropshipping\Shopify\FulfilmentService\StoreFulfilmentService;
 use App\Actions\Dropshipping\Shopify\Webhook\CreateShopifyWebhooks;
 use App\Actions\Traits\WithActionUpdate;
@@ -40,7 +41,7 @@ class ShopifyAppInstalledListener
 
         if ($shopifyUser->customerSalesChannel) {
 
-
+            CheckShopifyChannel::run($shopifyUser->customerSalesChannel);
             StoreFulfilmentService::run($shopifyUser->customerSalesChannel);
 
         }

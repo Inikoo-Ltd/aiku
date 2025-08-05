@@ -3,11 +3,10 @@
 namespace App\Exports\Marketing;
 
 use App\Enums\Catalogue\Product\ProductStateEnum;
-use App\Models\Catalogue\Asset;
-use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\Exportable;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
@@ -26,17 +25,16 @@ class ProductsInShopExport implements FromQuery, WithMapping, ShouldAutoSize, Wi
         $this->shop = $shop;
     }
 
-    public function query(): Relation|\Illuminate\Database\Eloquent\Builder|Asset|Builder
+    public function query(): Relation|\Illuminate\Database\Eloquent\Builder|\Laravel\Scout\Builder|Builder
     {
-        $query = Product::query()->where('shop_id', $this->shop->id)->whereIn('state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value]);
 
-        $query->with([
-            'family',
-            'currency',
-            'images',
-        ]);
+        return DB::table('products')
+            ->select('products.*', 'product_categories.name as family_name')
+            ->leftJoin('product_categories', 'products.family_id', '=', 'product_categories.id')
+            ->where('products.shop_id', $this->shop->id)
+            ->whereIn('products.state', [ProductStateEnum::ACTIVE->value, ProductStateEnum::DISCONTINUING->value])
+            ->orderBy('products.id');
 
-        return $query;
     }
 
 }

@@ -18,7 +18,7 @@ class FetchAuroraShippingZone extends FetchAurora
         $shippingZoneSchema = $this->parseShippingZoneSchema($this->organisation->id.':'.$this->auroraModelData->{'Shipping Zone Shipping Zone Schema Key'});
 
 
-        if($shippingZoneSchema->shop->type==ShopTypeEnum::DROPSHIPPING){
+        if ($shippingZoneSchema->shop->type == ShopTypeEnum::DROPSHIPPING) {
             return;
         }
 
