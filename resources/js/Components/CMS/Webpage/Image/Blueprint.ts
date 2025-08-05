@@ -12,6 +12,12 @@ export default {
 					useIn: ["desktop", "tablet", "mobile"],
 				},
 				{
+					key: ["gap"],
+					label: "Gap",
+					type: "number",
+					useIn: ["desktop", "tablet", "mobile"],
+				},
+				{
 					key: ["layout", "properties", "dimension"],
 					label: "Dimension",
 					type: "dimension",
