@@ -247,7 +247,7 @@ class IndexOrders extends OrgAction
             'customers.name as customer_name',
         ])
             ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
-            ->allowedSorts(['id', 'reference', 'date']) // Ensure `id` is the first sort column
+            ->allowedSorts(['id', 'reference', 'date', 'net_amount']) // Ensure `id` is the first sort column
             ->withBetweenDates(['date'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -307,7 +307,7 @@ class IndexOrders extends OrgAction
                 $table->column(key: 'customer_name', label: __('customer'), canBeHidden: false, searchable: true);
             }
             $table->column(key: 'payment_status', label: __('payment'), canBeHidden: false, searchable: true);
-            $table->column(key: 'net_amount', label: __('net'), canBeHidden: false, searchable: true, type: 'currency');
+            $table->column(key: 'net_amount', label: __('net'), canBeHidden: false, searchable: true, sortable:true, type: 'currency');
         };
     }
 
