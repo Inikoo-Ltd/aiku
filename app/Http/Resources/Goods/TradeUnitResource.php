@@ -8,41 +8,35 @@
 
 namespace App\Http\Resources\Goods;
 
+use App\Models\Goods\TradeUnit;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/**
- * @property string $code
- * @property string $slug
- * @property string $type
- * @property string $name
- * @property mixed $description
- * @property mixed $barcode
- * @property mixed $dimensions
- * @property mixed $gross_weight
- * @property mixed $volume
- * @property mixed $image_id
- * @property mixed $marketing_weight
- * @property mixed $marketing_dimensions
- * @property mixed $status
- */
+
 class TradeUnitResource extends JsonResource
 {
     public function toArray($request): array
     {
+        /** @var TradeUnit $tradeUnit */
+        $tradeUnit = $this;
+
         return array(
-            'slug'                 => $this->slug,
-            'status'               => $this->status,
-            'code'                 => $this->code,
-            'name'                 => $this->name,
-            'description'          => $this->description,
-            'barcode'              => $this->barcode,
-            'gross_weight'         => $this->gross_weight,
-            'marketing_weight'     => $this->marketing_weight,
-            'marketing_dimensions' => $this->marketing_dimensions,
-            'dimensions'           => $this->dimensions,
-            'volume'               => $this->volume,
-            'type'                 => $this->type,
-            'image_id'             => $this->image_id
+            'slug'                  => $tradeUnit->slug,
+            'status'                => $tradeUnit->status,
+            'code'                  => $tradeUnit->code,
+            'name'                  => $tradeUnit->name,
+            'description'           => $tradeUnit->description,
+            'barcode'               => $tradeUnit->barcode,
+            'gross_weight'          => $tradeUnit->gross_weight,
+            'marketing_weight'      => $tradeUnit->marketing_weight,
+            'marketing_dimensions'  => $tradeUnit->marketing_dimensions,
+            'volume'                => $tradeUnit->volume,
+            'type'                  => $tradeUnit->type,
+            'image_id'              => $tradeUnit->image_id,
+            'name_i8n'              => $tradeUnit->name_i8n,
+            'description_i8n'       => $tradeUnit->description_i8n,
+            'description_title_i8n' => $tradeUnit->description_title_i8n,
+            'description_extra_i8n' => $tradeUnit->description_extra_i8n,
+
         );
     }
 }

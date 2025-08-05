@@ -21,6 +21,10 @@ class FetchAuroraMasterAsset extends FetchAurora
 
     protected function parseModel(): void
     {
+
+        // primary asset  no longer needs to be fetched
+        return;
+
         $masterShop = $this->getMasterShop('Product Store Key');
 
         if ($masterShop == null) {
