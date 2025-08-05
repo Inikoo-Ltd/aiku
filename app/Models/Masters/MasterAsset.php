@@ -10,6 +10,7 @@ namespace App\Models\Masters;
 
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Goods\Stock;
+use App\Models\Goods\TradeUnit;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
@@ -19,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
@@ -228,6 +230,11 @@ class MasterAsset extends Model implements Auditable, HasMedia
             Stock::class,
             'master_asset_has_stocks',
         )->withPivot(['quantity', 'notes'])->withTimestamps();
+    }
+
+    public function tradeUnits(): MorphToMany
+    {
+        return $this->morphToMany(TradeUnit::class, 'model', 'model_has_trade_units')->withPivot(['quantity', 'notes'])->withTimestamps();
     }
 
 }
