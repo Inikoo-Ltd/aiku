@@ -99,6 +99,7 @@ class IndexPurchaseOrders extends OrgAction
             ])
             ->selectRaw('cost_total*org_exchange  as org_total_cost')
             ->selectRaw('\''.$organisation->currency->code.'\' as org_currency_code')
+            ->allowedSorts(['reference', 'parent_name', 'date', 'number_current_purchase_order_transactions', 'org_total_cost'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -122,7 +123,7 @@ class IndexPurchaseOrders extends OrgAction
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, searchable: true);
             }
             $table->column(key: 'date', label: __('date Created'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_of_items', label: __('items'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_current_purchase_order_transactions', label: __('items'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'org_total_cost', label: __('amount'), canBeHidden: false, sortable: true, searchable: true, type: 'currency')
                 ->defaultSort('reference');
         };
