@@ -106,10 +106,15 @@ class EditCustomer extends OrgAction
                                         'countriesAddressData' => GetAddressData::run()
                                     ]
                                 ],
-                                    'vat'      => [
+                                'vat'      => [
                                     'type'    => 'tax_number',
                                     'label'   => __('Tax number'),
-                                    'value'   => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : null,
+                                    'value'   => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : [
+                                        'number' => '',
+                                        'type'   => '',
+                                        'country_code' => $customer->address->country_code ?? null,
+                                        'country_id' => $customer->address->country_id ?? null,
+                                    ],
                                     'country' => $customer->address->country_code,
                                     'country_id' => $customer->address->country_id,
                                     'typeOptions' => TaxNumberTypeEnum::getOptions(),
