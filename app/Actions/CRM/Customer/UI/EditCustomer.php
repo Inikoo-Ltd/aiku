@@ -12,6 +12,7 @@ use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
+use App\Http\Resources\Helpers\TaxNumberResource;
 use App\Models\CRM\Customer;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
