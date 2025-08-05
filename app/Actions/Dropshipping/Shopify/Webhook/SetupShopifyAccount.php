@@ -16,16 +16,11 @@ use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class SetupShopifyAccount extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
 
-    public string $commandSignature = 'shopify:webhook {shopify}';
 
     /**
      * @throws \Exception
@@ -35,7 +30,7 @@ class SetupShopifyAccount extends OrgAction
         DB::transaction(function () use ($shopifyUser, $shop) {
             if ($shop->type === ShopTypeEnum::DROPSHIPPING) {
                 if (!$shopifyUser?->customer) {
-                    // TODO: Make customer as ds if pupil enable later
+
                 }
             } else {
                 $fulfilment = $shop->fulfilment;
@@ -47,6 +42,9 @@ class SetupShopifyAccount extends OrgAction
         });
     }
 
+    /**
+     * @throws \Exception
+     */
     public function asController(ShopifyUser $shopifyUser, ActionRequest $request)
     {
         $shop = Shop::find($request->input('shop'));
