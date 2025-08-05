@@ -7,7 +7,6 @@ import { faSpinnerThird, faCopy } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
-import { notify } from "@kyvg/vue3-notification"
 
 library.add(faSpinnerThird, faCopy)
 
@@ -55,6 +54,7 @@ async function validateVatNumber() {
 
   isLoadingButton.value = true
   validationStatus.value = null
+  set(props.form.errors, props.fieldName, null)
 
   try {
     const { name, parameters } = props.fieldData.route_validate
@@ -62,19 +62,15 @@ async function validateVatNumber() {
     console.log(data)
 
     validationStatus.value = "success"
-    notify({
-      title: trans("Success"),
-      text: trans("Tax number is valid."),
-      type: "success",
-    })
+    set(props.form.errors, props.fieldName, null) // clear error if valid
   } catch (err) {
     console.error(err)
     validationStatus.value = "failed"
-    notify({
-      title: trans("Something went wrong"),
-      text: trans("Failed to validate tax number, please try again."),
-      type: "error",
-    })
+    set(
+      props.form.errors,
+      props.fieldName,
+      trans("Failed to validate tax number, please try again.")
+    )
   } finally {
     isLoadingButton.value = false
   }
@@ -88,26 +84,14 @@ onMounted(() => {
 <template>
   <div class="relative">
     <div class="relative">
-      <PureInput
-        v-model="value.number"
-        @update:model-value="updateVat"
-        :class="{ 'border-red-500': form.errors?.[fieldName] }"
-      />
+      <PureInput v-model="value.number" @update:model-value="updateVat"
+        :class="{ 'border-red-500': form.errors?.[fieldName] }" />
 
-      <button
-        v-if="needButtonValidate"
-        type="button"
+      <button v-if="needButtonValidate" type="button"
         class="mt-2 inline-flex items-center text-blue-600 underline hover:text-blue-800 transition disabled:text-gray-400 disabled:cursor-not-allowed"
-        @click="validateVatNumber"
-        :disabled="isLoadingButton"
-      >
-        <svg
-          v-if="isLoadingButton"
-          class="animate-spin h-4 w-4 mr-2 text-blue-600"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
+        @click="validateVatNumber" :disabled="isLoadingButton">
+        <svg v-if="isLoadingButton" class="animate-spin h-4 w-4 mr-2 text-blue-600" xmlns="http://www.w3.org/2000/svg"
+          fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
         </svg>
@@ -115,11 +99,12 @@ onMounted(() => {
       </button>
     </div>
 
-    <p
-      v-if="get(form, ['errors', fieldName])"
-      class="mt-2 text-sm text-red-600"
-      :id="`${fieldName}-error`"
-    >
+    <p v-if="validationStatus === 'success'" class="mt-2 text-sm text-green-600">
+      {{ trans("Tax number is valid.") }}
+    </p>
+
+
+    <p v-if="get(form, ['errors', fieldName])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">
       {{ form.errors[fieldName] }}
     </p>
   </div>
