@@ -147,7 +147,7 @@ const resolvedGap = computed(() => {
       </Swiper>
 
       <!-- Desktop/Tablet Grid -->
-      <div v-else class="flex flex-wrap" :style="{
+      <div v-else class="flex" :style="{
         gap: resolvedGap
       }">
         <div v-for="index in fieldValue?.value?.images?.length"
