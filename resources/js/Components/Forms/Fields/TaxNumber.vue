@@ -62,7 +62,7 @@ async function validateVatNumber() {
         const { data } = await axios.post(route(name, parameters ?? {}))
         console.log(data)
 
-        validationStatus.value = "success"
+        validationStatus.value = data.valid ? "success" : "failed"
         set(props.form.errors, props.fieldName, null) // clear error if valid
     } catch (err) {
         console.error(err)
@@ -89,6 +89,14 @@ console.log("TaxNumber component mounted with fieldName:", props)
         <!-- Input Nomor VAT -->
         <PureInput v-model="value.number" @update:model-value="updateVat"
             :class="{ 'border-red-500': form.errors?.[fieldName] }" />
+        <!-- Validasi Berhasil -->
+        <p v-if="validationStatus === 'success'" class="text-sm text-green-600">
+            {{ trans("Tax number is valid.") }}
+        </p>
+
+         <p v-if="validationStatus === 'failed'" class="text-sm text-red-600">
+            {{ trans("Tax number is not valid.") }}
+        </p>
 
         <!-- Tombol Validasi Nomor Pajak -->
         <button v-if="needButtonValidate" type="button"
@@ -107,10 +115,6 @@ console.log("TaxNumber component mounted with fieldName:", props)
             :label="'label'" :valueProp="'value'" :mode="'single'" :required="true"
             @update:model-value="(v) => { value.type = v; updateFormValue(value) }" />
 
-        <!-- Validasi Berhasil -->
-        <p v-if="validationStatus === 'success'" class="text-sm text-green-600">
-            {{ trans("Tax number is valid.") }}
-        </p>
 
         <!-- Error dari Server -->
         <p v-if="get(form, ['errors', fieldName])" class="text-sm text-red-600" :id="`${fieldName}-error`">
