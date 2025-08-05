@@ -180,7 +180,7 @@ const compSelectedTradeUnit = computed(() => {
 <template>
 	<div class="grid md:grid-cols-2 gap-x-1 gap-y-4">
 		<!-- Sidebar -->
-		<div class="p-5 space-y-5 grid grid-cols-1 max-w-[500px] qwezxc">
+		<div class="p-5 space-y-5 grid grid-cols-1 w-full md:max-w-[500px]">
 			<!-- Image Preview & Thumbnails -->
 			<div class="relative">
 				<!-- Image Gallery -->
@@ -189,7 +189,7 @@ const compSelectedTradeUnit = computed(() => {
 					:images="data.product.data.images"
 					:breakpoints="{
 						0: {
-							slidesPerView: 3
+							slidesPerView: 5
 						},
 						640: {
 							slidesPerView: 4
