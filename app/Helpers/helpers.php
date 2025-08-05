@@ -238,3 +238,144 @@ if (!function_exists('riseDivisor')) {
         return $input;
     }
 }
+
+if (!function_exists('number')) {
+    function number($number, $fixed = 1, $force_fix = false, $locale = false): false|string
+    {
+        if (!$locale) {
+            global $locale;
+        }
+
+        if ($number == '') {
+            $number = 0;
+        }
+
+        $_number = new \NumberFormatter($locale, \NumberFormatter::DECIMAL);
+
+        $_number->setAttribute(\NumberFormatter::MAX_FRACTION_DIGITS, $fixed);
+
+        if ($force_fix) {
+            $_number->setAttribute(\NumberFormatter::MIN_FRACTION_DIGITS, $fixed);
+        }
+
+        return $_number->format($number);
+    }
+}
+
+if (!function_exists('convertUnits')) {
+    /**
+     * Convert a value from one unit to another
+     *
+     * @param  float  $value The value to convert
+     * @param  string  $from The source unit
+     * @param  string  $to The target unit
+     *
+     * @return float The converted value
+     */
+    function convertUnits(float $value, string $from, string $to): float
+    {
+        // If source and target units are the same, return the original value
+        if ($from == $to) {
+            return $value;
+        }
+
+        // First level match based on source unit category
+        return match ($from) {
+            // Volume conversions
+            'm3' => match ($to) {
+                'l' => $value * 1000,
+                'ml' => $value * 1000000,
+                default => $value, // Default case for unsupported target units
+            },
+            'l' => match ($to) {
+                'm3' => $value * 0.001,
+                'ml' => $value * 1000,
+                default => $value,
+            },
+            'ml' => match ($to) {
+                'l' => $value * 0.001,
+                'm3' => $value * 0.000001,
+                default => $value,
+            },
+
+            // Weight conversions
+            'Kg' => match ($to) {
+                'g' => $value * 1000,
+                'lb' => $value * 2.20462262,
+                'oz' => $value * 35.274,
+                default => $value,
+            },
+            'g' => match ($to) {
+                'Kg' => $value * 0.001,
+                'lb' => $value * 0.00220462262,
+                'oz' => $value * 0.035274,
+                default => $value,
+            },
+            'lb' => match ($to) {
+                'Kg' => $value * 0.45359237,
+                'g' => $value * 453.59237,
+                'oz' => $value * 16,
+                default => $value,
+            },
+            'oz' => match ($to) {
+                'Kg' => $value * 0.0283495,
+                'g' => $value * 28.3495,
+                'lb' => $value * 0.0625,
+                default => $value,
+            },
+
+            // Length conversions
+            'm' => match ($to) {
+                'mm' => $value * 1000,
+                'cm' => $value * 100,
+                'yd' => $value * 1.09361,
+                'in' => $value * 39.3701,
+                'ft' => $value * 3.28084,
+                default => $value,
+            },
+            'mm' => match ($to) {
+                'm' => $value * 0.001,
+                'cm' => $value * 0.1,
+                'yd' => $value * 0.00109361,
+                'in' => $value * 0.0393701,
+                'ft' => $value * 0.00328084,
+                default => $value,
+            },
+            'cm' => match ($to) {
+                'mm' => $value * 10,
+                'm' => $value * 0.01,
+                'yd' => $value * 0.0109361,
+                'in' => $value * 0.393701,
+                'ft' => $value * 0.0328084,
+                default => $value,
+            },
+            'yd' => match ($to) {
+                'mm' => $value * 914.4,
+                'cm' => $value * 91.44,
+                'm' => $value * 0.9144,
+                'in' => $value * 36,
+                'ft' => $value * 3,
+                default => $value,
+            },
+            'in' => match ($to) {
+                'mm' => $value * 25.4,
+                'cm' => $value * 2.54,
+                'yd' => $value * 0.0277778,
+                'm' => $value * 0.0254,
+                'ft' => $value * 0.0833333,
+                default => $value,
+            },
+            'ft' => match ($to) {
+                'mm' => $value * 304.8,
+                'cm' => $value * 30.48,
+                'yd' => $value * 0.333333,
+                'in' => $value * 12,
+                'm' => $value * 0.3048,
+                default => $value,
+            },
+
+            // Default case for unsupported source units
+            default => $value,
+        };
+    }
+}
