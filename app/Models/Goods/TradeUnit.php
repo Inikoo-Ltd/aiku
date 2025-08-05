@@ -105,6 +105,8 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $description_i8n
  * @property array<array-key, mixed>|null $description_title_i8n
  * @property array<array-key, mixed>|null $description_extra_i8n
+ * @property string|null $description_title
+ * @property string|null $description_extra
  * @property-read MediaCollection<int, Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Media|null $backImage
@@ -154,8 +156,7 @@ class TradeUnit extends Model implements HasMedia, Auditable
     use HasTranslations;
 
 
-    // public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
-    public array $translatable = [];
+    public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
 
     protected $casts = [
         'status'               => TradeUnitStatusEnum::class,

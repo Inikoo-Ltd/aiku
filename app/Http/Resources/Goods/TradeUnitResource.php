@@ -11,7 +11,6 @@ namespace App\Http\Resources\Goods;
 use App\Models\Goods\TradeUnit;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-
 class TradeUnitResource extends JsonResource
 {
     public function toArray($request): array
@@ -20,18 +19,22 @@ class TradeUnitResource extends JsonResource
         $tradeUnit = $this;
 
         return array(
-            'slug'                  => $tradeUnit->slug,
-            'status'                => $tradeUnit->status,
-            'code'                  => $tradeUnit->code,
+            'slug'   => $tradeUnit->slug,
+            'status' => $tradeUnit->status,
+            'code'   => $tradeUnit->code,
+
+            'barcode'              => $tradeUnit->barcode,
+            'gross_weight'         => $tradeUnit->gross_weight,
+            'marketing_weight'     => $tradeUnit->marketing_weight,
+            'marketing_dimensions' => $tradeUnit->marketing_dimensions,
+            'volume'               => $tradeUnit->volume,
+            'type'                 => $tradeUnit->type,
+            'image_id'             => $tradeUnit->image_id,
+
             'name'                  => $tradeUnit->name,
             'description'           => $tradeUnit->description,
-            'barcode'               => $tradeUnit->barcode,
-            'gross_weight'          => $tradeUnit->gross_weight,
-            'marketing_weight'      => $tradeUnit->marketing_weight,
-            'marketing_dimensions'  => $tradeUnit->marketing_dimensions,
-            'volume'                => $tradeUnit->volume,
-            'type'                  => $tradeUnit->type,
-            'image_id'              => $tradeUnit->image_id,
+            'description_title'     => $tradeUnit->description_title,
+            'description_extra'     => $tradeUnit->description_extra,
             'name_i8n'              => $this->safeDecode($tradeUnit->name_i8n),
             'description_i8n'       => $this->safeDecode($tradeUnit->description_i8n),
             'description_title_i8n' => $this->safeDecode($tradeUnit->description_title_i8n),
