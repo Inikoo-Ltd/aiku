@@ -1,17 +1,15 @@
 <script setup lang="ts">
 import PureInput from "@/Components/Pure/PureInput.vue"
 import { set, get } from "lodash-es"
-import { checkVAT, countries } from "jsvat-next"
-import { ref, watch } from "vue"
-import { debounce } from "lodash-es"
+import { ref, onMounted } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy } from "@fas"
+import { faSpinnerThird, faCopy } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import { notify } from "@kyvg/vue3-notification"
 
-library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
+library.add(faSpinnerThird, faCopy)
 
 const props = defineProps<{
   form: any
@@ -19,7 +17,6 @@ const props = defineProps<{
   options?: any
   refForms?: any
   fieldData?: {
-    country: string[]
     route_validate?: {
       name: string
       parameters?: any
@@ -30,16 +27,14 @@ const props = defineProps<{
 const emits = defineEmits(["update:form"])
 
 const value = ref(getFormValue(props.form, props.fieldName))
-const vatValidationResult = ref<string | null>(null)
 const isLoadingButton = ref(false)
 const validationStatus = ref<"success" | "failed" | null>(null)
+const needButtonValidate = ref(false)
 
 function getFormValue(data: any, fieldName: string | string[]) {
-  return Array.isArray(fieldName) ? getNestedValue(data, fieldName) : (data[fieldName] ?? { value: "" })
-}
-
-function getNestedValue(obj: any, keys: string[]) {
-  return keys.reduce((acc, key) => acc?.[key], obj)
+  return Array.isArray(fieldName)
+    ? fieldName.reduce((acc, key) => acc?.[key], data)
+    : (data[fieldName] ?? { value: "" })
 }
 
 function updateFormValue(newValue: any) {
@@ -51,37 +46,8 @@ function updateFormValue(newValue: any) {
   emits("update:form", props.form)
 }
 
-const debouncedValidation = debounce((val: string) => {
-  validateVAT(val)
-}, 500)
-
 function updateVat() {
-  debouncedValidation(value.value)
-}
-
-function validateVAT(vatNumber: string) {
-  if (!vatNumber) {
-    vatValidationResult.value = null
-    set(props.form, ["errors", props.fieldName], "")
-    return
-  }
-
-  const result = checkVAT(vatNumber, countries)
-  vatValidationResult.value = result.isValid ? "Valid VAT" : "Invalid VAT"
-
-  if (!result.isValid) {
-    set(props.form, ["errors", props.fieldName], "Invalid VAT number.")
-    return
-  }
-
-  const detectedCountry = result.country?.isoCode.short
-  if (props.fieldData?.country?.length && detectedCountry && !props.fieldData.country.includes(detectedCountry)) {
-    set(props.form, ["errors", props.fieldName], "VAT number does not match with the address.")
-    return
-  }
-
-  set(props.form, ["errors", props.fieldName], "")
-  updateFormValue(result)
+  updateFormValue(value.value)
 }
 
 async function validateVatNumber() {
@@ -113,6 +79,10 @@ async function validateVatNumber() {
     isLoadingButton.value = false
   }
 }
+
+onMounted(() => {
+  needButtonValidate.value = !!props.form[props.fieldName]?.number
+})
 </script>
 
 <template>
@@ -125,6 +95,7 @@ async function validateVatNumber() {
       />
 
       <button
+        v-if="needButtonValidate"
         type="button"
         class="mt-2 inline-flex items-center text-blue-600 underline hover:text-blue-800 transition disabled:text-gray-400 disabled:cursor-not-allowed"
         @click="validateVatNumber"
