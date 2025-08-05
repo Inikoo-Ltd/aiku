@@ -1,251 +1,250 @@
 <script setup lang="ts">
-import { routeType } from '@/types/route'
-import { inject, ref, watch, computed } from 'vue'
-import EditTradeUnit from './EditTradeUnit.vue'
-import { TradeUnit } from '@/types/trade-unit'
-import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
+import { ref, watch, inject, onMounted, nextTick } from 'vue'
+import TabView from 'primevue/tabview'
+import TabPanel from 'primevue/tabpanel'
 import PureInput from '../Pure/PureInput.vue'
 import PureTextarea from '../Pure/PureTextarea.vue'
 import Button from '../Elements/Buttons/Button.vue'
-import { trans } from "laravel-vue-i18n"
+import EditTradeUnit from './EditTradeUnit.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faLanguage } from '@fas'
+import { faLanguage, faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
+import { trans } from "laravel-vue-i18n"
 import { notify } from '@kyvg/vue3-notification'
 import { router } from '@inertiajs/vue3'
+import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
+import type { TradeUnit } from '@/types/trade-unit'
+import type { routeType } from '@/types/route'
 
 const props = defineProps<{
-    data: {
-        tradeUnit: TradeUnit
-        brand: {}
-        brand_routes: {
-            index_brand: routeType
-            store_brand: routeType
-            update_brand: routeType
-            delete_brand: routeType
-            attach_brand: routeType
-            detach_brand: routeType
-        }
-        tag_routes: {
-            index_tag: routeType
-            store_tag: routeType
-            update_tag: routeType
-            delete_tag: routeType
-            attach_tag: routeType
-            detach_tag: routeType
-        }
-        tags: {}[]
-        tags_selected_id: number[]
-    }
+  data: {
+    tradeUnit: TradeUnit
+    brand: {}
+    brand_routes: Record<string, routeType>
+    tag_routes: Record<string, routeType>
+    tags: {}[]
+    tags_selected_id: number[]
+  }
 }>()
 
-console.log(props)
-
-// Inject locale structure
 const locale = inject('locale', aikuLocaleStructure)
 const langOptions = Object.values(locale.languageOptions)
 
-// Selected language state
 const selectedLangCode = ref(langOptions[0]?.code || 'en')
+const activeTabIndex = ref(0)
 
-// Translations state
-const needToTranslate = ref(
-    langOptions.reduce((acc, lang) => {
-        const code = lang.code
-        acc[code] = {
-            name: props.data.tradeUnit.name_i8n?.[code] || '',
-            description: props.data.tradeUnit.description_i8n?.[code] || '',
-            description_title: props.data.tradeUnit.description_title_i8n?.[code] || '',
-            description_extra: props.data.tradeUnit.description_extra_i8n?.[code] || ''
-        }
-        return acc
-    }, {} as Record<string, {
-        name: string
-        description: string
-        description_title: string
-        description_extra: string
-    }>)
-)
+watch(activeTabIndex, (index) => {
+  selectedLangCode.value = langOptions[index].code
+})
 
-const selectedLang = computed(() => langOptions.find(opt => opt.code === selectedLangCode.value))
-
-// Local reactive bindings
 const translatedTitle = ref('')
 const translatedDescription = ref('')
 const translatedDescriptionTitle = ref('')
 const translatedDescriptionExtra = ref('')
 
-// Update local bindings when language changes
-const updateTranslation = () => {
-    const lang = selectedLangCode.value
-    const current = needToTranslate.value[lang]
-    translatedTitle.value = current?.name || ''
-    translatedDescription.value = current?.description || ''
-    translatedDescriptionTitle.value = current?.description_title || ''
-    translatedDescriptionExtra.value = current?.description_extra || ''
-}
-watch(selectedLangCode, updateTranslation, { immediate: true })
-
-// Sync edits to translation map
-watch(
-    [translatedTitle, translatedDescription, translatedDescriptionTitle, translatedDescriptionExtra],
-    () => {
-        const lang = selectedLangCode.value
-        if (!needToTranslate.value[lang]) {
-            needToTranslate.value[lang] = {
-                name: '',
-                description: '',
-                description_title: '',
-                description_extra: ''
-            }
-        }
-        needToTranslate.value[lang] = {
-            name: translatedTitle.value,
-            description: translatedDescription.value,
-            description_title: translatedDescriptionTitle.value,
-            description_extra: translatedDescriptionExtra.value
-        }
+const needToTranslate = ref(
+  langOptions.reduce((acc, lang) => {
+    acc[lang.code] = {
+      name: props.data.tradeUnit.name_i8n?.[lang.code] || '',
+      description: props.data.tradeUnit.description_i8n?.[lang.code] || '',
+      description_title: props.data.tradeUnit.description_title_i8n?.[lang.code] || '',
+      description_extra: props.data.tradeUnit.description_extra_i8n?.[lang.code] || ''
     }
+    return acc
+  }, {} as Record<string, {
+    name: string
+    description: string
+    description_title: string
+    description_extra: string
+  }>)
 )
 
+watch(selectedLangCode, () => {
+  const current = needToTranslate.value[selectedLangCode.value]
+  translatedTitle.value = current.name
+  translatedDescription.value = current.description
+  translatedDescriptionTitle.value = current.description_title
+  translatedDescriptionExtra.value = current.description_extra
+}, { immediate: true })
+
+watch([translatedTitle, translatedDescription, translatedDescriptionTitle, translatedDescriptionExtra], () => {
+  needToTranslate.value[selectedLangCode.value] = {
+    name: translatedTitle.value,
+    description: translatedDescription.value,
+    description_title: translatedDescriptionTitle.value,
+    description_extra: translatedDescriptionExtra.value
+  }
+})
 
 const isLoading = ref(false)
 
 const saveTranslation = () => {
-    const translations = needToTranslate.value
-    const masterData = {
+  router.patch(
+    route('grp.models.trade-unit.translations.update', { tradeUnit: props.data.tradeUnit.id }),
+    {
+      translations: needToTranslate.value,
+      master: {
         name: props.data.tradeUnit.name,
         description: props.data.tradeUnit.description,
         description_title: props.data.tradeUnit.description_title,
         description_extra: props.data.tradeUnit.description_extra
+      }
+    },
+    {
+      preserveScroll: true,
+      onStart: () => isLoading.value = true,
+      onFinish: () => isLoading.value = false,
+      onSuccess: () => notify({ title: trans('Success'), text: trans('Success to save translation'), type: 'success' }),
+      onError: () => notify({ title: trans('Error'), text: trans('Failed to save translation'), type: 'error' })
     }
-    router.patch(
-        route('grp.models.trade-unit.translations.update', {tradeUnit : props.data.tradeUnit.id}),
-        { translations : translations, master: masterData },
-        {
-            preserveScroll: true,
-            onStart: () => { isLoading.value = true },
-            onSuccess: () => {
-                notify({
-                    title: trans("Success"),
-                    text: trans("Success to save translation"),
-                    type: "success"
-                })
-            },
-            onError: errors => {
-                error.value = errors
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to set location"),
-                    type: "error"
-                })
-            },
-            onFinish: () => { isLoading.value = false },
-        }
-    )
+  )
 }
+
+// Handle scrolling
+const tabContainerRef = ref<HTMLElement | null>(null)
+const scrollTabs = (direction: 'left' | 'right') => {
+    console.log('scrollTabs', tabContainerRef.value?.querySelector('.p-tabview-tablist-scroll-container') )
+  const nav = tabContainerRef.value?.querySelector('.p-tabview-tablist-scroll-container') as HTMLElement
+  if (nav) {
+    nav.scrollBy({ left: direction === 'left' ? -150 : 150, behavior: 'smooth' })
+  }
+}
+
+onMounted(() => {
+  nextTick(() => {
+    const nav = tabContainerRef.value?.querySelector('.p-tabview-tablist-scroll-container') as HTMLElement
+    if (nav) {
+      nav.classList.add('flex', 'overflow-x-auto', 'no-scrollbar', 'whitespace-nowrap', 'gap-2')
+    }
+  })
+})
 </script>
 
 <template>
-    <div class="px-8 grid grid-cols-2 gap-8">
-        <!-- Edit Component -->
-        <EditTradeUnit :tags_selected_id="props.data.tags_selected_id" :brand="props.data.brand"
-            :brand_routes="props.data.brand_routes" :tags="props.data.tags" :tag_routes="props.data.tag_routes" />
+  <div class="px-8 grid grid-cols-2 gap-8">
+    <!-- Edit Component -->
+    <EditTradeUnit
+      :tags_selected_id="props.data.tags_selected_id"
+      :brand="props.data.brand"
+      :brand_routes="props.data.brand_routes"
+      :tags="props.data.tags"
+      :tag_routes="props.data.tag_routes"
+    />
 
-        <!-- Translation Section Wrapped -->
-        <div class="col-span-2 mt-6">
-            <div class="bg-white border border-gray-300 rounded-lg shadow-sm p-6">
-
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
-                    <!-- Title -->
-                    <h2 class="text-lg font-bold flex items-center gap-2">
-                        <FontAwesomeIcon :icon="faLanguage" />
-                        {{ trans('Multi-language Translations') }}
-                    </h2>
-
-                    <!-- Language Selector -->
-                    <select v-model="selectedLangCode"
-                        class="text-xs border border-gray-300 rounded px-2 py-1 bg-gray-100 focus:outline-none focus:ring focus:ring-blue-200">
-                        <option v-for="opt in langOptions" :key="opt.code" :value="opt.code">
-                            {{ opt.name }}
-                        </option>
-                    </select>
-                </div>
-
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Editable EN content -->
-                    <div class="bg-gray-50 border border-gray-300 rounded-md p-4 shadow-sm">
-                        <h3 class="text-base font-semibold flex items-center gap-2 mb-3">
-                            {{ trans('Master') }}
-                        </h3>
-
-                        <div class="mb-3">
-                            <label class="block text-xs text-gray-700 mb-1">Title</label>
-                            <PureInput v-model="props.data.tradeUnit.name" type="text" class="text-sm"
-                                placeholder="Enter title" />
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="block text-xs text-gray-700 mb-1">Description Title</label>
-                            <PureInput v-model="props.data.tradeUnit.description_title" type="text" class="text-sm"
-                                placeholder="Enter description title" />
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="block text-xs text-gray-700 mb-1">Description</label>
-                            <PureTextarea v-model="props.data.tradeUnit.description" rows="3" class="text-sm"
-                                placeholder="Enter description" />
-                        </div>
-
-                        <div>
-                            <label class="block text-xs text-gray-700 mb-1">Description Extra</label>
-                            <PureTextarea v-model="props.data.tradeUnit.description_extra" rows="3" class="text-sm"
-                                placeholder="Enter extra description" />
-                        </div>
-                    </div>
-
-                    <!-- Translated content -->
-                    <div class="bg-white border border-gray-300 rounded-md p-4 shadow-sm">
-                        <div class="flex justify-between items-center mb-3">
-                            <h3 class="text-base font-semibold flex items-center gap-2">
-                                Translation ({{ selectedLangCode?.toUpperCase() || '—' }})
-                            </h3>
-
-
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="block text-xs text-gray-700 mb-1">Title</label>
-                            <PureInput v-model="translatedTitle" type="text" class="text-sm"
-                                placeholder="Enter translated title" />
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="block text-xs text-gray-700 mb-1">Description Title</label>
-                            <PureInput v-model="translatedDescriptionTitle" type="text" class="text-sm"
-                                placeholder="Enter translated description title" />
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="block text-xs text-gray-700 mb-1">Description</label>
-                            <PureTextarea v-model="translatedDescription" rows="3" class="text-sm"
-                                placeholder="Enter translated description" />
-                        </div>
-
-                        <div>
-                            <label class="block text-xs text-gray-700 mb-1">Description Extra</label>
-                            <PureTextarea v-model="translatedDescriptionExtra" rows="3" class="text-sm"
-                                placeholder="Enter translated description extra" />
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Save Button -->
-                <div class="flex justify-end mt-6">
-                    <Button :type="'save'" @click="saveTranslation" :loading="isLoading"/>
-                </div>
-            </div>
+    <!-- Translation Section -->
+    <div class="col-span-2 mt-6">
+      <div class="bg-white border border-gray-300 rounded-lg shadow-sm p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-bold flex items-center gap-2">
+            <FontAwesomeIcon :icon="faLanguage" />
+            {{ trans('Multi-language Translations') }}
+          </h2>
         </div>
 
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Master Language -->
+          <div class="bg-gray-50 border border-gray-300 rounded-md p-4 shadow-sm">
+            <h3 class="text-base font-semibold mb-3">{{ trans('Master (EN)') }}</h3>
+
+            <div class="mb-3">
+              <label class="block text-xs text-gray-700 mb-1">Title</label>
+              <PureInput v-model="props.data.tradeUnit.name" type="text" class="text-sm" />
+            </div>
+            <div class="mb-3">
+              <label class="block text-xs text-gray-700 mb-1">Description Title</label>
+              <PureInput v-model="props.data.tradeUnit.description_title" type="text" class="text-sm" />
+            </div>
+            <div class="mb-3">
+              <label class="block text-xs text-gray-700 mb-1">Description</label>
+              <PureTextarea v-model="props.data.tradeUnit.description" rows="3" class="text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs text-gray-700 mb-1">Description Extra</label>
+              <PureTextarea v-model="props.data.tradeUnit.description_extra" rows="3" class="text-sm" />
+            </div>
+          </div>
+
+          <!-- Translations Tab -->
+          <div class="relative tab-custom" ref="tabContainerRef">
+            <!-- Scroll buttons -->
+            <button @click="scrollTabs('left')" class="absolute left-0 top-5 z-10 bg-white shadow rounded-full p-1">
+              <FontAwesomeIcon :icon="faChevronLeft" />
+            </button>
+            <button @click="scrollTabs('right')" class="absolute right-0 top-5 z-10 bg-white shadow rounded-full p-1">
+              <FontAwesomeIcon :icon="faChevronRight" />
+            </button>
+
+            <TabView v-model:activeIndex="activeTabIndex" class="bg-gray-50 border border-gray-300 rounded-md p-4 shadow-sm">
+              <TabPanel v-for="lang in langOptions" :key="lang.code" :style="{background : 'red'}">
+                <template #header>
+                  <span class="text-xs whitespace-nowrap">{{ lang.name }}</span>
+                </template>
+
+                <h3 class="text-base font-semibold mb-3">
+                  {{ trans('Translation') }} {{ lang.name }} ({{ lang.code.toUpperCase()  }})
+                </h3>
+
+                <div class="mb-3">
+                  <label class="block text-xs text-gray-700 mb-1">Title</label>
+                  <PureInput v-model="translatedTitle" type="text" class="text-sm" />
+                </div>
+                <div class="mb-3">
+                  <label class="block text-xs text-gray-700 mb-1">Description Title</label>
+                  <PureInput v-model="translatedDescriptionTitle" type="text" class="text-sm" />
+                </div>
+                <div class="mb-3">
+                  <label class="block text-xs text-gray-700 mb-1">Description</label>
+                  <PureTextarea v-model="translatedDescription" rows="3" class="text-sm" />
+                </div>
+                <div>
+                  <label class="block text-xs text-gray-700 mb-1">Description Extra</label>
+                  <PureTextarea v-model="translatedDescriptionExtra" rows="3" class="text-sm" />
+                </div>
+              </TabPanel>
+            </TabView>
+          </div>
+        </div>
+
+        <!-- Save Button -->
+        <div class="flex justify-end mt-6">
+          <Button :type="'save'" @click="saveTranslation" :loading="isLoading" />
+        </div>
+      </div>
     </div>
+  </div>
 </template>
+
+
+<style>
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Scrollable tab headers */
+.tab-custom .p-tabview-nav-container {
+  position: relative;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tab-custom .p-tabview-nav-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* Tab content area */
+.tab-custom .p-tabview-panels {
+  background-color: #F9FAFB !important; /* bg-gray-50 */
+  border-radius: 0rem;
+  padding: 0rem;
+  box-shadow: 0 0px 0px 0 rgb(0 0 0 / 0.05);
+}
+.tab-custom .p-tabview-panel {
+  background-color: #F9FAFB !important;
+  border: 0px solid #D1D5DB !important; /* border-gray-300 */
+  border-radius: 0rem;
+  padding: 1rem;
+}
+</style>
+
