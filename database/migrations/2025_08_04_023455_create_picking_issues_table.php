@@ -15,6 +15,7 @@ return new class extends Migration
             $table = $this->groupOrgRelationship($table);
             $table->unsignedInteger('warehouse_id')->index();
             $table->foreign('warehouse_id')->references('id')->on('warehouses')->nullOnDelete();
+            $table->string('slug')->unique()->collation('und_ns');
             $table->string('reference');
             $table->string('model_type')->comment('DeliveryNote, DeliveryNoteItem');
             $table->unsignedInteger('model_id');

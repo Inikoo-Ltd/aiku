@@ -28,14 +28,17 @@ class StorePickingIssue extends OrgAction
      */
     public function handle(DeliveryNote|DeliveryNoteItem $parent, array $modelData): void
     {
-        data_set('group_id', $modelData,  $parent->group_id);
-        data_set('organisation_id', $modelData,  $parent->organisation_id);
+        $issueRef = 'ISSUE-' . ($parent instanceof DeliveryNote ? 'DN' : 'DNI') . '-' . $parent->id;
 
-        if($parent instanceof DeliveryNote) {
-            data_set('warehouse_id', $modelData, $parent->warehouse_id);
+        data_set($modelData, 'group_id', $parent->group_id);
+        data_set($modelData, 'organisation_id', $parent->organisation_id);
+        data_set($modelData, 'reference', $issueRef);
+
+        if ($parent instanceof DeliveryNote) {
+            data_set($modelData, 'warehouse_id', $parent->warehouse_id);
         } elseif ($parent instanceof DeliveryNoteItem) {
-            data_set('warehouse_id', $modelData, $parent->deliveryNote->warehouse_id);
-            data_set('org_stock_id', $modelData, $parent->org_stock_id);
+            data_set($modelData, 'warehouse_id', $parent->deliveryNote->warehouse_id);
+            data_set($modelData, 'org_stock_id', $parent->org_stock_id);
         }
 
         $parent->pickingIssues()->create($modelData);
