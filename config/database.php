@@ -57,8 +57,6 @@ return [
             'search_path'    => env('DB_SEARCH_PATH', 'public'),
             'sslmode'        => 'prefer',
         ],
-
-
         'aurora' => [
             'driver'         => 'mysql',
             'host'           => env('AURORA_DB_HOST', '127.0.0.1'),
@@ -78,6 +76,88 @@ return [
                                    PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
                                ]) : [],
         ],
+
+        'aurora_1' => [
+            'driver'         => 'mysql',
+            'host'           => env('AURORA_DB_HOST', '127.0.0.1'),
+            'port'           => env('AURORA_DB_PORT', 3306),
+            'database'       => env('AURORA_DB_DATABASE_EN'),
+            'username'       => env('AURORA_DB_USERNAME', ''),
+            'password'       => env('AURORA_DB_PASSWORD', ''),
+            'unix_socket'    => '',
+            'charset'        => 'utf8mb4',
+            'collation'      => 'utf8mb4_unicode_ci',
+            'prefix'         => '',
+            'prefix_indexes' => true,
+            'strict'         => true,
+            'engine'         => null,
+            'options'        => extension_loaded('pdo_mysql')
+                ? array_filter([
+                    PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                ]) : [],
+        ],
+
+        'aurora_2' => [
+            'driver'         => 'mysql',
+            'host'           => env('AURORA_DB_HOST', '127.0.0.1'),
+            'port'           => env('AURORA_DB_PORT', 3306),
+            'database'       => env('AURORA_DB_DATABASE_SK'),
+            'username'       => env('AURORA_DB_USERNAME', ''),
+            'password'       => env('AURORA_DB_PASSWORD', ''),
+            'unix_socket'    => '',
+            'charset'        => 'utf8mb4',
+            'collation'      => 'utf8mb4_unicode_ci',
+            'prefix'         => '',
+            'prefix_indexes' => true,
+            'strict'         => true,
+            'engine'         => null,
+            'options'        => extension_loaded('pdo_mysql')
+                ? array_filter([
+                    PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                ]) : [],
+        ],
+
+        'aurora_3' => [
+            'driver'         => 'mysql',
+            'host'           => env('AURORA_DB_HOST', '127.0.0.1'),
+            'port'           => env('AURORA_DB_PORT', 3306),
+            'database'       => env('AURORA_DB_DATABASE_ES'),
+            'username'       => env('AURORA_DB_USERNAME', ''),
+            'password'       => env('AURORA_DB_PASSWORD', ''),
+            'unix_socket'    => '',
+            'charset'        => 'utf8mb4',
+            'collation'      => 'utf8mb4_unicode_ci',
+            'prefix'         => '',
+            'prefix_indexes' => true,
+            'strict'         => true,
+            'engine'         => null,
+            'options'        => extension_loaded('pdo_mysql')
+                ? array_filter([
+                    PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                ]) : [],
+        ],
+
+        'aurora_4' => [
+            'driver'         => 'mysql',
+            'host'           => env('AURORA_DB_HOST', '127.0.0.1'),
+            'port'           => env('AURORA_DB_PORT', 3306),
+            'database'       => env('AURORA_DB_DATABASE_AROMA'),
+            'username'       => env('AURORA_DB_USERNAME', ''),
+            'password'       => env('AURORA_DB_PASSWORD', ''),
+            'unix_socket'    => '',
+            'charset'        => 'utf8mb4',
+            'collation'      => 'utf8mb4_unicode_ci',
+            'prefix'         => '',
+            'prefix_indexes' => true,
+            'strict'         => true,
+            'engine'         => null,
+            'options'        => extension_loaded('pdo_mysql')
+                ? array_filter([
+                    PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                ]) : [],
+        ],
+
+
         'wowsbar' => [
             'driver'         => 'pgsql',
             'url'            => null,

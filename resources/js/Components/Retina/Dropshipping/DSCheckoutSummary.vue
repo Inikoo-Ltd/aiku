@@ -145,15 +145,15 @@ const isModalShippingAddress = ref(false)
 
             </dl>
 
-            <div class="mt-1 flex items-center w-full flex-none gap-x-1.5">
+            <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
                 <dt v-tooltip="trans('Weight')" class="flex-none">
                     <FontAwesomeIcon icon='fal fa-weight' fixed-width aria-hidden='true' class="text-gray-400"/>
                 </dt>
 
-                <dd class="xtext-gray-500" v-tooltip="trans('Estimated weight of all products (in kilograms)')">
-                    {{ summary.order_properties?.weight }}
+                <dd class="xtext-gray-500" v-tooltip="trans('Estimated weight of all products')">
+                    {{ summary.order_properties?.weight ?? '-' }}
                 </dd>
-            </div>
+            </dl>
 
             <div v-if="summary?.delivery_notes?.length" class="mt-4 border rounded-lg p-4 pt-3 bg-white shadow-sm">
                 <!-- Section Title -->

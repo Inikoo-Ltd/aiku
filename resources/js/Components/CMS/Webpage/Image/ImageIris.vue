@@ -10,6 +10,7 @@ import 'swiper/css'
 import 'swiper/css/autoplay'
 import { resolveResponsiveValue } from "@/Composables/Workshop"
 import { inject } from "vue"
+import { computed } from "vue"
 
 
 library.add(faCube, faStar, faImage, faPencil)
@@ -110,6 +111,11 @@ const getColumnWidthClass = (layoutType: string, index: number) => {
 const getVal = (base: any, path?: string[]) => {
   return resolveResponsiveValue(base, props.screenType, path);
 }
+
+
+const resolvedGap = computed(() => {
+  return ( props.fieldValue?.value?.gap?.[props.screenType || 'desktop'] || 0 ) + 'px'
+})
 </script>
 
 <template>
@@ -141,15 +147,17 @@ const getVal = (base: any, path?: string[]) => {
       </Swiper>
 
       <!-- Desktop/Tablet Grid -->
-      <div v-else class="flex flex-wrap">
+      <div v-else class="flex" :style="{
+        gap: resolvedGap
+      }">
         <div v-for="index in fieldValue?.value?.images?.length"
           :key="`${index}-${fieldValue?.value?.images?.[index - 1]?.source}`"
           class="flex flex-col group relative  hover:bg-white/40 h-full"
           :class="getColumnWidthClass(getVal(fieldValue?.value.layout_type), index - 1)">
           <template v-if="fieldValue?.value?.images?.[index - 1]?.source">
-           
-            <a v-if="getHref(index - 1)" :href="getHref(index - 1)" :target="getTarget(index - 1)" rel="noopener noreferrer"
-              class="block w-full h-full">
+
+            <a v-if="getHref(index - 1)" :href="getHref(index - 1)" :target="getTarget(index - 1)"
+              rel="noopener noreferrer" class="block w-full h-full">
               <Image :src="fieldValue?.value?.images?.[index - 1]?.source"
                 :alt="fieldValue?.value?.images?.[index - 1]?.properties?.alt || `image ${index}`" :imageCover="true"
                 class="w-full h-full aspect-square object-cover rounded-lg" :style="{
@@ -169,8 +177,9 @@ const getVal = (base: any, path?: string[]) => {
 
             <div v-if="fieldValue?.value?.caption?.use_caption" class="flex justify-center">
               <span v-if="fieldValue?.value?.images?.[index - 1]?.caption"
-                :style="getStyles(fieldValue?.value?.caption?.properties, screenType)">{{ fieldValue?.value?.images?.[index
-                  - 1]?.caption}}</span>
+                :style="getStyles(fieldValue?.value?.caption?.properties, screenType)">{{
+                fieldValue?.value?.images?.[index
+                - 1]?.caption}}</span>
               <span v-else class="text-gray-300 font-semibold">No caption</span>
 
             </div>

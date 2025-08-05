@@ -56,7 +56,7 @@ class DeliveryNoteItemsResource extends JsonResource
 
             'org_stock_code'               => $this->org_stock_code,
             'org_stock_name'               => $this->org_stock_name,
-
+            'org_stock_slug'               => $this->org_stock_slug,
         ];
     }
 }

@@ -26,7 +26,7 @@ import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue";
 import Notification from "@/Components/Utils/Notification.vue";
 import { faStackOverflow } from "@fortawesome/free-brands-svg-icons";
 import {
-    faPoll, faSadTear,
+    faPoll, faAllergies, faSpellCheck, faHandPaper, faHourglassStart, faSadTear,
     faParking, faBoxCheck,
     faUsers,
     faTachometerAltFast,
@@ -45,7 +45,7 @@ import {
     faAsterisk,faPauseCircle, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble,
     faSmile
 } from "@fal";
-import { faSearch, faBell } from "@far";
+import { faSearch, faUndoAlt, faBell } from "@far";
 import { faAsterisk as fasAsterisk, faExclamation, faInfo, faPlay, faGlobe as fasGlobe } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { notify } from "@kyvg/vue3-notification";
@@ -54,7 +54,7 @@ import { trans } from "laravel-vue-i18n";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import Modal from "@/Components/Utils/Modal.vue";
 
-library.add(faPoll, faSadTear, faPauseCircle, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faUsers, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faStore, faClock, faTransporter, faParking, faBoxCheck, faStackOverflow, faRulerTriangle, faRulerCombined, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faExternalLinkAlt, faTimes, faCheck, faAsterisk);
+library.add(faPoll, faAllergies, faSpellCheck, faHandPaper, faHourglassStart, faSadTear, faPauseCircle, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faUsers, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faStore, faClock, faTransporter, faParking, faBoxCheck, faStackOverflow, faRulerTriangle, faRulerCombined, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faExternalLinkAlt, faTimes, faCheck, faAsterisk);
 
 provide("layout", useLayoutStore());
 provide("locale", useLocaleStore());
@@ -155,7 +155,7 @@ onMounted(() => {
 
         <!-- Main Content -->
         <main
-            class="h-full relative flex flex-col pt-[76px] md:pt-[70px] lg:pt-20 xl:pt-16 pb-6 text-gray-700 transition-all duration-200 ease-in-out"
+            class="h-full relative flex flex-col pt-[76px] md:pt-[70px] lg:pt-20 xl:pt-16 pb-6 md:pb-24 text-gray-700 transition-all duration-200 ease-in-out"
             :class="[
                 layout.leftSidebar.show ? 'ml-0 md:ml-48' : 'ml-0 md:ml-12',
                 layout.app.environment === 'staging' ? 'mt-6' : ''

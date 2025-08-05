@@ -23,28 +23,15 @@ class LocationHydrateSortCode implements ShouldBeUnique
 {
     use AsAction;
 
-    /**
-     * Get a unique identifier for the job to prevent duplicate processing
-     */
+
     public function getJobUniqueId(Location $location): string
     {
         return $location->id;
     }
 
-    /**
-     * Process the location and update its sort_code
-     *
-     * @param Location $location The location to process
-     */
-    public function handle(Location $location): void
+
+    public function handle(Location $location): Location
     {
-
-
-
-
-
-
-        // Get the location code
         $code = $location->code;
 
         // Generate the sort code using the CreateSortCode helper
@@ -64,7 +51,7 @@ class LocationHydrateSortCode implements ShouldBeUnique
                 $formattedPosition = sprintf('%012.6f', $pickingPosition);
             }
 
-            $sortCode = $formattedPosition . '-'.CreateSortCode::run($warehouseArea->code).'-' . $sortCode;
+            $sortCode = $formattedPosition.'-'.CreateSortCode::run($warehouseArea->code).'-'.$sortCode;
         }
 
         // Update the location with the new sort code
@@ -72,5 +59,7 @@ class LocationHydrateSortCode implements ShouldBeUnique
         $location->update([
             'sort_code' => $sortCode
         ]);
+
+        return $location;
     }
 }

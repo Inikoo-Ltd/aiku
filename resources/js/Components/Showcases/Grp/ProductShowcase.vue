@@ -23,6 +23,7 @@ import Dialog from 'primevue/dialog'
 import { faImage } from "@far"
 import EditTradeUnit from "@/Components/Goods/EditTradeUnit.vue"
 import { Fieldset, Select } from "primevue"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 
 
 library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus)
@@ -177,22 +178,57 @@ const compSelectedTradeUnit = computed(() => {
 </script>
 
 <template>
-	<div class="grid md:grid-cols-4 gap-x-1 gap-y-4">
+	<div class="grid md:grid-cols-2 gap-x-1 gap-y-4">
 		<!-- Sidebar -->
-		<div class="p-5 space-y-5 grid grid-cols-1 max-w-[500px]">
+		<div class="p-5 space-y-5 grid grid-cols-1 w-full md:max-w-[500px]">
 			<!-- Image Preview & Thumbnails -->
 			<div class="relative">
 				<!-- Image Gallery -->
-				<ImageProducts v-if="data.product.data.images?.length" :images="data.product.data.images">
+				<ImageProducts
+					v-if="data.product.data.images?.length"
+					:images="data.product.data.images"
+					:breakpoints="{
+						0: {
+							slidesPerView: 5
+						},
+						640: {
+							slidesPerView: 4
+						},
+						1024: {
+							slidesPerView: 6
+						}
+					}"
+				>
 					<template #image-thumbnail="{ image, index }">
 						<div class="aspect-square w-full overflow-hidden group relative">
 							<Image :src="image.thumbnail" :alt="`Thumbnail ${index + 1}`"
 								class="block w-full h-full object-cover rounded-md border" />
 							<!-- Delete Button on Hover -->
-							<button @click.prevent="deleteImage(image, index)"
+							<!-- <button @click.prevent="deleteImage(image, index)"
 								class="absolute top-1 right-1 bg-white border border-gray-300 text-gray-700 p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-md hover:bg-red-500 hover:text-white">
 								<FontAwesomeIcon :icon="faTrash" class="text-sm" />
-							</button>
+							</button> -->
+
+							<ModalConfirmationDelete
+								:routeDelete="{
+									name: props.data.deleteImageRoute.name,
+									parameters: {
+										...props.data.deleteImageRoute.parameters,
+										media: image.id,
+									}
+								}"
+								:title="trans('Are you sure you want to delete the image?')"
+								:description="trans('This action cannot be undone.')"
+								isFullLoading
+								noLabel="Delete"
+								noIcon="fal fa-times"
+							>
+								<template #default="{ isOpenModal, changeModel }">
+									<div @click="changeModel" class="absolute top-1 right-1 hover:bg-red-100 ml-auto w-fit text-xs p-1 rounded text-red-500 hover:underline cursor-pointer">
+										<FontAwesomeIcon icon="fal fa-times" class="" fixed-width aria-hidden="true" />
+									</div>
+								</template>
+							</ModalConfirmationDelete>
 						</div>
 					</template>
 				</ImageProducts>
@@ -243,11 +279,11 @@ const compSelectedTradeUnit = computed(() => {
 			</section>
 		</div>
 		
-		<div>
+		<!-- <div>
 
-		</div>
+		</div> -->
 
-		<div class="md:col-span-2 pr-6">
+		<div class="md:col-span-1 pr-6">
 			<Fieldset
 				class="p-5 space-y-5 h-fit w-full max-w-lg"
 				legend="Trade units"

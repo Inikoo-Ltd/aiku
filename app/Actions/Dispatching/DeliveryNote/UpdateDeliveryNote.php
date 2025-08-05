@@ -54,7 +54,6 @@ class UpdateDeliveryNote extends OrgAction
             }
         }
 
-
         return $deliveryNote;
     }
 
@@ -86,6 +85,7 @@ class UpdateDeliveryNote extends OrgAction
             'public_notes'              => ['sometimes', 'nullable', 'string', 'max:4000'],
             'internal_notes'            => ['sometimes', 'nullable', 'string', 'max:4000'],
             'shipping_notes'            => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'dispatched_at'             => ['sometimes', 'nullable', 'date'],
         ];
 
         if (!$this->strict) {

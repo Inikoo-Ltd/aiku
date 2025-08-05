@@ -267,6 +267,7 @@ use App\Actions\Web\Website\BreakWebsiteCache;
 use App\Actions\Web\Website\LaunchWebsite;
 use App\Actions\Web\Website\PublishWebsiteMarginal;
 use App\Actions\Web\Website\PublishWebsiteProductTemplate;
+use App\Actions\Web\Website\ReindexWebsiteLuigi;
 use App\Actions\Web\Website\StoreWebsite;
 use App\Actions\Web\Website\UpdateWebsite;
 use App\Actions\Web\Website\UploadImagesToWebsite;
@@ -859,6 +860,7 @@ Route::name('poll.')->prefix('poll')->group(function () {
 
 Route::post('website/{website:id}/break-cache', BreakWebsiteCache::class)->name('website.break_cache')->withoutScopedBindings();
 Route::post('website/{website:id}/redirect', StoreRedirectFromWebsite::class)->name('website.redirect.store')->withoutScopedBindings();
+Route::post('website/{website:id}/reindex-luigi', ReindexWebsiteLuigi::class)->name('website_luigi.reindex')->withoutScopedBindings();
 
 
 Route::delete('/shipment/{shipment:id}', DeleteShipment::class)->name('shipment.delete');

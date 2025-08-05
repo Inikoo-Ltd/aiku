@@ -11,6 +11,8 @@ const props = defineProps<{
         }
     }
 }>()
+
+console.log(props)
 </script>
 
 <template>
@@ -32,8 +34,14 @@ const props = defineProps<{
 
         <div v-if="product?.specifications?.dimensions?.length" class="grid grid-cols-2 border-b border-gray-300">
             <div class="p-2 font-medium text-sm bg-gray-50">Product Dimensions</div>
-            <div class="p-2 text-sm">{{ product.specifications.dimensions[0] }} x {{ product.specifications.dimensions[1] }} x {{ product.specifications.dimensions[2] }} cm</div>
+            <div class="p-2 text-sm">
+                <template v-for="(dim, index) in product.specifications.dimensions" :key="index">
+                    {{ dim }}<span v-if="index < product.specifications.dimensions.length - 1"> x </span>
+                </template>
+                cm
+            </div>
         </div>
+
 
         <div v-if="product?.specifications?.ingredients" class="grid grid-cols-2 border-b border-gray-300">
             <div class="p-2 font-medium text-sm bg-gray-50">Materials/Ingredients</div>

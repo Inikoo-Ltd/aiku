@@ -19,6 +19,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $location_id
  * @property mixed $picked
  * @property mixed $pickings_data
+ * @property mixed $org_stock_packed_in
  */
 class LocationOrgStocksForPickingActionsResource extends JsonResource
 {
@@ -37,14 +38,29 @@ class LocationOrgStocksForPickingActionsResource extends JsonResource
             }
         }
 
+        $orgStockPackedIn = $this->org_stock_packed_in;
+
+        if ($orgStockPackedIn == '') {
+            $orgStockPackedIn = null;
+        }
+
+        $quantity = floor($this->quantity * 100) / 100; // Always round up to 3 decimal places
+
         return [
-            'id'              => $this->id,
-            'location_id'     => $this->location_id,
-            'location_code'   => $this->location_code,
-            'location_slug'   => $this->location_slug,
-            'quantity'        => (int) $this->quantity,
+            'id'                  => $this->id,
+            'location_id'         => $this->location_id,
+            'location_code'       => $this->location_code,
+            'location_slug'       => $this->location_slug,
+            'quantity'            => $this->quantity,
+            'quantity_fractional' => riseDivisor(
+                divideWithRemainder(
+                    findSmallestFactors($quantity)
+                ),
+                $orgStockPackedIn
+            ),
+
             'type'            => $this->type,
-            'quantity_picked' => (int) $quantityPicked,
+            'quantity_picked' => $quantityPicked,
             'picking_id'      => $pickingId,
         ];
     }
