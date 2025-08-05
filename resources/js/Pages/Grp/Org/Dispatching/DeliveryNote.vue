@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { Head, router, useForm, Link} from "@inertiajs/vue3";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faSmileWink,faRecycle, faCube, faChair, faHandPaper, faExternalLink, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faTired, faFilePdf, faBoxOpen, faExclamation, faExclamationTriangle } from "@fal";
+import { faSmileWink,faRecycle, faCube, faChair, faHandPaper, faExternalLink, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faTired, faFilePdf, faBoxOpen, faExclamation, faExclamationTriangle, faFragile } from "@fal";
 import { faArrowRight, faCheck } from "@fas";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import { capitalize } from "@/Composables/capitalize";
@@ -39,6 +39,7 @@ import ToggleSwitch from 'primevue/toggleswitch';
 import PureAddress from "@/Components/Pure/PureAddress.vue"
 import Message from 'primevue/message';
 import { debounce } from "lodash-es";
+import { id } from "date-fns/locale";
 
 
 library.add(faSmileWink,faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck);
@@ -310,11 +311,99 @@ onMounted(() => {
     })
   console.log('Subscribed to channel for porto ID:', props.delivery_note.id, 'Channel:', channel)
 })
+
+const modalIssue = ref(false)
+const issue = ref({
+    id : null,
+    type : 'delivery_note_item',
+    issue_body : ""
+})
+const Dummy = ref('')
+const IssueLoading = ref(false)
+
+const openModalIssue = (data : Object, type : String) =>{
+    modalIssue.value = true
+    issue.value = {
+        id: data.id,
+        type: type,
+        issue_body : "",
+        data : data
+    }
+}
+
+const closeModalIssue = () =>{
+    modalIssue.value = false
+    issue.value = {
+        id: null,
+        type: 'delivery_note_item',
+        issue_body : ""
+    }
+}
+
+
+
+const onIssueSubmit = () => {
+  if (!issue.value || !issue.value.id || !issue.value.type || !issue.value.body) {
+    notify({
+      title: trans("Invalid Data"),
+      text: trans("Issue data is incomplete."),
+      type: "warning"
+    });
+    return;
+  }
+
+  IssueLoading.value = true;
+
+  const isDeliveryItem = issue.value.type == "delivery_note_item";
+
+  
+
+  const finalRoute = isDeliveryItem
+    ? route("grp.models.delivery_note_item.issue.store", {
+        deliveryNoteItem: issue.value.id,
+      })
+    : route("grp.models.delivery_note.issue.store", {
+        deliveryNote: issue.value.id,
+      });
+
+  const formData = isDeliveryItem
+    ? { delivery_note_item_issue: issue.value.body, location_id: issue.value.data.locations[0].id }
+    : { delivery_note_issue: issue.value.body };
+
+    console.log(issue.value,finalRoute,isDeliveryItem)
+
+  router.post(finalRoute, formData, {
+    preserveState: true,
+    preserveScroll: true,
+    onStart: () => {
+      IssueLoading.value = true;
+    },
+    onFinish: () => {
+      IssueLoading.value = false;
+    },
+    onSuccess: () => {
+      notify({
+        title: trans("Success"),
+        text: trans("Issue submitted successfully."),
+        type: "success",
+      });
+    },
+    onError: (error) => {
+      notify({
+        title: trans("Something went wrong"),
+        text: error?.message || trans("Please try again later."),
+        type: "error",
+      });
+    },
+  });
+};
+
+
+
 </script>
 
 
 <template>
-
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" isButtonGroupWithBorder>
         <template #otherBefore>
@@ -358,6 +447,10 @@ onMounted(() => {
 
         <template #button-change-picker="{ action }">
             <Button @click="isModalToQueue = true" :label="action.label" :icon="action.icon" type="tertiary" />
+        </template>
+
+        <template #other v-if="props.delivery_note.state == 'handling' ||  props.delivery_note.state == 'queued' || props.delivery_note.state == 'packing' || props.delivery_note.state == 'packed'">
+            <Button @click="()=>openModalIssue(props.delivery_note,'delivery_note')" :label="'Issue'" :icon="faFragile" type="warning" />
         </template>
 
 
@@ -428,7 +521,7 @@ onMounted(() => {
 
     <div class="pb-12">
         <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" :routes
-            :state="delivery_note.state" />
+            :state="delivery_note.state"  @openModalIssue="(id)=>openModalIssue(id,'delivery_note_item')"/>
     </div>
 
     <!-- Modal: Select picker -->
@@ -584,6 +677,35 @@ onMounted(() => {
                     <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-5xl" fixed-width
                         aria-hidden="true" />
                 </div>
+            </div>
+        </div>
+    </Modal>
+
+
+        <Modal :isOpen="modalIssue" @onClose="closeModalIssue" width="w-full max-w-2xl">
+        <div class="px-2 space-y-2">
+            <!-- Header -->
+            <div class="text-lg font-semibold text-gray-800">
+                {{ issue.type == 'delivery_note_item' ?  trans(`Delivery Note Item (${issue?.data?.org_stock_code}) Picking Issue`) : trans('Delivery Note Picking Issue') }}
+            </div>
+
+            <!-- Form Fields -->
+            <div class="space-y-4">
+                <PureInput v-model="issue.body" :placeholder="trans('Describe the issue...')" />
+                <!-- 
+      Uncomment if needed
+      <PureMultiselectInfiniteScroll
+        v-model=""
+        :fetchRoute="routeIndexUser"
+        :placeholder="trans('Select User')"
+        valueProp="id"
+      />
+      -->
+            </div>
+
+            <!-- Actions -->
+            <div class="pt-4">
+                <Button :label="trans('Save')" type="save" full @click="onIssueSubmit" :loading="IssueLoading" />
             </div>
         </div>
     </Modal>
