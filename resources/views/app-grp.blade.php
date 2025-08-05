@@ -10,8 +10,14 @@
     <link href="https://fonts.bunny.net/css?family=fira-sans:100,200,300,400,500,600,700,800,900&display=swap" rel="stylesheet" />
     <link href="https://fonts.bunny.net/css?family=inter:100,200,300,400,500,600,700,800,900&display=swap" rel="stylesheet" />
 
-    <link rel="icon" type="image/png" href="{{ url('favicon.png') }}">
-    <link rel="icon" href="{{ url('favicon.svg') }}" type="image/svg+xml">
+
+    @if (config('app.env', 'production') === 'local')
+        <link rel="icon" type="image/png" href="{{ url('favicon_local.png') }}">
+        <link rel="icon" href="{{ url('favicon_local.svg') }}" type="image/svg+xml">
+    @else
+        <link rel="icon" type="image/png" href="{{ url('favicon.png') }}">
+        <link rel="icon" href="{{ url('favicon.svg') }}" type="image/svg+xml">
+    @endif
 
     @if (config('app.env', 'production') === 'staging')
         <!-- == -->
@@ -23,11 +29,11 @@
     @inertiaHead
     <style>
         iframe[name='JSD widget'] {
-            display: block;
-            bottom:50px;
-            right: 0;
-            margin-right: 55px;
-            margin-bottom: 15px;
+            /* display: block; */
+            bottom: 10px !important;
+            right: 0 !important;
+            /* margin-right: 55px;
+            margin-bottom: 15px; */
 
             opacity: .80;
         }

@@ -31,7 +31,6 @@ onBeforeMount(() => {
 const layout = inject('layout', {})
 const locale = inject('locale', aikuLocaleStructure)
 
-// console.log('pp', locale)
 
 const LBInitAutocompleteNew = async () => {
     // console.log('layout.iris.luigisbox_tracker_id:', layout.iris?.luigisbox_tracker_id)
@@ -117,7 +116,6 @@ const LBInitAutocompleteNew = async () => {
                 {
                     forRow: function(row) {
                         return (
-                            layout.retina.type !== 'b2b' &&
                             row['data-autocomplete-id'] == 1 &&
                             row.type === 'item'
                         )

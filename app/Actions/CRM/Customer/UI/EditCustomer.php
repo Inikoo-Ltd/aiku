@@ -106,8 +106,8 @@ class EditCustomer extends OrgAction
                                 ],
                                     'vat'      => [
                                     'type'    => 'tax_number',
-                                    'label'   => __('Tax Number'),
-                                    'value'   => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->resolve() : null,
+                                    'label'   => __('Tax number'),
+                                    'value'   => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : null,
                                     'country' => $customer->address->country_code,
                                     'route_validate' => [
                                         'name' => 'grp.models.tax_number.validate',

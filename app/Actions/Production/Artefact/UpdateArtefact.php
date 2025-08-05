@@ -30,7 +30,6 @@ class UpdateArtefact extends OrgAction
     public function handle(Artefact $artefact, array $modelData): Artefact
     {
         $stock = $this->update($artefact, $modelData, ['data', 'settings']);
-        OrgStockRecordSearch::dispatch($stock);
 
         return $stock;
     }

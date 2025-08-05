@@ -75,7 +75,9 @@ const emits = defineEmits<{
         />
 
          <!-- Section: mobile -->
-          <div :style="getStyles(data.header?.data?.fieldValue?.container?.properties, screenType)">
+          <div
+            v-if="data?.header"
+            :style="getStyles(data.header?.data?.fieldValue?.container?.properties, screenType)">
             <MobileHeader 
                 :header-data="data.header?.data?.fieldValue" 
                 :menu-data="menu?.menu?.data.fieldValue" 

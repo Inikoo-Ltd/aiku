@@ -333,8 +333,8 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
 <template>
     <dd class="relative w-full flex flex-col border rounded-md border-gray-400 overflow-hidden">
         <dl class="">
-            <!-- Invoice -->
-            <div class="border-b border-gray-400 px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
+
+            <div v-if="invoice_pay.order_reference"  class="border-b border-gray-400 px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                 <dt class="text-sm/6 font-medium ">
                     <FontAwesomeIcon v-tooltip="trans('Invoice')" icon="fal fa-shopping-cart"
                                      class="text-gray-400" fixed-width aria-hidden="true"/>

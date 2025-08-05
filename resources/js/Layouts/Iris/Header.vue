@@ -56,7 +56,7 @@ provide("onLogout", onLogoutAuth);
              :fieldValue="data.topBar.data.fieldValue" v-model="data.topBar.data.fieldValue" />
 
   <!-- Section: Header (logo, search, Title) -->
-  <component :is="getIrisComponent(data?.header?.code)" :fieldValue="data.header.data.fieldValue"
+  <component v-if="data?.header" :is="getIrisComponent(data?.header?.code)" :fieldValue="data.header.data.fieldValue"
              class="hidden md:block" />
 
   <!-- Section: Menu desktop -->

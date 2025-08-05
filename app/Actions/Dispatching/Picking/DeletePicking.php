@@ -10,6 +10,7 @@
 namespace App\Actions\Dispatching\Picking;
 
 use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
+use App\Actions\Inventory\OrgStockMovement\DeleteOrgStockMovement;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\Picking;
 use Lorisleiva\Actions\ActionRequest;
@@ -19,7 +20,21 @@ class DeletePicking extends OrgAction
     public function handle(Picking $picking): bool
     {
         $deliveryNoteItem = $picking->deliveryNoteItem;
+
+
         $picking->delete();
+        if ($picking->org_stock_movement_id) {
+            DeleteOrgStockMovement::run($picking->orgStockMovement);
+
+            if (app()->environment('production')) {
+                DeletePickingInAurora::dispatch(
+                    $picking->id,
+                    $picking->organisation,
+                    $picking->picker->contact_name,
+                    $picking->orgStock
+                );
+            }
+        }
 
         $deliveryNoteItem->refresh();
 
@@ -28,7 +43,7 @@ class DeletePicking extends OrgAction
         return true;
     }
 
-    public function asController(Picking $picking, ActionRequest $request)
+    public function asController(Picking $picking, ActionRequest $request): void
     {
         $this->initialisationFromShop($picking->shop, $request);
 

@@ -34,8 +34,6 @@ class StorePicking extends OrgAction
 
     public function handle(DeliveryNoteItem $deliveryNoteItem, LocationOrgStock $locationOrgStock, array $modelData): Picking
     {
-
-
         data_forget($modelData, 'location_org_stock_id');
 
         data_set($modelData, 'group_id', $deliveryNoteItem->group_id);
@@ -46,19 +44,29 @@ class StorePicking extends OrgAction
         data_set($modelData, 'location_id', $locationOrgStock->location_id);
 
         data_set($modelData, 'engine', PickingEngineEnum::AIKU, false);
-        data_set($modelData, 'type', PickingTypeEnum::PICK);
+        data_set($modelData, 'type', PickingTypeEnum::PICK, false);
 
         /** @var Picking $picking */
         $picking = $deliveryNoteItem->pickings()->create($modelData);
         $picking->refresh();
 
 
-        StoreOrgStockMovement::run(
+        if (app()->environment('production')) {
+            SavePickingInAurora::Dispatch($picking);
+        }
+
+        $orgStockMovement = StoreOrgStockMovement::run(
             $locationOrgStock->orgStock,
             $locationOrgStock->location,
             [
                 'quantity' => -$picking->quantity,
                 'type'     => OrgStockMovementTypeEnum::PICKED
+            ]
+        );
+
+        $picking->update(
+            [
+                'org_stock_movement_id' => $orgStockMovement->id,
             ]
         );
 
@@ -71,6 +79,7 @@ class StorePicking extends OrgAction
     {
         return [
             'not_picked_reason'     => ['sometimes', Rule::enum(PickingNotPickedReasonEnum::class)],
+            'type'                  => ['sometimes', Rule::enum(PickingTypeEnum::class)],
             'engine'                => ['sometimes', Rule::enum(PickingEngineEnum::class)],
             'location_org_stock_id' => [
                 'required',

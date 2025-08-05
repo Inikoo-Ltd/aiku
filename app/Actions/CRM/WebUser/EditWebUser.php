@@ -20,8 +20,6 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-use function Laravel\Prompts\password;
-
 class EditWebUser extends OrgAction
 {
     private Fulfilment|Shop $parent;

@@ -77,18 +77,25 @@ trait IsInvoiceUI
 
     public function getBoxStats(Invoice $invoice): array
     {
-        $deliveryNotes     = $invoice->order->deliveryNotes;
+
         $deliveryNotesData = [];
 
-        if ($deliveryNotes) {
-            foreach ($deliveryNotes as $deliveryNote) {
-                $deliveryNotesData[] = [
-                    'id'        => $deliveryNote->id,
-                    'slug'        => $deliveryNote->slug,
-                    'reference' => $deliveryNote->reference,
-                    'state'     => $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
-                    'shipments' => $deliveryNote?->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null
-                ];
+
+        $order = $invoice->order;
+        if ($order) {
+            $deliveryNotes = $invoice->order->deliveryNotes;
+
+
+            if ($deliveryNotes) {
+                foreach ($deliveryNotes as $deliveryNote) {
+                    $deliveryNotesData[] = [
+                        'id'        => $deliveryNote->id,
+                        'slug'      => $deliveryNote->slug,
+                        'reference' => $deliveryNote->reference,
+                        'state'     => $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
+                        'shipments' => $deliveryNote?->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null
+                    ];
+                }
             }
         }
 

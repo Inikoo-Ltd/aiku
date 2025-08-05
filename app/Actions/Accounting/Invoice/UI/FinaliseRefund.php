@@ -11,6 +11,7 @@ namespace App\Actions\Accounting\Invoice\UI;
 
 use App\Actions\Accounting\Invoice\WithRunInvoiceHydrators;
 use App\Actions\Comms\Email\SendInvoiceToFulfilmentCustomerEmail;
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\Invoice;
@@ -25,17 +26,34 @@ class FinaliseRefund extends OrgAction
 
     public function handle(Invoice $refund): Invoice
     {
-        $refund->invoiceTransactions()->update(
-            [
-                'in_process' => false
-            ]
-        );
+        $orgExchange = GetCurrencyExchange::run($refund->shop->currency, $refund->organisation->currency);
+        $grpExchange = GetCurrencyExchange::run($refund->shop->currency, $refund->group->currency);
+
+        foreach ($refund->invoiceTransactions as $invoiceTransaction) {
+            $invoiceTransaction->update(
+                [
+                    'in_process'     => false,
+                    'org_exchange'   => $orgExchange,
+                    'grp_exchange'   => $grpExchange,
+                    'date'           => now(),
+                    'org_net_amount' => $invoiceTransaction->net_amount * $orgExchange,
+                    'grp_net_amount' => $invoiceTransaction->net_amount * $grpExchange,
+                ]
+            );
+        }
+
 
         $refund->update(
             [
-                'in_process' => false
+                'in_process'     => false,
+                'org_exchange'   => $orgExchange,
+                'grp_exchange'   => $grpExchange,
+                'date'           => now(),
+                'org_net_amount' => $refund->net_amount * $orgExchange,
+                'grp_net_amount' => $refund->net_amount * $grpExchange,
             ]
         );
+
 
         $this->runInvoiceHydrators($refund);
         if ($refund->shop->type == 'fulfilment') {
@@ -50,13 +68,11 @@ class FinaliseRefund extends OrgAction
         $previousUrl   = url()->previous();
         $previousRoute = app('router')->getRoutes()->match(app('request')->create($previousUrl));
 
-        $previousRouteName       = $previousRoute->getName();
-        $previousRouteParameters = $previousRoute->parameters();
+        $previousRouteName              = $previousRoute->getName();
+        $previousRouteParameters        = $previousRoute->parameters();
         $previousRouteParameters['tab'] = 'items';
 
         return Redirect::route($previousRouteName, $previousRouteParameters);
-
-
     }
 
     public function asController(Invoice $refund, ActionRequest $request): Invoice

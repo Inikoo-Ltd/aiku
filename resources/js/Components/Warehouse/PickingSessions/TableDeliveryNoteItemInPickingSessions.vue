@@ -252,12 +252,12 @@ console.log('props', props.pickingSession)
 
         <!-- Column: Pickings -->
         <template #cell(pickings)="{ item }">
-            <!-- <pre>{{ item.pickings }}</pre> -->
+
             <div v-if="item.pickings?.length" class="space-y-1">
                 <div v-for="picking in item.pickings" :key="picking.id" class="flex gap-x-2 w-fit">
                     <!-- {{ picking.location_code }} -->
                     <div v-if="picking.type === 'pick'" class="flex gap-x-2 items-center">
-                        <Link :href="generateLocationRoute(picking)" class="secondaryLink">
+                        <Link :href="generateLocationRoute(picking)" class="secondaryLink" >
                         {{ picking.location_code }}
                         </Link>
 
@@ -467,7 +467,7 @@ console.log('props', props.pickingSession)
                             <Transition name="spin-to-right">
                                 <div :key="findLocation(itemValue.locations, proxyItem.hehe).location_code">
                                     <span v-if="findLocation(itemValue.locations, proxyItem.hehe)">
-                                        <Link
+                                        <Link v-tooltip="`${itemValue.warehouse_area}`"
                                             :href="generateLocationRoute(findLocation(itemValue.locations, proxyItem.hehe))"
                                             class="secondaryLink">
                                         {{ findLocation(itemValue.locations, proxyItem.hehe).location_code }}
@@ -592,19 +592,15 @@ console.log('props', props.pickingSession)
             </div>
 
 
-            <!-- <Link v-if="pickingSession.state == 'picking_finished' && itemValue.delivery_note_state == 'handling'"
-                method="patch" @start="packedLoading.add(delivery_note_id)"
-                :href="route('grp.models.delivery_note.state.packed', { deliveryNote: itemValue.delivery_note_id })"
-                @finish="packedLoading.delete(delivery_note_id)" class="mx-3">
-            <Button type="save" label="Set as packed" size="sm" :loading="isPacking(itemValue.delivery_note_id)" />
-            </Link> -->
 
               <Button  v-if="pickingSession.state === 'picking_finished' && itemValue.delivery_note_state === 'handling'" type="save" label="Set as packed" size="sm"  @click="onOpenModalDetail(itemValue)"/>
 
 
             <Button v-if="itemValue.delivery_note_state == 'packed'" :icon="faPencil" label="Edit Detail" size="sm"
                 @click="onOpenModalDetail(itemValue)" />
-
+            <div>
+                <!-- Empty div to avoid print unexpected from BE -->
+            </div>
         </template>
     </Table>
 

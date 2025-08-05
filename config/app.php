@@ -235,6 +235,15 @@ return [
     'po_editor_api_key' => env('PO_EDITOR_READ_ONLY_API_KEY', ''),
     'aurora_image_path' => env('AURORA_IMAGE_PATH'),
 
+    'aurora' => [
+        'domain' => env('AURORA_DOMAIN', 'aurora.systems'),
+        'api_keys' => [
+                1 => env('AURORA_STOCK_API_KEY_1'),
+                2 => env('AURORA_STOCK_API_KEY_2'),
+                3 => env('AURORA_STOCK_API_KEY_3'),
+                4 => env('AURORA_STOCK_API_KEY_4')
+        ]
+    ],
 
     'domain'                => env('APP_DOMAIN'),
     'cloudflare_api_token'  => env('CLOUDFLARE_API_TOKEN'),

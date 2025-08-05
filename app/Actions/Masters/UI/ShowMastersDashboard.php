@@ -56,7 +56,7 @@ class ShowMastersDashboard extends OrgAction
                             'parameters' => []
                         ],
                         'icon'  => 'fal fa-store',
-                        "color" => "#facc15",
+                        // "color" => "#facc15",
                         'value' => $group->goodsStats->number_current_master_shops,
                     ],
                     [
@@ -66,7 +66,7 @@ class ShowMastersDashboard extends OrgAction
                             'parameters' => []
                         ],
                         'icon'  => 'fal fa-folder-tree',
-                        "color" => "#a3e635",
+                        // "color" => "#a3e635",
                         'value' => $group->goodsStats->number_current_master_product_categories_type_department,
 
                         'metaRight'  => [
@@ -75,7 +75,7 @@ class ShowMastersDashboard extends OrgAction
                                 'icon'  => 'fal fa-folder-tree',
                                 'class' => ''
                             ],
-                            'count'   => $group->goodsStats->number_master_product_categories_type_department_sub_departments,
+                            'count'   => $group->goodsStats->number_current_master_product_categories_type_sub_department,
                         ],
                     ],
                     [
@@ -85,7 +85,7 @@ class ShowMastersDashboard extends OrgAction
                             'parameters' => []
                         ],
                         'icon'  => 'fal fa-folder',
-                        "color" => "#e879f9",
+                        // "color" => "#e879f9",
                         'value' => $group->goodsStats->number_current_master_product_categories_type_family,
                     ],
                     [
@@ -95,7 +95,7 @@ class ShowMastersDashboard extends OrgAction
                             'parameters' => []
                         ],
                         'icon'  => 'fal fa-cube',
-                        "color" => "#38bdf8",
+                        // "color" => "#38bdf8",
                         'value' => $group->goodsStats->number_current_master_assets_type_product,
                     ],
                     [
@@ -105,7 +105,7 @@ class ShowMastersDashboard extends OrgAction
                             'parameters' => []
                         ],
                         'icon'  => 'fal fa-album-collection',
-                        "color" => "#4f46e5",
+                        // "color" => "#4f46e5",
                         'value' => $group->goodsStats->number_current_master_collections,
                     ],
                 ]
