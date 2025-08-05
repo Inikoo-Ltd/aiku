@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { Head, router, useForm, Link} from "@inertiajs/vue3";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faSmileWink,faRecycle, faCube, faChair, faHandPaper, faExternalLink, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faTired, faFilePdf, faBoxOpen, faExclamation, faExclamationTriangle } from "@fal";
+import { faSmileWink,faRecycle, faCube, faChair, faHandPaper, faExternalLink, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faTired, faFilePdf, faBoxOpen, faExclamation, faExclamationTriangle, faFragile } from "@fal";
 import { faArrowRight, faCheck } from "@fas";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import { capitalize } from "@/Composables/capitalize";
@@ -39,6 +39,7 @@ import ToggleSwitch from 'primevue/toggleswitch';
 import PureAddress from "@/Components/Pure/PureAddress.vue"
 import Message from 'primevue/message';
 import { debounce } from "lodash-es";
+import { id } from "date-fns/locale";
 
 
 library.add(faSmileWink,faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck);
@@ -314,50 +315,69 @@ onMounted(() => {
 const modalIssue = ref(false)
 const issue = ref({
     id : null,
-    type : 
+    type : 'delivery_note_item'
 })
 const Dummy = ref('')
 const IssueLoading = ref(false)
 
-const openModalIssue = (id : Number) =>{
+const openModalIssue = (id : Number, type : String) =>{
     modalIssue.value = true
-    issue.value = id
+    issue.value = {
+        id: id,
+        type: type
+    }
 }
 
 const closeModalIssue = () =>{
     modalIssue.value = false
-    issue.value = null
+    issue.value = {
+        id: null,
+        type: 'delivery_note_item'
+    }
 }
 
 
 
 const onIssueSubmit = () => {
-    router.post(
-        route('grp.models.delivery_note_item.issue.store',{ deliveryNoteItem : issue.value}),
-        {},
-        {
-            preserveState: true,
-            preserveScroll: true,
-            onStart : () => IssueLoading.value = true,
-            onFinish : () => IssueLoading.value = false,
-            onSuccess: () => {
-                IssueLoading.value = false
-                notify({
-                    title: trans("Success"),
-                    text: "",
-                    type: "success"
-                });
-            },
-            onError: (error) => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: error,
-                    type: "error"
-                });
-            }
-        }
-    );
-};
+  const routeName =
+    issue.type === 'delivery_note_item'
+      ? 'grp.models.delivery_note_item.issue.store'
+      : 'grp.models.delivery_note.issue.store'
+
+  const routeParams = {
+    deliveryNoteItem: issue.value
+  }
+
+  router.post(
+    route(routeName, routeParams),
+    {},
+    {
+      preserveState: true,
+      preserveScroll: true,
+      onStart: () => {
+        IssueLoading.value = true
+      },
+      onFinish: () => {
+        IssueLoading.value = false
+      },
+      onSuccess: () => {
+        notify({
+          title: trans("Success"),
+          text: trans("Issue submitted successfully."),
+          type: "success"
+        })
+      },
+      onError: (error) => {
+        notify({
+          title: trans("Something went wrong"),
+          text: error?.message || trans("Please try again later."),
+          type: "error"
+        })
+      }
+    }
+  )
+}
+
 
 </script>
 
@@ -406,6 +426,10 @@ const onIssueSubmit = () => {
 
         <template #button-change-picker="{ action }">
             <Button @click="isModalToQueue = true" :label="action.label" :icon="action.icon" type="tertiary" />
+        </template>
+
+        <template #other>
+            <Button @click="()=>openModalIssue(props.delivery_note.id,'delivery_note')" :label="'Issue'" :icon="faFragile" type="warning" />
         </template>
 
 
@@ -476,7 +500,7 @@ const onIssueSubmit = () => {
 
     <div class="pb-12">
         <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" :routes
-            :state="delivery_note.state"  @openModalIssue="openModalIssue"/>
+            :state="delivery_note.state"  @openModalIssue="(id)=>openModalIssue(id,'delivery_note_item')"/>
     </div>
 
     <!-- Modal: Select picker -->
