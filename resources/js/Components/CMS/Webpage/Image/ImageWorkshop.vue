@@ -142,7 +142,6 @@ const resolvedGap = computed(() => {
         <div v-for="(image, index) in modelValue?.value?.images || []" :key="index"
           class="group relative hover:bg-white/40 flex flex-col h-full"
           :class="getColumnWidthClass(getVal(modelValue.value.layout_type), index)">
-          {{ getVal(modelValue.value.layout_type) }}
           <component :is="getHref(image) ? 'a' : 'div'" :href="getHref(image) || undefined" target="_blank"
             rel="noopener noreferrer" class="block w-full h-full">
             <Image v-if="image?.source" :src="image.source" :alt="image.properties?.alt || `image ${index + 1}`"
