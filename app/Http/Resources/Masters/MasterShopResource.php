@@ -40,7 +40,7 @@ class MasterShopResource extends JsonResource
                              'parameters' => []
                          ],
                          'icon'  => 'fal fa-folder-tree',
-                         // "color" => "#a3e635",
+                         "color" => "#a3e635",
                          'value' => $masterShop->stats->number_current_master_product_categories_type_department,
 
                          'metaRight'  => [
@@ -59,7 +59,7 @@ class MasterShopResource extends JsonResource
                              'parameters' => []
                          ],
                          'icon'  => 'fal fa-folder',
-                         // "color" => "#e879f9",
+                         "color" => "#e879f9",
                          'value' => $masterShop->stats->number_current_master_product_categories_type_family,
                      ],
                      [
@@ -69,7 +69,7 @@ class MasterShopResource extends JsonResource
                              'parameters' => []
                          ],
                          'icon'  => 'fal fa-cube',
-                         // "color" => "#38bdf8",
+                         "color" => "#38bdf8",
                          'value' => $masterShop->stats->number_current_master_assets_type_product,
                      ],
                      [
@@ -79,7 +79,7 @@ class MasterShopResource extends JsonResource
                              'parameters' => []
                          ],
                          'icon'  => 'fal fa-album-collection',
-                         // "color" => "#4f46e5",
+                         "color" => "#4f46e5",
                          'value' => $masterShop->stats->number_current_master_collections,
                      ],
                 ]
