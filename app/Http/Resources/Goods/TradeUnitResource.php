@@ -32,11 +32,15 @@ class TradeUnitResource extends JsonResource
             'volume'                => $tradeUnit->volume,
             'type'                  => $tradeUnit->type,
             'image_id'              => $tradeUnit->image_id,
-            'name_i8n'              => $tradeUnit->name_i8n,
-            'description_i8n'       => $tradeUnit->description_i8n,
-            'description_title_i8n' => $tradeUnit->description_title_i8n,
-            'description_extra_i8n' => $tradeUnit->description_extra_i8n,
-
+            'name_i8n'              => $this->safeDecode($tradeUnit->name_i8n),
+            'description_i8n'       => $this->safeDecode($tradeUnit->description_i8n),
+            'description_title_i8n' => $this->safeDecode($tradeUnit->description_title_i8n),
+            'description_extra_i8n' => $this->safeDecode($tradeUnit->description_extra_i8n),
         );
+    }
+
+    protected function safeDecode(?string $json): array
+    {
+        return $json ? json_decode($json, true) ?? [] : [];
     }
 }

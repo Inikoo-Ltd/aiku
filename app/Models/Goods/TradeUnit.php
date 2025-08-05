@@ -154,7 +154,8 @@ class TradeUnit extends Model implements HasMedia, Auditable
     use HasTranslations;
 
 
-    public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
+    // public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
+    public array $translatable = [];
 
     protected $casts = [
         'status'               => TradeUnitStatusEnum::class,
