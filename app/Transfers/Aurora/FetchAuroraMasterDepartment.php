@@ -18,6 +18,10 @@ class FetchAuroraMasterDepartment extends FetchAurora
     use WithAuroraImages;
     protected function parseModel(): void
     {
+
+        // primary departments no longer need to be fetched
+        return;
+
         $masterShop = $this->getMasterShop();
         if ($masterShop == null) {
             return;
