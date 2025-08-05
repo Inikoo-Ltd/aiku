@@ -39,6 +39,11 @@ class HydrateProducts
 
     public function handle(Product $product): void
     {
+
+        if($product->trashed()){
+            return;
+        }
+
         ProductHydrateAvailableQuantity::run($product);
         ProductHydrateForSale::run($product);
         ProductHydrateProductVariants::run($product);
