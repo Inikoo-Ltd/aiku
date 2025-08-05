@@ -258,8 +258,6 @@ const resultOfFetchShopifyProduct = ref<ShopifyProduct[]>([])
 const isLoadingFetchShopifyProduct = ref(false)
 const fetchRoute = async () => {
     isLoadingFetchShopifyProduct.value = true
-
-
     try {
         const www = await axios.get(route('retina.json.dropshipping.customer_sales_channel.shopify_products', {
             customerSalesChannel: props.customerSalesChannel?.id,
@@ -429,11 +427,71 @@ const onDisableCheckbox = (item) => {
             </div> -->
         </template>
 
+        <!--  <template #cell(actions)="{ item }">
+            <div class="mx-auto flex flex-wrap justify-center gap-2">
+                <ButtonWithLink
+					v-if="
+						!item.has_valid_platform_product_id && 
+						!item.exist_in_platform && 
+						!item.platform_status &&
+						(get(progressToUploadToShopify, [item.id], undefined) != 'success' && get(progressToUploadToShopify, [item.id], undefined) != 'loading')
+					"
+                    :routeTarget="item.platform_upload_portfolio"
+                    :label="trans('Connect')"
+                    icon="fal fa-upload"
+                    type="positive"
+                    size="xs"
+                    :bindToLink="{
+						preserveScroll: true,
+					}"
+                    @success="() => set(progressToUploadToShopify, [item.id], 'loading')"
+                    :disabled="get(progressToUploadToShopify, [item.id], null)"
+                />
+                <template v-else>
+                    <div v-if="item.platform_possible_matches?.number_matches && (!item.has_valid_platform_product_id || !item.exist_in_platform || !item.platform_status)" class="w-full flex gap-2 items-center">
+                        <div class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow overflow-hidden">
+                            <img :src="item.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src" :alt="item.platform_possible_matches?.matches_labels[0]" />
+                        </div>
+
+                        <div>
+                            <span class="mr-1">{{ item.platform_possible_matches?.matches_labels[0] }}</span>
+                            <ButtonWithLink
+                                v-if="item.platform_possible_matches?.number_matches === 1"
+                                v-tooltip="trans('Upload product to :platform (matching)', {platform: props.platform_data.name})"
+                                :routeTarget="{
+                                method: 'post',
+                                    name: 'retina.models.portfolio.match_to_existing_shopify_product',
+                                    parameters: {
+                                        portfolio: item.id,
+                                        shopify_product_id: item.platform_possible_matches.raw_data?.[0]?.id
+                                    }
+                                }"
+                                :bindToLink="{
+                                    preserveScroll: true,
+                                }"
+                                type="tertiary"
+                                :label="trans('Repair')"
+                                size="xxs"
+                                icon="fal fa-tools"
+                            />
+                            
+                            <Button
+                                v-else
+                                @click="() => (isOpenModal = true, selectedPortfolio = item)"
+                                :label="trans('Open match list')"
+                                size="xxs"
+                                type="tertiary"
+                            />
+                        </div>
+                    </div>
+				</template>
+            </div>
+        </template> -->
+
         <!-- Column: Actions (connect) -->
         <template #cell(matches)="{ item }">
 
             <template v-if="item.customer_sales_channel_platform_status">
-
             <template v-if="!item.platform_status">
 
                 <div v-if="item.platform_possible_matches?.number_matches" class="border  rounded p-1"
@@ -515,9 +573,6 @@ const onDisableCheckbox = (item) => {
                 />
 
             </template>
-
-
-
             </template>
 
         </template>
