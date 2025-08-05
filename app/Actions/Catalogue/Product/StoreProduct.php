@@ -11,11 +11,11 @@ namespace App\Actions\Catalogue\Product;
 use App\Actions\Catalogue\Asset\StoreAsset;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateForSale;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateProductVariants;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\OrgAction;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
-use App\Actions\Traits\ProductHydrateProductVariants;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Catalogue\Asset\AssetStateEnum;
 use App\Enums\Catalogue\Asset\AssetTypeEnum;
@@ -102,9 +102,7 @@ class StoreProduct extends OrgAction
             $product->refresh();
 
 
-            $product = $this->createAsset($product);
-
-            return $product;
+            return $this->createAsset($product);
         });
 
         ProductHydrateProductVariants::dispatch($product->mainProduct)->delay($this->hydratorsDelay);
