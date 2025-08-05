@@ -364,11 +364,11 @@ const listError = inject('listError', {})
 					</div>
 		
 					<!-- Section: Shipments -->
-					<dl v-if="['packed', 'finalised', 'dispatched'].includes(deliveryNote?.state)" class="flex items-xcenter w-fit pr-3 flex-none gap-x-1.5">
+					<dl v-if="['packed', 'finalised', 'dispatched'].includes(deliveryNote?.state)" class="flex items-xcenter w-full pr-3 flex-none gap-x-1.5">
 						<dt class="flex-none mt-1">
 							<FontAwesomeIcon v-tooltip="trans('Shipment')" icon="fal fa-shipping-fast" fixed-width aria-hidden="true" class="text-gray-500" />
 						</dt>
-						<dd class="text-gray-500">
+						<dd class="text-gray-500 w-full">
 							<ShipmentSection
 								:shipments="boxStats.shipments"
 								:shipments_routes="boxStats.shipments_routes"
