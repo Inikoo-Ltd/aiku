@@ -315,7 +315,8 @@ onMounted(() => {
 const modalIssue = ref(false)
 const issue = ref({
     id : null,
-    type : 'delivery_note_item'
+    type : 'delivery_note_item',
+    issue_body : ""
 })
 const Dummy = ref('')
 const IssueLoading = ref(false)
@@ -324,7 +325,8 @@ const openModalIssue = (id : Number, type : String) =>{
     modalIssue.value = true
     issue.value = {
         id: id,
-        type: type
+        type: type,
+        issue_body : ""
     }
 }
 
@@ -332,7 +334,8 @@ const closeModalIssue = () =>{
     modalIssue.value = false
     issue.value = {
         id: null,
-        type: 'delivery_note_item'
+        type: 'delivery_note_item',
+        issue_body : ""
     }
 }
 
@@ -344,13 +347,20 @@ const onIssueSubmit = () => {
       ? 'grp.models.delivery_note_item.issue.store'
       : 'grp.models.delivery_note.issue.store'
 
-  const routeParams = {
-    deliveryNoteItem: issue.value
+  const routeParams = issue.value.type === 'delivery_note_item' ? {
+    deliveryNoteItem: issue.value.id,
+    deliveryNote:props.delivery_note.id
+  } : {
+    deliveryNote: issue.value.id
   }
+
+  const formData = issue.value.type === 'delivery_note_item'
+    ?{ delivery_note_item_issue: issue.value.body}
+    :  { delivery_note_issue: issue.value.body }
 
   router.post(
     route(routeName, routeParams),
-    {},
+    formData,
     {
       preserveState: true,
       preserveScroll: true,
@@ -428,7 +438,7 @@ const onIssueSubmit = () => {
             <Button @click="isModalToQueue = true" :label="action.label" :icon="action.icon" type="tertiary" />
         </template>
 
-        <template #other>
+        <template #other v-if="props.delivery_note.state == 'handling' ||  props.delivery_note.state == 'queued' || props.delivery_note.state == 'packing' || props.delivery_note.state == 'packed'">
             <Button @click="()=>openModalIssue(props.delivery_note.id,'delivery_note')" :label="'Issue'" :icon="faFragile" type="warning" />
         </template>
 
@@ -670,7 +680,7 @@ const onIssueSubmit = () => {
 
             <!-- Form Fields -->
             <div class="space-y-4">
-                <PureInput v-model="Dummy" :placeholder="trans('Describe the issue...')" />
+                <PureInput v-model="issue.body" :placeholder="trans('Describe the issue...')" />
                 <!-- 
       Uncomment if needed
       <PureMultiselectInfiniteScroll
