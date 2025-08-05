@@ -38,6 +38,7 @@ class GetFirstLoadProps
                 [
                     'language'        => LanguageResource::make($language)->getArray(),
                     'languageOptions' => GetLanguagesOptions::make()->translated(),
+                    'languageAssetsOptions' => GetLanguagesOptions::make()->translated(),
                 ],
 
             'layout'      => GetLayout::run($user),
