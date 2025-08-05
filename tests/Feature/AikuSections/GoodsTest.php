@@ -10,7 +10,7 @@
 
 use App\Actions\Goods\Ingredient\StoreIngredient;
 use App\Actions\Goods\Ingredient\UpdateIngredient;
-use App\Actions\Goods\Stock\HydrateStock;
+use App\Actions\Goods\Stock\HydrateStocks;
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Goods\Stock\UpdateStock;
 use App\Actions\Goods\StockFamily\DeleteStockFamily;
@@ -405,7 +405,7 @@ test("UI Create Stock in Stock Family Group", function () {
 
 
 test('Hydrate stocks', function () {
-    HydrateStock::run(Stock::first());
+    HydrateStocks::run(Stock::first());
     $this->artisan('hydrate:stocks')->assertSuccessful();
 });
 

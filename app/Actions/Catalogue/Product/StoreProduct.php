@@ -11,10 +11,11 @@ namespace App\Actions\Catalogue\Product;
 use App\Actions\Catalogue\Asset\StoreAsset;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateForSale;
-use App\Actions\Catalogue\Product\Hydrators\ProductHydrateProductVariants;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\OrgAction;
+use App\Actions\Traits\ModelHydrateSingleTradeUnits;
+use App\Actions\Traits\ProductHydrateProductVariants;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Catalogue\Asset\AssetStateEnum;
 use App\Enums\Catalogue\Asset\AssetTypeEnum;
@@ -85,6 +86,10 @@ class StoreProduct extends OrgAction
         $product = DB::transaction(function () use ($shop, $modelData, $orgStocks) {
             /** @var Product $product */
             $product = $shop->products()->create($modelData);
+            $product = $this->syncOrgStocks($product, $orgStocks);
+            $product = $this->associateTradeUnits($product);
+            $product = ModelHydrateSingleTradeUnits::run($product);
+
             $product = ProductHydrateForSale::run($product);
 
             if ($product->is_main) {
@@ -99,8 +104,7 @@ class StoreProduct extends OrgAction
 
             $product = $this->createAsset($product);
 
-            $product = $this->syncOrgStocks($product, $orgStocks);
-            return $this->associateTradeUnits($product);
+            return $product;
         });
 
         ProductHydrateProductVariants::dispatch($product->mainProduct)->delay($this->hydratorsDelay);
@@ -114,7 +118,6 @@ class StoreProduct extends OrgAction
 
         return $product;
     }
-
 
 
     private function createAsset(Product $product): Product
