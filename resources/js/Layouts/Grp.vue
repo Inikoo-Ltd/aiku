@@ -26,7 +26,7 @@ import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue";
 import Notification from "@/Components/Utils/Notification.vue";
 import { faStackOverflow } from "@fortawesome/free-brands-svg-icons";
 import {
-    faPoll, faSadTear,
+    faPoll, faAllergies, faSpellCheck, faHandPaper, faHourglassStart, faSadTear,
     faParking, faBoxCheck,
     faUsers,
     faTachometerAltFast,
@@ -54,7 +54,7 @@ import { trans } from "laravel-vue-i18n";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import Modal from "@/Components/Utils/Modal.vue";
 
-library.add(faPoll, faSadTear, faPauseCircle, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faUsers, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faStore, faClock, faTransporter, faParking, faBoxCheck, faStackOverflow, faRulerTriangle, faRulerCombined, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faExternalLinkAlt, faTimes, faCheck, faAsterisk);
+library.add(faPoll, faAllergies, faSpellCheck, faHandPaper, faHourglassStart, faSadTear, faPauseCircle, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faUsers, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faStore, faClock, faTransporter, faParking, faBoxCheck, faStackOverflow, faRulerTriangle, faRulerCombined, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faExternalLinkAlt, faTimes, faCheck, faAsterisk);
 
 provide("layout", useLayoutStore());
 provide("locale", useLocaleStore());
