@@ -321,12 +321,13 @@ const issue = ref({
 const Dummy = ref('')
 const IssueLoading = ref(false)
 
-const openModalIssue = (id : Number, type : String) =>{
+const openModalIssue = (data : Object, type : String) =>{
     modalIssue.value = true
     issue.value = {
-        id: id,
+        id: data.id,
         type: type,
-        issue_body : ""
+        issue_body : "",
+        data : data
     }
 }
 
@@ -366,7 +367,7 @@ const onIssueSubmit = () => {
       });
 
   const formData = isDeliveryItem
-    ? { delivery_note_item_issue: issue.value.body }
+    ? { delivery_note_item_issue: issue.value.body, location_id: issue.value.data.locations[0].id }
     : { delivery_note_issue: issue.value.body };
 
     console.log(issue.value,finalRoute,isDeliveryItem)
@@ -449,7 +450,7 @@ const onIssueSubmit = () => {
         </template>
 
         <template #other v-if="props.delivery_note.state == 'handling' ||  props.delivery_note.state == 'queued' || props.delivery_note.state == 'packing' || props.delivery_note.state == 'packed'">
-            <Button @click="()=>openModalIssue(props.delivery_note.id,'delivery_note')" :label="'Issue'" :icon="faFragile" type="warning" />
+            <Button @click="()=>openModalIssue(props.delivery_note,'delivery_note')" :label="'Issue'" :icon="faFragile" type="warning" />
         </template>
 
 
@@ -685,7 +686,7 @@ const onIssueSubmit = () => {
         <div class="px-2 space-y-2">
             <!-- Header -->
             <div class="text-lg font-semibold text-gray-800">
-                {{ trans('Picking Issue') }}
+                {{ issue.type == 'delivery_note_item' ?  trans(`Delivery Note Item (${issue?.data?.org_stock_code}) Picking Issue`) : trans('Delivery Note Picking Issue') }}
             </div>
 
             <!-- Form Fields -->
