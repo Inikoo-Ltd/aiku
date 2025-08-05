@@ -85,7 +85,10 @@ class CheckShopifyChannel
             'can_connect_to_platform' => $canConnectToPlatform,
             'exist_in_platform'       => $existInPlatform,
         ]);
-        $this->update($customerSalesChannel->user, $updateData);
+        if($customerSalesChannel->user){
+            $this->update($customerSalesChannel->user, $updateData);
+        }
+
 
 
         return $customerSalesChannel;
