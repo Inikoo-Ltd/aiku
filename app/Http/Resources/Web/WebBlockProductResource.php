@@ -46,7 +46,7 @@ class WebBlockProductResource extends JsonResource
             'net_weight'        => $product->marketing_weight,
             'unit'              => $product->unit,
         ];
-        
+
         return [
             'slug'              => $product->slug,
             'code'              => $product->code,
