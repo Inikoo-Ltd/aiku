@@ -11,10 +11,12 @@ namespace App\Actions\CRM\Customer\UI;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
+use App\Enums\Helpers\TaxNumber\TaxNumberTypeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Http\Resources\Helpers\TaxNumberResource;
 use App\Models\CRM\Customer;
 use App\Models\Catalogue\Shop;
+use App\Models\Helpers\TaxNumber;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -109,6 +111,8 @@ class EditCustomer extends OrgAction
                                     'label'   => __('Tax number'),
                                     'value'   => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : null,
                                     'country' => $customer->address->country_code,
+                                    'country_id' => $customer->address->country_id,
+                                    'typeOptions' => TaxNumberTypeEnum::getOptions(),
                                     'route_validate' => [
                                         'name' => 'grp.models.tax_number.validate',
                                         'parameters' => [
