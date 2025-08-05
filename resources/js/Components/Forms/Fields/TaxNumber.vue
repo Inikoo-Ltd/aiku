@@ -85,7 +85,7 @@ console.log("TaxNumber component mounted with fieldName:", props)
 </script>
 
 <template>
-    <div class="space-y-3">
+    <div class="space-y-3 mb-5">
         <!-- Input Nomor VAT -->
         <PureInput v-model="value.number" @update:model-value="updateVat"
             :class="{ 'border-red-500': form.errors?.[fieldName] }" />
