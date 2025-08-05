@@ -24,7 +24,7 @@ console.log(props)
 
         <div v-if="product?.specifications?.net_weight" class="grid grid-cols-2 border-b border-gray-300">
             <div class="p-2 font-medium text-sm bg-gray-50">Net Weight</div>
-            <div class="p-2 text-sm">{{ product.specifications.net_weight }} g</div>
+            <div class="p-2 text-sm">{{ product.specifications.net_weight }} g/{{product.specifications.unit}}</div>
         </div>
 
         <div v-if="product?.specifications?.gross_weight" class="grid grid-cols-2 border-b border-gray-300">
