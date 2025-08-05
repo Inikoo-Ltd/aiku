@@ -297,7 +297,7 @@ const submitPortfolioAction = async (action: any) => {
   }
 }
 
-const tableKeyShopyfy = ulid()
+const tableKey = ulid()
 
 provide('selectedEchopersonal', useEchoRetinaPersonal())
 
@@ -472,10 +472,11 @@ provide('selectedEchopersonal', useEchoRetinaPersonal())
         <RetinaTablePortfoliosShopify v-else-if="platform_data.type === 'shopify'" :data="props.products"
             :tab="'products'" :selectedData :platform_data :platform_user_id :is_platform_connected
             :progressToUploadToShopify :customerSalesChannel="customer_sales_channel"
-            v-model:selectedProducts="selectedProducts" :key="tableKeyShopyfy"/>
+            v-model:selectedProducts="selectedProducts" :key="tableKey"/>
 
         <RetinaTablePortfoliosPlatform v-else :data="props.products" :tab="'products'" :selectedData :platform_data
-            :platform_user_id :is_platform_connected :progressToUploadToShopify />
+            :platform_user_id :is_platform_connected :progressToUploadToShopify :customerSalesChannel="customer_sales_channel"
+            v-model:selectedProducts="selectedProducts" :key="tableKey"/>
     </div>
 
     <Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false"
@@ -509,7 +510,7 @@ provide('selectedEchopersonal', useEchoRetinaPersonal())
                 </div>
 
                 <div class="pt-4 text-center">
-                    <Button label="Got it"  full  @click="()=>{modalAddproductBluk = false,tableKeyShopyfy = ulid()}"/>
+                    <Button label="Got it"  full  @click="()=>{modalAddproductBluk = false,tableKey = ulid()}"/>
                 </div>
             </div>
         </div>
@@ -539,7 +540,7 @@ provide('selectedEchopersonal', useEchoRetinaPersonal())
 
             <!-- Footer -->
             <div class="pt-6 text-center">
-                <Button label="Got it" full @click="()=>{modalMatchproductBluk = false,tableKeyShopyfy = ulid()}"/>
+                <Button label="Got it" full @click="()=>{modalMatchproductBluk = false,tableKey = ulid()}"/>
             </div>
             </div>
         </div>
