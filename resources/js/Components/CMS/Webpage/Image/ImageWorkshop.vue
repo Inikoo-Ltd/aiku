@@ -4,7 +4,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { Swiper, SwiperSlide } from "swiper/vue"
 import { Autoplay, Pagination } from "swiper/modules"
-import { inject } from "vue"
+import { inject, computed } from "vue"
 import Image from "@/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
 import { resolveResponsiveValue } from "@/Composables/Workshop"
@@ -106,6 +106,10 @@ const getColumnWidthClass = (layoutType: string, index: number) => {
 const getVal = (base: any, path?: string[]) => {
   return resolveResponsiveValue(base, props.screenType, path)
 }
+
+const resolvedGap = computed(() => {
+  return ( props.modelValue?.value?.gap?.[props.screenType || 'desktop'] || 0 ) + 'px'
+})
 </script>
 
 <template>
@@ -155,7 +159,14 @@ const getVal = (base: any, path?: string[]) => {
       </Swiper>
 
       <!-- DESKTOP/TABLET GRID -->
-      <div v-else class="flex flex-wrap">
+      
+      <div
+  v-else
+  class="flex flex-wrap"
+  :style="{
+    gap: resolvedGap
+  }"
+>
         <div
           v-for="(image, index) in modelValue?.value?.images || []"
           :key="index"
