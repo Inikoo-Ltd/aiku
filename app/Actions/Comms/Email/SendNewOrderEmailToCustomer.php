@@ -57,6 +57,7 @@ class SendNewOrderEmailToCustomer extends OrgAction
                 'invoice_address' => $order->billingAddress->getHtml(),
                 'customer_note' => $order->customer_notes,
                 'order_number' => $this->getOrderLinkHtml($order),
+                'order_reference' => $this->getOrderLinkHtml($order),
             ]
         );
     }
