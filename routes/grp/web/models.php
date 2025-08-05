@@ -196,6 +196,7 @@ use App\Actions\HumanResources\Workplace\DeleteWorkplace;
 use App\Actions\HumanResources\Workplace\StoreWorkplace;
 use App\Actions\HumanResources\Workplace\UpdateWorkplace;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
+use App\Actions\Masters\MasterProductCategory\StoreMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\StoreMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\UploadImageMasterProductCategory;
@@ -316,7 +317,7 @@ Route::patch('customer-balance/{customer:id}', UpdateBalanceCustomer::class)->na
 Route::patch('customer/{customer:id}/credit-transaction', StoreCreditTransaction::class)->name('customer.credit-transaction.store')->withoutScopedBindings();
 Route::patch('customer/delivery-address/{customer:id}', UpdateCustomerDeliveryAddress::class)->name('customer.delivery-address.update')->withoutScopedBindings();
 
-Route::post('master-product-category', UploadImageMasterProductCategory::class)->name('master_product_image.upload')->withoutScopedBindings();
+Route::post('master-product-category', StoreMasterProductCategory::class)->name('master_product.store')->withoutScopedBindings();
 Route::patch('master-product/{masterProductCategory:id}', UpdateMasterProductCategory::class)->name('master_product.update')->withoutScopedBindings();
 Route::post('master-product/{masterProductCategory:id}/image', UploadImageMasterProductCategory::class)->name('master_product_image.upload')->withoutScopedBindings();
 
