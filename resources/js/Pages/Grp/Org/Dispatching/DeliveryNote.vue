@@ -342,51 +342,61 @@ const closeModalIssue = () =>{
 
 
 const onIssueSubmit = () => {
-  const routeName =
-    issue.type === 'delivery_note_item'
-      ? 'grp.models.delivery_note_item.issue.store'
-      : 'grp.models.delivery_note.issue.store'
-
-  const routeParams = issue.value.type === 'delivery_note_item' ? {
-    deliveryNoteItem: issue.value.id,
-    deliveryNote:props.delivery_note.id
-  } : {
-    deliveryNote: issue.value.id
+  if (!issue.value || !issue.value.id || !issue.value.type || !issue.value.body) {
+    notify({
+      title: trans("Invalid Data"),
+      text: trans("Issue data is incomplete."),
+      type: "warning"
+    });
+    return;
   }
 
-  const formData = issue.value.type === 'delivery_note_item'
-    ?{ delivery_note_item_issue: issue.value.body}
-    :  { delivery_note_issue: issue.value.body }
+  IssueLoading.value = true;
 
-  router.post(
-    route(routeName, routeParams),
-    formData,
-    {
-      preserveState: true,
-      preserveScroll: true,
-      onStart: () => {
-        IssueLoading.value = true
-      },
-      onFinish: () => {
-        IssueLoading.value = false
-      },
-      onSuccess: () => {
-        notify({
-          title: trans("Success"),
-          text: trans("Issue submitted successfully."),
-          type: "success"
-        })
-      },
-      onError: (error) => {
-        notify({
-          title: trans("Something went wrong"),
-          text: error?.message || trans("Please try again later."),
-          type: "error"
-        })
-      }
-    }
-  )
-}
+  const isDeliveryItem = issue.value.type == "delivery_note_item";
+
+  
+
+  const finalRoute = isDeliveryItem
+    ? route("grp.models.delivery_note_item.issue.store", {
+        deliveryNoteItem: issue.value.id,
+      })
+    : route("grp.models.delivery_note.issue.store", {
+        deliveryNote: issue.value.id,
+      });
+
+  const formData = isDeliveryItem
+    ? { delivery_note_item_issue: issue.value.body }
+    : { delivery_note_issue: issue.value.body };
+
+    console.log(issue.value,finalRoute,isDeliveryItem)
+
+  router.post(finalRoute, formData, {
+    preserveState: true,
+    preserveScroll: true,
+    onStart: () => {
+      IssueLoading.value = true;
+    },
+    onFinish: () => {
+      IssueLoading.value = false;
+    },
+    onSuccess: () => {
+      notify({
+        title: trans("Success"),
+        text: trans("Issue submitted successfully."),
+        type: "success",
+      });
+    },
+    onError: (error) => {
+      notify({
+        title: trans("Something went wrong"),
+        text: error?.message || trans("Please try again later."),
+        type: "error",
+      });
+    },
+  });
+};
+
 
 
 </script>
