@@ -18,7 +18,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
 
-class CreateMasterSubDepartment extends OrgAction
+class CreateMasterFamily extends OrgAction
 {
     public function asController(MasterProductCategory $masterDepartment, ActionRequest $request): Response
     {
@@ -32,13 +32,14 @@ class CreateMasterSubDepartment extends OrgAction
         return Inertia::render(
             'CreateModel',
             [
-                // 'breadcrumbs' => $this->getBreadcrumbs(
-                //     $request->route()->getName(),
-                //     $request->route()->originalParameters()
-                // ),
-                'title'       => __('New Master Sub-department'),
+                 'breadcrumbs' => $this->getBreadcrumbs(
+                     $masterDepartment,
+                     $request->route()->getName(),
+                     $request->route()->originalParameters()
+                 ),
+                'title'       => __('New Master family'),
                 'pageHead'    => [
-                    'title'   => __('new master Sub-department'),
+                    'title'   => __('new master family'),
                     'actions' => [
                         [
                             'type'  => 'button',
@@ -55,7 +56,7 @@ class CreateMasterSubDepartment extends OrgAction
                     'blueprint' =>
                         [
                             [
-                                'title'  => __('Master Sub-department'),
+                                'title'  => __('Master family'),
                                 'fields' => [
                                     'type' => [
                                         'hidden'   => true,
@@ -63,7 +64,7 @@ class CreateMasterSubDepartment extends OrgAction
                                         'label'    => __('type'),
                                         'required' => true,
                                         'options'  => Options::forEnum(ProductCategoryTypeEnum::class),
-                                        'value'    => ProductCategoryTypeEnum::SUB_DEPARTMENT->value,
+                                        'value'    => ProductCategoryTypeEnum::FAMILY->value,
                                         'readonly' => true
                                     ],
                                     'code' => [
@@ -76,11 +77,21 @@ class CreateMasterSubDepartment extends OrgAction
                                         'label'    => __('name'),
                                         'required' => true
                                     ],
+                                    'description' => [
+                                        'type'     => 'textarea',
+                                        'label'    => __('description'),
+                                        'required' => true
+                                    ],
+                                    "image"         => [
+                                        "type"    => "image_crop_square",
+                                        "label"   => __("Image"),
+                                        "required" => false,
+                                    ],
                                 ]
                             ]
                         ],
                     'route'     => [
-                        'name'       => 'grp.models.master_sub_department.store',
+                        'name'       => 'grp.models.master_family.store',
                         'parameters' => [
                             'masterDepartment' => $masterDepartment->id
                         ]
@@ -90,23 +101,22 @@ class CreateMasterSubDepartment extends OrgAction
         );
     }
 
-
-
-    // public function getBreadcrumbs(string $routeName, array $routeParameters): array
-    // {
-    //     return array_merge(
-    //         IndexDepartments::make()->getBreadcrumbs(
-    //             routeName: preg_replace('/create$/', 'index', $routeName),
-    //             routeParameters: $routeParameters,
-    //         ),
-    //         [
-    //             [
-    //                 'type'         => 'creatingModel',
-    //                 'creatingModel' => [
-    //                     'label' => __('Creating department'),
-    //                 ]
-    //             ]
-    //         ]
-    //     );
-    // }
+    public function getBreadcrumbs(MasterProductCategory $masterProductCategory, string $routeName, array $routeParameters): array
+    {
+        return array_merge(
+            IndexMasterFamilies::make()->getBreadcrumbs(
+                parent: $masterProductCategory,
+                routeName: preg_replace('/create$/', 'index', $routeName),
+                routeParameters: $routeParameters,
+            ),
+            [
+                [
+                    'type'         => 'creatingModel',
+                    'creatingModel' => [
+                        'label' => __('Creating families'),
+                    ]
+                ]
+            ]
+        );
+    }
 }

@@ -29,7 +29,7 @@ class ShowMasterFamily extends GrpAction
     use WithFamilySubNavigation;
     use WithMastersAuthorisation;
 
-    private MasterShop|Group $parent;
+    private MasterShop|Group|MasterProductCategory $parent;
 
     public function handle(MasterProductCategory $masterFamily): MasterProductCategory
     {
@@ -52,6 +52,15 @@ class ShowMasterFamily extends GrpAction
     {
         $group        = group();
         $this->parent = $group;
+        $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
+
+        return $this->handle($masterFamily);
+    }
+
+    public function inMasterDepartment(MasterProductCategory $masterDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
+    {
+        $group        = group();
+        $this->parent = $masterDepartment;
         $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
 
         return $this->handle($masterFamily);

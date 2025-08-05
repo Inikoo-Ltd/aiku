@@ -194,6 +194,7 @@ use App\Actions\HumanResources\JobPosition\UpdateJobPosition;
 use App\Actions\HumanResources\Workplace\DeleteWorkplace;
 use App\Actions\HumanResources\Workplace\StoreWorkplace;
 use App\Actions\HumanResources\Workplace\UpdateWorkplace;
+use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterProductCategory\StoreMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\UploadImageMasterProductCategory;
@@ -314,10 +315,9 @@ Route::patch('customer-balance/{customer:id}', UpdateBalanceCustomer::class)->na
 Route::patch('customer/{customer:id}/credit-transaction', StoreCreditTransaction::class)->name('customer.credit-transaction.store')->withoutScopedBindings();
 Route::patch('customer/delivery-address/{customer:id}', UpdateCustomerDeliveryAddress::class)->name('customer.delivery-address.update')->withoutScopedBindings();
 
+Route::post('master-product-category', UploadImageMasterProductCategory::class)->name('master_product_image.upload')->withoutScopedBindings();
 Route::patch('master-product/{masterProductCategory:id}', UpdateMasterProductCategory::class)->name('master_product.update')->withoutScopedBindings();
 Route::post('master-product/{masterProductCategory:id}/image', UploadImageMasterProductCategory::class)->name('master_product_image.upload')->withoutScopedBindings();
-
-Route::post('master-product/{masterDepartment:id}/master-sub-departments/store', StoreMasterSubDepartment::class)->name('master_product.master_sub_departments.store')->withoutScopedBindings();
 
 
 Route::prefix('stock-family')->name('stock-family.')->group(function () {
@@ -337,6 +337,10 @@ Route::prefix('department/{productCategory:id}')->name('department.')->group(fun
     Route::post('sub-department', StoreSubDepartment::class)->name('sub_department.store');
 });
 
+Route::prefix('mater-department/{masterDepartment:id}')->group(function () {
+    Route::post('master-sub-department', StoreMasterSubDepartment::class)->name('master_sub_department.store');
+    Route::post('master-family', StoreMasterFamily::class)->name('master_family.store');
+});
 
 Route::prefix('/product_category/{productCategory:id}')->name('product_category.')->group(function () {
     Route::patch('update', UpdateProductCategory::class)->name('update');
