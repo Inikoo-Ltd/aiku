@@ -8,6 +8,10 @@ import PureInput from '../Pure/PureInput.vue'
 import PureTextarea from '../Pure/PureTextarea.vue'
 import Button from '../Elements/Buttons/Button.vue'
 import { trans } from "laravel-vue-i18n"
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { faLanguage } from '@fas'
+import { notify } from '@kyvg/vue3-notification'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps<{
     data: {
@@ -33,6 +37,8 @@ const props = defineProps<{
         tags_selected_id: number[]
     }
 }>()
+
+console.log(props)
 
 // Inject locale structure
 const locale = inject('locale', aikuLocaleStructure)
@@ -102,9 +108,40 @@ watch(
 )
 
 
+const isLoading = ref(false)
+
 const saveTranslation = () => {
     const translations = needToTranslate.value
-    console.log('Saving translations:', translations)
+    const masterData = {
+        name: props.data.tradeUnit.name,
+        description: props.data.tradeUnit.description,
+        description_title: props.data.tradeUnit.description_title,
+        description_extra: props.data.tradeUnit.description_extra
+    }
+    router.patch(
+        route('grp.models.trade-unit.translations.update', {tradeUnit : props.data.tradeUnit.id}),
+        { translations : translations, master: masterData },
+        {
+            preserveScroll: true,
+            onStart: () => { isLoading.value = true },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Success to save translation"),
+                    type: "success"
+                })
+            },
+            onError: errors => {
+                error.value = errors
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to set location"),
+                    type: "error"
+                })
+            },
+            onFinish: () => { isLoading.value = false },
+        }
+    )
 }
 </script>
 
@@ -117,9 +154,23 @@ const saveTranslation = () => {
         <!-- Translation Section Wrapped -->
         <div class="col-span-2 mt-6">
             <div class="bg-white border border-gray-300 rounded-lg shadow-sm p-6">
-                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
-                    {{ trans('🌍 Multi-language Translations')}}
-                </h2>
+
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
+                    <!-- Title -->
+                    <h2 class="text-lg font-bold flex items-center gap-2">
+                        <FontAwesomeIcon :icon="faLanguage" />
+                        {{ trans('Multi-language Translations') }}
+                    </h2>
+
+                    <!-- Language Selector -->
+                    <select v-model="selectedLangCode"
+                        class="text-xs border border-gray-300 rounded px-2 py-1 bg-gray-100 focus:outline-none focus:ring focus:ring-blue-200">
+                        <option v-for="opt in langOptions" :key="opt.code" :value="opt.code">
+                            {{ opt.name }}
+                        </option>
+                    </select>
+                </div>
+
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Editable EN content -->
@@ -130,25 +181,25 @@ const saveTranslation = () => {
 
                         <div class="mb-3">
                             <label class="block text-xs text-gray-700 mb-1">Title</label>
-                            <PureInput v-model="needToTranslate.en.name" type="text" class="text-sm"
+                            <PureInput v-model="props.data.tradeUnit.name" type="text" class="text-sm"
                                 placeholder="Enter title" />
                         </div>
 
                         <div class="mb-3">
                             <label class="block text-xs text-gray-700 mb-1">Description Title</label>
-                            <PureInput v-model="needToTranslate.en.description_title" type="text" class="text-sm"
+                            <PureInput v-model="props.data.tradeUnit.description_title" type="text" class="text-sm"
                                 placeholder="Enter description title" />
                         </div>
 
                         <div class="mb-3">
                             <label class="block text-xs text-gray-700 mb-1">Description</label>
-                            <PureTextarea v-model="needToTranslate.en.description" rows="3" class="text-sm"
+                            <PureTextarea v-model="props.data.tradeUnit.description" rows="3" class="text-sm"
                                 placeholder="Enter description" />
                         </div>
 
                         <div>
                             <label class="block text-xs text-gray-700 mb-1">Description Extra</label>
-                            <PureTextarea v-model="needToTranslate.en.description_extra" rows="3" class="text-sm"
+                            <PureTextarea v-model="props.data.tradeUnit.description_extra" rows="3" class="text-sm"
                                 placeholder="Enter extra description" />
                         </div>
                     </div>
@@ -157,14 +208,10 @@ const saveTranslation = () => {
                     <div class="bg-white border border-gray-300 rounded-md p-4 shadow-sm">
                         <div class="flex justify-between items-center mb-3">
                             <h3 class="text-base font-semibold flex items-center gap-2">
-                                🌐 Translation ({{ selectedLangCode?.toUpperCase() || '—' }})
+                                Translation ({{ selectedLangCode?.toUpperCase() || '—' }})
                             </h3>
 
-                            <select v-model="selectedLangCode" class="text-xs border rounded px-2 py-1 bg-gray-100">
-                                <option v-for="opt in langOptions" :key="opt.code" :value="opt.code">
-                                    {{ opt.name }}
-                                </option>
-                            </select>
+
                         </div>
 
                         <div class="mb-3">
@@ -195,7 +242,7 @@ const saveTranslation = () => {
 
                 <!-- Save Button -->
                 <div class="flex justify-end mt-6">
-                   <Button :type="'save'" @click="saveTranslation"/>
+                    <Button :type="'save'" @click="saveTranslation" :loading="isLoading"/>
                 </div>
             </div>
         </div>

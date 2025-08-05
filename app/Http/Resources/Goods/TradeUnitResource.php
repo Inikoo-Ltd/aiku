@@ -22,6 +22,7 @@ class TradeUnitResource extends JsonResource
             'slug'   => $tradeUnit->slug,
             'status' => $tradeUnit->status,
             'code'   => $tradeUnit->code,
+            'id'     => $tradeUnit->id,
 
             'barcode'              => $tradeUnit->barcode,
             'gross_weight'         => $tradeUnit->gross_weight,
