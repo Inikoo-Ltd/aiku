@@ -7,6 +7,7 @@ import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import PureInput from '../Pure/PureInput.vue'
 import PureTextarea from '../Pure/PureTextarea.vue'
 import Button from '../Elements/Buttons/Button.vue'
+import { trans } from "laravel-vue-i18n"
 
 const props = defineProps<{
     data: {
@@ -117,15 +118,14 @@ const saveTranslation = () => {
         <div class="col-span-2 mt-6">
             <div class="bg-white border border-gray-300 rounded-lg shadow-sm p-6">
                 <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
-                    🌍 Multi-language Translations
+                    {{ trans('🌍 Multi-language Translations')}}
                 </h2>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Editable EN content -->
                     <div class="bg-gray-50 border border-gray-300 rounded-md p-4 shadow-sm">
                         <h3 class="text-base font-semibold flex items-center gap-2 mb-3">
-                            <img src="/flags/gb.png" class="w-5 h-4" />
-                            Default (EN)
+                            {{ trans('Master') }}
                         </h3>
 
                         <div class="mb-3">
