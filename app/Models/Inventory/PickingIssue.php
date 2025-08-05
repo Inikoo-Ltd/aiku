@@ -18,12 +18,29 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Spatie\Sluggable\HasSlug;
+use Spatie\Sluggable\SlugOptions;
 
 class PickingIssue extends Model
 {
     use HasFactory;
+    use HasSlug;
 
     protected $guarded = [];
+
+    public function getSlugOptions(): SlugOptions
+    {
+        return SlugOptions::create()
+            ->generateSlugsFrom('reference')
+            ->saveSlugsTo('slug')
+            ->doNotGenerateSlugsOnUpdate();
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
 
     public function group(): BelongsTo
     {
