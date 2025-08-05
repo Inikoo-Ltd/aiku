@@ -19,6 +19,7 @@ trait HasProductInformation
         $table->string('tariff_code')->nullable()->index();
         $table->string('duty_rate')->nullable()->index();
         $table->string('hts_us')->nullable()->index();
+        $table->text('marketing_ingredients')->nullable();
     }
 
     public function getProductInformationFieldNames(): array
