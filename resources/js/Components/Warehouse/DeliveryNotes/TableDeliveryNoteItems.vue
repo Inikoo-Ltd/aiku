@@ -269,9 +269,9 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
         <template #cell(picking_position)="{ item: itemValue, proxyItem }">
 
             <div v-if="itemValue.quantity_to_pick > 0">
-                <div v-if="findLocation(itemValue.locations, proxyItem.hehe)" class="rounded p-1 flex flex-col justify-between gap-x-6 items-center even:bg-black/5">
+                <div v-if="findLocation(itemValue.locations, proxyItem.hehe)" class="flex flex-col justify-between gap-x-6 items-center">
                     <!-- Action: decrease and increase quantity -->
-                    <div class="mb-3 w-full flex justify-between gap-x-6 items-center">
+                    <div class="mb-3 w-full flex justify-between gap-x-6 xitems-center">
                         <div class="">
                             <Transition name="spin-to-right">
                                 <div :key="findLocation(itemValue.locations, proxyItem.hehe).location_code">
