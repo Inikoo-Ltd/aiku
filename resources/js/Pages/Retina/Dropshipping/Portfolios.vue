@@ -18,7 +18,7 @@ import AddPortfolios from "@/Components/Dropshipping/AddPortfolios.vue";
 import {Message, Popover} from "primevue"
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
 import {faSyncAlt, faHandPointer} from "@fas";
-import { useEchoRetinaPersonal } from '@/Stores/echo-retina-personal'
+import {useEchoRetinaPersonal} from '@/Stores/echo-retina-personal'
 import {
     faBracketsCurly, faPawClaws,
     faFileExcel,
@@ -33,12 +33,12 @@ import {
 } from "@fal";
 import axios from "axios"
 import {Table as TableTS} from "@/types/Table"
-import { CustomerSalesChannel } from "@/types/customer-sales-channel"
+import {CustomerSalesChannel} from "@/types/customer-sales-channel"
 import RetinaTablePortfoliosPlatform from "@/Components/Tables/Retina/RetinaTablePortfoliosPlatform.vue"
 import RetinaTablePortfoliosShopify from "@/Components/Tables/Retina/RetinaTablePortfoliosShopify.vue"
 import ProgressBar from '@/Components/Utils/ProgressBar.vue'
-import { faCircleCheck } from "@fortawesome/free-solid-svg-icons";
-import { ulid } from "ulid";
+import {faCircleCheck} from "@fortawesome/free-solid-svg-icons";
+import {ulid} from "ulid";
 
 library.add(faFileExcel, faBracketsCurly, faSyncAlt, faHandPointer, faPawClaws, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
 
@@ -59,6 +59,8 @@ const props = defineProps<{
     }
     products: TableTS
     routes: {
+        batch_upload: routeType
+        match_match: routeType
         syncAllRoute: routeType
         batch_sync: routeType
         duplicate: routeType
@@ -88,7 +90,7 @@ const props = defineProps<{
     manual_channels: object
     count_product_not_synced: number
 
-   // inactive: {}
+    // inactive: {}
     product_count: number
 }>();
 
@@ -247,7 +249,7 @@ const bulkUpload = () => {
 
 const progressToUploadToShopify = ref<{ [key: number]: string }>({})
 const selectedProducts = ref<number[]>([])
-const loadingAction= ref([])
+const loadingAction = ref([])
 const modalAddproductBluk = ref(false)
 const modalMatchproductBluk = ref(false)
 
@@ -258,43 +260,42 @@ const debReloadPage = () => {
 }
 
 
-
 const onSuccessEditCheckmark = (key) => {
-  console.log('sss')
-  if(key == 'Match With Existing Product') modalMatchproductBluk.value = true
-  else modalAddproductBluk.value = true
-  selectedProducts.value = []
+    console.log('sss')
+    if (key == 'Match With Existing Product') modalMatchproductBluk.value = true
+    else modalAddproductBluk.value = true
+    selectedProducts.value = []
 }
 
 const onFailedEditCheckmark = (error: any) => {
-  notify({
-    title: "Something went wrong.",
-    text: error?.response?.data?.products || "An error occurred.",
-    type: "error",
-  })
+    notify({
+        title: "Something went wrong.",
+        text: error?.response?.data?.products || "An error occurred.",
+        type: "error",
+    })
 }
 
 const submitPortfolioAction = async (action: any) => {
-  loadingAction.value.push(action.label)
+    loadingAction.value.push(action.label)
 
-  const url = route(action.name, action?.parameters)
-  const method = action?.method?.toLowerCase() || "get"
+    const url = route(action.name, action?.parameters)
+    const method = action?.method?.toLowerCase() || "get"
 
-  try {
-    const response = await axios({
-      method,
-      url,
-      data: {
-        portfolios: selectedProducts.value,
-      },
-    })
+    try {
+        const response = await axios({
+            method,
+            url,
+            data: {
+                portfolios: selectedProducts.value,
+            },
+        })
 
-    onSuccessEditCheckmark(action.label)
-  } catch (error) {
-    onFailedEditCheckmark(error)
-  } finally {
-    loadingAction.value = []
-  }
+        onSuccessEditCheckmark(action.label)
+    } catch (error) {
+        onFailedEditCheckmark(error)
+    } finally {
+        loadingAction.value = []
+    }
 }
 
 const tableKey = ulid()
@@ -305,29 +306,29 @@ provide('selectedEchopersonal', useEchoRetinaPersonal())
 
 <template>
 
-    <Head :title="capitalize(title)" />
+    <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead">
 
         <template #button-upload-to-shopify="{ action }">
             <Button @click="onUploadToShopify()" :style="action.style" :label="action.label" :loading="isLoadingUpload"
-                :disabled="!selectedData.products.length"
-                v-tooltip="!selectedData.products.length ? trans('Select at least one product to upload') : ''" />
+                    :disabled="!selectedData.products.length"
+                    v-tooltip="!selectedData.products.length ? trans('Select at least one product to upload') : ''"/>
         </template>
 
         <template v-if="props.product_count" #other>
             <div class="rounded-md ">
                 <a :href="downloadUrl('csv') as string" target="_blank" rel="noopener">
-                    <Button :icon="faDownload" label="CSV" type="tertiary" class="rounded-r-none" />
+                    <Button :icon="faDownload" label="CSV" type="tertiary" class="rounded-r-none"/>
                 </a>
 
                 <a :href="downloadUrl('images') as string" target="_blank" rel="noopener">
-                    <Button :icon="faImage" label="Images" type="tertiary" class="border-l-0 border-r-0 rounded-none" />
+                    <Button :icon="faImage" label="Images" type="tertiary" class="border-l-0 border-r-0 rounded-none"/>
                 </a>
 
                 <!-- Section: Download button -->
                 <Button @click="(e) => _popover?.toggle(e)" v-tooltip="trans('Open another options')"
-                    :icon="faEllipsisV" xloading="!!isLoadingSpecificChannel.length"
-                    class="!px-2 border-l-0 rounded-l-none h-full" type="tertiary" key="" />
+                        :icon="faEllipsisV" xloading="!!isLoadingSpecificChannel.length"
+                        class="!px-2 border-l-0 rounded-l-none h-full" type="tertiary" key=""/>
 
                 <Popover ref="_popover">
                     <div class="w-64 relative">
@@ -337,13 +338,13 @@ provide('selectedEchopersonal', useEchoRetinaPersonal())
 
                         <div class="flex flex-col gap-y-2">
                             <a :href="downloadUrl('xlsx') as string" target="_blank" rel="noopener">
-                                <Button :icon="faFileExcel" label="Excel" full :style="'tertiary'" />
+                                <Button :icon="faFileExcel" label="Excel" full :style="'tertiary'"/>
                             </a>
                             <a :href="downloadUrl('json') as string" target="_blank" rel="noopener">
-                                <Button :icon="faBracketsCurly" label="JSON" full :style="'tertiary'" />
+                                <Button :icon="faBracketsCurly" label="JSON" full :style="'tertiary'"/>
                             </a>
                             <a :href="downloadUrl('images') as string" target="_blank" rel="noopener">
-                                <Button :icon="faImage" :label="trans('Images')" full :style="'tertiary'" />
+                                <Button :icon="faImage" :label="trans('Images')" full :style="'tertiary'"/>
                             </a>
                         </div>
 
@@ -352,13 +353,13 @@ provide('selectedEchopersonal', useEchoRetinaPersonal())
             </div>
 
             <Button @click="() => (isOpenModalPortfolios = true)" :label="trans('Add products')"
-                :icon="'fas fa-plus'" />
+                    :icon="'fas fa-plus'"/>
 
             <div class="rounded-md" v-if="manual_channels?.data?.length">
                 <!-- Section: Download button -->
                 <Button @click="(e) => _clone_popover?.toggle(e)" v-tooltip="trans('Open another options')"
-                    :icon="faEllipsisV" xloading="!!isLoadingSpecificChannel.length" class="!px-2 h-full"
-                    type="tertiary" key="" />
+                        :icon="faEllipsisV" xloading="!!isLoadingSpecificChannel.length" class="!px-2 h-full"
+                        type="tertiary" key=""/>
 
                 <Popover ref="_clone_popover">
                     <div class="w-64 relative">
@@ -368,8 +369,8 @@ provide('selectedEchopersonal', useEchoRetinaPersonal())
 
                         <div class="flex flex-col gap-y-2" v-for="manual_channel in manual_channels?.data">
                             <Button :loading="isLoadingClone" @click="() => onCloneManualPortfolio(manual_channel.id)"
-                                :label="manual_channel.name + ' ('+manual_channel.number_portfolios+')'" full
-                                :style="'tertiary'" />
+                                    :label="manual_channel.name + ' ('+manual_channel.number_portfolios+')'" full
+                                    :style="'tertiary'"/>
                         </div>
 
                     </div>
@@ -382,28 +383,28 @@ provide('selectedEchopersonal', useEchoRetinaPersonal())
     <Message v-if="!is_platform_connected && !isPlatformManual" severity="error" class="m-4 ">
         <div class="ml-2 font-normal flex flex-col items-center sm:flex-row justify-between w-full">
             <div>
-                <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true"/>
                 <div class="inline items-center gap-x-2">
                     {{
-                    trans("Your channel is not connected yet to the platform. Please connect it to be able to synchronize your products.")
+                        trans("Your channel is not connected yet to the platform. Please connect it to be able to synchronize your products.")
                     }}
                 </div>
             </div>
 
             <div class="w-full sm:w-fit h-fit">
                 <Button v-if="customer_sales_channel?.reconnect_route?.name"
-                    @click="() => onClickReconnect(customer_sales_channel)" iconRight="fal fa-external-link"
-                    :label="trans('Connect')" zsize="xxs" type="secondary" full />
+                        @click="() => onClickReconnect(customer_sales_channel)" iconRight="fal fa-external-link"
+                        :label="trans('Connect')" zsize="xxs" type="secondary" full/>
             </div>
         </div>
     </Message>
 
     <!-- Section: Alert if there is product not synced -->
     <Message v-if="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual" severity="warn"
-        class="m-4 ">
+             class="m-4 ">
         <div class="ml-2 font-normal flex flex-col items-center sm:flex-row justify-between w-full">
             <div>
-                <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true"/>
                 <div class="inline items-center gap-x-2">
                     {{ trans("You have :products products not synced yet", {products: `${count_product_not_synced}`}) }}
                 </div>
@@ -411,33 +412,32 @@ provide('selectedEchopersonal', useEchoRetinaPersonal())
 
             <div class="w-full sm:w-fit h-fit space-x-2">
                 <ButtonWithLink v-if="routes.duplicate?.name" :routeTarget="routes.duplicate"
-                    v-tooltip="trans('This will only create new products to the :platform that not exist in :platform', { platform: props.platform_data.name })"
-                    aclick="() => onClickReconnect(customer_sales_channel)" icon="far fa-plus"
-                    :label="trans('Create new')" type="tertiary" />
+                                v-tooltip="trans('This will only create new products to the :platform that not exist in :platform', { platform: props.platform_data.name })"
+                                aclick="() => onClickReconnect(customer_sales_channel)" icon="far fa-plus"
+                                :label="trans('Create new')" type="tertiary"/>
 
                 <ButtonWithLink v-if="routes.batch_sync?.name" :routeTarget="routes.batch_sync"
-                    v-tooltip="trans('This will only sync existing products to the :platform (will not create new)', { platform: props.platform_data.name })"
-                    icon="fas fa-sync-alt" :label="trans('Use existing')" type="tertiary" />
-
+                                v-tooltip="trans('This will only sync existing products to the :platform (will not create new)', { platform: props.platform_data.name })"
+                                icon="fas fa-sync-alt" :label="trans('Use existing')" type="tertiary"/>
 
 
                 <div class="space-x-2">
                     <Button v-if="selectedProducts.length > 0" type="green" icon="fas fa-hand-pointer"
-                        :label="trans('Match With Existing Product (:count)', { count: selectedProducts?.length })"
-                        :loading="loadingAction.includes('Match With Existing Product')" @click="() => submitPortfolioAction({
+                            :label="trans('Match With Existing Product (:count)', { count: selectedProducts?.length })"
+                            :loading="loadingAction.includes('Match With Existing Product')" @click="() => submitPortfolioAction({
                             label : 'Match With Existing Product',
                             name : 'retina.models.dropshipping.shopify.batch_match',
                             parameters: { customerSalesChannel: customer_sales_channel.id },
                             method: 'post',
-                        })" size="xs" />
+                        })" size="xs"/>
                     <Button v-if="selectedProducts.length > 0" :type="'create'"
-                        :label="trans('Create New Product (:count)', { count: selectedProducts?.length })"
-                        :loading="loadingAction.includes('Create New Product')" @click="() => submitPortfolioAction({
+                            :label="trans('Create New Product (:count)', { count: selectedProducts?.length })"
+                            :loading="loadingAction.includes('Create New Product')" @click="() => submitPortfolioAction({
                             label : 'Create New Product',
                             name : 'retina.models.dropshipping.shopify.batch_upload',
                             parameters: { customerSalesChannel: customer_sales_channel.id },
                             method: 'post',
-                        })" size="xs" />
+                        })" size="xs"/>
                 </div>
             </div>
         </div>
@@ -445,107 +445,113 @@ provide('selectedEchopersonal', useEchoRetinaPersonal())
 
     <!-- retina.models.dropshipping.ebay.batch_upload -->
     <div v-if="props.product_count < 1"
-        class="relative mx-auto flex max-w-3xl flex-col items-center px-6 text-center pt-20 lg:px-0">
+         class="relative mx-auto flex max-w-3xl flex-col items-center px-6 text-center pt-20 lg:px-0">
         <h1 class="text-4xl font-bold tracking-tight lg:text-6xl">
             {{ content?.portfolio_empty?.title || trans(`You don't have a single portfolios`) }}
         </h1>
         <p class="mt-4 text-xl">
             {{
-            content?.portfolio_empty?.description || trans("To get started, add products to your shop. You can sync from your inventory or create a new one.")
+                content?.portfolio_empty?.description || trans("To get started, add products to your shop. You can sync from your inventory or create a new one.")
             }}
         </p>
         <div class="mt-6 space-y-4">
             <ButtonWithLink v-if="routes?.syncAllRoute" :routeTarget="routes?.syncAllRoute" isWithError
-                :label="content?.portfolio_empty?.sync_button" icon="fas fa-sync-alt" xtype="tertiary" size="xl" />
+                            :label="content?.portfolio_empty?.sync_button" icon="fas fa-sync-alt" xtype="tertiary"
+                            size="xl"/>
             <div v-if="routes?.syncAllRoute && routes?.addPortfolioRoute" class="text-gray-500">
                 {{ content?.portfolio_empty?.separation || trans("or") }}
             </div>
             <Button v-if="routes?.addPortfolioRoute" @click="isOpenModalPortfolios = true"
-                :label="content?.portfolio_empty?.add_button || trans('Add products')" icon="fas fa-plus" size="xl" />
+                    :label="content?.portfolio_empty?.add_button || trans('Add products')" icon="fas fa-plus"
+                    size="xl"/>
         </div>
     </div>
     <div v-else class="overflow-x-auto">
         <RetinaTablePortfoliosManual v-if="isPlatformManual" :data="props.products" :tab="'products'" :selectedData
-            :platform_data :platform_user_id :is_platform_connected :progressToUploadToShopify :isPlatformManual
-            :useCheckBox="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual" />
+                                     :platform_data :platform_user_id :is_platform_connected :progressToUploadToShopify
+                                     :isPlatformManual
+                                     :useCheckBox="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual"/>
 
         <RetinaTablePortfoliosShopify v-else-if="platform_data.type === 'shopify'" :data="props.products"
-            :tab="'products'" :selectedData :platform_data :platform_user_id :is_platform_connected
-            :progressToUploadToShopify :customerSalesChannel="customer_sales_channel"
-            v-model:selectedProducts="selectedProducts" :key="tableKey"/>
+                                      :tab="'products'" :selectedData :platform_data :platform_user_id
+                                      :is_platform_connected
+                                      :progressToUploadToShopify :customerSalesChannel="customer_sales_channel"
+                                      v-model:selectedProducts="selectedProducts" :key="tableKey"/>
 
         <RetinaTablePortfoliosPlatform v-else :data="props.products" :tab="'products'" :selectedData :platform_data
-            :platform_user_id :is_platform_connected :progressToUploadToShopify :customerSalesChannel="customer_sales_channel"
-            v-model:selectedProducts="selectedProducts" :key="tableKey"/>
+                                       :platform_user_id :is_platform_connected :progressToUploadToShopify
+                                       :customerSalesChannel="customer_sales_channel"
+                                       v-model:selectedProducts="selectedProducts" :key="tableKey"
+                                       :routes="props.routes"/>
     </div>
 
     <Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false"
-        width="w-full max-w-7xl max-h-[600px] md:max-h-[85vh] overflow-y-auto">
+           width="w-full max-w-7xl max-h-[600px] md:max-h-[85vh] overflow-y-auto">
         <AddPortfolios v-if="platform_data?.type === 'manual'" :step="step" :routes="props.routes" :platform_data
-            @onDone="isOpenModalPortfolios = false" :platform_user_id />
+                       @onDone="isOpenModalPortfolios = false" :platform_user_id/>
 
         <AddPortfoliosWithUpload v-else :step="step" :routes="props.routes" :platform_data
-            @onDone="isOpenModalPortfolios = false" :platform_user_id :is_platform_connected     
-            :customerSalesChannel="customer_sales_channel" :onClickReconnect />          
+                                 @onDone="isOpenModalPortfolios = false" :platform_user_id :is_platform_connected
+                                 :customerSalesChannel="customer_sales_channel" :onClickReconnect/>
     </Modal>
 
 
-    <Modal :isOpen="modalAddproductBluk" @onClose="modalAddproductBluk = false"  width="w-full max-w-2xl xx">
-       <div class="flex items-center justify-center">
+    <Modal :isOpen="modalAddproductBluk" @onClose="modalAddproductBluk = false" width="w-full max-w-2xl xx">
+        <div class="flex items-center justify-center">
             <div>
                 <div class="flex items-center space-x-4">
-                <div class="flex items-center justify-center w-12 h-12 bg-green-100 text-green-600 rounded-full">
-                    <FontAwesomeIcon :icon="faCircleCheck" class="w-6 h-6" />
-                </div>
-                <h2 class="text-2xl font-bold text-gray-800"> {{trans('Uploading products')}}</h2>
+                    <div class="flex items-center justify-center w-12 h-12 bg-green-100 text-green-600 rounded-full">
+                        <FontAwesomeIcon :icon="faCircleCheck" class="w-6 h-6"/>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800"> {{ trans('Uploading products') }}</h2>
                 </div>
 
                 <div class="text-base text-gray-700 leading-relaxed mt-6 mb-3">
-                <p>
-                    {{trans('Your product is being uploaded')}} <span class="font-medium">Shopify</span>.
-                </p>
-                <p class="mt-2 text-gray-600">
-                    {{trans('Please refresh the page after a few minutes to view the updated status')}}
-                </p>
+                    <p>
+                        {{ trans('Your product is being uploaded') }} <span class="font-medium">Shopify</span>.
+                    </p>
+                    <p class="mt-2 text-gray-600">
+                        {{ trans('Please refresh the page after a few minutes to view the updated status') }}
+                    </p>
                 </div>
 
                 <div class="pt-4 text-center">
-                    <Button label="Got it"  full  @click="()=>{modalAddproductBluk = false,tableKey = ulid()}"/>
+                    <Button label="Got it" full @click="()=>{modalAddproductBluk = false,tableKey = ulid()}"/>
                 </div>
             </div>
         </div>
     </Modal>
 
 
-   <Modal :isOpen="modalMatchproductBluk" @onClose="modalMatchproductBluk = false" width="w-full max-w-2xl">
+    <Modal :isOpen="modalMatchproductBluk" @onClose="modalMatchproductBluk = false" width="w-full max-w-2xl">
         <div class="flex items-center justify-center">
             <div>
-            <!-- Header Success -->
-            <div class="flex items-center space-x-4">
-                <div class="flex items-center justify-center w-12 h-12 bg-green-100 text-green-600 rounded-full">
-                <FontAwesomeIcon :icon="faCircleCheck" class="w-6 h-6" />
+                <!-- Header Success -->
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center justify-center w-12 h-12 bg-green-100 text-green-600 rounded-full">
+                        <FontAwesomeIcon :icon="faCircleCheck" class="w-6 h-6"/>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800">Product Successfully Matched</h2>
                 </div>
-                <h2 class="text-2xl font-bold text-gray-800">Product Successfully Matched</h2>
-            </div>
 
-            <!-- Content -->
-            <div class="text-base text-gray-700 leading-relaxed mt-4">
-                <p>
-                Your product has been successfully uploaded and matched on <span class="font-medium">Shopify</span>.
-                </p>
-                <p class="mt-2 text-gray-600">
-                Please refresh the page after a few minutes to see the latest update.
-                </p>
-            </div>
+                <!-- Content -->
+                <div class="text-base text-gray-700 leading-relaxed mt-4">
+                    <p>
+                        Your product has been successfully uploaded and matched on <span
+                        class="font-medium">Shopify</span>.
+                    </p>
+                    <p class="mt-2 text-gray-600">
+                        Please refresh the page after a few minutes to see the latest update.
+                    </p>
+                </div>
 
-            <!-- Footer -->
-            <div class="pt-6 text-center">
-                <Button label="Got it" full @click="()=>{modalMatchproductBluk = false,tableKey = ulid()}"/>
-            </div>
+                <!-- Footer -->
+                <div class="pt-6 text-center">
+                    <Button label="Got it" full @click="()=>{modalMatchproductBluk = false,tableKey = ulid()}"/>
+                </div>
             </div>
         </div>
     </Modal>
-
 
 
     <!--  <ProgressBar/> -->
