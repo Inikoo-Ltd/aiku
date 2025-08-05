@@ -168,6 +168,7 @@ use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Goods\Stock\UpdateStock;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
 use App\Actions\Goods\StockFamily\UpdateStockFamily;
+use App\Actions\Goods\TradeUnit\UpdateTradeUnitTranslations;
 use App\Actions\Helpers\AwsEmail\SendIdentityEmailVerification;
 use App\Actions\Helpers\Brand\AttachBrandToModel;
 use App\Actions\Helpers\Brand\DeleteBrand;
@@ -839,6 +840,9 @@ Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit}')->group(function () 
     Route::delete('tags/{tag:id}/delete', [DeleteTag::class, 'inTradeUnit'])->name('tags.delete');
     Route::post('tags/attach', [AttachTagsToModel::class, 'inTradeUnit'])->name('tags.attach');
     Route::delete('tags/{tag:id}/detach', [DetachTagFromModel::class, 'inTradeUnit'])->name('tags.detach');
+
+    Route::patch('translations', UpdateTradeUnitTranslations::class)->name('translations.update');
+
 
     Route::post('brands/store', [StoreBrand::class, 'inTradeUnit'])->name('brands.store');
     Route::delete('brands/{brand:id}/delete', [DeleteBrand::class, 'inTradeUnit'])->name('brands.delete')->withoutScopedBindings();
