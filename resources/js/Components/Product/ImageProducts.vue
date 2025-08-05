@@ -16,6 +16,11 @@ import Image from '@/Components/Image.vue'
 
 const props = defineProps<{
   images: { source: string; thumbnail: string }[]
+  breakpoints: {
+    [key: number]: {
+      slidesPerView: number
+    }
+  }
 }>()
 
 const keySwiperMain = ref(ulid())
@@ -100,7 +105,7 @@ onMounted(async () => {
 
     <!-- Thumbnail Swiper -->
     <Swiper :key="keySwiperThumb" :space-between="8" watch-slides-progress :modules="[Thumbs]"
-      @swiper="(swiper) => (thumbsSwiper = swiper)" :breakpoints="{
+      @swiper="(swiper) => (thumbsSwiper = swiper)" :breakpoints="breakpoints ?? {
         0: {
           slidesPerView: 3
         },
@@ -110,8 +115,9 @@ onMounted(async () => {
       }" class="w-full">
       <SwiperSlide v-for="(image, index) in props.images" :key="index"
         class="cursor-pointer rounded overflow-hidden border border-gray-300">
-        <slot name="image-thumbnail" :image="image">
+        <slot name="image-thumbnail" :image :index>
           <div class="aspect-square w-full">
+            
             <Image :src="image.source" :alt="`Thumbnail ${index + 1}`" class="w-full h-full object-cover" />
           </div>
         </slot>
