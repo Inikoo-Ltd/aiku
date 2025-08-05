@@ -11,6 +11,7 @@ namespace App\Http\Resources\Dispatching;
 use App\Http\Resources\Inventory\LocationOrgStocksForPickingActionsResource;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Dispatching\Picking;
+use App\Models\Inventory\PickingIssue;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\DB;
 
@@ -88,8 +89,7 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
 
 
         $pickings = Picking::where('delivery_note_item_id', $this->id)->get();
-
-
+        $issues = PickingIssue::where('model_type', 'DeliveryNoteItem')->where('model_id', $this->id)->get();
 
         return [
             'id'                           => $this->id,
@@ -109,6 +109,7 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'locations'                    => $pickingLocations->isNotEmpty() ? LocationOrgStocksForPickingActionsResource::collection($pickingLocations) : [],
             'pickings'                     => PickingResource::collection($pickings),
             'packings'                     => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
+            'issues'                       => PickingIssuesResource::collection($issues),
             'warning'                      => $fullWarning,
             'is_handled'                   => $this->is_handled,
             'is_packed'                    => $isPacked,

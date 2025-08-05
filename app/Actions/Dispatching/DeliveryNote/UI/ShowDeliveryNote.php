@@ -27,6 +27,7 @@ use App\Http\Resources\Dispatching\DeliveryNoteItemsResource;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsStateHandlingResource;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsStateUnassignedResource;
 use App\Http\Resources\Dispatching\DeliveryNoteResource;
+use App\Http\Resources\Dispatching\PickingIssuesResource;
 use App\Http\Resources\Dispatching\ShipmentsResource;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Ordering\PickersResource;
@@ -343,6 +344,7 @@ class ShowDeliveryNote extends OrgAction
         $order     = $deliveryNote->orders->first();
 
         return [
+            'issues'           => PickingIssuesResource::collection($deliveryNote->issues)->resolve(),
             'state'            => $deliveryNote->state,
             'state_icon'       => DeliveryNoteStateEnum::stateIcon()[$deliveryNote->state->value],
             'state_label'      => $deliveryNote->state->labels()[$deliveryNote->state->value],
