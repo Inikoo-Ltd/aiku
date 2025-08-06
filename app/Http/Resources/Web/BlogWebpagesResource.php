@@ -41,13 +41,13 @@ class BlogWebpagesResource extends JsonResource
 
         if (app()->isProduction()) {
             $href = 'https://www.';
-            if (str_starts_with($this->website_url, 'www.')) {
-                $href .= substr($this->website_url, 4);
+            if (str_starts_with($this->website->domain, 'www.')) {
+                $href .= substr($this->website->domain, 4);
             } else {
-                $href .= $this->website_url;
+                $href .= $this->website->domain;
             }
         } else {
-            $href = 'http://' . $this->website_url;
+            $href = 'http://' . $this->website->domain;
         }
 
         $href .= '/' . $this->url;
