@@ -22,13 +22,21 @@ const props = defineProps<{
     description_extra: string
   }
   needTranslation: Object
-  routeToSave:routeType
+  routeToSave: routeType
 }>()
 
 // Language options
 const locale = inject('locale', aikuLocaleStructure)
 const langOptions = Object.values(locale.languageOptions)
-const selectedLangCode = ref(langOptions[0]?.code || 'en')
+
+const urlParams = new URLSearchParams(window.location.search)
+const initialLang = urlParams.get('lang') || langOptions[0]?.code || 'en'
+const selectedLangCode = ref(initialLang)
+
+// Validate initialLang
+if (!langOptions.some(l => l.code === selectedLangCode.value)) {
+  selectedLangCode.value = langOptions[0]?.code || 'en'
+}
 
 // Dynamic translations per language
 const translations = ref(
@@ -55,7 +63,7 @@ const translationDescription = ref('')
 const translationDescTitle = ref('')
 const translationDescExtra = ref('')
 
-// Update fields on language switch
+// Update fields on language switch and update URL param
 const updateTranslationFields = () => {
   const current = translations.value[selectedLangCode.value]
   translationTitle.value = current?.name || ''
@@ -64,7 +72,13 @@ const updateTranslationFields = () => {
   translationDescExtra.value = current?.description_extra || ''
 }
 
-watch(selectedLangCode, updateTranslationFields, { immediate: true })
+watch(selectedLangCode, (newLang) => {
+  const params = new URLSearchParams(window.location.search)
+  params.set('lang', newLang)
+  const newUrl = `${window.location.pathname}?${params.toString()}`
+  window.history.replaceState({}, '', newUrl)
+  updateTranslationFields()
+}, { immediate: true })
 
 // Sync fields to translations
 watch(
@@ -107,6 +121,7 @@ const saveTranslation = () => {
 }
 </script>
 
+
 <template>
   <div class="px-8 grid grid-cols-2 gap-8">
     <!-- Right: Translation Panel -->
@@ -123,8 +138,14 @@ const saveTranslation = () => {
 
           <div>
             <div class="flex flex-wrap gap-2">
-              <Button  v-for="opt in langOptions" @click="selectedLangCode = opt.code"
-                :key="selectedLangCode + opt.code" :label="opt.name" size="xxs"  :type="selectedLangCode === opt.code ? 'primary' : 'tertiary'"/>
+              <Button
+                v-for="opt in langOptions"
+                @click="selectedLangCode = opt.code"
+                :key="selectedLangCode + opt.code"
+                :label="opt.name"
+                size="xxs"
+                :type="selectedLangCode === opt.code ? 'primary' : 'tertiary'"
+              />
             </div>
           </div>
 
@@ -134,19 +155,19 @@ const saveTranslation = () => {
 
             <div class="space-y-3">
               <div>
-                <label class="block text-xs text-gray-700 mb-1">{{trans('Title')}}</label>
+                <label class="block text-xs text-gray-700 mb-1">{{ trans('Title') }}</label>
                 <PureInput v-model="props.master.name" placeholder="Enter title" class="text-sm" />
               </div>
               <div>
-                <label class="block text-xs text-gray-700 mb-1">{{trans('Description Title')}}</label>
+                <label class="block text-xs text-gray-700 mb-1">{{ trans('Description Title') }}</label>
                 <PureInput v-model="props.master.description_title" placeholder="Enter description title" class="text-sm" />
               </div>
               <div>
-                <label class="block text-xs text-gray-700 mb-1">{{trans('Description')}}</label>
+                <label class="block text-xs text-gray-700 mb-1">{{ trans('Description') }}</label>
                 <SideEditorInputHTML v-model="props.master.description" rows="3" class="text-sm" />
               </div>
               <div>
-                <label class="block text-xs text-gray-700 mb-1">{{trans('Description Extra')}}</label>
+                <label class="block text-xs text-gray-700 mb-1">{{ trans('Description Extra') }}</label>
                 <SideEditorInputHTML v-model="props.master.description_extra" rows="3" class="text-sm" />
               </div>
             </div>
@@ -160,19 +181,19 @@ const saveTranslation = () => {
 
             <div class="space-y-3">
               <div>
-                <label class="block text-xs text-gray-700 mb-1">{{trans('Title')}}</label>
+                <label class="block text-xs text-gray-700 mb-1">{{ trans('Title') }}</label>
                 <PureInput v-model="translationTitle" placeholder="Enter translated title" class="text-sm" />
               </div>
               <div>
-                <label class="block text-xs text-gray-700 mb-1">{{trans('Description Title')}}</label>
+                <label class="block text-xs text-gray-700 mb-1">{{ trans('Description Title') }}</label>
                 <PureInput v-model="translationDescTitle" placeholder="Enter translated description title" class="text-sm" />
               </div>
               <div>
-                <label class="block text-xs text-gray-700 mb-1">{{trans('Description')}}</label>
+                <label class="block text-xs text-gray-700 mb-1">{{ trans('Description') }}</label>
                 <SideEditorInputHTML v-model="translationDescription" rows="3" class="text-sm" />
               </div>
               <div>
-                <label class="block text-xs text-gray-700 mb-1">{{trans('Description Extra')}}</label>
+                <label class="block text-xs text-gray-700 mb-1">{{ trans('Description Extra') }}</label>
                 <SideEditorInputHTML v-model="translationDescExtra" rows="3" class="text-sm" />
               </div>
             </div>
@@ -187,3 +208,4 @@ const saveTranslation = () => {
     </div>
   </div>
 </template>
+
