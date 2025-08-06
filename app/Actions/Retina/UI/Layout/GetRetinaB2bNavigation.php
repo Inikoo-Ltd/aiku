@@ -31,6 +31,30 @@ class GetRetinaB2bNavigation
             ]
         ];
 
+        $groupNavigation['basket'] = [
+            'label' => __('Basket'),
+            'icon' => ['fal', 'fa-shopping-basket'],
+            'root' => 'retina.ecom.basket.',
+            'route' => [
+                'name' => 'retina.ecom.basket.show'
+            ],
+            'topMenu' => [
+
+            ]
+        ];
+
+        $groupNavigation['favourites'] = [
+            'label' => __('Favourites'),
+            'icon' => ['fal', 'fa-heart'],
+            'root' => 'retina.ecom.favourites.',
+            'route' => [
+                'name' => 'retina.ecom.favourites.index'
+            ],
+            'topMenu' => [
+
+            ]
+        ];
+
         return $groupNavigation;
     }
 }
