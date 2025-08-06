@@ -686,4 +686,10 @@ class Shop extends Model implements HasMedia, Auditable
     {
         return $this->hasMany(TrafficSource::class);
     }
+
+    public function platformStats(): HasMany
+    {
+        return $this->hasMany(ShopPlatformStats::class);
+    }
+
 }

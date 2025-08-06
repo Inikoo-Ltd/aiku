@@ -12,9 +12,11 @@ use App\Models\Dropshipping\Platform;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class ShopHasPlatform extends Model
+class ShopPlatformStats extends Model
 {
     protected $guarded = [];
+
+    protected $table = 'shop_platform_stats';
 
     public function shop(): BelongsTo
     {
