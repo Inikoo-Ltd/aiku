@@ -55,6 +55,82 @@ class GetRetinaB2bNavigation
             ]
         ];
 
+        $groupNavigation['invoice'] = [
+            'label'   => __('Invoice'),
+            'icon'    => ['fal', 'fa-file-invoice-dollar'],
+            'root'    => 'retina.dropshipping.invoices.',
+            'route'   => [
+                'name' => 'retina.dropshipping.invoices.index'
+            ],
+            // 'topMenu' => [
+            //     'subSections' => [
+            //         [
+            //             'label' => __('View Top ups'),
+            //             'icon'  => ['far', 'fa-eye'],
+            //             'root'  => 'retina.top_up.',
+            //             'route' => [
+            //                 'name' => 'retina.top_up.index',
+
+            //             ]
+            //         ],
+            //     ]
+            // ]
+        ];
+
+        $groupNavigation['top_up'] = [
+            'label'   => __('Top Up'),
+            'icon'    => ['fal', 'fa-money-bill-wave'],
+            'root'    => 'retina.top_up.',
+            'route'   => [
+                'name' => 'retina.top_up.dashboard'
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label' => __('View Top ups'),
+                        'icon'  => ['far', 'fa-eye'],
+                        'root'  => 'retina.top_up.',
+                        'route' => [
+                            'name' => 'retina.top_up.index',
+
+                        ]
+                    ],
+                ]
+            ]
+        ];
+
+        $groupNavigation['sysadmin'] = [
+            'label'   => __('manage account'),
+            'icon'    => ['fal', 'fa-users-cog'],
+            'root'    => 'retina.sysadmin.',
+            'route'   => [
+                'name' => 'retina.sysadmin.dropshipping.dashboard'
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label' => __('users'),
+                        'icon'  => ['fal', 'fa-user-circle'],
+                        'root'  => 'retina.sysadmin.web-users.',
+                        'route' => [
+                            'name' => 'retina.sysadmin.web-users.index',
+
+                        ]
+                    ],
+
+                    [
+                        'label' => __('account settings'),
+                        'icon'  => ['fal', 'fa-cog'],
+                        'root'  => 'retina.sysadmin.settings.',
+                        'route' => [
+                            'name' => 'retina.sysadmin.settings.edit',
+
+                        ]
+                    ],
+                ]
+            ]
+        ];
+        
         return $groupNavigation;
     }
 }

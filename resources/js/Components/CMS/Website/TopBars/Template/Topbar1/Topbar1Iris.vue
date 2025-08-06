@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { trans } from "laravel-vue-i18n";
 import { inject } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faLanguage } from "@fal";
@@ -13,6 +12,7 @@ import { useForm } from '@inertiajs/vue3'
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import LoadingText from '@/Components/Utils/LoadingText.vue'
 import type { Language } from '@/types/Locale'
+import { trans, loadLanguageAsync } from 'laravel-vue-i18n'
 
 library.add(faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faLanguage);
 
@@ -84,8 +84,7 @@ const form = useForm<{
 
 
 const onSelectLanguage = (language: Language) => {
-  console.log(language)
-  /*    const routeUpdate = layout.app.name === 'Aiku' ? 'grp.models.profile.update' : 'retina.models.profile.update'
+     const routeUpdate = layout?.iris?.is_logged_in ? 'retina.models.profile.update' : 'retina.models.profile.update'
  
      if(form.language_id != language.id) {
          form.language_id = language.id
@@ -96,9 +95,11 @@ const onSelectLanguage = (language: Language) => {
                  loadLanguageAsync(language.code)
              )
          })
-     } */
+     }
 
 }
+
+console.log(locale)
 </script>
 
 <template>
@@ -116,7 +117,7 @@ const onSelectLanguage = (language: Language) => {
         v-html="textReplaceVariables(model?.main_title?.text, layout.iris_variables)" />
     </div>
 
-    <Popover v-if="layout?.iris?.is_logged_in && layout.app.environment === 'local'"  v-slot="{ open }" class="relative h-full">
+    <Popover v-if="layout.app.environment === 'local'"  v-slot="{ open }" class="relative h-full">
       <PopoverButton aria-label="Language Selector">
         <template v-if="form.processing">
           <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-xs" fixed-width aria-hidden="true" />

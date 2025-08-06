@@ -7,6 +7,9 @@ import { useCopyText } from "@/Composables/useCopyText"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCopy } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import axios from "axios"
+import { notify } from "@kyvg/vue3-notification"
+import { trans } from "laravel-vue-i18n"
 library.add(faCopy)
 
 const props = defineProps<{
@@ -27,14 +30,35 @@ const props = defineProps<{
                 }
             }
         }
+        order_payment_api_point: string
     }
     needToPay: number
     currency_code: string
 }>()
 
+console.log('Checkout payment Card props', props.data)
 const locale = inject('locale', {})
 
 const isLoading = ref(false)
+
+const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
+    try {
+        const aaa = await axios.post(route('retina.webhooks.checkout_com.order_payment_completed', {
+            orderPaymentApiPoint: props.data.order_payment_api_point
+        }), {
+            'cko-payment-id': paymentResponseId
+        })
+
+        console.log("hitWebhookAfterSuccess:", aaa.data)
+    } catch (error) {
+        console.log("Error hit the checkout:", error)
+        notify({
+            title: trans("Something went wrong"),
+            text: trans("Failed to hit the webhooks"),
+            type: "error",
+        })
+    }
+}
 onMounted(async () => {
     isLoading.value = true
     const checkout = await loadCheckoutWebComponents({
@@ -48,6 +72,7 @@ onMounted(async () => {
     
         onPaymentCompleted: (_component, paymentResponse) => {
             console.log("Create Payment with PaymentId: ", paymentResponse.id)
+            hitWebhookAfterSuccess(paymentResponse.id)
         },
     
         onChange: (component) => {
