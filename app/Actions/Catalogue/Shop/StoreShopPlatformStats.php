@@ -7,6 +7,7 @@
  */
 
 namespace App\Actions\Catalogue\Shop;
+
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Shop;
 

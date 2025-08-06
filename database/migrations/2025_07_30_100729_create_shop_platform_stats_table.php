@@ -1,22 +1,25 @@
 <?php
 
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Wed, 06 Aug 2025 13:03:19 Central European Summer Time, Trnava, Slovakia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
+
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\Ordering\Order\OrderHandingTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
-
+return new class () extends Migration {
     public function up(): void
     {
         Schema::create('shop_platform_stats', function (Blueprint $table) {
-            $table->id();
+            $table->increments('id');
             $table->unsignedSmallInteger('shop_id')->index();
             $table->foreign('shop_id')->references('id')->on('shops')->nullOnDelete();
             $table->unsignedSmallInteger('platform_id');

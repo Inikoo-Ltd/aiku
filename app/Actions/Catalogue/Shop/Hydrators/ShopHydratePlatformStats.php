@@ -20,7 +20,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ShopHydratePlatformStats implements ShouldBeUnique
 {
     use AsAction;
-     use WithHydrateCommand;
+    use WithHydrateCommand;
 
     public string $commandSignature = 'hydrate:shop_platform_stats {organisations?*} {--s|slug=}';
 
@@ -41,7 +41,7 @@ class ShopHydratePlatformStats implements ShouldBeUnique
             return;
         }
 
-        foreach($shop->platformStats as $platformStat) {
+        foreach ($shop->platformStats as $platformStat) {
             ShopPlatformStatsHydrateCustomers::run($shop, $platformStat->platform);
             ShopPlatformStatsHydratePortfolios::run($shop, $platformStat->platform);
             ShopPlatformStatsHydrateOrders::run($shop, $platformStat->platform);
