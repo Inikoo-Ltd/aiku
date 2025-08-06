@@ -38,7 +38,7 @@ class ShowRetinaTopUpCheckout extends RetinaAction
 
         $paymentSessionClient = $checkoutApi->getPaymentSessionsClient();
 
-        $topUpAmount = (int) round((float) $topUpPaymentApiPoint->amount * 100);
+        $topUpAmount = (int)round((float)$topUpPaymentApiPoint->amount * 100);
 
         $paymentSessionRequest            = new PaymentSessionsRequest();
         $paymentSessionRequest->amount    = $topUpAmount;
@@ -73,23 +73,23 @@ class ShowRetinaTopUpCheckout extends RetinaAction
         }
 
         return [
-            'label'       => __('Online payments'),
-            'key'         => 'credit_card',
-            'public_key'  => $publicKey,
-            'environment' => app()->environment('production') ? 'production' : 'sandbox',
-            'locale'      => 'en',
-            'icon'        => 'fal fa-credit-card-front',
-            'data'        => $paymentSession
+            'label'                         => __('Online payments'),
+            'key'                           => 'credit_card',
+            'public_key'                    => $publicKey,
+            'environment'                   => app()->environment('production') ? 'production' : 'sandbox',
+            'locale'                        => 'en',
+            'icon'                          => 'fal fa-credit-card-front',
+            'data'                          => $paymentSession,
+            'top_up_payment_api_point_ulid' => $topUpPaymentApiPoint->ulid
         ];
     }
 
     public function authorize(ActionRequest $request): bool
     {
         $topUpPaymentApiPoint = $request->route('topUpPaymentApiPoint');
+
         return $topUpPaymentApiPoint->customer_id == $this->customer->id;
     }
-
-
 
 
     public function asController(TopUpPaymentApiPoint $topUpPaymentApiPoint, ActionRequest $request): array
@@ -108,14 +108,13 @@ class ShowRetinaTopUpCheckout extends RetinaAction
 
     public function htmlResponse(array $checkoutComData, ActionRequest $request): \Illuminate\Http\Response|Response|\Illuminate\Http\RedirectResponse
     {
-
         if (Arr::has($checkoutComData, 'error')) {
             return Redirect::route('retina.top_up.dashboard')->with(
                 'notification',
                 [
-                    'status'               => 'error',
-                    'title'                => __('Failed to Top Up'),
-                    'description'          => Arr::get($checkoutComData, 'error'),
+                    'status'      => 'error',
+                    'title'       => __('Failed to Top Up'),
+                    'description' => Arr::get($checkoutComData, 'error'),
                 ]
             );
         }
