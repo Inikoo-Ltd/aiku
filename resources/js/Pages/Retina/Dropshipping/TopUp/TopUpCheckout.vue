@@ -46,7 +46,7 @@ const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
   try {
     const response = await axios.post(
       route('retina.webhooks.checkout_com.top_up_payment_completed', {
-        orderPaymentApiPoint: 6,
+        orderPaymentApiPoint: props.top_up_payment_api_point_ulid,
       }),
       {
         'cko-payment-id': paymentResponseId,
@@ -60,9 +60,9 @@ const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
     if (status === 'success') {
       console.log("Payment successful:", response);
       retryCount.value = 0
-      /* router.post(route('retina.webhooks.checkout_com.redirect_success_paid_order', {
-        order: props.order.id,
-      })); */
+      router.post(route('retina.webhooks.checkout_com.top_up_payment_success', {
+        topUpPaymentApiPoint : props.top_up_payment_api_point_ulid,
+      }));
 
     }else if (status === 'error') {
       console.warn("Payment error:", msg);
@@ -163,6 +163,14 @@ const isLoadingCheckout = ref(true)
                 </div>
             </div>
 
+             <Transition name="fade">
+                <div v-if="retryCount > 0"
+                    class="mt-4 px-4 py-2 rounded-lg bg-yellow-50 border border-yellow-300 text-yellow-800 text-sm font-medium flex items-center gap-2 animate-pulse">
+                    <FontAwesomeIcon :icon="faSpinner" class="animate-spin" />
+                    Retrying payment... Attempt {{ retryCount }} of {{ MAX_RETRIES }}
+                </div>
+            </Transition>
+
         </div>
     </div>
 
@@ -174,15 +182,19 @@ const isLoadingCheckout = ref(true)
                 </div>
             </div>
 
-            <Transition name="fade">
-                <div v-if="retryCount > 0"
-                    class="mt-4 px-4 py-2 rounded-lg bg-yellow-50 border border-yellow-300 text-yellow-800 text-sm font-medium flex items-center gap-2 animate-pulse">
-                    <FontAwesomeIcon :icon="faSpinner" class="animate-spin" />
-                    Retrying payment... Attempt {{ retryCount }} of {{ MAX_RETRIES }}
-                </div>
-            </Transition>
+           
 
         </div> -->
 
 
 </template>
+
+
+<style scoped>
+    .fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+</style>
