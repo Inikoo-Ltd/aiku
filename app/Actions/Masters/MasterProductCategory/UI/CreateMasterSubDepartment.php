@@ -10,9 +10,12 @@
 
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
+use App\Actions\Masters\MasterShop\UI\IndexMasterShops;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\UI\SupplyChain\MasterSubDepartmentTabsEnum;
 use App\Models\Masters\MasterProductCategory;
+use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -20,22 +23,37 @@ use Spatie\LaravelOptions\Options;
 
 class CreateMasterSubDepartment extends OrgAction
 {
-    public function asController(MasterProductCategory $masterDepartment, ActionRequest $request): Response
+    /**
+     * @var \App\Models\Masters\MasterProductCategory|\App\Models\Masters\MasterShop
+     */
+    private MasterShop|MasterProductCategory $parent;
+
+    public function asController(MasterShop $masterShop, ActionRequest $request): Response
     {
+        $this->parent = $masterShop;
         $this->initialisationFromGroup(group(), $request);
+
+        return $this->handle($masterShop, $request);
+    }
+
+    public function inMasterDepartment(MasterProductCategory $masterDepartment, ActionRequest $request): Response
+    {
+        $this->parent = $masterDepartment;
+        $group        = group();
+        $this->initialisationFromGroup($group, $request)->withTab(MasterSubDepartmentTabsEnum::values());
 
         return $this->handle($masterDepartment, $request);
     }
 
-    public function handle(MasterProductCategory $masterDepartment, ActionRequest $request): Response
+    public function handle(MasterProductCategory|MasterShop $parent, ActionRequest $request): Response
     {
         return Inertia::render(
             'CreateModel',
             [
-                // 'breadcrumbs' => $this->getBreadcrumbs(
-                //     $request->route()->getName(),
-                //     $request->route()->originalParameters()
-                // ),
+                 'breadcrumbs' => $this->getBreadcrumbs(
+                     $request->route()->getName(),
+                     $request->route()->originalParameters()
+                 ),
                 'title'       => __('New Master Sub-department'),
                 'pageHead'    => [
                     'title'   => __('new master Sub-department'),
@@ -79,34 +97,46 @@ class CreateMasterSubDepartment extends OrgAction
                                 ]
                             ]
                         ],
-                    'route'     => [
-                        'name'       => 'grp.models.master_sub_department.store',
-                        'parameters' => [
-                            'masterDepartment' => $masterDepartment->id
-                        ]
-                    ]
+                    'route' => match ($parent::class) {
+                        MasterShop::class => [
+                            'name' => 'grp.models.master_shops.master_sub_department.store',
+                            'parameters' => [
+                                'masterShop' => $parent->id
+                            ]
+                        ],
+                        MasterProductCategory::class => [
+                            'name' => 'grp.models.master_sub_department.store',
+                            'parameters' => [
+                                'masterDepartment' => $parent->id
+                            ]
+                        ],
+                        default => null
+                    }
                 ]
             ]
         );
     }
 
 
-
-    // public function getBreadcrumbs(string $routeName, array $routeParameters): array
-    // {
-    //     return array_merge(
-    //         IndexDepartments::make()->getBreadcrumbs(
-    //             routeName: preg_replace('/create$/', 'index', $routeName),
-    //             routeParameters: $routeParameters,
-    //         ),
-    //         [
-    //             [
-    //                 'type'         => 'creatingModel',
-    //                 'creatingModel' => [
-    //                     'label' => __('Creating department'),
-    //                 ]
-    //             ]
-    //         ]
-    //     );
-    // }
+    public function getBreadcrumbs(string $routeName, array $routeParameters): array
+    {
+        return array_merge(
+            match ($this->parent::class) {
+                MasterShop::class => IndexMasterShops::make()->getBreadcrumbs(),
+                MasterProductCategory::class => IndexMasterSubDepartments::make()->getBreadcrumbs(
+                    parent: $this->parent,
+                    routeName: preg_replace('/create$/', 'index', $routeName),
+                    routeParameters: $routeParameters,
+                )
+            },
+            [
+                [
+                    'type' => 'creatingModel',
+                    'creatingModel' => [
+                        'label' => __('Creating sub-department'),
+                    ]
+                ]
+            ]
+        );
+    }
 }

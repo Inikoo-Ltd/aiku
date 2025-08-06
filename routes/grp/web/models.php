@@ -344,7 +344,7 @@ Route::prefix('department/{productCategory:id}')->name('department.')->group(fun
 });
 
 Route::prefix('mater-department/{masterDepartment:id}')->group(function () {
-    Route::post('master-sub-department', StoreMasterSubDepartment::class)->name('master_sub_department.store');
+    Route::post('master-sub-department', [StoreMasterSubDepartment::class, 'inMasterDepartment'])->name('master_sub_department.store');
     Route::post('master-family', [StoreMasterFamily::class, 'inMasterDepartment'])->name('master_family.store');
 });
 
