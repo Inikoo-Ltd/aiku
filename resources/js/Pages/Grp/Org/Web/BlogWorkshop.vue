@@ -288,7 +288,7 @@ watch(currentView, (newVal) => {
     <!-- Sidebar -->
     <aside v-if="!fullScreen" class="hidden lg:flex lg:flex-col w-[380px] bg-white border-r p-4 shadow-sm space-y-4">
       <h2 class="text-lg font-bold text-gray-700 border-b pb-2">{{ trans('Blog Settings') }}</h2>
-      <div class="h-[calc(100vh-4rem)] bg-gray-100 overflow-auto">
+      <div v-if="data?.layout?.web_blocks.length" class="h-[calc(100vh-4rem)] bg-gray-100 overflow-auto">
         <SideEditor v-model="data.layout.web_blocks[0].web_block.layout.data.fieldValue" :panelOpen="openedChildSideEditor"
           :blueprint="Blueprint.blueprint"
           :uploadImageRoute="{ ...webpage.images_upload_route, parameters: { modelHasWebBlocks: webpage.layout.web_blocks[0].id } }"
