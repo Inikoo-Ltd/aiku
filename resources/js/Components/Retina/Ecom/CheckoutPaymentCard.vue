@@ -39,7 +39,7 @@ const props = defineProps<{
 console.log('Checkout payment Card props', props.data)
 const locale = inject('locale', {})
 
-const isLoading = ref(false)
+const isLoading = ref(true)
 
 const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
     try {
@@ -60,7 +60,7 @@ const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
     }
 }
 onMounted(async () => {
-    isLoading.value = true
+    // isLoading.value = true
     const checkout = await loadCheckoutWebComponents({
         paymentSession: props.data?.data,
         publicKey: props.data.public_key,
@@ -104,7 +104,7 @@ const onClickCopy = (textToCopy: string) => {
 </script>
 
 <template>
-    <div class="relative w-full max-w-xl isolate mx-auto my-8 overflow-hidden">
+    <div class="relative w-full max-w-xl isolate mx-auto my-8 xoverflow-hidden">
         <div class="mb-2 pl-2">
             Need to pay: <span class="font-bold">{{ locale.currencyFormat(currency_code, props.needToPay) }}</span>
             <Transition name="spin-to-right">
@@ -113,8 +113,13 @@ const onClickCopy = (textToCopy: string) => {
             </Transition>
         </div>
 
-        <div xv-show="!isLoading" id="flow-container" class="absolute w-full border-b border-gray-300" />
-        <div class="w-full h-[623px] md:h-[511px] -z-10" :class="isLoading ? 'skeleton' : ''">
+        <div class="relative min-h-[200px]">
+            <div xv-show="!isLoading" id="flow-container" class="xabsolute w-full border-b border-gray-300" />
+            
+            <div v-show="isLoading" class="pointer-events-none absolute top-0 h-full w-full z-10">
+                <div class="w-full min-h-[200px] h-full xmd:h-[511px] skeleton" xclass="isLoading ? 'skeleton' : ''">
+                </div>
+            </div>
 
         </div>
     </div>
