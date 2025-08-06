@@ -70,7 +70,7 @@ class BlogWebpagesResource extends JsonResource
             'organisation_slug' => $this->organisation_slug,
             'shop_name'         => $this->shop_name,
             'shop_slug'         => $this->shop_slug,
-            'published_layout'  => $this->published_layout,
+            'published_layout' => json_decode($this->published_layout),
             'published_at'      => $this->snapshots()->latest()->first()->published_at,
         ];
     }
