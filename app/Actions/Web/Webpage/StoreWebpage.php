@@ -150,10 +150,9 @@ class StoreWebpage extends OrgAction
                 } 
 
                 if($webpage->type == WebpageTypeEnum::BLOG) {
-                    $webpage = $this->createWebBlock($webpage, 'blog', $webpage);
+                    $this->createWebBlock($webpage, 'blog', $webpage);
                 }
             }
-
 
             return $webpage;
         });
