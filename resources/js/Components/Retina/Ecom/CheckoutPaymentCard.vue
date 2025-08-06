@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue"
+import { onMounted, ref, inject } from "vue"
 import { loadCheckoutWebComponents } from '@checkout.com/checkout-web-components';
-import { inject } from "vue"
 import { useCopyText } from "@/Composables/useCopyText"
 import { router } from "@inertiajs/vue3"
 
@@ -62,9 +61,9 @@ const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
 
     if (status === 'success') {
       console.log("Payment successful:", response);
-      router.get('retina.webhooks.checkout_com.redirect_success_paid_order', {
-        order_id: props.order.id,
-      });
+        router.post(route('retina.redirect_success_paid_order', {
+            order: props.order.id
+        }));
 
     } else if (status === 'error') {
       console.warn("Payment error:", msg);
