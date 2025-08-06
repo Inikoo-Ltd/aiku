@@ -68,6 +68,12 @@ function removeStep(index: number) {
   steps.splice(index, 1)
   emit('update:modelValue', { ...props.modelValue, steps })
 }
+
+function updateStep(index: number, field: 'from' | 'to' | 'price', value: number | string) {
+  const steps = [...props.modelValue.steps]
+  steps[index][field] = value
+  emit('update:modelValue', { ...props.modelValue, steps })
+}
 </script>
 
 <template>
@@ -106,6 +112,7 @@ function removeStep(index: number) {
           v-model="item.from"
           placeholder="From"
           class="col-span-3"
+          @update:modelValue="val => updateStep(index, 'from', val)"
         />
 
         <!-- To -->
@@ -114,6 +121,7 @@ function removeStep(index: number) {
             <PureInputNumber
               v-model="item.to"
               placeholder="To"
+               @update:modelValue="val => updateStep(index, 'to', val)"
             />
           </template>
           <div
@@ -129,6 +137,7 @@ function removeStep(index: number) {
           v-model="item.price"
           placeholder="Price"
           class="col-span-4"
+          @update:modelValue="val => updateStep(index, 'price', val)"
         />
 
         <!-- Action -->
