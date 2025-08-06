@@ -9,6 +9,7 @@
 use App\Actions\Masters\MasterAsset\UI\IndexMasterAssets;
 use App\Actions\Masters\MasterAsset\UI\ShowMasterAsset;
 use App\Actions\Masters\MasterCollection\UI\IndexMasterCollections;
+use App\Actions\Masters\MasterProductCategory\UI\CreateMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\CreateMasterFamily;
 use App\Actions\Masters\MasterProductCategory\UI\CreateMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterDepartments;
@@ -63,6 +64,7 @@ Route::prefix('/shops/{masterShop}')->as('master_shops.show')->group(function ()
 
     Route::prefix('departments')->as('.master_departments.')->group(function () {
         Route::get('', IndexMasterDepartments::class)->name('index');
+        Route::get('create', CreateMasterDepartment::class)->name('create');
         Route::get('{masterDepartment}', ShowMasterDepartment::class)->name('show');
         Route::get('{masterDepartment}/blueprint', ShowMasterDepartmentWorkshop::class)->name('blueprint');
     });

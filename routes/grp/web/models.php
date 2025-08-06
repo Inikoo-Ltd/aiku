@@ -195,6 +195,7 @@ use App\Actions\HumanResources\JobPosition\UpdateJobPosition;
 use App\Actions\HumanResources\Workplace\DeleteWorkplace;
 use App\Actions\HumanResources\Workplace\StoreWorkplace;
 use App\Actions\HumanResources\Workplace\UpdateWorkplace;
+use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterProductCategory\StoreMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\StoreMasterSubDepartment;
@@ -335,6 +336,7 @@ Route::name('stock.')->prefix('/stock')->group(function () {
 });
 
 Route::prefix('master-shops/{masterShop:id}')->as('master_shops.')->group(function () {
+    Route::post('master-department', StoreMasterDepartment::class)->name('master_department.store');
     Route::post('master-sub-department', StoreMasterSubDepartment::class)->name('master_sub_department.store');
     Route::post('master-family', StoreMasterFamily::class)->name('master_family.store');
 });

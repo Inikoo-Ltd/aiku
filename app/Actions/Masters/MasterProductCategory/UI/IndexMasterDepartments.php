@@ -189,6 +189,24 @@ class IndexMasterDepartments extends OrgAction
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
+                    'actions'       => [
+                        [
+                            'type'    => 'button',
+                            'style'   => 'create',
+                            'tooltip' => __('new master department'),
+                            'label'   => __('master department'),
+                            'route'   => match ($this->parent::class) {
+                                MasterProductCategory::class => [
+                                    'name'       => 'grp.masters.master_departments.create',
+                                    'parameters' => $request->route()->originalParameters()
+                                ],
+                                default => [
+                                    'name'       => 'grp.masters.master_shops.show.master_departments.create',
+                                    'parameters' => $request->route()->originalParameters()
+                                ]
+                            }
+                        ],
+                    ],
                     'subNavigation' => $subNavigation,
                 ],
                 'data'        => MasterDepartmentsResource::collection($masterDepartments),
