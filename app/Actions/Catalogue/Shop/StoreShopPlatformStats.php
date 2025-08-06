@@ -20,7 +20,7 @@ class StoreShopPlatformStats extends OrgAction
         $platforms = $shop->group->platforms;
 
         foreach ($platforms as $platform) {
-            $shop->platformStats()->create([
+            $shop->platformStats()->firstOrCreate([
                 'platform_id' => $platform->id,
             ]);
         }
