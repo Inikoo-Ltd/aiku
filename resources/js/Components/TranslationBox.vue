@@ -27,6 +27,7 @@ const props = defineProps<{
 
 // Language options
 const locale = inject('locale', aikuLocaleStructure)
+console.log(locale)
 const langOptions = Object.values(locale.languageOptions)
 
 const urlParams = new URLSearchParams(window.location.search)
