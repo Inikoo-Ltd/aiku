@@ -5,7 +5,6 @@ import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as TSPageHeading } from "@/types/PageHeading"
 import { CheckoutComFlow } from "@/types/CheckoutComFlow"
 import { FlashNotification as FlashNotificationType } from "@/types/FlashNotification"
-import { useCheckoutCom } from "@/Composables/useCheckoutComFlow"
 import { onMounted } from "vue"
 import { PageProps as InertiaPageProps } from "@inertiajs/core"
 import FlashNotification from "@/Components/UI/FlashNotification.vue"
@@ -22,6 +21,7 @@ const props = defineProps<{
     title: string,
     pageHead: TSPageHeading
     checkout_com_data: CheckoutComFlow
+    top_up_payment_api_point_ulid: string
 }>()
 
 interface PagePropsWithFlash extends InertiaPageProps {

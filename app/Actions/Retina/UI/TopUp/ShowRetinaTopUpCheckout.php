@@ -55,11 +55,10 @@ class ShowRetinaTopUpCheckout extends RetinaAction
         $paymentSessionRequest->failure_url           = $this->getFailureUrl($topUpPaymentApiPoint);
 
 
-
-        $product = new Product();
-        $product->name       = 'top up';
-        $product->quantity   = 1;
-        $product->unit_price = $topUpAmount;
+        $product                      = new Product();
+        $product->name                = 'top up';
+        $product->quantity            = 1;
+        $product->unit_price          = $topUpAmount;
         $paymentSessionRequest->items = [$product];
 
 
@@ -113,6 +112,8 @@ class ShowRetinaTopUpCheckout extends RetinaAction
 
     public function htmlResponse(array $checkoutComData, ActionRequest $request): \Illuminate\Http\Response|Response|\Illuminate\Http\RedirectResponse
     {
+        $topUpPaymentApiPointUlid = Arr::pull($checkoutComData, 'top_up_payment_api_point_ulid');
+
         if (Arr::has($checkoutComData, 'error')) {
             return Redirect::route('retina.top_up.dashboard')->with(
                 'notification',
@@ -129,15 +130,16 @@ class ShowRetinaTopUpCheckout extends RetinaAction
         return Inertia::render(
             'Dropshipping/TopUp/TopUpCheckout',
             [
-                'title'             => $title,
-                'pageHead'          => [
+                'title'                         => $title,
+                'pageHead'                      => [
                     'title' => $title,
                     'icon'  => [
                         'icon'  => ['fal', 'fa-money-bill-wave'],
                         'title' => $title
                     ],
                 ],
-                'checkout_com_data' => $checkoutComData
+                'checkout_com_data'             => $checkoutComData,
+                'top_up_payment_api_point_ulid' => $topUpPaymentApiPointUlid,
             ]
         );
     }
