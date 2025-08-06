@@ -173,7 +173,7 @@ class IndexMasterFamilies extends OrgAction
             'title' => __('master shop')
         ];
         $afterTitle    = [
-            'label' => __('Families')
+            'label' => __('Master Families')
         ];
         $iconRight     = [
             'icon' => 'fal fa-folder-tree',
@@ -218,11 +218,40 @@ class IndexMasterFamilies extends OrgAction
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
+                    'actions'       => $this->getActions($request),
                     'subNavigation' => $subNavigation,
                 ],
                 'data'        => MasterFamiliesResource::collection($masterFamilies),
             ]
         )->table($this->tableStructure($this->parent));
+    }
+
+    public function getActions(ActionRequest $request): array
+    {
+        $actions = [];
+
+
+        $createRoute = "grp.masters.master_shops.show.master_families.create";
+
+        if ($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            $createRoute = "grp.masters.master_sub_departments.show.master_families.create";
+        } elseif ($this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
+            $createRoute = "grp.masters.master_departments.show.master_families.create";
+        }
+
+        $actions[] = [
+            'type' => 'button',
+            'style' => 'create',
+            'tooltip' => __('master new family'),
+            'label' => __('master family'),
+            'route' => [
+                'name' => $createRoute,
+                'parameters' => $request->route()->originalParameters()
+            ]
+        ];
+
+
+        return $actions;
     }
 
     public function getBreadcrumbs(Group|MasterShop|MasterProductCategory $parent, string $routeName, array $routeParameters, string $suffix = null): array

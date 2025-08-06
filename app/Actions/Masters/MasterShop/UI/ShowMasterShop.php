@@ -95,7 +95,7 @@ class ShowMasterShop extends GrpAction
     {
         return
             array_merge(
-                IndexMasterShops::make()->getBreadcrumbs($routeName),
+                IndexMasterShops::make()->getBreadcrumbs(),
                 [
                     [
                         'type'           => 'modelWithIndex',
