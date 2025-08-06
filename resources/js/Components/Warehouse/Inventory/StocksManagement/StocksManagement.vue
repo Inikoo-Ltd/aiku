@@ -11,11 +11,27 @@ import { ref } from 'vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { now } from 'lodash'
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import { InputNumber } from 'primevue'
+import StockCheck from './StockCheck.vue'
 library.add(faForklift, faClipboardCheck, faShoppingBasket, faStickyNote)
+
+const props = defineProps<{
+    stocks_management: {
+        part_locations: {
+            id: number
+            name: string
+            slug: string
+            stock: number
+            isAudited: boolean
+        }[]
+    }
+}>()
 
 const locale = inject('locale', aikuLocaleStructure)
 
 const selectedShoppingBasket = ref(2)
+
+const isStockCheck = ref(false)
 </script>
 
 <template>
@@ -30,7 +46,7 @@ const selectedShoppingBasket = ref(2)
             </button>
         </div>
 
-        <!-- Summary Stats -->
+        <!-- Section: Summary Stats -->
         <div class="grid grid-cols-4 gap-2 text-center">
             <div class="bg-gray-100 p-2 rounded">
                 <span v-tooltip="trans('Stock in locations')">
@@ -88,45 +104,52 @@ const selectedShoppingBasket = ref(2)
             <div class="grid grid-cols-7 gap-x-3">
                 <div class="col-span-2 font-semibold text-gray-600">Current cost:</div>
                 <div class="col-span-3 text-right">
-                    4720000
+                    <!-- 4720000 -->
                 </div>
                 <div class="col-span-2 text-right">
-                    8000 /SKO
+                    8000 /Unit
                 </div>
             </div>
         </div>
 
-        <!-- Location Grid -->
+        <!-- Section: Location Grid -->
         <div class="border-t pt-2 gap-2 items-center text-gray-700">
-            <div v-for="xx in 5" class="grid grid-cols-7 gap-x-3 items-center gap-2">
+            <template v-if="isStockCheck">
+                <StockCheck
+                    :part_locations="props.stocks_management.part_locations"
+                    @onClickBackground="isStockCheck = false"
+                />
+            </template>
+
+            <div v-else v-for="(loc, idx) in props.stocks_management.part_locations" class="grid grid-cols-7 gap-x-3 items-center gap-2">
                 <div class="col-span-5 flex items-center gap-x-2">
                     <div @click="() => console.log('qq sticnote')"
                         v-tooltip="trans('Add part\'s location note')"
                         class="cursor-pointer"
-                        :class="selectedShoppingBasket === xx ? 'text-blue-700' : 'text-gray-400 hover:text-gray-700'"
+                        :class="selectedShoppingBasket === idx ? 'text-blue-700' : 'text-gray-400 hover:text-gray-700'"
                     >
                         <FontAwesomeIcon
-                            :icon="selectedShoppingBasket === xx ? 'fas fa-sticky-note' : 'fal fa-sticky-note'"
+                            :icon="selectedShoppingBasket === idx ? 'fas fa-sticky-note' : 'fal fa-sticky-note'"
                             class=""
                             fixed-width
                             aria-hidden="true"
                         />
                     </div>
 
-                    <div @click="() => selectedShoppingBasket = xx"
+                    <div @click="() => selectedShoppingBasket = idx"
                         v-tooltip="trans('Add part\'s location note')"
                         class="cursor-pointer "
-                        :class="selectedShoppingBasket === xx ? 'text-blue-700' : 'text-gray-400 hover:text-gray-700'"
+                        :class="selectedShoppingBasket === idx ? 'text-blue-700' : 'text-gray-400 hover:text-gray-700'"
                     >
                         <FontAwesomeIcon
-                            :icon="selectedShoppingBasket === xx ? 'fas fa-shopping-basket' : 'fal fa-shopping-basket'"
+                            :icon="selectedShoppingBasket === idx ? 'fas fa-shopping-basket' : 'fal fa-shopping-basket'"
                             class=""
                             fixed-width
                             aria-hidden="true"
                         />
                     </div>
-                    <span>E3</span>
-                    <i class="fas fa-question-circle text-gray-400"></i>
+                    <span>{{ loc.name}}</span>
+                    <FontAwesomeIcon icon="fal fa-question-circle" class="" fixed-width aria-hidden="true" />
                 </div>
 
                 <div v-tooltip="trans('Last audit :date', { date: useFormatTime(new Date()) })" class="text-right">
@@ -135,7 +158,7 @@ const selectedShoppingBasket = ref(2)
                 </div>
 
                 <div class="text-right">
-                    6
+                    {{ loc.stock}}
                 </div>
             </div>
         </div>
@@ -143,6 +166,7 @@ const selectedShoppingBasket = ref(2)
         <!-- Action Buttons -->
         <div class="flex justify-between xborder-t xpt-3">
             <Button
+                @click="() => isStockCheck = !isStockCheck"
                 iconRight="fal fa-clipboard-check"
                 :label="trans('Stock check')"
                 size="sm"

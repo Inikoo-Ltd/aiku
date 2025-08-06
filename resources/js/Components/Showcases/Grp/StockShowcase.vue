@@ -23,7 +23,7 @@ import { Fieldset, Select } from "primevue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTrash as falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus } from "@fas"
-import StocksManagement from "@/Components/Warehouse/Inventory/StocksManagement.vue"
+import StocksManagement from "@/Components/Warehouse/Inventory/StocksManagement/StocksManagement.vue"
 library.add(faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus)
 
 const props = defineProps<{
@@ -76,6 +76,15 @@ const props = defineProps<{
             tags: {}[]
             tags_selected_id: number[]
         }[]
+        stocks_management: {
+            part_locations: {
+                id: number
+                name: string
+                slug: string
+                stock: number
+                isAudited: boolean
+            }[]
+        }
     }
 }>()
 
@@ -159,7 +168,9 @@ const compSelectedTradeUnit = computed(() => {
 
         <div></div>
         <div class="md:col-span-3">
-            <StocksManagement />
+            <StocksManagement
+                :stocks_management="data.stocks_management"
+            />
         </div>
 
         <div class="md:col-span-2 pr-6">
@@ -252,5 +263,6 @@ const compSelectedTradeUnit = computed(() => {
                 <span class="text-sm font-medium">{{ trans("Show more") }}</span>
             </div>
         </div>
+        <pre>{{ data }}</pre>
     </div>
 </template>

@@ -55,6 +55,45 @@ class GetOrgStockShowcase
                 'moveLocationRoute' => [
                     'method'    => 'patch',
                     'name'      => 'grp.models.location_org_stock.move',
+                ],
+                'stocks_management' => [
+                    'part_locations' => [
+                        [
+                            'id' => 1,
+                            'name' => 'E1',
+                            'last_audit' => now(),
+                            'stock' => 45,
+                            'isAudited' => true
+                        ],
+                        [
+                            'id' => 2,
+                            'name' => 'E2',
+                            'last_audit' => now(),
+                            'stock' => 30,
+                            'isAudited' => false
+                        ],
+                        [
+                            'id' => 3,
+                            'name' => 'E3',
+                            'last_audit' => now(),
+                            'stock' => 60,
+                            'isAudited' => true
+                        ],
+                        [
+                            'id' => 4,
+                            'name' => 'E4',
+                            'last_audit' => now(),
+                            'stock' => 20,
+                            'isAudited' => false
+                        ],
+                        [
+                            'id' => 5,
+                            'name' => 'E5',
+                            'last_audit' => now(),
+                            'stock' => 80,
+                            'isAudited' => true
+                        ]
+                    ]
                 ]
             ]
         );
