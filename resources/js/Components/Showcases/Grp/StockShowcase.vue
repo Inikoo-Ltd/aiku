@@ -5,12 +5,9 @@
   -->
 
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { inject, ref, computed, watch } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { faTrash as falTrash, faEdit, faExternalLink } from "@fal"
-import { faCircle, faPlay, faTrash, faPlus } from "@fas"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
@@ -23,7 +20,11 @@ import EditTradeUnit from "@/Components/Goods/EditTradeUnit.vue"
 import { Fieldset, Select } from "primevue"
 
 
-library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus)
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faTrash as falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote } from "@fal"
+import { faCircle, faPlay, faTrash, faPlus } from "@fas"
+import StocksManagement from "@/Components/Warehouse/Inventory/StocksManagement.vue"
+library.add(faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus)
 
 const props = defineProps<{
     data: {
@@ -157,7 +158,8 @@ const compSelectedTradeUnit = computed(() => {
         </div> -->
 
         <div></div>
-        <div>
+        <div class="md:col-span-3">
+            <StocksManagement />
         </div>
 
         <div class="md:col-span-2 pr-6">
