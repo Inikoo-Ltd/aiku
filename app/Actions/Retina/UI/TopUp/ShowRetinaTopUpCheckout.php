@@ -14,6 +14,7 @@ use App\Actions\RetinaAction;
 use App\Enums\Accounting\TopUpPaymentApiPoint\TopUpPaymentApiPointStateEnum;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Accounting\TopUpPaymentApiPoint;
+use Checkout\Payments\Product;
 use Checkout\Payments\Sessions\PaymentSessionsRequest;
 use Checkout\Payments\ThreeDsRequest;
 use Illuminate\Support\Arr;
@@ -53,9 +54,13 @@ class ShowRetinaTopUpCheckout extends RetinaAction
         $paymentSessionRequest->success_url           = $this->getSuccessUrl($topUpPaymentApiPoint);
         $paymentSessionRequest->failure_url           = $this->getFailureUrl($topUpPaymentApiPoint);
 
-        $paymentSessionRequest->disabled_payment_methods = [
-            'applepay',
-        ];
+
+
+        $product = new Product();
+        $product->name       = 'items';
+        $product->quantity   = 1;
+        $product->unit_price = $topUpAmount;
+        $paymentSessionRequest->items = [$product];
 
 
         $paymentSessionRequest = $this->setBillingInformation(
