@@ -34,6 +34,7 @@ class RedirectSuccessPaymentOrder extends RetinaAction
 
     public function asController(Order $order, ActionRequest $request): array
     {
+
         $this->initialisation($request);
 
         return $this->handle($order);

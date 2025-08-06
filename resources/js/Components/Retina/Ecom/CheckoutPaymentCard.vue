@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue"
+import { onMounted, ref, inject } from "vue"
 import { loadCheckoutWebComponents } from '@checkout.com/checkout-web-components';
-import { inject } from "vue"
 import { useCopyText } from "@/Composables/useCopyText"
 import { router } from "@inertiajs/vue3"
 
@@ -76,7 +75,7 @@ const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
               text: response.data.msg ? response.data.msg : trans('Failed to communicate with the payment service.'),
               type: 'error',
           });
-    
+
 
     } else {
       console.log("Payment still processing:", status);

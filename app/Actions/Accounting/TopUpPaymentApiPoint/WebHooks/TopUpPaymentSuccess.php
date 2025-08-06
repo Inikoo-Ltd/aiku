@@ -43,6 +43,12 @@ class TopUpPaymentSuccess extends RetinaWebhookAction
             $modelData['cko-payment-id']
         );
 
+        return $this->processSuccess($checkoutComPayment, $topUpPaymentApiPoint, $paymentAccountShop);
+
+    }
+
+    public function processSuccess($checkoutComPayment, $topUpPaymentApiPoint, $paymentAccountShop)
+    {
         $amount = Arr::get($checkoutComPayment, 'amount', 0) / 100;
 
         $paymentData = [
@@ -118,6 +124,7 @@ class TopUpPaymentSuccess extends RetinaWebhookAction
 
         return $creditTransaction;
     }
+
 
     public function rules(): array
     {
