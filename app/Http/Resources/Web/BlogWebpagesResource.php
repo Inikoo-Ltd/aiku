@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Web;
 
+use App\Enums\Web\Website\WebsiteTypeEnum;
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -47,10 +48,15 @@ class BlogWebpagesResource extends JsonResource
                 $href .= $this->website->domain;
             }
         } else {
-            $href = 'http://' . $this->website->domain;
+            if($request->get('website')->type == WebsiteTypeEnum::DROPSHIPPING) {
+                $href = 'https://ds.test';
+            }
+            elseif ($request->get('website')->type == WebsiteTypeEnum::FULFILMENT) {
+                $href = 'https://fulfilment.test';
+            }
         }
 
-        $href .= '/' . $this->url;
+        $href .= '/blog/' . $this->url;
 
         $publishedLayout = is_array($this->published_layout) 
         ? $this->published_layout 
