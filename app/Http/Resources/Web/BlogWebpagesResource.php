@@ -52,6 +52,10 @@ class BlogWebpagesResource extends JsonResource
 
         $href .= '/' . $this->url;
 
+        $publishedLayout = is_array($this->published_layout) 
+        ? $this->published_layout 
+        : json_decode($this->published_layout);
+
         return [
             "id"       => $this->id,
             "slug"     => $this->slug,
@@ -70,7 +74,7 @@ class BlogWebpagesResource extends JsonResource
             'organisation_slug' => $this->organisation_slug,
             'shop_name'         => $this->shop_name,
             'shop_slug'         => $this->shop_slug,
-            'published_layout' => json_decode($this->published_layout),
+            'published_layout' => $publishedLayout,
             'published_at'      => $this->snapshots()->latest()->first()->published_at,
         ];
     }
