@@ -91,7 +91,7 @@ class LocationOrgStock extends Model implements Auditable
 
     public function orgStock(): BelongsTo
     {
-        return $this->belongsTo(OrgStock::class);
+        return $this->belongsTo(OrgStock::class, 'org_stock_id');
     }
 
     public function location(): BelongsTo

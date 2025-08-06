@@ -29,8 +29,7 @@ class OrgStockResource extends JsonResource
             'description'        => $orgStock->stock?->description,
             'number_locations'   => $orgStock->stats?->number_locations,
             'quantity_locations' => $orgStock->quantity_in_locations,
-            'photo'              => $orgStock->stock?->imageSources(),
-            'locations'          => LocationOrgStocksResource::collection($orgStock->locationOrgStocks)
+            'photo'              => $orgStock->stock?->imageSources()
         ];
     }
 }
