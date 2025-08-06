@@ -9,6 +9,7 @@
 namespace App\Actions\Web\Webpage\Iris;
 
 use App\Enums\Web\Webpage\WebpageTypeEnum;
+use App\Http\Resources\Web\BlogWebpagesResource;
 use App\Http\Resources\Web\WebpagesResource;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -29,7 +30,7 @@ class ShowIrisBlogDashboard
     {
         $website = $request->get('website');
 
-        $blogs = WebpagesResource::collection($website->webpages()->where('type', WebpageTypeEnum::BLOG)->get())->resolve();
+        $blogs = BlogWebpagesResource::collection($website->webpages()->where('type', WebpageTypeEnum::BLOG)->get())->resolve();
 
         return Inertia::render(
             'BlogDashboard', 
