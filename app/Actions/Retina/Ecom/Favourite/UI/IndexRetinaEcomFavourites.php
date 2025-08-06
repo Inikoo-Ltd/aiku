@@ -45,14 +45,13 @@ class IndexRetinaEcomFavourites extends RetinaAction
     public function htmlResponse(LengthAwarePaginator $productFavorites, ActionRequest $request): Response
     {
         return Inertia::render(
-            'Ecom/Basket',
+            'Ecom/Favourites',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('Favourites'),
                 'pageHead' => [
                     'title'         => __('Favourites'),
                     'icon'          => 'fal fa-heart',
-
                 ],
                 'data'     => CustomerFavouritesResource::collection($productFavorites),
 
