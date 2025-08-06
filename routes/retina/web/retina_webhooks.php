@@ -22,7 +22,7 @@ Route::name('webhooks.')->prefix('webhooks')->group(function () {
 
         Route::get('order-payment-success/{orderPaymentApiPoint:ulid}', CheckoutComOrderPaymentSuccess::class)->name('order_payment_success');
         Route::get('order-payment-failure/{orderPaymentApiPoint:ulid}', CheckoutComOrderPaymentFailure::class)->name('order_payment_failure');
-        Route::get('order-payment-completed', CheckoutComOrderPaymentSuccess::class)->name('order_payment_completed');
+        Route::get('order-payment-completed/{orderPaymentApiPoint:ulid}', CheckoutComOrderPaymentSuccess::class)->name('order_payment_completed');
 
 
         Route::get('top-up-payment-success/{topUpPaymentApiPoint:ulid}', TopUpPaymentSuccess::class)->name('top_up_payment_success');
