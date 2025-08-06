@@ -38,19 +38,28 @@ const sortedSteps = computed(() => {
 // Add new step before INF
 function addStepBeforeInfinity() {
   const steps = [...props.modelValue.steps]
-  const lastStep = steps.find(step => step.to === 'INF')
-  const insertIndex = lastStep ? steps.indexOf(lastStep) : steps.length
+  const lastStepIndex = steps.findIndex(step => step.to === 'INF')
+  const insertIndex = lastStepIndex !== -1 ? lastStepIndex : steps.length
 
-  const newFrom = insertIndex > 0 ? (steps[insertIndex - 1]?.to || 0) : 0
+  const previousStep = insertIndex > 0 ? steps[insertIndex - 1] : null
+  const newFrom = previousStep ? (typeof previousStep.to === 'number' ? previousStep.to : 0) : 0
+  const newTo = newFrom + 1
 
+  // Insert new step
   steps.splice(insertIndex, 0, {
     from: newFrom,
-    to: newFrom + 1,
+    to: newTo,
     price: 0,
   })
 
+  // Update the INF row's "from"
+  if (lastStepIndex !== -1) {
+    steps[insertIndex + 1].from = newTo
+  }
+
   emit('update:modelValue', { ...props.modelValue, steps })
 }
+
 
 // Optional: remove step (except INF row)
 function removeStep(index: number) {
