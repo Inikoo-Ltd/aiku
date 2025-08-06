@@ -8,6 +8,8 @@
 
 namespace App\Actions\Web\Webpage\Iris;
 
+use App\Enums\Web\Webpage\WebpageTypeEnum;
+use App\Http\Resources\Web\WebpagesResource;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -19,14 +21,21 @@ class ShowIrisBlogDashboard
 
     public function asController(ActionRequest $request): Response
     {
-        return $this->handle();
+        return $this->handle($request);
     }
 
 
-    public function handle(): Response
+    public function handle(ActionRequest $request): Response
     {
+        $website = $request->get('website');
+
+        $blogs = WebpagesResource::collection($website->webpages()->where('type', WebpageTypeEnum::BLOG)->get())->resolve();
+
         return Inertia::render(
-            'BlogDashboard'
+            'BlogDashboard', 
+            [
+                'blogs' => $blogs,
+            ]
         );
     }
 }
