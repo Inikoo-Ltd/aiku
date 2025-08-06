@@ -26,14 +26,6 @@ const emits = defineEmits<{
     (e: "onClickBackground"): void
 }>()
 
-// const dummyData = ref([
-//     { id: 1, name: 'E1', lastAudit: new Date(), stock: 45, isAudited: true },
-//     { id: 2, name: 'E2', lastAudit: new Date(), stock: 30, isAudited: false },
-//     { id: 3, name: 'E3', lastAudit: new Date(), stock: 60, isAudited: true },
-//     { id: 4, name: 'E4', lastAudit: new Date(), stock: 20, isAudited: false },
-//     { id: 5, name: 'E5', lastAudit: new Date(), stock: 80, isAudited: true }
-// ])
-
 const form = useForm({
     stockCheck: props.part_locations.map(item => ({
         id: item.id,
@@ -69,7 +61,7 @@ const submitCheckStock = () => {
     <div>
         <div @click="() => emits('onClickBackground')" class="cursor-pointer fixed inset-0 bg-black/40 z-30" />
         <div class="relative bg-white z-40 xpy-2 xpx-3 space-y-1">
-            <div class="text-center">Stock check</div>
+            <div class="text-center">Edit Locations</div>
             <div v-for="(forrrmm, idx) in form.stockCheck" class="grid grid-cols-7 gap-x-3 items-center gap-2">
                 <div class="col-span-4 flex items-center gap-x-2">
                     {{ forrrmm.name }}
