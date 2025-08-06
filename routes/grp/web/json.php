@@ -104,7 +104,7 @@ Route::get('shop/{shop}/departments', GetDepartmentsInShop::class)->name('shop.d
 Route::get('shop/{shop:id}/products-no-webpage', GetProductsWithNoWebpage::class)->name('shop.products.no-webpage');
 
 Route::get('shop/{shop}/catalogue/{productCategory}/families', GetProductCategoryFamilies::class)->name('shop.catalogue.departments.families');
-Route::get('shop/{shop:id}/catalogue/collection/{collection:id}/products', GetProductsNotAttachedToACollection::class)->name('shop.products.not_attached_to_collection');
+Route::get('shop/{shop:id}/catalogue/collection/{collection:id}/products', GetProductsNotAttachedToACollection::class)->name('shop.products.not_attached_to_collection')->withoutScopedBindings();
 Route::get('shop/{shop}/catalogue/{scope}/departments', GetDepartments::class)->name('shop.catalogue.departments');
 Route::get('shop/{shop}/catalogue/{scope}/sub-departments', GetSubDepartments::class)->name('shop.catalogue.sub-departments');
 Route::get('shop/{shop}/catalogue/collection/{scope}/families', GetFamilies::class)->name('shop.catalogue.families');
