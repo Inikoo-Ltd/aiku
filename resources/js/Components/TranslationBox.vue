@@ -10,6 +10,7 @@ import PureInput from '@/Components/Pure/PureInput.vue'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
+import SideEditorInputHTML from './CMS/Fields/SideEditorInputHTML.vue'
 
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 
@@ -142,11 +143,11 @@ const saveTranslation = () => {
               </div>
               <div>
                 <label class="block text-xs text-gray-700 mb-1">{{trans('Description')}}</label>
-                <PureTextarea v-model="props.master.description" rows="3" class="text-sm" />
+                <SideEditorInputHTML v-model="props.master.description" rows="3" class="text-sm" />
               </div>
               <div>
                 <label class="block text-xs text-gray-700 mb-1">{{trans('Description Extra')}}</label>
-                <PureTextarea v-model="props.master.description_extra" rows="3" class="text-sm" />
+                <SideEditorInputHTML v-model="props.master.description_extra" rows="3" class="text-sm" />
               </div>
             </div>
           </div>
@@ -168,11 +169,11 @@ const saveTranslation = () => {
               </div>
               <div>
                 <label class="block text-xs text-gray-700 mb-1">{{trans('Description')}}</label>
-                <PureTextarea v-model="translationDescription" rows="3" class="text-sm" />
+                <SideEditorInputHTML v-model="translationDescription" rows="3" class="text-sm" />
               </div>
               <div>
                 <label class="block text-xs text-gray-700 mb-1">{{trans('Description Extra')}}</label>
-                <PureTextarea v-model="translationDescExtra" rows="3" class="text-sm" />
+                <SideEditorInputHTML v-model="translationDescExtra" rows="3" class="text-sm" />
               </div>
             </div>
           </div>
