@@ -53,6 +53,7 @@ import ToggleStateWebpage from '@/Components/Forms/Fields/ToggleStateWebpage.vue
 import DeleteWebpage from '@/Components/Forms/Fields/DeleteWebpage.vue'
 import InputTranslation from '@/Components/Forms/Fields/InputTranslation.vue'
 import TextEditorTranslation from '@/Components/Forms/Fields/TextEditorTranslation.vue'
+import Pricing_zone from '@/Components/Forms/Fields/Pricing_zone.vue'
 
 
 export const componentsList: {[key: string]: Component} = {
@@ -104,7 +105,8 @@ export const componentsList: {[key: string]: Component} = {
     'button' : ButtonForm,
     'input_translation' : InputTranslation,
     'select_infinite': SelectInfiniteScroll,
-    'textEditor_translation' : TextEditorTranslation
+    'textEditor_translation' : TextEditorTranslation,
+    'pricing_zone': Pricing_zone
 }
 
 export const getComponent = (componentName: string) => {
