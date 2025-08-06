@@ -1,21 +1,19 @@
 <script setup lang="ts">
-import { Head, usePage } from "@inertiajs/vue3"
+import { Head, usePage, router } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as TSPageHeading } from "@/types/PageHeading"
 import { CheckoutComFlow } from "@/types/CheckoutComFlow"
 import { FlashNotification as FlashNotificationType } from "@/types/FlashNotification"
-import { onMounted } from "vue"
+import { onMounted, ref } from "vue"
 import { PageProps as InertiaPageProps } from "@inertiajs/core"
 import FlashNotification from "@/Components/UI/FlashNotification.vue"
-import { watch } from "vue"
-import { ref } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
-import { loadCheckoutWebComponents } from '@checkout.com/checkout-web-components';
-import { router } from "@inertiajs/vue3"
+import { loadCheckoutWebComponents } from "@checkout.com/checkout-web-components"
 import { faSpinner } from "@fal"
 import axios from "axios"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 const props = defineProps<{
     title: string,
@@ -29,6 +27,7 @@ interface PagePropsWithFlash extends InertiaPageProps {
         notification?: FlashNotificationType
     }
 }
+
 const isLoading = ref(true)
 const page = usePage<PagePropsWithFlash>()
 console.log(props)
@@ -38,69 +37,69 @@ console.log(props)
 }) */
 
 
-const MAX_RETRIES = 5;
-const retryCount = ref(0);
+const MAX_RETRIES = 5
+const retryCount = ref(0)
 
 
 const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
-  try {
-    const response = await axios.post(
-      route('retina.webhooks.checkout_com.top_up_payment_completed', {
-        orderPaymentApiPoint: props.top_up_payment_api_point_ulid,
-      }),
-      {
-        'cko-payment-id': paymentResponseId,
-      }
-    );
+    try {
+        const response = await axios.post(
+            route("retina.webhooks.checkout_com.top_up_payment_completed", {
+                topUpPaymentApiPoint: props.top_up_payment_api_point_ulid
+            }),
+            {
+                "cko-payment-id": paymentResponseId
+            }
+        )
 
-    console.log("hitWebhookAfterSuccess:", response);
+        console.log("hitWebhookAfterSuccess:", response)
 
-    const { status, msg } = response.data;
+        const { status, msg } = response.data
 
-    if (status === 'success') {
-      console.log("Payment successful:", response);
-      retryCount.value = 0
-      router.post(route('retina.webhooks.checkout_com.top_up_payment_success', {
-        topUpPaymentApiPoint : props.top_up_payment_api_point_ulid,
-      }));
+        if (status === "success") {
+            console.log("Payment successful:", response)
+            retryCount.value = 0
+            router.post(route("retina.redirect_success_paid_top_up", {
+                creditTransaction: response.data.credit_transaction_id,
+            }))
 
-    }else if (status === 'error') {
-      console.warn("Payment error:", msg);
-      // ✅ Show modal with specific error message
-      notify({
-              title: trans('Something went wrong'),
-              text: response.data.msg ? response.data.msg : trans('Failed to communicate with the payment service.'),
-              type: 'error',
-          });
+        } else if (status === "error") {
+            console.warn("Payment error:", msg)
+            // ✅ Show modal with a specific error message
+            notify({
+                title: trans("Something went wrong"),
+                text: response.data.msg ? response.data.msg : trans("Failed to communicate with the payment service."),
+                type: "error"
+            })
 
 
-    } else {
-      console.log("Payment still processing:", status);
+        } else {
+            console.log("Payment still processing:", status)
 
-      if (retryCount.value < MAX_RETRIES) {
-        retryCount.value++;
-        console.info(`Retrying... attempt ${retryCount.value} of ${MAX_RETRIES}`);
-        setTimeout(() => hitWebhookAfterSuccess(paymentResponseId), 5000);
-      } else {
+            if (retryCount.value < MAX_RETRIES) {
+                retryCount.value++
+                console.info(`Retrying... attempt ${retryCount.value} of ${MAX_RETRIES}`)
+                setTimeout(() => hitWebhookAfterSuccess(paymentResponseId), 5000)
+            } else {
+                retryCount.value = 0
+                // ⛔ Final error after max retries
+                notify({
+                    title: trans("Something went wrong"),
+                    text: response.data.msg ? response.data.msg : trans("Failed to communicate with the payment service."),
+                    type: "error"
+                })
+            }
+        }
+    } catch (error) {
+        console.error("Checkout webhook failed:", error)
         retryCount.value = 0
-        // ⛔ Final error after max retries
-          notify({
-              title: trans('Something went wrong'),
-              text: response.data.msg ? response.data.msg : trans('Failed to communicate with the payment service.'),
-              type: 'error',
-          });
-      }
-  }
-  } catch (error) {
-    console.error("Checkout webhook failed:", error);
-    retryCount.value = 0
-    notify({
-      title: trans('Something went wrong'),
-      text: error.data.message ? error.data.message : trans('Failed to communicate with the payment service.'),
-      type: 'error',
-    });
-  }
-};
+        notify({
+            title: trans("Something went wrong"),
+            text: error.data.message ? error.data.message : trans("Failed to communicate with the payment service."),
+            type: "error"
+        })
+    }
+}
 
 onMounted(async () => {
     // isLoading.value = true
@@ -112,41 +111,30 @@ onMounted(async () => {
         onReady: () => {
             console.log("onReady")
         },
-    
+
         onPaymentCompleted: (_component, paymentResponse) => {
             console.log("Create Payment with PaymentId: ", paymentResponse.id)
-           /*  hitWebhookAfterSuccess(paymentResponse.id) */
+            hitWebhookAfterSuccess(paymentResponse.id)
         },
-    
+
         onChange: (component) => {
-            console.log( `onChange() -> isValid: "${component.isValid()}" for "${component.type}"`, )
+            console.log(`onChange() -> isValid: "${component.isValid()}" for "${component.type}"`)
         },
         onError: (component, error) => {
             console.log("onError", error, "Component", component.type)
         },
         appearance: {
-            colorAction: 'rgb(15, 22, 38)',
+            colorAction: "rgb(15, 22, 38)"
         }
     })
-    
-    const flowComponent = checkout.create('flow');
-    flowComponent.mount('#flow-container');
+
+    const flowComponent = checkout.create("flow")
+    flowComponent.mount("#flow-container")
     setTimeout(() => {
         isLoading.value = false
     }, 2000)
 })
 
-const isLoadingCheckout = ref(true)
-
-/* watch(() => isLoading.value, (loading) => {
-    console.log('ewew', loading)
-    if (!loading) {
-        console.log('rr')
-        setTimeout(() => {
-            isLoadingCheckout.value = false
-        }, 2000)
-    }
-}) */
 
 </script>
 
@@ -158,14 +146,14 @@ const isLoadingCheckout = ref(true)
     <div class="flex justify-center">
         <div class="mt-6 relative w-full max-w-xl min-h-[200px]">
             <div id="flow-container" class="w-full border-b border-gray-300" />
-             <div v-show="isLoading" class="pointer-events-none absolute top-0 h-full w-full z-10">
-                <div class="w-full min-h-[200px] h-full xmd:h-[511px] skeleton" xclass="isLoading ? 'skeleton' : ''">
+            <div v-show="isLoading" class="pointer-events-none absolute top-0 h-full w-full z-10">
+                <div class="w-full min-h-[200px] h-full xmd:h-[511px] skeleton">
                 </div>
             </div>
 
-             <Transition name="fade">
+            <Transition name="fade">
                 <div v-if="retryCount > 0"
-                    class="mt-4 px-4 py-2 rounded-lg bg-yellow-50 border border-yellow-300 text-yellow-800 text-sm font-medium flex items-center gap-2 animate-pulse">
+                     class="mt-4 px-4 py-2 rounded-lg bg-yellow-50 border border-yellow-300 text-yellow-800 text-sm font-medium flex items-center gap-2 animate-pulse">
                     <FontAwesomeIcon :icon="faSpinner" class="animate-spin" />
                     Retrying payment... Attempt {{ retryCount }} of {{ MAX_RETRIES }}
                 </div>
@@ -174,27 +162,16 @@ const isLoadingCheckout = ref(true)
         </div>
     </div>
 
-    <!-- <div class="relative min-h-[200px]">
-            <div xv-show="!isLoading" id="flow-container" class="xabsolute w-full border-b border-gray-300" />
-
-            <div v-show="isLoading" class="pointer-events-none absolute top-0 h-full w-full z-10">
-                <div class="w-full min-h-[200px] h-full xmd:h-[511px] skeleton" xclass="isLoading ? 'skeleton' : ''">
-                </div>
-            </div>
-
-           
-
-        </div> -->
-
 
 </template>
 
 
 <style scoped>
-    .fade-enter-active, .fade-leave-active {
-  transition: opacity 0.3s ease;
+.fade-enter-active, .fade-leave-active {
+    transition: opacity 0.3s ease;
 }
+
 .fade-enter-from, .fade-leave-to {
-  opacity: 0;
+    opacity: 0;
 }
 </style>
