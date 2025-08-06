@@ -44,6 +44,7 @@ const isLoading = ref(true)
 const MAX_RETRIES = 5;
 let retryCount = 0;
 
+
 const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
   try {
     const response = await axios.post(
@@ -61,23 +62,41 @@ const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
 
     if (status === 'success') {
       console.log("Payment successful:", response);
-        router.post(route('retina.redirect_success_paid_order', {
-            order: props.order.id
-        }));
+      router.get(route('retina.webhooks.checkout_com.redirect_success_paid_order', {
+        order_id: props.order.id,
+      }));
 
-    } else if (status === 'error') {
+    }else if (status === 'error') {
       console.warn("Payment error:", msg);
       // ✅ Show modal with specific error message
+      notify({
+              title: trans('Something went wrong'),
+              text: response.data.msg ? response.data.msg : trans('Failed to communicate with the payment service.'),
+              type: 'error',
+          });
+
 
     } else {
       console.log("Payment still processing:", status);
 
-    }
+      if (retryCount < MAX_RETRIES) {
+        retryCount++;
+        console.info(`Retrying... attempt ${retryCount} of ${MAX_RETRIES}`);
+        setTimeout(() => hitWebhookAfterSuccess(paymentResponseId), 5000);
+      } else {
+        // ⛔ Final error after max retries
+          notify({
+              title: trans('Something went wrong'),
+              text: response.data.msg ? response.data.msg : trans('Failed to communicate with the payment service.'),
+              type: 'error',
+          });
+      }
+  }
   } catch (error) {
     console.error("Checkout webhook failed:", error);
     notify({
       title: trans('Something went wrong'),
-      text: trans('Failed to communicate with the payment service.'),
+      text: error.data.message ? error.data.message : trans('Failed to communicate with the payment service.'),
       type: 'error',
     });
   }
