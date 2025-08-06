@@ -183,6 +183,7 @@ use App\Actions\Helpers\Tag\DeleteTag;
 use App\Actions\Helpers\Tag\DetachTagFromModel;
 use App\Actions\Helpers\Tag\StoreTag;
 use App\Actions\Helpers\Tag\UpdateTag;
+use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\HumanResources\ClockingMachine\DeleteClockingMachine;
 use App\Actions\HumanResources\ClockingMachine\StoreClockingMachine;
 use App\Actions\HumanResources\ClockingMachine\UpdateClockingMachine;
@@ -509,7 +510,6 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
     Route::get('pallet-picking-pdf', PdfPickingPalletReturn::class)->name('pallet_picking.pdf');
     Route::get('pdf', PdfPalletReturn::class)->name('pdf');
 
-
     Route::post('/shipment-from-fulfilment', CreateShipmentInPalletReturnInFulfilment::class)->name('shipment_from_fulfilment.store');
     Route::post('/shipment-from-warehouse', CreateShipmentInPalletReturnInWarehouse::class)->name('shipment_from_warehouse.store');
 
@@ -567,7 +567,6 @@ Route::name('banner.')->prefix('banner/{banner:id}')->group(function () {
 Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
     Route::post('prospect/upload', [ImportShopProspects::class, 'inShop'])->name('prospects.upload');
     Route::post('website', StoreWebsite::class)->name('website.store');
-
 
     Route::name('sender_email.')->prefix('sender-email')->group(function () {
         Route::post('verify', [SendIdentityEmailVerification::class, 'inShop'])->name('verify');
@@ -856,9 +855,10 @@ Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit}')->group(function () 
     Route::delete('brands/{brand:id}/detach', [DetachBrandFromModel::class, 'inTradeUnit'])->name('brands.detach');
 });
 
+Route::get('/languages/all', [GetLanguagesOptions::class, 'all'])->name('languages.all');
+Route::get('/languages/translated', [GetLanguagesOptions::class, 'translated'])->name('languages.translated');
 
 Route::delete('access-token/{token:id}', DeleteUserAccessToken::class)->name('access_token.delete');
-
 
 Route::post('shops/{shop}/poll/store', StorePoll::class)->name('poll.store');
 

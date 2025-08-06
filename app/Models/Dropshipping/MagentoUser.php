@@ -16,6 +16,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Database\Factories\MagentoUserFactory;
 
 /**
  *
@@ -34,7 +36,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $username
  * @property string $password
  * @property int|null $platform_id
- * @property int|null $customer_sales_channel_id
+ * @pr
+ * operty int|null $customer_sales_channel_id
  * @property WebUserTypeEnum $state
  * @property WebUserAuthTypeEnum $auth_type
  * @property-read \App\Models\CRM\Customer $customer
@@ -52,6 +55,7 @@ class MagentoUser extends Model
     use InCustomer;
     use HasSlug;
     use WithMagentoApiRequest;
+    use HasFactory;
 
     protected $guarded = [];
 
@@ -79,5 +83,10 @@ class MagentoUser extends Model
     public function customerSalesChannel(): BelongsTo
     {
         return $this->belongsTo(CustomerSalesChannel::class);
+    }
+
+    protected static function newFactory()
+    {
+        return MagentoUserFactory::new();
     }
 }

@@ -50,7 +50,5 @@ class StoreWooCommerceUser extends OrgAction
             'customer_sales_channel_id' => $customerSalesChannel->id,
         ]);
         return $wooCommerceUser;
-
-
     }
 }

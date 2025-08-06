@@ -183,8 +183,6 @@ trait WithMagentoApiRequest
         return $this->magentoApiRequest('get', $endpoint, [], $searchCriteria);
     }
 
-
-
     /**
      * Get a single order by ID
      */
