@@ -177,12 +177,20 @@ class StoreWebpage extends OrgAction
                 'website'      => $webpage->website->slug,
                 'webpage'      => $webpage->slug
             ])),
-            default => Inertia::location(route('grp.org.shops.show.web.webpages.show', [
-                'organisation' => $this->shop->organisation->slug,
-                'shop'         => $this->shop->slug,
-                'website'      => $webpage->website->slug,
-                'webpage'      => $webpage->slug
-            ]))
+            default => match ($webpage->type) {
+                WebpageTypeEnum::BLOG => Inertia::location(route('grp.org.shops.show.web.blogs.show', [
+                    'organisation' => $this->shop->organisation->slug,
+                    'shop'         => $this->shop->slug,
+                    'website'      => $webpage->website->slug,
+                    'webpage'      => $webpage->slug
+                ])),
+                default => Inertia::location(route('grp.org.shops.show.web.webpages.show', [
+                    'organisation' => $this->shop->organisation->slug,
+                    'shop'         => $this->shop->slug,
+                    'website'      => $webpage->website->slug,
+                    'webpage'      => $webpage->slug
+                ]))
+            }
         };
     }
 
