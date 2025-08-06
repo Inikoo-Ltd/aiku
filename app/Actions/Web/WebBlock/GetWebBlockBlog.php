@@ -9,6 +9,7 @@
 
 namespace App\Actions\Web\WebBlock;
 
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +26,7 @@ class GetWebBlockBlog
         $latestBlogs = DB::table('webpages')
             ->where('website_id', $webpage->website_id)
             ->where('type', WebpageTypeEnum::BLOG->value)
+            ->where('state', WebpageStateEnum::LIVE->value)
             ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get()
