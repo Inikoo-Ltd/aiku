@@ -3,6 +3,7 @@ import { onMounted, ref } from "vue"
 import { loadCheckoutWebComponents } from '@checkout.com/checkout-web-components';
 import { inject } from "vue"
 import { useCopyText } from "@/Composables/useCopyText"
+import { router } from "@inertiajs/vue3"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCopy } from "@fal"
@@ -32,6 +33,7 @@ const props = defineProps<{
         }
         order_payment_api_point: string
     }
+    order : any
     needToPay: number
     currency_code: string
 }>()
@@ -40,36 +42,48 @@ console.log('Checkout payment Card props', props.data)
 const locale = inject('locale', {})
 
 const isLoading = ref(true)
+const MAX_RETRIES = 5;
+let retryCount = 0;
 
 const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
-    try {
-        const response = await axios.post(route('retina.webhooks.checkout_com.order_payment_completed', {
-            orderPaymentApiPoint: props.data.order_payment_api_point
-        }), {
-            'cko-payment-id': paymentResponseId
-        })
+  try {
+    const response = await axios.post(
+      route('retina.webhooks.checkout_com.order_payment_completed', {
+        orderPaymentApiPoint: props.data.order_payment_api_point,
+      }),
+      {
+        'cko-payment-id': paymentResponseId,
+      }
+    );
 
-        console.log("hitWebhookAfterSuccess:", response.data)
+    console.log("hitWebhookAfterSuccess:", response);
 
-        if(response.data.status === 'success') {
-            // here navigate to a route i will gice you later
-        }else if(response.data.status === 'error') {
-            // here show a modal with response.data.msg
-        }else{
-            //show modal paiyment still procession we wil try again
-            // then wait 5 seconds and call same ajax,
-            // but a maxmimun 5 times, after that show an error to contact customer services or whatever
-        }
+    const { status, msg } = response.data;
 
-    } catch (error) {
-        console.log("Error hit the checkout:", error)
-        notify({
-            title: trans("Something went wrong"),
-            text: trans("Failed to hit the webhooks"),
-            type: "error",
-        })
+    if (status === 'success') {
+      console.log("Payment successful:", response);
+      router.get('retina.webhooks.checkout_com.redirect_success_paid_order', {
+        order_id: props.order.id,
+      });
+
+    } else if (status === 'error') {
+      console.warn("Payment error:", msg);
+      // ✅ Show modal with specific error message
+
+    } else {
+      console.log("Payment still processing:", status);
+
     }
-}
+  } catch (error) {
+    console.error("Checkout webhook failed:", error);
+    notify({
+      title: trans('Something went wrong'),
+      text: trans('Failed to communicate with the payment service.'),
+      type: 'error',
+    });
+  }
+};
+
 onMounted(async () => {
     // isLoading.value = true
     const checkout = await loadCheckoutWebComponents({
