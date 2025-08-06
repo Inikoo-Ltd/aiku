@@ -48,6 +48,15 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
         );
 
 
+        return $this->processSuccesfulPayment($orderPaymentApiPoint, $paymentAccountShop, $checkoutComPayment);
+
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function processSuccesfulPayment(OrderPaymentApiPoint $orderPaymentApiPoint, PaymentAccountShop $paymentAccountShop, array $checkoutComPayment): array
+    {
         $amount = Arr::get($checkoutComPayment, 'amount', 0) / 100;
 
         $paymentData = [
@@ -99,6 +108,7 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
             'order'   => $order,
         ];
     }
+
 
     public function rules(): array
     {
