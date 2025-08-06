@@ -49,8 +49,8 @@ return new class extends Migration
                 foreach (OrderHandingTypeEnum::cases() as $case) {
                     $table->unsignedInteger('number_orders_handing_type_'.$case->snake())->default(0);
                 }
-            $table->bigInteger('number_customer_sales_channels')->default(0);
-            $table->bigInteger('number_customer_sales_channel_broken')->default(0);
+            $table->unsignedInteger('number_customer_sales_channels')->default(0);
+            $table->unsignedInteger('number_customer_sales_channel_broken')->default(0);
 
             $table->timestampsTz();
         });
