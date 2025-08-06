@@ -57,7 +57,7 @@ class ShowRetinaTopUpCheckout extends RetinaAction
 
 
         $product = new Product();
-        $product->name       = 'items';
+        $product->name       = 'top up';
         $product->quantity   = 1;
         $product->unit_price = $topUpAmount;
         $paymentSessionRequest->items = [$product];
