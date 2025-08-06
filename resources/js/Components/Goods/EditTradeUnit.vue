@@ -334,13 +334,13 @@ const onEditBrand = () => {
                 <template #closeButton>
                     <ModalConfirmationDelete
                         :routeDelete="{
-                            name: props.tag_routes.delete_tag.name,
+                            name: props.tag_routes.detach_tag.name,
                             parameters: {
-                                ...props.tag_routes.delete_tag.parameters,
+                                ...props.tag_routes.detach_tag.parameters,
                                 tag: tag.id,
                             }
                         }"
-                        :title="trans('Are you sure you want to delete tag') + ` ${tag.name}?`"
+                        :title="trans('Are you sure you want to detach tag') + ` ${tag.name}?`"
                         isFullLoading
                     >
                         <template #default="{ isOpenModal, changeModel }">
