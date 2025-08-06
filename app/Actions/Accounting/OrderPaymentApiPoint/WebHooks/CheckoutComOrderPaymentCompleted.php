@@ -8,9 +8,11 @@
 
 namespace App\Actions\Accounting\OrderPaymentApiPoint\WebHooks;
 
+use App\Actions\Accounting\OrderPaymentApiPoint\UpdateOrderPaymentApiPoint;
 use App\Actions\Accounting\WithCheckoutCom;
 use App\Actions\IrisAction;
 use App\Actions\Retina\Dropshipping\Orders\WithRetinaOrderPlacedRedirection;
+use App\Enums\Accounting\OrderPaymentApiPoint\OrderPaymentApiPointStateEnum;
 use App\Models\Accounting\OrderPaymentApiPoint;
 use App\Models\Accounting\PaymentAccountShop;
 use Illuminate\Support\Arr;
@@ -37,8 +39,38 @@ class CheckoutComOrderPaymentCompleted extends IrisAction
             $modelData['cko-payment-id']
         );
 
+        if (Arr::get($checkoutComPayment, 'error')) {
+            return [
+                'status'         => 'pending',
+                'payment_status' => 'Connection Error',
+                'msg'            => __('Error connecting to payment gateway, we will try again now')
 
-        dd($checkoutComPayment);
+            ];
+        }
+
+        $status = Arr::get($checkoutComPayment, 'status', 'Error');
+        if (in_array($status, ['Pending', 'Retry Scheduled'])) {
+            return [
+                'status'         => 'pending',
+                'payment_status' => $status,
+                'msg'            => __('Payment is still pending, we will try again now')
+            ];
+        }
+
+        if (in_array($status, ['Voided', 'Declined', 'Cancelled', 'Expired'])) {
+            CheckoutComOrderPaymentFailure::make()->processFailure($orderPaymentApiPoint, $checkoutComPayment);
+
+            return [
+                'status'         => 'error',
+                'payment_status' => $status,
+                'msg'            => __('Payment has been declined, please try again later')
+            ];
+        }
+
+        CheckoutComOrderPaymentSuccess::make()->processSuccessfulPayment($orderPaymentApiPoint, $paymentAccountShop, $checkoutComPayment);
+
+
+        dd(Arr::get($checkoutComPayment, 'status'));
     }
 
     public function rules(): array

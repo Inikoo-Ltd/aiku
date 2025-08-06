@@ -43,13 +43,24 @@ const isLoading = ref(true)
 
 const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
     try {
-        const aaa = await axios.post(route('retina.webhooks.checkout_com.order_payment_completed', {
+        const response = await axios.post(route('retina.webhooks.checkout_com.order_payment_completed', {
             orderPaymentApiPoint: props.data.order_payment_api_point
         }), {
             'cko-payment-id': paymentResponseId
         })
 
-        console.log("hitWebhookAfterSuccess:", aaa.data)
+        console.log("hitWebhookAfterSuccess:", response.data)
+
+        if(response.data.status === 'success') {
+            // here navigate to a route i will gice you later
+        }else if(response.data.status === 'error') {
+            // here show a modal with response.data.msg
+        }else{
+            //show modal paiyment still procession we wil try again
+            // then wait 5 seconds and call same ajax,
+            // but a maxmimun 5 times, after that show an error to contact customer services or whatever
+        }
+
     } catch (error) {
         console.log("Error hit the checkout:", error)
         notify({
