@@ -13,6 +13,7 @@ namespace App\Actions\Masters\MasterProductCategory\UI;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Masters\MasterProductCategory;
+use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -20,20 +21,27 @@ use Spatie\LaravelOptions\Options;
 
 class CreateMasterFamily extends OrgAction
 {
-    public function asController(MasterProductCategory $masterDepartment, ActionRequest $request): Response
+    public function asController(MasterShop $masterShop, ActionRequest $request): Response
+    {
+        $this->initialisationFromGroup(group(), $request);
+
+        return $this->handle($masterShop, $request);
+    }
+
+    public function inMasterDepartment(MasterProductCategory $masterDepartment, ActionRequest $request): Response
     {
         $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($masterDepartment, $request);
     }
 
-    public function handle(MasterProductCategory $masterDepartment, ActionRequest $request): Response
+    public function handle(MasterProductCategory|MasterShop $parent, ActionRequest $request): Response
     {
         return Inertia::render(
             'CreateModel',
             [
                  'breadcrumbs' => $this->getBreadcrumbs(
-                     $masterDepartment,
+                     $parent,
                      $request->route()->getName(),
                      $request->route()->originalParameters()
                  ),
@@ -46,7 +54,7 @@ class CreateMasterFamily extends OrgAction
                             'style' => 'cancel',
                             'label' => __('cancel'),
                             'route' => [
-                                'name'       => 'grp.masters.master_departments.show.master_sub_departments.index',
+                                'name'       => preg_replace('/create$/', 'index', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())
                             ],
                         ]
@@ -90,22 +98,31 @@ class CreateMasterFamily extends OrgAction
                                 ]
                             ]
                         ],
-                    'route'     => [
-                        'name'       => 'grp.models.master_family.store',
-                        'parameters' => [
-                            'masterDepartment' => $masterDepartment->id
-                        ]
-                    ]
+                    'route' => match ($parent::class) {
+                        MasterShop::class => [
+                            'name' => 'grp.models.master_shops.master_family.store',
+                            'parameters' => [
+                                'masterShop' => $parent->id
+                            ]
+                        ],
+                        MasterProductCategory::class => [
+                            'name' => 'grp.models.master_family.store',
+                            'parameters' => [
+                                'masterDepartment' => $parent->id
+                            ]
+                        ],
+                        default => null
+                    }
                 ]
             ]
         );
     }
 
-    public function getBreadcrumbs(MasterProductCategory $masterProductCategory, string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(MasterProductCategory|MasterShop $parent, string $routeName, array $routeParameters): array
     {
         return array_merge(
             IndexMasterFamilies::make()->getBreadcrumbs(
-                parent: $masterProductCategory,
+                parent: $parent,
                 routeName: preg_replace('/create$/', 'index', $routeName),
                 routeParameters: $routeParameters,
             ),
