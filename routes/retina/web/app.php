@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Accounting\OrderPaymentApiPoint\WebHooks\RedirectSuccessPaymentOrder;
+use App\Actions\Accounting\TopUpPaymentApiPoint\WebHooks\RedirectSuccessPaymentTopUp;
 
 Route::middleware(["retina-auth:retina", 'retina-prepare-account'])->group(function () {
     Route::get('/', function () {
