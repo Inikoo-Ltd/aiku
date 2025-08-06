@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Shop;
 
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
 
 class StoreShopPlatformStats extends OrgAction
@@ -18,12 +19,14 @@ class StoreShopPlatformStats extends OrgAction
      */
     public function handle(Shop $shop): Shop
     {
-        $platforms = $shop->group->platforms;
+        if ($shop->type == ShopTypeEnum::DROPSHIPPING || $shop->type == ShopTypeEnum::FULFILMENT) {
+            $platforms = $shop->group->platforms;
 
-        foreach ($platforms as $platform) {
-            $shop->platformStats()->firstOrCreate([
-                'platform_id' => $platform->id,
-            ]);
+            foreach ($platforms as $platform) {
+                $shop->platformStats()->firstOrCreate([
+                    'platform_id' => $platform->id,
+                ]);
+            }
         }
 
 
