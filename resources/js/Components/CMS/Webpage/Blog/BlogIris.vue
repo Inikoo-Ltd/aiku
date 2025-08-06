@@ -87,28 +87,7 @@ onMounted(async () => {
 
 const shareUrl = encodeURIComponent(window.location.href)
 
-const latestPosts = ref([
-  {
-    id: 1,
-    title: "Understanding Vue 3 Composition API",
-    image: "https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png"
-  },
-  {
-    id: 2,
-    title: "Getting Started with PrimeVue",
-    image: "https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png"
-  },
-  {
-    id: 3,
-    title: "Advanced TypeScript Patterns",
-    image: "https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png"
-  },
-  {
-    id: 4,
-    title: "Deploying Vue Apps with Vite",
-    image: "https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png"
-  }
-])
+console.log(props.fieldValue)
 </script>
 
 <template>
@@ -141,10 +120,13 @@ const latestPosts = ref([
       <div class="mt-10">
         <div class="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">Latest Posts</div>
         <div class="space-y-3">
-          <div v-for="post in latestPosts" :key="post.id"
+          <div v-for="post in fieldValue.latest_blogs" :key="post.id"
             class="flex items-center gap-3 group hover:bg-gray-50 p-2 rounded-md transition">
-            <img :src="post.image" :alt="post.title"
-              class="w-16 h-14 object-cover rounded-md border border-gray-200 shadow-sm" />
+           <!--  <img :src="post.image" :alt="post.title"
+              class="w-16 h-14 object-cover rounded-md border border-gray-200 shadow-sm" /> -->
+               <Image :src="post?.published_layout?.web_blocks[0]?.web_block?.layout?.data?.fieldValue?.image?.source"
+                        :alt="post?.published_layout?.web_blocks[0]?.web_block?.layout?.data?.fieldValue?.image?.alt"
+                        class="w-16 h-14 object-cover rounded-md border border-gray-200 shadow-sm" :imageCover="true"/>
             <div class="text-sm font-medium text-gray-700 group-hover:text-gray-900">
               {{ post.title }}
             </div>

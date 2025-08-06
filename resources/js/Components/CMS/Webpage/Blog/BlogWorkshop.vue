@@ -48,7 +48,7 @@ const displayDate = computed(() => {
 <template>
   <article class="max-w-3xl mx-auto px-4 py-8 text-gray-800">
     <!-- Title as textarea -->
-    <div class="mb-4" :style="getStyles(modelValue.properties, screenType)">
+    <div class="mb-4" :style="getStyles(modelValue?.properties, screenType)">
         <Editor v-model="modelValue.title" @update:modelValue="() => emits('autoSave')" class="mb-6"
           placeholder="Blog Title" :uploadImageRoute="{
             name: webpageData.images_upload_route.name,
@@ -67,13 +67,13 @@ const displayDate = computed(() => {
     <!-- Hero Image or Placeholder -->
     <div
       class="w-full mb-8 rounded-xl shadow-md overflow-hidden aspect-[2/1] bg-gray-100 flex items-center justify-center">
-      <Image v-if="modelValue.image.source" :src="modelValue.image.source" :alt="modelValue.image.alt"
+      <Image v-if="modelValue?.image?.source" :src="modelValue?.image?.source" :alt="modelValue?.image.alt"
         :imageCover="true" class="w-full h-full object-cover" />
       <FontAwesomeIcon v-else :icon="['fas', 'image']" class="text-gray-400 text-6xl" />
     </div>
 
     <!-- Content Editor -->
-    <div :style="getStyles(modelValue.properties, screenType)">
+    <div :style="getStyles(modelValue?.properties, screenType)">
       <Editor v-model="modelValue.content" @update:modelValue="() => emits('autoSave')" class="mb-6"
         placeholder="Blog content" :uploadImageRoute="{
           name: webpageData.images_upload_route.name,
