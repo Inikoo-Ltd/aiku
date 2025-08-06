@@ -155,19 +155,18 @@ class ShowMasterSubDepartment extends GrpAction
 
 
         return match ($routeName) {
-
-            'grp.org.shops.show.catalogue.departments.show.sub_departments.show' =>
+            'grp.masters.master_departments.show.master_sub_departments.show' =>
             array_merge(
-                (new ShowMasterDepartment())->getBreadcrumbs($masterSubDepartment->masterShop, $masterSubDepartment->masterDepartment, 'grp.org.shops.show.catalogue.departments.show', $routeParameters),
+                (new IndexMasterSubDepartments())->getBreadcrumbs($masterSubDepartment->masterShop, $masterSubDepartment->masterDepartment, $routeParameters, $suffix),
                 $headCrumb(
                     $masterSubDepartment,
                     [
                         'index' => [
-                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.index',
+                            'name'       => 'grp.masters.master_departments.show.master_sub_departments.index',
                             'parameters' => $routeParameters
                         ],
                         'model' => [
-                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
+                            'name'       => 'grp.masters.master_departments.show.master_sub_departments.show',
                             'parameters' => $routeParameters
 
 

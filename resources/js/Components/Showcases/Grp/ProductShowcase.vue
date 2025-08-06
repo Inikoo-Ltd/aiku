@@ -257,23 +257,52 @@ const compSelectedTradeUnit = computed(() => {
 					</div>
 					<div class="flex justify-between">
 						<dt>{{ trans("Stock") }}</dt>
-						<dd class="font-medium">-- pcs</dd>
+						<dd class="font-medium">
+							{{ data.product.data.stock }} {{ data.product.data.unit }}
+						</dd>
 					</div>
-					<div class="flex justify-between">
+					<!-- <div class="flex justify-between">
 						<dt>{{ trans("Cost") }}</dt>
 						<dd class="font-medium">--</dd>
-					</div>
+					</div> -->
 					<div class="flex justify-between">
 						<dt>{{ trans("Price") }}</dt>
 						<dd class="font-medium text-right">
-							{{ locale.currencyFormat(data.product.data.currency_code || "usd", data.product.data.price)
+							{{ locale.currencyFormat(data.product.data.currency_code, data.product.data.price)
 							}}
-							<span class="font-light">margin (--)</span>
+							<!-- <span class="font-light">margin (--)</span> -->
 						</dd>
 					</div>
+					
+					<!-- Field: RRP -->
 					<div class="flex justify-between">
 						<dt>RRP</dt>
-						<dd class="font-medium text-right">--- <span class="font-light">margin (--)</span></dd>
+						<dd class="font-medium text-right">
+							{{ locale.currencyFormat(data.product.data.currency_code, data.product.data.rrp) }}
+							<span class="font-light">
+								({{
+									((data.product.data.rrp - data.product.data.price) / data.product.data.price * 100).toFixed(2)
+								}}%)
+							</span>
+						</dd>
+					</div>
+					
+					<!-- Field: Weight -->
+					<div class="flex justify-between">
+						<dt>{{ trans("Weight") }}</dt>
+						<dd class="font-medium text-right">
+							{{ locale.number(data.product.data.specifications.gross_weight) }} gr
+							<!-- <span class="font-light">margin (--)</span> -->
+						</dd>
+					</div>
+
+					<div class="flex flex-col">
+						<dt>{{ trans("Ingredients") }}</dt>
+						<ul class="xtext-right list-disc list-inside font-light" >
+							<li v-for="ingredient in data.product.data.specifications?.ingredients" :key="ingredient.id">
+								{{ ingredient }}
+							</li>
+						</ul>
 					</div>
 				</dl>
 			</section>
@@ -283,6 +312,7 @@ const compSelectedTradeUnit = computed(() => {
 
 		</div> -->
 
+		<!-- Section: Trade Units -->
 		<div class="md:col-span-1 pr-6">
 			<Fieldset
 				class="p-5 space-y-5 h-fit w-full max-w-lg"
@@ -319,7 +349,7 @@ const compSelectedTradeUnit = computed(() => {
 								</Link>
 							</template>
 							<div v-else class="text-gray-500 text-center mx-auto">
-								No trade units for this product
+								{{ trans("No trade units for this product") }}
 							</div>
 						</div>
 

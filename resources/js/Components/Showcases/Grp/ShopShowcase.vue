@@ -32,15 +32,15 @@ defineProps<{
             :dashboard="data.dashboard_stats"
         />
 
-        <div class="flex justify-between gap-x-4 px-4">
-            <div class="w-full max-w-xl text-xl h-[700px] mt-4 xmd:grid grid-cols-1 gap-2 lg:gap-5 xsm:grid-cols-2">
+        <div class="flex justify-between gap-x-4 gap-y-4 px-4">
+            <div class="w-full max-w-xl text-xl xh-[700px] mt-4 md:grid grid-cols-1 gap-2 lg:gap-5 sm:grid-cols-2">
                 <StatsBox
-                    v-for="(stat, idxStat) in data.statsBox"
+                    v-for="(stat, idxStat) in data.data.statsBox"
                     :stat="stat"
                 >
-                    <template #background>
+                    <!-- <template #background>
                         <div></div>
-                    </template>
+                    </template> -->
                 </StatsBox>
             </div>
         </div>

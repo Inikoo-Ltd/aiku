@@ -6,8 +6,8 @@
 
 <script setup lang="ts">
 import Table from '@/Components/Table/Table.vue'
-import { RouteParams } from "@/types/route-params";
-import { Link } from '@inertiajs/vue3'
+import {RouteParams} from "@/types/route-params";
+import {Link} from '@inertiajs/vue3'
 
 defineProps<{
     data: object,
@@ -16,6 +16,13 @@ defineProps<{
 
 function masterSubDepartmentRoute(subDepartment: {}) {
     switch (route().current()) {
+        case 'grp.masters.master_shops.show.master_sub_departments.index':
+            return route(
+                'grp.masters.master_shops.show.master_sub_departments.show',
+                [
+                    (route().params as RouteParams).masterShop,
+                    subDepartment.slug
+                ]);
         case 'grp.masters.master_departments.show.master_sub_departments.index':
             return route(
                 'grp.masters.master_departments.show.master_sub_departments.show',
@@ -28,10 +35,9 @@ function masterSubDepartmentRoute(subDepartment: {}) {
                 'grp.masters.master_shops.show.master_sub_departments.show',
                 [
                     (route().params as RouteParams).masterShop,
-                    (route().params as RouteParams).masterDepartment,
                     subDepartment.slug
                 ]
-        );
+            );
     }
 }
 
@@ -40,7 +46,8 @@ function masterSubDepartmentRoute(subDepartment: {}) {
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(code)="{ item: subDepartment }">
-            <Link v-if="masterSubDepartmentRoute(subDepartment)" :href="masterSubDepartmentRoute(subDepartment)" class="primaryLink">
+            <Link v-if="masterSubDepartmentRoute(subDepartment)" :href="masterSubDepartmentRoute(subDepartment)"
+                  class="primaryLink">
                 {{ subDepartment["code"] }}
             </Link>
         </template>

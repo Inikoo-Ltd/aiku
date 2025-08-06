@@ -24,13 +24,13 @@ trait DataFeedsMapping
 
         if ($row->web_images && $rawImages = json_decode($row->web_images, true)) {
             foreach (Arr::get($rawImages, 'all', []) as $image) {
-                $images .= Arr::get($image, 'original.original').'; ';
+                $images .= Arr::get($image, 'original.original').' ';
             }
         }
-        $images = preg_replace('/; $/', '', $images);
+        $images = preg_replace('/ $/', '', $images);
 
 
-        $status       = $row->status;
+        $status       = $row->state;
         $statusString = (string)$status;
         $status       = Str::studly($statusString);
 
@@ -45,7 +45,7 @@ trait DataFeedsMapping
         } elseif ($row->state == 'discontinuing') {
             $availabilityStatus = 'Discontinuing';
         } else {
-            $availabilityStatus = 'OK';
+            $availabilityStatus = 'Normal';
             if ($availableQuantity == 0) {
                 $availabilityStatus = 'OutofStock';
             } elseif ($availableQuantity < 5) {

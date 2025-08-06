@@ -85,7 +85,7 @@ class CheckShopifyChannel
             'can_connect_to_platform' => $canConnectToPlatform,
             'exist_in_platform'       => $existInPlatform,
         ]);
-        if($customerSalesChannel->user){
+        if ($customerSalesChannel->user) {
             $this->update($customerSalesChannel->user, $updateData);
         }
 
@@ -102,32 +102,32 @@ class CheckShopifyChannel
     public function asCommand(Command $command): void
     {
         $customerSalesChannelSlug = $command->argument('customerSalesChannel');
-        
+
         if ($customerSalesChannelSlug) {
             // Process a single customer sales channel
             $customerSalesChannel = CustomerSalesChannel::where('slug', $customerSalesChannelSlug)->firstOrFail();
             $customerSalesChannel = $this->handle($customerSalesChannel);
-            
+
             // Display CustomerSalesChannel status information
             $this->displayChannelInfo($command, $customerSalesChannel);
         } else {
 
-            $shopifyPlatform=Platform::where('type',PlatformTypeEnum::SHOPIFY)->firstOrFail();
+            $shopifyPlatform = Platform::where('type', PlatformTypeEnum::SHOPIFY)->firstOrFail();
 
             $customerSalesChannels = CustomerSalesChannel::where('platform_id', $shopifyPlatform->id)->get();
-            
+
             if ($customerSalesChannels->isEmpty()) {
                 $command->info('No customer sales channels found with platform_id=1.');
                 return;
             }
-            
+
             $command->info("Processing {$customerSalesChannels->count()} customer sales channels with platform_id=1...");
-            
+
             // Create a progress bar
             $bar = $command->getOutput()->createProgressBar($customerSalesChannels->count());
             $bar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
             $bar->start();
-            
+
             $successCount = 0;
             $failCount = 0;
 
@@ -140,16 +140,16 @@ class CheckShopifyChannel
                     $failCount++;
                     $command->error("Error processing $customerSalesChannel->slug: {$e->getMessage()}");
                 }
-                
+
                 $bar->advance();
             }
-            
+
             $bar->finish();
             $command->newLine(2);
             $command->info("Processed {$customerSalesChannels->count()} customer sales channels: $successCount successful, $failCount failed.");
         }
     }
-    
+
     /**
      * Display detailed information about a customer sales channel
      */
@@ -162,14 +162,14 @@ class CheckShopifyChannel
             ['Can Connect to Platform', $customerSalesChannel->can_connect_to_platform ? 'Yes' : 'No'],
             ['Exist in Platform', $customerSalesChannel->exist_in_platform ? 'Yes' : 'No']
         ];
-        
+
         $shopData = $customerSalesChannel->user->data['shop'] ?? [];
-        
+
         if (empty($shopData)) {
             $command->info("No shop data found.");
             return;
         }
-        
+
         // Basic shop information
         $tableData = [
             ['ID', $shopData['id'] ?? 'N/A'],
@@ -180,10 +180,10 @@ class CheckShopifyChannel
             ['Description', $shopData['description'] ?? 'N/A'],
             ['Company Name', $shopData['company_name'] ?? 'N/A']
         ];
-        
+
         $command->info("\nShop Information:");
         $command->table(['Field', 'Value'], $tableData);
-        
+
         // Billing address information if available
         if (!empty($shopData['billingAddress'])) {
             $billingAddress = $shopData['billingAddress'];
@@ -195,15 +195,15 @@ class CheckShopifyChannel
                 ['Postal/ZIP Code', $billingAddress['postal_code'] ?? 'N/A'],
                 ['Country Code', $billingAddress['country_code'] ?? 'N/A']
             ];
-            
+
             $command->info("\nBilling Address:");
             $command->table(['Field', 'Value'], $addressData);
         }
-        
+
         // Fulfillment services information if available
         if (!empty($shopData['fulfillmentServices'])) {
             $command->info("\nFulfillment Services:");
-            
+
             $counter = 1;
             foreach ($shopData['fulfillmentServices'] as $service) {
                 $serviceData = [
@@ -213,10 +213,10 @@ class CheckShopifyChannel
                     ['Type', $service['type'] ?? 'N/A'],
                     ['Inventory Management', $service['inventoryManagement'] ? 'Yes' : 'No']
                 ];
-                
+
                 $command->info("\nService #$counter:");
                 $command->table(['Field', 'Value'], $serviceData);
-                
+
                 // Location information if available
                 if (!empty($service['location'])) {
                     $location = $service['location'];
@@ -227,10 +227,10 @@ class CheckShopifyChannel
                         ['Active', $location['isActive'] ? 'Yes' : 'No'],
                         ['Fulfills Online Orders', $location['fulfillsOnlineOrders'] ? 'Yes' : 'No']
                     ];
-                    
+
                     $command->info("Location:");
                     $command->table(['Field', 'Value'], $locationData);
-                    
+
                     // Location address if available
                     if (!empty($location['address'])) {
                         $address = $location['address'];
@@ -243,19 +243,19 @@ class CheckShopifyChannel
                             ['Postal/ZIP Code', $address['postal_code'] ?? 'N/A'],
                             ['Country Code', $address['country_code'] ?? 'N/A']
                         ];
-                        
+
                         $command->info("Address:");
                         $command->table(['Field', 'Value'], $addressData);
                     }
                 }
-                
+
                 $counter++;
             }
         }
-        
+
         $command->info("\nCustomer Sales Channel Status:");
         $command->table(['Field', 'Value'], $statusData);
-        
+
         $command->info("\nShop data updated successfully.");
     }
 

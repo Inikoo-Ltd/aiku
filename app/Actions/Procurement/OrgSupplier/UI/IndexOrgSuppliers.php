@@ -124,7 +124,7 @@ class IndexOrgSuppliers extends OrgAction
 
             ->leftJoin('org_supplier_stats', 'org_supplier_stats.org_supplier_id', 'org_suppliers.id')
 
-            ->allowedSorts(['code', 'name', 'agent_name', 'supplier_locations', 'number_org_supplier_products', 'number_purchase_orders'])
+            ->allowedSorts(['code', 'name', 'agent_name', 'supplier_locations', 'number_org_supplier_products', 'number_purchase_orders', 'number_purchase_orders_delivery_state_in_process'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();

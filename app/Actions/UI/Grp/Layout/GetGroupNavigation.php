@@ -200,7 +200,7 @@ class GetGroupNavigation
             'topMenu' => [
                 'subSections' => [
                     [
-                        'label' => __('SKUs families'),
+                        'label' => __('Master SKUs families'),
                         'icon'  => ['fal', 'fa-boxes-alt'],
                         'root'  => 'grp.goods.stock-families.',
                         'route' => [
@@ -210,7 +210,7 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => 'SKUs',
+                        'label' => __('Master SKUs'),
                         'icon'  => ['fal', 'fa-box'],
                         'root'  => 'grp.goods.stocks.',
                         'route' => [
@@ -267,7 +267,7 @@ class GetGroupNavigation
                         ],
                     ],
                     [
-                        'label' => __('Shops'),
+                        'label' => __('Master Shops'),
                         'tooltip' => __('Master shops'),
                         'icon'  => ['fal', 'fa-store-alt'],
                         'root'  => 'grp.masters.master_shops.',
@@ -277,49 +277,49 @@ class GetGroupNavigation
 
                         ]
                     ],
-                    [
-                        'label' => __('Departments'),
-                        'tooltip' => __('Master departments'),
-                        'icon'  => ['fal', 'fa-folder-tree'],
-                        'root'  => 'grp.masters.master_departments.',
-                        'route' => [
-                            'name'       => 'grp.masters.master_departments.index',
-                            'parameters' => []
-
-                        ]
-                    ],
-                    [
-                        'label' => __('Families'),
-                        'tooltip' => __('Master families'),
-                        'icon'  => ['fal', 'fa-folder'],
-                        'root'  => 'grp.masters.master_families.',
-                        'route' => [
-                            'name'       => 'grp.masters.master_families.index',
-                            'parameters' => []
-
-                        ]
-                    ],
-                    [
-                        'label' => __('Products'),
-                        'tooltip' => __('Master products'),
-                        'icon'  => ['fal', 'fa-cube'],
-                        'root'  => 'grp.masters.master_products.',
-                        'route' => [
-                            'name'       => 'grp.masters.master_products.index',
-                            'parameters' => []
-
-                        ]
-                    ],
-                    [
-                        "label"   => __("Collections"),
-                        "tooltip" => __("Master Collections"),
-                        "icon"    => ["fal", "fa-album-collection"],
-                        'root'    => 'grp.masters.master_collections.',
-                        "route"   => [
-                            "name"       => "grp.masters.master_collections.index",
-                            "parameters" => [],
-                        ],
-                    ],
+//                    [
+//                        'label' => __('Departments'),
+//                        'tooltip' => __('Master departments'),
+//                        'icon'  => ['fal', 'fa-folder-tree'],
+//                        'root'  => 'grp.masters.master_departments.',
+//                        'route' => [
+//                            'name'       => 'grp.masters.master_departments.index',
+//                            'parameters' => []
+//
+//                        ]
+//                    ],
+//                    [
+//                        'label' => __('Families'),
+//                        'tooltip' => __('Master families'),
+//                        'icon'  => ['fal', 'fa-folder'],
+//                        'root'  => 'grp.masters.master_families.',
+//                        'route' => [
+//                            'name'       => 'grp.masters.master_families.index',
+//                            'parameters' => []
+//
+//                        ]
+//                    ],
+//                    [
+//                        'label' => __('Products'),
+//                        'tooltip' => __('Master products'),
+//                        'icon'  => ['fal', 'fa-cube'],
+//                        'root'  => 'grp.masters.master_products.',
+//                        'route' => [
+//                            'name'       => 'grp.masters.master_products.index',
+//                            'parameters' => []
+//
+//                        ]
+//                    ],
+//                    [
+//                        "label"   => __("Collections"),
+//                        "tooltip" => __("Master Collections"),
+//                        "icon"    => ["fal", "fa-album-collection"],
+//                        'root'    => 'grp.masters.master_collections.',
+//                        "route"   => [
+//                            "name"       => "grp.masters.master_collections.index",
+//                            "parameters" => [],
+//                        ],
+//                    ],
 
 
                 ]

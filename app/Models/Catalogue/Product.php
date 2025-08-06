@@ -141,6 +141,7 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $description_i8n
  * @property array<array-key, mixed>|null $description_title_i8n
  * @property array<array-key, mixed>|null $description_extra_i8n
+ * @property bool $is_single_trade_unit Indicates if the product has a single trade unit
  * @property-read \App\Models\Catalogue\Asset|null $asset
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, BackInStockReminder> $backInStockReminders
