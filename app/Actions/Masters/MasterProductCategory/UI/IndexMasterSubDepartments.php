@@ -130,7 +130,7 @@ class IndexMasterSubDepartments extends GrpAction
             'title' => __('master shop')
         ];
         $afterTitle = [
-            'label' => __('Sub Departments')
+            'label' => __('Master Sub Departments')
         ];
         $iconRight  = [
             'icon' => 'fal fa-folder-tree',
@@ -152,7 +152,7 @@ class IndexMasterSubDepartments extends GrpAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'actions'       => [
-                        [
+                        $this->parent instanceof MasterProductCategory ? [
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('new master Sub-department'),
@@ -161,7 +161,7 @@ class IndexMasterSubDepartments extends GrpAction
                                 'name'       => 'grp.masters.master_departments.show.master_sub_departments.create',
                                 'parameters' => $request->route()->originalParameters()
                             ]
-                        ],
+                        ] : [],
                     ],
                     'subNavigation' => $subNavigation,
                 ],
@@ -189,7 +189,7 @@ class IndexMasterSubDepartments extends GrpAction
         return match ($routeName) {
             'grp.masters.master_shops.show.master_sub_departments.index' =>
             array_merge(
-                ShowMasterShop::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
+                ShowMasterShop::make()->getBreadcrumbs($parent, $routeName),
                 $headCrumb(
                     [
                         'name'       => $routeName,
@@ -199,7 +199,8 @@ class IndexMasterSubDepartments extends GrpAction
                 )
             ),
 
-            'grp.masters.master_departments.show.master_sub_departments.index' =>
+            'grp.masters.master_departments.show.master_sub_departments.index',
+            'grp.masters.master_departments.show.master_sub_departments.show' =>
             array_merge(
                 ShowMasterDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
                 $headCrumb(

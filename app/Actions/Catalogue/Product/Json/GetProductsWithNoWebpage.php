@@ -42,8 +42,8 @@ class GetProductsWithNoWebpage extends OrgAction
         $queryBuilder->leftJoin('asset_sales_intervals', 'products.asset_id', 'asset_sales_intervals.asset_id');
         $queryBuilder->leftJoin('asset_ordering_intervals', 'products.asset_id', 'asset_ordering_intervals.asset_id');
         $queryBuilder->leftJoin('webpages', function ($join) {
-        $join->on('products.id', '=', 'webpages.model_id')
-                ->where('webpages.model_type', '=', 'Product');
+            $join->on('products.id', '=', 'webpages.model_id')
+                    ->where('webpages.model_type', '=', 'Product');
         });
         $queryBuilder->where('products.is_main', true);
         $queryBuilder->where('products.shop_id', $shop->id);

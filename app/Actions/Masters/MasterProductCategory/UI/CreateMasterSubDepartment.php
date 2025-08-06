@@ -80,7 +80,7 @@ class CreateMasterSubDepartment extends OrgAction
                             ]
                         ],
                     'route'     => [
-                        'name'       => 'grp.models.master_product.master_sub_departments.store',
+                        'name'       => 'grp.models.master_sub_department.store',
                         'parameters' => [
                             'masterDepartment' => $masterDepartment->id
                         ]

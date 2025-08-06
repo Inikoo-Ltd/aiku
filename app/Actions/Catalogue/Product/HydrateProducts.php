@@ -14,15 +14,16 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoFavourited
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoFavouritedInCategories;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoReminded;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoRemindedInCategories;
-use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingIngredientsFromTradeUnits;
-use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTradeUnitsFields;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateForSale;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateImages;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingIngredientsFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateProductVariants;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTradeUnitsFields;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
+use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Models\Catalogue\Product;
 
 class HydrateProducts
@@ -38,6 +39,11 @@ class HydrateProducts
 
     public function handle(Product $product): void
     {
+
+        if($product->trashed()){
+            return;
+        }
+
         ProductHydrateAvailableQuantity::run($product);
         ProductHydrateForSale::run($product);
         ProductHydrateProductVariants::run($product);
@@ -52,6 +58,7 @@ class HydrateProducts
         ProductHydrateBarcodeFromTradeUnit::run($product);
         ProductHydrateImages::run($product);
         ProductHydrateTradeUnitsFields::run($product);
+        ModelHydrateSingleTradeUnits::run($product);
     }
 
 }

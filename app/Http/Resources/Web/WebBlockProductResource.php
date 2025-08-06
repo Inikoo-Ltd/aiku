@@ -41,11 +41,12 @@ class WebBlockProductResource extends JsonResource
             'gross_weight'      => $product->gross_weight,
             'marketing_weights' => $tradeUnits->pluck('marketing_weights')->flatten()->filter()->values()->all(),
             'barcode'           => $product->barcode,
-            'dimensions'        => NaturalLanguage::make()->dimensions($product->marketing_dimensions),
+            'dimensions'        => NaturalLanguage::make()->dimensions(json_encode($product->marketing_dimensions)),
             'cpnp'              => $product->cpnp_number,
-            'net_weight'        => $product->marketing_weight. '/' . $product->unit,
+            'net_weight'        => $product->marketing_weight,
+            'unit'              => $product->unit,
         ];
-        
+
         return [
             'slug'              => $product->slug,
             'code'              => $product->code,

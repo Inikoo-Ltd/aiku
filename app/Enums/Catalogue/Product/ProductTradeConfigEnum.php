@@ -28,7 +28,7 @@ enum ProductTradeConfigEnum: string
     case FORCE_FOR_SALE = 'force-for-sale';
 
 
-    public static function labels($bucket = null): array
+    public static function labels(): array
     {
         return [
             'auto' => __('Auto'),

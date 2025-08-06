@@ -429,10 +429,10 @@ trait WithAuroraParsers
     {
         $department = ProductCategory::where('type', ProductCategoryTypeEnum::DEPARTMENT)->where('source_department_id', $sourceId)->first();
         // we no longer parsing departmetns
-//        if (!$department) {
-//            $sourceData = explode(':', $sourceId);
-//            $department = FetchAuroraDepartments::run($this->organisationSource, $sourceData[1]);
-//        }
+        //        if (!$department) {
+        //            $sourceData = explode(':', $sourceId);
+        //            $department = FetchAuroraDepartments::run($this->organisationSource, $sourceData[1]);
+        //        }
 
         return $department;
     }

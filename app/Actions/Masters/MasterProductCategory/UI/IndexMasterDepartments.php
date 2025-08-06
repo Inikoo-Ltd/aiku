@@ -153,7 +153,7 @@ class IndexMasterDepartments extends OrgAction
                 'title' => __('master shop')
             ];
             $afterTitle = [
-                'label' => __('Departments')
+                'label' => __('Master Departments')
             ];
             $iconRight  = [
                 'icon' => 'fal fa-folder-tree',
