@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Masters\MasterAsset\UI\IndexMasterAssets;
+use App\Actions\Masters\MasterAsset\UI\ShowMasterAsset;
 use App\Actions\Masters\MasterCollection\UI\IndexMasterCollections;
 use App\Actions\Masters\MasterProductCategory\UI\CreateMasterFamily;
 use App\Actions\Masters\MasterProductCategory\UI\CreateMasterSubDepartment;
@@ -78,6 +79,7 @@ Route::prefix('/shops/{masterShop}')->as('master_shops.show')->group(function ()
     });
     Route::prefix('products')->as('.products.')->group(function () {
         Route::get('', [IndexMasterAssets::class, 'inMasterShop'])->name('index');
+        Route::get('{masterProduct}', ShowMasterAsset::class)->name('show');
     });
     Route::prefix('collections')->as('.master_collections.')->group(function () {
         Route::get('', IndexMasterCollections::class)->name('index');
