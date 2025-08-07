@@ -195,6 +195,7 @@ use App\Actions\HumanResources\JobPosition\UpdateJobPosition;
 use App\Actions\HumanResources\Workplace\DeleteWorkplace;
 use App\Actions\HumanResources\Workplace\StoreWorkplace;
 use App\Actions\HumanResources\Workplace\UpdateWorkplace;
+use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterProductCategory\StoreMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\StoreMasterSubDepartment;
@@ -334,14 +335,19 @@ Route::name('stock.')->prefix('/stock')->group(function () {
     Route::patch('/{stock:id}', UpdateStock::class)->name('update');
 });
 
+Route::prefix('master-shops/{masterShop:id}')->as('master_shops.')->group(function () {
+    Route::post('master-department', StoreMasterDepartment::class)->name('master_department.store');
+    Route::post('master-sub-department', StoreMasterSubDepartment::class)->name('master_sub_department.store');
+    Route::post('master-family', StoreMasterFamily::class)->name('master_family.store');
+});
 
 Route::prefix('department/{productCategory:id}')->name('department.')->group(function () {
     Route::post('sub-department', StoreSubDepartment::class)->name('sub_department.store');
 });
 
 Route::prefix('mater-department/{masterDepartment:id}')->group(function () {
-    Route::post('master-sub-department', StoreMasterSubDepartment::class)->name('master_sub_department.store');
-    Route::post('master-family', StoreMasterFamily::class)->name('master_family.store');
+    Route::post('master-sub-department', [StoreMasterSubDepartment::class, 'inMasterDepartment'])->name('master_sub_department.store');
+    Route::post('master-family', [StoreMasterFamily::class, 'inMasterDepartment'])->name('master_family.store');
 });
 
 Route::prefix('/product_category/{productCategory:id}')->name('product_category.')->group(function () {

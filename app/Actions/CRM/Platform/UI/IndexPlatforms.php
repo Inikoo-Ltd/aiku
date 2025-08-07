@@ -12,10 +12,10 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Traits\WithCustomersSubNavigation;
-use App\Http\Resources\Platform\PlatformsResource;
+use App\Http\Resources\Platform\ShopPlatformStatsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
-use App\Models\Dropshipping\Platform;
+use App\Models\Catalogue\ShopPlatformStats;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -32,7 +32,7 @@ class IndexPlatforms extends OrgAction
 
     private Shop|Organisation $parent;
 
-    public function handle($prefix = null): LengthAwarePaginator
+    public function handle(Shop $shop, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -44,8 +44,8 @@ class IndexPlatforms extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $queryBuilder = QueryBuilder::for(Platform::class);
-
+        $queryBuilder = QueryBuilder::for(ShopPlatformStats::class);
+        $queryBuilder->where('shop_platform_stats.shop_id', $shop->id);
         return $queryBuilder
             ->allowedSorts(['id'])
             ->allowedFilters([$globalSearch])
@@ -122,7 +122,7 @@ class IndexPlatforms extends OrgAction
                     'subNavigation' => $subNavigation,
                     'actions'       => $action,
                 ],
-                'data'        => PlatformsResource::collection($platforms), // You may want to use a resource if needed
+                'data'        => ShopPlatformStatsResource::collection($platforms),
             ]
         )->table($this->tableStructure());
     }
@@ -132,7 +132,7 @@ class IndexPlatforms extends OrgAction
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle();
+        return $this->handle($shop);
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

@@ -80,7 +80,7 @@ trait WithMasterCatalogueSubNavigation
             ],
 
             [
-                'number'   => $masterShop->stats->number_current_master_assets_type_product,
+                'number'   => $masterShop->stats->number_current_master_assets,
                 'label'    => __('Master Products'),
                 'route'    => [
                     'name'       => 'grp.masters.master_shops.show.products.index',

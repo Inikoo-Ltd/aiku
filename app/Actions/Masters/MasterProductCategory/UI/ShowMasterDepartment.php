@@ -34,6 +34,8 @@ class ShowMasterDepartment extends GrpAction
 
     private MasterShop|Group $parent;
 
+    private MasterProductCategory $masterDepartment;
+
     public function handle(MasterProductCategory $masterDepartment): MasterProductCategory
     {
         $this->masterDepartment = $masterDepartment;
@@ -173,7 +175,8 @@ class ShowMasterDepartment extends GrpAction
                     $suffix
                 )
             ),
-            'grp.masters.master_departments.show.master_sub_departments.index' =>
+            'grp.masters.master_departments.show.master_sub_departments.index',
+            'grp.masters.master_departments.show.master_families.index' =>
             array_merge(
                 ShowMastersDashboard::make()->getBreadcrumbs(),
                 $headCrumb(
@@ -193,9 +196,9 @@ class ShowMasterDepartment extends GrpAction
                     $suffix
                 )
             ),
-            'grp.masters.master_departments.show.master_families.index' =>
+            'grp.masters.master_departments.show.master_families.show' =>
             array_merge(
-                ShowMastersDashboard::make()->getBreadcrumbs(),
+                IndexMasterDepartments::make()->getBreadcrumbs($parent->masterShop, $routeName, $routeParameters),
                 $headCrumb(
                     $parent,
                     [

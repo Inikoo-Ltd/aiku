@@ -152,16 +152,22 @@ class IndexMasterSubDepartments extends GrpAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'actions'       => [
-                        $this->parent instanceof MasterProductCategory ? [
+                        [
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('new master Sub-department'),
                             'label'   => __('Sub-department'),
-                            'route'   => [
-                                'name'       => 'grp.masters.master_departments.show.master_sub_departments.create',
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ] : [],
+                            'route'   => match ($this->parent::class) {
+                                MasterProductCategory::class => [
+                                    'name'       => 'grp.masters.master_departments.show.master_sub_departments.create',
+                                    'parameters' => $request->route()->originalParameters()
+                                ],
+                                default => [
+                                    'name'       => 'grp.masters.master_shops.show.master_sub_departments.create',
+                                    'parameters' => $request->route()->originalParameters()
+                                ]
+                            }
+                        ],
                     ],
                     'subNavigation' => $subNavigation,
                 ],

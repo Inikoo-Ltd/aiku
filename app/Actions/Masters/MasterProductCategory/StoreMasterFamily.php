@@ -13,21 +13,26 @@ namespace App\Actions\Masters\MasterProductCategory;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Masters\MasterProductCategory;
+use App\Models\Masters\MasterShop;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreMasterFamily extends OrgAction
 {
-    public function handle(MasterProductCategory $masterDepartment, array $modelData): MasterProductCategory
+    /**
+     * @var \App\Models\Masters\MasterProductCategory|\App\Models\Masters\MasterShop
+     */
+    private MasterShop|MasterProductCategory $parent;
+
+    public function handle(MasterProductCategory|MasterShop $parent, array $modelData): MasterProductCategory
     {
         data_set($modelData, 'type', MasterProductCategoryTypeEnum::FAMILY);
 
-        return StoreMasterProductCategory::run($masterDepartment, $modelData);
+        return StoreMasterProductCategory::run($parent, $modelData);
     }
 
     public function rules(): array
@@ -47,7 +52,6 @@ class StoreMasterFamily extends OrgAction
             ],
             'name'        => ['required', 'max:250', 'string'],
             'description' => ['sometimes', 'required', 'max:1500'],
-            'image_id'    => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
             'image'       => [
                 'sometimes',
                 'nullable',
@@ -66,19 +70,35 @@ class StoreMasterFamily extends OrgAction
         return $this->handle($masterDepartment, $this->validatedData);
     }
 
-    public function asController(MasterProductCategory $masterDepartment, ActionRequest $request): MasterProductCategory
+    public function asController(MasterShop $masterShop, ActionRequest $request): MasterProductCategory
     {
+        $this->parent = $masterShop;
+        $this->initialisationFromGroup(group(), $request);
+
+        return $this->handle($masterShop, $this->validatedData);
+    }
+
+    public function inMasterDepartment(MasterProductCategory $masterDepartment, ActionRequest $request): MasterProductCategory
+    {
+        $this->parent = $masterDepartment;
         $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($masterDepartment, $this->validatedData);
     }
 
 
-    public function htmlResponse(MasterProductCategory $masterSubDepartment, ActionRequest $request): RedirectResponse
+    public function htmlResponse(MasterProductCategory $masterProductCategory, ActionRequest $request): RedirectResponse
     {
+        if ($this->parent instanceof MasterShop) {
+            return Redirect::route('grp.masters.master_shops.show.master_families.show', [
+                'masterShop' => $this->parent->slug,
+                'masterFamily' => $masterProductCategory->slug,
+            ]);
+        }
+
         return Redirect::route('grp.masters.master_departments.show.master_families.show', [
-            'masterDepartment' => $masterSubDepartment->parent->slug,
-            'masterFamily' => $masterSubDepartment->slug,
+            'masterDepartment' => $this->parent->slug,
+            'masterFamily' => $masterProductCategory->slug,
         ]);
     }
 

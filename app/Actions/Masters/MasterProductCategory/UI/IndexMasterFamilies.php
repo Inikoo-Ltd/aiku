@@ -230,24 +230,26 @@ class IndexMasterFamilies extends OrgAction
     {
         $actions = [];
 
-        if ($this->parent instanceof MasterProductCategory) {
+
+        $createRoute = "grp.masters.master_shops.show.master_families.create";
+
+        if ($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            $createRoute = "grp.masters.master_sub_departments.show.master_families.create";
+        } elseif ($this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
             $createRoute = "grp.masters.master_departments.show.master_families.create";
-
-            if ($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
-                $createRoute = "grp.masters.master_sub_departments.show.master_families.create";
-            }
-
-            $actions[] = [
-                'type' => 'button',
-                'style' => 'create',
-                'tooltip' => __('master new family'),
-                'label' => __('master family'),
-                'route' => [
-                    'name' => $createRoute,
-                    'parameters' => $request->route()->originalParameters()
-                ]
-            ];
         }
+
+        $actions[] = [
+            'type' => 'button',
+            'style' => 'create',
+            'tooltip' => __('master new family'),
+            'label' => __('master family'),
+            'route' => [
+                'name' => $createRoute,
+                'parameters' => $request->route()->originalParameters()
+            ]
+        ];
+
 
         return $actions;
     }

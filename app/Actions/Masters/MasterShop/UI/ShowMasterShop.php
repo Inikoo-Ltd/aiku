@@ -80,8 +80,8 @@ class ShowMasterShop extends GrpAction
 
                 MasterShopTabsEnum::SHOWCASE->value => $this->tab == MasterShopTabsEnum::SHOWCASE->value
                     ?
-                    fn () => MasterShopResource::make($masterShop)
-                    : Inertia::lazy(fn () => MasterShopResource::make($masterShop)),
+                    fn () => MasterShopResource::make($masterShop)->resolve()
+                    : Inertia::lazy(fn () => MasterShopResource::make($masterShop)->resolve()),
             ]
         );
     }
@@ -95,7 +95,7 @@ class ShowMasterShop extends GrpAction
     {
         return
             array_merge(
-                IndexMasterShops::make()->getBreadcrumbs($routeName),
+                IndexMasterShops::make()->getBreadcrumbs(),
                 [
                     [
                         'type'           => 'modelWithIndex',

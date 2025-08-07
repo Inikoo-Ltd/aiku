@@ -18,6 +18,7 @@ class TradeUnitResource extends JsonResource
         /** @var TradeUnit $tradeUnit */
         $tradeUnit = $this;
 
+
         return array(
             'slug'   => $tradeUnit->slug,
             'status' => $tradeUnit->status,
@@ -36,10 +37,10 @@ class TradeUnitResource extends JsonResource
             'description'           => $tradeUnit->description,
             'description_title'     => $tradeUnit->description_title,
             'description_extra'     => $tradeUnit->description_extra,
-            'name_i8n'              => $this->safeDecode($tradeUnit->name_i8n),
-            'description_i8n'       => $this->safeDecode($tradeUnit->description_i8n),
-            'description_title_i8n' => $this->safeDecode($tradeUnit->description_title_i8n),
-            'description_extra_i8n' => $this->safeDecode($tradeUnit->description_extra_i8n),
+            'name_i8n'              => $tradeUnit->getTranslations('name_i8n'),
+            'description_i8n'       => $tradeUnit->getTranslations('description_i8n'),
+            'description_title_i8n' => $tradeUnit->getTranslations('description_title_i8n'),
+            'description_extra_i8n' => $tradeUnit->getTranslations('description_extra_i8n'),
         );
     }
 

@@ -13,6 +13,7 @@ namespace App\Actions\Masters\MasterProductCategory;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Masters\MasterProductCategory;
+use App\Models\Masters\MasterShop;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
@@ -21,11 +22,16 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreMasterSubDepartment extends OrgAction
 {
-    public function handle(MasterProductCategory $masterDepartment, array $modelData): MasterProductCategory
+    /**
+     * @var \App\Models\Masters\MasterProductCategory|\App\Models\Masters\MasterShop
+     */
+    private MasterShop|MasterProductCategory $parent;
+
+    public function handle(MasterProductCategory|MasterShop $parent, array $modelData): MasterProductCategory
     {
         data_set($modelData, 'type', MasterProductCategoryTypeEnum::SUB_DEPARTMENT);
 
-        return StoreMasterProductCategory::run($masterDepartment, $modelData);
+        return StoreMasterProductCategory::run($parent, $modelData);
     }
 
     public function rules(): array
@@ -58,16 +64,31 @@ class StoreMasterSubDepartment extends OrgAction
         return $this->handle($masterDepartment, $this->validatedData);
     }
 
-    public function asController(MasterProductCategory $masterDepartment, ActionRequest $request): MasterProductCategory
+    public function asController(MasterShop $masterShop, ActionRequest $request): MasterProductCategory
     {
+        $this->parent = $masterShop;
+        $this->initialisationFromGroup(group(), $request);
+
+        return $this->handle($masterShop, $this->validatedData);
+    }
+
+    public function inMasterDepartment(MasterProductCategory $masterDepartment, ActionRequest $request): MasterProductCategory
+    {
+        $this->parent = $masterDepartment;
         $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($masterDepartment, $this->validatedData);
     }
 
-
     public function htmlResponse(MasterProductCategory $masterSubDepartment, ActionRequest $request): RedirectResponse
     {
+        if ($this->parent instanceof MasterShop) {
+            return Redirect::route('grp.masters.master_shops.show.master_sub_departments.show', [
+                'masterShop' => $this->parent->slug,
+                'masterSubDepartment' => $masterSubDepartment->slug,
+            ]);
+        }
+
         return Redirect::route('grp.masters.master_departments.show.master_sub_departments.show', [
             'masterDepartment' => $masterSubDepartment->parent->slug,
             'masterSubDepartment' => $masterSubDepartment->slug,
