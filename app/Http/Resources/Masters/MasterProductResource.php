@@ -35,7 +35,18 @@ class MasterProductResource extends JsonResource
         return [
             'slug'                   => $this->slug,
             'code'                   => $this->code,
-            'name'                   => $this->name
+            'name'                   => $this->name,
+            'description'           => $this->description,
+            'description_title'     => $this->description_title,
+            'description_extra'     => $this->description_extra,
+            'name_i8n'              => $this->getTranslations('name_i8n'),
+            'description_i8n'       => $this->getTranslations('description_i8n'),
+            'description_title_i8n' => $this->getTranslations('description_title_i8n'),
+            'description_extra_i8n' => $this->getTranslations('description_extra_i8n'),
+            'route_save_translations' => [
+                'name'       => 'grp.models.master-product.translations.update',
+                'parameters' => []
+            ]
         ];
     }
 }
