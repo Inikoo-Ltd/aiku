@@ -99,6 +99,7 @@ class IndexDepartments extends OrgAction
                 'product_categories.description',
                 'product_categories.created_at',
                 'product_categories.updated_at',
+                'product_categories.master_product_category_id',
                 'product_category_stats.number_current_families',
                 'product_category_stats.number_current_products',
                 'product_category_stats.number_current_sub_departments',
