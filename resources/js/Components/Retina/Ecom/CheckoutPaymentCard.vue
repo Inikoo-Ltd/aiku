@@ -32,7 +32,6 @@ const props = defineProps<{
         }
         order_payment_api_point: string
     }
-    order : any
     needToPay: number
     currency_code: string
 }>()
@@ -63,8 +62,8 @@ const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
     if (status === 'success') {
       console.log("Payment successful:", response);
       retryCount.value = 0
-      router.post(route('retina.webhooks.checkout_com.redirect_success_paid_order', {
-        order: props.order.id,
+      router.post(route('retina.redirect_success_paid_order', {
+        order: response.data.order_id,
       }));
 
     }else if (status === 'error') {
