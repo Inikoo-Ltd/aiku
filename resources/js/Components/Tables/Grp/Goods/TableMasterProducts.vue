@@ -5,26 +5,26 @@
   -->
 
 <script setup lang="ts">
-import Table from "@/Components/Table/Table.vue";
-import {trans} from "laravel-vue-i18n";
-import {Link} from "@inertiajs/vue3";
-import {MasterProduct} from "@/types/master-product";
-import {RouteParams} from "@/types/route-params";
+import Table from "@/Components/Table/Table.vue"
+import { trans } from "laravel-vue-i18n"
+import { Link } from "@inertiajs/vue3"
+import { MasterProduct } from "@/types/master-product"
+import { RouteParams } from "@/types/route-params"
 
 defineProps<{
     data: {}
     tab?: string
-}>();
+}>()
 
 function masterFamilyRoute(masterProduct: MasterProduct) {
     if (route().current() == "grp.masters.master_products.index") {
         return route(
             "grp.masters.master_families.show",
-            {masterFamily: masterProduct.master_family_slug});
+            { masterFamily: masterProduct.master_family_slug })
     } else {
         return route(
             "grp.masters.master_shops.show.master_families.show",
-            {masterShop: (route().params as RouteParams).masterShop, masterFamily: masterProduct.master_family_slug});
+            { masterShop: (route().params as RouteParams).masterShop, masterFamily: masterProduct.master_family_slug })
     }
 }
 
@@ -32,11 +32,25 @@ function masterProductRoute(masterProduct: MasterProduct) {
     if (route().current() == "grp.masters.master_products.index") {
         return route(
             "grp.masters.master_products.show",
-            {masterProduct: masterProduct.slug});
+            {
+                masterProduct: masterProduct.slug
+            })
+    } else if (route().current() == "grp.masters.master_departments.show.master_families.show.master_products.index") {
+        return route(
+            "grp.masters.master_departments.show.master_families.show.master_products.show",
+            {
+                masterDepartment: (route().params as RouteParams).masterDepartment,
+                masterFamily: (route().params as RouteParams).masterFamily,
+                masterProduct: masterProduct.slug
+            }
+        )
     } else {
         return route(
-            "grp.masters.master_shops.show.master_assets.show",
-            {masterShop: (route().params as RouteParams).masterShop, masterProduct: masterProduct.slug});
+            "grp.masters.master_shops.show.products.show",
+            {
+                masterShop: (route().params as RouteParams).masterShop,
+                masterProduct: masterProduct.slug
+            })
     }
 }
 
@@ -44,14 +58,14 @@ function masterDepartmentRoute(masterProduct: MasterProduct) {
     if (route().current() == "grp.masters.master_products.index") {
         return route(
             "grp.masters.master_departments.show",
-            {masterDepartment: masterProduct.master_department_slug});
+            { masterDepartment: masterProduct.master_department_slug })
     } else {
         return route(
             "grp.masters.master_shops.show.master_departments.show",
             {
                 masterShop: (route().params as RouteParams).masterShop,
                 masterDepartment: masterProduct.master_department_slug
-            });
+            })
     }
 }
 
@@ -60,7 +74,7 @@ function masterShopRoute(masterProduct: MasterProduct) {
         {
             masterShop: masterProduct.master_shop_slug
         }
-    );
+    )
 }
 
 </script>
