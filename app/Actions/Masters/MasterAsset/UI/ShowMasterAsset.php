@@ -240,7 +240,7 @@ class ShowMasterAsset extends GrpAction
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
-                        'masterFamily' => $masterAsset->slug
+                        'masterProduct' => $masterAsset->slug
                     ]
                 ]
             ],
@@ -250,7 +250,7 @@ class ShowMasterAsset extends GrpAction
                     'name'       => $routeName,
                     'parameters' => [
                         'masterShop'   => $masterAsset->masterShop->slug,
-                        'masterFamily' => $masterAsset->slug
+                        'masterProduct' => $masterAsset->slug
                     ]
                 ]
             ],

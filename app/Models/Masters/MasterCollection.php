@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use Spatie\Translatable\HasTranslations;
 
 /**
  *
@@ -53,6 +54,9 @@ class MasterCollection extends Model implements Auditable
     use HasSlug;
     use HasHistory;
     use InGroup;
+    use HasTranslations;
+
+    public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
 
     protected $casts = [
         'data'   => 'array',

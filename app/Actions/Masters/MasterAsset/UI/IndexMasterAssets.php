@@ -250,7 +250,7 @@ class IndexMasterAssets extends GrpAction
                     $suffix
                 ),
             ),
-            'grp.masters.master_shops.show.products.index' =>
+            'grp.masters.master_shops.show.master_assets.index' =>
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($parent, $routeName),
                 $headCrumb(

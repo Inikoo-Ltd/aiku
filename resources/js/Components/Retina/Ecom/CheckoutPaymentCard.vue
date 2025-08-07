@@ -170,7 +170,7 @@ const onClickCopy = (textToCopy: string) => {
 
         <!-- Section: Flow Container -->
         <div class="relative min-h-[200px]">
-            <template v-if="paymentResponseId">
+            <template v-if="!paymentResponseId">
                 <div xv-show="!isLoading" id="flow-container" class="xabsolute w-full xborder-b border-gray-300" />
                 <div v-show="isLoading" class="pointer-events-none absolute top-0 h-full w-full z-10">
                     <div class="w-full min-h-[200px] h-full xmd:h-[511px] skeleton" xclass="isLoading ? 'skeleton' : ''">

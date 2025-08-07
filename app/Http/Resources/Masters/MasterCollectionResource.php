@@ -33,6 +33,16 @@ class MasterCollectionResource extends JsonResource
             'description'    => $this->description,
             'status'         => $this->status,
             'data'           => $this->data,
+            'description_title'     => $this->description_title,
+            'description_extra'     => $this->description_extra,
+            'name_i8n'              => $this->getTranslations('name_i8n'),
+            'description_i8n'       => $this->getTranslations('description_i8n'),
+            'description_title_i8n' => $this->getTranslations('description_title_i8n'),
+            'description_extra_i8n' => $this->getTranslations('description_extra_i8n'),
+            'route_save_translations' => [
+                'name'       => 'grp.models.master_collection.translations.update',
+                'parameters' => []
+            ]
         ];
     }
 }
