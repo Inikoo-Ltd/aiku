@@ -71,8 +71,10 @@ class UpdateProductCategory extends OrgAction
         }
 
 
+
         $productCategory = $this->update($productCategory, $modelData, ['data']);
-        $changes         = $productCategory->getChanges();
+        $productCategory->refresh();
+        $changes         = Arr::except($productCategory->getChanges(), ['updated_at']);
 
         if (Arr::hasAny($changes, ['code', 'name', 'type'])) {
             ProductCategoryRecordSearch::dispatch($productCategory);
@@ -156,16 +158,17 @@ class UpdateProductCategory extends OrgAction
                     ->where('shop_id', $this->shop->id)
             ],
 
-            'follow_master' => ['sometimes', 'boolean'],
-            'image'         => [
+            'follow_master'              => ['sometimes', 'boolean'],
+            'image'                      => [
                 'sometimes',
                 'nullable',
                 File::image()
                     ->max(12 * 1024)
             ],
-            'webpage_id'    => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
-            'url'           => ['sometimes', 'nullable', 'string', 'max:250'],
-            'images'        => ['sometimes', 'array'],
+            'webpage_id'                 => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
+            'url'                        => ['sometimes', 'nullable', 'string', 'max:250'],
+            'images'                     => ['sometimes', 'array'],
+            'master_product_category_id' => ['sometimes', 'integer', 'nullable', Rule::exists('master_product_categories', 'id')->where('master_shop_id', $this->shop->master_shop_id)],
 
         ];
 

@@ -2,32 +2,31 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Thu, 27 Apr 2023 16:36:34 Malaysia Time, Sanur, Bali, Indonesia
- * Copyright (c) 2023, Raul A Perusquia Flores
+ * Created: Thu, 07 Aug 2025 07:47:47 Central European Summer Time, Trnava, Slovakia
+ * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Catalogue\ProductCategory\UI;
+namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\OrgAction;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\DepartmentTabsEnum;
-use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
+use App\Models\Masters\MasterProductCategory;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class EditFamily extends OrgAction
+class EditMasterFamily extends OrgAction
 {
-    public function handle(ProductCategory $family): ProductCategory
+    public function handle(MasterProductCategory $family): MasterProductCategory
     {
         return $family;
     }
 
 
-
-    public function inOrganisation(Organisation $organisation, ProductCategory $family, ActionRequest $request): ProductCategory
+    public function inOrganisation(Organisation $organisation, MasterProductCategory $family, ActionRequest $request): MasterProductCategory
     {
         $this->initialisation($organisation, $request);
 
@@ -35,7 +34,7 @@ class EditFamily extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inShop(Organisation $organisation, Shop $shop, ProductCategory $family, ActionRequest $request): ProductCategory
+    public function inShop(Organisation $organisation, Shop $shop, MasterProductCategory $family, ActionRequest $request): MasterProductCategory
     {
         $this->initialisationFromShop($shop, $request);
 
@@ -43,7 +42,7 @@ class EditFamily extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $family, ActionRequest $request): ProductCategory
+    public function inDepartment(Organisation $organisation, Shop $shop, MasterProductCategory $department, MasterProductCategory $family, ActionRequest $request): MasterProductCategory
     {
         $this->initialisationFromShop($shop, $request)->withTab(DepartmentTabsEnum::values());
 
@@ -51,7 +50,7 @@ class EditFamily extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inSubDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ProductCategory $family, ActionRequest $request): ProductCategory
+    public function inSubDepartment(Organisation $organisation, Shop $shop, MasterProductCategory $department, MasterProductCategory $subDepartment, MasterProductCategory $family, ActionRequest $request): MasterProductCategory
     {
 
         $this->initialisationFromShop($shop, $request)->withTab(DepartmentTabsEnum::values());
@@ -59,38 +58,38 @@ class EditFamily extends OrgAction
         return $this->handle($family);
     }
 
-    public function htmlResponse(ProductCategory $family, ActionRequest $request): Response
+    public function htmlResponse(MasterProductCategory $masterFamily, ActionRequest $request): Response
     {
         $departmentIdFormData = [];
 
-        if ($family->parent?->type == ProductCategoryTypeEnum::DEPARTMENT) {
+        if ($masterFamily->parent?->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
             $departmentIdFormData['department_id'] = [
                 'type'     => 'select',
                 'label'    => __('Department'),
                 'required' => true,
-                'options'  => $family->shop->productCategories()
-                    ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
+                'options'  => $masterFamily->masterShop->masterProductCategories()
+                    ->where('type', MasterProductCategoryTypeEnum::DEPARTMENT)
                     ->get(['id as value', 'name as label'])
                     ->toArray(),
-                'value'   =>  $family->parent_id,
+                'value'   =>  $masterFamily->master_parent_id,
             ];
 
         }
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('family'),
+                'title'       => __('Master Family'),
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $family,
+                    $masterFamily,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
                 'navigation'                            => [
-                    'previous' => $this->getPrevious($family, $request),
-                    'next'     => $this->getNext($family, $request),
+                    'previous' => $this->getPrevious($masterFamily, $request),
+                    'next'     => $this->getNext($masterFamily, $request),
                 ],
                 'pageHead'    => [
-                    'title'    => $family->code,
+                    'title'    => $masterFamily->code,
                     'actions'  => [
                         [
                             'type'  => 'button',
@@ -112,27 +111,27 @@ class EditFamily extends OrgAction
                                 'code' => [
                                     'type'  => 'input',
                                     'label' => __('code'),
-                                    'value' => $family->code
+                                    'value' => $masterFamily->code
                                 ],
                                 'name' => [
                                     'type'  => 'input',
                                     'label' => __('name'),
-                                    'value' => $family->name
+                                    'value' => $masterFamily->name
                                 ],
                                 'description_title' => [
                                     'type'  => 'input',
                                     'label' => __('description title'),
-                                    'value' => $family->description_title
+                                    'value' => $masterFamily->description_title
                                 ],
                                 'description' => [
                                     'type'  => 'textEditor',
                                     'label' => __('description'),
-                                    'value' => $family->description
+                                    'value' => $masterFamily->description
                                 ],
                                 'description_extra' => [
                                     'type'  => 'textEditor',
                                     'label' => __('description extra'),
-                                    'value' => $family->description_extra
+                                    'value' => $masterFamily->description_extra
                                 ],
                             ]
                         ],
@@ -144,7 +143,7 @@ class EditFamily extends OrgAction
                                 "image"         => [
                                     "type"    => "image_crop_square",
                                     "label"   => __("Image"),
-                                    "value"   => $family->imageSources(720, 480),
+                                    "value"   => $masterFamily->imageSources(720, 480),
                                 ],
                                 ...$departmentIdFormData
                             ]
@@ -158,8 +157,8 @@ class EditFamily extends OrgAction
                                     'label'   => __('Department'),
                                     'options'   => [
                                         [
-                                            'id' => $family->department?->id,
-                                            'code' => $family->department?->code
+                                            'id' => $masterFamily->department?->id,
+                                            'code' => $masterFamily->department?->code
                                         ]
                                     ],
                                     'fetchRoute'    => [
@@ -172,7 +171,7 @@ class EditFamily extends OrgAction
                                     'valueProp' => 'id',
                                     'labelProp' => 'code',
                                     'required' => false,
-                                    'value'   => $family->department->id ?? null,
+                                    'value'   => $masterFamily->department->id ?? null,
                                 ]
                             ],
 
@@ -183,7 +182,7 @@ class EditFamily extends OrgAction
                         'updateRoute' => [
                             'name'       => 'grp.models.product_category.update',
                             'parameters' => [
-                                'productCategory'   => $family->id
+                                'MasterProductCategory'   => $masterFamily->id
                             ]
                         ],
                     ]
@@ -193,9 +192,9 @@ class EditFamily extends OrgAction
     }
 
 
-    public function getBreadcrumbs(ProductCategory $family, string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(MasterProductCategory $family, string $routeName, array $routeParameters): array
     {
-        return ShowFamily::make()->getBreadcrumbs(
+        return ShowMasterFamily::make()->getBreadcrumbs(
             $family,
             routeName: preg_replace('/edit$/', 'show', $routeName),
             routeParameters: $routeParameters,
@@ -203,19 +202,19 @@ class EditFamily extends OrgAction
         );
     }
 
-    public function getPrevious(ProductCategory $family, ActionRequest $request): ?array
+    public function getPrevious(MasterProductCategory $family, ActionRequest $request): ?array
     {
-        $previous = ProductCategory::where('code', '<', $family->code)->orderBy('code', 'desc')->first();
+        $previous = MasterProductCategory::where('code', '<', $family->code)->orderBy('code', 'desc')->first();
         return $this->getNavigation($previous, $request->route()->getName());
     }
 
-    public function getNext(ProductCategory $family, ActionRequest $request): ?array
+    public function getNext(MasterProductCategory $family, ActionRequest $request): ?array
     {
-        $next = ProductCategory::where('code', '>', $family->code)->orderBy('code')->first();
+        $next = MasterProductCategory::where('code', '>', $family->code)->orderBy('code')->first();
         return $this->getNavigation($next, $request->route()->getName());
     }
 
-    private function getNavigation(?ProductCategory $family, string $routeName): ?array
+    private function getNavigation(?MasterProductCategory $family, string $routeName): ?array
     {
         if (!$family) {
             return null;
