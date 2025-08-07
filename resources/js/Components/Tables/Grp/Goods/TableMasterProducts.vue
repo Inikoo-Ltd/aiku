@@ -46,7 +46,7 @@ function masterProductRoute(masterProduct: MasterProduct) {
         )
     } else {
         return route(
-            "grp.masters.master_shops.show.master_assets.show",
+            "grp.masters.master_shops.show.master_products.show",
             {
                 masterShop: (route().params as RouteParams).masterShop,
                 masterProduct: masterProduct.slug

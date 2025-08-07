@@ -178,6 +178,7 @@ class IndexMasterSubDepartments extends GrpAction
 
     public function getBreadcrumbs(MasterShop|MasterProductCategory $parent, string $routeName, array $routeParameters, string $suffix = null): array
     {
+
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [
                 [
@@ -208,7 +209,12 @@ class IndexMasterSubDepartments extends GrpAction
             'grp.masters.master_departments.show.master_sub_departments.index',
             'grp.masters.master_departments.show.master_sub_departments.show' =>
             array_merge(
-                ShowMasterDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
+                ShowMasterDepartment::make()->getBreadcrumbs(
+                    $parent->group,
+                    $parent,
+                    $routeName,
+                    $routeParameters
+                ),
                 $headCrumb(
                     [
                         'name'       => $routeName,
@@ -217,7 +223,6 @@ class IndexMasterSubDepartments extends GrpAction
                     $suffix
                 )
             ),
-
 
 
             default => []

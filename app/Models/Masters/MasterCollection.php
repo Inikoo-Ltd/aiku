@@ -40,10 +40,15 @@ use Spatie\Translatable\HasTranslations;
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Group $group
  * @property-read \App\Models\Masters\MasterCollectionStats|null $stats
+ * @property-read mixed $translations
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection whereJsonContainsLocale(string $column, string $locale, ?mixed $value, string $operand = '=')
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection whereJsonContainsLocales(string $column, array $locales, ?mixed $value, string $operand = '=')
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection whereLocale(string $column, string $locale)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection whereLocales(string $column, array $locales)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection withTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection withoutTrashed()
  * @mixin \Eloquent

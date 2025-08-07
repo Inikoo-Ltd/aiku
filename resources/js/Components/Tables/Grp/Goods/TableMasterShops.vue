@@ -34,7 +34,7 @@ function masterFamiliesRoute(masterShop: MasterShop) {
 
 function masterProductsRoute(masterShop: MasterShop) {
     return route(
-        "grp.masters.master_shops.show.master_assets.index",
+        "grp.masters.master_shops.show.master_products.index",
         [masterShop.slug]);
 }
 

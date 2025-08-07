@@ -50,6 +50,8 @@ class IndexMasterAssets extends GrpAction
         }
 
         $queryBuilder = QueryBuilder::for(MasterAsset::class);
+        $queryBuilder->where('is_main', true);
+
         $queryBuilder->select(
             [
                 'master_assets.id',
@@ -89,15 +91,15 @@ class IndexMasterAssets extends GrpAction
                 'departments.code as master_department_code',
                 'departments.name as master_department_name'
             ]);
-        }elseif ($parent instanceof MasterProductCategory) {
+        } elseif ($parent instanceof MasterProductCategory) {
 
-            if($parent->type==MasterProductCategoryTypeEnum::FAMILY){
+            if ($parent->type == MasterProductCategoryTypeEnum::FAMILY) {
                 $queryBuilder->where('master_assets.master_family_id', $parent->id);
 
-            }elseif ($parent->type==MasterProductCategoryTypeEnum::DEPARTMENT){
+            } elseif ($parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
                 $queryBuilder->where('master_assets.master_department_id', $parent->id);
 
-            }else{
+            } else {
                 $queryBuilder->where('master_assets.master_sub_department_id', $parent->id);
 
             }
@@ -250,7 +252,7 @@ class IndexMasterAssets extends GrpAction
                     $suffix
                 ),
             ),
-            'grp.masters.master_shops.show.master_assets.index' =>
+            'grp.masters.master_shops.show.master_products.index' =>
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($parent, $routeName),
                 $headCrumb(
@@ -283,7 +285,7 @@ class IndexMasterAssets extends GrpAction
         return $this->handle($masterShop, $request);
     }
 
-    public function inMasterFamilyInMasterDepartment(MasterProductCategory $masterDepartment,MasterProductCategory $masterFamily, ActionRequest $request): LengthAwarePaginator
+    public function inMasterFamilyInMasterDepartment(MasterProductCategory $masterDepartment, MasterProductCategory $masterFamily, ActionRequest $request): LengthAwarePaginator
     {
         $group        = group();
 

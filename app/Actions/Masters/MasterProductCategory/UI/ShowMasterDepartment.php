@@ -181,7 +181,7 @@ class ShowMasterDepartment extends GrpAction
             array_merge(
                 ShowMastersDashboard::make()->getBreadcrumbs(),
                 $headCrumb(
-                    $parent,
+                    $masterDepartment,
                     [
                         'index' => [
                             'name'       => 'grp.masters.master_departments.index',
@@ -201,7 +201,7 @@ class ShowMasterDepartment extends GrpAction
             array_merge(
                 IndexMasterDepartments::make()->getBreadcrumbs($parent->masterShop, $routeName, $routeParameters),
                 $headCrumb(
-                    $parent,
+                    $masterDepartment,
                     [
                         'index' => [
                             'name'       => 'grp.masters.master_departments.index',
