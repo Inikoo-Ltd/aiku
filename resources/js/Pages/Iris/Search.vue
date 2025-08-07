@@ -85,7 +85,6 @@ console.log("layout", layout)
 
 <template>
     <div class="py-16 w-full mx-auto px-8">
-        <pre>{{ layout?.app?.webpage_layout?.container?.properties?.text?.fontFamily }}</pre>
         <input v-model="inputValue" class="block w-full max-w-lg mx-auto" id="inputXxxLuigi" style="border: 1px solid #d1d5db; border-radius: 7px;height: 45px;padding-left: 10px;" placeholder="Search"/>
         
         <div class="mt-16" :style="{
