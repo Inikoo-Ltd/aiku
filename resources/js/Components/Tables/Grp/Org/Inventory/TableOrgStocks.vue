@@ -14,10 +14,7 @@ defineProps<{
   tab?: string
 }>();
 
-
 function stockRoute(stock: Stock) {
-
-
   console.log(route().current());
   switch (route().current()) {
     case "grp.org.warehouses.show.inventory.org_stock_families.show":
@@ -61,13 +58,11 @@ function stockRoute(stock: Stock) {
           route().params["warehouse"],
           stock.slug
         ]);
-
   }
 }
 
 function stockFamilyRoute(stock: Stock) {
   switch (route().current()) {
-
 
     default:
       return route(
@@ -79,12 +74,9 @@ function stockFamilyRoute(stock: Stock) {
         ]);
   }
 }
-
-
 </script>
 
 <template>
-
   <Table :resource="data" :name="tab" class="mt-5">
     <template #cell(code)="{ item: stock }">
       <Link :href="stockRoute(stock)" class="primaryLink">
@@ -102,6 +94,24 @@ function stockFamilyRoute(stock: Stock) {
     </template>
     <template #cell(unit_value)="{ item: stock }">
       {{ stock["unit_value"] }}
+    </template>
+    <template #cell(type)="{ item: stock }">
+      <span class="capitalize">{{ stock["type"] }}</span>
+    </template>
+    <template #cell(picking_priority)="{ item: stock }">
+      {{ stock["picking_priority"] }}
+    </template>
+    <template #cell(value)="{ item: stock }">
+      {{ stock["value"] }}
+    </template>
+    <template #cell(dropshipping_pipe)="{ item: stock }">
+      {{ stock["dropshipping_pipe"] }}
+    </template>
+    <template #cell(quantity)="{ item: stock }">
+      {{ stock["quantity"] }}
+    </template>
+    <template #cell(notes)="{ item: stock }">
+      {{ stock["notes"] }}
     </template>
   </Table>
 </template>

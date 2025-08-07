@@ -31,6 +31,7 @@ const props = defineProps<{
     details?: {}
     history?: {}
     stocks?: {}
+    org_stocks?: {}
     pallets?: {}
     showcase?: {}
 }>()
@@ -49,6 +50,7 @@ const component = computed(() => {
     }
     return components[currentTab.value]
 })
+
 </script>
 
 <template>
