@@ -54,6 +54,7 @@ import DeleteWebpage from '@/Components/Forms/Fields/DeleteWebpage.vue'
 import InputTranslation from '@/Components/Forms/Fields/InputTranslation.vue'
 import TextEditorTranslation from '@/Components/Forms/Fields/TextEditorTranslation.vue'
 import Pricing_zone from '@/Components/Forms/Fields/Pricing_zone.vue'
+import Teritory_zone from '@/Components/Forms/Fields/Teritory_zone.vue'
 
 
 export const componentsList: {[key: string]: Component} = {
@@ -106,7 +107,8 @@ export const componentsList: {[key: string]: Component} = {
     'input_translation' : InputTranslation,
     'select_infinite': SelectInfiniteScroll,
     'textEditor_translation' : TextEditorTranslation,
-    'pricing_zone': Pricing_zone
+    'pricing_zone': Pricing_zone,
+    'teritory_zone': Teritory_zone
 }
 
 export const getComponent = (componentName: string) => {

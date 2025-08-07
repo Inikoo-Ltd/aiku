@@ -54,6 +54,7 @@ function mapTerritories(territories: { country_code: string }[]) {
             {{ position["position"] }}
         </template>
         <template #cell(territories)="{ item: territories }">
+            <pre>{{ territories.territories }}</pre>
             <AddressLocation v-for="(territory, index) in mapTerritories(territories.territories)" :key="index"
                 :data="[territory, territory, territory]" />
         </template>

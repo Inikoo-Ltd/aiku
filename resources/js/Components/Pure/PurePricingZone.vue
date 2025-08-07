@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, watch, shallowRef } from 'vue'
 import { faInfinity, faPlus, faTrash } from '@far'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-
+import InputNumber from 'primevue/inputnumber'
 import PureMultiselect from './PureMultiselect.vue'
-import PureInputNumber from './PureInputNumber.vue'
 
 library.add(faInfinity, faPlus, faTrash)
 
@@ -25,54 +24,53 @@ const options = ref([
   { value: 'shipping_zone', label: 'Shipping Zone' },
 ])
 
-// Sort step, ensure 'INF' always at the end
-const sortedSteps = computed(() => {
-  const steps = [...props.modelValue.steps]
-  return steps.sort((a, b) => {
-    if (a.to === 'INF') return 1
-    if (b.to === 'INF') return -1
-    return (a.to as number) - (b.to as number)
-  })
-})
+// Deep copy untuk local editing
+const localSteps = shallowRef(
+  JSON.parse(JSON.stringify(props.modelValue.steps))
+)
 
-// Add new step before INF
-function addStepBeforeInfinity() {
-  const steps = [...props.modelValue.steps]
-  const lastStepIndex = steps.findIndex(step => step.to === 'INF')
-  const insertIndex = lastStepIndex !== -1 ? lastStepIndex : steps.length
-
-  const previousStep = insertIndex > 0 ? steps[insertIndex - 1] : null
-  const newFrom = previousStep ? (typeof previousStep.to === 'number' ? previousStep.to : 0) : 0
-  const newTo = newFrom + 1
-
-  // Insert new step
-  steps.splice(insertIndex, 0, {
-    from: newFrom,
-    to: newTo,
-    price: 0,
-  })
-
-  // Update the INF row's "from"
-  if (lastStepIndex !== -1) {
-    steps[insertIndex + 1].from = newTo
-  }
-
-  emit('update:modelValue', { ...props.modelValue, steps })
-}
-
-
-// Optional: remove step (except INF row)
-function removeStep(index: number) {
-  const steps = [...props.modelValue.steps]
-  if (steps[index].to === 'INF') return // protect INF row
-  steps.splice(index, 1)
-  emit('update:modelValue', { ...props.modelValue, steps })
-}
+// Sync jika modelValue.steps berubah dari luar
+watch(() => props.modelValue.steps, (newVal) => {
+  localSteps.value = JSON.parse(JSON.stringify(newVal))
+}, { deep: true })
 
 function updateStep(index: number, field: 'from' | 'to' | 'price', value: number | string) {
-  const steps = [...props.modelValue.steps]
-  steps[index][field] = value
-  emit('update:modelValue', { ...props.modelValue, steps })
+  localSteps.value[index][field] = value
+
+  // Emit hanya perubahan yang diperlukan
+  const updatedSteps = localSteps.value.map(step => ({ ...step }))
+  emit('update:modelValue', {
+    ...props.modelValue,
+    steps: updatedSteps
+  })
+}
+
+function addStepBeforeInfinity() {
+  const steps = [...localSteps.value.map(step => ({ ...step }))]
+  const infIndex = steps.findIndex(step => step.to === 'INF')
+  const insertIndex = infIndex !== -1 ? infIndex : steps.length
+
+  const previous = insertIndex > 0 ? steps[insertIndex - 1] : null
+  const newFrom = previous ? (typeof previous.to === 'number' ? previous.to : 0) : 0
+  const newTo = newFrom + 1
+
+  steps.splice(insertIndex, 0, { from: newFrom, to: newTo, price: 0 })
+  localSteps.value = steps
+  emit('update:modelValue', {
+    ...props.modelValue,
+    steps: steps
+  })
+}
+
+function removeStep(index: number) {
+  const steps = [...localSteps.value]
+  if (steps[index].to === 'INF') return
+  steps.splice(index, 1)
+  localSteps.value = steps
+  emit('update:modelValue', {
+    ...props.modelValue,
+    steps: steps
+  })
 }
 </script>
 
@@ -83,6 +81,7 @@ function updateStep(index: number, field: 'from' | 'to' | 'price', value: number
       <label class="block mb-1 font-medium text-gray-700">Type</label>
       <PureMultiselect
         :modelValue="modelValue.type"
+        @update:modelValue="type => emit('update:modelValue', { ...props.modelValue, type })"
         :placeholder="'Select Type'"
         :options="options"
         :required="true"
@@ -103,25 +102,26 @@ function updateStep(index: number, field: 'from' | 'to' | 'price', value: number
       </div>
 
       <div
-        v-for="(item, index) in sortedSteps"
+        v-for="(item, index) in localSteps"
         :key="index"
         class="grid grid-cols-12 gap-2 py-2 border-b items-center"
       >
         <!-- From -->
-        <PureInputNumber
-          v-model="item.from"
-          placeholder="From"
-          class="col-span-3"
-          @update:modelValue="val => updateStep(index, 'from', val)"
-        />
+        <div class="col-span-3">
+          <InputNumber
+            :modelValue="item.from"
+            @update:modelValue="val => updateStep(index, 'from', val)"
+            inputClass="w-full"
+          />
+        </div>
 
         <!-- To -->
-        <div class="col-span-3 h-full">
+        <div class="col-span-3">
           <template v-if="item.to !== 'INF'">
-            <PureInputNumber
-              v-model="item.to"
-              placeholder="To"
-               @update:modelValue="val => updateStep(index, 'to', val)"
+            <InputNumber
+              :modelValue="item.to"
+              @update:modelValue="val => updateStep(index, 'to', val)"
+              inputClass="w-full"
             />
           </template>
           <div
@@ -133,12 +133,13 @@ function updateStep(index: number, field: 'from' | 'to' | 'price', value: number
         </div>
 
         <!-- Price -->
-        <PureInputNumber
-          v-model="item.price"
-          placeholder="Price"
-          class="col-span-4"
-          @update:modelValue="val => updateStep(index, 'price', val)"
-        />
+        <div class="col-span-4">
+          <InputNumber
+            :modelValue="item.price"
+            @update:modelValue="val => updateStep(index, 'price', val)"
+            inputClass="w-full"
+          />
+        </div>
 
         <!-- Action -->
         <div class="col-span-2 flex items-center justify-center gap-2">
@@ -166,7 +167,3 @@ function updateStep(index: number, field: 'from' | 'to' | 'price', value: number
     </div>
   </div>
 </template>
-
-<style scoped>
-/* You can style further if needed */
-</style>

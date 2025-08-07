@@ -9,6 +9,7 @@
 
 namespace App\Actions\Ordering\ShippingZone\UI;
 
+use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Models\Catalogue\Shop;
@@ -79,9 +80,10 @@ class EditShippingZone extends OrgAction
                                     'value' => $shippingZone->name
                                 ],
                                 'territory' => [
-                                    'type'  => 'input',
+                                    'type'  => 'teritory_zone',
                                     'label' => __('territory'),
-                                    'value' => $shippingZone->territories
+                                    'value' => $shippingZone->territories,
+                                    'country_list' => GetCountriesOptions::run(),
                                 ],
                                 'price' => [
                                     'type'  => 'pricing_zone',
