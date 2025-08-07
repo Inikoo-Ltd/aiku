@@ -29,6 +29,7 @@ class GetOrgStockShowcase
         return collect(
             [
                 'trade_units' => $dataTradeUnits,
+                'stock_data' => $this->stockData($warehouse, $orgStock),
                 'contactCard'              => OrgStockResource::make($orgStock)->getArray(),
                 'locationRoute'            => [
                     'name'       => 'grp.org.warehouses.show.infrastructure.locations.index',
@@ -58,6 +59,20 @@ class GetOrgStockShowcase
                 ]
             ]
         );
+    }
+
+    public function stockData(Warehouse $warehouse, OrgStock $orgStock): array
+    {
+        // need to fix with real data
+
+        return [
+            'stock_in_locations' => $orgStock->quantity_in_locations,
+            'stock_in_process' => $orgStock->stats->number_stock_deliveries_state_in_process,
+            'stock_in_picked' => $orgStock->stats->number_stock_deliveries_state_ready_to_ship,
+            'stock_available' => 0,
+            'stock_value' => $orgStock->stats->value,
+            'current_cost' => $orgStock->unit_cost,
+        ];
     }
 
     private function getDataTradeUnit($tradeUnits): array
