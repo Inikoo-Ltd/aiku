@@ -87,7 +87,10 @@ class IndexPalletsInReturnPalletWholePallets extends OrgAction
             $query->where('pallets.pallet_return_id', $palletReturn->id);
         }
 
-        $query->leftJoin('pallet_return_items', 'pallet_return_items.pallet_id', 'pallets.id');
+        $query->leftJoin('pallet_return_items', function($join) use ($palletReturn) {
+            $join->on('pallet_return_items.pallet_id', '=', 'pallets.id')
+                ->where('pallet_return_items.pallet_return_id', '=', $palletReturn->id);
+        });
         $query->leftJoin('locations', 'locations.id', 'pallets.location_id');
 
         if ($palletReturn->state === PalletReturnStateEnum::IN_PROCESS) {
