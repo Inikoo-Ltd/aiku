@@ -6,10 +6,10 @@
 
 <script setup lang="ts">
 import Table from "@/Components/Table/Table.vue"
-import { trans } from "laravel-vue-i18n"
-import { Link } from "@inertiajs/vue3"
-import { MasterProduct } from "@/types/master-product"
-import { RouteParams } from "@/types/route-params"
+import {trans} from "laravel-vue-i18n"
+import {Link} from "@inertiajs/vue3"
+import {MasterProduct} from "@/types/master-product"
+import {RouteParams} from "@/types/route-params"
 
 defineProps<{
     data: {}
@@ -20,11 +20,11 @@ function masterFamilyRoute(masterProduct: MasterProduct) {
     if (route().current() == "grp.masters.master_products.index") {
         return route(
             "grp.masters.master_families.show",
-            { masterFamily: masterProduct.master_family_slug })
+            {masterFamily: masterProduct.master_family_slug})
     } else {
         return route(
             "grp.masters.master_shops.show.master_families.show",
-            { masterShop: (route().params as RouteParams).masterShop, masterFamily: masterProduct.master_family_slug })
+            {masterShop: (route().params as RouteParams).masterShop, masterFamily: masterProduct.master_family_slug})
     }
 }
 
@@ -46,7 +46,7 @@ function masterProductRoute(masterProduct: MasterProduct) {
         )
     } else {
         return route(
-            "grp.masters.master_shops.show.products.show",
+            "grp.masters.master_shops.show.master_assets.index",
             {
                 masterShop: (route().params as RouteParams).masterShop,
                 masterProduct: masterProduct.slug
@@ -58,7 +58,7 @@ function masterDepartmentRoute(masterProduct: MasterProduct) {
     if (route().current() == "grp.masters.master_products.index") {
         return route(
             "grp.masters.master_departments.show",
-            { masterDepartment: masterProduct.master_department_slug })
+            {masterDepartment: masterProduct.master_department_slug})
     } else {
         return route(
             "grp.masters.master_shops.show.master_departments.show",
