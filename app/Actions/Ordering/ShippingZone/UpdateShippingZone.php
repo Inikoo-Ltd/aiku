@@ -47,7 +47,7 @@ class UpdateShippingZone extends OrgAction
             'status'      => ['sometimes', 'required', 'boolean'],
             'price'       => ['sometimes', 'array'],
             'territories' => ['sometimes', 'array'],
-            'position'    => ['required', 'integer'],
+            'position'    => ['sometimes', 'integer'],
             'is_failover' => ['sometimes', 'boolean'],
 
         ];
