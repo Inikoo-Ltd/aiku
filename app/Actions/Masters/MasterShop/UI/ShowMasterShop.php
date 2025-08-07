@@ -80,8 +80,8 @@ class ShowMasterShop extends GrpAction
 
                 MasterShopTabsEnum::SHOWCASE->value => $this->tab == MasterShopTabsEnum::SHOWCASE->value
                     ?
-                    fn () => MasterShopResource::make($masterShop)
-                    : Inertia::lazy(fn () => MasterShopResource::make($masterShop)),
+                    fn () => MasterShopResource::make($masterShop)->resolve()
+                    : Inertia::lazy(fn () => MasterShopResource::make($masterShop)->resolve()),
             ]
         );
     }
