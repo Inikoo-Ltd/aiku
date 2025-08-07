@@ -116,7 +116,7 @@ function removeStep(index: number) {
         </div>
 
         <!-- To -->
-        <div class="col-span-3">
+        <div class="col-span-3 h-full">
           <template v-if="item.to !== 'INF'">
             <InputNumber
               :modelValue="item.to"
