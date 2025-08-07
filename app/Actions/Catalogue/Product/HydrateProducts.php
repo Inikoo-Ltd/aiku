@@ -40,7 +40,7 @@ class HydrateProducts
     public function handle(Product $product): void
     {
 
-        if($product->trashed()){
+        if ($product->trashed()) {
             return;
         }
 

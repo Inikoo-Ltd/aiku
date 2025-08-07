@@ -1,38 +1,27 @@
 <?php
 
-/*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 07 May 2025 12:38:25 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2025, Raul A Perusquia Flores
- */
-
-namespace App\Actions\Accounting\OrderPaymentApiPoint\WebHooks;
+namespace App\Actions\Accounting\TopUpPaymentApiPoint\WebHooks;
 
 use App\Actions\Accounting\WithCheckoutCom;
-use App\Actions\IrisAction;
-use App\Models\Accounting\OrderPaymentApiPoint;
+use App\Actions\RetinaWebhookAction;
 use App\Models\Accounting\PaymentAccountShop;
+use App\Models\Accounting\TopUpPaymentApiPoint;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
-class CheckoutComOrderPaymentCompleted extends IrisAction
+class TopUpPaymentCompleted extends RetinaWebhookAction
 {
     use WithCheckoutCom;
 
-
-    /**
-     * @throws \Throwable
-     */
-    public function handle(OrderPaymentApiPoint $orderPaymentApiPoint, array $modelData): array
+    public function handle(TopUpPaymentApiPoint $topUpPaymentApiPoint, array $modelData): array
     {
-        $paymentAccountShopID = Arr::get($orderPaymentApiPoint->data, 'payment_methods.checkout');
-        $paymentAccountShop   = PaymentAccountShop::find($paymentAccountShopID);
+        $paymentAccountShopId = Arr::get($topUpPaymentApiPoint->data, 'payment_account_shop_id');
+        $paymentAccountShop   = PaymentAccountShop::find($paymentAccountShopId)->first();
 
         $checkoutComPayment = $this->getCheckOutPayment(
             $paymentAccountShop,
             $modelData['cko-payment-id']
         );
-
 
         if (Arr::get($checkoutComPayment, 'error')) {
             return [
@@ -53,7 +42,7 @@ class CheckoutComOrderPaymentCompleted extends IrisAction
         }
 
         if (in_array($status, ['Voided', 'Declined', 'Cancelled', 'Expired'])) {
-            CheckoutComOrderPaymentFailure::make()->processFailure($orderPaymentApiPoint, $checkoutComPayment);
+            TopUpPaymentFailure::make()->processFailure($topUpPaymentApiPoint, $checkoutComPayment);
 
             return [
                 'status'         => 'error',
@@ -62,7 +51,12 @@ class CheckoutComOrderPaymentCompleted extends IrisAction
             ];
         }
 
-        return CheckoutComOrderPaymentSuccess::make()->processSuccessfulPayment($orderPaymentApiPoint, $paymentAccountShop, $checkoutComPayment);
+        $creditTransaction = TopUpPaymentSuccess::make()->processSuccess($checkoutComPayment, $topUpPaymentApiPoint, $paymentAccountShop);
+
+        return [
+            'status'                => 'success',
+            'credit_transaction_id' => $creditTransaction->id,
+        ];
     }
 
     public function rules(): array
@@ -72,14 +66,10 @@ class CheckoutComOrderPaymentCompleted extends IrisAction
         ];
     }
 
-    /**
-     * @throws \Throwable
-     */
-    public function asController(OrderPaymentApiPoint $orderPaymentApiPoint, ActionRequest $request): array
+    public function asController(TopUpPaymentApiPoint $topUpPaymentApiPoint, ActionRequest $request): array
     {
         $this->initialisation($request);
 
-        return $this->handle($orderPaymentApiPoint, $this->validatedData);
+        return $this->handle($topUpPaymentApiPoint, $this->validatedData);
     }
-
 }

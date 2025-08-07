@@ -8,6 +8,8 @@
 
 namespace App\Actions\Dropshipping\CustomerSalesChannel;
 
+use App\Actions\Catalogue\ShopPlatformStats\ShopPlatformStatsHydrateCustomers;
+use App\Actions\Catalogue\ShopPlatformStats\ShopPlatformStatsHydrateCustomerSalesChannel;
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateCustomers;
 use App\Actions\OrgAction;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
@@ -28,6 +30,8 @@ class StoreCustomerSalesChannel extends OrgAction
         $customerSalesChannel           = $customer->customerSalesChannels()->create($modelData);
 
         PlatformHydrateCustomers::dispatch($platform)->delay($this->hydratorsDelay);
+        ShopPlatformStatsHydrateCustomers::dispatch($customer->shop, $platform)->delay($this->hydratorsDelay);
+        ShopPlatformStatsHydrateCustomerSalesChannel::dispatch($customer->shop, $platform)->delay($this->hydratorsDelay);
 
         return $customerSalesChannel;
     }

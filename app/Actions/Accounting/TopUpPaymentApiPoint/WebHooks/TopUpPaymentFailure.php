@@ -39,6 +39,12 @@ class TopUpPaymentFailure extends RetinaWebhookAction
             return $this->processError($topUpPaymentApiPoint, $payment);
         }
 
+        return $this->processFailure($topUpPaymentApiPoint, $payment);
+
+    }
+
+    public function processFailure(TopUpPaymentApiPoint $topUpPaymentApiPoint, $payment): string
+    {
         return UpdateTopUpPaymentApiPoint::run(
             $topUpPaymentApiPoint,
             [

@@ -22,10 +22,10 @@ class UpdateTradeUnitTranslations extends OrgAction
         UpdateTradeUnit::run($tradeUnit, $modelData['master']);
 
 
-        $name_i8n=[];
-        $description_i8n=[];
-        $description_title_i8n=[];
-        $description_extra_i8n=[];
+        $name_i8n = [];
+        $description_i8n = [];
+        $description_title_i8n = [];
+        $description_extra_i8n = [];
 
         foreach ($modelData['translations'] as $locale => $translation) {
             $name_i8n[$locale] = $translation['name'];
@@ -53,7 +53,7 @@ class UpdateTradeUnitTranslations extends OrgAction
             'master.description' => ['present','nullable','string','max:10000'],
             'master.description_title' => ['present','nullable','string','max:1000'],
             'master.description_extra' => ['present','nullable','string','max:20000'],
-            'translations'=> ['required', 'array'],
+            'translations' => ['required', 'array'],
         ];
     }
 

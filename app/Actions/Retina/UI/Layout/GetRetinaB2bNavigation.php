@@ -130,7 +130,7 @@ class GetRetinaB2bNavigation
                 ]
             ]
         ];
-        
+
         return $groupNavigation;
     }
 }

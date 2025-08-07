@@ -51,14 +51,9 @@ class GetRetinaPaymentAccountShopCheckoutComData
 
 
         $product = new Product();
-
         $product->name       = 'items';
         $product->quantity   = 1;
         $product->unit_price = $toPayByOther;
-
-
-
-
         $paymentSessionRequest->items = [$product];
 
         $paymentSessionRequest->three_ds          = new ThreeDsRequest();
@@ -69,9 +64,7 @@ class GetRetinaPaymentAccountShopCheckoutComData
         $paymentSessionRequest->success_url           = $this->getSuccessUrl($orderPaymentApiPoint);
         $paymentSessionRequest->failure_url           = $this->getFailureUrl($orderPaymentApiPoint);
 
-        $paymentSessionRequest->disabled_payment_methods = [
-            'applepay'
-        ];
+
 
 
         $billingAddress = $order->billingAddress;

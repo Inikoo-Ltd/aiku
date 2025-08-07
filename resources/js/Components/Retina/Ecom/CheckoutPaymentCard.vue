@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue"
+import { onMounted, ref, inject } from "vue"
 import { loadCheckoutWebComponents } from '@checkout.com/checkout-web-components';
-import { inject } from "vue"
 import { useCopyText } from "@/Composables/useCopyText"
+import { router } from "@inertiajs/vue3"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faCopy } from "@fal"
+import { faCopy, faSpinner } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
@@ -32,6 +32,7 @@ const props = defineProps<{
         }
         order_payment_api_point: string
     }
+    order : any
     needToPay: number
     currency_code: string
 }>()
@@ -40,25 +41,70 @@ console.log('Checkout payment Card props', props.data)
 const locale = inject('locale', {})
 
 const isLoading = ref(true)
+const MAX_RETRIES = 5;
+const retryCount = ref(0);
+
 
 const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
-    try {
-        const aaa = await axios.post(route('retina.webhooks.checkout_com.order_payment_completed', {
-            orderPaymentApiPoint: props.data.order_payment_api_point
-        }), {
-            'cko-payment-id': paymentResponseId
-        })
+  try {
+    const response = await axios.post(
+      route('retina.webhooks.checkout_com.order_payment_completed', {
+        orderPaymentApiPoint: props.data.order_payment_api_point,
+      }),
+      {
+        'cko-payment-id': paymentResponseId,
+      }
+    );
 
-        console.log("hitWebhookAfterSuccess:", aaa.data)
-    } catch (error) {
-        console.log("Error hit the checkout:", error)
-        notify({
-            title: trans("Something went wrong"),
-            text: trans("Failed to hit the webhooks"),
-            type: "error",
-        })
-    }
-}
+    console.log("hitWebhookAfterSuccess:", response);
+
+    const { status, msg } = response.data;
+
+    if (status === 'success') {
+      console.log("Payment successful:", response);
+      retryCount.value = 0
+      router.post(route('retina.webhooks.checkout_com.redirect_success_paid_order', {
+        order: props.order.id,
+      }));
+
+    }else if (status === 'error') {
+      console.warn("Payment error:", msg);
+      // ✅ Show modal with specific error message
+      notify({
+              title: trans('Something went wrong'),
+              text: response.data.msg ? response.data.msg : trans('Failed to communicate with the payment service.'),
+              type: 'error',
+          });
+
+
+    } else {
+      console.log("Payment still processing:", status);
+
+      if (retryCount.value < MAX_RETRIES) {
+        retryCount.value++;
+        console.info(`Retrying... attempt ${retryCount.value} of ${MAX_RETRIES}`);
+        setTimeout(() => hitWebhookAfterSuccess(paymentResponseId), 5000);
+      } else {
+        retryCount.value = 0
+        // ⛔ Final error after max retries
+          notify({
+              title: trans('Something went wrong'),
+              text: response.data.msg ? response.data.msg : trans('Failed to communicate with the payment service.'),
+              type: 'error',
+          });
+      }
+  }
+  } catch (error) {
+    console.error("Checkout webhook failed:", error);
+    retryCount.value = 0
+    notify({
+      title: trans('Something went wrong'),
+      text: error.data.message ? error.data.message : trans('Failed to communicate with the payment service.'),
+      type: 'error',
+    });
+  }
+};
+
 onMounted(async () => {
     // isLoading.value = true
     const checkout = await loadCheckoutWebComponents({
@@ -108,19 +154,38 @@ const onClickCopy = (textToCopy: string) => {
         <div class="mb-2 pl-2">
             Need to pay: <span class="font-bold">{{ locale.currencyFormat(currency_code, props.needToPay) }}</span>
             <Transition name="spin-to-right">
-                <FontAwesomeIcon v-if="isRecentlyCopied" icon="fal fa-check" class="ml-1 text-green-500" fixed-width aria-hidden="true" />
-                <FontAwesomeIcon v-else @click="() => onClickCopy(props.needToPay.toFixed(2))" icon="fal fa-copy" class="ml-1 text-gray-400 hover:text-gray-600 cursor-pointer" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-if="isRecentlyCopied" icon="fal fa-check" class="ml-1 text-green-500" fixed-width
+                    aria-hidden="true" />
+                <FontAwesomeIcon v-else @click="() => onClickCopy(props.needToPay.toFixed(2))" icon="fal fa-copy"
+                    class="ml-1 text-gray-400 hover:text-gray-600 cursor-pointer" fixed-width aria-hidden="true" />
             </Transition>
         </div>
 
         <div class="relative min-h-[200px]">
             <div xv-show="!isLoading" id="flow-container" class="xabsolute w-full border-b border-gray-300" />
-            
+
             <div v-show="isLoading" class="pointer-events-none absolute top-0 h-full w-full z-10">
                 <div class="w-full min-h-[200px] h-full xmd:h-[511px] skeleton" xclass="isLoading ? 'skeleton' : ''">
                 </div>
             </div>
 
+            <Transition name="fade">
+                <div v-if="retryCount > 0"
+                    class="mt-4 px-4 py-2 rounded-lg bg-yellow-50 border border-yellow-300 text-yellow-800 text-sm font-medium flex items-center gap-2 animate-pulse">
+                    <FontAwesomeIcon :icon="faSpinner" class="animate-spin" />
+                    Retrying payment... Attempt {{ retryCount }} of {{ MAX_RETRIES }}
+                </div>
+            </Transition>
+
         </div>
     </div>
 </template>
+
+<style scoped>
+    .fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+</style>
