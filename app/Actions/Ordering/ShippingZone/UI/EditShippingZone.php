@@ -96,9 +96,8 @@ class EditShippingZone extends OrgAction
 
                     'args' => [
                         'updateRoute' => [
-                            'name'       => 'grp.models.stock.update',
+                            'name'       => 'grp.models.shipping_zone.update',
                             'parameters' => $shippingZone->id
-
                         ],
                     ]
                 ]
