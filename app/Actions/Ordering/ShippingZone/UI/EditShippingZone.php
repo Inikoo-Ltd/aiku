@@ -79,7 +79,7 @@ class EditShippingZone extends OrgAction
                                     'label' => __('name'),
                                     'value' => $shippingZone->name
                                 ],
-                                'territory' => [
+                                'territories' => [
                                     'type'  => 'teritory_zone',
                                     'label' => __('territory'),
                                     'value' => $shippingZone->territories,
