@@ -88,14 +88,7 @@ class EditCustomerClient extends OrgAction
                                     'address'      => [
                                         'type'    => 'address',
                                         'label'   => __('Address'),
-                                        'value'   => AddressFormFieldsResource::make(
-                                            new Address(
-                                                [
-                                                    'country_id' => $customerClient->shop->country_id,
-
-                                                ]
-                                            )
-                                        )->getArray(),
+                                        'value'   => AddressFormFieldsResource::make($customerClient->address)->getArray(),
                                         'options' => [
                                             'countriesAddressData' => GetAddressData::run()
 
