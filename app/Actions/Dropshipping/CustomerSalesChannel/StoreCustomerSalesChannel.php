@@ -24,12 +24,12 @@ class StoreCustomerSalesChannel extends OrgAction
 {
     public function handle(Customer $customer, Platform $platform, array $modelData): CustomerSalesChannel
     {
-        if($platform->type == PlatformTypeEnum::MANUAL) {
+        if ($platform->type == PlatformTypeEnum::MANUAL) {
             data_set($modelData, 'can_connect_to_platform', true);
             data_set($modelData, 'exist_in_platform', true);
             data_set($modelData, 'platform_status', true);
         }
-        
+
         $modelData['group_id']          = $customer->group_id;
         $modelData['organisation_id']   = $customer->organisation_id;
         $modelData['shop_id']           = $customer->shop_id;
