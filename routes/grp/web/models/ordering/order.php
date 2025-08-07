@@ -12,6 +12,7 @@ use App\Actions\Dispatching\Picking\DeletePicking;
 use App\Actions\Dispatching\Picking\UpdatePicking;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
+use App\Actions\Ordering\Order\AddBalanceFromExcessPaymentOrder;
 use App\Actions\Ordering\Order\CancelOrder;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Actions\Ordering\Order\ImportTransactionInOrder;
@@ -56,6 +57,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     });
 
     Route::patch('send-back-to-Basket', SendOrderBackToBasket::class)->name('send_back_to_basket');
+    Route::post('return-excess', AddBalanceFromExcessPaymentOrder::class)->name('return_excess_payment');
 
     Route::name('state.')->prefix('state')->group(function () {
         Route::patch('creating', SendOrderBackToBasket::class)->name('creating');
