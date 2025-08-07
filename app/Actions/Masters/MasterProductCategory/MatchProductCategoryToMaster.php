@@ -2,14 +2,14 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Thu, 07 Aug 2025 07:47:47 Central European Summer Time, Trnava, Slovakia
+ * Created: Thu, 07 Aug 2025 17:55:15 Central European Summer Time, Trnava, Slovakia
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Catalogue\ProductCategory;
+namespace App\Actions\Masters\MasterProductCategory;
 
+use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\OrgAction;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Masters\MasterProductCategory;
 use Exception;
@@ -23,7 +23,6 @@ class MatchProductCategoryToMaster extends OrgAction
 
     public function handle(ProductCategory $productCategory): ProductCategory
     {
-
         $masterShop = $productCategory->shop->masterShop;
 
         if (!$masterShop) {
@@ -35,28 +34,24 @@ class MatchProductCategoryToMaster extends OrgAction
             ->first();
 
 
+        UpdateProductCategory::make()->action(
+            $productCategory,
+            [
+                'master_product_category_id' => $masterProductCategory ? $masterProductCategory->id : null,
+            ]
+        );
 
-        if ($masterProductCategory) {
-            UpdateProductCategory::make()->action(
-                $productCategory,
-                [
-                    'master_product_category_id' => $masterProductCategory->id,
-                ]
-            );
-        }
 
         return $productCategory;
     }
 
     public function getCommandSignature(): string
     {
-        return 'product:match_to_master';
+        return 'product_category:match_to_master';
     }
 
     public function asCommand(Command $command): int
     {
-
-
         $command->info('Matching product categories to master product categories');
 
         $chunkSize = 100;
@@ -87,7 +82,7 @@ class MatchProductCategoryToMaster extends OrgAction
                             $matchedCount++;
                         }
                     } catch (Exception $e) {
-                        $command->error("Error processing product category {$productCategory->id}: {$e->getMessage()}");
+                        $command->error("Error processing product category $productCategory->id: {$e->getMessage()}");
                     }
                     $count++;
                     $bar->advance();

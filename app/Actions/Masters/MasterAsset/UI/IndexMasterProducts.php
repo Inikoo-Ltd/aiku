@@ -29,7 +29,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexMasterAssets extends GrpAction
+class IndexMasterProducts extends GrpAction
 {
     use WithMasterCatalogueSubNavigation;
     use WithMastersAuthorisation;
@@ -51,6 +51,8 @@ class IndexMasterAssets extends GrpAction
 
         $queryBuilder = QueryBuilder::for(MasterAsset::class);
         $queryBuilder->where('is_main', true);
+        $queryBuilder->leftJoin('master_asset_stats', 'master_assets.id', '=', 'master_asset_stats.master_asset_id');
+
 
         $queryBuilder->select(
             [
@@ -60,6 +62,7 @@ class IndexMasterAssets extends GrpAction
                 'master_assets.slug',
                 'master_assets.status',
                 'master_assets.price',
+                'master_asset_stats.number_current_assets as used_in',
             ]
         );
         if ($parent instanceof Group) {
@@ -152,6 +155,7 @@ class IndexMasterAssets extends GrpAction
 
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current products with this master'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('code');
         };
     }
@@ -192,7 +196,7 @@ class IndexMasterAssets extends GrpAction
                 'title' => __('master shop')
             ];
             $afterTitle    = [
-                'label' => __('Products')
+                'label' => __('Master Products')
             ];
             $iconRight     = [
                 'icon' => 'fal fa-cube',

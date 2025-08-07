@@ -27,7 +27,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowMasterAsset extends GrpAction
+class ShowMasterProducts extends GrpAction
 {
     use WithFamilySubNavigation;
     use WithMastersAuthorisation;
