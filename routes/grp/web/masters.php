@@ -79,7 +79,7 @@ Route::prefix('/shops/{masterShop}')->as('master_shops.show')->group(function ()
         Route::get('/sub-departments/create', CreateMasterSubDepartment::class)->name('create');
         Route::get('{masterSubDepartment}', ShowMasterSubDepartment::class)->name('show');
     });
-    Route::prefix('products')->as('.products.')->group(function () {
+    Route::prefix('master-products')->as('.master_assets.')->group(function () {
         Route::get('', [IndexMasterAssets::class, 'inMasterShop'])->name('index');
         Route::get('{masterProduct}', ShowMasterAsset::class)->name('show');
     });

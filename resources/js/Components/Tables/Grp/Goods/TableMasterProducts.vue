@@ -35,7 +35,7 @@ function masterProductRoute(masterProduct: MasterProduct) {
             {masterProduct: masterProduct.slug});
     } else {
         return route(
-            "grp.masters.master_shops.show.products.show",
+            "grp.masters.master_shops.show.master_assets.show",
             {masterShop: (route().params as RouteParams).masterShop, masterProduct: masterProduct.slug});
     }
 }
