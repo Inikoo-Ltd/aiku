@@ -83,7 +83,7 @@ class ShowMasterFamily extends GrpAction
                 ],
                 'pageHead'    => [
                     'title'   => $masterFamily->name,
-                    'model'   => '',
+                    'model'   => __('Master Family'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-folder'],
                         'title' => __('department')

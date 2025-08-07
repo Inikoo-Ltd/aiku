@@ -34,6 +34,8 @@ class ShowMasterDepartment extends GrpAction
 
     private MasterShop|Group $parent;
 
+    private MasterProductCategory $masterDepartment;
+
     public function handle(MasterProductCategory $masterDepartment): MasterProductCategory
     {
         $this->masterDepartment = $masterDepartment;

@@ -25,7 +25,7 @@ class FulfillOrderToWooCommerce extends OrgAction
 
     public function handle(Order $order): void
     {
-        $fulfillOrderId = Arr::get($order->data, 'id');
+        $fulfillOrderId = Arr::get($order->data, 'woo_order.id');
 
         /** @var WooCommerceUser $wooCommerceUser */
         $wooCommerceUser = $order->customerSalesChannel->user;

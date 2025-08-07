@@ -35,7 +35,6 @@ class MasterDepartmentHydrateMasterFamilies implements ShouldBeUnique
         ];
 
 
-
         $masterDepartment->stats()->update($stats);
     }
 

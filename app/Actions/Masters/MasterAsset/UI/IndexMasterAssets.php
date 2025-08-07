@@ -13,6 +13,7 @@ use App\Actions\GrpAction;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
+use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Http\Resources\Masters\MasterProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Masters\MasterAsset;
@@ -78,6 +79,30 @@ class IndexMasterAssets extends GrpAction
             ]);
         } elseif ($parent instanceof MasterShop) {
             $queryBuilder->where('master_assets.master_shop_id', $parent->id);
+            $queryBuilder->leftJoin('master_product_categories as departments', 'departments.id', 'master_assets.master_department_id');
+            $queryBuilder->leftJoin('master_product_categories as families', 'families.id', 'master_assets.master_family_id');
+            $queryBuilder->addSelect([
+                'families.slug as master_family_slug',
+                'families.code as master_family_code',
+                'families.name as master_family_name',
+                'departments.slug as master_department_slug',
+                'departments.code as master_department_code',
+                'departments.name as master_department_name'
+            ]);
+        }elseif ($parent instanceof MasterProductCategory) {
+
+            if($parent->type==MasterProductCategoryTypeEnum::FAMILY){
+                $queryBuilder->where('master_assets.master_family_id', $parent->id);
+
+            }elseif ($parent->type==MasterProductCategoryTypeEnum::DEPARTMENT){
+                $queryBuilder->where('master_assets.master_department_id', $parent->id);
+
+            }else{
+                $queryBuilder->where('master_assets.master_sub_department_id', $parent->id);
+
+            }
+
+
             $queryBuilder->leftJoin('master_product_categories as departments', 'departments.id', 'master_assets.master_department_id');
             $queryBuilder->leftJoin('master_product_categories as families', 'families.id', 'master_assets.master_family_id');
             $queryBuilder->addSelect([
@@ -172,6 +197,8 @@ class IndexMasterAssets extends GrpAction
             ];
         }
 
+
+
         return Inertia::render(
             'Masters/MasterProducts',
             [
@@ -223,7 +250,7 @@ class IndexMasterAssets extends GrpAction
                     $suffix
                 ),
             ),
-            'grp.masters.master_shops.show.products.index' =>
+            'grp.masters.master_shops.show.master_assets.index' =>
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($parent, $routeName),
                 $headCrumb(
@@ -254,6 +281,15 @@ class IndexMasterAssets extends GrpAction
         $this->initialisation($group, $request);
 
         return $this->handle($masterShop, $request);
+    }
+
+    public function inMasterFamilyInMasterDepartment(MasterProductCategory $masterDepartment,MasterProductCategory $masterFamily, ActionRequest $request): LengthAwarePaginator
+    {
+        $group        = group();
+
+        $this->parent = $masterFamily;
+        $this->initialisation($group, $request);
+        return $this->handle($masterFamily, $request);
     }
 
 }

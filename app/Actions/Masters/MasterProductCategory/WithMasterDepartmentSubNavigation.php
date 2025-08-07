@@ -19,7 +19,7 @@ trait WithMasterDepartmentSubNavigation
         return [
             [
                 'isAnchor'   => true,
-                'label'    => __('Department'),
+                'label'    => __('Master Department'),
                 'route'     => [
                     'name'       => 'grp.masters.master_departments.show',
                     'parameters' => [$masterDepartment->slug]
@@ -30,7 +30,7 @@ trait WithMasterDepartmentSubNavigation
                 ]
             ],
             [
-                'label'    => __('Sub-departments'),
+                'label'    => __('Master Sub-departments'),
                 'number'   => $masterDepartment->stats->number_sub_departments,
                 'route'     => [
                     'name'       => 'grp.masters.master_departments.show.master_sub_departments.index',
@@ -42,8 +42,8 @@ trait WithMasterDepartmentSubNavigation
                 ]
             ],
              [
-                 'label'    => __('Families'),
-                 'number'   => $masterDepartment->stats->number_current_families,
+                 'label'    => __('Master Families'),
+                 'number'   => $masterDepartment->stats->number_master_product_categories_type_family,
                  'route'     => [
                      'name'       => 'grp.masters.master_departments.show.master_families.index',
                      'parameters' => [$masterDepartment->slug]
