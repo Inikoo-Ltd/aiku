@@ -12,6 +12,7 @@ const props = defineProps<{
     tag_routes: Record<string, routeType>
     tags: {}[]
     tags_selected_id: number[]
+    route_save_translation:routeType
   }
 }>()
 
@@ -33,9 +34,6 @@ const props = defineProps<{
    <TranslationBox 
         :master="data.tradeUnit" 
         :needTranslation="data.tradeUnit" 
-        :route-to-save="{
-            name: 'grp.models.trade-unit.translations.update',
-            parameters: { tradeUnit: data.tradeUnit.id }
-        }"
+        :route-to-save="data.route_save_translation"
     />
 </template>
