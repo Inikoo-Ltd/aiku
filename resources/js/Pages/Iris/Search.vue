@@ -118,6 +118,50 @@ console.log("layout", layout)
 
 <style lang="scss">
 
+
+// ===== Search Page: Result (start) ===== //
+.lb-container {
+    @apply box-border !important;
+}
+.lb-search__main {
+    @apply md:pl-7 box-border w-[77%] !important;
+}
+
+.lb-search__aside {
+    @apply max-w-64 !important;
+}
+
+.lb-results {
+    @apply gap-x-0 gap-y-4 !important;
+}
+
+.lb-search .lb-result {
+    @apply box-border !important;
+}
+
+.lb-result {
+    @apply lg:w-1/4 xl:w-[20%] !important;
+}
+
+.lb-search .lb-result__aside {
+    @apply h-[100px] md:h-[125px] aspect-square !important;
+}
+
+.lb-result__image {
+    @apply object-contain h-full w-full !important;
+}
+
+.lb-search .lb-result__image-wrapper {
+    @apply w-full aspect-square !important; 
+}
+
+.lb-search .lb-search__container {
+    @apply justify-center !important;
+}
+// ===== Search Page: Result (end) ===== //
+
+
+
 .lb-checkbox label.lb-facet__label {
     position: static !important;
 }
