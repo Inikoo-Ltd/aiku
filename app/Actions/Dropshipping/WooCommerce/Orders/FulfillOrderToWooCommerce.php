@@ -27,6 +27,10 @@ class FulfillOrderToWooCommerce extends OrgAction
     {
         $fulfillOrderId = Arr::get($order->data, 'woo_order.id');
 
+        if (!$fulfillOrderId) {
+            $fulfillOrderId = $order->platform_order_id;
+        }
+
         /** @var WooCommerceUser $wooCommerceUser */
         $wooCommerceUser = $order->customerSalesChannel->user;
 
