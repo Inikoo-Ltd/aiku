@@ -110,7 +110,7 @@ const isModalAddress = ref(false)
                                 <div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
                                     <span class="" v-html="data?.customer?.address.formatted_address" />
 
-                                    <div @click="() => isModalAddress = true"
+                                    <div v-if="data.addresses && data.address_update_route" @click="() => isModalAddress = true"
                                         class="w-fit pr-4 whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
                                         <!-- <FontAwesomeIcon icon='fal fa-pencil' size="sm" class='mr-1' fixed-width aria-hidden='true' /> -->
                                         <span>{{ trans('Edit') }}</span>
@@ -125,7 +125,8 @@ const isModalAddress = ref(false)
 
 
     </div>
-    <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
+    
+    <Modal v-if="data.addresses && data.address_update_route" :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
         <CustomerAddressManagementModal
             :addresses="data.addresses"
             :updateRoute="data.address_update_route"
