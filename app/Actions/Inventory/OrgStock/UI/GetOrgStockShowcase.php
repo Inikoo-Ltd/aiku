@@ -11,6 +11,7 @@ namespace App\Actions\Inventory\OrgStock\UI;
 use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
 use App\Http\Resources\Inventory\OrgStockResource;
 use App\Models\Goods\TradeUnit;
+use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -63,15 +64,26 @@ class GetOrgStockShowcase
 
     public function stockData(Warehouse $warehouse, OrgStock $orgStock): array
     {
-        // need to fix with real data
+        $locationData = $orgStock->locationOrgStocks->map(function (LocationOrgStock $locationOrgStock) {
+            return [
+                'id' => $locationOrgStock->id,
+                'name' => $locationOrgStock->location->code,
+                'lastAudit' => $locationOrgStock->audited_at,
+                'stock' => $locationOrgStock->quantity,
+                'isAudited' => !is_null($locationOrgStock->audited_at)
+            ];
+        })->toArray();
 
         return [
             'stock_in_locations' => $orgStock->quantity_in_locations,
             'stock_in_process' => $orgStock->stats->number_stock_deliveries_state_in_process,
             'stock_in_picked' => $orgStock->stats->number_stock_deliveries_state_ready_to_ship,
-            'stock_available' => 0,
-            'stock_value' => $orgStock->stats->value,
+            'stock_available' => $orgStock->quantity_in_locations -
+                ($orgStock->stats->number_stock_deliveries_state_in_process +
+                    $orgStock->stats->number_stock_deliveries_state_ready_to_ship),
+            'stock_value' => $orgStock->value_in_locations,
             'current_cost' => $orgStock->unit_cost,
+            'locations' => $locationData
         ];
     }
 
