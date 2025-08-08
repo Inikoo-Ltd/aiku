@@ -4,6 +4,8 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
+import integer from "../../../vendor/swagger-api/swagger-ui/src/core/plugins/json-schema-2020-12-samples/fn/types/integer"
+
 export interface Department {
     slug:string,
     shop_slug: string,
@@ -14,4 +16,5 @@ export interface Department {
     description: string
     created_at: string
     updated_at: string
+    master_product_category_id: number
 }

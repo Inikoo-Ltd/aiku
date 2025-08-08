@@ -250,7 +250,7 @@ class GetGroupNavigation
     {
         return [
             'label'   => __('Masters'),
-            'icon'    => ['fal', 'fa-ruler-triangle'],
+            'icon'    => ['fab', 'fa-octopus-deploy'],
             'root'    => 'grp.masters.',
             'route'   => [
                 'name' => 'grp.masters.dashboard'

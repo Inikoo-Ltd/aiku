@@ -14,6 +14,7 @@ use App\Actions\Helpers\RedirectDeliveryNotesLink;
 use App\Actions\Helpers\RedirectInvoicesInCustomerLink;
 use App\Actions\Helpers\RedirectInvoicesInShopFromDashboard;
 use App\Actions\Helpers\RedirectInvoicesInShopLink;
+use App\Actions\Helpers\RedirectMasterProductCategoryLink;
 use App\Actions\Helpers\RedirectPickingSessionLink;
 use App\Actions\Helpers\RedirectPortfolioItemLink;
 use App\Actions\Helpers\RedirectProductCategoryLink;
@@ -40,7 +41,9 @@ Route::get('redirect-product-category/{productCategory:slug}', RedirectProductCa
 Route::get('redirect-collections-in-product-category/{productCategory:slug}', RedirectCollectionsInProductCategoryLink::class)->name('redirect_collections_in_product_category');
 
 Route::get('redirect-picking-session/{pickingSession:id}', RedirectPickingSessionLink::class)->name('redirect_picking_session');
-;
+
+Route::get('redirect-master-product-category/{masterProductCategory:id}', RedirectMasterProductCategoryLink::class)->name('redirect_master_product_category');
+
 
 
 Route::prefix('uploads/{upload}')->as('uploads.')->group(function () {
