@@ -141,7 +141,7 @@ class OrgStock extends Model implements Auditable
     {
         return SlugOptions::create()
             ->generateSlugsFrom(function () {
-                return $this->code.' '.$this->organisation->code;
+                return $this->code . ' ' . $this->organisation->code;
             })
             ->doNotGenerateSlugsOnUpdate()
             ->saveSlugsTo('slug');
@@ -232,4 +232,9 @@ class OrgStock extends Model implements Auditable
         )->withPivot(['quantity', 'notes'])->withTimestamps();
     }
 
+    public function locations(): BelongsToMany
+    {
+        return $this->belongsToMany(Location::class, 'location_org_stocks')
+            ->withPivot(['type', 'picking_priority', 'value', 'dropshipping_pipe', 'quantity', 'notes']);
+    }
 }

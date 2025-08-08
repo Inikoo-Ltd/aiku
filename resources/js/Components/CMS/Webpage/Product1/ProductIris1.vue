@@ -312,7 +312,7 @@ const toggleExpanded = () => {
         <ImageProducts :images="fieldValue.product.images" />
         <div class="flex justify-between items-start gap-4 mt-4">
             <!-- Price + Unit Info -->
-            <div>
+            <div v-if="layout?.iris?.is_logged_in">
                 <div class="text-lg font-semibold">
                     {{ locale.currencyFormat(currency?.code, fieldValue.product.price || 0) }}
                     <span class="text-xs text-gray-500 ml-1">
