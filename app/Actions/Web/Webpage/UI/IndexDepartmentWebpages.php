@@ -199,17 +199,17 @@ class IndexDepartmentWebpages extends OrgAction
                         'title' => __('webpage')
                     ],
                     'subNavigation' => $subNavigation,
-                    'actions'       => [
-                        [
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'label' => __('webpage'),
-                            'route' => [
-                                'name'       => $routeCreate,
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ],
-                        ]
-                    ]
+                    // 'actions'       => [
+                    //     [
+                    //         'type'  => 'button',
+                    //         'style' => 'create',
+                    //         'label' => __('webpage'),
+                    //         'route' => [
+                    //             'name'       => $routeCreate,
+                    //             'parameters' => array_values($request->route()->originalParameters())
+                    //         ],
+                    //     ]
+                    // ]
                 ],
                 'data'        => ProductCategoryWebpagesResource::collection($webpages),
 
