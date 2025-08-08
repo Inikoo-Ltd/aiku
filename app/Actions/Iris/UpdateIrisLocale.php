@@ -26,16 +26,15 @@ class UpdateIrisLocale extends IrisAction
 {
     use WithActionUpdate;
 
-    public function handle(string $locale, Request $request, Closure $next)
+    public function handle(string $locale)
     {
-        if($request->user()) {
-            $webUser = $request->user();
+        if(request()->user()) {
+            $webUser = request()->user();
             $this->update($webUser, [
                 'language_id' => Language::where('code', $locale)->first()->id,
             ]);
         }
         Cookie::queue('aiku_guest_locale', $locale, 60 * 24 * 120);
         app()->setLocale($locale);
-        return $next($request);
     }
 }
