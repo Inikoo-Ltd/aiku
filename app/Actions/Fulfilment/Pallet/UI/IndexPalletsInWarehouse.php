@@ -97,9 +97,8 @@ class IndexPalletsInWarehouse extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
-
 
             $table->withGlobalSearch();
 
@@ -129,7 +128,6 @@ class IndexPalletsInWarehouse extends OrgAction
             if ($parent instanceof Warehouse) {
                 $table->column(key: 'location_code', label: __('Location'), canBeHidden: false, sortable: true, searchable: true);
             }
-
 
             $table->column(key: 'contents', label: __('Contents'), canBeHidden: false, searchable: true);
             $table->column(key: 'actions', label: __('Actions'), canBeHidden: false, searchable: true);

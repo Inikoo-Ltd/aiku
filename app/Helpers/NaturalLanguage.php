@@ -126,7 +126,7 @@ class NaturalLanguage
         return $country ? [
             'name' => $country->name,
             'code' => $country->code,
-        ] : null;
+        ] : [];
     }
 
 
