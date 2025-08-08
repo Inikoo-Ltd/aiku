@@ -56,6 +56,7 @@ class IndexCustomerSalesChannels extends OrgAction
         if ($shop) {
             $queryBuilder->where('customer_sales_channels.shop_id', $shop->id);
         }
+        $queryBuilder->leftJoin('customers', 'customer_sales_channels.customer_id', '=', 'customers.id');
 
         $queryBuilder->select([
             'customer_sales_channels.id',
@@ -71,6 +72,10 @@ class IndexCustomerSalesChannels extends OrgAction
             'customer_sales_channels.number_portfolio_broken as number_portfolio_broken',
             'customer_sales_channels.number_orders as number_orders',
             'customer_sales_channels.platform_id',
+            'customers.contact_name as customer_contact_name',
+            'customers.company_name as customer_company_name',
+            'customers.slug as customer_slug',
+            'customers.id as customer_id',
         ])
             ->selectSub(function ($subquery) {
                 $subquery->from('orders')
@@ -139,6 +144,7 @@ class IndexCustomerSalesChannels extends OrgAction
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'customer_company_name', label: __('Customer'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_portfolios', label: __('Portfolios'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_orders', label: __('Orders'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'total_amount', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')

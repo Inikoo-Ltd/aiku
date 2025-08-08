@@ -90,7 +90,7 @@ class ShowPickingSession extends OrgAction
         if ($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
             $this->tab = PickingSessionTabsEnum::ITEMS->value;
         } elseif ($pickingSession->state == PickingSessionStateEnum::HANDLING) {
-            $this->tab = PickingSessionTabsEnum::ITEMIZED->value;
+            $this->tab = PickingSessionTabsEnum::GROUPED->value;
         } else {
             $this->tab = PickingSessionTabsEnum::GROUPED->value;
         }
