@@ -15,6 +15,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\Portfolio;
+use App\Models\Helpers\Language;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cookie;
 use Lorisleiva\Actions\ActionRequest;
@@ -25,11 +26,17 @@ class UpdateIrisLocale extends IrisAction
 
     public function handle(string $locale): void
     {
+        if(request()->user()) {
+            $webUser = request()->user();
+            $this->update($webUser, [
+                'language_id' => Language::where('code', $locale)->first()->id,
+            ]);
+        }
         Cookie::queue('aiku_guest_locale', $locale, 60 * 24 * 120);
         app()->setLocale($locale);
     }
 
-    public function asController(string $locale, ActionRequest $request): void
+    public function asController(string $locale): void
     {
         $this->handle($locale);
     }
