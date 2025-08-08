@@ -17,6 +17,10 @@ library.add(faAlbumCollection);
 
 const props = defineProps<{
     data: {
+        translation_box: {
+            title: string
+            save_route: routeType
+        }
         family: {
             data: {},
         },
@@ -85,8 +89,8 @@ const links = ref([
 
      <TranslationBox 
         v-if="route().current()?.includes('master')"
-        :master="data.family" 
-        :needTranslation="data.family" 
-        :route-to-save="data.route_save_translations"
+        :master="data.family.data" 
+        :needTranslation="data.family.data" 
+        v-bind="data.family.data.translation_box"
     />
 </template>

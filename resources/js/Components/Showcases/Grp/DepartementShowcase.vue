@@ -18,6 +18,10 @@ library.add(faAlbumCollection);
 
 const props = defineProps<{
     data: {
+        translation_box : {
+            title: string
+            save_route: routeType
+        }
         has_webpage ?: boolean;
         department: {
             data: {
@@ -181,6 +185,6 @@ const UnassignCollection = async ( id: number ) => {
         v-if="route().current()?.includes('master')"
         :master="data.department" 
         :needTranslation="data.department" 
-        :route-to-save="data.route_save_translations"
+        v-bind="data.department.data.translation_box"
     />
 </template>

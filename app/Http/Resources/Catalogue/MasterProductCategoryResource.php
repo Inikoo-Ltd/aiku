@@ -51,10 +51,13 @@ class MasterProductCategoryResource extends JsonResource
             'description_i8n'       => $this->getTranslations('description_i8n'),
             'description_title_i8n' => $this->getTranslations('description_title_i8n'),
             'description_extra_i8n' => $this->getTranslations('description_extra_i8n'),
-            'route_save_translations' => [
-                'name'       => 'grp.models.master_product_categories.translations.update',
-                'parameters' => []
-            ]
+            'translation_box' => [
+                'title' => __(''),
+                'save_route' => [
+                     'name'       => 'grp.models.master_product_categories.translations.update',
+                     'parameters' => []
+                ],
+            ],
         ];
     }
 }

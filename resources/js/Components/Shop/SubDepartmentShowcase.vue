@@ -15,6 +15,10 @@ library.add(faUnlink, faThLarge, faBars, faSeedling, faCheck)
 
 const props = defineProps<{
     data: {
+        translation_box : {
+            title: string
+            save_route: routeType
+        }
         subDepartment: {
             slug: string
             image_id: ImageTS | string | null
@@ -205,9 +209,9 @@ const UnassignCollection = async (id: number) => {
 
       <TranslationBox 
         v-if="route().current()?.includes('master')"
-        :master="data.subDepartment" 
-        :needTranslation="data.subDepartment" 
-        :route-to-save="data.route_save_translations"
+        :master="data.subDepartment.data" 
+        :needTranslation="data.subDepartment.data" 
+         v-bind="data.subDepartment.data.translation_box" 
     />
 </template>
 
