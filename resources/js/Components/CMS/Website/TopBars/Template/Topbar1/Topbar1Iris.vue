@@ -197,9 +197,9 @@ const onSelectLanguage = (languageCode: string) => {
       <transition name="headlessui">
         <PopoverPanel
           class="absolute top-full mt-1 right-0 z-10 w-48 bg-white text-gray-900 rounded shadow-lg ring-1 ring-black/10 overflow-hidden">
-          <FooterTab tabName="language" :header="false">
+          <div tabName="language" :header="false">
             <!-- Header -->
-            <template #header>
+            <div>
                 <div class="bg-gray-100 h-7 flex items-center gap-x-1 px-3 border-b border-gray-300">
                     <FontAwesomeIcon icon="fal fa-language" class="text-xs text-gray-600" fixed-width />
                     <Transition name="spin-to-down">
@@ -208,10 +208,10 @@ const onSelectLanguage = (languageCode: string) => {
                         </span>
                     </Transition>
                 </div>
-            </template>
+            </div>
 
             <!-- Language Options -->
-            <template #default>
+            <div>
               <div v-if="Object.keys(layout.iris.website_i18n?.language_options).length > 0" class="flex flex-col">
                 <!-- Language: system -->
                 <button key="website_language" type="button"
@@ -245,8 +245,8 @@ const onSelectLanguage = (languageCode: string) => {
                 {{ trans('Nothing to show here') }}
               </div>
 
-            </template>
-          </FooterTab>
+            </div>
+          </div>
         </PopoverPanel>
       </transition>
     </Popover>
