@@ -47,7 +47,7 @@ class MatchAssetsToMaster extends OrgAction
 
     public function getCommandSignature(): string
     {
-        return 'product:match_to_master';
+        return 'products:match_to_master';
     }
 
     public function asCommand(Command $command): int
@@ -69,17 +69,17 @@ class MatchAssetsToMaster extends OrgAction
             $chunkSize,
             function ($assets) use (&$count, &$matchedCount, $bar, $command) {
                 foreach ($assets as $asset) {
-                    //   try {
-                    $hadMaster = (bool)$asset->master_asset_id;
-                    $this->handle($asset);
-                    $hasNowMaster = (bool)$asset->master_asset_id;
+                    try {
+                        $hadMaster = (bool)$asset->master_asset_id;
+                        $this->handle($asset);
+                        $hasNowMaster = (bool)$asset->master_asset_id;
 
-                    if (!$hadMaster && $hasNowMaster) {
-                        $matchedCount++;
+                        if (!$hadMaster && $hasNowMaster) {
+                            $matchedCount++;
+                        }
+                    } catch (Exception $e) {
+                        $command->error("Error processing asset $asset->id: {$e->getMessage()}");
                     }
-                    //                    } catch (Exception $e) {
-                    //                        $command->error("Error processing asset {$asset->id}: {$e->getMessage()}");
-                    //                    }
                     $count++;
                     $bar->advance();
                 }
