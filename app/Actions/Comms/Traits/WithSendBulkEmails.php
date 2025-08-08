@@ -114,7 +114,8 @@ trait WithSendBulkEmails
             'customer-note' => Arr::get($additionalData, 'customer_note'),
             'order' => Arr::get($additionalData, 'order'),
             'pay-info' => Arr::get($additionalData, 'pay_info'),
-
+            'platform' => Arr::get($additionalData, 'platform'),
+            'balance' => Arr::get($additionalData, 'balance'),
 
             default => $originalPlaceholder,
         };
