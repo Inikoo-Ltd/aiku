@@ -22,7 +22,7 @@ trait WithIrisInertia
     public function getIrisData(Website $website, ?WebUser $webUser): array
     {
 
-        $shop=$website->shop;
+        $shop = $website->shop;
 
         $headerLayout   = Arr::get($website->published_layout, 'header');
         $isHeaderActive = Arr::get($headerLayout, 'status');
@@ -79,8 +79,9 @@ trait WithIrisInertia
                 'symbol' => $shop->currency->symbol,
                 'name'   => $shop->currency->name,
             ],
-            'website_i18n'=>[
-                'language'=>LanguageResource::make($shop->language)->getArray(),
+            'locale'               => app()->getLocale(),
+            'website_i18n' => [
+                'language' => LanguageResource::make($shop->language)->getArray(),
                 'language_options' => GetLanguagesOptions::make()->translated(),
             ],
             'user_auth'            => $webUser ? LoggedWebUserResource::make($webUser)->getArray() : null,
