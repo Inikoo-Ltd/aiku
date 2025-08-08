@@ -194,7 +194,6 @@ class ShowLocation extends OrgAction
                     $suffix
                 ),
             ),
-
             default => []
         };
     }

@@ -89,30 +89,30 @@ function stockFamilyRoute(stock: Stock) {
         {{ stock["family_code"] }}
       </Link>
     </template>
-    <template #cell(description)="{ item: stock }">
-      {{ stock["description"] }}
-    </template>
-    <template #cell(unit_value)="{ item: stock }">
-      {{ stock["unit_value"] }}
-    </template>
     <template #cell(type)="{ item: stock }">
-      <span class="capitalize">{{ stock["type"] }}</span>
+      {{ stock.type ?? 'no data' }}
     </template>
+
     <template #cell(picking_priority)="{ item: stock }">
-      {{ stock["picking_priority"] }}
+      {{ stock.picking_priority ?? 'no data'}}
     </template>
+
     <template #cell(value)="{ item: stock }">
-      {{ stock["value"] }}
+      {{ stock.value ?? 'no data' }}
     </template>
+
     <template #cell(dropshipping_pipe)="{ item: stock }">
-      {{ stock["dropshipping_pipe"] }}
+      {{ stock.dropshipping_pipe ?? 'no data'}}
     </template>
+
     <template #cell(quantity)="{ item: stock }">
-      {{ stock["quantity"] }}
+      {{ stock.quantity ?? 'no data'}}
     </template>
+
     <template #cell(notes)="{ item: stock }">
-      {{ stock["notes"] }}
+      {{ stock.notes ?? 'no data'}}
     </template>
+
   </Table>
 </template>
 
