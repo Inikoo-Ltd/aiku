@@ -75,7 +75,6 @@ class StoreStoredItemAuditFromPallet extends OrgAction
     public function prepareForValidation(ActionRequest $request): void
     {
         $warehouseCount = $this->fulfilment->warehouses()->count();
-        dd($warehouseCount); // Cek jumlah warehouse
 
         if ($warehouseCount === 1) {
             /** @var Warehouse $warehouse */
