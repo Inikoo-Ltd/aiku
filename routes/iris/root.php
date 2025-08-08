@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Iris\UpdateIrisLocale;
 use App\Actions\Web\Webpage\Iris\ShowIrisSitemap;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use Illuminate\Support\Facades\Route;
@@ -26,11 +27,12 @@ Route::prefix("json")
     ->name("json.")
     ->group(__DIR__."/json.php");
 
-
+Route::patch('/locale/{locale}', UpdateIrisLocale::class)->name('locale.update');
 Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::prefix("models")
         ->name("models.")
         ->group(__DIR__."/models.php");
+
 
     Route::prefix("")->group(function () {
         Route::group([], __DIR__.'/system.php');

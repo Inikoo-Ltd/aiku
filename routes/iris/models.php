@@ -15,7 +15,6 @@ use App\Actions\Iris\Portfolio\StoreIrisPortfolioToMultiChannels;
 use App\Actions\Iris\UpdateIrisLocale;
 use Illuminate\Support\Facades\Route;
 
-Route::patch('/locale/{locale}', UpdateIrisLocale::class)->name('locale.update');
 Route::post('portfolio-all-channels', StoreIrisPortfolioToAllChannels::class)->name('all_channels.portfolio.store');
 Route::post('portfolio-multi-channels', StoreIrisPortfolioToMultiChannels::class)->name('multi_channels.portfolio.store');
 Route::post('product-category/{productCategory:id}/portfolio-multi-channels', [StoreIrisPortfolioToMultiChannels::class, 'inProductCategory'])->name('multi_channels.product_category.portfolio.store');
