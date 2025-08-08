@@ -216,7 +216,7 @@ const onSelectLanguage = (languageCode: string) => {
                 <button key="website_language" type="button"
                     @click="onSelectLanguage(layout.iris.website_i18n?.language?.code)" :class="[
                         'w-full text-left px-3 py-2 text-sm transition rounded-none border-b border-gray-300',
-                        true
+                        layout.iris.website_i18n?.language?.code === layout.iris.locale
                             ? 'bg-gray-200 text-blue-600 font-semibold'
                             : 'hover:bg-gray-100 text-gray-800'
                     ]">
