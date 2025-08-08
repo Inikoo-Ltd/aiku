@@ -99,7 +99,7 @@ const onSelectLanguage = (languageCode: string) => {
         }
     } else {
         routeToUpdateLanguage = {
-            name: 'iris.models.locale.update',
+            name: 'iris.locale.update',
             parameters: {
                 locale: languageCode
             }
@@ -111,7 +111,7 @@ const onSelectLanguage = (languageCode: string) => {
     // console.log('loaa11', languageCode)
 
     // Section: Submit
-    // console.log('44444444444444', routeToUpdateLanguage.name, route(routeToUpdateLanguage.name, routeToUpdateLanguage.parameters))
+    console.log('44444444444444', routeToUpdateLanguage.name, route(routeToUpdateLanguage.name, routeToUpdateLanguage.parameters))
     router.patch(
         route(routeToUpdateLanguage.name, routeToUpdateLanguage.parameters),
         {
