@@ -92,7 +92,7 @@ const onSelectLanguage = (languageCode: string) => {
     let routeToUpdateLanguage = {}
     if (route().current()?.startsWith('retina')) {
         routeToUpdateLanguage = {
-            name: 'retina.models.profile.update',
+            name: 'retina.models.locale.update',
             parameters: {
                 locale: languageCode
             }
@@ -107,10 +107,11 @@ const onSelectLanguage = (languageCode: string) => {
     }
     // const routeUpdate = layout?.iris?.is_logged_in ? 'retina.models.profile.update' : 'retina.models.profile.update'
 
-    console.log('loaa', form)
-    console.log('loaa11', languageCode)
+    // console.log('loaa', form)
+    // console.log('loaa11', languageCode)
 
     // Section: Submit
+    // console.log('44444444444444', routeToUpdateLanguage.name, route(routeToUpdateLanguage.name, routeToUpdateLanguage.parameters))
     router.patch(
         route(routeToUpdateLanguage.name, routeToUpdateLanguage.parameters),
         {
@@ -118,11 +119,13 @@ const onSelectLanguage = (languageCode: string) => {
         },
         {
             preserveScroll: true,
-            preserveState: true,
+            // preserveState: true,
             onStart: () => { 
+                // console.log('start 222222222222222222')
                 // isLoading.value = true
             },
             onSuccess: () => {
+                // console.log('succcccccceeeessssssss')
                 layout.iris.locale = languageCode
                 loadLanguageAsync(languageCode)
                 notify({
@@ -131,7 +134,8 @@ const onSelectLanguage = (languageCode: string) => {
                     type: "success"
                 })
             },
-            onError: errors => {
+            onError: (errors) => {
+                // console.log('gggg', errors)
                 notify({
                     title: trans("Something went wrong"),
                     text: trans("Failed to set the language, try again."),
@@ -139,6 +143,7 @@ const onSelectLanguage = (languageCode: string) => {
                 })
             },
             onFinish: () => {
+                // console.log('000000000000000000000000000')
                 // isLoading.value = false
             },
         }
@@ -174,16 +179,16 @@ const onSelectLanguage = (languageCode: string) => {
         v-html="textReplaceVariables(model?.main_title?.text, layout.iris_variables)" />
     </div>
 
-    <Popover v-if="layout.app.environment === 'local'"  v-slot="{ open }" class="relative h-full">
+    <Popover v-if="layout.app.environment === 'local'"  class="relative h-full">
       <PopoverButton aria-label="Language Selector">
         <div v-if="form.processing">
           <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-xs" fixed-width aria-hidden="true" />
           <LoadingText class="h-full font-extralight text-xs flex items-center gap-x-1 leading-none" />
         </div>
 
-        <div v-else>
-            <Button type="transparent" icon="fal fa-language" :label="layout.iris.locale">
-            </Button>
+        <div v-else class="text-yellow-600 hover:text-yellow-400 flex gap-x-2 items-center py-1 hover:underline">
+            <FontAwesomeIcon icon="fal fa-language" class="" fixed-width aria-hidden="true" />
+            {{ layout.iris.locale }}
         </div>
       </PopoverButton>
 
