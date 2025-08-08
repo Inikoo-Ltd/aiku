@@ -18,7 +18,7 @@ import { routeType } from "@/types/route";
 import { ref, onMounted, reactive, inject } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes } from "@fal";
-import { faSkull } from "@fas";
+import { faSkull, faStickyNote } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import axios from "axios";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
@@ -30,8 +30,9 @@ import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 import { faPencil } from "@far";
 import MiniDeliveryNote from "@/Components/MiniDeliveryNote.vue";
 import Drawer from 'primevue/drawer';
+import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 
-library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes);
+library.add(faSkull, faStickyNote, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl, faHandPaper, faChair, faBoxCheck, faCheckDouble, faTimes);
 
 
 const props = defineProps<{
@@ -190,6 +191,9 @@ const onOpenModalDetail = (deliveryNote) => {
 
 console.log('props', props.pickingSession)
 
+// Section: Note
+const isModalNote = ref(false)
+const selectedDelivery = ref(null)
 </script>
 
 <template>
@@ -205,9 +209,25 @@ console.log('props', props.pickingSession)
 
 
         <template #cell(delivery_note_reference)="{ item }">
-            <Link :href="showdeliveryNoteRoute(item)" class="primaryLink">
-            {{ item?.delivery_note_reference }}
-            </Link>
+            <div>
+                <Link :href="showdeliveryNoteRoute(item)" class="primaryLink">
+                    {{ item?.delivery_note_reference }}
+                </Link>
+            </div>
+            
+            <div v-if="item.delivery_note_shipping_notes" @click="() => (isModalNote = true, selectedDelivery = item)" class="text-[rgb(56, 189, 248)] cursor-pointer mt-1">
+
+                <Button
+                    size="xxs"
+                    key=""
+                    type="tertiary"
+                    :label="trans('Open shipping notes')"
+                >
+                    <template #icon>
+                        <FontAwesomeIcon icon="fas fa-sticky-note" class="text-[rgb(56,189,248)]" fixed-width aria-hidden="true" />
+                    </template>
+                </Button>
+            </div>
         </template>
 
 
@@ -692,6 +712,46 @@ console.log('props', props.pickingSession)
     <Modal :isOpen="modalDetail" @onClose="() => onCloseModalDetail()" width="w-1/2">
         <MiniDeliveryNote :deliveryNote="DeliveryNoteInModal"
             @SuccsesUpdateState="() => { onCloseModalDetail() }" />
+    </Modal>
+
+    <!-- Modal: Note -->
+    <Modal :isOpen="isModalNote" @onClose="() => isModalNote = false" width="max-w-md w-full">
+        <div class="">
+            <div class="text-center text-xl font-semibold">
+                Delivery Note: {{ selectedDelivery?.delivery_note_reference }}
+            </div>
+
+
+            <div class="relative w-full xpt-4 rounded overflow-hidden mt-2"  :style="{
+                backgroundColor: `rgba(56, 189, 248, 0.1)`,
+                border:`1px solid rgb(56, 189, 248)`
+            }">
+                <!-- Section: Header -->
+                <div class="xabsolute top-0 left-0 w-full flex gap-x-1 lg:pr-0 justify-between lg:justify-normal">
+                    <div class="w-full flex items-center justify-between text-xs truncate gap-x-2 text-center py-0.5 pl-3 pr-3" :style="{
+                        backgroundColor: 'rgb(56, 189, 248)',
+                    }">
+                        <div
+                            class="flex flex-wrap items-center gap-x-1"
+                        >
+                            <FontAwesomeIcon icon='fas fa-sticky-note' class='' fixed-width aria-hidden='true' />
+                            {{ trans("Delivery Instructions") }}
+                            <InformationIcon :information="trans('This note will be printed in the shipping label')" />
+                            
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Section: Note -->
+                <p class="h-full max-h-32 mx-auto items-center px-4 pt-2 pb-2 text-xxs break-words">
+                    <template v-if="selectedDelivery?.delivery_note_shipping_notes">{{ selectedDelivery?.delivery_note_shipping_notes }}</template>
+                    <div v-else class="text-gray-400 italic">
+                        {{ 'No notes' }}
+                    </div>
+                </p>
+            </div>
+        </div>
     </Modal>
 
 

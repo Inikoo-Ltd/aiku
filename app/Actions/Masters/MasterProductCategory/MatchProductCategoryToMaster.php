@@ -47,7 +47,7 @@ class MatchProductCategoryToMaster extends OrgAction
 
     public function getCommandSignature(): string
     {
-        return 'product_category:match_to_master';
+        return 'product_categories:match_to_master';
     }
 
     public function asCommand(Command $command): int

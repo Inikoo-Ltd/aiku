@@ -261,6 +261,8 @@ class IndexProspects extends OrgAction
             unset($navigation[ProspectsTabsEnum::SUCCESS->value]);
         }
 
+
+
         if ($this->parent instanceof Shop) {
             $spreadsheetRoute = [
                 'event'           => 'action-progress',
@@ -284,6 +286,11 @@ class IndexProspects extends OrgAction
 
         ];
 
+        if( $this->parent instanceof Group) {
+            unset($navigation[ProspectsTabsEnum::DASHBOARD->value]);
+            $subNavigation = null;
+        }
+
         $tabs = [
             'tabs' => [
                 'current'    => $this->tab,
@@ -293,10 +300,10 @@ class IndexProspects extends OrgAction
             ProspectsTabsEnum::DASHBOARD->value => $this->tab == ProspectsTabsEnum::DASHBOARD->value ?
                 fn() => GetProspectsDashboard::run($this->parent, $request)
                 : Inertia::lazy(fn() => GetProspectsDashboard::run($this->parent, $request)),
-            ProspectsTabsEnum::PROSPECTS->value => $this->tab == ProspectsTabsEnum::PROSPECTS->value ?
-                fn() => $dataProspect
-                : Inertia::lazy(fn() => $dataProspect),
 
+            ProspectsTabsEnum::PROSPECTS->value => $this->tab == ProspectsTabsEnum::PROSPECTS->value ?
+                fn() => ProspectsResource::collection($prospects)
+                : Inertia::lazy(fn() => ProspectsResource::collection($prospects)),
             ProspectsTabsEnum::CONTACTED->value => $this->tab == ProspectsTabsEnum::CONTACTED->value ?
                 fn() => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::CONTACTED->value, scope: 'contacted'))
                 : Inertia::lazy(fn() => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::CONTACTED->value, scope: 'contacted'))),
@@ -313,20 +320,6 @@ class IndexProspects extends OrgAction
                 fn() => HistoryResource::collection(IndexHistory::run(model: Prospect::class, prefix: ProspectsTabsEnum::HISTORY->value))
                 : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run(model: Prospect::class, prefix: ProspectsTabsEnum::HISTORY->value))),
         ];
-
-        if ($this->parent instanceof Group) {
-            $subNavigation = null;
-            $tabs          = [
-                'tabs'                              => [
-                    'current'    => $this->tab,
-                    'navigation' => Arr::except(ProspectsTabsEnum::navigation(), [ProspectsTabsEnum::DASHBOARD->value]),
-                ],
-                ProspectsTabsEnum::PROSPECTS->value => $this->tab == ProspectsTabsEnum::PROSPECTS->value ?
-                    fn() => $dataProspect
-                    : Inertia::lazy(fn() => $dataProspect),
-            ];
-        }
-
 
         return Inertia::render(
             'Org/Shop/CRM/Prospects',
