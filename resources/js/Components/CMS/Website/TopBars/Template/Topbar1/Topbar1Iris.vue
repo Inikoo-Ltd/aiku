@@ -92,7 +92,7 @@ const onSelectLanguage = (languageCode: string) => {
     let routeToUpdateLanguage = {}
     if (route().current()?.startsWith('retina')) {
         routeToUpdateLanguage = {
-            name: 'retina.models.locale.update',
+            name: 'retina.locale.update',
             parameters: {
                 locale: languageCode
             }

@@ -121,7 +121,6 @@ use Illuminate\Support\Facades\Route;
 Route::post('place-order-pay-by-bank', PlaceOrderPayByBank::class)->name('place-order-pay-by-bank');
 Route::post('top-up-payment-api-point', StoreTopUpPaymentApiPoint::class)->name('top_up_payment_api_point.store');
 
-Route::patch('/locale/{locale}', UpdateRetinaLocale::class)->name('locale.update');
 Route::patch('/profile', UpdateRetinaProfile::class)->name('profile.update');
 Route::patch('/settings', UpdateRetinaCustomerSettings::class)->name('settings.update');
 
