@@ -56,8 +56,6 @@ class IndexOrgStocksInLocation extends OrgAction
                 'location_org_stocks.quantity',
                 'location_org_stocks.notes',
             ])
-
-            // ->allowedSorts(['code', 'name', 'family_code', 'unit_value', 'discontinued_in_organisation_at'])
             ->allowedSorts(['type', 'picking_priority', 'value', 'dropshipping_pipe', 'quantity', 'notes'])
             ->allowedFilters([$globalSearch, AllowedFilter::exact('state')])
             ->withPaginator($prefix, tableName: request()->route()->getName())

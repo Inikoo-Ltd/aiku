@@ -27,7 +27,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class ShowMasterAsset extends GrpAction
+class ShowMasterProducts extends GrpAction
 {
     use WithFamilySubNavigation;
     use WithMastersAuthorisation;
@@ -152,18 +152,18 @@ class ShowMasterAsset extends GrpAction
 
 
         return match ($routeName) {
-            'grp.masters.master_shops.show.master_assets.show' =>
+            'grp.masters.master_shops.show.master_products.show' =>
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($this->parent, $routeParameters),
                 $headCrumb(
                     $masterAsset,
                     [
                         'index' => [
-                            'name'       => 'grp.masters.master_shops.show.master_assets.index',
+                            'name'       => 'grp.masters.master_shops.show.master_products.index',
                             'parameters' => $routeParameters
                         ],
                         'model' => [
-                            'name'       => 'grp.masters.master_shops.show.master_assets.show',
+                            'name'       => 'grp.masters.master_shops.show.master_products.show',
                             'parameters' => $routeParameters
                         ]
                     ],
@@ -244,7 +244,7 @@ class ShowMasterAsset extends GrpAction
                     ]
                 ]
             ],
-            'grp.masters.master_shops.show.master_assets.show' => [
+            'grp.masters.master_shops.show.master_products.show' => [
                 'label' => $masterAsset->name,
                 'route' => [
                     'name'       => $routeName,

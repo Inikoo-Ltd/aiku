@@ -33,6 +33,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $organisation_code
  * @property mixed $number_current_sub_departments
  * @property mixed $number_current_collections
+ * @property mixed $master_product_category_id
  */
 class DepartmentsResource extends JsonResource
 {
@@ -65,6 +66,7 @@ class DepartmentsResource extends JsonResource
             'organisation_name'              => $this->organisation_name,
             'organisation_code'              => $this->organisation_code,
             'organisation_slug'              => $this->organisation_slug,
+            'master_product_category_id'     => $this->master_product_category_id
         ];
     }
 }

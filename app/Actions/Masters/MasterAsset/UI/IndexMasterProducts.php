@@ -29,7 +29,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexMasterAssets extends GrpAction
+class IndexMasterProducts extends GrpAction
 {
     use WithMasterCatalogueSubNavigation;
     use WithMastersAuthorisation;
@@ -50,6 +50,10 @@ class IndexMasterAssets extends GrpAction
         }
 
         $queryBuilder = QueryBuilder::for(MasterAsset::class);
+        $queryBuilder->where('is_main', true);
+        $queryBuilder->leftJoin('master_asset_stats', 'master_assets.id', '=', 'master_asset_stats.master_asset_id');
+
+
         $queryBuilder->select(
             [
                 'master_assets.id',
@@ -58,6 +62,7 @@ class IndexMasterAssets extends GrpAction
                 'master_assets.slug',
                 'master_assets.status',
                 'master_assets.price',
+                'master_asset_stats.number_current_assets as used_in',
             ]
         );
         if ($parent instanceof Group) {
@@ -89,15 +94,15 @@ class IndexMasterAssets extends GrpAction
                 'departments.code as master_department_code',
                 'departments.name as master_department_name'
             ]);
-        }elseif ($parent instanceof MasterProductCategory) {
+        } elseif ($parent instanceof MasterProductCategory) {
 
-            if($parent->type==MasterProductCategoryTypeEnum::FAMILY){
+            if ($parent->type == MasterProductCategoryTypeEnum::FAMILY) {
                 $queryBuilder->where('master_assets.master_family_id', $parent->id);
 
-            }elseif ($parent->type==MasterProductCategoryTypeEnum::DEPARTMENT){
+            } elseif ($parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
                 $queryBuilder->where('master_assets.master_department_id', $parent->id);
 
-            }else{
+            } else {
                 $queryBuilder->where('master_assets.master_sub_department_id', $parent->id);
 
             }
@@ -150,6 +155,7 @@ class IndexMasterAssets extends GrpAction
 
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current products with this master'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('code');
         };
     }
@@ -190,7 +196,7 @@ class IndexMasterAssets extends GrpAction
                 'title' => __('master shop')
             ];
             $afterTitle    = [
-                'label' => __('Products')
+                'label' => __('Master Products')
             ];
             $iconRight     = [
                 'icon' => 'fal fa-cube',
@@ -250,7 +256,7 @@ class IndexMasterAssets extends GrpAction
                     $suffix
                 ),
             ),
-            'grp.masters.master_shops.show.master_assets.index' =>
+            'grp.masters.master_shops.show.master_products.index' =>
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($parent, $routeName),
                 $headCrumb(
@@ -283,7 +289,7 @@ class IndexMasterAssets extends GrpAction
         return $this->handle($masterShop, $request);
     }
 
-    public function inMasterFamilyInMasterDepartment(MasterProductCategory $masterDepartment,MasterProductCategory $masterFamily, ActionRequest $request): LengthAwarePaginator
+    public function inMasterFamilyInMasterDepartment(MasterProductCategory $masterDepartment, MasterProductCategory $masterFamily, ActionRequest $request): LengthAwarePaginator
     {
         $group        = group();
 

@@ -65,12 +65,11 @@ class UpdateProductCategory extends OrgAction
         if ($imageData['image']) {
             $this->processCatalogueImage($imageData, $productCategory);
         }
+
         $originalMasterProductCategory = null;
         if (Arr::has($modelData, 'master_product_category_id')) {
             $originalMasterProductCategory = $productCategory->masterProductCategory;
         }
-
-
 
         $productCategory = $this->update($productCategory, $modelData, ['data']);
         $productCategory->refresh();
