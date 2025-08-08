@@ -11,10 +11,12 @@ namespace App\Actions\CRM\Customer\UI;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
+use App\Enums\Helpers\TaxNumber\TaxNumberTypeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Http\Resources\Helpers\TaxNumberResource;
 use App\Models\CRM\Customer;
 use App\Models\Catalogue\Shop;
+use App\Models\Helpers\TaxNumber;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -49,8 +51,6 @@ class EditCustomer extends OrgAction
             $firstName = $parts[0];
             $lastName = $parts[1] ?? ''; // in case there's no last name
         }
-
-
         return Inertia::render(
             'EditModel',
             [
@@ -106,11 +106,25 @@ class EditCustomer extends OrgAction
                                         'countriesAddressData' => GetAddressData::run()
                                     ]
                                 ],
-                                    'vat'      => [
+                                'tax_number'      => [
                                     'type'    => 'tax_number',
                                     'label'   => __('Tax number'),
-                                    'value'   => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : null,
+                                    'value'   => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : [
+                                        'number' => '',
+                                        'type'   => '',
+                                        'country_code' => $customer->address->country_code ?? null,
+                                        'country_id' => $customer->address->country_id ?? null,
+                                    ],
                                     'country' => $customer->address->country_code,
+                                    'country_id' => $customer->address->country_id,
+                                    'typeOptions' => TaxNumberTypeEnum::getOptions(),
+                                    'route_validate' => [
+                                        'name' => 'grp.models.tax_number.validate',
+                                        'parameters' => [
+                                            'taxNumber' => $customer->taxNumber->id ?? null,
+                                        ],
+                                        'method' => 'post'
+                                    ]
                                 ]
                             ]
                         ]
