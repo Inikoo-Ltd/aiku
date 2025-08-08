@@ -12,26 +12,23 @@ namespace App\Actions\Retina\Helpers\Language;
 use App\Actions\IrisAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Helpers\Language;
+use Closure;
 use Illuminate\Support\Facades\Cookie;
-
+use Illuminate\Http\Request;    
 class UpdateRetinaLocale extends IrisAction
 {
     use WithActionUpdate;
 
-    public function handle(string $locale): void
+    public function handle(string $locale, Request $request, Closure $next)
     {
-        if(request()->user()) {
-            $webUser = request()->user();
+        if($request->user()) {
+            $webUser = $request->user();
             $this->update($webUser, [
                 'language_id' => Language::where('code', $locale)->first()->id,
             ]);
         }
         Cookie::queue('aiku_guest_locale', $locale, 60 * 24 * 120);
         app()->setLocale($locale);
-    }
-
-    public function asController(string $locale): void
-    {
-        $this->handle($locale);
+        return $next($request);
     }
 }
