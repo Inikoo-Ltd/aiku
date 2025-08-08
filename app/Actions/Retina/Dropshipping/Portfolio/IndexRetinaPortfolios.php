@@ -11,7 +11,6 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithPlatformStatusCheck;
-use App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\RetinaCustomerSalesChannelResource;
@@ -175,45 +174,15 @@ class IndexRetinaPortfolios extends RetinaAction
             };
         }
 
-        // Button: Create a new product to platform
-        $duplicateRoute = false;
-        if ($platformUser) {
-            $duplicateRoute = match ($this->customerSalesChannel->platform->type) {
-                PlatformTypeEnum::WOOCOMMERCE => [
-                    'name'       => 'retina.models.dropshipping.woo.batch_upload',
-                    'parameters' => [
-                        'wooCommerceUser' => $platformUser->id
-                    ]
-                ],
-                default => false
-            };
-        }
-
-        // Button: Sync all to platform
-        $batchSyncRoute = false;
-        if ($platformUser) {
-            $batchSyncRoute = match ($this->customerSalesChannel->platform->type) {
-                PlatformTypeEnum::WOOCOMMERCE => [
-                    'name'       => 'retina.models.dropshipping.woo.batch_sync',
-                    'parameters' => [
-                        'wooCommerceUser' => $platformUser->id
-                    ]
-                ],
-                default => false
-            };
-        }
-
         $actions = [];
 
-        if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
-            $countProductsNotSync = $this->customerSalesChannel->portfolios()->where('portfolios.status',true)->where('platform_status', false)->count();
-        } elseif ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
+        if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
             $countProductsNotSync = 0;
         } else {
-            // todo review this for other platforms , we shuuld use platform_status
-            $countProductsNotSync = $this->customerSalesChannel->portfolios()->where('platform_product_id', null)->count();
+            $countProductsNotSync = $this->customerSalesChannel->portfolios()->where('portfolios.status', true)
+                ->where('platform_status', false)
+                ->count();
         }
-
 
         if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
             $actions = [
@@ -260,8 +229,6 @@ class IndexRetinaPortfolios extends RetinaAction
                 ],
                 'routes'         => [
                     'bulk_upload'               => $bulkUploadRoute,
-                    'batch_sync'                => $batchSyncRoute,
-                    'duplicate'                 => $duplicateRoute,
                     'itemRoute'                 => [
                         'name'       => 'retina.dropshipping.customer_sales_channels.filtered_products.index',
                         'parameters' => [
@@ -386,10 +353,7 @@ class IndexRetinaPortfolios extends RetinaAction
             if ($this->customerSalesChannel->platform->type !== PlatformTypeEnum::MANUAL) {
                 $table->column(key: 'status', label: __('status'));
 
-                $matchesLabel = __('Matches');
-                if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
-                    $matchesLabel = __('Shopify product');
-                }
+                $matchesLabel = __($this->customerSalesChannel->platform->name . ' product');
 
                 $table->column(key: 'matches', label: $matchesLabel, canBeHidden: false);
                 $table->column(key: 'create_new', label: '', canBeHidden: false);

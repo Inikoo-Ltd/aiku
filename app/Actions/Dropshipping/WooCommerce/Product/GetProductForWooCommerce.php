@@ -23,24 +23,15 @@ class GetProductForWooCommerce
     /**
      * @throws \Exception
      */
-    public function handle(WooCommerceUser $wooCommerceUser)
+    public function handle(WooCommerceUser $wooCommerceUser, $query = '')
     {
-        $products = $wooCommerceUser->getWooCommerceProducts();
-
-        if (!$products) {
-            return collect([]);
-        }
-
-        dd($products);
+        return $wooCommerceUser->getWooCommerceProducts([
+            'search' => $query
+        ]);
     }
 
     public function asController(WooCommerceUser $wooCommerceUser, ActionRequest $request)
     {
         return $this->handle($wooCommerceUser);
-    }
-
-    public function asCommand()
-    {
-        $this->handle(WooCommerceUser::first());
     }
 }

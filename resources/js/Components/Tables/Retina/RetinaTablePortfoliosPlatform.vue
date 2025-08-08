@@ -30,7 +30,7 @@ import {
     faExclamationCircle,
     faClone,
     faLink, faScrewdriver, faTools,
-    faRecycle,faHandPointer,faHandshakeSlash,faHandshake
+    faRecycle, faHandPointer, faHandshakeSlash, faHandshake
 } from "@fal"
 import {faStar, faFilter} from "@fas"
 import {faExclamationTriangle as fadExclamationTriangle} from "@fad"
@@ -42,8 +42,9 @@ import Modal from "@/Components/Utils/Modal.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import axios from "axios"
+import {routeType} from "@/types/route";
 
-library.add(faHandshake,faHandshakeSlash,faHandPointer,fadExclamationTriangle, faSyncAlt, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, faClone, faLink, faScrewdriver, faTools)
+library.add(faHandshake, faHandshakeSlash, faHandPointer, fadExclamationTriangle, faSyncAlt, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, faClone, faLink, faScrewdriver, faTools)
 
 interface PlatformData {
     id: number
@@ -68,10 +69,15 @@ const props = defineProps<{
     selectedData: {
         products: number[]
     }
-
+    routes: {
+        batch_upload: routeType
+        batch_match: routeType
+    }
     platform_data: PlatformData
     platform_user_id: number
     is_platform_connected: boolean
+    route_match: object
+    route_create_new: object
     progressToUploadToShopify: {}
     isPlatformManual?: boolean
     customerSalesChannel: {}
@@ -213,17 +219,17 @@ const onSubmitVariant = () => {
 
     /* Section: Submit */
     router.post(
-    	 route('retina.models.portfolio.match_to_existing_shopify_product', {
+        route(props.routes.batch_match.name, {
             portfolio: selectedPortfolio.value?.id,
-            shopify_product_id: selectedVariant.value?.id
+            platform_product_id: selectedVariant.value?.id
         }),
-    	{
-    		// data: 'qqq'
-    	},
-    	 {
+        {
+            // data: 'qqq'
+        },
+        {
             preserveScroll: true,
             preserveState: true,
-            onStart: () => { 
+            onStart: () => {
                 isLoadingSubmit.value = true
             },
             onSuccess: () => {
@@ -290,7 +296,7 @@ const onChangeCheked = (checked: boolean, item: DeliveryNote) => {
     }
 }
 
-const onCheckedAll = ({ data, allChecked }) => {
+const onCheckedAll = ({data, allChecked}) => {
     if (!selectedProducts.value) return
 
     if (allChecked) {
@@ -303,16 +309,16 @@ const onCheckedAll = ({ data, allChecked }) => {
 }
 
 const onDisableCheckbox = (item) => {
-    if(item.platform_status && item.exist_in_platform && item.has_valid_platform_product_id) return true
+    if (item.platform_status && item.exist_in_platform && item.has_valid_platform_product_id) return true
     return false
 }
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5" isCheckBox @onChecked="(item) => onChangeCheked(true, item)"
-        @onUnchecked="(item) => onChangeCheked(false, item)" @onCheckedAll="(data) => onCheckedAll(data)"
-        checkboxKey='id' :isChecked="(item) => selectedProducts.includes(item.id)"
-        :disabledCheckbox="(item)=>onDisableCheckbox(item)" :rowColorFunction="(item) => {
+           @onUnchecked="(item) => onChangeCheked(false, item)" @onCheckedAll="(data) => onCheckedAll(data)"
+           checkboxKey='id' :isChecked="(item) => selectedProducts.includes(item.id)"
+           :disabledCheckbox="(item)=>onDisableCheckbox(item)" :rowColorFunction="(item) => {
 			if (!isPlatformManual && is_platform_connected && !item.platform_product_id && get(progressToUploadToShopify, [item.id], undefined) != 'success') {
 				return 'bg-yellow-50'
 			} else {
@@ -330,26 +336,28 @@ const onDisableCheckbox = (item) => {
 
         <template #add-on-button>
             <Button @click="onClickFilterOutOfStock('out-of-stock')"
-                v-tooltip="trans('Filter the product that out of stock')" label="Out of stock" size="xs"
-                :key="compTableFilterStatus" :type="compTableFilterStatus === 'out-of-stock' ? 'secondary' : 'tertiary'"
-                :icon="compTableFilterStatus === 'out-of-stock' ? 'fas fa-filter' : 'fal fa-filter'"
-                iconRight="fal fa-exclamation-triangle" :loading="isLoadingTable == 'out-of-stock'" />
+                    v-tooltip="trans('Filter the product that out of stock')" label="Out of stock" size="xs"
+                    :key="compTableFilterStatus"
+                    :type="compTableFilterStatus === 'out-of-stock' ? 'secondary' : 'tertiary'"
+                    :icon="compTableFilterStatus === 'out-of-stock' ? 'fas fa-filter' : 'fal fa-filter'"
+                    iconRight="fal fa-exclamation-triangle" :loading="isLoadingTable == 'out-of-stock'"/>
             <Button @click="onClickFilterOutOfStock('discontinued')"
-                v-tooltip="trans('Filter the product that discontinued')" label="Discontinued" size="xs"
-                :key="compTableFilterStatus" :type="compTableFilterStatus === 'discontinued' ? 'secondary' : 'tertiary'"
-                :icon="compTableFilterStatus === 'discontinued' ? 'fas fa-filter' : 'fal fa-filter'"
-                iconRight="fal fa-times" :loading="isLoadingTable == 'discontinued'" />
+                    v-tooltip="trans('Filter the product that discontinued')" label="Discontinued" size="xs"
+                    :key="compTableFilterStatus"
+                    :type="compTableFilterStatus === 'discontinued' ? 'secondary' : 'tertiary'"
+                    :icon="compTableFilterStatus === 'discontinued' ? 'fas fa-filter' : 'fal fa-filter'"
+                    iconRight="fal fa-times" :loading="isLoadingTable == 'discontinued'"/>
         </template>
 
         <template #cell(image)="{ item: product }">
             <div class="overflow-hidden w-10 h-10">
-                <Image :src="product.image" :alt="product.name" />
+                <Image :src="product.image" :alt="product.name"/>
             </div>
         </template>
 
         <template #cell(name)="{ item: product }">
             <Link :href="portfolioRoute(product)" class="primaryLink whitespace-nowrap">
-            {{ product["code"] }}
+                {{ product["code"] }}
             </Link>
             <div class="text-base font-semibold">
                 {{ product["name"] }}
@@ -374,19 +382,19 @@ const onDisableCheckbox = (item) => {
 
             <!-- Section: is code exist in platform -->
             <div v-if="product.is_code_exist_in_platform" class="text-xs text-amber-500">
-                <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true"/>
                 <span class="pr-2">{{
-                    trans("We found same product in your shop, do you want to create new or use existing?")
+                        trans("We found same product in your shop, do you want to create new or use existing?")
                     }}</span>
                 <Button v-tooltip="trans('Will create new product in :platform', {platform: props.platform_data.name})"
-                    label="Create new" icon="fal fa-plus" type="tertiary" size="xxs" />
+                        label="Create new" icon="fal fa-plus" type="tertiary" size="xxs"/>
                 <span class="px-2 text-gray-500">or</span>
                 <Button
                     v-tooltip="trans('Will sync the product and prioritize our product', {platform: props.platform_data.name})"
                     label="Use Existing" icon="fal fa-sync-alt"
                     :disabled="data?.product_availability?.options === 'use_existing'"
                     :type="data?.product_availability?.options === 'use_existing' ? 'primary' : 'tertiary'"
-                    size="xxs" />
+                    size="xxs"/>
             </div>
         </template>
 
@@ -394,18 +402,19 @@ const onDisableCheckbox = (item) => {
         <template #cell(status)="{ item }">
             <div class="whitespace-nowrap">
                 <FontAwesomeIcon v-if="item.has_valid_platform_product_id"
-                    v-tooltip="trans('Has valid platform product id')" icon="fal fa-check" class="text-green-500"
-                    fixed-width aria-hidden="true" />
+                                 v-tooltip="trans('Has valid platform product id')" icon="fal fa-check"
+                                 class="text-green-500"
+                                 fixed-width aria-hidden="true"/>
                 <FontAwesomeIcon v-else v-tooltip="trans('Has valid platform product id')" icon="fal fa-times"
-                    class="text-red-500" fixed-width aria-hidden="true" />
+                                 class="text-red-500" fixed-width aria-hidden="true"/>
                 <FontAwesomeIcon v-if="item.exist_in_platform" v-tooltip="trans('Exist in platform')"
-                    icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                                 icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true"/>
                 <FontAwesomeIcon v-else v-tooltip="trans('Exist in platform')" icon="fal fa-times" class="text-red-500"
-                    fixed-width aria-hidden="true" />
+                                 fixed-width aria-hidden="true"/>
                 <FontAwesomeIcon v-if="item.platform_status" v-tooltip="trans('Platform status')" icon="fal fa-check"
-                    class="text-green-500" fixed-width aria-hidden="true" />
+                                 class="text-green-500" fixed-width aria-hidden="true"/>
                 <FontAwesomeIcon v-else v-tooltip="trans('Platform status')" icon="fal fa-times" class="text-red-500"
-                    fixed-width aria-hidden="true" />
+                                 fixed-width aria-hidden="true"/>
             </div>
 
 
@@ -417,11 +426,11 @@ const onDisableCheckbox = (item) => {
                 <template v-if="!item.platform_status">
 
                     <div v-if="item.platform_possible_matches?.number_matches" class="border  rounded p-1"
-                        :class="selectedProducts?.includes(item.id) ? 'bg-green-200 border-green-400' : 'border-gray-300'">
+                         :class="selectedProducts?.includes(item.id) ? 'bg-green-200 border-green-400' : 'border-gray-300'">
                         <div class="flex gap-x-2 items-center border border-gray-300 rounded p-1">
                             <div v-if="item.platform_possible_matches?.raw_data?.[0].images?.[0]?.src"
-                                class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow border border-gray-300 rounded">
-                                <img :src="item.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src" />
+                                 class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow border border-gray-300 rounded">
+                                <img :src="item.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src"/>
                             </div>
                             <div>
                                 <span class="mr-1">{{ item.platform_possible_matches?.matches_labels[0] }}</span>
@@ -429,7 +438,7 @@ const onDisableCheckbox = (item) => {
                         </div>
 
                         <ButtonWithLink v-if="item.platform_possible_matches?.number_matches"
-                            v-tooltip="trans('Match to existing Shopify product')" :routeTarget="{
+                                        v-tooltip="trans('Match to existing Shopify product')" :routeTarget="{
                                 method: 'post',
                                 name: 'retina.models.portfolio.match_to_existing_shopify_product',
                                 parameters: {
@@ -439,17 +448,18 @@ const onDisableCheckbox = (item) => {
                             }" :bindToLink="{
                                 preserveScroll: true,
                             }" type="primary" :label="trans('Match with this product')" size="xxs"
-                            icon="fal fa-hand-pointer" />
+                                        icon="fal fa-hand-pointer"/>
 
                     </div>
 
                     <Button v-if="item.platform_possible_matches?.number_matches"
-                        @click="() => (fetchRoute(), isOpenModal = true, selectedPortfolio = item)"
-                        :label="trans('Choose another product from your shop')" :capitalize="false" size="xxs"
-                        type="tertiary" />
+                            @click="() => (fetchRoute(), isOpenModal = true, selectedPortfolio = item)"
+                            :label="trans('Choose another product from your shop')" :capitalize="false" size="xxs"
+                            type="tertiary"/>
                     <Button v-else @click="() => (fetchRoute(), isOpenModal = true, selectedPortfolio = item)"
-                        :label="trans('Match it with an existing product in your shop')" :capitalize="false" size="xxs"
-                        type="tertiary" />
+                            :label="trans('Match it with an existing product in your shop')" :capitalize="false"
+                            size="xxs"
+                            type="tertiary"/>
                 </template>
                 <template v-else>
 
@@ -457,8 +467,8 @@ const onDisableCheckbox = (item) => {
                         <div class="flex gap-x-2 items-center">
 
                             <div v-if="item.shopify_product_data?.images?.edges?.[0]?.node?.src"
-                                class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow border border-gray-300 rounded">
-                                <img :src="item.shopify_product_data?.images?.edges?.[0]?.node?.src" />
+                                 class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow border border-gray-300 rounded">
+                                <img :src="item.shopify_product_data?.images?.edges?.[0]?.node?.src"/>
                             </div>
 
                             <div>
@@ -468,10 +478,10 @@ const onDisableCheckbox = (item) => {
                     </template>
 
 
-
                     <Button class="mt-2" @click="() => (fetchRoute(), isOpenModal = true, selectedPortfolio = item)"
-                        :label="trans('Connect with other product')" :capitalize="false" :icon="faRecycle" size="xxs"
-                        type="tertiary" />
+                            :label="trans('Connect with other product')" :capitalize="false" :icon="faRecycle"
+                            size="xxs"
+                            type="tertiary"/>
 
                 </template>
             </template>
@@ -480,8 +490,8 @@ const onDisableCheckbox = (item) => {
 
                 <ButtonWithLink
 					v-if="
-						!item.has_valid_platform_product_id && 
-						!item.exist_in_platform && 
+						!item.has_valid_platform_product_id &&
+						!item.exist_in_platform &&
 						!item.platform_status &&
 						(get(progressToUploadToShopify, [item.id], undefined) != 'success' && get(progressToUploadToShopify, [item.id], undefined) != 'loading')
 					"
@@ -524,7 +534,7 @@ const onDisableCheckbox = (item) => {
                                 size="xxs"
                                 icon="fal fa-tools"
                             />
-                            
+
                             <Button
                                 v-else
                                 @click="() => (isOpenModal = true, selectedPortfolio = item)"
@@ -567,11 +577,11 @@ const onDisableCheckbox = (item) => {
         <!-- Column: Actions 3 -->
         <template #cell(delete)="{ item }">
             <ButtonWithLink v-tooltip="trans('Unselect product')" type="negative" icon="fal fa-skull"
-                :routeTarget="item.update_portfolio" :body="{
+                            :routeTarget="item.update_portfolio" :body="{
 						'status': false,
 					}" size="xs" :bindToLink="{
 						preserveScroll: true,
-					}" />
+					}"/>
         </template>
     </Table>
 
@@ -582,13 +592,13 @@ const onDisableCheckbox = (item) => {
         <div class="relative isolate">
 
             <div v-if="isLoadingSubmit"
-                class="flex justify-center items-center text-7xl text-white absolute z-10 inset-0 bg-black/40">
-                <LoadingIcon />
+                 class="flex justify-center items-center text-7xl text-white absolute z-10 inset-0 bg-black/40">
+                <LoadingIcon/>
             </div>
 
             <div class="mb-2">
                 <PureInput v-model="querySearchPortfolios" aupdate:modelValue="() => debounceGetPortfoliosList()"
-                    :placeholder="trans('Input to search portfolios')" />
+                           :placeholder="trans('Input to search portfolios')"/>
                 <slot name="afterInput">
                 </slot>
             </div>
@@ -605,42 +615,43 @@ const onDisableCheckbox = (item) => {
                         <div class="grid grid-cols-2 gap-3 pb-2">
                             <template v-if="selectedPortfolio?.platform_possible_matches?.length > 0">
                                 <div v-for="(item, index) in filteredPortfolios" :key="index"
-                                    @click="() => selectedVariant = item"
-                                    class="relative h-fit rounded cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
-                                    :class="[
+                                     @click="() => selectedVariant = item"
+                                     class="relative h-fit rounded cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
+                                     :class="[
 										selectedVariant?.id === item.id ? 'bg-green-100 border-green-400' : ''
 									]">
                                     <Transition name="slide-to-right">
                                         <FontAwesomeIcon v-if="selectedVariant?.id === item.id"
-                                            icon="fas fa-check-circle" class="bottom-2 right-2 absolute text-green-500"
-                                            fixed-width aria-hidden="true" />
+                                                         icon="fas fa-check-circle"
+                                                         class="bottom-2 right-2 absolute text-green-500"
+                                                         fixed-width aria-hidden="true"/>
                                     </Transition>
                                     <slot name="product" :item="item">
                                         <Image v-if="item.image" :src="item.image"
-                                            class="w-16 h-16 overflow-hidden mx-auto md:mx-0 mb-4 md:mb-0" imageCover
-                                            :alt="item.name" />
+                                               class="w-16 h-16 overflow-hidden mx-auto md:mx-0 mb-4 md:mb-0" imageCover
+                                               :alt="item.name"/>
                                         <div class="flex flex-col justify-between">
                                             <div class="w-fit" xclick="() => selectProduct(item)">
                                                 <div v-tooltip="trans('Name')"
-                                                    class="w-fit font-semibold leading-none mb-1">
+                                                     class="w-fit font-semibold leading-none mb-1">
                                                     {{ item.name || 'no name' }}
                                                 </div>
                                                 <div v-if="!item.no_code" v-tooltip="trans('Code')"
-                                                    class="w-fit text-xs text-gray-400 italic">
+                                                     class="w-fit text-xs text-gray-400 italic">
                                                     {{ item.code || 'no code' }}
                                                 </div>
                                                 <div v-if="item.reference" v-tooltip="trans('Reference')"
-                                                    class="w-fit text-xs text-gray-400 italic">
+                                                     class="w-fit text-xs text-gray-400 italic">
                                                     {{ item.reference || 'no reference' }}
                                                 </div>
                                                 <div v-if="item.gross_weight" v-tooltip="trans('Weight')"
-                                                    class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}
+                                                     class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}
                                                 </div>
                                             </div>
                                             <div v-if="!item.no_price" xclick="() => selectProduct(item)"
-                                                v-tooltip="trans('Price')" class="w-fit text-xs text-gray-x500">
+                                                 v-tooltip="trans('Price')" class="w-fit text-xs text-gray-x500">
                                                 {{
-                                                locale?.currencyFormat(item.currency_code || 'usd', item.price || 0)
+                                                    locale?.currencyFormat(item.currency_code || 'usd', item.price || 0)
                                                 }}
                                             </div>
                                         </div>
@@ -654,13 +665,12 @@ const onDisableCheckbox = (item) => {
                     </div>
 
 
-
                     <div class="mt-4">
                         <Button @click="() => onSubmitVariant()" xdisabled="selectedProduct.length < 1"
-                            xv-tooltip="selectedProduct.length < 1 ? trans('Select at least one product') : ''"
-                            xlabel="submitLabel ?? `${trans('Add')} ${selectedProduct.length}`"
-                            label="Select as variant" type="primary" full xicon="fas fa-plus"
-                            :loading="isLoadingSubmit" />
+                                xv-tooltip="selectedProduct.length < 1 ? trans('Select at least one product') : ''"
+                                xlabel="submitLabel ?? `${trans('Add')} ${selectedProduct.length}`"
+                                label="Select as variant" type="primary" full xicon="fas fa-plus"
+                                :loading="isLoadingSubmit"/>
                     </div>
                 </div>
             </div>
