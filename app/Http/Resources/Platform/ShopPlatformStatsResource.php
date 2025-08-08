@@ -31,7 +31,8 @@ class ShopPlatformStatsResource extends JsonResource
             'number_customer_sales_channels' => $this->number_customer_sales_channels,
             'number_customer_sales_channel_broken' => $this->number_customer_sales_channel_broken,
             'number_products' => $this->number_products,
-            'number_orders' => $this->number_orders
+            'number_orders' => $this->number_orders,
+            'sales' => $this->sales,
         ];
     }
 }

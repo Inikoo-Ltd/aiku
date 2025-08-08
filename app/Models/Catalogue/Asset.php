@@ -71,6 +71,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransaction> $invoiceTransactions
+ * @property-read Asset|null $masterAsset
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read Model|\Eloquent|null $model
  * @property-read \App\Models\Catalogue\AssetOrderingIntervals|null $orderingIntervals
@@ -170,8 +171,6 @@ class Asset extends Model implements HasMedia
         return $this->hasMany(Transaction::class);
     }
 
-
-
     public function barcode(): MorphToMany
     {
         return $this->morphToMany(Barcode::class, 'model', 'model_has_barcodes')->withTimestamps();
@@ -225,6 +224,11 @@ class Asset extends Model implements HasMedia
     public function model(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    public function masterAsset(): BelongsTo
+    {
+        return $this->belongsTo(Asset::class, 'master_asset_id');
     }
 
 
