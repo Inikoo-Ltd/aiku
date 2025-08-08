@@ -176,21 +176,15 @@ const onSelectLanguage = (languageCode: string) => {
 
     <Popover v-if="layout.app.environment === 'local'"  v-slot="{ open }" class="relative h-full">
       <PopoverButton aria-label="Language Selector">
-        <template v-if="form.processing">
+        <div v-if="form.processing">
           <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-xs" fixed-width aria-hidden="true" />
           <LoadingText class="h-full font-extralight text-xs flex items-center gap-x-1 leading-none" />
-        </template>
-        <template v-else>
-          <Button type="transparent">
-            <template #icon>
-              <FontAwesomeIcon :icon="faLanguage" class="text-white" fixed-width aria-hidden="true" />
-            </template>
+        </div>
 
-            <template #label>
-              <span class="text-white">{{ layout.iris.locale }}</span>
-            </template>
-          </Button>
-        </template>
+        <div v-else>
+            <Button type="transparent" icon="fal fa-language" :label="layout.iris.locale">
+            </Button>
+        </div>
       </PopoverButton>
 
       <!-- Panel -->
