@@ -332,6 +332,39 @@
 </table>
 
 <br>
+@if (!empty($refunds))
+    <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
+        <tr class="title">
+            <td colspan="6">{{ __('Refunds') }}</td>
+        </tr>
+
+        <tr class="title">
+            <td style="width:14%;text-align:left">{{ __('Code') }}</td>
+            <td style="text-align:left" colspan="2">{{ __('Description') }}</td>
+            <td style="text-align:left;width:20%">{{ __('Price') }}</td>
+            <td style="text-align:left">{{ __('Qty') }}</td>
+            <td style="width:14%;text-align:right">{{ __('Amount') }}</td>
+        </tr>
+
+        <tbody>
+        @foreach($refunds as $refund)
+            <tr class="@if($loop->last) last @endif">
+                <td style="text-align:left">
+                    {{ $refund['code'] }}
+                </td>
+                <td style="text-align:left" colspan="2">
+                    {{ $refund['description'] }}
+                </td>
+                <td style="text-align:left">{{  $invoice->currency->symbol . $refund['price'] }}</td>
+                <td style="text-align:right">{{ $refund['quantity'] }}</td>
+                <td style="text-align:right">{{ $invoice->currency->symbol . $refund['total'] }}</td>
+            </tr>
+        @endforeach
+        </tbody>
+
+    </table>
+@endif
+<br>
 
 @if($invoice->payments->count() >0)
     <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
