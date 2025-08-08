@@ -113,6 +113,16 @@ class SendNewOrderEmailToSubscribers extends OrgAction
         }
     }
 
+    public string $commandSignature = 'test:send-new_order-email-subscribers';
+
+
+    public function asCommand(): void
+    {
+        $order = Order::where('slug', 'awd151817')->first();
+
+        $this->handle($order);
+    }
+
     private function generateOrderTransactionsHtml($transactions): string
     {
         if (!$transactions) {
@@ -138,7 +148,7 @@ class SendNewOrderEmailToSubscribers extends OrgAction
                 </tr>',
                 $historicAsset->code ?? 'N/A',
                 $historicAsset->name ?? 'N/A',
-                $transaction->quantity_ordered ?? '0',
+                rtrim(rtrim(sprintf('%.3f', $transaction->quantity_ordered ?? 0), '0'), '.') ?? '0',
                 $transaction->net_amount ?? '0'
             );
         }
