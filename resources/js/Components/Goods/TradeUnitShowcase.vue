@@ -12,9 +12,11 @@ const props = defineProps<{
     tag_routes: Record<string, routeType>
     tags: {}[]
     tags_selected_id: number[]
-    route_save_translation:routeType
+    translation_box: {
+      title: string
+      save_route: routeType
   }
-}>()
+}}>()
 
 
 </script>
@@ -31,9 +33,10 @@ const props = defineProps<{
     />
   </div>
 
-   <TranslationBox 
+   <TranslationBox
+        v-bind="data.translation_box" 
         :master="data.tradeUnit" 
         :needTranslation="data.tradeUnit" 
-        :route-to-save="data.route_save_translation"
+        
     />
 </template>

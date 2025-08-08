@@ -21,13 +21,13 @@ const props = defineProps<{
     description_title: string
     description_extra: string
   }
+  title: string
   needTranslation: Object
-  routeToSave: routeType
+  save_route: routeType
 }>()
-
+console.log(props)
 // Language options
 const locale = inject('locale', aikuLocaleStructure)
-console.log(locale)
 const langOptions = Object.values(locale.languageOptions)
 
 const urlParams = new URLSearchParams(window.location.search)
@@ -105,7 +105,7 @@ const saveTranslation = () => {
   }
 
   router.patch(
-    route(props.routeToSave.name, props.routeToSave.parameters),
+    route(props.save_route.name, props.save_route.parameters),
     { translations: translations.value, master },
     {
       preserveScroll: true,
@@ -124,9 +124,11 @@ const saveTranslation = () => {
 
 
 <template>
-  <div class="px-8 grid grid-cols-2 gap-8">
+  
+  <div class="px-8 grid grid-cols-2 gap-3">
+     <h2 class="text-xl font-bold flex items-center gap-2">{{ trans(props.title) }}</h2>
     <!-- Right: Translation Panel -->
-    <div class="col-span-2 mt-6">
+    <div class="col-span-2">
       <div class="bg-white border rounded-lg shadow-sm p-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <!-- Header & Language Selector -->

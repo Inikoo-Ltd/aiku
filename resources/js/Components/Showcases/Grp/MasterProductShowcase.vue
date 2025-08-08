@@ -13,7 +13,7 @@ console.log(props.data)
         <TranslationBox 
             :master="data.data" 
             :needTranslation="data.data" 
-            :route-to-save="data.data.route_save_translations" 
+            v-bind="data.data.translation_box" 
         />
     </div>
 </template>
