@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject } from "vue";
+import { inject, ref } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faLanguage } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -8,11 +8,12 @@ import { checkVisible, textReplaceVariables } from "@/Composables/Workshop";
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import { useForm } from '@inertiajs/vue3'
+import { router, useForm } from '@inertiajs/vue3'
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import LoadingText from '@/Components/Utils/LoadingText.vue'
 import type { Language } from '@/types/Locale'
 import { trans, loadLanguageAsync } from 'laravel-vue-i18n'
+import { notify } from "@kyvg/vue3-notification"
 
 library.add(faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faLanguage);
 
@@ -63,7 +64,7 @@ interface ModelTopbar1 {
 const model = defineModel<ModelTopbar1>();
 const isLoggedIn = inject("isPreviewLoggedIn", false);
 const layout = inject("layout", {});
-const locale = inject('locale', aikuLocaleStructure)
+// const locale = inject('locale', aikuLocaleStructure)
 
 
 // Method: generate url for Login
@@ -77,29 +78,85 @@ const urlLoginWithRedirect = () => {
 }
 
 const form = useForm<{
-  language_id: number | null
+  locale: string | null
 }>({
-  language_id: null,
+  locale: null,
 })
 
 
-const onSelectLanguage = (language: Language) => {
-     const routeUpdate = layout?.iris?.is_logged_in ? 'retina.models.profile.update' : 'retina.models.profile.update'
- 
-     if(form.language_id != language.id) {
-         form.language_id = language.id
-         form.patch(route(routeUpdate), {
-             preserveScroll: true,
-             onSuccess: () => (
-                 locale.language = language,
-                 loadLanguageAsync(language.code)
-             )
-         })
-     }
+// Section: change language
+console.log('vvvvv', layout.iris.website_i18n)
+// const userLocale = layout.iris.locale
+const onSelectLanguage = (languageCode: string) => {
 
+    let routeToUpdateLanguage = {}
+    if (route().current()?.startsWith('retina')) {
+        routeToUpdateLanguage = {
+            name: 'retina.models.profile.update',
+            parameters: {
+                locale: languageCode
+            }
+        }
+    } else {
+        routeToUpdateLanguage = {
+            name: 'iris.models.locale.update',
+            parameters: {
+                locale: languageCode
+            }
+        }
+    }
+    // const routeUpdate = layout?.iris?.is_logged_in ? 'retina.models.profile.update' : 'retina.models.profile.update'
+
+    console.log('loaa', form)
+    console.log('loaa11', languageCode)
+
+    // Section: Submit
+    router.patch(
+        route(routeToUpdateLanguage.name, routeToUpdateLanguage.parameters),
+        {
+            locale: languageCode
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                // isLoading.value = true
+            },
+            onSuccess: () => {
+                layout.iris.locale = languageCode
+                loadLanguageAsync(languageCode)
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully change the language. Please refresh the page."),
+                    type: "success"
+                })
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to set the language, try again."),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                // isLoading.value = false
+            },
+        }
+    )
+    
+    // if(form.locale != languageCode) {
+    //     form.locale = languageCode
+    //     form.patch(route(routeToUpdateLanguage.name, routeToUpdateLanguage.parameters), {
+    //         preserveScroll: true,
+    //         onSuccess: () => (
+    //             // locale.language = language,
+    //             loadLanguageAsync(languageCode)
+    //         )
+    //     })
+    // }
 }
 
-console.log(locale)
+// console.log(locale)
 </script>
 
 <template>
@@ -130,7 +187,7 @@ console.log(locale)
             </template>
 
             <template #label>
-              <span class="text-white">{{ locale.language.name }}</span>
+              <span class="text-white">{{ layout.iris.locale }}</span>
             </template>
           </Button>
         </template>
@@ -143,28 +200,45 @@ console.log(locale)
           <FooterTab tabName="language" :header="false">
             <!-- Header -->
             <template #header>
-              <div class="bg-gray-100 h-7 flex items-center gap-x-1 px-3 border-b border-gray-300">
-                <FontAwesomeIcon icon="fal fa-language" class="text-xs text-gray-600" fixed-width />
-                <Transition name="spin-to-down">
-                  <span :key="locale.language.name" class="text-xs font-light leading-none text-gray-600">
-                    {{ locale.language.name }}
-                  </span>
-                </Transition>
-              </div>
+                <div class="bg-gray-100 h-7 flex items-center gap-x-1 px-3 border-b border-gray-300">
+                    <FontAwesomeIcon icon="fal fa-language" class="text-xs text-gray-600" fixed-width />
+                    <Transition name="spin-to-down">
+                        <span :key="'locale.language.name'" class="text-xs font-light leading-none text-gray-600">
+                           wwwwwww
+                        </span>
+                    </Transition>
+                </div>
             </template>
 
             <!-- Language Options -->
             <template #default>
-              <div v-if="Object.keys(locale.languageOptions).length > 0" class="flex flex-col">
-                <button v-for="(language, index) in locale.languageOptions" :key="language.id" type="button"
-                  @click="onSelectLanguage(language)" :class="[
-                    'w-full text-left px-3 py-2 text-sm transition rounded-none',
-                    language.id === locale.language.id
-                      ? 'bg-gray-200 text-blue-600 font-semibold'
-                      : 'hover:bg-gray-100 text-gray-800'
-                  ]">
-                  {{ language.name }}
+              <div v-if="Object.keys(layout.iris.website_i18n?.language_options).length > 0" class="flex flex-col">
+                <!-- Language: system -->
+                <button key="website_language" type="button"
+                    @click="onSelectLanguage(layout.iris.website_i18n?.language?.code)" :class="[
+                        'w-full text-left px-3 py-2 text-sm transition rounded-none border-b border-gray-300',
+                        true
+                            ? 'bg-gray-200 text-blue-600 font-semibold'
+                            : 'hover:bg-gray-100 text-gray-800'
+                    ]">
+                    {{ layout.iris.website_i18n?.language?.name }}
                 </button>
+
+                <hr class="border-b border-gray-200 !my-2" />
+
+                <!-- Language: options list -->
+                <button v-for="(language, index) in layout.iris.website_i18n?.language_options" :key="language.id" type="button"
+                    @click="onSelectLanguage(language.code)" :class="[
+                        'w-full text-left px-3 py-2 text-sm transition rounded-none',
+                        language.code === layout.iris.locale
+                        ? 'bg-gray-200 text-blue-600 font-semibold'
+                        : 'hover:bg-gray-100 text-gray-800'
+                    ]">
+                    {{ language.name }}
+                    <!-- {{ language.code }}+
+                {{ layout.iris.locale }} -->
+                </button>
+
               </div>
 
               <div v-else class="text-xs text-gray-400 py-2 px-3">
