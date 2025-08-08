@@ -13,11 +13,14 @@ import { remove as loRemove } from "lodash-es";
 import { ref } from "vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { faSeedling } from "@fal";
+import { faOctopusDeploy } from  "@fortawesome/free-brands-svg-icons"
 import { library } from "@fortawesome/fontawesome-svg-core";
 import routes from "../../../../../../../han/src/constants/Routes";
 import { RouteParams } from "@/types/route-params";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { trans } from "laravel-vue-i18n"
 
-library.add(faSeedling);
+library.add(faSeedling,faOctopusDeploy);
 
 defineProps<{
     data: {}
@@ -125,6 +128,16 @@ function departmentsInShopRoute(department: Department) {
         [department.organisation_slug, department.shop_slug]);
 }
 
+function masterDepartmentRoute(department: Department) {
+    if(!department.master_product_category_id){
+        return '';
+    }
+
+    return route(
+        "grp.helpers.redirect_master_product_category",
+        [department.master_product_category_id]);
+}
+
 
 const isLoadingDetach = ref<string[]>([]);
 
@@ -150,9 +163,21 @@ const isLoadingDetach = ref<string[]>([]);
             </Icon>
         </template>
         <template #cell(code)="{ item: department }">
+
+            <div class="whitespace-nowrap">
+            <Link  :href="masterDepartmentRoute(department) as string"  v-tooltip="trans('Go to Master')" class="mr-1"  :class="[ department.master_product_category_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
+                <FontAwesomeIcon
+                    icon="fab fa-octopus-deploy"
+                    color="#4B0082"
+                />
+            </Link>
+
             <Link :href="departmentRoute(department) as string" class="primaryLink">
                 {{ department["code"] }}
             </Link>
+            </div>
+
+
         </template>
         <template #cell(number_current_families)="{ item: department }">
             <Link :href="familyRoute(department) as string" class="secondaryLink">
