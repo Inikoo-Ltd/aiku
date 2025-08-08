@@ -542,12 +542,26 @@ const onDisableCheckbox = (item) => {
 
         <!-- Column: Actions 2 (Modal shopify) -->
         <template #cell(create_new)="{ item }">
-            <template
-                v-if="!(!item.has_valid_platform_product_id && !item.exist_in_platform && !item.platform_status && (get(progressToUploadToShopify, [item.id], undefined) != 'success' && get(progressToUploadToShopify, [item.id], undefined) != 'loading'))">
-                <Button
-                    v-if="(!item.has_valid_platform_product_id || !item.exist_in_platform || !item.platform_status) && item.platform_possible_matches.length"
-                    @click="isOpenModal = true, selectedPortfolio = item" label="Modal Shopify" type="tertiary" />
-            </template>
+                <div v-if="item.customer_sales_channel_platform_status  && !item.platform_status "  class="flex gap-x-2 items-center">
+                <ButtonWithLink
+                    v-tooltip="trans('Will create new product in Shopify')"
+                    :routeTarget="{
+                    method: 'post',
+                        name: 'retina.models.portfolio.store_new_shopify_product',
+                        parameters: {
+                            portfolio: item.id
+                        },
+                    }"
+                    isWithError
+                    icon=""
+                    :label="trans('Create new product')"
+                    size="xxs"
+                    type="tertiary"
+                    :bindToLink="{
+                        preserveScroll: true,
+                    }"
+                />
+            </div>
         </template>
 
         <!-- Column: Actions 3 -->
