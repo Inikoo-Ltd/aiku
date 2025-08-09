@@ -8,7 +8,7 @@
 
 use App\Actions\Accounting\OrderPaymentApiPoint\WebHooks\RedirectSuccessPaymentOrder;
 use App\Actions\Accounting\TopUpPaymentApiPoint\WebHooks\RedirectSuccessPaymentTopUp;
-use App\Actions\Retina\Helpers\Language\UpdateRetinaLocale;
+use App\Actions\Iris\UpdateIrisLocale;
 
 Route::middleware(["retina-auth:retina", 'retina-prepare-account'])->group(function () {
     Route::get('/', function () {
@@ -70,6 +70,5 @@ Route::middleware(["retina-auth:retina", 'retina-prepare-account'])->group(funct
 
 
 });
-Route::patch('/locale/{locale}', UpdateRetinaLocale::class)->name('locale.update');
 require __DIR__."/retina_auth.php";
 require __DIR__."/retina_webhooks.php";
