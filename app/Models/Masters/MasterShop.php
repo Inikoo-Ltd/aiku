@@ -134,7 +134,7 @@ class MasterShop extends Model implements Auditable
         return $this->masterProductCategories()->where('type', MasterProductCategoryTypeEnum::DEPARTMENT)->get();
     }
 
-    public function subDepartments(): LaravelCollection
+    public function getMasterSubDepartments(): LaravelCollection
     {
         return $this->masterProductCategories()->where('type', MasterProductCategoryTypeEnum::SUB_DEPARTMENT)->get();
     }

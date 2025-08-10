@@ -42,7 +42,7 @@ class StoreMasterSubDepartment extends OrgAction
                 'max:32',
                 new AlphaDashDot(),
                 new IUnique(
-                    table: 'product_categories',
+                    table: 'master_product_categories',
                     extraConditions: [
                         ['column' => 'group_id', 'value' => $this->group->id],
                         ['column' => 'deleted_at', 'operator' => 'notNull'],
@@ -50,7 +50,7 @@ class StoreMasterSubDepartment extends OrgAction
                 ),
             ],
             'name'        => ['required', 'max:250', 'string'],
-            'description' => ['sometimes', 'required', 'max:1500'],
+            'description' => ['sometimes', 'nullable', 'max:1500'],
 
         ];
     }
@@ -84,13 +84,13 @@ class StoreMasterSubDepartment extends OrgAction
     {
         if ($this->parent instanceof MasterShop) {
             return Redirect::route('grp.masters.master_shops.show.master_sub_departments.show', [
-                'masterShop' => $this->parent->slug,
+                'masterShop'          => $this->parent->slug,
                 'masterSubDepartment' => $masterSubDepartment->slug,
             ]);
         }
 
         return Redirect::route('grp.masters.master_departments.show.master_sub_departments.show', [
-            'masterDepartment' => $masterSubDepartment->parent->slug,
+            'masterDepartment'    => $masterSubDepartment->parent->slug,
             'masterSubDepartment' => $masterSubDepartment->slug,
         ]);
     }

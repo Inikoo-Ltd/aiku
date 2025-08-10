@@ -42,7 +42,7 @@ class StoreMasterDepartment extends OrgAction
                 'max:32',
                 new AlphaDashDot(),
                 new IUnique(
-                    table: 'product_categories',
+                    table: 'master_product_categories',
                     extraConditions: [
                         ['column' => 'group_id', 'value' => $this->group->id],
                         ['column' => 'deleted_at', 'operator' => 'notNull'],
