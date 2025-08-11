@@ -25,13 +25,14 @@ const props = defineProps<{
   needTranslation: Object
   save_route: routeType
 }>()
-console.log(props)
+
 // Language options
 const locale = inject('locale', aikuLocaleStructure)
 const langOptions = Object.values(locale.languageOptions)
 
-const urlParams = new URLSearchParams(window.location.search)
-const initialLang = urlParams.get('lang') || langOptions[0]?.code || 'en'
+// Retrieve from localStorage, or default to first language
+const storedLang = localStorage.getItem('translation_box')
+const initialLang = storedLang || langOptions[0]?.code || 'en'
 const selectedLangCode = ref(initialLang)
 
 // Validate initialLang
@@ -64,7 +65,7 @@ const translationDescription = ref('')
 const translationDescTitle = ref('')
 const translationDescExtra = ref('')
 
-// Update fields on language switch and update URL param
+// Update fields on language switch
 const updateTranslationFields = () => {
   const current = translations.value[selectedLangCode.value]
   translationTitle.value = current?.name || ''
@@ -73,11 +74,9 @@ const updateTranslationFields = () => {
   translationDescExtra.value = current?.description_extra || ''
 }
 
+// Watch language change — save to localStorage & update fields
 watch(selectedLangCode, (newLang) => {
-  const params = new URLSearchParams(window.location.search)
-  params.set('lang', newLang)
-  const newUrl = `${window.location.pathname}?${params.toString()}`
-  window.history.replaceState({}, '', newUrl)
+  localStorage.setItem('translation_box', newLang)
   updateTranslationFields()
 }, { immediate: true })
 

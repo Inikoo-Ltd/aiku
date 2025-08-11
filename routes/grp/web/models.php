@@ -415,7 +415,6 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
         Route::post('sub-department/store/{productCategory:id}', [StoreProductCategory::class, 'inDepartment'])->name('sub-department.store')->withoutScopedBindings();
     });
 
-
     Route::prefix('/shop/{shop:id}/catalogue/families')->name('catalogue.families.')->group(function () {
         Route::post('{family:id}/product/store', [StoreProduct::class, 'inFamily'])->name('product.store')->withoutScopedBindings();
     });
@@ -459,7 +458,6 @@ Route::name('product.')->prefix('product')->group(function () {
     Route::post('/{product:id}/content', [StoreModelHasContent::class, 'inProduct'])->name('content.store');
     Route::post('{product:id}/images', UploadImagesToProduct::class)->name('images.store')->withoutScopedBindings();
 });
-
 
 Route::name('pallet-delivery.')->prefix('pallet-delivery/{palletDelivery:id}')->group(function () {
     Route::patch('/', UpdatePalletDelivery::class)->name('update');
@@ -516,7 +514,6 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
     Route::get('stored-item-picking-pdf', PdfPickingStoredItemReturn::class)->name('stored_item_picking.pdf');
     Route::get('pallet-picking-pdf', PdfPickingPalletReturn::class)->name('pallet_picking.pdf');
     Route::get('pdf', PdfPalletReturn::class)->name('pdf');
-
 
     Route::post('/shipment-from-fulfilment', CreateShipmentInPalletReturnInFulfilment::class)->name('shipment_from_fulfilment.store');
     Route::post('/shipment-from-warehouse', CreateShipmentInPalletReturnInWarehouse::class)->name('shipment_from_warehouse.store');
