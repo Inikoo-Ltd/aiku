@@ -37,7 +37,7 @@ class MatchProductCategoryToMaster extends OrgAction
         UpdateProductCategory::make()->action(
             $productCategory,
             [
-                'master_product_category_id' => $masterProductCategory ? $masterProductCategory->id : null,
+                'master_product_category_id' => $masterProductCategory?->id,
             ]
         );
 
@@ -58,17 +58,13 @@ class MatchProductCategoryToMaster extends OrgAction
         $count = 0;
         $matchedCount = 0;
 
-        // Get total count for progress bar
         $totalCount = ProductCategory::count();
 
-        // Create a progress bar
         $bar = $command->getOutput()->createProgressBar($totalCount);
         $bar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
         $bar->start();
 
-        // Process product categories in chunks
 
-        //where('type',ProductCategoryTypeEnum::DEPARTMENT)->where('shop_id',1)
         ProductCategory::chunk(
             $chunkSize,
             function ($productCategories) use (&$count, &$matchedCount, $bar, $command) {
