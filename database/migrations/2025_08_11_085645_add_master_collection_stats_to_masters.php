@@ -17,12 +17,12 @@ return new class extends Migration
     {
         Schema::table('master_shop_stats', function (Blueprint $table) {
              foreach (CollectionProductsStatusEnum::cases() as $state) {
-                $table->unsignedSmallInteger('number_collections_products_status_'.$state->snake())->default(0);
+                $table->unsignedInteger('number_collections_products_status_'.$state->snake())->default(0);
             }
         });
         Schema::table('master_product_category_stats', function (Blueprint $table) {
             foreach (CollectionStateEnum::cases() as $state) {
-                $table->unsignedSmallInteger('number_collections_state_'.$state->snake())->default(0);
+                $table->unsignedInteger('number_collections_state_'.$state->snake())->default(0);
             }
         });
     }
