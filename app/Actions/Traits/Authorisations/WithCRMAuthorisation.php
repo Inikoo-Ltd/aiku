@@ -8,8 +8,6 @@
 
 namespace App\Actions\Traits\Authorisations;
 
-use App\Models\SysAdmin\Organisation;
-
 use Lorisleiva\Actions\ActionRequest;
 
 trait WithCRMAuthorisation
@@ -17,15 +15,6 @@ trait WithCRMAuthorisation
     public function authorize(ActionRequest $request): bool
     {
         $routeName = $request->route()->getName();
-
-        $organisationParameter = $request->route('organisation');
-
-        if ($organisationParameter) {
-            $this->organisation = Organisation::where('slug', $organisationParameter)->first();
-            if (!$this->organisation) {
-                return false;
-            }
-        }
 
         if (str_starts_with($routeName, 'grp.overview.')) {
             return $request->user()->authTo("group-overview");
@@ -65,16 +54,6 @@ trait WithCRMAuthorisation
                     "accounting.{$this->shop->organisation_id}.view"
                 ]
             );
-        } elseif (str_starts_with($routeName, 'grp.org.suppliers.')) {
-            if ($this->organisation) {
-                $requiredPermission = "supplier.{$this->organisation->id}.view";
-
-                if (str_ends_with($routeName, '.edit') || str_ends_with($routeName, '.create')) {
-                    $requiredPermission = "supplier.{$this->organisation->id}.edit";
-                }
-
-                return $request->user()->authTo($requiredPermission);
-            }
         }
 
         return false;
