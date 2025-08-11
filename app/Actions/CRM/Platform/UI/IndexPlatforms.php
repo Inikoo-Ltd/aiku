@@ -24,6 +24,9 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedSort;
+use Spatie\QueryBuilder\Sorts\Sort;
+use Illuminate\Database\Eloquent\Builder;
 
 class IndexPlatforms extends OrgAction
 {
@@ -44,10 +47,26 @@ class IndexPlatforms extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $queryBuilder = QueryBuilder::for(ShopPlatformStats::class);
-        $queryBuilder->where('shop_platform_stats.shop_id', $shop->id);
+        $queryBuilder = QueryBuilder::for(ShopPlatformStats::class)
+            ->join('platforms', 'shop_platform_stats.platform_id', '=', 'platforms.id')
+            ->select('shop_platform_stats.*', 'platforms.name as platform_name')
+            ->where('shop_platform_stats.shop_id', $shop->id);
+
         return $queryBuilder
-            ->allowedSorts(['id'])
+            ->allowedSorts([
+                'id',
+                'number_customer_sales_channels',
+                'number_products',
+                'number_orders',
+                'sales',
+                AllowedSort::custom('name', new class implements Sort {
+                    public function __invoke(Builder $query, bool $descending, string $property)
+                    {
+                        $direction = $descending ? 'desc' : 'asc';
+                        $query->orderBy('platforms.name', $direction);
+                    }
+                })
+            ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -57,7 +76,7 @@ class IndexPlatforms extends OrgAction
     {
         return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
-                $table->name($prefix)->pageName($prefix.'Page');
+                $table->name($prefix)->pageName($prefix . 'Page');
             }
 
             $table
