@@ -433,8 +433,30 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
 
 
                 </div>
+            </div>
 
-
+            <div v-else>
+                <div class="md:hidden">
+                    <ButtonWithLink
+                        v-if="!itemValue.is_handled"
+                        type="negative"
+                        tooltip="Set as not picked"
+                        icon="fal fa-debug"
+                        size="lg"
+                        :routeTarget="itemValue.not_picking_route"
+                        :bindToLink="{preserveScroll: true}"
+                    />
+                </div>
+                <div class="hidden md:block">
+                    <ButtonWithLink
+                        v-if="!itemValue.is_handled"
+                        type="negative"
+                        tooltip="Set as not picked"
+                        icon="fal fa-debug"
+                        :routeTarget="itemValue.not_picking_route"
+                        :bindToLink="{preserveScroll: true}"
+                    />
+                </div>
             </div>
 
 
