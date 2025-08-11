@@ -135,7 +135,7 @@ class CallApiGlsSKShipping extends OrgAction
             $client = new SoapClient($url, $soapOptions);
         } catch (SoapFault $e) {
             $errorData = [
-                'message' => 'Unknown error',
+                'message' => 'Connection Error '.$e->getMessage(),
             ];
             return [
                 'status'    => 'fail',

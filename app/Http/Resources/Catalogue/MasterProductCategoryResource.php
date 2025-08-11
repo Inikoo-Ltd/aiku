@@ -30,6 +30,7 @@ class MasterProductCategoryResource extends JsonResource
     public function toArray($request): array
     {
         return [
+            'id'               => $this->id,
             'slug'               => $this->slug,
             'shop_slug'          => $this->shop_slug,
             'shop_code'          => $this->shop_code,
@@ -52,7 +53,7 @@ class MasterProductCategoryResource extends JsonResource
             'description_title_i8n' => $this->getTranslations('description_title_i8n'),
             'description_extra_i8n' => $this->getTranslations('description_extra_i8n'),
             'translation_box' => [
-                'title' => __(''),
+                'title' => __('Multi-language Translations'),
                 'save_route' => [
                      'name'       => 'grp.models.master_product_categories.translations.update',
                      'parameters' => []
