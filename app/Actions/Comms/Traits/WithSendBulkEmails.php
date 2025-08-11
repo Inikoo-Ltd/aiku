@@ -42,6 +42,8 @@ trait WithSendBulkEmails
 
         $html = preg_replace('/\R+/', '', $html);
 
+        dd($html);
+
         StoreEmailCopy::make()->action($dispatchedEmail, [
             'subject' => $subject,
             'body'    => $html
