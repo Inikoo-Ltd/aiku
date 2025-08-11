@@ -231,7 +231,7 @@ class GetGroupNavigation
                     ],
                     [
                         'label' => 'Ingredients',
-                        'icon'  => ['fal', 'fa-atom'],
+                        'icon'  => ['fal', 'fa-apple-crate'],
                         'root'  => 'grp.goods.ingredients.',
                         'route' => [
                             'name'       => 'grp.goods.ingredients.index',
