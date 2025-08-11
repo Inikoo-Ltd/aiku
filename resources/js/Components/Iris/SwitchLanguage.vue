@@ -74,10 +74,15 @@ const _popover = ref(null)
             @click="(e) => _popover?.toggle(e)"
             v-tooltip="trans('Change language of the website')"
             icon="fal fa-language"
-            :label="Object.values(layout.iris.website_i18n?.language_options || {})?.find(language => language.code === layout.iris.locale)?.name"
+            xlabel="Object.values(layout.iris.website_i18n?.language_options || {})?.find(language => language.code === layout.iris.locale)?.name"
             :loading="!!isLoadingChangeLanguage"
             type="transparent"
-        />
+        >
+            <template #label>
+                {{ Object.values(layout.iris.website_i18n?.language_options || {})?.find(language => language.code === layout.iris.locale)?.name }}
+                <img class="inline pr-1 pl-1 h-[1em]" :src="`/flags/${layout.iris.locale.toLowerCase()}.png`" xalt="language.code"   xtitle='capitalize(countryName)'  />
+            </template>
+        </Button>
         <Popover ref="_popover">
             <div>
                 <!-- Language Options -->
@@ -92,6 +97,7 @@ const _popover = ref(null)
                     ]">
                         {{ layout.iris.website_i18n?.language?.name }}
                         <FontAwesomeIcon v-tooltip="trans('Default language by system')" icon="fas fa-laptop-code" class="text-gray-400" fixed-width aria-hidden="true" />
+                        <img class="inline pr-1 pl-1 h-[1em]" :src="`/flags/${layout.iris.locale.toLowerCase()}.png`" xalt="language.code"   xtitle='capitalize(countryName)'  />
                         <LoadingIcon v-if="isLoadingChangeLanguage == `system${layout.iris.website_i18n?.language?.code}`" />
                     </button>
 
@@ -106,6 +112,7 @@ const _popover = ref(null)
                         : 'hover:bg-gray-100 text-gray-800'
                     ]">
                         {{ language.name }}
+                        <img class="inline pr-1 pl-1 h-[1em]" :src="`/flags/${language.code.toLowerCase()}.png`" xalt="language.code"   xtitle='capitalize(countryName)'  />
                         <LoadingIcon v-if="isLoadingChangeLanguage == `option${language.code}`" />
                     </button>
                 </div>
