@@ -2,17 +2,16 @@
 import { inject } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faLanguage } from "@fal"
+import { faLaptopCode } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { getStyles } from "@/Composables/styles"
 import { checkVisible, textReplaceVariables } from "@/Composables/Workshop"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
-import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue"
-import { router, useForm } from "@inertiajs/vue3"
-import LoadingText from "@/Components/Utils/LoadingText.vue"
-import { trans, loadLanguageAsync } from "laravel-vue-i18n"
-import { notify } from "@kyvg/vue3-notification"
 
-library.add(faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faLanguage)
+import { trans } from "laravel-vue-i18n"
+import SwitchLanguage from "@/Components/Iris/SwitchLanguage.vue"
+
+library.add(faLaptopCode, faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faLanguage)
 
 defineProps<{
     screenType: "desktop" | "mobile" | "tablet"
@@ -73,75 +72,16 @@ const urlLoginWithRedirect = () => {
     }
 }
 
-const form = useForm<{
-    locale: string | null
-}>({
-    locale: null
-})
-
-
-// const userLocale = layout.iris.locale
-const onSelectLanguage = (languageCode: string) => {
-
-    let routeToUpdateLanguage = {}
-    if (route().current()?.startsWith("retina")) {
-        routeToUpdateLanguage = {
-            name: "retina.models.locale.update",
-            parameters: {
-                locale: languageCode
-            }
-        }
-    } else {
-        routeToUpdateLanguage = {
-            name: "iris.locale.update",
-            parameters: {
-                locale: languageCode
-            }
-        }
-    }
-
-
-    router.patch(
-        route(routeToUpdateLanguage.name, routeToUpdateLanguage.parameters),
-        {
-            locale: languageCode
-        },
-        {
-            preserveScroll: true,
-            onStart: () => {
-
-            },
-            onSuccess: () => {
-
-                layout.iris.locale = languageCode
-                loadLanguageAsync(languageCode)
-
-            },
-            onError: (errors) => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to set the language, try again."),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-
-            }
-        }
-    )
-
-
-}
 
 </script>
 
 <template>
     <div></div>
     <div id="top_bar_1_iris" class="py-1 px-4 flex flex-col md:flex-row md:justify-between gap-x-4" :style="{
-    ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-    margin: 0,
-    ...getStyles(model.container?.properties, screenType)
-  }">
+        ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+        margin: 0,
+        ...getStyles(model.container?.properties, screenType)
+    }">
         <div class="flex-shrink flex flex-col md:flex-row items-center justify-between w-full ">
             <!-- Section: Main title -->
             <div
@@ -150,68 +90,13 @@ const onSelectLanguage = (languageCode: string) => {
                 v-html="textReplaceVariables(model?.main_title?.text, layout.iris_variables)" />
         </div>
 
-        <Popover v-if="layout.app.environment === 'local'" class="relative h-full">
-            <PopoverButton aria-label="Language Selector">
-                <div v-if="form.processing">
-                    <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-xs" fixed-width aria-hidden="true" />
-                    <LoadingText class="h-full font-extralight text-xs flex items-center gap-x-1 leading-none" />
-                </div>
-
-                <div v-else class="text-yellow-600 hover:text-yellow-400 flex gap-x-2 items-center py-1 hover:underline">
-                    <FontAwesomeIcon icon="fal fa-language" class="" fixed-width aria-hidden="true" />
-                    {{ layout.iris.locale }}
-                </div>
-            </PopoverButton>
-
-            <!-- Panel -->
-            <transition name="headlessui">
-                <PopoverPanel
-                    class="absolute top-full mt-1 right-0 z-10 w-48 bg-white text-gray-900 rounded shadow-lg ring-1 ring-black/10 overflow-hidden">
-                    <div tabName="language" :header="false">
-
-                        <!-- Language Options -->
-                        <div>
-                            <div v-if="Object.keys(layout.iris.website_i18n?.language_options).length > 0" class="flex flex-col">
-                                <!-- Language: system -->
-                                <button key="website_language" type="button"
-                                        @click="onSelectLanguage(layout.iris.website_i18n?.language?.code)" :class="[
-                        'w-full text-left px-3 py-2 text-sm transition rounded-none border-b border-gray-300',
-                        layout.iris.website_i18n?.language?.code === layout.iris.locale
-                            ? 'bg-gray-200 text-blue-600 font-semibold'
-                            : 'hover:bg-gray-100 text-gray-800'
-                    ]">
-                                    {{ layout.iris.website_i18n?.language?.name }}
-                                </button>
-
-                                <hr class="border-b border-gray-200 !my-2" />
-
-                                <!-- Language: options list -->
-                                <button v-for="(language, index) in layout.iris.website_i18n?.language_options" :key="language.id" type="button"
-                                        @click="onSelectLanguage(language.code)" :class="[
-                        'w-full text-left px-3 py-2 text-sm transition rounded-none',
-                        language.code === layout.iris.locale
-                        ? 'bg-gray-200 text-blue-600 font-semibold'
-                        : 'hover:bg-gray-100 text-gray-800'
-                    ]">
-                                    {{ language.name }}
-                                    <!-- {{ language.code }}+
-                                {{ layout.iris.locale }} -->
-                                </button>
-
-                            </div>
-
-                            <div v-else class="text-xs text-gray-400 py-2 px-3">
-                                {{ trans("Nothing to show here") }}
-                            </div>
-
-                        </div>
-                    </div>
-                </PopoverPanel>
-            </transition>
-        </Popover>
 
 
         <div class="action_buttons flex justify-between md:justify-start items-center gap-x-1 flex-wrap md:flex-nowrap">
+
+            <SwitchLanguage 
+                v-if="layout.app.environment === 'local'"
+            />
 
             <!-- Section: My account -->
             <ButtonWithLink

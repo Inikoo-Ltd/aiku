@@ -1,0 +1,119 @@
+<script setup lang="ts">
+import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue"
+import { router } from "@inertiajs/vue3"
+import { trans, loadLanguageAsync } from "laravel-vue-i18n"
+import { notify } from "@kyvg/vue3-notification"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { inject, ref } from "vue"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import LoadingIcon from "../Utils/LoadingIcon.vue"
+
+const layout = inject("layout", {})
+
+// const userLocale = layout.iris.locale
+const isLoadingChangeLanguage = ref<string | null>(null)
+const onSelectLanguage = (languageCode: string, type: string) => {
+
+    let routeToUpdateLanguage = {}
+    if (route().current()?.startsWith("retina")) {
+        routeToUpdateLanguage = {
+            name: "retina.models.locale.update",
+            parameters: {
+                locale: languageCode
+            }
+        }
+    } else {
+        routeToUpdateLanguage = {
+            name: "iris.locale.update",
+            parameters: {
+                locale: languageCode
+            }
+        }
+    }
+
+    router.patch(
+        route(routeToUpdateLanguage.name, routeToUpdateLanguage.parameters),
+        {
+            locale: languageCode
+        },
+        {
+            preserveScroll: true,
+            onStart: () => {
+                isLoadingChangeLanguage.value = `${type}${languageCode}`
+            },
+            onSuccess: () => {
+                layout.iris.locale = languageCode
+                loadLanguageAsync(languageCode)
+            },
+            onError: (errors) => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to set the language, try again."),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingChangeLanguage.value = null
+            }
+        }
+    )
+}
+</script>
+
+<template>
+    <div>
+        <Popover class="relative h-full">
+            <PopoverButton aria-label="Language Selector">
+
+                <!-- Section: Register -->
+                <Button icon="fal fa-language" :label="Object.values(layout.iris.website_i18n?.language_options || {})?.find(language => language.code === layout.iris.locale)?.name" :loading="isLoadingChangeLanguage" xtype="transparent">
+                </Button>
+            </PopoverButton>
+
+            <!-- Panel -->
+            <transition name="headlessui">
+                <PopoverPanel
+                    class="absolute top-full mt-1 right-0 z-10 w-48 bg-white text-gray-900 rounded shadow-lg ring-1 ring-black/10 overflow-hidden">
+                    <div>
+                        <!-- Language Options -->
+                        <div v-if="Object.keys(layout.iris.website_i18n?.language_options).length > 0" class="flex flex-col">
+                            <!-- Language: system -->
+                            <button key="website_language" type="button"
+                                @click="onSelectLanguage(layout.iris.website_i18n?.language?.code, 'system')" :class="[
+                                'w-full text-left px-3 py-2 text-sm transition rounded-none border-b border-gray-300',
+                                layout.iris.website_i18n?.language?.code === layout.iris.locale
+                                    ? 'bg-gray-200 text-blue-600 font-semibold'
+                                    : 'hover:bg-gray-100 text-gray-800'
+                            ]">
+                                {{ layout.iris.website_i18n?.language?.name }}
+                                <FontAwesomeIcon v-tooltip="trans('Default language by system')" icon="fas fa-laptop-code" class="text-gray-400" fixed-width aria-hidden="true" />
+                                <LoadingIcon v-if="isLoadingChangeLanguage == `system${layout.iris.website_i18n?.language?.code}`" />
+                            </button>
+
+                            <hr class="border-b border-gray-200 !my-2" />
+
+                            <!-- Language: options list -->
+                            <button v-for="(language, index) in layout.iris.website_i18n?.language_options" :key="language.id" type="button"
+                                @click="onSelectLanguage(language.code, 'option')" :class="[
+                                'w-full text-left px-3 py-2 text-sm transition rounded-none',
+                                language.code === layout.iris.locale
+                                ? 'bg-gray-200 text-blue-600 font-semibold'
+                                : 'hover:bg-gray-100 text-gray-800'
+                            ]">
+                                {{ language.name }}
+                                <LoadingIcon v-if="isLoadingChangeLanguage == `option${language.code}`" />
+                                <!-- {{ language.code }}+
+                                {{ layout.iris.locale }} -->
+                            </button>
+                        </div>
+
+                        <div v-else class="text-xs text-gray-400 py-2 px-3">
+                            {{ trans("Nothing to show here") }}
+                        </div>
+
+                    </div>
+                </PopoverPanel>
+            </transition>
+        </Popover>
+    </div>
+</template>
