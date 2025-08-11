@@ -10,6 +10,8 @@
 
 namespace App\Models\Masters;
 
+use App\Enums\Catalogue\MasterCollection\MasterCollectionProductStatusEnum;
+use App\Enums\Catalogue\MasterCollection\MasterCollectionStateEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
@@ -72,6 +74,8 @@ class MasterCollection extends Model implements Auditable, HasMedia
     protected $casts = [
         'data'   => 'array',
         'status' => 'boolean',
+        'state'          => MasterCollectionStateEnum::class,
+        'products_status' => MasterCollectionProductStatusEnum::class,
     ];
 
     protected $attributes = [
