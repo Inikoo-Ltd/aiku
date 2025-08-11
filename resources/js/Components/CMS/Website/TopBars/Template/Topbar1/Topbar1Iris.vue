@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { inject } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faLanguage } from "@fal"
+import { faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus } from "@fal"
 import { faLaptopCode } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { getStyles } from "@/Composables/styles"
@@ -11,7 +11,7 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { trans } from "laravel-vue-i18n"
 import SwitchLanguage from "@/Components/Iris/SwitchLanguage.vue"
 
-library.add(faLaptopCode, faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faLanguage)
+library.add(faLaptopCode, faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus)
 
 defineProps<{
     screenType: "desktop" | "mobile" | "tablet"
@@ -93,10 +93,7 @@ const urlLoginWithRedirect = () => {
 
 
         <div class="action_buttons flex justify-between md:justify-start items-center gap-x-1 flex-wrap md:flex-nowrap">
-
-            <SwitchLanguage 
-                v-if="layout.app.environment === 'local'"
-            />
+            <SwitchLanguage />
 
             <!-- Section: My account -->
             <ButtonWithLink
@@ -152,7 +149,7 @@ const urlLoginWithRedirect = () => {
 
             <!-- Section: Logout -->
             <ButtonWithLink v-if="checkVisible(model?.logout?.visible || null, isLoggedIn)" url="/app/logout" method="post"
-                            :data="{}" icon="fal fa-sign-out">
+                            :data="{}" icon="fal fa-sign-out" type="negative">
                 <template #label>
                     <span v-html="textReplaceVariables(model?.logout?.text, layout.iris_variables)" />
                 </template>
