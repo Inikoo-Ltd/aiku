@@ -34,6 +34,11 @@ class CalculateDeliveryNoteItemTotalPicked extends OrgAction
 
         $isCompleted = $isFullyPicked || $isMarkedAsUnpickable;
 
+        // SPECIFIC CONDITION IF SOMEHOW A 0 QUANTITY MANAGED TO GET RECORDED
+        if ($deliveryNoteItem->quantity_required == 0 && $pickings->where('type', PickingTypeEnum::NOT_PICK)->isEmpty()) {
+            $isCompleted = false;
+        }
+
         if ($deliveryNoteItem->quantity_required > 0) {
             $pickedWeight = $totalPicked * $deliveryNoteItem->estimated_required_weight / $deliveryNoteItem->quantity_required;
         } else {
