@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Shop\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Actions\UI\WithInertia;
 use App\Http\Resources\Catalogue\DepartmentResource;
 use App\Http\Resources\Catalogue\FamilyResource;
@@ -23,8 +24,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class ShowCatalogue extends OrgAction
 {
-    use AsAction;
-    use WithInertia;
+    use WithCatalogueAuthorisation;
 
 
     public function handle(Shop $shop): Shop
@@ -32,13 +32,7 @@ class ShowCatalogue extends OrgAction
         return $shop;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit   = $request->user()->authTo("products.{$this->shop->id}.edit");
-        $this->canDelete = $request->user()->authTo("products.{$this->shop->id}.edit");
 
-        return $request->user()->authTo("products.{$this->shop->id}.view");
-    }
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
     {
@@ -126,6 +120,13 @@ class ShowCatalogue extends OrgAction
                             'icon'    => [
                                 'icon'  => 'fal fa-folder-tree',
                                 'class' => ''
+                            ],
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.catalogue.sub_departments.index',
+                                'parameters' => [
+                                    'organisation' => $shop->organisation->slug,
+                                    'shop'         => $shop->slug
+                                ]
                             ],
                             'count'   => $shop->stats->number_current_sub_departments,
                         ],

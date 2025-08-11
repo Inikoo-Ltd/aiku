@@ -98,7 +98,7 @@ const debounceSubmitNote = debounce(onSubmitNote, 800)
         <ButtonWithLink
             :icon="faArrowLeft"
             label="Continue shopping"
-            url="/"
+            url="/app"
             type="tertiary"
             fullLoading
         />

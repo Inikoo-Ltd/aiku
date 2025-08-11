@@ -129,7 +129,7 @@ class StoreShop extends OrgAction
             $shop->outboxCustomerNotificationIntervals()->create();
             $shop->outboxColdEmailsIntervals()->create();
             $shop->outboxPushIntervals()->create();
-
+            StoreShopPlatformStats::run($shop);
 
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
                 $shop->timeSeries()->create(['frequency' => $frequency]);

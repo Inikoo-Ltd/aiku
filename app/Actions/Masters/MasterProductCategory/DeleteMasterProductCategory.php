@@ -8,7 +8,9 @@
 
 namespace App\Actions\Masters\MasterProductCategory;
 
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterProductCategories;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Masters\MasterProductCategory;
@@ -42,6 +44,8 @@ class DeleteMasterProductCategory extends OrgAction
         } else {
             $masterProductCategory->delete();
         }
+        MasterShopHydrateMasterDepartments::dispatch($masterProductCategory->masterShop)->delay($this->hydratorsDelay);
+        GroupHydrateMasterProductCategories::dispatch($masterProductCategory->group)->delay($this->hydratorsDelay);
 
         return $masterProductCategory;
     }

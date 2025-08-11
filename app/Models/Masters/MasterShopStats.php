@@ -46,6 +46,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_current_master_assets_type_shipping_zone
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_master_collections
+ * @property int $number_current_master_collections status=true
  * @property-read \App\Models\Masters\MasterShop $masterShop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopStats newQuery()

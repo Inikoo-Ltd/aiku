@@ -170,7 +170,7 @@ class ShowShop extends OrgAction
                 data: $this->getOrdersWidgetData($shop),
             );
         }
-
+        
         return [
             'dashboard_stats' => [
                 'widgets' => [
@@ -178,7 +178,7 @@ class ShowShop extends OrgAction
                     'components'   => $widgetComponents
                 ]
             ],
-            'statsBox'  => $this->getStatsBox($shop),
+            'statsBox'  => $shop->type->value == 'dropshipping' ? $this->getStatsBox($shop) : null,
         ];
     }
 

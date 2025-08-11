@@ -150,6 +150,13 @@ const onCloseModal = () => {
 const findLocation = (locationsList: {location_code: string}[], selectedHehe: string) => {
     return locationsList.find(x => x.location_code == selectedHehe) || locationsList[0]
 }
+
+const breakpoint = ref('')
+const innerWidth = ref(0)
+onMounted(() => {
+    innerWidth.value = window.innerWidth
+    // breakpoint.value = twBreakPoint(window.innerWidth)
+})
 </script>
 
 <template>
@@ -269,9 +276,9 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
         <template #cell(picking_position)="{ item: itemValue, proxyItem }">
 
             <div v-if="itemValue.quantity_to_pick > 0">
-                <div v-if="findLocation(itemValue.locations, proxyItem.hehe)" class="rounded p-1 flex flex-col justify-between gap-x-6 items-center even:bg-black/5">
+                <div v-if="findLocation(itemValue.locations, proxyItem.hehe)" class="flex flex-col justify-between gap-x-6 items-center">
                     <!-- Action: decrease and increase quantity -->
-                    <div class="mb-3 w-full flex justify-between gap-x-6 items-center">
+                    <div class="mb-3 w-full flex justify-between gap-x-6 xitems-center">
                         <div class="">
                             <Transition name="spin-to-right">
                                 <div :key="findLocation(itemValue.locations, proxyItem.hehe).location_code">
@@ -402,27 +409,15 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
                             </NumberWithButtonSave>
 
                             
-                            <div class="md:hidden">
-                                <ButtonWithLink
-                                    v-if="!itemValue.is_handled"
-                                    type="negative"
-                                    tooltip="Set as not picked"
-                                    icon="fal fa-debug"
-                                    size="lg"
-                                    :routeTarget="itemValue.not_picking_route"
-                                    :bindToLink="{preserveScroll: true}"
-                                />
-                            </div>
-                            <div class="hidden md:block">
-                                <ButtonWithLink
-                                    v-if="!itemValue.is_handled"
-                                    type="negative"
-                                    tooltip="Set as not picked"
-                                    icon="fal fa-debug"
-                                    :routeTarget="itemValue.not_picking_route"
-                                    :bindToLink="{preserveScroll: true}"
-                                />
-                            </div>
+                            <ButtonWithLink
+                                v-if="!itemValue.is_handled"
+                                type="negative"
+                                tooltip="Set as not picked"
+                                icon="fal fa-debug"
+                                :size="innerWidth > 768 ? undefined : 'lg'"
+                                :routeTarget="itemValue.not_picking_route"
+                                :bindToLink="{preserveScroll: true}"
+                            />
 
                             <!-- Section: Errors list -->
                             <div v-if="proxyItem.errors?.length">
@@ -433,8 +428,18 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
 
 
                 </div>
+            </div>
 
-
+            <div v-else>
+                <ButtonWithLink
+                    v-if="!itemValue.is_handled"
+                    type="negative"
+                    tooltip="Set as not picked"
+                    icon="fal fa-debug"
+                    :size="innerWidth > 768 ? undefined : 'lg'"
+                    :routeTarget="itemValue.not_picking_route"
+                    :bindToLink="{preserveScroll: true}"
+                />
             </div>
 
 

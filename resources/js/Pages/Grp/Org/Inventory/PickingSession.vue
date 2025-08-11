@@ -63,6 +63,6 @@ watch(() => props.tabs.current, (newTab) => {
     </div>
     <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
     <div class="pb-12">
-        <component :is="component" :data="props[currentTab]" :tab="currentTab" :pickingSession="data.data" :key="data.data.state" />
+        <component :is="component" :data="props[currentTab]" :tab="currentTab" :pickingSession="data.data" :key="`${currentTab}${props.data.state}`" />
     </div>
 </template>

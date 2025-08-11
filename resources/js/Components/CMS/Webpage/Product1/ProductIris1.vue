@@ -205,7 +205,7 @@ const toggleExpanded = () => {
                             <div class="flex items-center gap-[1px]">
                             </div>
                         </div>
-                        <div class="flex items-center gap-2 text-sm text-gray-600 mb-4">
+                        <div v-if="layout?.iris?.is_logged_in" class="flex items-center gap-2 text-sm text-gray-600 mb-4">
                             <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
                                 :class="fieldValue.product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
                             <span>
@@ -244,7 +244,7 @@ const toggleExpanded = () => {
                         </template>
                     </div>
                 </div>
-                <div class="flex items-end pb-3 mb-3">
+                <div v-if="layout?.iris?.is_logged_in" class="flex items-end pb-3 mb-3">
                     <div class="text-gray-900 font-semibold text-3xl capitalize leading-none flex-grow min-w-0">
                         {{ locale.currencyFormat(currency?.code, fieldValue.product.price || 0) }}
 
@@ -312,7 +312,7 @@ const toggleExpanded = () => {
         <ImageProducts :images="fieldValue.product.images" />
         <div class="flex justify-between items-start gap-4 mt-4">
             <!-- Price + Unit Info -->
-            <div>
+            <div v-if="layout?.iris?.is_logged_in">
                 <div class="text-lg font-semibold">
                     {{ locale.currencyFormat(currency?.code, fieldValue.product.price || 0) }}
                     <span class="text-xs text-gray-500 ml-1">

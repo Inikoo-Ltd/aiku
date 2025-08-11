@@ -18,6 +18,10 @@ class FetchAuroraMasterFamily extends FetchAurora
 
     protected function parseModel(): void
     {
+
+        // primary family no longer needs to be fetched
+        return;
+
         $masterShop = $this->getMasterShop();
 
         if ($masterShop == null) {

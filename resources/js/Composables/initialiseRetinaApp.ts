@@ -36,6 +36,13 @@ export const initialiseRetinaApp = () => {
     }
     
     router.on('navigate', (event) => {
+        // To see Vue filename in console (component.vue())
+        if (usePage().component) {
+            window.component = {
+                vue: usePage().component
+            }
+        }
+        
         layout.currentParams = route().v().params  // current params
         layout.currentQuery = route().v().query  // current query
         layout.currentRoute = route().current()  // current route

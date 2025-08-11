@@ -47,10 +47,8 @@ class ShowTradeUnit extends GrpAction
 
     public function getImagesData(TradeUnit $tradeUnit): array
     {
-        // $imagesData = [];
 
-        // if ($this->tab == TradeUnitTabsEnum::IMAGES->value) {
-        $imagesData = [
+        return [
             [
                 'label' => __('Main'),
                 'type'  => 'image',
@@ -113,9 +111,8 @@ class ShowTradeUnit extends GrpAction
                 'images' => $tradeUnit->imageSources(getImage:'sizeComparisonImage'),
             ],
         ];
-        // }
 
-        return $imagesData;
+
     }
 
     public function htmlResponse(TradeUnit $tradeUnit, ActionRequest $request): Response
@@ -171,7 +168,6 @@ class ShowTradeUnit extends GrpAction
                     'navigation' => TradeUnitTabsEnum::navigation()
 
                 ],
-
                 'images_category_box' => $this->getImagesData($tradeUnit),
                 'images_update_route' => [
                     'name'       => 'grp.models.trade-unit.update_images',

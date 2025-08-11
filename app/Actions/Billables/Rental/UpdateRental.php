@@ -9,7 +9,7 @@
 namespace App\Actions\Billables\Rental;
 
 use App\Actions\Billables\Rental\Search\RentalRecordSearch;
-use App\Actions\Catalogue\Asset\UpdateAsset;
+use App\Actions\Catalogue\Asset\UpdateAssetFromModel;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRentals;
 use App\Actions\OrgAction;
@@ -52,7 +52,7 @@ class UpdateRental extends OrgAction
             );
         }
 
-        UpdateAsset::run($rental->asset, [], $this->hydratorsDelay);
+        UpdateAssetFromModel::run($rental->asset, [], $this->hydratorsDelay);
 
 
         if (Arr::hasAny($rental->getChanges(), ['state'])) {

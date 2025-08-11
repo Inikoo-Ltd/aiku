@@ -68,7 +68,7 @@ const customWidthEnabled = ref(false)
          <PureInputNumber
           :modelValue="get(model, 'height.value', 0)"
           @update:modelValue="newVal => (set(model, 'height.value', newVal), emits('update:modelValue', {...model}))"
-          :suffix="model?.width?.unit || '%'"
+          :suffix="model?.height?.unit || '%'"
           class="min-w-[80px] col-span-4"
         />
       </div>

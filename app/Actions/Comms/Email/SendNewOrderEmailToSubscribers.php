@@ -15,6 +15,7 @@ use App\Actions\Comms\Traits\WithSendBulkEmails;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\Outbox\OutboxBuilderEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
@@ -61,6 +62,14 @@ class SendNewOrderEmailToSubscribers extends OrgAction
 
             $transactions = $order->transactions()->where('model_type', 'Product')->get();
 
+            $paymentAccount = $order->payments()->first()->paymentAccount;
+
+            $balance = '';
+
+            if($paymentAccount->type == PaymentAccountTypeEnum::ACCOUNT) {
+                $balance = 'Customer Balance: '.$order->shop->currency->symbol.$order->customer->balance;
+            }
+
             $this->sendEmailWithMergeTags(
                 $dispatchedEmail,
                 $outbox->emailOngoingRun->sender(),
@@ -97,9 +106,21 @@ class SendNewOrderEmailToSubscribers extends OrgAction
                         $customer->shop->slug,
                         $customer->slug
                     ]),
+                    'platform' => $order->customerSalesChannel?->platform?->name ?? '',
+                    'balance' => $balance,
                 ]
             );
         }
+    }
+
+    public string $commandSignature = 'test:send-new_order-email-subscribers';
+
+
+    public function asCommand(): void
+    {
+        $order = Order::where('slug', 'awd151817')->first();
+
+        $this->handle($order);
     }
 
     private function generateOrderTransactionsHtml($transactions): string
@@ -127,7 +148,7 @@ class SendNewOrderEmailToSubscribers extends OrgAction
                 </tr>',
                 $historicAsset->code ?? 'N/A',
                 $historicAsset->name ?? 'N/A',
-                $transaction->quantity_ordered ?? '0',
+                rtrim(rtrim(sprintf('%.3f', $transaction->quantity_ordered ?? 0), '0'), '.') ?? '0',
                 $transaction->net_amount ?? '0'
             );
         }

@@ -966,9 +966,7 @@ test('update retina web user', function (WebUser $webUser) {
 
 test('delete retina web user', function (WebUser $webUser) {
     expect($webUser->customer->stats->number_web_users)->toBe(2);
-    DeleteRetinaWebUser::make()->action(
-        $webUser
-    );
+    DeleteRetinaWebUser::make()->action($webUser);
     $webUser->customer->refresh();
     expect($webUser->customer->stats->number_web_users)->toBe(1);
 })->depends('update retina web user');

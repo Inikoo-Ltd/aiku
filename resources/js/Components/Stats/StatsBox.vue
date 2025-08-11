@@ -38,7 +38,7 @@ const locale = inject('locale', aikuLocaleStructure)
             stat.is_negative ? 'bg-red-100 hover:bg-red-200 border-red-200 hover:border-red-300 text-red-500' : 'bg-white hover:bg-gray-50 border-gray-200',
             stat.route?.name ? 'cursor-pointer' : ''
         ]" @start="() => isBoxLoading = true" @finish="() => isBoxLoading = false">
-        <slot name="background">
+        <slot v-if="stat.color" name="background">
             <BackgroundBox v-if="!stat.is_negative" class="-z-10 opacity-80 absolute top-0 right-0" />
             <FontAwesomeIcon v-else icon="fad fa-fire-alt"
                 class="text-red-500 -z-10 opacity-40 absolute -bottom-2 -right-5 text-7xl" fixed-width aria-hidden="true" />

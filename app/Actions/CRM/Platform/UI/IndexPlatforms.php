@@ -12,10 +12,10 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Traits\WithCustomersSubNavigation;
-use App\Http\Resources\Platform\PlatformsResource;
+use App\Http\Resources\Platform\ShopPlatformStatsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
-use App\Models\Dropshipping\Platform;
+use App\Models\Catalogue\ShopPlatformStats;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -24,6 +24,9 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedSort;
+use Spatie\QueryBuilder\Sorts\Sort;
+use Illuminate\Database\Eloquent\Builder;
 
 class IndexPlatforms extends OrgAction
 {
@@ -32,7 +35,7 @@ class IndexPlatforms extends OrgAction
 
     private Shop|Organisation $parent;
 
-    public function handle($prefix = null): LengthAwarePaginator
+    public function handle(Shop $shop, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -44,10 +47,26 @@ class IndexPlatforms extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $queryBuilder = QueryBuilder::for(Platform::class);
+        $queryBuilder = QueryBuilder::for(ShopPlatformStats::class)
+            ->join('platforms', 'shop_platform_stats.platform_id', '=', 'platforms.id')
+            ->select('shop_platform_stats.*', 'platforms.name as platform_name')
+            ->where('shop_platform_stats.shop_id', $shop->id);
 
         return $queryBuilder
-            ->allowedSorts(['id'])
+            ->allowedSorts([
+                'id',
+                'number_customer_sales_channels',
+                'number_products',
+                'number_orders',
+                'sales',
+                AllowedSort::custom('name', new class implements Sort {
+                    public function __invoke(Builder $query, bool $descending, string $property)
+                    {
+                        $direction = $descending ? 'desc' : 'asc';
+                        $query->orderBy('platforms.name', $direction);
+                    }
+                })
+            ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -57,7 +76,7 @@ class IndexPlatforms extends OrgAction
     {
         return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
-                $table->name($prefix)->pageName($prefix.'Page');
+                $table->name($prefix)->pageName($prefix . 'Page');
             }
 
             $table
@@ -68,7 +87,8 @@ class IndexPlatforms extends OrgAction
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_customer_sales_channels', label: __('Channels'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_products', label: __('Portfolios'), canBeHidden: false, sortable: true)
-                ->column(key: 'number_orders', label: __('Orders'), canBeHidden: false, sortable: true);
+                ->column(key: 'number_orders', label: __('Orders'), canBeHidden: false, sortable: true)
+                ->column(key: 'sales', label: __('Sales'), canBeHidden: false, sortable: true, align: 'right');
         };
     }
 
@@ -122,7 +142,7 @@ class IndexPlatforms extends OrgAction
                     'subNavigation' => $subNavigation,
                     'actions'       => $action,
                 ],
-                'data'        => PlatformsResource::collection($platforms), // You may want to use a resource if needed
+                'data'        => ShopPlatformStatsResource::collection($platforms),
             ]
         )->table($this->tableStructure());
     }
@@ -132,7 +152,7 @@ class IndexPlatforms extends OrgAction
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle();
+        return $this->handle($shop);
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array

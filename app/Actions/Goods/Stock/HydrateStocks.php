@@ -11,9 +11,10 @@ namespace App\Actions\Goods\Stock;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateGrossWeightFromTradeUnits;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateSalesIntervals;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
+use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Models\Goods\Stock;
 
-class HydrateStock
+class HydrateStocks
 {
     use WithHydrateCommand;
     public string $commandSignature = 'hydrate:stocks';
@@ -27,6 +28,7 @@ class HydrateStock
     {
         StockHydrateGrossWeightFromTradeUnits::run($stock);
         StockHydrateSalesIntervals::run($stock);
+        ModelHydrateSingleTradeUnits::run($stock);
     }
 
 }

@@ -96,7 +96,7 @@ class StoreMasterProductCategory extends GrpAction
                 'required',
                 'boolean',
             ],
-            'description' => ['sometimes', 'required', 'max:1500'],
+            'description' => ['sometimes', 'nullable', 'max:1500'],
         ];
 
         if (!$this->strict) {

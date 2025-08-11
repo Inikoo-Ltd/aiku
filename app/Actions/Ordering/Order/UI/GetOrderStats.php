@@ -17,8 +17,9 @@ class GetOrderStats
 
     public function handle(Shop $shop): array
     {
-        $orders = $shop->orders;
-        $total  = $orders->sum('net_amount');
+        $total = \DB::table('orders')->where('shop_id', $shop->id)->sum('net_amount');
+        // dd('qwew', $orders);
+        // $total  = $orders->sum('net_amount');
         return [
             'number_orders' => $shop->orderingStats->number_orders,
             'total'         => $total

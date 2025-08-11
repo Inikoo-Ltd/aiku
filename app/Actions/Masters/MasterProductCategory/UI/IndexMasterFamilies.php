@@ -152,7 +152,7 @@ class IndexMasterFamilies extends OrgAction
 
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current shops with this master'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current families with this master'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'products', label: __('products'), tooltip: __('current master products'), canBeHidden: false, sortable: true, searchable: true);
 
         };
@@ -173,7 +173,7 @@ class IndexMasterFamilies extends OrgAction
             'title' => __('master shop')
         ];
         $afterTitle    = [
-            'label' => __('Families')
+            'label' => __('Master Families')
         ];
         $iconRight     = [
             'icon' => 'fal fa-folder-tree',
@@ -218,11 +218,40 @@ class IndexMasterFamilies extends OrgAction
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
+                    'actions'       => $this->getActions($request),
                     'subNavigation' => $subNavigation,
                 ],
                 'data'        => MasterFamiliesResource::collection($masterFamilies),
             ]
         )->table($this->tableStructure($this->parent));
+    }
+
+    public function getActions(ActionRequest $request): array
+    {
+        $actions = [];
+
+
+        $createRoute = "grp.masters.master_shops.show.master_families.create";
+
+        if ($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            $createRoute = "grp.masters.master_sub_departments.show.master_families.create";
+        } elseif ($this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
+            $createRoute = "grp.masters.master_departments.show.master_families.create";
+        }
+
+        $actions[] = [
+            'type' => 'button',
+            'style' => 'create',
+            'tooltip' => __('master new family'),
+            'label' => __('master family'),
+            'route' => [
+                'name' => $createRoute,
+                'parameters' => $request->route()->originalParameters()
+            ]
+        ];
+
+
+        return $actions;
     }
 
     public function getBreadcrumbs(Group|MasterShop|MasterProductCategory $parent, string $routeName, array $routeParameters, string $suffix = null): array
@@ -266,7 +295,12 @@ class IndexMasterFamilies extends OrgAction
             ),
             'grp.masters.master_departments.show.master_families.index' =>
             array_merge(
-                ShowMasterDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
+                ShowMasterDepartment::make()->getBreadcrumbs(
+                    $parent->group,
+                    $parent,
+                    $routeName,
+                    $routeParameters
+                ),
                 $headCrumb(
                     [
                         'name'       => $routeName,
