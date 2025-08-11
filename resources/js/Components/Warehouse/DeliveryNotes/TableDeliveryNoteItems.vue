@@ -150,6 +150,13 @@ const onCloseModal = () => {
 const findLocation = (locationsList: {location_code: string}[], selectedHehe: string) => {
     return locationsList.find(x => x.location_code == selectedHehe) || locationsList[0]
 }
+
+const breakpoint = ref('')
+const innerWidth = ref(0)
+onMounted(() => {
+    innerWidth.value = window.innerWidth
+    // breakpoint.value = twBreakPoint(window.innerWidth)
+})
 </script>
 
 <template>
@@ -402,27 +409,15 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
                             </NumberWithButtonSave>
 
                             
-                            <div class="md:hidden">
-                                <ButtonWithLink
-                                    v-if="!itemValue.is_handled"
-                                    type="negative"
-                                    tooltip="Set as not picked"
-                                    icon="fal fa-debug"
-                                    size="lg"
-                                    :routeTarget="itemValue.not_picking_route"
-                                    :bindToLink="{preserveScroll: true}"
-                                />
-                            </div>
-                            <div class="hidden md:block">
-                                <ButtonWithLink
-                                    v-if="!itemValue.is_handled"
-                                    type="negative"
-                                    tooltip="Set as not picked"
-                                    icon="fal fa-debug"
-                                    :routeTarget="itemValue.not_picking_route"
-                                    :bindToLink="{preserveScroll: true}"
-                                />
-                            </div>
+                            <ButtonWithLink
+                                v-if="!itemValue.is_handled"
+                                type="negative"
+                                tooltip="Set as not picked"
+                                icon="fal fa-debug"
+                                :size="innerWidth > 768 ? undefined : 'lg'"
+                                :routeTarget="itemValue.not_picking_route"
+                                :bindToLink="{preserveScroll: true}"
+                            />
 
                             <!-- Section: Errors list -->
                             <div v-if="proxyItem.errors?.length">
@@ -436,27 +431,15 @@ const findLocation = (locationsList: {location_code: string}[], selectedHehe: st
             </div>
 
             <div v-else>
-                <div class="md:hidden">
-                    <ButtonWithLink
-                        v-if="!itemValue.is_handled"
-                        type="negative"
-                        tooltip="Set as not picked"
-                        icon="fal fa-debug"
-                        size="lg"
-                        :routeTarget="itemValue.not_picking_route"
-                        :bindToLink="{preserveScroll: true}"
-                    />
-                </div>
-                <div class="hidden md:block">
-                    <ButtonWithLink
-                        v-if="!itemValue.is_handled"
-                        type="negative"
-                        tooltip="Set as not picked"
-                        icon="fal fa-debug"
-                        :routeTarget="itemValue.not_picking_route"
-                        :bindToLink="{preserveScroll: true}"
-                    />
-                </div>
+                <ButtonWithLink
+                    v-if="!itemValue.is_handled"
+                    type="negative"
+                    tooltip="Set as not picked"
+                    icon="fal fa-debug"
+                    :size="innerWidth > 768 ? undefined : 'lg'"
+                    :routeTarget="itemValue.not_picking_route"
+                    :bindToLink="{preserveScroll: true}"
+                />
             </div>
 
 
