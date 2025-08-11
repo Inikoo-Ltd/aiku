@@ -16,7 +16,10 @@ import "@/../css/Iris/editor.css"
 import { getStyles } from "@/Composables/styles";
 import { Root as RootWebpage } from '@/types/webpageTypes'
 import ButtonPreviewLogin from '@/Components/Workshop/Tools/ButtonPreviewLogin.vue';
-
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faTimes } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faTimes)
 
 defineOptions({ layout: WebPreview })
 const props = defineProps<{
