@@ -16,6 +16,7 @@ use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 
 class EditGroupSettings extends GrpAction
 {
@@ -76,6 +77,32 @@ class EditGroupSettings extends GrpAction
                                 "label" => __("logo"),
                                 "value" => $group->imageSources(320, 320)
                             ],
+                        ],
+                    ],
+                    [
+                        'label'  => __('Languages'),
+                        'icon'   => 'fa-light fa-language',
+                        'fields' => [
+                            'language_id' => [
+                                'type'          => 'select',
+                                'label'         => __('Main language'),
+                                'placeholder'   => __('Select your language'),
+                                'required'      => true,
+                                'value'         => 'test',
+                                'options'       => GetLanguagesOptions::make()->all(),
+                                'searchable'    => true
+                            ],
+                            'extra_language' => [
+                                'type'          => 'select',
+                                'label'         => __('Main language'),
+                                'placeholder'   => __('Select your language'),
+                                'required'      => true,
+                                'value'         => [],
+                                'options'       => GetLanguagesOptions::make()->all(),
+                                'searchable'    => true,
+                                'mode'          => 'tags',
+                            ]
+
                         ],
                     ],
                     [

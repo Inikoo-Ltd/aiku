@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Thu, 07 Aug 2025 17:55:46 Central European Summer Time, Plane Vienna - Malaga
+ * Created: Thu, 07 Aug 2025 17:55:46 Central European Summer Time, Plane Vienna-Malaga
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
@@ -37,7 +37,7 @@ class MatchAssetsToMaster extends OrgAction
         UpdateAsset::make()->action(
             $asset,
             [
-                'master_asset_id' => $masterAsset ? $masterAsset->id : null,
+                'master_asset_id' => $masterAsset?->id,
             ]
         );
 
