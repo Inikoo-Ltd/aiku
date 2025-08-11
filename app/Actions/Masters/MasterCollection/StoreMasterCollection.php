@@ -116,16 +116,16 @@ class StoreMasterCollection extends GrpAction
         return $this->handle($parent, $this->validatedData);
     }
 
-    public function asController(Group $group, MasterShop $masterShop, ActionRequest $request): MasterCollection
+    public function asController(MasterShop $masterShop, ActionRequest $request): MasterCollection
     {
-        $this->initialisation($group, $request);
+        $this->initialisation($masterShop->group, $request);
 
         return $this->handle($masterShop, $this->validatedData);
     }
 
-    public function inMasterProductCategory(Group $group, MasterProductCategory $masterProductCategory, ActionRequest $request): MasterCollection
+    public function inMasterProductCategory(MasterProductCategory $masterProductCategory, ActionRequest $request): MasterCollection
     {
-        $this->initialisation($group, $request);
+        $this->initialisation($masterProductCategory->group, $request);
 
         return $this->handle($masterProductCategory, $this->validatedData);
     }
