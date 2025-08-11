@@ -37,7 +37,7 @@ class RepairInvoiceMissingUlid
         $bar->setFormat('debug');
         $bar->start();
 
-        Invoice::orderBy('id')->whereNull('ulid')
+        Invoice::orderBy('id','desc')->whereNull('ulid')
             ->chunk(100, function (Collection $models) use ($bar) {
                 foreach ($models as $model) {
                     $this->handle($model);

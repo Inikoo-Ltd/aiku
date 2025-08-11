@@ -82,7 +82,7 @@ trait WithOrderingCustomerNotification
 
     public function getPdfInvoiceLink(?Invoice $invoice): string
     {
-        if (!$invoice) {
+        if (!$invoice || $invoice->ulid=='') {
             return '';
         }
 
