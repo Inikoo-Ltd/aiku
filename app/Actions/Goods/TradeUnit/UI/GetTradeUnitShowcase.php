@@ -113,7 +113,7 @@ class GetTradeUnitShowcase
             'tags_selected_id' => $tradeUnit->tags->pluck('id')->toArray(),
             'tags' =>  TagsResource::collection($tradeUnit->tags)->toArray(request()),
             'translation_box' => [
-                'title' => __(''),
+                'title' => __('Multi-language Translations'),
                 'save_route' => [
                     'name' => 'grp.models.trade-unit.translations.update',
                     'parameters' => [
