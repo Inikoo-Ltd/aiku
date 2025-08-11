@@ -20,11 +20,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use Spatie\Translatable\HasTranslations;
 
 /**
  *
@@ -51,6 +53,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_department_id
  * @property string|null $source_family_id
  * @property bool $show_in_website
+ * @property array<array-key, mixed>|null $name_i8n
+ * @property array<array-key, mixed>|null $description_i8n
+ * @property array<array-key, mixed>|null $description_title_i8n
+ * @property array<array-key, mixed>|null $description_extra_i8n
+ * @property string|null $description_title
+ * @property string|null $description_extra
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, MasterProductCategory> $children
  * @property-read Group $group
@@ -69,11 +77,16 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Masters\MasterProductCategoryStats|null $stats
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategoryTimeSeries> $timeSeries
+ * @property-read mixed $translations
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory whereJsonContainsLocale(string $column, string $locale, ?mixed $value, string $operand = '=')
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory whereJsonContainsLocales(string $column, array $locales, ?mixed $value, string $operand = '=')
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory whereLocale(string $column, string $locale)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory whereLocales(string $column, array $locales)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory withTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategory withoutTrashed()
  * @mixin \Eloquent
@@ -86,8 +99,11 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
     use HasHistory;
     use HasImage;
     use InGroup;
+    use HasTranslations;
 
     protected $guarded = [];
+
+    public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
 
     protected $casts = [
         'data'            => 'array',
@@ -204,6 +220,12 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
     {
         return $this->belongsTo(MasterShop::class);
     }
+
+    public function masterCollections(): MorphToMany
+    {
+        return $this->morphToMany(MasterCollection::class, 'model', 'model_has_master_collections')->withTimestamps();
+    }
+
 
 
 }

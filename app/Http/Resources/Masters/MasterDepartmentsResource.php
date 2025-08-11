@@ -27,6 +27,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property int $products
  * @property int $used_in
  * @property mixed $show_in_website
+ * @property mixed $sub_departments
+ * @property mixed $collections
  */
 class MasterDepartmentsResource extends JsonResource
 {
@@ -48,6 +50,8 @@ class MasterDepartmentsResource extends JsonResource
             'used_in'          => $this->used_in,
             'families'         => $this->families,
             'products'         => $this->products,
+            'sub_departments'  => $this->sub_departments,
+            'collections'      => $this->collections,
             'show_in_website'  => $this->show_in_website,
         ];
     }

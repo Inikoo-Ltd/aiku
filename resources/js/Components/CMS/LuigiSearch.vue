@@ -2,6 +2,7 @@
 import { computed, inject, onMounted, ref, onBeforeMount } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
+import { router } from "@inertiajs/vue3"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch } from "@far"
@@ -13,13 +14,23 @@ library.add(faSearch)
 // &language=en
 // &currency_symbol=£
 
+const props = defineProps<{
+    id: string
+}>()
+
 const inputValue = ref('')
+
+onBeforeMount(() => {
+    // Read query param 'q' from URL if present
+    const params = new URLSearchParams(window.location.search)
+    const q = params.get('q')
+    if (q) inputValue.value = q
+})
 
 
 const layout = inject('layout', {})
 const locale = inject('locale', aikuLocaleStructure)
 
-// console.log('pp', locale)
 
 const LBInitAutocompleteNew = async () => {
     // console.log('layout.iris.luigisbox_tracker_id:', layout.iris?.luigisbox_tracker_id)
@@ -42,23 +53,23 @@ const LBInitAutocompleteNew = async () => {
                 prefixed: true,
                 symbol: locale.currencySymbol(layout.iris?.currency?.code)
             },
-            // ShowBuyTitle: 'Buy now', // Top Product: Button label
-            Translations: {
-                en: {
-                    // showBuyTitle: 'Burrrry now', // Top Product: Button label
-                    // priceFilter: {
-                    //     minimumFractionDigits: 0,
-                    //     maximumFractionDigits: 2,
-                    //     locale: locale.language.code,
-                    //     prefixed: true,
-                    //     symbol: locale.currencySymbol(layout.iris?.currency?.code)
-                    // }
-                }
-            },
+            // Translations: {
+            //     en: {
+            //         // showBuyTitle: 'Burrrry now', // Top Product: Button label
+            //         // priceFilter: {
+            //         //     minimumFractionDigits: 0,
+            //         //     maximumFractionDigits: 2,
+            //         //     locale: locale.language.code,
+            //         //     prefixed: true,
+            //         //     symbol: locale.currencySymbol(layout.iris?.currency?.code)
+            //         // }
+            //     }
+            // },
             RemoveFields: layout.iris.is_logged_in ? [] : ['formatted_price', 'price_amount', 'price'],
             Types: [
                 {
-                    name: "Product",
+                    name: "Products",
+                    heroName: "Top product",
                     type: "item",
                     size: 7,
                     xattributes: layout.iris.is_logged_in ? ['product_code', 'formatted_price'] : ['product_code'],
@@ -96,36 +107,35 @@ const LBInitAutocompleteNew = async () => {
                     type: "tag",
                 },
             ],
-            ShowAllCallback: () => {  // Called when 'Show All Product' clicked
-                if (inputValue.value) {
-                    // console.log('query:', stringQuery)
-                    window.location.href = `/search?q=${encodeURIComponent(inputValue.value)}`;
-                } else {
-                    notify({
-                        title: trans("Something went wrong"),
-                        text: trans("The query must be filled"),
-                        type: "error",
-                    })
-                }
+            ShowAllTitle: 'View all results', // Show All Product: Button label
+            ShowAllCallback: (q) => {  // Called when 'Show All Product' clicked
+                visitSearchPage()
             },
+            ShowBuyTitle: 'Detail', // Top Product: Button label
             Actions: [  // Action for Top Product 'Add To Basket'
                 {
                     forRow: function(row) {
-                        console.log('row:', row)
-                        return layout.retina.type !== 'b2b' && row['data-autocomplete-id'] == 1 && row.type === 'item'  // Top product
+                        return (
+                            row['data-autocomplete-id'] == 1 &&
+                            row.type === 'item'
+                        )
                     },
                     // iconUrl: 'https://cdn-icons-png.freepik.com/256/275/275790.png',
-                    title: "Visit product's page",
+                    iconText: '➔',
+                    // title: "Visit product's page",
                     action: function(e, result) {
-                        console.log('zzzzzzzzz', e, result)
+                        // console.log('zzzzzzzzz', e, result)
+                        window.location.href = result?.attributes?.web_url?.[0]
+                        // router.visit(result.attributes.web_url[0])
+
                     }
                 }
             ]
         },
-        "#inputLuigi"
+        `#${props.id || 'inputLuigi'}`
     )
 
-    console.log("Init autocomplete")
+    console.log("Init autocomplete", props.id)
 }
 
 
@@ -149,7 +159,6 @@ onBeforeMount(() => {
     script.async = true;
     document.head.appendChild(script);
     script.onload = () => {
-        console.log('Luigi autocomplete script loaded');
         LBInitAutocompleteNew();
     };
     script.onerror = () => {
@@ -159,23 +168,38 @@ onBeforeMount(() => {
 onMounted(() => {
     importStyleCSS()
 })
+
+const visitSearchPage = () => {
+    console.log('visit', inputValue.value)
+    if (inputValue.value) {
+        router.get(`/search?q=${encodeURIComponent(inputValue.value)}`)
+    } else {
+        notify({
+            title: trans("Something went wrong"),
+            text: trans("The query must be filled"),
+            type: "error",
+        })
+    }
+}
 </script>
 
 <template>
-    <div class="w-full relative ">
+    <div class="w-full relative group">
         <input
-            v-model="inputValue"
+            :value="inputValue"
+            @input="(q) => (inputValue = q?.target?.value, console.log('inputValue', inputValue))"
             xdisabled
             class="h-12 min-w-28 focus:border-transparent focus:ring-2 focus:ring-gray-700 w-full md:min-w-0 md:w-full rounded-full border border-[#d1d5db] disabled:bg-gray-200 disabled:cursor-not-allowed pl-10"
-            id="inputLuigi"
+            :id="id || 'inputLuigi'"
             xstyle="height: 35px"
             :placeholder="trans('Search')"
+            @keydown.enter="() => visitSearchPage()"
         />
-        <FontAwesomeIcon icon="far fa-search" class="text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon icon="far fa-search" class="group-focus-within:text-gray-700 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" fixed-width aria-hidden="true" />
     </div>
 </template>
 
-<style>
+<style lang="scss">
 
 .luigi-ac-ribbon {
     /* Border top of the Autocomplete */
@@ -186,9 +210,16 @@ onMounted(() => {
 /* Styling for Layout: Hero */
 .luigi-ac-hero-color {
     background: var(--luigiColor1) !important;
+    color: var(--luigiColor2) !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+  /*  padding-left: 0px !important; */
+    padding-bottom: 2px !important;
 }
 .luigi-ac-others {
     background: #F3F7FA !important;
+    overflow-y: auto !important;
 }
 .luigi-ac-header {
     color: var(--luigiColor1) !important;
@@ -322,6 +353,10 @@ onMounted(() => {
 .luigi-ac-rest-main .luigi-ac-attr--formatted_price {
     display: block !important;
     color: var(--luigiColor1) !important;
+}
+
+.luigi-ac-heromobile-action-for-mobile  {
+    @apply md:!hidden;
 }
 
 /* Button: Shop Today */

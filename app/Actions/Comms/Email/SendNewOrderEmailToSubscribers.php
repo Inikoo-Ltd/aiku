@@ -15,6 +15,7 @@ use App\Actions\Comms\Traits\WithSendBulkEmails;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\Outbox\OutboxBuilderEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
@@ -58,6 +59,17 @@ class SendNewOrderEmailToSubscribers extends OrgAction
                 $emailHtmlBody = $outbox->emailOngoingRun?->email?->liveSnapshot?->compiled_layout;
             }
 
+
+            $transactions = $order->transactions()->where('model_type', 'Product')->get();
+
+            $paymentAccount = $order->payments()->first()->paymentAccount;
+
+            $balance = '';
+
+            if($paymentAccount->type == PaymentAccountTypeEnum::ACCOUNT) {
+                $balance = 'Customer Balance: '.$order->shop->currency->symbol.$order->customer->balance;
+            }
+
             $this->sendEmailWithMergeTags(
                 $dispatchedEmail,
                 $outbox->emailOngoingRun->sender(),
@@ -65,9 +77,20 @@ class SendNewOrderEmailToSubscribers extends OrgAction
                 $emailHtmlBody,
                 '',
                 additionalData: [
+                    'shop_name'     => $order->shop->name,
+                    'currency'      => $order->shop->currency->symbol,
                     'customer_name' => $customer->name,
                     'order_reference' => $order->reference,
-                    'date' => $order->created_at->format('F jS, Y'),
+                    'order_total'   => $order->total_amount,
+                    'goods_amount'   => $order->goods_amount,
+                    'charges_amount'   => $order->charges_amount,
+                    'shipping_amount'   => $order->shipping_amount,
+                    'net_amount'   => $order->net_amount,
+                    'tax_amount'   => $order->tax_amount,
+                    'payment_amount' => $order->payment_amount,
+                    'payment_type' => $order->payments()->first()->paymentAccount->name ?? 'N/A',
+                    'blade_new_order_transactions' => $this->generateOrderTransactionsHtml($transactions),
+                    'date' => $order->submitted_at->format('F jS, Y'),
                     'order_link' => route('grp.org.shops.show.crm.customers.show.orders.show', [
                         $order->organisation->slug,
                         $order->shop->slug,
@@ -83,9 +106,54 @@ class SendNewOrderEmailToSubscribers extends OrgAction
                         $customer->shop->slug,
                         $customer->slug
                     ]),
+                    'platform' => $order->customerSalesChannel?->platform?->name ?? '',
+                    'balance' => $balance,
                 ]
             );
         }
+    }
+
+    public string $commandSignature = 'test:send-new_order-email-subscribers';
+
+
+    public function asCommand(): void
+    {
+        $order = Order::where('slug', 'awd151817')->first();
+
+        $this->handle($order);
+    }
+
+    private function generateOrderTransactionsHtml($transactions): string
+    {
+        if (!$transactions) {
+            return '';
+        }
+
+        if (is_string($transactions)) {
+            $transactions = json_decode($transactions, true);
+        }
+
+        $html = '';
+        foreach ($transactions as $transaction) {
+            $historicAsset = $transaction->historicAsset;
+
+            $html .= sprintf(
+                '<tr style="border-bottom: 1px solid #e9e9e9;">
+                    <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: left;">
+                        <strong>%s</strong><br/>
+                        <span style="color: #666;">%s</span>
+                    </td>
+                    <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: center;">%s</td>
+                    <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: right;">£%s</td>
+                </tr>',
+                $historicAsset->code ?? 'N/A',
+                $historicAsset->name ?? 'N/A',
+                rtrim(rtrim(sprintf('%.3f', $transaction->quantity_ordered ?? 0), '0'), '.') ?? '0',
+                $transaction->net_amount ?? '0'
+            );
+        }
+
+        return $html;
     }
 
 }

@@ -61,14 +61,14 @@ class ShowRetinaEcomBasket extends RetinaAction
                         'update_route' => [
                             'name'       => 'retina.models.order.update',
                             'parameters' => [
-                                'order' => $order->id
+                                'order' => $order?->id
                             ],
                             'method'     => 'patch'
                         ],
                         'submit_route' => [
                             'name'       => 'retina.models.order.submit',
                             'parameters' => [
-                                'order' => $order->id
+                                'order' => $order?->id
                             ],
                             'method'     => 'patch'
                         ]
@@ -92,15 +92,15 @@ class ShowRetinaEcomBasket extends RetinaAction
             array_merge(
                 ShowRetinaDashboard::make()->getBreadcrumbs(),
                 [
-                    [
-                        'type'   => 'simple',
-                        'simple' => [
-                            'route' => [
-                                'name' => 'retina.dropshipping.orders.index'
-                            ],
-                            'label'  => __('Orders'),
-                        ]
-                    ]
+                    // [
+                    //     'type'   => 'simple',
+                    //     'simple' => [
+                    //         'route' => [
+                    //             'name' => 'retina.dropshipping.orders.index'
+                    //         ],
+                    //         'label'  => __('Orders'),
+                    //     ]
+                    // ]
                 ]
             );
     }

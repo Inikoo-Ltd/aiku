@@ -12,13 +12,13 @@ use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf;
 use Rawilk\Printing\Api\PrintNode\Enums\ContentType;
 use Rawilk\Printing\Api\PrintNode\PendingPrintJob;
 use Rawilk\Printing\Api\PrintNode\PrintNode;
 use Rawilk\Printing\Api\PrintNode\Resources\Printer;
 use Rawilk\Printing\Api\PrintNode\Resources\PrintJob;
 use Illuminate\Validation\ValidationException;
+use Spatie\Browsershot\Browsershot;
 
 trait WithPrintNode
 {
@@ -74,17 +74,19 @@ trait WithPrintNode
         return PrintJob::create($pendingJob);
     }
 
-    public function printRawBase64(string $title, int $printId, string $rawBase64): PrintJob
+    public function printRawBase64(string $title, int $printId, string $rawBase64, string $type = 'html'): PrintJob
     {
-        // Convert raw base64 content to PDF using LaravelMPDF
-        $mpdf = new \Mpdf\Mpdf();
-
-
         $content = Str::fromBase64($rawBase64);
-        $pdf = LaravelMpdf::loadHTML($content);
-        $pdfContent = $pdf->output();
-
-
+        // check if content is html
+        if ($type === 'html') {
+            $pdfContent = Browsershot::html($content)
+                ->setOption('no-stop-slow-scripts', true)
+                ->setOption('timeout', 5000)
+                ->margins(10, 10, 10, 10)
+                ->pdf();
+        } else {
+            $pdfContent = 'data:application/pdf;base64,' . $rawBase64;
+        }
 
         $this->ensureClientInitialized();
         $pendingJob = PendingPrintJob::make()

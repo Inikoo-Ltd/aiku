@@ -10,7 +10,6 @@ namespace App\Actions\Dropshipping\CustomerSalesChannel;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -53,7 +52,6 @@ class UpdateCustomerSalesChannel extends OrgAction
             ],
             'status'            => ['sometimes', Rule::enum(CustomerSalesChannelStatusEnum::class)],
             'state'             => ['sometimes', Rule::enum(CustomerSalesChannelStateEnum::class)],
-            'connection_status' => ['sometimes', Rule::enum(CustomerSalesChannelConnectionStatusEnum::class)],
             'name'              => ['sometimes', 'string', 'max:255'],
             'closed_at'         => ['sometimes', 'date'],
         ];

@@ -122,7 +122,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                 'box_stats' => $this->getOrderBoxStats($order),
                 'currency'  => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'      => OrderResource::make($order),
-
+                'is_notes_editable' => false,  // TODO: make it dynamic, only disable on 'after' state
 
                 RetinaOrderTabsEnum::TRANSACTIONS->value => $this->tab == RetinaOrderTabsEnum::TRANSACTIONS->value ?
                     fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: RetinaOrderTabsEnum::TRANSACTIONS->value))
@@ -195,14 +195,13 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                     'invoice' => $invoice->slug,
                 ],
             ];
+
             $routeDownload = [
                 'name'       => 'retina.dropshipping.invoices.pdf',
                 'parameters' => [
                     'invoice' => $invoice->slug,
                 ],
             ];
-
-            $routeDownload = null;
 
             $invoicesData[] = [
                 'reference' => $invoice->reference,
@@ -232,8 +231,21 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                 ]
             );
         }
-        $deliveryNote = $order->deliveryNotes->first();
-        $shipments    = $deliveryNote?->shipments ? RetinaShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null;
+
+        $deliveryNotes     = $order->deliveryNotes;
+        $deliveryNotesData = [];
+
+        if ($deliveryNotes) {
+            foreach ($deliveryNotes as $deliveryNote) {
+                $deliveryNotesData[] = [
+                    'id'        => $deliveryNote->id,
+                    'reference' => $deliveryNote->reference,
+                    'state'     => $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
+                    'shipments' => $deliveryNote?->shipments ? RetinaShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null
+                ];
+            }
+        }
+
 
         return [
             'customer_client'  => $customerClientData,
@@ -255,11 +267,11 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                 ]
             ),
             'customer_channel' => $customerChannel,
-            'invoices'          => $invoicesData,
+            'invoices'         => $invoicesData,
             'order_properties' => [
                 'weight'    => NaturalLanguage::make()->weight($order->estimated_weight),
-                'shipments' => $shipments,
             ],
+            'delivery_notes'   => $deliveryNotesData,
             'products'         => [
                 'payment'          => [
                     'routes'       => [

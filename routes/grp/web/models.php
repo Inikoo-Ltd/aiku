@@ -23,6 +23,7 @@ use App\Actions\Catalogue\Collection\DeleteCollection;
 use App\Actions\Catalogue\Collection\DetachCollectionFromModel;
 use App\Actions\Catalogue\Collection\DetachModelFromCollection;
 use App\Actions\Catalogue\Collection\DisableCollection;
+use App\Actions\Catalogue\Collection\EnableCollection;
 use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\Collection\UpdateCollection;
 use App\Actions\Catalogue\Product\AttachImagesToProduct;
@@ -39,7 +40,7 @@ use App\Actions\Catalogue\ProductCategory\DeleteProductCategory;
 use App\Actions\Catalogue\ProductCategory\DetachFamilyToSubDepartment;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreSubDepartment;
-use App\Actions\Catalogue\ProductCategory\UpdateMultipleFamiliesDepartment;
+use App\Actions\Catalogue\ProductCategory\AttachFamiliesToDepartment;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
@@ -69,9 +70,11 @@ use App\Actions\CRM\Poll\DeletePoll;
 use App\Actions\CRM\Poll\StorePoll;
 use App\Actions\CRM\Poll\UpdatePoll;
 use App\Actions\CRM\Prospect\ImportShopProspects;
+use App\Actions\CRM\WebUser\DeleteWebUser;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\CRM\WebUser\UpdateWebUser;
 use App\Actions\Dispatching\Printer\PrintShipmentLabel;
+use App\Actions\Dispatching\Shipment\DeleteShipment;
 use App\Actions\Dispatching\Shipment\DetachShipmentFromPalletReturn;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInFulfilment;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInWarehouse;
@@ -81,6 +84,11 @@ use App\Actions\Dropshipping\CustomerSalesChannel\DeleteCustomerSalesChannel;
 use App\Actions\Dropshipping\Portfolio\DeletePortfolio;
 use App\Actions\Dropshipping\Portfolio\StoreMultiplePortfolios;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
+use App\Actions\Dropshipping\Shopify\Product\CreateNewBulkPortfoliosToShopify;
+use App\Actions\Dropshipping\Shopify\Product\MatchBulkPortfoliosToCurrentShopifyProduct;
+use App\Actions\Dropshipping\Shopify\Product\MatchPortfolioToCurrentShopifyProduct;
+use App\Actions\Dropshipping\Shopify\Product\StoreNewProductToCurrentShopify;
+use App\Actions\Dropshipping\Shopify\ResetShopifyChannel;
 use App\Actions\Fulfilment\Fulfilment\StoreFulfilmentFromUI;
 use App\Actions\Fulfilment\Fulfilment\UpdateFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\StoreFulfilmentCustomer;
@@ -160,6 +168,7 @@ use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Goods\Stock\UpdateStock;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
 use App\Actions\Goods\StockFamily\UpdateStockFamily;
+use App\Actions\Goods\TradeUnit\UpdateTradeUnitTranslations;
 use App\Actions\Helpers\AwsEmail\SendIdentityEmailVerification;
 use App\Actions\Helpers\Brand\AttachBrandToModel;
 use App\Actions\Helpers\Brand\DeleteBrand;
@@ -186,8 +195,15 @@ use App\Actions\HumanResources\JobPosition\UpdateJobPosition;
 use App\Actions\HumanResources\Workplace\DeleteWorkplace;
 use App\Actions\HumanResources\Workplace\StoreWorkplace;
 use App\Actions\HumanResources\Workplace\UpdateWorkplace;
+use App\Actions\Masters\MasterProductCategory\AttachFamiliesToMasterSubDepartment;
+use App\Actions\Masters\MasterProductCategory\DetachFamilyToMasterSubDepartment;
+use App\Actions\Masters\MasterCollection\StoreMasterCollection;
+use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
+use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
+use App\Actions\Masters\MasterProductCategory\StoreMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\StoreMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategory;
+use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategoryTranslations;
 use App\Actions\Masters\MasterProductCategory\UploadImageMasterProductCategory;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Purge\StorePurge;
@@ -245,6 +261,7 @@ use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
 use App\Actions\Web\ModelHasWebBlocks\UpdateModelHasWebBlocks;
 use App\Actions\Web\ModelHasWebBlocks\UploadImagesToModelHasWebBlocks;
 use App\Actions\Web\Redirect\StoreRedirect;
+use App\Actions\Web\Redirect\StoreRedirectFromWebsite;
 use App\Actions\Web\Redirect\UpdateRedirect;
 use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Actions\Web\Webpage\PublishWebpage;
@@ -258,6 +275,7 @@ use App\Actions\Web\Website\BreakWebsiteCache;
 use App\Actions\Web\Website\LaunchWebsite;
 use App\Actions\Web\Website\PublishWebsiteMarginal;
 use App\Actions\Web\Website\PublishWebsiteProductTemplate;
+use App\Actions\Web\Website\ReindexWebsiteLuigi;
 use App\Actions\Web\Website\StoreWebsite;
 use App\Actions\Web\Website\UpdateWebsite;
 use App\Actions\Web\Website\UploadImagesToWebsite;
@@ -304,10 +322,10 @@ Route::patch('customer-balance/{customer:id}', UpdateBalanceCustomer::class)->na
 Route::patch('customer/{customer:id}/credit-transaction', StoreCreditTransaction::class)->name('customer.credit-transaction.store')->withoutScopedBindings();
 Route::patch('customer/delivery-address/{customer:id}', UpdateCustomerDeliveryAddress::class)->name('customer.delivery-address.update')->withoutScopedBindings();
 
+Route::post('master-product-category', StoreMasterProductCategory::class)->name('master_product.store')->withoutScopedBindings();
 Route::patch('master-product/{masterProductCategory:id}', UpdateMasterProductCategory::class)->name('master_product.update')->withoutScopedBindings();
 Route::post('master-product/{masterProductCategory:id}/image', UploadImageMasterProductCategory::class)->name('master_product_image.upload')->withoutScopedBindings();
-
-Route::post('master-product/{masterDepartment:id}/master-sub-departments/store', StoreMasterSubDepartment::class)->name('master_product.master_sub_departments.store')->withoutScopedBindings();
+Route::patch('master-product/{masterProductCategory:id}/translations', UpdateMasterProductCategoryTranslations::class)->name('master_product_category.translations.update');
 
 
 Route::prefix('stock-family')->name('stock-family.')->group(function () {
@@ -322,17 +340,35 @@ Route::name('stock.')->prefix('/stock')->group(function () {
     Route::patch('/{stock:id}', UpdateStock::class)->name('update');
 });
 
+Route::prefix('master-shops/{masterShop:id}')->as('master_shops.')->group(function () {
+    Route::post('master-department', StoreMasterDepartment::class)->name('master_department.store');
+    Route::post('master-sub-department', StoreMasterSubDepartment::class)->name('master_sub_department.store');
+    Route::post('master-family', StoreMasterFamily::class)->name('master_family.store');
+    Route::post('master-collection', StoreMasterCollection::class)->name('master_collection.store');
+});
+
+Route::prefix('master-product-category/{masterProductCategory:id}')->name('master_product_category.')->group(function () {
+    Route::post('master-collection', [StoreMasterCollection::class, 'inMasterProductCategory'])->name('master_collection.store');
+});
 
 Route::prefix('department/{productCategory:id}')->name('department.')->group(function () {
     Route::post('sub-department', StoreSubDepartment::class)->name('sub_department.store');
 });
 
-
-Route::prefix('/product_category/{productCategory:id}')->name('product_category.')->group(function () {
-    Route::patch('', UpdateProductCategory::class)->name('update');
-    Route::delete('', DeleteProductCategory::class)->name('delete');
+Route::prefix('mater-department/{masterDepartment:id}')->group(function () {
+    Route::post('master-sub-department', [StoreMasterSubDepartment::class, 'inMasterDepartment'])->name('master_sub_department.store');
+    Route::post('master-family', [StoreMasterFamily::class, 'inMasterDepartment'])->name('master_family.store');
 });
 
+Route::prefix('master-sub-department/{masterSubDepartment:id}')->name('master-sub-department.')->group(function () {
+    Route::post('families/attach', AttachFamiliesToMasterSubDepartment::class)->name('families.attach');
+    Route::delete('family/{family:id}/detach', DetachFamilyToMasterSubDepartment::class)->name('family.detach')->withoutScopedBindings();
+});
+
+Route::prefix('/product_category/{productCategory:id}')->name('product_category.')->group(function () {
+    Route::patch('update', UpdateProductCategory::class)->name('update');
+    Route::delete('delete', DeleteProductCategory::class)->name('delete');
+});
 
 Route::prefix('sub-department/{productCategory:id}')->name('sub-department.')->group(function () {
     Route::post('family', [StoreProductCategory::class, 'inSubDepartment'])->name('family.store');
@@ -344,6 +380,11 @@ Route::prefix('sub-department/{subDepartment:id}')->name('sub-department.')->gro
 
 Route::delete('portfolio/{portfolio:id}', DeletePortfolio::class)->name('portfolio.delete');
 Route::patch('portfolio/{portfolio:id}', UpdatePortfolio::class)->name('portfolio.update')->withoutScopedBindings();
+
+Route::post('portfolio/{portfolio:id}/match-to-existing-shopify-product', MatchPortfolioToCurrentShopifyProduct::class)->name('portfolio.match_to_existing_shopify_product');
+Route::post('portfolio/{portfolio:id}/store-new-shopify-product', StoreNewProductToCurrentShopify::class)->name('portfolio.store_new_shopify_product');
+Route::post('{customerSalesChannel:id}/shopify-batch-upload', CreateNewBulkPortfoliosToShopify::class)->name('shopify.batch_upload')->withoutScopedBindings();
+Route::post('{customerSalesChannel:id}/shopify-batch-match', MatchBulkPortfoliosToCurrentShopifyProduct::class)->name('shopify.batch_match')->withoutScopedBindings();
 
 Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::post("google-drive.authorize", [AuthorizeClientGoogleDrive::class, 'authorize'])->name('google_drive.authorize');
@@ -386,7 +427,6 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
         Route::post('family/store/{productCategory:id}', [StoreProductCategory::class, 'inDepartment'])->name('family.store')->withoutScopedBindings();
         Route::post('sub-department/store/{productCategory:id}', [StoreProductCategory::class, 'inDepartment'])->name('sub-department.store')->withoutScopedBindings();
     });
-
 
     Route::prefix('/shop/{shop:id}/catalogue/families')->name('catalogue.families.')->group(function () {
         Route::post('{family:id}/product/store', [StoreProduct::class, 'inFamily'])->name('product.store')->withoutScopedBindings();
@@ -431,7 +471,6 @@ Route::name('product.')->prefix('product')->group(function () {
     Route::post('/{product:id}/content', [StoreModelHasContent::class, 'inProduct'])->name('content.store');
     Route::post('{product:id}/images', UploadImagesToProduct::class)->name('images.store')->withoutScopedBindings();
 });
-
 
 Route::name('pallet-delivery.')->prefix('pallet-delivery/{palletDelivery:id}')->group(function () {
     Route::patch('/', UpdatePalletDelivery::class)->name('update');
@@ -488,7 +527,6 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
     Route::get('stored-item-picking-pdf', PdfPickingStoredItemReturn::class)->name('stored_item_picking.pdf');
     Route::get('pallet-picking-pdf', PdfPickingPalletReturn::class)->name('pallet_picking.pdf');
     Route::get('pdf', PdfPalletReturn::class)->name('pdf');
-
 
     Route::post('/shipment-from-fulfilment', CreateShipmentInPalletReturnInFulfilment::class)->name('shipment_from_fulfilment.store');
     Route::post('/shipment-from-warehouse', CreateShipmentInPalletReturnInWarehouse::class)->name('shipment_from_warehouse.store');
@@ -672,6 +710,7 @@ Route::name('model_has_web_block.')->prefix('model-has-web-block')->group(functi
 });
 
 Route::patch('/web-user/{webUser:id}', UpdateWebUser::class)->name('web-user.update');
+Route::delete('/web-user/{webUser:id}', DeleteWebUser::class)->name('web-user.delete');
 
 Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
     Route::post('', [StoreWebUser::class, 'inCustomer'])->name('web-user.store');
@@ -687,6 +726,7 @@ Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customer
     Route::post('portfolio-multiple-manual', StoreMultiplePortfolios::class)->name('portfolio.store_multiple_manual');
     Route::post('client', StoreCustomerClient::class)->name('client.store');
     Route::delete('delete', DeleteCustomerSalesChannel::class)->name('delete');
+    Route::patch('reset-shopify', ResetShopifyChannel::class)->name('shopify_reset');
 });
 
 Route::post('{shop:id}/purge', StorePurge::class)->name('purge.store');
@@ -738,6 +778,7 @@ Route::name('collection.')->prefix('collection/{collection:id}')->group(function
     Route::delete('detach-models', DetachModelFromCollection::class)->name('detach-models');
     Route::delete('delete', DeleteCollection::class)->name('delete');
     Route::patch('webpage-disable', DisableCollection::class)->name('webpage_disable');
+    Route::patch('webpage-enable', EnableCollection::class)->name('webpage_enable');
 });
 
 Route::name('supplier.')->prefix('supplier/{supplier:id}')->group(function () {
@@ -808,7 +849,7 @@ Route::name('product_category.')->group(function () {
 });
 
 Route::post('family/{family:id}/move-products', UpdateMultipleProductsFamily::class)->name('family.move_products');
-Route::post('department/{department:id}/move-families', UpdateMultipleFamiliesDepartment::class)->name('department.move_families');
+Route::post('department/{department:id}/move-families', AttachFamiliesToDepartment::class)->name('department.move_families');
 
 Route::name('model_has_content.')->prefix('model-has-content/{modelHasContent:id}')->group(function () {
     Route::patch('update', UpdateModelHasContent::class)->name('update');
@@ -822,6 +863,9 @@ Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit}')->group(function () 
     Route::delete('tags/{tag:id}/delete', [DeleteTag::class, 'inTradeUnit'])->name('tags.delete');
     Route::post('tags/attach', [AttachTagsToModel::class, 'inTradeUnit'])->name('tags.attach');
     Route::delete('tags/{tag:id}/detach', [DetachTagFromModel::class, 'inTradeUnit'])->name('tags.detach');
+
+    Route::patch('translations', UpdateTradeUnitTranslations::class)->name('translations.update');
+
 
     Route::post('brands/store', [StoreBrand::class, 'inTradeUnit'])->name('brands.store');
     Route::delete('brands/{brand:id}/delete', [DeleteBrand::class, 'inTradeUnit'])->name('brands.delete')->withoutScopedBindings();
@@ -842,25 +886,30 @@ Route::name('poll.')->prefix('poll')->group(function () {
 });
 
 Route::post('website/{website:id}/break-cache', BreakWebsiteCache::class)->name('website.break_cache')->withoutScopedBindings();
+Route::post('website/{website:id}/redirect', StoreRedirectFromWebsite::class)->name('website.redirect.store')->withoutScopedBindings();
+Route::post('website/{website:id}/reindex-luigi', ReindexWebsiteLuigi::class)->name('website_luigi.reindex')->withoutScopedBindings();
 
 
-require __DIR__."/models/inventory/warehouse.php";
-require __DIR__."/models/inventory/location_org_stock.php";
-require __DIR__."/models/inventory/warehouse_area.php";
-require __DIR__."/models/inventory/location.php";
-require __DIR__."/models/ordering/order.php";
-require __DIR__."/models/dispatching/delivery_note.php";
-require __DIR__."/models/dispatching/delivery_note_item.php";
-require __DIR__."/models/stock/stock.php";
-require __DIR__."/models/accounting/invoice.php";
-require __DIR__."/models/accounting/refund.php";
-require __DIR__."/models/billables/billables.php";
-require __DIR__."/models/billables/services.php";
+Route::delete('/shipment/{shipment:id}', DeleteShipment::class)->name('shipment.delete');
 
-require __DIR__."/models/hr/hr.php";
-require __DIR__."/models/website/webpages.php";
-require __DIR__."/models/supply_chain/agent.php";
-require __DIR__."/models/sys_admin/user.php";
-require __DIR__."/models/fulfilment/fulfilment_customer.php";
-require __DIR__."/models/fulfilment/stored_item_audit.php";
-require __DIR__."/models/fulfilment/stored_item_audit_delta.php";
+
+require __DIR__ . "/models/inventory/warehouse.php";
+require __DIR__ . "/models/inventory/location_org_stock.php";
+require __DIR__ . "/models/inventory/warehouse_area.php";
+require __DIR__ . "/models/inventory/location.php";
+require __DIR__ . "/models/ordering/order.php";
+require __DIR__ . "/models/dispatching/delivery_note.php";
+require __DIR__ . "/models/dispatching/delivery_note_item.php";
+require __DIR__ . "/models/stock/stock.php";
+require __DIR__ . "/models/accounting/invoice.php";
+require __DIR__ . "/models/accounting/refund.php";
+require __DIR__ . "/models/billables/billables.php";
+require __DIR__ . "/models/billables/services.php";
+
+require __DIR__ . "/models/hr/hr.php";
+require __DIR__ . "/models/website/webpages.php";
+require __DIR__ . "/models/supply_chain/agent.php";
+require __DIR__ . "/models/sys_admin/user.php";
+require __DIR__ . "/models/fulfilment/fulfilment_customer.php";
+require __DIR__ . "/models/fulfilment/stored_item_audit.php";
+require __DIR__ . "/models/fulfilment/stored_item_audit_delta.php";

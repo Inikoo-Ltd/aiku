@@ -32,7 +32,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_org_stock_movements_type_disassociate
  * @property int $number_org_stock_movements_flow_in
  * @property int $number_org_stock_movements_flow_out
- * @property int $number_org_stock_movements_flow_no_change
+ * @property int $number_org_stock_movements_flow_audit
  * @property int $number_purchase_orders
  * @property int $number_current_purchase_orders Number purchase orders (except: cancelled and not_received)
  * @property int $number_open_purchase_orders Number purchase orders (except: in_process,settled,cancelled,not_received)
@@ -97,6 +97,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_stock_delivery_items_state_not_received
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_org_stock_movements_type_audit
  * @property-read \App\Models\Inventory\OrgStock $orgStock
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockStats newQuery()

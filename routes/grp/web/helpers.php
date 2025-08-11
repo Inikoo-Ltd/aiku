@@ -10,9 +10,12 @@ use App\Actions\Helpers\RedirectAssetLink;
 use App\Actions\Helpers\RedirectCollectionsInProductCategoryLink;
 use App\Actions\Helpers\RedirectCustomersInShopFromDashboard;
 use App\Actions\Helpers\RedirectDeletedInvoicesInShopLink;
+use App\Actions\Helpers\RedirectDeliveryNotesLink;
 use App\Actions\Helpers\RedirectInvoicesInCustomerLink;
 use App\Actions\Helpers\RedirectInvoicesInShopFromDashboard;
 use App\Actions\Helpers\RedirectInvoicesInShopLink;
+use App\Actions\Helpers\RedirectMasterProductCategoryLink;
+use App\Actions\Helpers\RedirectPickingSessionLink;
 use App\Actions\Helpers\RedirectPortfolioItemLink;
 use App\Actions\Helpers\RedirectProductCategoryLink;
 use App\Actions\Helpers\RedirectShopInShopFromDashboard;
@@ -25,6 +28,8 @@ Route::get('redirect-deleted-invoices-in-shop/{shop:id}', RedirectDeletedInvoice
 Route::get('redirect-refunds-in-shop/{invoice:id}', RedirectInvoicesInShopLink::class)->name('redirect_invoices_in_shop');
 Route::get('redirect-invoice-in-customer/{invoice:id}', RedirectInvoicesInCustomerLink::class)->name('redirect_invoices_in_customer');
 
+Route::get('redirect-delivery-note/{deliveryNote:id}', RedirectDeliveryNotesLink::class)->name('redirect_delivery_notes');
+
 
 Route::get('redirect-invoices-from-dashboard/{shop:id}', RedirectInvoicesInShopFromDashboard::class)->name('redirect_invoices_from_dashboard');
 Route::get('redirect-customers-from-dashboard/{shop:id}', RedirectCustomersInShopFromDashboard::class)->name('redirect_customers_from_dashboard');
@@ -34,6 +39,11 @@ Route::get('redirect-portfolio-item/{portfolio:id}', RedirectPortfolioItemLink::
 
 Route::get('redirect-product-category/{productCategory:slug}', RedirectProductCategoryLink::class)->name('redirect_product_category');
 Route::get('redirect-collections-in-product-category/{productCategory:slug}', RedirectCollectionsInProductCategoryLink::class)->name('redirect_collections_in_product_category');
+
+Route::get('redirect-picking-session/{pickingSession:id}', RedirectPickingSessionLink::class)->name('redirect_picking_session');
+
+Route::get('redirect-master-product-category/{masterProductCategory:id}', RedirectMasterProductCategoryLink::class)->name('redirect_master_product_category');
+
 
 
 Route::prefix('uploads/{upload}')->as('uploads.')->group(function () {

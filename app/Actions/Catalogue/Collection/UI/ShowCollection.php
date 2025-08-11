@@ -162,17 +162,17 @@ class ShowCollection extends OrgAction
                                 ]
                             ]
                             : [
-                            'type'    => 'button',
-                            'style'   => 'edit',
-                            'tooltip' => __('Create Webpage'),
-                            'label'   => __('Create Webpage'),
-                            'icon'    => ["fas", "fa-plus"],
-                            'route'   => [
-                                'name'       => 'grp.models.webpages.collection.store',
-                                'parameters' => $collection->id,
-                                'method'     => 'post'
-                            ]
-                        ],
+                                'type'    => 'button',
+                                'style'   => 'edit',
+                                'tooltip' => __('Create Webpage'),
+                                'label'   => __('Create Webpage'),
+                                'icon'    => ["fas", "fa-plus"],
+                                'route'   => [
+                                    'name'       => 'grp.models.webpages.collection.store',
+                                    'parameters' => $collection->id,
+                                    'method'     => 'post'
+                                ]
+                            ],
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
@@ -297,8 +297,8 @@ class ShowCollection extends OrgAction
                     : Inertia::lazy(fn () => CollectionsResource::collection(IndexCollectionsInCollection::run($collection, prefix: CollectionTabsEnum::COLLECTIONS->value))),
 
                 CollectionTabsEnum::HISTORY->value => $this->tab == CollectionTabsEnum::HISTORY->value ?
-                                    fn () => HistoryResource::collection(IndexHistory::run($collection))
-                                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($collection))),
+                    fn () => HistoryResource::collection(IndexHistory::run($collection))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($collection))),
 
             ]
         )

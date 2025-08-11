@@ -12,6 +12,7 @@ use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Http\Resources\CRM\WebUserResource;
 use App\Models\CRM\Customer;
 use App\Models\CRM\WebUser;
@@ -26,7 +27,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowWebUser extends OrgAction
 {
-    use WithAuthorizeWebUserScope;
+    use WithCRMAuthorisation;
     use WithFulfilmentCustomerSubNavigation;
 
 
@@ -36,13 +37,6 @@ class ShowWebUser extends OrgAction
     {
         return $webUser;
     }
-
-
-    public function authorize(ActionRequest $request): bool
-    {
-        return $this->authorizeWebUserScope($request);
-    }
-
 
 
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, WebUser $webUser, ActionRequest $request): WebUser
@@ -97,7 +91,7 @@ class ShowWebUser extends OrgAction
                     'subNavigation' => $subNavigation,
                     'icon'              => 'fal fa-user',
                     'iconRight' => $iconRight,
-                // 'meta'          => [
+                    // 'meta'          => [
                     //     [
                     //         'name' => $webUser->username
                     //     ]
@@ -257,6 +251,4 @@ class ShowWebUser extends OrgAction
             default => []
         };
     }
-
-
 }

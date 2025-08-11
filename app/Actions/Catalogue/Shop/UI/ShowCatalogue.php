@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Shop\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Actions\UI\WithInertia;
 use App\Http\Resources\Catalogue\DepartmentResource;
 use App\Http\Resources\Catalogue\FamilyResource;
@@ -23,8 +24,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class ShowCatalogue extends OrgAction
 {
-    use AsAction;
-    use WithInertia;
+    use WithCatalogueAuthorisation;
 
 
     public function handle(Shop $shop): Shop
@@ -32,13 +32,7 @@ class ShowCatalogue extends OrgAction
         return $shop;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit   = $request->user()->authTo("products.{$this->shop->id}.edit");
-        $this->canDelete = $request->user()->authTo("products.{$this->shop->id}.edit");
 
-        return $request->user()->authTo("products.{$this->shop->id}.view");
-    }
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
     {
@@ -66,41 +60,6 @@ class ShowCatalogue extends OrgAction
             $product                 = $shop->stats->{'top'.$timeUpdate.'Product'};
             $topProduct[$timeUpdate] = $product ? ProductResource::make($product) : null;
         }
-
-        $totalProducts = $shop->stats->number_products;
-
-        $productsWithZeroQuantity = $shop->products()
-            ->where('available_quantity', 0)
-            ->count();
-
-        $percentageWithZeroQuantity = ($totalProducts > 0)
-            ? round(($productsWithZeroQuantity / $totalProducts) * 100, 2)
-            : 0;
-
-
-        //        $departmentsData = [
-        //            [
-        //                'label' => __('Departments'),
-        //                'icon'  => 'fal fa-folder-tree',
-        //                'value' => $shop->stats->number_departments,
-        //            ],
-        //            [
-        //                'label' => __('Current Departments'),
-        //                'icon'  => 'fal fa-folder-tree',
-        //                'value' => $shop->stats->number_current_departments,
-        //            ],
-        //            [
-        //                'label' => __('Discontinuing Departments'),
-        //                'icon'  => 'fal fa-folder-tree',
-        //                'value' => $shop->stats->number_departments_state_discontinuing,
-        //            ],
-        //            [
-        //                'label' => __('Departments In Process'),
-        //                'icon'  => 'fal fa-folder-tree',
-        //                'value' => $shop->stats->number_departments_state_in_process,
-        //            ],
-        //
-        //        ];
 
 
         return Inertia::render(
@@ -156,15 +115,22 @@ class ShowCatalogue extends OrgAction
                         'value' => $shop->stats->number_current_departments,
 
 
-                        'metaRight'  => [
+                        'metaRight' => [
                             'tooltip' => __('Sub Departments'),
                             'icon'    => [
                                 'icon'  => 'fal fa-folder-tree',
                                 'class' => ''
                             ],
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.catalogue.sub_departments.index',
+                                'parameters' => [
+                                    'organisation' => $shop->organisation->slug,
+                                    'shop'         => $shop->slug
+                                ]
+                            ],
                             'count'   => $shop->stats->number_current_sub_departments,
                         ],
-                        'metas' => [
+                        'metas'     => [
 
                             [
                                 'tooltip' => __('Active departments'),
@@ -174,11 +140,11 @@ class ShowCatalogue extends OrgAction
                                     "class"   => "text-green-500"
                                 ],
                                 'count'   => $shop->stats->number_departments_state_active,
-                                'route' => [
+                                'route'   => [
                                     'name'       => 'grp.org.shops.show.catalogue.departments.index',
                                     'parameters' => [
-                                        'organisation' => $shop->organisation->slug,
-                                        'shop'         => $shop->slug,
+                                        'organisation'          => $shop->organisation->slug,
+                                        'shop'                  => $shop->slug,
                                         'index_elements[state]' => 'active'
                                     ]
                                 ],
@@ -191,11 +157,11 @@ class ShowCatalogue extends OrgAction
                                     'class' => 'text-amber-500'
                                 ],
                                 'count'   => $shop->stats->number_departments_state_discontinuing,
-                                'route' => [
+                                'route'   => [
                                     'name'       => 'grp.org.shops.show.catalogue.departments.index',
                                     'parameters' => [
-                                        'organisation' => $shop->organisation->slug,
-                                        'shop'         => $shop->slug,
+                                        'organisation'          => $shop->organisation->slug,
+                                        'shop'                  => $shop->slug,
                                         'index_elements[state]' => 'discontinuing'
                                     ]
                                 ],
@@ -207,11 +173,11 @@ class ShowCatalogue extends OrgAction
                                     'class' => 'text-red-500'
                                 ],
                                 'count'   => $shop->stats->number_departments_state_discontinued,
-                                'route' => [
+                                'route'   => [
                                     'name'       => 'grp.org.shops.show.catalogue.departments.index',
                                     'parameters' => [
-                                        'organisation' => $shop->organisation->slug,
-                                        'shop'         => $shop->slug,
+                                        'organisation'          => $shop->organisation->slug,
+                                        'shop'                  => $shop->slug,
                                         'index_elements[state]' => 'discontinued'
                                     ]
                                 ],
@@ -223,11 +189,11 @@ class ShowCatalogue extends OrgAction
                                     'class' => 'text-green-500 animate-pulse'
                                 ],
                                 'count'   => $shop->stats->number_departments_state_in_process,
-                                'route' => [
+                                'route'   => [
                                     'name'       => 'grp.org.shops.show.catalogue.departments.index',
                                     'parameters' => [
-                                        'organisation' => $shop->organisation->slug,
-                                        'shop'         => $shop->slug,
+                                        'organisation'          => $shop->organisation->slug,
+                                        'shop'                  => $shop->slug,
                                         'index_elements[state]' => 'in_process'
                                     ]
                                 ],
@@ -237,7 +203,7 @@ class ShowCatalogue extends OrgAction
                     [
                         'label' => __('Families'),
                         'route' => [
-                            'name'       => 'grp.org.shops.show.catalogue.families.index',        // TODO
+                            'name'       => 'grp.org.shops.show.catalogue.families.index',
                             'parameters' => [
                                 'organisation' => $shop->organisation->slug,
                                 'shop'         => $shop->slug
@@ -255,11 +221,11 @@ class ShowCatalogue extends OrgAction
                                     "class"   => "text-green-500"
                                 ],
                                 'count'   => $shop->stats->number_families_state_active,
-                                'route' => [
+                                'route'   => [
                                     'name'       => 'grp.org.shops.show.catalogue.families.index',
                                     'parameters' => [
-                                        'organisation' => $shop->organisation->slug,
-                                        'shop'         => $shop->slug,
+                                        'organisation'          => $shop->organisation->slug,
+                                        'shop'                  => $shop->slug,
                                         'index_elements[state]' => 'active'
                                     ]
                                 ],
@@ -271,11 +237,11 @@ class ShowCatalogue extends OrgAction
                                     'class' => 'text-amber-500'
                                 ],
                                 'count'   => $shop->stats->number_families_state_discontinuing,
-                                'route' => [
+                                'route'   => [
                                     'name'       => 'grp.org.shops.show.catalogue.families.index',
                                     'parameters' => [
-                                        'organisation' => $shop->organisation->slug,
-                                        'shop'         => $shop->slug,
+                                        'organisation'          => $shop->organisation->slug,
+                                        'shop'                  => $shop->slug,
                                         'index_elements[state]' => 'discontinuing'
                                     ]
                                 ],
@@ -287,11 +253,11 @@ class ShowCatalogue extends OrgAction
                                     'class' => 'text-red-500'
                                 ],
                                 'count'   => $shop->stats->number_families_state_discontinued,
-                                'route' => [
+                                'route'   => [
                                     'name'       => 'grp.org.shops.show.catalogue.families.index',
                                     'parameters' => [
-                                        'organisation' => $shop->organisation->slug,
-                                        'shop'         => $shop->slug,
+                                        'organisation'          => $shop->organisation->slug,
+                                        'shop'                  => $shop->slug,
                                         'index_elements[state]' => 'discontinued'
                                     ]
                                 ],
@@ -303,11 +269,11 @@ class ShowCatalogue extends OrgAction
                                     'class' => 'text-green-500 animate-pulse'
                                 ],
                                 'count'   => $shop->stats->number_families_state_in_process,
-                                'route' => [
+                                'route'   => [
                                     'name'       => 'grp.org.shops.show.catalogue.families.index',
                                     'parameters' => [
-                                        'organisation' => $shop->organisation->slug,
-                                        'shop'         => $shop->slug,
+                                        'organisation'          => $shop->organisation->slug,
+                                        'shop'                  => $shop->slug,
                                         'index_elements[state]' => 'in_process'
                                     ]
                                 ],
@@ -315,18 +281,18 @@ class ShowCatalogue extends OrgAction
                         ]
                     ],
                     [
-                        'label' => __('Current Products'),
-                        'route' => [
-                            'name'       => 'grp.org.shops.show.catalogue.products.current_products.index',        // TODO
+                        'label'     => __('Current Products'),
+                        'route'     => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.current_products.index',
                             'parameters' => [
                                 'organisation' => $shop->organisation->slug,
                                 'shop'         => $shop->slug
                             ]
                         ],
-                        'icon'  => 'fal fa-cube',
-                        "color" => "#38bdf8",
-                        'value' => $shop->stats->number_current_products,
-                        'metaRight'  => [
+                        'icon'      => 'fal fa-cube',
+                        "color"     => "#38bdf8",
+                        'value'     => $shop->stats->number_current_products,
+                        'metaRight' => [
                             'tooltip' => __('Variants'),
                             'icon'    => [
                                 'icon'  => 'fal fa-cubes',
@@ -334,7 +300,7 @@ class ShowCatalogue extends OrgAction
                             ],
                             'count'   => $shop->stats->number_current_product_variants,
                         ],
-                        'metas' => [
+                        'metas'     => [
 
                             [
                                 "icon"    => [
@@ -344,7 +310,7 @@ class ShowCatalogue extends OrgAction
                                 ],
                                 "count"   => $shop->stats->number_products_state_active,
                                 "tooltip" => "Active",
-                                'route' => [
+                                'route'   => [
                                     'name'       => 'grp.org.shops.show.catalogue.products.current_products.index',
                                     'parameters' => [
                                         'organisation' => $shop->organisation->slug,
@@ -369,7 +335,7 @@ class ShowCatalogue extends OrgAction
                                 ],
                                 "count"   => $shop->stats->number_products_state_discontinued,
                                 "tooltip" => "Discontinued",
-                                'route' => [
+                                'route'   => [
                                     'name'       => 'grp.org.shops.show.catalogue.products.discontinued_products.index',
                                     'parameters' => [
                                         'organisation' => $shop->organisation->slug,
@@ -384,7 +350,7 @@ class ShowCatalogue extends OrgAction
                                     'class' => 'text-green-500 animate-pulse'
                                 ],
                                 "count"   => $shop->stats->number_products_state_in_process,
-                                'route' => [
+                                'route'   => [
                                     'name'       => 'grp.org.shops.show.catalogue.products.in_process_products.index',
                                     'parameters' => [
                                         'organisation' => $shop->organisation->slug,
@@ -397,7 +363,7 @@ class ShowCatalogue extends OrgAction
                     [
                         'label' => __('Collections'),
                         'route' => [
-                            'name'       => 'grp.org.shops.show.catalogue.collections.index',        // TODO
+                            'name'       => 'grp.org.shops.show.catalogue.collections.active.index',
                             'parameters' => [
                                 'organisation' => $shop->organisation->slug,
                                 'shop'         => $shop->slug
@@ -405,37 +371,71 @@ class ShowCatalogue extends OrgAction
                         ],
                         'icon'  => 'fal fa-album-collection',
                         "color" => "#4f46e5",
-                        'value' => $shop->stats->number_collections,
+                        'value' => $shop->stats->number_collections_state_active,
+                        'metas' => [
+                            [
+                                'hide'    => $shop->stats->number_collections_products_status_discontinuing == 0,
+                                'tooltip' => __('Discontinuing collections'),
+                                'icon'    => [
+                                    'icon'  => 'fas fa-exclamation-triangle',
+                                    'class' => 'text-amber-500'
+                                ],
+                                'count'   => $shop->stats->number_collections_products_status_discontinuing,
+                                'route'   => [
+                                    'name'       => 'grp.org.shops.show.catalogue.collections.active.index',
+                                    'parameters' => [
+                                        'organisation'    => $shop->organisation->slug,
+                                        'shop'            => $shop->slug,
+                                        'elements[state]' => 'discontinuing'
+                                    ]
+                                ],
+                            ],
+                            [
+                                'hide'    => $shop->stats->number_collections_products_status_discontinued == 0,
+                                'tooltip' => __('Discontinued collections'),
+                                'icon'    => [
+                                    'icon'  => 'fas fa-exclamation-triangle',
+                                    'class' => 'text-red-500'
+                                ],
+                                'count'   => $shop->stats->number_collections_products_status_discontinued,
+                                'route'   => [
+                                    'name'       => 'grp.org.shops.show.catalogue.collections.active.index',
+                                    'parameters' => [
+                                        'organisation'    => $shop->organisation->slug,
+                                        'shop'            => $shop->slug,
+                                        'elements[state]' => 'discontinued'
+                                    ]
+                                ],
+                            ],
+                        ]
                     ],
                     [
-                        'label' => __('Stray Families'),
-                        'is_negative' => true,
-                        'route' => [
+                        'label'           => __('Stray Families'),
+                        'is_negative'     => true,
+                        'route'           => [
                             'name'       => 'grp.org.shops.show.catalogue.families.no_department.index',
                             'parameters' => [
                                 'organisation' => $shop->organisation->slug,
                                 'shop'         => $shop->slug
                             ]
                         ],
-                        'icon'  => 'fal fa-folder',
-                        "xcolor" => "#ff0000",
+                        'icon'            => 'fal fa-folder',
                         "backgroundColor" => "#ff000011",
-                        'value' => $shop->stats->number_families_no_department,
+                        'value'           => $shop->stats->number_families_no_department,
                     ],
                     [
-                        'label' => __('Orphan Products'),
-                        'is_negative' => true,
-                        'route' => [
+                        'label'           => __('Orphan Products'),
+                        'is_negative'     => true,
+                        'route'           => [
                             'name'       => 'grp.org.shops.show.catalogue.products.orphan_products.index',
                             'parameters' => [
                                 'organisation' => $shop->organisation->slug,
                                 'shop'         => $shop->slug
                             ]
                         ],
-                        'icon'  => 'fal fa-cube',
-                        "xcolor" => "#ff0000",
+                        'icon'            => 'fal fa-cube',
                         "backgroundColor" => "#ff000011",
-                        'value' => $shop->stats->number_products_no_family,
+                        'value'           => $shop->stats->number_products_no_family,
                     ],
                 ]
 

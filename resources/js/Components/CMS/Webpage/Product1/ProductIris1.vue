@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { faCube, faLink, faHeart } from "@fal"
-import { faBox } from "@far"
 import { faCircle, faHeart as fasHeart, faDotCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -157,13 +156,16 @@ const fetchProductExistInChannel = async () => {
     }
 }
 
+
 onMounted(() => {
-    fetchProductExistInChannel()
-  requestAnimationFrame(() => {
-    if (contentRef.value.scrollHeight > 100) {
-      showButton.value = true
+    if (layout.iris?.customer && layout?.iris?.is_logged_in) {
+        fetchProductExistInChannel()
     }
-  })
+    requestAnimationFrame(() => {
+        if (contentRef.value.scrollHeight > 100) {
+            showButton.value = true
+        }
+    })
 })
 
 const toggleExpanded = () => {
@@ -203,7 +205,7 @@ const toggleExpanded = () => {
                             <div class="flex items-center gap-[1px]">
                             </div>
                         </div>
-                        <div class="flex items-center gap-2 text-sm text-gray-600 mb-4">
+                        <div v-if="layout?.iris?.is_logged_in" class="flex items-center gap-2 text-sm text-gray-600 mb-4">
                             <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
                                 :class="fieldValue.product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
                             <span>
@@ -218,12 +220,12 @@ const toggleExpanded = () => {
                     <div class="h-full flex items-start">
                         <!-- Favorite Icon -->
                         <template v-if="layout?.retina?.type != 'dropshipping' && layout.iris?.is_logged_in">
-                            <div v-if="isLoadingFavourite" class="xabsolute top-2 right-2 text-gray-500 text-2xl">
+                            <div v-if="isLoadingFavourite" class="top-2 right-2 text-gray-500 text-2xl">
                                 <LoadingIcon />
                             </div>
                             <div v-else
                                 @click="() => fieldValue.product.is_favourite ? onUnselectFavourite(fieldValue.product) : onAddFavourite(fieldValue.product)"
-                                class="cursor-pointer xabsolute top-2 right-2 group text-2xl ">
+                                class="cursor-pointer top-2 right-2 group text-2xl ">
                                 <FontAwesomeIcon v-if="fieldValue.product.is_favourite" :icon="fasHeart" fixed-width
                                     class="text-pink-500" />
                                 <span v-else class="">
@@ -242,7 +244,7 @@ const toggleExpanded = () => {
                         </template>
                     </div>
                 </div>
-                <div class="flex items-end pb-3 mb-3">
+                <div v-if="layout?.iris?.is_logged_in" class="flex items-end pb-3 mb-3">
                     <div class="text-gray-900 font-semibold text-3xl capitalize leading-none flex-grow min-w-0">
                         {{ locale.currencyFormat(currency?.code, fieldValue.product.price || 0) }}
 
@@ -261,7 +263,7 @@ const toggleExpanded = () => {
                     />
 
                     <!-- Skeleton loading -->
-                    <div v-if="isLoadingFetchExistenceChannels" class="absolute h-full w-full z-10 xopacity-40">
+                    <div v-if="isLoadingFetchExistenceChannels" class="absolute h-full w-full z-10">
                         <div class="h-full w-full skeleton rounded" />
                     </div>
 
@@ -310,7 +312,7 @@ const toggleExpanded = () => {
         <ImageProducts :images="fieldValue.product.images" />
         <div class="flex justify-between items-start gap-4 mt-4">
             <!-- Price + Unit Info -->
-            <div>
+            <div v-if="layout?.iris?.is_logged_in">
                 <div class="text-lg font-semibold">
                     {{ locale.currencyFormat(currency?.code, fieldValue.product.price || 0) }}
                     <span class="text-xs text-gray-500 ml-1">

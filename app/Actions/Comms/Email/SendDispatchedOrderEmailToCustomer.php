@@ -54,7 +54,7 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
                         <tr style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
                             <td class="content-block" style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0; padding: 0 0 20px;" valign="top">
                                 <h2 style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 18px; color: #000; line-height: 1.2em; font-weight: 400; margin: 0 0 15px;">
-                                    <!--[if mso]><span style="font-family: Arial, sans-serif;" class="fallback-text">Order Details</span><![endif]-->
+                                    <!--[if mso]><span style="font-family: Arial, sans-serif" class="fallback-text">Order Details</span><![endif]-->
                                     <!--[if !mso]><!--><span class="fallback-text">Order Details</span><!--<![endif]-->
                                 </h2>
                             </td>
@@ -140,18 +140,17 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
                 'date'            => $order->created_at->format('F jS, Y'),
                 'order_link'      => $orderUrl,
                 'invoice_link'    => $invoiceUrl,
-                'tracking_url'    => $this->getTrackingUrl($order),
             ]
         );
     }
 
 
-    public string $commandSignature = 'order:send-dispatched-email';
+    public string $commandSignature = 'test:send-dispatched-email';
 
 
-    public function asCommand()
+    public function asCommand(): void
     {
-        $order = Order::where('slug', 'awd150095')->first();
+        $order = Order::where('slug', 'awd151487')->first();
 
         $this->handle($order);
     }
@@ -169,8 +168,8 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
         foreach ($shipments as $shipment) {
             $shipperName = $shipment['name'] ?? 'Unknown';
 
-            if (!empty($shipment['tracking_urls'])) {
-                foreach ($shipment['tracking_urls'] as $trackingData) {
+            if (!empty($shipment['formatted_tracking_urls'])) {
+                foreach ($shipment['formatted_tracking_urls'] as $trackingData) {
                     $trackingNumber = $trackingData['tracking'] ?? '';
                     $trackingUrl = $trackingData['url'] ?? '';
 
@@ -188,9 +187,13 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
             }
         }
 
+
         return $html ?: '<span class="fallback-text">No tracking information available</span>';
     }
-    
+
+
+
+
     private function generateInvoicePdfHtml($invoices): string
     {
         $html = '';

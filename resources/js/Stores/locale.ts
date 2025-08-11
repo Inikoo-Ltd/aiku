@@ -17,6 +17,7 @@ export const useLocaleStore = defineStore("locale", () => {
 		name: "English",
 	})
 	const languageOptions = ref<Language[]>([language.value])
+	const languageAssetsOptions = ref<Language[]>([language.value])
 	const currencyInertia = ref({})
 
 	const number = (number: number) => {
@@ -68,5 +69,5 @@ export const useLocaleStore = defineStore("locale", () => {
 
 	}
 
-	return { language, languageOptions, number, currencyFormat, CurrencyShort, currencySymbol }
+	return { language, languageOptions, number, currencyFormat, CurrencyShort, currencySymbol, languageAssetsOptions  }
 })

@@ -247,7 +247,7 @@ class IndexOrders extends OrgAction
             'customers.name as customer_name',
         ])
             ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
-            ->allowedSorts(['id', 'reference', 'date']) // Ensure `id` is the first sort column
+            ->allowedSorts(['id', 'reference', 'date', 'net_amount']) // Ensure `id` is the first sort column
             ->withBetweenDates(['date'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -302,12 +302,12 @@ class IndexOrders extends OrgAction
 
             $table->column(key: 'state', label: '', canBeHidden: false, searchable: true, type: 'icon');
             $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
+            $table->column(key: 'date', label: __('Created date'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
             if ($parent instanceof Shop) {
                 $table->column(key: 'customer_name', label: __('customer'), canBeHidden: false, searchable: true);
             }
             $table->column(key: 'payment_status', label: __('payment'), canBeHidden: false, searchable: true);
-            $table->column(key: 'net_amount', label: __('net'), canBeHidden: false, searchable: true, type: 'currency');
+            $table->column(key: 'net_amount', label: __('net'), canBeHidden: false, searchable: true, sortable:true, type: 'currency');
         };
     }
 
@@ -455,6 +455,10 @@ class IndexOrders extends OrgAction
                 OrdersTabsEnum::ORDERS->value => $this->tab == OrdersTabsEnum::ORDERS->value ?
                     fn () => OrdersResource::collection($orders)
                     : Inertia::lazy(fn () => OrdersResource::collection($orders)),
+
+                OrdersTabsEnum::LAST_ORDERS->value => $this->tab == OrdersTabsEnum::LAST_ORDERS->value ?
+                    fn () => GetLastOrders::run($shop)
+                    : Inertia::lazy(fn () => GetLastOrders::run($shop)),
             ]
         )->table($this->tableStructure($this->parent, OrdersTabsEnum::ORDERS->value, $this->bucket));
     }
@@ -492,11 +496,11 @@ class IndexOrders extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $platform, CustomerClient $customerClient, ActionRequest $request): LengthAwarePaginator
+    public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, CustomerClient $customerClient, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket               = 'all';
         $this->parent               = $customerClient;
-        $this->customerSalesChannel = $platform;
+        $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisationFromShop($shop, $request)->withTab(OrdersTabsEnum::values());
 
         return $this->handle(parent: $customerClient, prefix: OrdersTabsEnum::ORDERS->value);

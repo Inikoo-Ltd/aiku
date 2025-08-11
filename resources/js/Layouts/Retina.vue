@@ -24,7 +24,7 @@ import { isArray } from "lodash-es"
 import { confetti } from '@tsparticles/confetti'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faExclamationTriangle, faCheckCircle as fasCheckCircle, faInfoCircle, faTrashAlt, faCopy } from "@fal"
+import { faExclamationTriangle, faCheckCircle as fasCheckCircle, faInfoCircle, faBox, faHandsHelping, faChair, faTrashAlt, faCopy, faStickyNote } from "@fal"
 import { faExclamationTriangle as fasExclamationTriangle, faCheckCircle, faExclamationCircle, faInfo, faCircle } from '@fas'
 import Modal from "@/Components/Utils/Modal.vue"
 import { trans } from "laravel-vue-i18n"
@@ -32,7 +32,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { faSearch, faBell, faPlus } from '@far'
 import { faExclamationTriangle as fadExclamationTriangle } from '@fad'
 
-library.add(fasExclamationTriangle, faExclamationTriangle, faTimesCircle, faExternalLink, faSeedling, faSkull, fasCheckCircle, faExclamationCircle, faInfo, faCircle, faInfoCircle, faTrashAlt, faCopy)
+library.add(fasExclamationTriangle, faExclamationTriangle, faTimesCircle, faExternalLink, faSeedling, faSkull, fasCheckCircle, faExclamationCircle, faInfo, faCircle, faInfoCircle, faBox, faHandsHelping, faChair, faTrashAlt, faCopy, faStickyNote)
 library.add(fadExclamationTriangle, faCheckCircle, faNarwhal, falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faSearch, faBell, faPlus)
 
 
@@ -45,7 +45,7 @@ const layout = useLayoutStore()
 
 // Flash: Notification
 watch(() => usePage().props?.flash?.notification, (notif) => {
-    console.log('notif ret', notif)
+    // console.log('notif ret', notif)
     if (!notif) return
 
     notify({
@@ -98,7 +98,7 @@ const shootMultipleConfetti = () => {
     }, 500);
 }
 watch(() => usePage().props?.flash?.confetti, (newVal) => {
-    console.log('confettixx ret', newVal)
+    // console.log('confettixx ret', newVal)
     if (!newVal) return
     
     shootMultipleConfetti()
@@ -109,7 +109,7 @@ watch(() => usePage().props?.flash?.confetti, (newVal) => {
 
 // Flash: GTM
 watch(() => usePage().props?.flash?.gtm, (newValue) => {
-    console.log('gtm ret', newValue)
+    // console.log('gtm ret', newValue)
     if (!newValue) return
 
     window.dataLayer = window.dataLayer || [];
@@ -131,7 +131,7 @@ interface Modal {
 const selectedModal = ref<Modal | null>(null)
 const isModalOpen = ref(false)
 watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
-    console.log('modal ret', modal)
+    // console.log('modal ret', modal)
     if (!modal) return
 
     selectedModal.value = modal
@@ -208,7 +208,7 @@ const getBgColorDependsOnStatus = (status: string) => {
 <template>
     <!-- Retina: Ds -->
     <RetinaLayoutDs
-        v-if="layout.retina?.type === 'dropshipping'"
+        v-if="layout.retina?.type === 'dropshipping' || layout.retina?.type === 'b2b'"
     >
         <template #default>
             <slot />
@@ -216,13 +216,13 @@ const getBgColorDependsOnStatus = (status: string) => {
     </RetinaLayoutDs>
 
     <!-- Retina: Ecom -->
-    <RetinaLayoutEcom
+    <!-- <RetinaLayoutEcom
         v-else-if="layout.retina?.type === 'b2b'"
     >
         <template #default>
             <slot />
         </template>
-    </RetinaLayoutEcom>
+    </RetinaLayoutEcom> -->
 
     <!-- Retina: Fulfilment -->
     <template v-else-if="layout.retina?.type === 'fulfilment'">

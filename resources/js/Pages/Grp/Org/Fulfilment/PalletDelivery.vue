@@ -34,7 +34,7 @@ import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
 import '@/Composables/Icon/PalletDeliveryStateEnum'
 
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faUser, faTruckCouch, faPallet, faPlus, faFilePdf, faIdCardAlt, faPaperclip, faEnvelope, faPhone, faConciergeBell, faCube, faCalendarDay, faPencil, faUndoAlt, faTrashAlt } from '@fal'
+import { faUser, faTruckCouch, faPallet, faPlus, faFilePdf, faIdCardAlt, faPaperclip, faEnvelope, faPhone, faConciergeBell, faCube, faCalendarDay, faPencil, faUndoAlt, faTrashAlt, faFileExcel } from '@fal'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue";
 
@@ -51,7 +51,7 @@ import HelpArticles from '@/Components/Utils/HelpArticles.vue'
 import ModalAfterConfirmationDelete from '@/Components/Utils/ModalAfterConfirmationDelete.vue'
 import ModalSupervisorList from '@/Components/Utils/ModalSupervisorList.vue'
 
-library.add(faUser, faTruckCouch, faPallet, faPlus, faFilePdf, faIdCardAlt, faPaperclip, faEnvelope, faPhone,faExclamationTriangle, faConciergeBell, faCube, faCalendarDay, faPencil, faUndoAlt, faTrashAlt)
+library.add(faUser, faFileExcel ,faTruckCouch, faPallet, faPlus, faFilePdf, faIdCardAlt, faPaperclip, faEnvelope, faPhone,faExclamationTriangle, faConciergeBell, faCube, faCalendarDay, faPencil, faUndoAlt, faTrashAlt)
 
 interface UploadSection {
     title: {
@@ -122,6 +122,7 @@ const props = defineProps<{
 		name: string
 		code: string
 	}[]
+    export_excel_route: {}
     upload_pallet: UploadSection
     upload_stored_item: UploadSection
 
@@ -332,6 +333,7 @@ const isModalUploadFileOpen = ref(false)
 <!-- {{ props.service_list_route.name }} -->
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
+        
         <!-- Button: Upload -->
         <template #button-group-upload="{ action }">
             <Menu v-slot="{ close }" as="div" class="relative inline-block text-left">
@@ -730,6 +732,20 @@ const isModalUploadFileOpen = ref(false)
         </template>
         
         <template #other>
+            <a v-if="export_excel_route" :href="export_excel_route?.name ? route(export_excel_route?.name, export_excel_route.parameters) : '#'"
+                    as="a" target="_blank" class="flex items-center">
+                <Button
+                    v-if="export_excel_route"
+                    :href="'#'"
+                    :label="`${trans('Excel')}`"
+                    icon="fal fa-file-excel"
+                    type="secondary"
+                    target="_blank"
+                    class="text-gray-600 hover:text-green-600 transition-colors duration-200"
+                />
+            </a>
+        </template>
+        <!-- <template #other>
             <Button
                 v-if="currentTab === 'attachments'"
                 @click="() => isModalUploadFileOpen = true"
@@ -737,7 +753,7 @@ const isModalUploadFileOpen = ref(false)
                 icon="fal fa-upload"
                 type="secondary"
             />
-        </template>
+        </template> -->
     </PageHeading> 
 
     <!-- Section: Pallet Warning -->

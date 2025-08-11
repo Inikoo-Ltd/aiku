@@ -220,6 +220,7 @@ class ShowWebpage extends OrgAction
                 'type'  => 'button',
                 'style' => 'edit',
                 'icon'  => ["fal", "fa-folder"],
+                'tooltip' => __('See Family'),
                 'route' => [
                     'name'       => 'grp.org.shops.show.catalogue.families.show',
                     'parameters' => [
@@ -255,13 +256,13 @@ class ShowWebpage extends OrgAction
                 ];
             }
 
-            $actions[] = [
-                'type'    => 'button',
-                'style'   => 'edit',
-                'icon'    => ["fal", "fa-object-group"],
-                'tooltip' => __('blueprint'),
-                'route'   => $workshopRoute
-            ];
+            /*  $actions[] = [
+                 'type'    => 'button',
+                 'style'   => 'edit',
+                 'icon'    => ["fal", "fa-object-group"],
+                 'tooltip' => __('Blueprint'),
+                 'route'   => $workshopRoute
+             ]; */
         }
 
 
@@ -349,6 +350,7 @@ class ShowWebpage extends OrgAction
                     'navigation' => WebpageTabsEnum::navigation()
                 ],
                 'root_active' => $subNavigationRoot,
+                'webpage_url'   => $webpage->getUrl(),
 
                 WebpageTabsEnum::SHOWCASE->value => $this->tab == WebpageTabsEnum::SHOWCASE->value ?
                     fn () => WebpageResource::make($webpage)->getArray()

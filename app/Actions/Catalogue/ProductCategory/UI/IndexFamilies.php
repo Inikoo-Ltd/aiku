@@ -29,10 +29,14 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedSort;
+use Spatie\QueryBuilder\Sorts\Sort;
+use Illuminate\Database\Eloquent\Builder;
 
 class IndexFamilies extends OrgAction
 {
@@ -111,7 +115,6 @@ class IndexFamilies extends OrgAction
             );
         }
 
-
         $queryBuilder->leftJoin('shops', 'product_categories.shop_id', 'shops.id');
         $queryBuilder->leftJoin('organisations', 'product_categories.organisation_id', '=', 'organisations.id');
         $queryBuilder->leftJoin('product_category_sales_intervals', 'product_category_sales_intervals.product_category_id', 'product_categories.id');
@@ -132,7 +135,6 @@ class IndexFamilies extends OrgAction
                 abort(419);
             }
         }
-
 
         return $queryBuilder
             ->defaultSort('product_categories.code')
@@ -160,13 +162,50 @@ class IndexFamilies extends OrgAction
                 'organisations.slug as organisation_slug',
                 'product_category_sales_intervals.sales_grp_currency_all as sales_all',
                 'product_category_ordering_intervals.invoices_all as invoices_all',
-
+                DB::raw("(
+                    SELECT json_agg(json_build_object(
+                        'id', c.id,
+                        'slug', c.slug,
+                        'code', c.code,
+                        'name', c.name
+                    ))
+                    FROM collection_has_models chm
+                    JOIN collections c ON chm.collection_id = c.id
+                    WHERE chm.model_id = product_categories.id
+                        AND chm.model_type = 'ProductCategory'
+                        AND c.deleted_at IS NULL
+                )::text as collections"),
             ])
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
             ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
             ->leftjoin('product_categories as departments', 'departments.id', 'product_categories.department_id')
             ->leftjoin('product_categories as sub_departments', 'sub_departments.id', 'product_categories.sub_department_id')
-            ->allowedSorts(['code', 'name', 'shop_code', 'department_code', 'number_current_products', 'sub_department_name', 'department_name'])
+            ->allowedSorts([
+                'code',
+                'name',
+                'shop_code',
+                'department_code',
+                'number_current_products',
+                'sub_department_name',
+                'department_name',
+                AllowedSort::custom('collections', new class implements Sort {
+                    public function __invoke(Builder $query, bool $descending, string $property)
+                    {
+                        $direction = $descending ? 'desc' : 'asc';
+                        $query->orderBy(
+                            DB::raw("(
+                                SELECT json_agg(c.name)
+                                FROM collection_has_models chm
+                                JOIN collections c ON chm.collection_id = c.id
+                                WHERE chm.model_id = product_categories.id
+                                AND chm.model_type = 'ProductCategory'
+                                AND c.deleted_at IS NULL
+                            )::text"),
+                            $direction
+                        );
+                    }
+                })
+            ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -178,7 +217,7 @@ class IndexFamilies extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
 
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
@@ -244,6 +283,7 @@ class IndexFamilies extends OrgAction
                 }
 
                 if (class_basename($parent) != 'Collection') {
+                    $table->column(key: 'collections', label: __('collections'), canBeHidden: false, sortable: true, searchable: true);
                     $table->column(key: 'number_current_products', label: __('current products'), canBeHidden: false, sortable: true, searchable: true);
                 }
 
@@ -328,9 +368,6 @@ class IndexFamilies extends OrgAction
                     'icon'  => ['fal', 'fa-folder-tree'],
                     'title' => __('department')
                 ];
-                // $iconRight  = [
-                //     'icon' => 'fal fa-folder',
-                // ];
                 $iconRight  = $this->parent->state->stateIcon()[$this->parent->state->value];
                 $afterTitle = [
 
@@ -343,9 +380,6 @@ class IndexFamilies extends OrgAction
                     'icon'  => ['fal', 'fa-dot-circle'],
                     'title' => __('sub department')
                 ];
-                // $iconRight  = [
-                //     'icon' => 'fal fa-folder',
-                // ];
                 $iconRight  = $this->parent->state->stateIcon()[$this->parent->state->value];
                 $afterTitle = [
 
@@ -408,12 +442,12 @@ class IndexFamilies extends OrgAction
                     'navigation' => $navigation,
                 ],
                 ProductCategoryTabsEnum::INDEX->value => $this->tab == ProductCategoryTabsEnum::INDEX->value ?
-                    fn () => FamiliesResource::collection($families)
-                    : Inertia::lazy(fn () => FamiliesResource::collection($families)),
+                    fn() => FamiliesResource::collection($families)
+                    : Inertia::lazy(fn() => FamiliesResource::collection($families)),
 
                 ProductCategoryTabsEnum::SALES->value => $this->tab == ProductCategoryTabsEnum::SALES->value ?
-                    fn () => FamiliesResource::collection($families)
-                    : Inertia::lazy(fn () => FamiliesResource::collection($families)),
+                    fn() => FamiliesResource::collection($families)
+                    : Inertia::lazy(fn() => FamiliesResource::collection($families)),
             ]
         )->table($this->tableStructure(parent: $this->parent, modelOperations: null, canEdit: false, prefix: ProductCategoryTabsEnum::INDEX->value, sales: false))
             ->table($this->tableStructure(parent: $this->parent, modelOperations: null, canEdit: false, prefix: ProductCategoryTabsEnum::SALES->value, sales: $this->sales));

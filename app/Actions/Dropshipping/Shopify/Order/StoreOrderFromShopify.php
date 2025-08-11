@@ -45,20 +45,14 @@ class StoreOrderFromShopify extends OrgAction
     {
         $deliveryAddress = Arr::get($modelData, 'shipping_address');
 
-        if (! $deliveryAddress) {
-            return;
-        }
-
         $customerClient = $this->digestShopifyCustomerClient($shopifyUser, $modelData);
         $shopifyProducts = collect($modelData['line_items']);
         $attributes = $this->getShopifyAttributesFromWebhook(Arr::get($modelData, 'customer'), $deliveryAddress);
         $deliveryAddress = Arr::get($attributes, 'address');
 
-
         $shopifyUserHasProductExists = $shopifyUser->customerSalesChannel->portfolios()
             ->whereIn('platform_product_id', $shopifyProducts->pluck('product_id'))->exists();
-
-        $existOrder = Order::where('platform_order_id', Arr::get($modelData, 'order_id'))->first();
+        $existOrder = Order::where('platform_order_id', Arr::get($modelData, 'id'))->first();
 
         if ($existOrder) {
             return;
@@ -71,27 +65,27 @@ class StoreOrderFromShopify extends OrgAction
                 'date'                      => $modelData['created_at'],
                 'delivery_address'          => new Address($deliveryAddress),
                 'data'                      => ['shopify_data' => $modelData],
-                'platform_order_id'         => Arr::get($modelData, 'order_id'),
+                'platform_order_id'         => Arr::get($modelData, 'id'),
 
             ]);
 
             foreach ($shopifyProducts as $shopifyProduct) {
-                /** @var Portfolio $shopifyUserHasProduct */
-                $shopifyUserHasProduct = $shopifyUser->customerSalesChannel->portfolios()
+                /** @var Portfolio $portfolio */
+                $portfolio = $shopifyUser->customerSalesChannel->portfolios()
                     ->where('platform_product_id', $shopifyProduct['product_id'])->first();
 
-                if ($shopifyUserHasProduct) {
+                if ($portfolio) {
                     /** @var Product $product */
-                    $product = $shopifyUserHasProduct->item;
+                    $product = $portfolio->item;
                     if (!$product) {
-                        \Sentry\captureMessage('ShopifyUserHasProduct '.$shopifyUserHasProduct->id.' does not have a product');
+                        \Sentry\captureMessage('Portfolio '.$portfolio->id.' does not have a product');
                         continue;
                     }
 
                     /** @var HistoricAsset $product */
                     $historicAsset = $product->asset?->historicAsset;
                     if (!$historicAsset) {
-                        \Sentry\captureMessage('ShopifyUserHasProduct '.$shopifyUserHasProduct->id.' does not have a historic asset');
+                        \Sentry\captureMessage('Portfolio '.$portfolio->id.' does not have a historic asset');
                         continue;
                     }
 
@@ -135,16 +129,16 @@ class StoreOrderFromShopify extends OrgAction
         if (!$customerClientID) {
             $customerClient = StoreCustomerClient::make()->action($shopifyUser->customerSalesChannel, [
                 'reference'    => $reference,
-                'email'        => Arr::get($attributes, 'customer.email'),
-                'contact_name' => trim(Arr::get($shopifyOrderData, 'customer.first_name').' '.Arr::get($shopifyOrderData, 'customer.last_name')),
+                'email'        => Arr::get($shopifyOrderData, 'customer.email'),
+                'contact_name' => trim(Arr::get($shopifyOrderData, 'customer.firstName').' '.Arr::get($shopifyOrderData, 'customer.lastName')),
                 'phone'        => Arr::get($shopifyOrderData, 'customer.phone'),
                 'address'      => $deliveryAddress
             ]);
         } else {
             $customerClient = CustomerClient::find($customerClientID->id);
             $customerClient = UpdateCustomerClient::make()->action($customerClient, [
-                'email'        => Arr::get($attributes, 'customer.email'),
-                'contact_name' => trim(Arr::get($shopifyOrderData, 'customer.first_name').' '.Arr::get($shopifyOrderData, 'customer.last_name')),
+                'email'        => Arr::get($shopifyOrderData, 'customer.email'),
+                'contact_name' => trim(Arr::get($shopifyOrderData, 'customer.firstName').' '.Arr::get($shopifyOrderData, 'customer.lastName')),
                 'phone'        => Arr::get($shopifyOrderData, 'customer.phone'),
                 'address'      => $deliveryAddress
             ]);

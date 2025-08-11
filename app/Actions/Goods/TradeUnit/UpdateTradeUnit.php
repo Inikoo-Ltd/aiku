@@ -9,6 +9,7 @@
 namespace App\Actions\Goods\TradeUnit;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingIngredientsFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTradeUnitsFields;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
@@ -54,6 +55,12 @@ class UpdateTradeUnit extends GrpAction
         if ($tradeUnit->wasChanged('marketing_weight')) {
             foreach ($tradeUnit->products as $product) {
                 ProductHydrateMarketingWeightFromTradeUnits::dispatch($product);
+            }
+        }
+
+        if ($tradeUnit->wasChanged('marketing_ingredients')) {
+            foreach ($tradeUnit->products as $product) {
+                ProductHydrateMarketingIngredientsFromTradeUnits::dispatch($product);
             }
         }
 

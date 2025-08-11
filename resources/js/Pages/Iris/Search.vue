@@ -84,16 +84,18 @@ console.log("layout", layout)
 </script>
 
 <template>
-    <div class="py-16 w-full max-w-6xl mx-auto">
+    <div class="py-16 w-full mx-auto px-8">
         <input v-model="inputValue" class="block w-full max-w-lg mx-auto" id="inputXxxLuigi" style="border: 1px solid #d1d5db; border-radius: 7px;height: 45px;padding-left: 10px;" placeholder="Search"/>
         
-        <div id="luigi_result_search" class="mt-16 h-40">
-            <div class="flex gap-x-4 h-full">
-                <div class="w-96 skeleton">
-                </div>
-
-                <div class="w-full skeleton">
-
+        <div class="mt-16" :style="{
+            fontFamily: layout?.app?.webpage_layout?.container?.properties?.text?.fontFamily
+        }">
+            <div id="luigi_result_search" class="h-40">
+                <div class="flex gap-x-4 h-full">
+                    <div class="w-96 skeleton">
+                    </div>
+                    <div class="w-full skeleton">
+                    </div>
                 </div>
             </div>
         </div>
@@ -114,9 +116,58 @@ console.log("layout", layout)
   </div> -->
 </template>
 
-<style>
+<style lang="scss">
+
+
+// ===== Search Page: Result (start) ===== //
+.lb-container {
+    @apply box-border !important;
+}
+.lb-search__main {
+    @apply md:pl-7 box-border w-[77%] !important;
+}
+
+.lb-search__aside {
+    @apply max-w-64 !important;
+}
+
+.lb-results {
+    @apply gap-x-0 gap-y-4 !important;
+}
+
+.lb-search .lb-result {
+    @apply box-border !important;
+}
+
+.lb-result {
+    @apply lg:w-1/4 xl:w-[20%] !important;
+}
+
+.lb-search .lb-result__aside {
+    @apply h-[100px] md:h-[125px] aspect-square !important;
+}
+
+.lb-result__image {
+    @apply object-contain h-full w-full !important;
+}
+
+.lb-search .lb-result__image-wrapper {
+    @apply w-full aspect-square !important; 
+}
+
+.lb-search .lb-search__container {
+    @apply justify-center !important;
+}
+// ===== Search Page: Result (end) ===== //
+
+
+
 .lb-checkbox label.lb-facet__label {
     position: static !important;
+}
+
+.lb-search {
+    font-family: v-bind('layout?.app?.webpage_layout?.container?.properties?.text?.fontFamily') !important;
 }
 
 .lb-search-text-color-primary {

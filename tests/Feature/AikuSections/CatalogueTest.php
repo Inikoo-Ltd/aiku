@@ -676,10 +676,10 @@ test('hydrate families', function (ProductCategory $family) {
     $this->artisan('hydrate:families')->assertExitCode(0);
 })->depends('create family');
 
-test('hydrate products', function (Product $product) {
-    HydrateProducts::run($product);
+test('hydrate products', function () {
+    HydrateProducts::run(Product::first());
     $this->artisan('hydrate:products')->assertExitCode(0);
-})->depends('create product');
+});
 
 
 test('can show catalogue', function (Shop $shop) {

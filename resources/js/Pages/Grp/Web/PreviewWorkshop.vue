@@ -16,7 +16,10 @@ import "@/../css/Iris/editor.css"
 import { getStyles } from "@/Composables/styles";
 import { Root as RootWebpage } from '@/types/webpageTypes'
 import ButtonPreviewLogin from '@/Components/Workshop/Tools/ButtonPreviewLogin.vue';
-
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faTimes } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faTimes)
 
 defineOptions({ layout: WebPreview })
 const props = defineProps<{
@@ -52,6 +55,7 @@ const updateIrisLayout = (isLoggedIn: boolean) => {
     currency: defaultCurrency,
     is_logged_in: isLoggedIn,
   }
+  router.reload()
 }
 
 const showWebpage = (activityItem) => {
@@ -151,7 +155,7 @@ watch(isPreviewLoggedIn, (value) => {
 
 
 
-<style scoped lang="scss">
+<style  lang="scss">
 :deep(.hover-dashed) {
     @apply relative;
 
@@ -168,5 +172,9 @@ watch(isPreviewLoggedIn, (value) => {
         content: "";
         @apply -z-10 absolute inset-0 hover:bg-yellow-500/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
     }
+}
+
+#jsd-widget{
+    display: none !important;
 }
 </style>

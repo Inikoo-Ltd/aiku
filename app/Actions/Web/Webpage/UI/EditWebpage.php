@@ -66,7 +66,6 @@ class EditWebpage extends OrgAction
      */
     public function htmlResponse(Webpage $webpage, ActionRequest $request): Response
     {
-
         return Inertia::render(
             'EditModel',
             [
@@ -103,26 +102,7 @@ class EditWebpage extends OrgAction
                             'label'  => __('Webpage'),
                             'icon'   => 'fal fa-browser',
                             'fields' => [
-                                'title'       => [
-                                    'type'                => 'input',
-                                    'label'               => __('Title'),
-                                    'label_no_capitalize' => true,
-                                    'value'               => $webpage->title,
-                                    'required'            => true,
-                                ],
-                                'allow_fetch' => [
-                                    'type'  => 'toggle',
-                                    'label' => __('Allow fetch'),
-                                    'value' => $webpage->allow_fetch,
-                                ],
-                            ]
-                        ],
-                        [
-                            'label'  => __('Link Preview'),
-                            'icon'   => 'fal fa-image',
-                            'information' => __('The link preview is used by social media platforms to display a preview of the webpage when the url shared.'),
-                            'fields' => [
-                                "seo_image"         => [
+                                 "seo_image"         => [
                                     "type"    => "image_crop_square",
                                     "label"   => __("Preview image"),
                                     "value"   => $webpage->imageSources(1200, 1200, 'seoImage'),
@@ -131,23 +111,28 @@ class EditWebpage extends OrgAction
                                         "maxAspectRatio" => 12 / 4,
                                     ]
                                 ],
-                                'seo_title'         => [
+                                'title'       => [
                                     'type'                => 'input',
-                                    'label'               => __('Preview Title'),
+                                    'label'               => __('Title'),
                                     'label_no_capitalize' => true,
-                                    'value'               => $webpage->seo_title,
-                                    'required'            => false,
+                                    'value'               => $webpage->title,
+                                    'required'            => true,
                                 ],
-                                'description_title' => [
+                                 'description'       => [
                                     'type'                => 'textarea',
-                                    'label'               => __('Preview Description'),
+                                    'label'               => __('Description'),
                                     'label_no_capitalize' => true,
-                                    'value'               => $webpage->seo_description,
-                                    'required'            => false,
+                                    'value'               => $webpage->description,
+                                    'required'            => true,
+                                    "maxLength"     => 150,
+                                    "counter"       => true,
                                 ],
-
-
-                            ],
+                                'allow_fetch' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Allow fetch'),
+                                    'value' => $webpage->allow_fetch,
+                                ],
+                            ]
                         ],
                         [
                             'label'  => __('Structured data'),

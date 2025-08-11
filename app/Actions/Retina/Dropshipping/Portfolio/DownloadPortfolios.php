@@ -41,8 +41,8 @@ class DownloadPortfolios extends RetinaAction
             ]);
         } elseif ($type == 'portfolio_images') {
             $filename .= '_images.zip';
-            return response()->streamDownload(function () use ($customer, $customerSalesChannel) {
-                PortfoliosZipExport::make()->handle($customer, $customerSalesChannel);
+            return response()->streamDownload(function () use ($customerSalesChannel) {
+                PortfoliosZipExport::make()->handle($customerSalesChannel);
             }, $filename);
         } elseif ($type == 'portfolio_xlsx') {
             $filename .= '.xlsx';

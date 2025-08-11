@@ -12,7 +12,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\MagentoUser;
 use App\Models\Dropshipping\Portfolio;
-use App\Models\Dropshipping\WooCommerceUser;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -22,12 +21,12 @@ class DeleteProductFromMagento extends OrgAction
     use WithAttributes;
     use WithActionUpdate;
 
-    public function handle(?Portfolio $portfolio, bool $forceDelete = false, bool $fromWebhook = false): null|int|WooCommerceUser
+    public function handle(?Portfolio $portfolio, bool $forceDelete = false, bool $fromWebhook = false): null|int|MagentoUser
     {
         /** @var MagentoUser $magentoUser */
         $magentoUser = $portfolio->customerSalesChannel->user;
 
-        if (!$portfolio) {
+        if (!$magentoUser) {
             return null;
         }
 

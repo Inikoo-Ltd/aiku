@@ -145,7 +145,7 @@ class CreateWebpage extends OrgAction
                                         'required'  => true,
                                         'label'    => __('seo structure type'),
                                         'options'  => Options::forEnum(WebpageSeoStructureTypeEnum::class),
-                                        'value'    => '',
+                                        'value'    => null,
                                         'required' => false,
                                 ],
 

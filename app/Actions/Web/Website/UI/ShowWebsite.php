@@ -221,6 +221,30 @@ class ShowWebsite extends OrgAction
 
                 'route_storefront' => $route_storefront,
 
+                'route_redirects' => [
+                    'submit' => [
+                        'name'       => 'grp.models.website.redirect.store',
+                        'parameters' => [
+                            'organisation' => $shop->organisation->slug,
+                            'shop'         => $shop->slug,
+                            'website'      => $website->id
+                        ]
+                    ],
+                    'fetch_live_webpages' => [
+                        'name'       => 'grp.json.active_webpages.index',
+                        'parameters' => [
+                            'shop'         => $shop->slug,
+                        ]
+                    ],
+                ],
+
+                'luigi_data' => [
+                    'last_reindexed'           => Arr::get($website->settings, "luigisbox.last_reindex_at"),
+                    'luigisbox_tracker_id' => Arr::get($website->settings, "luigisbox.tracker_id"),
+                    'luigisbox_private_key'    => Arr::get($website->settings, "luigisbox.private_key"),
+                    'luigisbox_lbx_code'       => Arr::get($website->settings, "luigisbox.lbx_code"),
+                ],
+
                 WebsiteTabsEnum::SHOWCASE->value => $this->tab == WebsiteTabsEnum::SHOWCASE->value ? array_merge(WebsiteResource::make($website)->getArray(), ['layout' => GetWebsiteWorkshopLayout::run($this->parent, $website)['routeList']], ['stats' => $stats, 'content_blog_stats' => $content_blog_stats])
                     : Inertia::lazy(fn () => WebsiteResource::make($website)->getArray()),
 

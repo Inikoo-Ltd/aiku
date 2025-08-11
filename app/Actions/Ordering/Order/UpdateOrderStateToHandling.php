@@ -30,7 +30,11 @@ class UpdateOrderStateToHandling extends OrgAction
             'state' => OrderStateEnum::HANDLING
         ];
 
-        if (in_array($order->state, [OrderStateEnum::SUBMITTED, OrderStateEnum::IN_WAREHOUSE])) {
+        if (in_array($order->state, [
+            OrderStateEnum::SUBMITTED,
+            OrderStateEnum::IN_WAREHOUSE,
+            OrderStateEnum::HANDLING,
+        ])) {
             $order->transactions()->update([
                 'state' => TransactionStateEnum::HANDLING
             ]);

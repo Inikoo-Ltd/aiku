@@ -54,7 +54,6 @@ class UpdateDeliveryNote extends OrgAction
             }
         }
 
-
         return $deliveryNote;
     }
 
@@ -81,7 +80,12 @@ class UpdateDeliveryNote extends OrgAction
             'packer_id'      => ['sometimes'],
             'picker_user_id' => ['sometimes'],
             'packer_user_id' => ['sometimes'],
-            'parcels'        => ['sometimes', 'array']
+            'parcels'        => ['sometimes', 'array'],
+            'customer_notes'            => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'public_notes'              => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'internal_notes'            => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'shipping_notes'            => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'dispatched_at'             => ['sometimes', 'nullable', 'date'],
         ];
 
         if (!$this->strict) {

@@ -13,13 +13,13 @@
   import type { Component } from 'vue'
   import Tabs from "@/Components/Navigation/Tabs.vue"
 
-  import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
-  import CustomerClientShowcase from "@/Components/Showcases/Grp/CustomerClientShowcase.vue"
-  import TableWebUsers from "@/Components/Tables/Grp/Org/CRM/TableWebUsers.vue"
+//   import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
+//   import CustomerClientShowcase from "@/Components/Showcases/Grp/CustomerClientShowcase.vue"
+//   import TableWebUsers from "@/Components/Tables/Grp/Org/CRM/TableWebUsers.vue"
   import { PageHeading as PageHeadingTS } from '@/types/PageHeading'
-  import ModelDetails from "@/Components/ModelDetails.vue"
-  import TableOrders from "@/Components/Tables/Grp/Org/Ordering/TableOrders.vue"
-  import TableDispatchedEmails from "@/Components/Tables/TableDispatchedEmails.vue"
+//   import ModelDetails from "@/Components/ModelDetails.vue"
+//   import TableOrders from "@/Components/Tables/Grp/Org/Ordering/TableOrders.vue"
+//   import TableDispatchedEmails from "@/Components/Tables/TableDispatchedEmails.vue"
   const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
 
 

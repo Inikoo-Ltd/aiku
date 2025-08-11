@@ -3,5 +3,6 @@ group/
 tenants/
 ../../resources/private/firebase/aiku-firebase.json
 excel-uploads
+excel-exports
 mpdf
 tmp

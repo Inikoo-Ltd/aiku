@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\LocationOrgStock;
 
+use App\Actions\Maintenance\Dispatching\RepairOrgStockMissingLocationIds;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Inventory\LocationOrgStock;
@@ -29,6 +30,8 @@ class MoveOrgStockToOtherLocation extends OrgAction
         $this->update($targetLocation, [
             'quantity' => (int) $targetLocation->quantity + (int) $movementData['quantity'],
         ]);
+
+        RepairOrgStockMissingLocationIds::dispatch($targetLocation->orgStock);
 
         return $currentLocationStock;
     }

@@ -44,7 +44,7 @@ class FamiliesResource extends JsonResource
             $image        = $media->getImage()->resize($width, $height);
             $imageSources = GetPictureSources::run($image);
         }
-
+        $collections = $this->collections ? json_decode($this->collections, true) : [];
         return [
             'id'                 => $this->id,
             'slug'               => $this->slug,
@@ -57,7 +57,7 @@ class FamiliesResource extends JsonResource
             'sub_department_slug'    => $this->sub_department_slug,
             'sub_department_code'    => $this->sub_department_code,
             'sub_department_name'    => $this->sub_department_name,
-            'image'              =>  $imageSources ,
+            'image'              =>  $imageSources,
             'state'              => [
                 'tooltip' => $this->state->labels()[$this->state->value],
                 'icon'    => $this->state->stateIcon()[$this->state->value]['icon'],
@@ -69,6 +69,7 @@ class FamiliesResource extends JsonResource
             'created_at'               => $this->created_at,
             'updated_at'               => $this->updated_at,
             'number_current_products'  => $this->number_current_products,
+            'collections'       => $collections,
             'sales'                    => $this->sales_all,
             'invoices'                 => $this->invoices_all,
             'organisation_name' => $this->organisation_name,

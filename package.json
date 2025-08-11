@@ -112,6 +112,7 @@
         "patch-package": "^8.0.0",
         "pinia": "^2.0.20",
         "primevue": "^4.0.4",
+        "puppeteer": "^24.14.0",
         "pusher-js": "^8.4.0-rc2",
         "qrcode.vue": "^3.4.1",
         "qs": "^6.11.1",
