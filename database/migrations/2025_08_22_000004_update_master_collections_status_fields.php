@@ -17,6 +17,7 @@ return new class () extends Migration {
     {
         Schema::table('master_collections', function (Blueprint $table) {
             $table->dropColumn('status');
+            $table->unsignedInteger('image_id')->nullable();
             $table->string('state')->default(MasterCollectionStateEnum::IN_PROCESS->value)->index();
             $table->string('products_status')->default(MasterCollectionProductStatusEnum::NORMAL->value)->index();
         });
@@ -25,7 +26,7 @@ return new class () extends Migration {
     public function down(): void
     {
         Schema::table('master_collections', function (Blueprint $table) {
-            $table->dropColumn(['state', 'products_status']);
+            $table->dropColumn(['state', 'products_status', 'image_id']);
             $table->boolean('status')->default(true)->index();
         });
     }
