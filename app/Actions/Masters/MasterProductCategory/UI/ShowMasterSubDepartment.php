@@ -66,7 +66,7 @@ class ShowMasterSubDepartment extends GrpAction
         return Inertia::render(
             'Masters/MasterSubDepartment',
             [
-                'title'       => __('Sub-department'),
+                'title'       => __('master sub-department'),
                  'breadcrumbs' => $this->getBreadcrumbs(
                      $masterSubDepartment,
                      $request->route()->getName(),
@@ -78,10 +78,10 @@ class ShowMasterSubDepartment extends GrpAction
                 ],
                 'pageHead'    => [
                     'title'   => $masterSubDepartment->name,
-                    'model'   => __('Sub-department'),
+                    'model'   => __('master sub-department'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-folder-tree'],
-                        'title' => __('Sub-department')
+                        'title' => __('master sub-department')
                     ],
                     'actions' => [
                         $this->canEdit ? [
@@ -106,6 +106,27 @@ class ShowMasterSubDepartment extends GrpAction
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => MasterSubDepartmentTabsEnum::navigation()
+                ],
+
+                'routes' => [
+                    'fetch_families' => [
+                        'name'       => 'grp.json.master_product_category.families.index',
+                        'parameters' => [
+                            'masterProductCategory' => $masterSubDepartment->slug
+                        ]
+                    ],
+                    'attach_families' => [
+                        'name'       => 'grp.models.master-sub-department.families.attach',
+                        'parameters' => [
+                            'masterSubDepartment' => $masterSubDepartment->id
+                        ]
+                    ],
+                    'detach_families' => [
+                        'name'       => 'grp.models.master-sub-department.family.detach',
+                        'parameters' => [
+                            'masterSubDepartment' => $masterSubDepartment->id
+                        ]
+                    ]
                 ],
 
                 MasterSubDepartmentTabsEnum::SHOWCASE->value => $this->tab == MasterSubDepartmentTabsEnum::SHOWCASE->value ?
