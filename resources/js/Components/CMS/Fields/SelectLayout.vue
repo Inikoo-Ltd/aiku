@@ -27,9 +27,9 @@ const layouts = ref<Layout[]>([
   { name: "Layout Two Equal Images", layout_type: "2", grid: "grid-cols-2", images: 2 },
   { name: "Layout Three Equal Images", layout_type: "3", grid: "grid-cols-3", images: 3 },
   { name: "Layout Four Equal Images", layout_type: "4", grid: "grid-cols-4", images: 4 },
-   { name: "Layout six Equal Images", layout_type: "6", grid: "grid-cols-6", images: 6 },
-  { name: "Layout 12 (1/3, 2/3)", layout_type: "12", flex: ["w-1/3", "w-2/3"], images: 2 },
-  { name: "Layout 21 (2/3, 1/3)", layout_type: "21", flex: ["w-2/3", "w-1/3"], images: 2 },
+  { name: "Layout six Equal Images", layout_type: "6", grid: "grid-cols-6", images: 6 },
+ /*  { name: "Layout 12 (1/3, 2/3)", layout_type: "12", flex: ["w-1/3", "w-2/3"], images: 2 }, */
+  /* { name: "Layout 21 (2/3, 1/3)", layout_type: "21", flex: ["w-2/3", "w-1/3"], images: 2 }, */
   { name: "Layout 13 (1/4, 3/4)", layout_type: "13", flex: ["w-1/4", "w-3/4"], images: 2 },
   { name: "Layout 31 (3/4, 1/4)", layout_type: "31", flex: ["w-3/4", "w-1/4"], images: 2 },
   { name: "Layout One Large, Two Small", layout_type: "211", flex: ["w-1/2", "w-1/4", "w-1/4"], images: 3 },

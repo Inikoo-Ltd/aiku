@@ -209,9 +209,9 @@ const UnassignCollection = async (id: number) => {
 
       <TranslationBox 
         v-if="route().current()?.includes('master')"
-        :master="data.subDepartment.data" 
-        :needTranslation="data.subDepartment.data" 
-         v-bind="data.subDepartment.data.translation_box" 
+        :master="data.subDepartment" 
+        :needTranslation="data.subDepartment" 
+         v-bind="data.subDepartment.translation_box" 
     />
 </template>
 
