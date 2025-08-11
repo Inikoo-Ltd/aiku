@@ -12,6 +12,7 @@ use App\Actions\Inventory\Location\Hydrators\LocationHydrateStocks;
 use App\Actions\Inventory\Location\Hydrators\LocationHydrateStockValue;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateLocations;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
+use App\Actions\Maintenance\Dispatching\RepairOrgStockMissingLocationIds;
 use App\Actions\OrgAction;
 use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
 use App\Http\Resources\Inventory\LocationOrgStockResource;
@@ -40,7 +41,7 @@ class StoreLocationOrgStock extends OrgAction
 
 
         $locationStock = $location->locationOrgStocks()->create($modelData);
-
+        RepairOrgStockMissingLocationIds::dispatch($orgStock)->delay($this->hydratorsDelay);
         LocationHydrateStocks::dispatch($location)->delay($this->hydratorsDelay);
         LocationHydrateStockValue::dispatch($location)->delay($this->hydratorsDelay);
         OrgStockHydrateLocations::dispatch($orgStock)->delay($this->hydratorsDelay);

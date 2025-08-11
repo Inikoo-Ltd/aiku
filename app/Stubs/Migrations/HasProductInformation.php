@@ -30,7 +30,6 @@ trait HasProductInformation
             'tariff_code',
             'duty_rate',
             'hts_us',
-            'marketing_ingredients',
         ];
     }
 }

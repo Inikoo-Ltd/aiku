@@ -17,6 +17,7 @@ enum OrdersTabsEnum: string
     use HasTabs;
 
     case ORDERS    = 'orders';
+    case LAST_ORDERS    = 'last_orders';
     case STATS     = 'stats';
     case HISTORY   = 'history';
 
@@ -25,7 +26,11 @@ enum OrdersTabsEnum: string
         return match ($this) {
 
             OrdersTabsEnum::ORDERS => [
-                'title' => __('orders'),
+                'title' => __('all orders'),
+                'icon'  => 'fal fa-bars',
+            ],
+            OrdersTabsEnum::LAST_ORDERS => [
+                'title' => __('last orders'),
                 'icon'  => 'fal fa-bars',
             ],
             OrdersTabsEnum::STATS => [

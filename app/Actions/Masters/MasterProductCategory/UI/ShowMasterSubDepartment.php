@@ -66,7 +66,7 @@ class ShowMasterSubDepartment extends GrpAction
         return Inertia::render(
             'Masters/MasterSubDepartment',
             [
-                'title'       => __('Sub-department'),
+                'title'       => __('master sub-department'),
                  'breadcrumbs' => $this->getBreadcrumbs(
                      $masterSubDepartment,
                      $request->route()->getName(),
@@ -78,10 +78,10 @@ class ShowMasterSubDepartment extends GrpAction
                 ],
                 'pageHead'    => [
                     'title'   => $masterSubDepartment->name,
-                    'model'   => __('Sub-department'),
+                    'model'   => __('master sub-department'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-folder-tree'],
-                        'title' => __('Sub-department')
+                        'title' => __('master sub-department')
                     ],
                     'actions' => [
                         $this->canEdit ? [
@@ -106,6 +106,27 @@ class ShowMasterSubDepartment extends GrpAction
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => MasterSubDepartmentTabsEnum::navigation()
+                ],
+
+                'routes' => [
+                    'fetch_families' => [
+                        'name'       => 'grp.json.master_product_category.families.index',
+                        'parameters' => [
+                            'masterProductCategory' => $masterSubDepartment->slug
+                        ]
+                    ],
+                    'attach_families' => [
+                        'name'       => 'grp.models.master-sub-department.families.attach',
+                        'parameters' => [
+                            'masterSubDepartment' => $masterSubDepartment->id
+                        ]
+                    ],
+                    'detach_families' => [
+                        'name'       => 'grp.models.master-sub-department.family.detach',
+                        'parameters' => [
+                            'masterSubDepartment' => $masterSubDepartment->id
+                        ]
+                    ]
                 ],
 
                 MasterSubDepartmentTabsEnum::SHOWCASE->value => $this->tab == MasterSubDepartmentTabsEnum::SHOWCASE->value ?
@@ -155,19 +176,38 @@ class ShowMasterSubDepartment extends GrpAction
 
 
         return match ($routeName) {
-
-            'grp.org.shops.show.catalogue.departments.show.sub_departments.show' =>
+            'grp.masters.master_departments.show.master_sub_departments.show' =>
             array_merge(
-                (new ShowMasterDepartment())->getBreadcrumbs($masterSubDepartment->masterShop, $masterSubDepartment->masterDepartment, 'grp.org.shops.show.catalogue.departments.show', $routeParameters),
+                (new IndexMasterSubDepartments())->getBreadcrumbs($masterSubDepartment, $masterSubDepartment->masterDepartment, $routeParameters, $suffix),
                 $headCrumb(
                     $masterSubDepartment,
                     [
                         'index' => [
-                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.index',
+                            'name'       => 'grp.masters.master_departments.show.master_sub_departments.index',
                             'parameters' => $routeParameters
                         ],
                         'model' => [
-                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
+                            'name'       => 'grp.masters.master_departments.show.master_sub_departments.show',
+                            'parameters' => $routeParameters
+
+
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.masters.master_shops.show.master_sub_departments.show' =>
+            array_merge(
+                (new IndexMasterSubDepartments())->getBreadcrumbs($masterSubDepartment->masterShop, $routeName, $routeParameters, $suffix),
+                $headCrumb(
+                    $masterSubDepartment,
+                    [
+                        'index' => [
+                            'name'       => 'grp.masters.master_shops.show.master_sub_departments.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.masters.master_shops.show.master_sub_departments.show',
                             'parameters' => $routeParameters
 
 

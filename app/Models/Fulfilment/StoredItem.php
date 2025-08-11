@@ -10,7 +10,6 @@ namespace App\Models\Fulfilment;
 
 use App\Enums\Fulfilment\StoredItem\StoredItemStateEnum;
 use App\Models\Dropshipping\Portfolio;
-use App\Models\Dropshipping\ShopifyUserHasProduct;
 use App\Models\Dropshipping\TiktokUserHasProduct;
 use App\Models\Inventory\Warehouse;
 use App\Models\Traits\HasHistory;
@@ -66,7 +65,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Fulfilment\Pallet> $pallets
  * @property-read Portfolio|null $portfolio
  * @property-read \App\Models\Helpers\RetinaSearch|null $retinaSearch
- * @property-read ShopifyUserHasProduct|null $shopifyPortfolio
  * @property-read TiktokUserHasProduct|null $tiktokPortfolio
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Warehouse|null $warehouse
@@ -135,10 +133,6 @@ class StoredItem extends Model implements Auditable
         return $this->hasMany(PalletStoredItem::class);
     }
 
-    public function shopifyPortfolio(): MorphOne
-    {
-        return $this->morphOne(ShopifyUserHasProduct::class, 'product');
-    }
 
     public function tiktokPortfolio(): MorphOne
     {

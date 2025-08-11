@@ -29,6 +29,11 @@ class ReindexWebsiteLuigiData
         $this->reindex($website);
     }
 
+    public function asController(Website $website): void
+    {
+        $this->handle($website);
+    }
+
     /**
      * @throws \Laravel\Octane\Exceptions\DdException
      * @throws \Illuminate\Http\Client\ConnectionException

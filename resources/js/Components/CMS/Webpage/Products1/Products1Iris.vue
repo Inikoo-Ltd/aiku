@@ -268,8 +268,10 @@ onMounted(() => {
         isAscending.value = !sortParam.startsWith("-");
     }
 
-    if (layout?.iris?.is_logged_in)
+    if (layout?.iris?.is_logged_in){
         fetchProductHasPortfolio();
+    }
+       
 
 
     /* debFetchProducts() */
@@ -494,14 +496,14 @@ const responsiveGridClass = computed(() => {
                         </span>
                     </div>
 
-                    <!--                    <div>-->
-                    <!--                        <ButtonAddCategoryToPortfolio-->
-                    <!--                            xproduct="fieldValue.product"-->
-                    <!--                            :products-->
-                    <!--                            :categoryId-->
-                    <!--                            xproductHasPortfolio="productExistenceInChannels"-->
-                    <!--                        />-->
-                    <!--                    </div>-->
+                    <div>
+                        <ButtonAddCategoryToPortfolio
+                            xproduct="fieldValue.product"
+                            :products
+                            :categoryId
+                            xproductHasPortfolio="productExistenceInChannels"
+                        />
+                    </div>
                 </div>
 
                 <!-- Product Grid -->

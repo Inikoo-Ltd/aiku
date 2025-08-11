@@ -43,7 +43,7 @@ class OrgStockRecordSearch
 
         $orgFamilyName = '';
         if ($orgStock->orgStockFamily) {
-            $orgFamilyName = $orgStock->orgStockFamily->name ? ' (' . $orgStock->orgStockFamily->name  . ')' : '';
+            $orgFamilyName = $orgStock->orgStockFamily->name ? ' ('.$orgStock->orgStockFamily->name.')' : '';
         }
         $orgStock->universalSearch()->updateOrCreate(
             [],
@@ -57,32 +57,32 @@ class OrgStockRecordSearch
                 'haystack_tier_1'   => trim($orgStock->code.' '.$orgStock->name),
                 'keyword'           => $orgStock->code,
                 'result'            => [
-                    'route'     => [
-                        'name'          => 'grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show',
-                        'parameters'    => [
+                    'route'       => [
+                        'name'       => 'grp.org.warehouses.show.inventory.org_stocks.current_org_stocks.show',
+                        'parameters' => [
                             $orgStock->organisation->slug,
                             $warehouse->slug,
                             $orgStock->slug
                         ]
                     ],
-                    'description'      => [
-                        'label' => $orgStock->name . $orgFamilyName,
+                    'description' => [
+                        'label' => $orgStock->name.$orgFamilyName,
                     ],
-                    'code' => [
+                    'code'        => [
                         'label' => $orgStock->code,
                     ],
-                    'icon'      => [
+                    'icon'        => [
                         'icon' => 'fal fa-box',
                     ],
-                    'meta'      => [
+                    'meta'        => [
                         [
-                            'label' => $orgStock->state,
+                            'label'   => $orgStock->state,
                             'tooltip' => __('State')
                         ],
                         [
                             'type'   => 'number',
-                            'label'  => __('Number locations') . ': ',
-                            'number' => (int) $orgStock->stats->number_locations
+                            'label'  => __('Number locations').': ',
+                            'number' => $orgStock->stats->number_locations
                         ],
 
                     ],

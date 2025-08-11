@@ -10,16 +10,23 @@
 
 namespace App\Models\Masters;
 
+use App\Enums\Catalogue\MasterCollection\MasterCollectionProductStatusEnum;
+use App\Enums\Catalogue\MasterCollection\MasterCollectionStateEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
+use App\Models\Traits\HasImage;
+use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InGroup;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
+use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use Spatie\Translatable\HasTranslations;
 
 /**
  *
@@ -39,24 +46,36 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Group $group
  * @property-read \App\Models\Masters\MasterCollectionStats|null $stats
+ * @property-read mixed $translations
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection whereJsonContainsLocale(string $column, string $locale, ?mixed $value, string $operand = '=')
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection whereJsonContainsLocales(string $column, array $locales, ?mixed $value, string $operand = '=')
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection whereLocale(string $column, string $locale)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection whereLocales(string $column, array $locales)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection withTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection withoutTrashed()
  * @mixin \Eloquent
  */
-class MasterCollection extends Model implements Auditable
+class MasterCollection extends Model implements Auditable, HasMedia
 {
     use SoftDeletes;
     use HasSlug;
     use HasHistory;
+    use HasImage;
+    use HasUniversalSearch;
     use InGroup;
+    use HasTranslations;
+
+    public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
 
     protected $casts = [
         'data'   => 'array',
         'status' => 'boolean',
+        'state'          => MasterCollectionStateEnum::class,
+        'products_status' => MasterCollectionProductStatusEnum::class,
     ];
 
     protected $attributes = [
@@ -94,5 +113,20 @@ class MasterCollection extends Model implements Auditable
     public function stats(): HasOne
     {
         return $this->hasOne(MasterCollectionStats::class);
+    }
+
+    public function salesIntervals(): HasOne
+    {
+        return $this->hasOne(MasterCollectionSalesIntervals::class);
+    }
+
+    public function orderingStats(): HasOne
+    {
+        return $this->hasOne(MasterCollectionOrderingStats::class);
+    }
+
+    public function masterShop(): BelongsTo
+    {
+        return $this->belongsTo(MasterShop::class);
     }
 }

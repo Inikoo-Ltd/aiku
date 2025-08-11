@@ -13,6 +13,7 @@ use App\Actions\Accounting\WithCheckoutCom;
 use App\Models\Accounting\OrderPaymentApiPoint;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Ordering\Order;
+use Checkout\Payments\Product;
 use Checkout\Payments\Sessions\PaymentSessionsRequest;
 use Checkout\Payments\ThreeDsRequest;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -39,17 +40,21 @@ class GetRetinaPaymentAccountShopCheckoutComData
         );
 
         $toPayByOther = $paymentAmounts['by_other'];
-        $toPayByOther = intval($toPayByOther * 100);
 
 
-        if ($toPayByOther == 0) {
-            abort(404);
-        }
+        $toPayByOther = (int)round((float)$toPayByOther * 100);
 
         $paymentSessionRequest            = new PaymentSessionsRequest();
         $paymentSessionRequest->amount    = $toPayByOther;
         $paymentSessionRequest->currency  = $order->currency->code;
         $paymentSessionRequest->reference = $order->reference;
+
+
+        $product = new Product();
+        $product->name       = 'items';
+        $product->quantity   = 1;
+        $product->unit_price = $toPayByOther;
+        $paymentSessionRequest->items = [$product];
 
         $paymentSessionRequest->three_ds          = new ThreeDsRequest();
         $paymentSessionRequest->three_ds->enabled = true;
@@ -59,9 +64,8 @@ class GetRetinaPaymentAccountShopCheckoutComData
         $paymentSessionRequest->success_url           = $this->getSuccessUrl($orderPaymentApiPoint);
         $paymentSessionRequest->failure_url           = $this->getFailureUrl($orderPaymentApiPoint);
 
-        $paymentSessionRequest->disabled_payment_methods = [
-            'applepay',
-        ];
+
+
 
         $billingAddress = $order->billingAddress;
 

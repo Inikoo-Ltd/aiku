@@ -74,6 +74,7 @@ class IndexDepartments extends OrgAction
 
 
         $queryBuilder->leftJoin('shops', 'product_categories.shop_id', 'shops.id');
+        $queryBuilder->leftJoin('currencies', 'shops.currency_id', 'currencies.id');
         $queryBuilder->leftJoin('organisations', 'product_categories.organisation_id', '=', 'organisations.id');
         $queryBuilder->leftJoin('product_category_sales_intervals', 'product_category_sales_intervals.product_category_id', 'product_categories.id');
         $queryBuilder->leftJoin('product_category_ordering_intervals', 'product_category_ordering_intervals.product_category_id', 'product_categories.id');
@@ -99,6 +100,7 @@ class IndexDepartments extends OrgAction
                 'product_categories.description',
                 'product_categories.created_at',
                 'product_categories.updated_at',
+                'product_categories.master_product_category_id',
                 'product_category_stats.number_current_families',
                 'product_category_stats.number_current_products',
                 'product_category_stats.number_current_sub_departments',
@@ -106,6 +108,7 @@ class IndexDepartments extends OrgAction
                 'shops.slug as shop_slug',
                 'shops.code as shop_code',
                 'shops.name as shop_name',
+                'currencies.code as currency_code',
                 'product_category_sales_intervals.sales_grp_currency_all as sales_all',
                 'product_category_ordering_intervals.invoices_all as invoices_all',
                 'organisations.name as organisation_name',
@@ -164,7 +167,7 @@ class IndexDepartments extends OrgAction
 
             if ($sales) {
                 $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'sales', label: __('sales'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'sales', label: __('sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'invoices', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true);
             } else {
                 $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
@@ -274,18 +277,18 @@ class IndexDepartments extends OrgAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ] : false,
-                        [
-                            'type'  => 'button',
-                            'style' => 'secondary',
-                            'label' => __('blueprint'),
-                            'route' => [
-                                'name'       => 'grp.org.shops.show.catalogue.departments.index.blueprints',
-                                'parameters' => [
-                                    'organisation' => $this->organisation->slug,
-                                    'shop'         => $this->shop->slug,
-                                ]
-                            ]
-                        ],
+                        // [
+                        //     'type'  => 'button',
+                        //     'style' => 'secondary',
+                        //     'label' => __('blueprint'),
+                        //     'route' => [
+                        //         'name'       => 'grp.org.shops.show.catalogue.departments.index.blueprints',
+                        //         'parameters' => [
+                        //             'organisation' => $this->organisation->slug,
+                        //             'shop'         => $this->shop->slug,
+                        //         ]
+                        //     ]
+                        // ],
                         class_basename($this->parent) == 'Collection' ? [
                             'type'    => 'button',
                             'style'   => 'secondary',

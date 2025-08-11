@@ -17,7 +17,6 @@ use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
-use App\Models\Helpers\Address;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -38,12 +37,12 @@ class EditCustomerClient extends OrgAction
                 ),
                 'title'       => __('edit client'),
                 'pageHead'    => [
-                    'title'        => __('edit client'),
-                    'icon'         => [
+                    'title'   => __('edit client'),
+                    'icon'    => [
                         'icon'  => ['fal', 'fa-user'],
                         'title' => __('client')
                     ],
-                    'actions'      => [
+                    'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
@@ -51,7 +50,7 @@ class EditCustomerClient extends OrgAction
                             'route' => [
                                 'name'       => match ($request->route()->getName()) {
                                     'shops.show.customers.create' => 'shops.show.customers.index',
-                                    default                       => preg_replace('/edit$/', 'show', $request->route()->getName())
+                                    default => preg_replace('/edit$/', 'show', $request->route()->getName())
                                 },
                                 'parameters' => array_values($request->route()->originalParameters())
                             ],
@@ -61,7 +60,7 @@ class EditCustomerClient extends OrgAction
                 'formData'    => [
                     'blueprint' =>
                         [
-                            [
+                            'Profile' => [
                                 "label"  => __("Profile"),
                                 'title'  => __('contact'),
                                 'fields' => [
@@ -75,12 +74,12 @@ class EditCustomerClient extends OrgAction
                                         'label' => __('contact name'),
                                         'value' => $customerClient->contact_name
                                     ],
-                                    'email' => [
+                                    'email'        => [
                                         'type'  => 'input',
                                         'label' => __('email'),
                                         'value' => $customerClient->email
                                     ],
-                                    'phone' => [
+                                    'phone'        => [
                                         'type'  => 'input',
                                         'label' => __('phone'),
                                         'value' => $customerClient->phone
@@ -88,14 +87,7 @@ class EditCustomerClient extends OrgAction
                                     'address'      => [
                                         'type'    => 'address',
                                         'label'   => __('Address'),
-                                        'value'   => AddressFormFieldsResource::make(
-                                            new Address(
-                                                [
-                                                    'country_id' => $customerClient->shop->country_id,
-
-                                                ]
-                                            )
-                                        )->getArray(),
+                                        'value'   => AddressFormFieldsResource::make($customerClient->address)->getArray(),
                                         'options' => [
                                             'countriesAddressData' => GetAddressData::run()
 
@@ -104,9 +96,9 @@ class EditCustomerClient extends OrgAction
                                 ]
                             ]
                         ],
-                    'args' => [
-                        'updateRoute'     => [
-                            'name'      => 'grp.models.customer_client.update',
+                    'args'      => [
+                        'updateRoute' => [
+                            'name'       => 'grp.models.customer_client.update',
                             'parameters' => [
                                 'customerClient' => $customerClient->id
                             ]
@@ -120,6 +112,7 @@ class EditCustomerClient extends OrgAction
     public function authorize(ActionRequest $request): bool
     {
         $shop = $request->route()->parameter('shop');
+
         return $request->user()->authTo("crm.$shop->id.edit");
     }
 
@@ -128,15 +121,16 @@ class EditCustomerClient extends OrgAction
     {
         $this->parent = $customerSalesChannel;
         $this->initialisationFromShop($shop, $request);
+
         return $this->handle($customerClient, $request);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerSalesChannel $customerSalesChannel, CustomerClient $customerClient, ActionRequest $request): Response
     {
-
         $this->parent = $customerSalesChannel;
         $this->initialisationFromFulfilment($fulfilment, $request);
+
         return $this->handle($customerClient, $request);
     }
 

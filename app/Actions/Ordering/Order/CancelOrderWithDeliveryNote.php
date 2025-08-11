@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 14-07-2025-17h-10m
@@ -10,15 +11,11 @@ namespace App\Actions\Ordering\Order;
 
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Dispatching\DeliveryNote\CancelDeliveryNote;
-use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
-use App\Actions\Dispatching\Picking\StoreNotPickPicking;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
-use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
-use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Models\Ordering\Order;
@@ -50,7 +47,7 @@ class CancelOrderWithDeliveryNote extends OrgAction
         $this->update($order, $modelData);
 
         $transactions = $order->transactions;
-        
+
         /** @var Transaction $transaction */
         foreach ($transactions as $transaction) {
             $transactionData = ['state' => TransactionStateEnum::CANCELLED];
@@ -85,7 +82,7 @@ class CancelOrderWithDeliveryNote extends OrgAction
         $order = $this->order;
         if ($order->state === OrderStateEnum::CANCELLED) {
             $validator->errors()->add('messages', 'Order is already cancelled.');
-        } 
+        }
     }
 
     public function action(Order $order): Order

@@ -17,6 +17,7 @@ use App\Models\CRM\PollOption;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
@@ -36,6 +37,9 @@ trait WithRetinaRegistration
                 $modelData
             );
         }
+
+        Cookie::queue('aiku_tsd', '', 60);
+        Cookie::queue('aiku_lts', '', 60);
     }
 
     public function afterValidator(Validator $validator, ActionRequest $request): void
@@ -108,6 +112,12 @@ trait WithRetinaRegistration
         }
     }
 
+    public function prepareForValidation(ActionRequest $request): void
+    {
+        $this->set('traffic_sources', $request->cookie('aiku_tsd'));
+    }
+
+
     public function rules(): array
     {
         $fulfilmentRules = [
@@ -118,9 +128,10 @@ trait WithRetinaRegistration
         ];
 
         $rules = [
+            'traffic_sources' => ['sometimes'],
             'contact_name'    => ['required', 'string', 'max:255'],
             'company_name'    => ['sometimes', 'nullable', 'string', 'max:255'],
-            'contact_website'    => ['sometimes', 'nullable', 'string', 'max:255'],
+            'contact_website' => ['sometimes', 'nullable', 'string', 'max:255'],
             'email'           => [
                 'required',
                 'string',
@@ -152,5 +163,4 @@ trait WithRetinaRegistration
 
         return $rules;
     }
-
 }

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Comms\Traits;
 
+use App\Actions\Comms\EmailCopy\StoreEmailCopy;
 use App\Actions\Comms\Ses\SendSesEmail;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\OutBoxHasSubscriber;
@@ -25,14 +26,13 @@ trait WithSendBulkEmails
         $html = $emailHtmlBody;
 
         $html = $this->processStyles($html);
-
-
         if (preg_match_all("/{{(.*?)}}/", $html, $matches)) {
             foreach ($matches[1] as $i => $placeholder) {
                 $placeholder = $this->replaceMergeTags($placeholder, $dispatchedEmail, $unsubscribeUrl, $passwordToken, $invoiceUrl, $additionalData);
                 $html        = str_replace($matches[0][$i], sprintf('%s', $placeholder), $html);
             }
         }
+
         if (preg_match_all("/\[(.*?)]/", $html, $matches)) {
             foreach ($matches[1] as $i => $tag) {
                 $placeholder = $this->replaceMergeTags($tag, $dispatchedEmail, $unsubscribeUrl, $passwordToken, $invoiceUrl, $additionalData);
@@ -42,6 +42,12 @@ trait WithSendBulkEmails
 
         $html = preg_replace('/\R+/', '', $html);
 
+        dd($html);
+
+        StoreEmailCopy::make()->action($dispatchedEmail, [
+            'subject' => $subject,
+            'body'    => $html
+        ]);
 
         return SendSesEmail::run(
             subject: $subject,
@@ -82,18 +88,37 @@ trait WithSendBulkEmails
 
             'order-link' => Arr::get($additionalData, 'order_link'),
             'order-reference' => Arr::get($additionalData, 'order_reference'),
+            'order-number' => Arr::get($additionalData, 'order_number'),
             'invoice-reference' => Arr::get($additionalData, 'invoice_reference'),
             'invoice-link' => Arr::get($additionalData, 'invoice_link'),
             'customer-link' => Arr::get($additionalData, 'customer_link'),
             'pallet-reference' => Arr::get($additionalData, 'pallet_reference'),
             'pallet-link' => Arr::get($additionalData, 'pallet_link'),
-            'order' => Arr::get($additionalData, 'order'),
+            'blade-new-order-transactions' => Arr::get($additionalData, 'blade_new_order_transactions'),
             'tracking' => Arr::get($additionalData, 'tracking'),
             'deletion-date',
             'delivered-date',
             'returned-date',
             'order-date' => Arr::get($additionalData, 'date'),
             'tracking-url' => Arr::get($additionalData, 'tracking_url'),
+            'currency' => Arr::get($additionalData, 'currency'),
+            'order-total' => Arr::get($additionalData, 'order_total'),
+            'goods-amount' => Arr::get($additionalData, 'goods_amount'),
+            'charges-amount' => Arr::get($additionalData, 'charges_amount'),
+            'shipping-amount' => Arr::get($additionalData, 'shipping_amount'),
+            'payment-amount' => Arr::get($additionalData, 'payment_amount'),
+            'payment-type' => Arr::get($additionalData, 'payment_type'),
+            'net-amount' => Arr::get($additionalData, 'net_amount'),
+            'tax-amount' => Arr::get($additionalData, 'tax_amount'),
+            'shop-name' => Arr::get($additionalData, 'shop_name'),
+            'delivery-address' => Arr::get($additionalData, 'delivery_address'),
+            'invoice-address' => Arr::get($additionalData, 'invoice_address'),
+            'customer-note' => Arr::get($additionalData, 'customer_note'),
+            'order' => Arr::get($additionalData, 'order'),
+            'pay-info' => Arr::get($additionalData, 'pay_info'),
+            'platform' => Arr::get($additionalData, 'platform'),
+            'balance' => Arr::get($additionalData, 'balance'),
+
             default => $originalPlaceholder,
         };
     }

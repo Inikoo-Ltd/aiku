@@ -22,6 +22,7 @@ use App\Actions\Fulfilment\Pallet\DownloadDropshippingClientTemplate;
 use App\Actions\Ordering\Order\DownloadOrderTransactionsTemplate;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\CreateMitSavedCard;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\ShowRetinaMitSavedCardsDashboard;
+use App\Actions\Retina\Billing\RetinaPdfInvoice;
 use App\Actions\Retina\Billing\UI\IndexRetinaDropshippingInvoices;
 use App\Actions\Retina\Billing\UI\ShowRetinaDropshippingInvoice;
 use App\Actions\Retina\Dropshipping\ApiToken\UI\ShowRetinaApiDropshippingDashboard;
@@ -39,11 +40,10 @@ use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshipp
 use App\Actions\Retina\Dropshipping\Orders\IndexRetinaDropshippingOrders;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingBasket;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingOrder;
-use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfolios;
+use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfoliosCSV;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
 use App\Actions\Retina\Dropshipping\Portfolio\ShowRetinaDropshippingPortfolio;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaFilteredProducts;
-use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInDropshipping;
 use App\Actions\Retina\Platform\EditRetinaCustomerSalesChannel;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use Illuminate\Support\Facades\Route;
@@ -97,9 +97,8 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
 
     Route::prefix('my-products')->as('portfolios.')->group(function () {
         Route::get('', IndexRetinaPortfolios::class)->name('index');
-        Route::get('download', DownloadPortfolios::class)->name('download');
+        Route::get('download', DownloadPortfoliosCSV::class)->name('download');
         Route::get('{portfolio}', ShowRetinaDropshippingPortfolio::class)->name('show');
-        Route::get('products', IndexRetinaProductsInDropshipping::class)->name('products.index');
     });
 
     Route::prefix('orders')->as('orders.')->group(function () {
@@ -125,6 +124,7 @@ Route::prefix('tiktok')->name('tiktok.')->group(function () {
 Route::prefix('invoices')->name('invoices.')->group(function () {
     Route::get('', IndexRetinaDropshippingInvoices::class)->name('index');
     Route::get('{invoice}', ShowRetinaDropshippingInvoice::class)->name('show');
+    Route::get('{invoice}/pdf', RetinaPdfInvoice::class)->name('pdf');
 });
 
 Route::prefix('saved-credit-cards')->name('mit_saved_cards.')->group(function () {

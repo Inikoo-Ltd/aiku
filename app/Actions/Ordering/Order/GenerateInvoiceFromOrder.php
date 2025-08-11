@@ -43,20 +43,19 @@ class GenerateInvoiceFromOrder extends OrgAction
             $billingAddress = $order->billingAddress;
             $updatedData    = [];
             if ($order->deliveryNotes) {
-                $updatedData  = $this->recalculateTotals($order);
+                $updatedData = $this->recalculateTotals($order);
             }
 
             $order->update([
-                'net_amount'                => Arr::get($updatedData, 'net_amount', $order->net_amount),
-                'total_amount'              => Arr::get($updatedData, 'total_amount', $order->total_amount),
-                'gross_amount'              => Arr::get($updatedData, 'gross_amount', $order->gross_amount),
-                'goods_amount'              => Arr::get($updatedData, 'goods_amount', $order->goods_amount),
+                'net_amount'   => Arr::get($updatedData, 'net_amount', $order->net_amount),
+                'total_amount' => Arr::get($updatedData, 'total_amount', $order->total_amount),
+                'gross_amount' => Arr::get($updatedData, 'gross_amount', $order->gross_amount),
+                'goods_amount' => Arr::get($updatedData, 'goods_amount', $order->goods_amount),
             ]);
 
 
             $invoiceData = [
                 'in_process'                => false,
-                'reference'                 => $order->reference,
                 'currency_id'               => $order->currency_id,
                 'billing_address'           => new Address($billingAddress->getFields()),
                 'type'                      => InvoiceTypeEnum::INVOICE,
@@ -74,6 +73,11 @@ class GenerateInvoiceFromOrder extends OrgAction
                 'platform_id'               => $order->platform_id,
                 'footer'                    => $order->shop->invoice_footer ?? ''
             ];
+
+            $shop = $order->shop;
+            if (!Arr::get($shop->settings, 'invoicing.stand_alone_invoice_numbers')) {
+                $invoiceData['reference'] = $order->reference;
+            }
 
 
             $invoice = StoreInvoice::make()->action(parent: $order, modelData: $invoiceData);
@@ -124,7 +128,6 @@ class GenerateInvoiceFromOrder extends OrgAction
 
     public function recalculateTotals(Order $order): array
     {
-
         $itemsNet   = 0;
         $itemsGross = 0;
 
@@ -157,7 +160,7 @@ class GenerateInvoiceFromOrder extends OrgAction
 
         $pickings = [];
         foreach ($transaction->deliveryNoteItems as $deliveryNoteItem) {
-            if ($deliveryNoteItem->quantity_ordered == 0) {
+            if ($deliveryNoteItem->quantity_required == 0) {
                 $pickings[] = 1;
             }
 

@@ -68,7 +68,7 @@ class CheckoutComMitSavedCardFailure extends RetinaWebhookAction
         }
 
         return Redirect::route('retina.dropshipping.mit_saved_cards.create')->with(
-            'notification',
+            'modal',
             [
                 'status'         => 'failure',
                 'title'          => $this->getFailureTitle($mitSavedCard->failure_status),

@@ -21,6 +21,13 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $id
  * @property mixed $item_type
  * @property mixed $item_id
+ * @property mixed $customer_sales_channel_platform_status
+ * @property mixed $has_valid_platform_product_id
+ * @property mixed $exist_in_platform
+ * @property mixed $platform_status
+ * @property mixed $platform_possible_matches
+ * @property mixed $platform_product_id
+ * @property mixed $customer_sales_channel_id
  */
 class PortfoliosResource extends JsonResource
 {
@@ -29,7 +36,7 @@ class PortfoliosResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'  => $this->id,
+            'id'         => $this->id,
             'reference'  => $this->reference,
             'item_name'  => $this->item_name,
             'item_code'  => $this->item_code,
@@ -37,9 +44,19 @@ class PortfoliosResource extends JsonResource
             'item_id'    => $this->item_id,
             'type'       => $this->type,
             'created_at' => $this->created_at,
-            'platform_product_id' => $this->platform_product_id ? '✅' : '❌', // TODO change later
+
+
+            'customer_sales_channel_platform_status' => $this->customer_sales_channel_platform_status,
+
+            'has_valid_platform_product_id' => $this->has_valid_platform_product_id,
+            'exist_in_platform'             => $this->exist_in_platform,
+            'platform_status'               => $this->platform_status,
+            'platform_possible_matches'     => $this->platform_possible_matches,
+            'platform_product_id'           => $this->platform_product_id,
+
+
             'customer_sales_channel_id' => $this->customer_sales_channel_id ?? null,
-            'routes'     => [
+            'routes'                    => [
                 'delete_route' => [
                     'method'     => 'delete',
                     'name'       => 'grp.models.portfolio.delete',

@@ -13,6 +13,7 @@ use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Accounting\TopUp\StoreTopUp;
 use App\Actions\Accounting\TopUpPaymentApiPoint\UpdateTopUpPaymentApiPoint;
 use App\Actions\Accounting\WithCheckoutCom;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateTopUps;
 use App\Actions\Retina\Dropshipping\Orders\FindUnpaidOrderAndPayWithBalance;
 use App\Actions\RetinaWebhookAction;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
@@ -43,6 +44,12 @@ class TopUpPaymentSuccess extends RetinaWebhookAction
             $modelData['cko-payment-id']
         );
 
+        return $this->processSuccess($checkoutComPayment, $topUpPaymentApiPoint, $paymentAccountShop);
+
+    }
+
+    public function processSuccess($checkoutComPayment, $topUpPaymentApiPoint, $paymentAccountShop)
+    {
         $amount = Arr::get($checkoutComPayment, 'amount', 0) / 100;
 
         $paymentData = [
@@ -80,7 +87,7 @@ class TopUpPaymentSuccess extends RetinaWebhookAction
             'type'       => CreditTransactionTypeEnum::TOP_UP,
         ];
 
-        
+
         FindUnpaidOrderAndPayWithBalance::run($topUpPaymentApiPoint->customer, [
             'amount' => $amount
         ]);
@@ -118,8 +125,11 @@ class TopUpPaymentSuccess extends RetinaWebhookAction
             ]
         );
 
+        CustomerHydrateTopUps::dispatch($topUpPaymentApiPoint->customer);
+
         return $creditTransaction;
     }
+
 
     public function rules(): array
     {
@@ -149,5 +159,4 @@ class TopUpPaymentSuccess extends RetinaWebhookAction
             ]
         );
     }
-
 }

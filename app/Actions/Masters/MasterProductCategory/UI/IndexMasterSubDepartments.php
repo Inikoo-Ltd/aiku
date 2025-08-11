@@ -130,7 +130,7 @@ class IndexMasterSubDepartments extends GrpAction
             'title' => __('master shop')
         ];
         $afterTitle = [
-            'label' => __('Sub Departments')
+            'label' => __('Master Sub Departments')
         ];
         $iconRight  = [
             'icon' => 'fal fa-folder-tree',
@@ -157,10 +157,16 @@ class IndexMasterSubDepartments extends GrpAction
                             'style'   => 'create',
                             'tooltip' => __('new master Sub-department'),
                             'label'   => __('Sub-department'),
-                            'route'   => [
-                                'name'       => 'grp.masters.master_departments.show.master_sub_departments.create',
-                                'parameters' => $request->route()->originalParameters()
-                            ]
+                            'route'   => match ($this->parent::class) {
+                                MasterProductCategory::class => [
+                                    'name'       => 'grp.masters.master_departments.show.master_sub_departments.create',
+                                    'parameters' => $request->route()->originalParameters()
+                                ],
+                                default => [
+                                    'name'       => 'grp.masters.master_shops.show.master_sub_departments.create',
+                                    'parameters' => $request->route()->originalParameters()
+                                ]
+                            }
                         ],
                     ],
                     'subNavigation' => $subNavigation,
@@ -172,6 +178,7 @@ class IndexMasterSubDepartments extends GrpAction
 
     public function getBreadcrumbs(MasterShop|MasterProductCategory $parent, string $routeName, array $routeParameters, string $suffix = null): array
     {
+
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [
                 [
@@ -189,7 +196,7 @@ class IndexMasterSubDepartments extends GrpAction
         return match ($routeName) {
             'grp.masters.master_shops.show.master_sub_departments.index' =>
             array_merge(
-                ShowMasterShop::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
+                ShowMasterShop::make()->getBreadcrumbs($parent, $routeName),
                 $headCrumb(
                     [
                         'name'       => $routeName,
@@ -199,9 +206,15 @@ class IndexMasterSubDepartments extends GrpAction
                 )
             ),
 
-            'grp.masters.master_departments.show.master_sub_departments.index' =>
+            'grp.masters.master_departments.show.master_sub_departments.index',
+            'grp.masters.master_departments.show.master_sub_departments.show' =>
             array_merge(
-                ShowMasterDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
+                ShowMasterDepartment::make()->getBreadcrumbs(
+                    $parent->group,
+                    $parent,
+                    $routeName,
+                    $routeParameters
+                ),
                 $headCrumb(
                     [
                         'name'       => $routeName,
@@ -210,7 +223,6 @@ class IndexMasterSubDepartments extends GrpAction
                     $suffix
                 )
             ),
-
 
 
             default => []

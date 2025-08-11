@@ -12,6 +12,8 @@ use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Enums\Dispatching\Picking\PickingEngineEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Inventory\Location;
+use App\Models\Inventory\OrgStock;
+use App\Models\Inventory\OrgStockMovement;
 use App\Models\SysAdmin\User;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Model;
@@ -43,6 +45,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read \App\Models\Dispatching\DeliveryNoteItem $deliveryNoteItem
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read Location|null $location
+ * @property-read OrgStock $orgStock
+ * @property-read OrgStockMovement|null $orgStockMovement
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read User|null $picker
  * @property-read \App\Models\Catalogue\Shop $shop
@@ -86,6 +90,16 @@ class Picking extends Model
     public function location(): BelongsTo
     {
         return $this->belongsTo(Location::class, 'location_id');
+    }
+
+    public function orgStock(): BelongsTo
+    {
+        return $this->belongsTo(OrgStock::class, 'org_stock_id');
+    }
+
+    public function orgStockMovement(): BelongsTo
+    {
+        return $this->belongsTo(OrgStockMovement::class, 'org_stock_movement_id');
     }
 
 

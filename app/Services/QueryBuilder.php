@@ -8,6 +8,7 @@
 
 namespace App\Services;
 
+use App\Models\CRM\Customer;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
@@ -23,7 +24,7 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
     ): self {
         $elementsData = null;
 
-        $argumentName = ($prefix ? $prefix.'_' : '').'elements';
+        $argumentName = ($prefix ? $prefix . '_' : '') . 'elements';
 
 
         if (request()->has("$argumentName.$key")) {
@@ -51,7 +52,7 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
     ): self {
         $elementsData = null;
 
-        $argumentName = ($prefix ? $prefix.'_' : '').'radioFilter';
+        $argumentName = ($prefix ? $prefix . '_' : '') . 'radioFilter';
         if (request()->has($argumentName) || $defaultValue) {
             $elements = request()->input("$argumentName") ?? $defaultValue;
             if (is_array($elements)) {
@@ -76,13 +77,13 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
     public function withFilterPeriod($column, ?string $prefix = null): static
     {
         $table      = $this->getModel()->getTable();
-        $periodType = array_key_first(request()->input(($prefix ? $prefix.'_' : '').'period') ?? []);
+        $periodType = array_key_first(request()->input(($prefix ? $prefix . '_' : '') . 'period') ?? []);
 
         if ($periodType) {
             $periodData = $this->validatePeriod($periodType, $prefix);
 
             if ($periodData) {
-                $this->whereBetween($table.'.'.$column, [$periodData['start'], $periodData['end']]);
+                $this->whereBetween($table . '.' . $column, [$periodData['start'], $periodData['end']]);
             }
         }
 
@@ -92,7 +93,7 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
 
     protected function validatePeriod(string $periodType, ?string $prefix = null): ?array
     {
-        $period = request()->input(($prefix ? $prefix.'_' : '').'period.'.$periodType);
+        $period = request()->input(($prefix ? $prefix . '_' : '') . 'period.' . $periodType);
 
         return ValidateQueryBuilderPeriods::run($periodType, $period);
     }
@@ -101,7 +102,7 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
     {
         $table          = $this->getModel()->getTable();
         $allowedColumns = array_merge($allowedColumns, ['created_at', 'updated_at']);
-        $argumentName   = ($prefix ? $prefix.'_' : '').'between';
+        $argumentName   = ($prefix ? $prefix . '_' : '') . 'between';
 
         $filters  = request()->input($argumentName, []);
         $timezone = request()->header('X-Timezone');
@@ -114,8 +115,8 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
                 if (count($parts) === 2) {
                     [$start, $end] = $parts;
 
-                    $start = trim($start).' 00:00:00';
-                    $end   = trim($end).' 23:59:59';
+                    $start = trim($start) . ' 00:00:00';
+                    $end   = trim($end) . ' 23:59:59';
 
                     $start = Carbon::createFromFormat('Ymd H:i:s', $start, $timezone)
                         ->setTimezone('UTC')
@@ -126,7 +127,9 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
                         ->toDateTimeString();
 
                     if ($this->getModel() instanceof FulfilmentCustomer) {
-                        $this->whereBetween('customers.'.$column, [$start, $end]);
+                        $this->whereBetween('customers.' . $column, [$start, $end]);
+                    } elseif ($this->getModel() instanceof Customer && $column == 'last_invoiced_at') {
+                        $this->whereBetween('customer_stats.' . $column, [$start, $end]);
                     } else {
                         $this->whereBetween("$table.$column", [$start, $end]);
                     }
@@ -174,13 +177,13 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
             $prefix = '';
         }
 
-        $argumentName = ($prefix ? $prefix.'_' : '').$queryName;
+        $argumentName = ($prefix ? $prefix . '_' : '') . $queryName;
         if ($numberOfRecords === null && request()->has($argumentName)) {
             $numberOfRecords = (int)request()->input($argumentName);
         }
 
         $userId      = auth()->user()->id ?? null;
-        $keyRppCache = $tableName ? "ui_state-$userType:$userId;rrp-table:".$prefix."$tableName" : null;
+        $keyRppCache = $tableName ? "ui_state-$userType:$userId;rrp-table:" . $prefix . "$tableName" : null;
 
         if ($numberOfRecords) {
             $perPage = $numberOfRecords;
@@ -206,7 +209,7 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
 
         return $this->paginate(
             perPage: $perPage,
-            pageName: $prefix ? $prefix.'Page' : 'page'
+            pageName: $prefix ? $prefix . 'Page' : 'page'
         );
     }
 
@@ -215,6 +218,4 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         $this->queryBuilder->withTrashed();
         return $this;
     }
-
-
 }

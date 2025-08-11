@@ -37,7 +37,8 @@ import {
   faExclamationTriangle, faBrowser, faDraftingCompass, faRectangleWide,
   faStars, faTimes, faBars, faExternalLink, faExpandWide, faCompressWide,
   faHome, faSignIn, faHammer, faCheckCircle, faBroadcastTower, faSkull,
-  faEye
+  faEye,
+  faWindWarning
 } from "@fal";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -201,6 +202,12 @@ const debounceSaveWorkshop = (block) => {
           text: error?.response?.data?.message || error.message,
           type: "error",
         });
+      } else {
+        notify({
+          title: trans("Failed to auto save."),
+          text: error?.response?.data?.message || error.message,
+          type: "error",
+        });
       }
     } finally {
       isLoadingBlock.value = null;
@@ -345,9 +352,13 @@ const onPublish = async (action: routeType, popover) => {
 
 const beforePublish = (route, popover) => {
   const validation = JSON.stringify(data.value.layout);
-  validation.includes('<h1') || validation.includes('<H1')
+  if(props.webpage.type == "catalogue") onPublish(route, popover)
+  else {
+     validation.includes('<h1') || validation.includes('<H1')
     ? onPublish(route, popover)
     : confirmPublish(route, popover);
+  }
+ 
 };
 
 const confirmPublish = (route, popover) => {
@@ -468,7 +479,11 @@ console.log('props',props)
   </PageHeading>
 
 
-  <ConfirmDialog group="alert-publish" />
+  <ConfirmDialog group="alert-publish" >
+    <template #icon>
+      <FontAwesomeIcon :icon="faExclamationTriangle"  class="text-orange-500"/>
+    </template>
+  </ConfirmDialog>
 
   <div class="flex">
     <div v-if="!fullScreen" class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1">

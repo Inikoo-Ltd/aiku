@@ -29,9 +29,13 @@ export interface StatsBoxTS {
         tooltip: string
     }
     metas?: {
+        hide: boolean
+        logo_icon: string
         count: number
         icon: Icon
         route?: routeType
         tooltip: string
+        hide : boolean
+        logo_icon : Object
     }[]
 }

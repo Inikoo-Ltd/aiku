@@ -39,14 +39,18 @@ class PayOrderWithMitCard
      */
     public function handle(Order $order, MitSavedCard $mitSavedCard): array
     {
+
+        if ($mitSavedCard->state != 'success') {
+            return [];
+        }
+
+
         $paymentAccountShop = $order->shop->paymentAccountShops()
             ->where('type', PaymentAccountTypeEnum::CHECKOUT)
             ->where('state', PaymentAccountShopStateEnum::ACTIVE)->first();
 
 
-
         $secretKey = $paymentAccountShop->getCredentials()[1];
-
 
 
         $paymentAmounts = $this->calculatePaymentWithBalance(
@@ -56,7 +60,9 @@ class PayOrderWithMitCard
 
 
         $toPay = $paymentAmounts['total'];
-        $toPay = intval($toPay * 100);
+
+        $toPay = (int)round((float)$toPay * 100);
+
 
         if ($toPay == 0) {
             return [
@@ -72,6 +78,7 @@ class PayOrderWithMitCard
         $channelID = $paymentAccountShop->getCheckoutComChannel();
 
 
+
         $request                        = new PaymentRequest();
         $request->source                = [
             'type' => 'id',
@@ -79,12 +86,12 @@ class PayOrderWithMitCard
         ];
         $request->processing_channel_id = $channelID;
 
-        $request->amount                = $toPay;
-        $request->currency              = $order->currency->code;
-        $request->payment_type          = 'Unscheduled';
-        $request->merchant_initiated    = true;
-        $request->previous_payment_id   = $mitSavedCard->token;
-        $request->processing            = [
+        $request->amount              = $toPay;
+        $request->currency            = $order->currency->code;
+        $request->payment_type        = 'Unscheduled';
+        $request->merchant_initiated  = true;
+        $request->previous_payment_id = $mitSavedCard->token;
+        $request->processing          = [
             'merchant_initiated_reason' => 'delayed_charge'
         ];
 
@@ -100,11 +107,11 @@ class PayOrderWithMitCard
                 'state'                   => PaymentStateEnum::COMPLETED,
                 'type'                    => PaymentTypeEnum::PAYMENT,
                 'payment_account_shop_id' => $paymentAccountShop->id,
-                'data' => [
+                'data'                    => [
                     'checkout_com' => $response
                 ]
             ];
-            $payment = StorePayment::make()->action($order->customer, $paymentAccountShop->paymentAccount, $paymentData);
+            $payment     = StorePayment::make()->action($order->customer, $paymentAccountShop->paymentAccount, $paymentData);
 
             AttachPaymentToOrder::make()->action($order, $payment, [
                 'amount' => $payment->amount
@@ -113,20 +120,18 @@ class PayOrderWithMitCard
             $result = [
                 'status' => 'ok',
             ];
-
         } catch (CheckoutApiException $e) {
-
             // API error
             $error_details    = $e->error_details;
             $http_status_code = isset($e->http_metadata) ? $e->http_metadata->getStatusCode() : null;
 
             $result = [
-                'status' => 'error',
-                'message' => $e->getMessage(),
-                'error_details' => $error_details,
+                'debug'            => 'PayOrderWithMitCard.php',
+                'status'           => 'error',
+                'message'          => $e->getMessage(),
+                'error_details'    => $error_details,
                 'http_status_code' => $http_status_code,
             ];
-            print_r($result);
 
         }
 
@@ -141,7 +146,7 @@ class PayOrderWithMitCard
      */
     public function asCommand(): int
     {
-        $order = Order::find(1186846);
+        $order = Order::find(1195254);
 
         $mitSavedCard = MitSavedCard::where('customer_id', $order->customer_id)->first();
 

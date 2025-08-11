@@ -108,6 +108,7 @@ Route::get('/invoice-categories', IndexInvoiceCategories::class)->name('invoice-
 Route::get('/invoice-categories/create', CreateInvoiceCategory::class)->name('invoice-categories.create');
 Route::get('/invoice-categories/{invoiceCategory}', ShowInvoiceCategory::class)->name('invoice-categories.show');
 Route::get('/invoice-categories/{invoiceCategory}/invoices', [IndexInvoices::class, 'inInvoiceCategory'])->name('invoice-categories.show.invoices.index');
+Route::get('/invoice-categories/{invoiceCategory}/invoices/omega', [OmegaManyInvoice::class, 'inInvoiceCategory'])->name('invoice-categories.show.invoices.index.omega');
 
 Route::get('/invoice-categories/{invoiceCategory}/refunds', [IndexRefunds::class, 'inInvoiceCategory'])->name('invoice-categories.show.refunds.index');
 

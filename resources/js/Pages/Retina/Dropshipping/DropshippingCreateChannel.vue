@@ -289,7 +289,7 @@ const isModalEbayDuplicate = ref(false)
                     class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <img src="https://aw.aurora.systems/art/aurora_log_v2_orange.png" alt="" class="h-12">
                     <div class="flex flex-col">
-                        <div class="font-semibold">{{ trans("Web") }}</div>
+                        <div class="font-semibold">{{ trans("Web") }}/API</div>
                         <div class="text-xs text-gray-500">{{ total_channels?.manual }} {{ trans("Channels") }}</div>
                     </div>
                 </div>
@@ -306,18 +306,16 @@ const isModalEbayDuplicate = ref(false)
             <!-- Section: Shopify -->
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                    class="mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <div v-html="ChannelLogo('shopify')" class="h-12"></div>
                     <div class="flex flex-col">
                         <div class="font-semibold">Shopify</div>
                         <div class="text-xs text-gray-500">{{ total_channels?.shopify }} {{ trans("Channels") }}</div>
                     </div>
                 </div>
-
                 <!-- Button: Connect -->
                 <div class="relative w-full">
-                    <Button v-if="layout?.app?.environment === 'local'" @click="() => isModalOpen = 'shopify'" label="Connect" type="primary" full/>
-                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
+                    <Button @click="() => isModalOpen = 'shopify'" label="Connect" type="primary" full/>
                 </div>
             </div>
 
@@ -395,7 +393,7 @@ const isModalEbayDuplicate = ref(false)
                 <div class="w-full flex justify-end">
 
                     <Button
-                        v-if="layout?.app?.environment === 'local'"
+                        v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
                         :label="trans('Connect')"
                         xtype="primary"
                         :type="total_channels?.ebay ? 'tertiary' : 'primary'"
@@ -433,6 +431,7 @@ const isModalEbayDuplicate = ref(false)
                         :label="trans('Connect')"
                         type="primary"
                         full
+                        iconRight="fal fa-external-link-alt"
                         @click="onSubmitAmazon"
                     />
 
@@ -473,15 +472,15 @@ const isModalEbayDuplicate = ref(false)
     </div>
 
     <!-- Modal: Shopify -->
-    <Modal :isOpen="!!isModalOpen" @onClose="isModalOpen = false" width="w-[500px]">
+    <Modal :isOpen="!!isModalOpen" @onClose="isModalOpen = false" width="w-[600px]">
         <div class="h-fit">
-            <div class="mb-4">
+            <div class="mb-6">
                 <div class="text-center font-semibold text-xl">
-                    {{ trans("Select your store name") }}
+                    {{ trans("Please enter your Shopify unique domain name") }}
                 </div>
 
-                <div class="text-center text-xs text-gray-500">
-                    {{ trans("This is the url that your store can be accessed") }}
+                <div class="text-center text-xs text-gray-500 w-9/12 mx-auto">
+                    {{ trans("You will be able to find it in your Shopify settings under domains section.") }}
                 </div>
             </div>
 
@@ -496,6 +495,10 @@ const isModalEbayDuplicate = ref(false)
                 }"
                 @keydown.enter="() => onCreateStoreShopify()"
             />
+            
+            <div class="mt-1 text-xs text-gray-500">
+                {{ trans("Not sure which is your Shopify store name?") }} <a href="https://drive.google.com/file/d/1bdq3cQUvc3bussJfIMen5b4P4X-qw0W-/view" target="_blank" class="underline hover:text-gray-700">Click here</a>
+            </div>
 
             <Transition name="slide-to-right">
                 <div v-if="errorShopify" class="text-red-500 italic text-sm mt-2">
@@ -503,7 +506,7 @@ const isModalEbayDuplicate = ref(false)
                 </div>
             </Transition>
 
-            <Button @click="() => onCreateStoreShopify()" full label="Create" :loading="!!isLoading" class="mt-6"/>
+            <Button @click="() => onCreateStoreShopify()" full :label="trans('Connect')" :loading="!!isLoading" class="mt-6" />
         </div>
     </Modal>
 
@@ -512,7 +515,7 @@ const isModalEbayDuplicate = ref(false)
         <div class="">
             <div class="mb-4">
                 <div class="text-center font-semibold text-xl">
-                    {{ trans("Create manual platform") }}
+                    {{ trans("Create platform manual") }}
                 </div>
 
                 <div class="text-center text-xs text-gray-500">

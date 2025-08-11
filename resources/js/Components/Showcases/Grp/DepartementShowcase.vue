@@ -8,6 +8,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { router, Link } from "@inertiajs/vue3";
 import { trans } from "laravel-vue-i18n";
 import { notify } from "@kyvg/vue3-notification";
+import TranslationBox from '@/Components/TranslationBox.vue';
 
 import Image from "@/Components/Image.vue";
 import Message from "primevue/message";
@@ -17,6 +18,10 @@ library.add(faAlbumCollection);
 
 const props = defineProps<{
     data: {
+        translation_box : {
+            title: string
+            save_route: routeType
+        }
         has_webpage ?: boolean;
         department: {
             data: {
@@ -171,6 +176,15 @@ const UnassignCollection = async ( id: number ) => {
 <!--                    @unassign="UnassignCollection"-->
 <!--                />-->
 <!--            </div>-->
+
+
         </div>
     </div>
+
+    <TranslationBox 
+        v-if="route().current()?.includes('master')"
+        :master="data.department" 
+        :needTranslation="data.department" 
+        v-bind="data.department.translation_box"
+    />
 </template>

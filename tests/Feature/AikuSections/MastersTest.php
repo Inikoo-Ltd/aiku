@@ -20,6 +20,7 @@ use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\HydrateMasterShop;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\Masters\MasterShop\UpdateMasterShop;
+use App\Actions\Masters\MasterAsset\HydrateMasterAssets;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
@@ -443,3 +444,10 @@ test('Hydrate master departments', function (MasterShop $masterShop) {
 test('master hydrator', function () {
     $this->artisan('hydrate -s masters')->assertExitCode(0);
 });
+
+test('Hydrate master assets', function (MasterAsset $masterAsset) {
+    HydrateMasterAssets::run($masterAsset);
+    $masterAsset->refresh();
+    expect($masterAsset)->toBeInstanceOf(MasterAsset::class);
+
+})->depends('update master asset');

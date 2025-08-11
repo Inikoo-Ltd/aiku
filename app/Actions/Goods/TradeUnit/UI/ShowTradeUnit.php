@@ -47,75 +47,72 @@ class ShowTradeUnit extends GrpAction
 
     public function getImagesData(TradeUnit $tradeUnit): array
     {
-        // $imagesData = [];
 
-        // if ($this->tab == TradeUnitTabsEnum::IMAGES->value) {
-        $imagesData = [
+        return [
             [
                 'label' => __('Main'),
                 'type'  => 'image',
-                'key_in_db' => 'image_id',
+                'column_in_db' => 'image_id',
                 'images' => $tradeUnit->imageSources(),
             ],
             [
                 'label' => __('Video'),
                 'type'  => 'video',
                 'information' => __('You can use YouTube or Vimeo links'),
-                'key_in_db' => 'video_url',
+                'column_in_db' => 'video_url',
                 'url' => $tradeUnit->video_url,
             ],
             [
                 'label' => __('Front side'),
                 'type'  => 'image',
-                'key_in_db' => 'front_image_id',
+                'column_in_db' => 'front_image_id',
                 'images' => $tradeUnit->imageSources(getImage:'frontImage'),
             ],
             [
                 'label' => __('Left side'),
                 'type'  => 'image',
-                'key_in_db' => 'left_image_id',
+                'column_in_db' => 'left_image_id',
                 'images' => $tradeUnit->imageSources(getImage:'leftImage'),
             ],
             [
                 'label' => __('3/4 angle side'),
                 'type'  => 'image',
-                'key_in_db' => '34_image_id',
+                'column_in_db' => '34_image_id',
                 'images' => $tradeUnit->imageSources(getImage:'threeQuarterImage'),
             ],
             [
                 'label' => __('Right side'),
                 'type'  => 'image',
-                'key_in_db' => 'right_image_id',
+                'column_in_db' => 'right_image_id',
                 'images' => $tradeUnit->imageSources(getImage:'rightImage'),
             ],
             [
                 'label' => __('Back side'),
                 'type'  => 'image',
-                'key_in_db' => 'back_image_id',
+                'column_in_db' => 'back_image_id',
                 'images' => $tradeUnit->imageSources(getImage:'backImage'),
             ],
             [
                 'label' => __('Top side'),
                 'type'  => 'image',
-                'key_in_db' => 'top_image_id',
+                'column_in_db' => 'top_image_id',
                 'images' => $tradeUnit->imageSources(getImage:'topImage'),
             ],
             [
                 'label' => __('Bottom side'),
                 'type'  => 'image',
-                'key_in_db' => 'bottom_image_id',
+                'column_in_db' => 'bottom_image_id',
                 'images' => $tradeUnit->imageSources(getImage:'bottomImage'),
             ],
             [
                 'label' => __('Comparison image'),
                 'type'  => 'image',
-                'key_in_db' => 'size_comparison_image_id',
+                'column_in_db' => 'size_comparison_image_id',
                 'images' => $tradeUnit->imageSources(getImage:'sizeComparisonImage'),
             ],
         ];
-        // }
 
-        return $imagesData;
+
     }
 
     public function htmlResponse(TradeUnit $tradeUnit, ActionRequest $request): Response
@@ -171,7 +168,6 @@ class ShowTradeUnit extends GrpAction
                     'navigation' => TradeUnitTabsEnum::navigation()
 
                 ],
-
                 'images_category_box' => $this->getImagesData($tradeUnit),
                 'images_update_route' => [
                     'name'       => 'grp.models.trade-unit.update_images',

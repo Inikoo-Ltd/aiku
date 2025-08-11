@@ -12,6 +12,7 @@ namespace App\Actions\Catalogue\Collection\Json;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Http\Resources\Web\WebpagesResource;
 use App\InertiaTable\InertiaTable;
@@ -40,6 +41,15 @@ class GetWebpagesInCollection extends OrgAction
 
         return $this->handle($shop->website);
     }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inShopActive(Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = 'live';
+        $this->scope  = $shop;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($shop->website);
+    }
 
     public function handle(Website $parent, $prefix = null, $bucket = null): LengthAwarePaginator
     {
@@ -61,6 +71,10 @@ class GetWebpagesInCollection extends OrgAction
         $queryBuilder = QueryBuilder::for(Webpage::class);
 
         $queryBuilder->where('webpages.website_id', $parent->id);
+
+        if ($bucket == 'live') {
+            $queryBuilder->where('webpages.state', WebpageStateEnum::LIVE);
+        }
 
         if ($this->bucket == 'catalogue') {
             $queryBuilder->where('webpages.type', WebpageTypeEnum::CATALOGUE);

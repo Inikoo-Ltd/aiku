@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\CustomerSalesChannel;
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
 class RetinaDeleteCustomerSalesChannel extends RetinaAction
@@ -40,7 +41,7 @@ class RetinaDeleteCustomerSalesChannel extends RetinaAction
 
     public function htmlResponse(): RedirectResponse
     {
-        return back();
+        return Redirect::route('retina.dropshipping.customer_sales_channels.index');
     }
 
 

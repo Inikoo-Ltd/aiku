@@ -68,11 +68,11 @@ export default {
     },
 
     /**
-     * Whether to simplify the fraction (reduce to lowest terms)
+     * Whether to simplify the fraction (reduce to the lowest terms)
      */
     simplify: {
       type: Boolean,
-      default: true
+      default: false
     }
   },
 
