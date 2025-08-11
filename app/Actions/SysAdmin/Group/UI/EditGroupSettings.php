@@ -97,7 +97,7 @@ class EditGroupSettings extends GrpAction
                                 'label'         => __('Main language'),
                                 'placeholder'   => __('Select your language'),
                                 'required'      => true,
-                                'value'         => [],
+                                'value'         => [],//need_just_id 
                                 'options'       => GetLanguagesOptions::make()->all(),
                                 'searchable'    => true,
                                 'mode'          => 'tags',
