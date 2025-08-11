@@ -21,16 +21,18 @@ class FinaliseAndDispatchDeliveryNote extends OrgAction
      */
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
-        $deliveryNote = DB::transaction(function () use ($deliveryNote) {
+        return DB::transaction(function () use ($deliveryNote) {
+
             $finalisedDeliveryNote = FinaliseDeliveryNote::make()->action($deliveryNote);
+
             $finalisedDeliveryNote->refresh();
             $dispatchedDeliveryNote = DispatchDeliveryNote::make()->action($deliveryNote);
+
             $dispatchedDeliveryNote->refresh();
 
             return $dispatchedDeliveryNote;
         });
 
-        return $deliveryNote;
     }
 
     /**

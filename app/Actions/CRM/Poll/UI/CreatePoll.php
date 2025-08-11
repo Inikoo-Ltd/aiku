@@ -30,6 +30,7 @@ class CreatePoll extends OrgAction
      */
     public function handle(ActionRequest $request): \Inertia\Response
     {
+
         return Inertia::render(
             'CreateModel',
             [
@@ -74,7 +75,7 @@ class CreatePoll extends OrgAction
                                     'options'  => Options::forEnum(PollTypeEnum::class),
                                     'value'    => [
                                         'type'         => PollTypeEnum::OPTION->value,
-                                        'poll_options' => []
+                                        'poll_options' => [],
                                     ]
                                 ],
                                 'label'                    => [

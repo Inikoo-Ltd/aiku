@@ -127,6 +127,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property OrderChargesEngineEnum $charges_engine
  * @property int|null $customer_sales_channel_id
  * @property string|null $platform_order_id
+ * @property string|null $shipping_notes
+ * @property string|null $traffic_sources
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits

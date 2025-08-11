@@ -19,6 +19,8 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { trans } from "laravel-vue-i18n"
 import Modal from "@/Components/Utils/Modal.vue"
 import { notify } from "@kyvg/vue3-notification"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import deliveryNote from "@/Pages/Grp/Org/Dispatching/DeliveryNote.vue"
 
 const props = defineProps<{
     data: TableTS,
@@ -45,7 +47,7 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
                 [deliveryNote.shop_id, deliveryNote.slug])
         case "grp.org.warehouses.show.dispatching.delivery-notes":
             return route(
-                "grp.org.warehouses.show.dispatching.delivery-notes.show",
+                "grp.org.warehouses.show.dispatching.delivery_notes.show",
                 [route().params["organisation"], route().params["warehouse"], deliveryNote.slug])
         case "grp.org.shops.show.ordering.delivery-notes.index":
             return route(
@@ -73,9 +75,16 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
                 [deliveryNote.organisation_slug, deliveryNote.shop_slug, deliveryNote.customer_slug, deliveryNote.slug])
         default:
             return route(
-                "grp.org.warehouses.show.dispatching.delivery-notes.show",
+                "grp.org.warehouses.show.dispatching.delivery_notes.show",
                 [route().params["organisation"], route().params["warehouse"], deliveryNote.slug]);
     }
+}
+
+
+function pickingSessionRoute(id) {
+    return route(
+        "grp.helpers.redirect_picking_session",
+        [id])
 }
 
 function customerRoute(deliveryNote: DeliveryNote) {
@@ -146,26 +155,71 @@ const onChangeCheked = (checked: boolean, item: DeliveryNote) => {
             selectedDeliveryNotes.value.push(item.id)
         }
     } else {
-        selectedDeliveryNotes.value = selectedDeliveryNotes.value.filter(id => id !== item.id)
+        selectedDeliveryNotes.value = selectedDeliveryNotes.value.filter(id => id != item.id)
     }
 }
 
+const onCheckedAll = ({ data, allChecked }) => {
+    if (!selectedDeliveryNotes.value) return
+
+    if (allChecked) {
+        const newIds = data.map(row => row.id)
+        selectedDeliveryNotes.value = Array.from(new Set([...selectedDeliveryNotes.value, ...newIds]))
+    } else {
+        const uncheckIds = data.map(row => row.id)
+        selectedDeliveryNotes.value = selectedDeliveryNotes.value.filter(id => !uncheckIds.includes(id))
+    }
+}
 
 
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="layout.app.environment !== 'production'"
-        @onChecked="(item) => onChangeCheked(true, item)" @onUnchecked="(item) => onChangeCheked(false, item)"
-        checkboxKey='id' :isChecked="(item) => selectedDeliveryNotes.includes(item.id)">
+    <Table :resource="data" :name="tab" class="mt-5" 
+        :isCheckBox="true"
+        @onChecked="(item) => onChangeCheked(true, item)" 
+        @onUnchecked="(item) => onChangeCheked(false, item)"
+        @onCheckedAll="(data) => onCheckedAll(data)"
+        checkboxKey='id' 
+        :isChecked="(item) => selectedDeliveryNotes.includes(item.id)"
+        :disabledCheckbox="(item) => item.picking_sessions_count > 0"
+    >
+    
+       <!--  <template #header-checkbox="data">
+            <div></div>
+        </template> -->
+
+        <template #disable-checkbox>
+            <div></div>
+        </template>
+
         <template #cell(status)="{ item: deliveryNote }">
             <Icon :data="deliveryNote.state_icon" />
+        </template>
+
+        <template #cell(effective_weight)="{ item: deliveryNote }">
+            {{ deliveryNote.effective_weight }} g
         </template>
 
         <template #cell(reference)="{ item: deliveryNote }">
             <Link :href="deliveryNoteRoute(deliveryNote)" class="primaryLink">
             {{ deliveryNote["reference"] }}
             </Link>
+
+            <template v-if="deliveryNote.picking_sessions_count > 0 && deliveryNote.picking_session_ids">
+                <Link
+                    v-for="id in deliveryNote.picking_session_ids.split(',')"
+                    :key="id"
+                    :href="pickingSessionRoute(id)" class="secondaryLink">
+                <FontAwesomeIcon
+                    icon="fab fa-stack-overflow" 
+                    class="text-yellow-500" 
+                    fixed-width 
+                    aria-hidden="true" 
+                />
+                </Link>
+            </template>
+
         </template>
 
         <template #cell(date)="{ item }">

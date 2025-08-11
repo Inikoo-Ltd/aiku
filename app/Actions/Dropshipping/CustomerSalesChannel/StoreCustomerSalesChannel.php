@@ -8,9 +8,10 @@
 
 namespace App\Actions\Dropshipping\CustomerSalesChannel;
 
+use App\Actions\Catalogue\ShopPlatformStats\ShopPlatformStatsHydrateCustomers;
+use App\Actions\Catalogue\ShopPlatformStats\ShopPlatformStatsHydrateCustomerSalesChannel;
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateCustomers;
 use App\Actions\OrgAction;
-use App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\Customer;
@@ -23,14 +24,21 @@ class StoreCustomerSalesChannel extends OrgAction
 {
     public function handle(Customer $customer, Platform $platform, array $modelData): CustomerSalesChannel
     {
+        if ($platform->type == PlatformTypeEnum::MANUAL) {
+            data_set($modelData, 'can_connect_to_platform', true);
+            data_set($modelData, 'exist_in_platform', true);
+            data_set($modelData, 'platform_status', true);
+        }
+
         $modelData['group_id']          = $customer->group_id;
         $modelData['organisation_id']   = $customer->organisation_id;
         $modelData['shop_id']           = $customer->shop_id;
         $modelData['platform_id']       = $platform->id;
-        $modelData['connection_status'] = $platform->type == PlatformTypeEnum::MANUAL ? CustomerSalesChannelConnectionStatusEnum::NO_APPLICABLE : CustomerSalesChannelConnectionStatusEnum::PENDING;
         $customerSalesChannel           = $customer->customerSalesChannels()->create($modelData);
 
         PlatformHydrateCustomers::dispatch($platform)->delay($this->hydratorsDelay);
+        ShopPlatformStatsHydrateCustomers::dispatch($customer->shop, $platform)->delay($this->hydratorsDelay);
+        ShopPlatformStatsHydrateCustomerSalesChannel::dispatch($customer->shop, $platform)->delay($this->hydratorsDelay);
 
         return $customerSalesChannel;
     }

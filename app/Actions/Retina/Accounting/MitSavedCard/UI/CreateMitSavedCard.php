@@ -65,6 +65,10 @@ class CreateMitSavedCard extends RetinaAction
         $paymentSessionRequest->success_url = $this->getSuccessUrl($mitSavedCard);
         $paymentSessionRequest->failure_url = $this->getFailureUrl($mitSavedCard);
 
+        $paymentSessionRequest->disabled_payment_methods = [
+            'applepay',
+        ];
+
         $billingAddress = $this->customer->address;
 
         $paymentSessionRequest = $this->setBillingInformation($paymentSessionRequest, $billingAddress);

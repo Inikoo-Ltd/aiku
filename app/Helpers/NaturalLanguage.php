@@ -8,6 +8,7 @@
 
 namespace App\Helpers;
 
+use App\Models\Helpers\Country;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class NaturalLanguage
@@ -37,11 +38,13 @@ class NaturalLanguage
 
                 // If no matching suffix was found, use the calculated base with the custom suffix
                 $base = log($size) / log(1024);
+
                 return round(pow(1024, $base - floor($base)), $precision).$suffix;
             }
 
             // Default behavior (no custom suffix)
             $base = log($size) / log(1024);
+
             return round(pow(1024, $base - floor($base)), $precision).$suffixes[floor($base)];
         } else {
             return $size;
@@ -69,19 +72,19 @@ class NaturalLanguage
                     $value = $weight / pow(1000, $suffixBase);
                     // Format the value based on whether it's a whole number or not
                     if ($value == (int)$value) {
-                        return (int)$value . $suffix;
+                        return (int)$value.$suffix;
                     } else {
-                        return rtrim(rtrim(number_format($value, $precision, '.', ''), '0'), '.') . $suffix;
+                        return rtrim(rtrim(number_format($value, $precision, '.', ''), '0'), '.').$suffix;
                     }
                 }
 
                 // If no matching suffix was found, use the calculated base with the custom suffix
-                $base = log($weight) / log(1000);
+                $base  = log($weight) / log(1000);
                 $value = pow(1000, $base - floor($base));
                 if ($value == (int)$value) {
-                    return (int)$value . $suffix;
+                    return (int)$value.$suffix;
                 } else {
-                    return rtrim(rtrim(number_format($value, $precision, '.', ''), '0'), '.') . $suffix;
+                    return rtrim(rtrim(number_format($value, $precision, '.', ''), '0'), '.').$suffix;
                 }
             }
 
@@ -89,26 +92,43 @@ class NaturalLanguage
             // Choose the suffix based on the weight value
             if ($weight >= 1000000) {
                 // Convert to tonnes
-                $value = $weight / 1000000;
+                $value  = $weight / 1000000;
                 $suffix = $suffixes[2]; // t
             } elseif ($weight >= 1000) {
                 // Convert to kilograms for weights over 1000g
-                $value = $weight / 1000;
+                $value  = $weight / 1000;
                 $suffix = $suffixes[1]; // kg
             } else {
                 // Use grams for weights under 1000g
-                $value = $weight;
+                $value  = $weight;
                 $suffix = $suffixes[0]; // g
             }
 
             // Format the value based on whether it's a whole number or not
             if ($value == (int)$value) {
-                return (int)$value . $suffix;
+                return (int)$value.$suffix;
             } else {
-                return rtrim(rtrim(number_format($value, $precision, '.', ''), '0'), '.') . $suffix;
+                return rtrim(rtrim(number_format($value, $precision, '.', ''), '0'), '.').$suffix;
             }
         } else {
             return $weight;
         }
     }
+
+    public function dimensions($dimensionsData): string
+    {
+        return DimensionsFormatter::make()->dimensions($dimensionsData) ?? '';
+    }
+
+    public function country($country): array
+    {
+        $country = Country::where('iso3', $country)->first();
+        return $country ? [
+            'name' => $country->name,
+            'code' => $country->code,
+        ] : [];
+    }
+
+
+
 }

@@ -45,6 +45,7 @@ const props = defineProps<{
 const locale = inject('locale', aikuLocaleStructure)
 
 const isLoading = ref<string | boolean>(false)
+const isLoadingNode = ref<string | boolean>(false)
 </script>
 
 <template>
@@ -82,13 +83,17 @@ const isLoading = ref<string | boolean>(false)
                     <!-- Section: Sub data -->
                     <div v-if="node.sub_data?.length" class="py-2 px-3 md:px-0 text-sm text-gray-500 flex gap-x-3 gap-y-0.5 justify-end items-center flex-wrap">
                         <Link
-                            v-for="subData in node.sub_data"
+                            v-for="(subData, subIdx) in node.sub_data"
                             :is="subData.route?.name ? Link : 'div'"
                             :href="subData.route?.name ? route(subData.route.name, subData.route.parameters) : ''"
-                            class="group/sub px-2 flex gap-x-0.5 items-center font-normal"
+                            class="group/sub px-2 flex gap-x-0.5 items-center font-normal rounded"
                             v-tooltip="capitalize(subData.icon?.tooltip)"
+                            :class="subData.route?.name ? 'hover:bg-gray-200 hover:ring-1 hover:ring-gray-300' : ''"    
+                            @start="() => isLoadingNode = 'subLink' + subIdx"
+                            @finish="() => isLoadingNode = false"
                         >
-                            <FontAwesomeIcon :icon="subData.icon?.icon" class="" :class="subData.icon?.class" fixed-width :title="subData.icon?.tooltip" aria-hidden="true" />
+                            <LoadingIcon v-if="isLoadingNode === 'subLink' + subIdx" />
+                            <FontAwesomeIcon v-else :icon="subData.icon?.icon" class="" :class="subData.icon?.class" fixed-width :title="subData.icon?.tooltip" aria-hidden="true" />
                             <span class=" ">
                                 {{ locale.number(subData.count || 0) }}
                             </span>
@@ -104,7 +109,8 @@ const isLoading = ref<string | boolean>(false)
                         :href="node.route?.name ? route(node.rightSubLink.route.name, node.rightSubLink.route.parameters) : ''"
                         @start="() => isLoading = 'subLink' + nodeIdx"
                         @finish="() => isLoading = false"
-                        class="w-9 h-9 flex justify-center items-center specialBox">
+                        class="w-9 h-9 flex justify-center items-center specialBox"
+                    >
                         <LoadingIcon v-if="isLoading === 'subLink' + nodeIdx" />
                         <FontAwesomeIcon v-else-if="node.rightSubLink?.icon" :icon="node.rightSubLink.icon" class="flex-shrink-0 " aria-hidden="true" fixed-width />
                     </component>

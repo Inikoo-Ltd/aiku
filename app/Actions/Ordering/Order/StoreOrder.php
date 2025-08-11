@@ -79,7 +79,6 @@ class StoreOrder extends OrgAction
         }
         data_set($modelData, 'date', now(), overwrite: false);
 
-
         if ($this->strict) {
             $modelData['pay_status'] = OrderPayStatusEnum::UNPAID->value;
             if ($parent instanceof Customer) {
@@ -90,7 +89,7 @@ class StoreOrder extends OrgAction
             } elseif ($parent instanceof CustomerClient) {
                 data_forget($modelData, 'billing_address'); // Just in case is added by mistake
                 $billingAddress  = $parent->customer->address;
-                $deliveryAddress = Arr::pull($modelData, 'delivery_address');
+                $deliveryAddress = Arr::pull($modelData, 'delivery_address') ?? $parent->address;
             } else {
                 $billingAddress  = Arr::pull($modelData, 'billing_address');
                 $deliveryAddress = Arr::pull($modelData, 'delivery_address');
@@ -100,19 +99,18 @@ class StoreOrder extends OrgAction
             $deliveryAddress = Arr::pull($modelData, 'delivery_address');
         }
 
-        if (class_basename($parent) == 'Customer') {
+        if ($parent instanceof Customer) {
             $modelData['customer_id'] = $parent->id;
             $modelData['currency_id'] = $parent->shop->currency_id;
             $modelData['shop_id']     = $parent->shop_id;
-        } elseif (class_basename($parent) == 'CustomerClient') {
+        } elseif ($parent instanceof CustomerClient) {
             $modelData['customer_id']        = $parent->customer_id;
             $modelData['customer_client_id'] = $parent->id;
             $modelData['currency_id']        = $parent->shop->currency_id;
             $modelData['shop_id']            = $parent->shop_id;
+            $modelData['platform_id'] = $parent->salesChannel->platform_id;
+            $modelData['customer_sales_channel_id'] = $parent->customer_sales_channel_id;
 
-            if (!$modelData['platform_id']) {
-                $modelData['platform_id'] = $parent->platform_id;
-            }
         } else {
             $modelData['currency_id'] = $parent->currency_id;
             $modelData['shop_id']     = $parent->id;
@@ -126,6 +124,7 @@ class StoreOrder extends OrgAction
             } else {
                 $taxNumber = $parent->customer->taxNumber;
             }
+            // dd($deliveryAddress);
             data_set(
                 $modelData,
                 'tax_category_id',
@@ -318,7 +317,7 @@ class StoreOrder extends OrgAction
                 $order->organisation->slug,
                 $order->shop->slug,
                 $order->customer->slug,
-                $order->platform->slug,
+                $order->customerSalesChannel->slug,
                 $order->customerClient->ulid,
                 $order->slug
             ]),

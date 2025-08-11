@@ -106,9 +106,23 @@ const generateLinkPallet = () => {
 // Generate link to audit
 const generateLinkAudit = (data) => {
     switch (route().current()) {
-      
+        case 'grp.org.fulfilments.show.crm.customers.show.stored-items.show':
+            return route('grp.org.fulfilments.show.crm.customers.show.stored-item-audits.show',
+                [
+                    route().params['organisation'],
+                    route().params['fulfilment'],
+                    route().params['fulfilmentCustomer'],
+                    data.last_audit_slug
+                ]
+            );
+        case 'retina.fulfilment.itemised_storage.stored_items.show':
+            return route('retina.fulfilment.storage.stored-items-audits.show',
+                [
+                    data.last_audit_slug
+                ]
+            );
         default:
-            return null
+            return ''
     }
 }
 
@@ -201,9 +215,9 @@ onMounted(() => {
                         <dt class="text-gray-500">{{ trans("Last audit") }}</dt>
                         <dd class="flex items-start gap-x-2">
                       
-                            <Link v-if="data.stored_item?.last_audit_at"
+                            <Link v-if="data.stored_item?.last_audit_at && generateLinkAudit(data)"
                                 :href="generateLinkAudit(data)" class="primaryLink">
-                            {{ useFormatTime(data.stored_item?.last_audit_at) }}
+                                {{ useFormatTime(data.stored_item?.last_audit_at) }}
                             </Link>
                             <div v-else class="font-medium">{{ useFormatTime(data.stored_item?.last_audit_at) }}</div>
                         </dd>

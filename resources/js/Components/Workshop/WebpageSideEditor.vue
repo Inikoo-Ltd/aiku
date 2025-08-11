@@ -56,7 +56,7 @@ const isLoadingBlock = inject('isLoadingBlock', ref(null))
 const filterBlock = inject('filterBlock')
 const changeTab = (index: number) => (selectedTab.value = index)
 const sendNewBlock = (block: Daum) => {
-  console.log('mmm',block,addType.value )
+  console.log('mmm', block, addType.value)
   emits('add', { block, type: addType.value })
 }
 const sendBlockUpdate = (block: Daum) => emits('update', block)
@@ -157,6 +157,13 @@ const pasteBlock = () => {
   closeContextMenu()
 }
 
+const duplicateBlock = (block: Daum) => {
+  copiedBlock.value = structuredClone(toRaw(block))
+  emits('onDuplicateBlock', copiedBlock.value.id)
+  closeContextMenu()
+}
+
+
 
 onMounted(() => {
   window.addEventListener('click', closeContextMenu)
@@ -166,7 +173,7 @@ onUnmounted(() => {
 })
 
 defineExpose({
-    addType
+  addType
 })
 
 </script>
@@ -216,27 +223,41 @@ defineExpose({
                 <template #item="{ element, index }">
                   <div v-if="showWebpage(element)" class="bg-white border border-gray-200 rounded"
                     @contextmenu="e => openContextMenu(e, element)">
-                    <div class="flex justify-between items-center px-3 py-2 cursor-pointer hover:bg-gray-100"
-                      :class="openedBlockSideEditor === index ? 'bg-theme text-white' : ''">
-                      <div class="flex items-center gap-2 w-full"
-                        @click="() => getEditPermissions(element.web_block.layout.data) && (openedBlockSideEditor = openedBlockSideEditor === index ? null : index)">
+                    <div class="flex justify-between items-center px-3 py-2 "
+                      v-tooltip="getEditPermissions(element.web_block.layout.data) ? '' : trans('This block is reserved by system. Not editable.')"
+                      :class="[
+                        openedBlockSideEditor === index ? 'bg-theme text-white' : '',
+                        getEditPermissions(element.web_block.layout.data) ? 'cursor-pointer hover:bg-gray-100' : 'cursor-not-allowed'
+                      ]">
+                      <button class="flex items-center gap-2 w-full"
+                        @click="() => openedBlockSideEditor = openedBlockSideEditor === index ? null : index"
+                        :disabled="!getEditPermissions(element.web_block.layout.data)">
                         <FontAwesomeIcon icon="fal fa-bars" class="handle text-sm text-gray-400 cursor-grab" />
                         <span class="text-sm font-medium capitalize truncate">
                           {{ element.name || element.type }}
                         </span>
                         <LoadingIcon v-if="isLoadingBlock === element.id" />
-                      </div>
+                      </button>
 
                       <div class="flex items-center gap-1">
+                        <!-- Duplicate Block Button -->
+                        <button v-if="getEditPermissions(element.web_block.layout.data)"
+                          v-tooltip="trans('Duplicate this block')" @click.stop.prevent="duplicateBlock(element)"
+                          class="px-1 py-0.5 text-theme hover:text-opacity-80 text-xs bg-white/50 rounded">
+                          <FontAwesomeIcon :icon="faCopy" fixed-width />
+                        </button>
+
+
                         <button v-if="getHiddenPermissions(element.web_block.layout.data)"
+                          v-tooltip="trans('Toggle visibility: hide/show the block from the page')"
                           @click.stop.prevent="setShowBlock($event, element)"
-                          class="px-1 text-theme hover:text-opacity-80 text-xs">
+                          class="px-1 py-0.5 text-theme hover:text-opacity-80 text-xs bg-white/50 rounded">
                           <FontAwesomeIcon :icon="element.show ? 'fal fa-eye' : 'fal fa-eye-slash'" fixed-width />
                         </button>
 
                         <button v-if="getDeletePermissions(element.web_block.layout.data)"
                           @click="e => isLoadingDeleteBlock !== element.id && confirmDelete(e, element)"
-                          class="px-1 text-theme hover:text-opacity-80 text-xs">
+                          class="px-1 py-0.5 text-theme hover:text-opacity-80 text-xs bg-white/50 rounded">
                           <LoadingIcon v-if="isLoadingDeleteBlock === element.id" />
                           <FontAwesomeIcon v-else icon="fal fa-trash-alt" class="text-red-500" fixed-width />
                         </button>
@@ -244,12 +265,12 @@ defineExpose({
                     </div>
 
                     <Collapse v-if="element?.web_block?.layout"
-                      :when="openedBlockSideEditor === index">
+                      :when="openedBlockSideEditor === index && getEditPermissions(element.web_block.layout.data)">
                       <div class="p-2 space-y-2">
                         <VisibleCheckmark v-model="element.visibility" @update:modelValue="sendBlockUpdate(element)" />
                         <SideEditor v-model="element.web_block.layout.data.fieldValue"
-                          :panelOpen="openedChildSideEditor" :blueprint="getBlueprint(element.type,webpage)" :block="element"
-                          @update:modelValue="() => sendBlockUpdate(element)"
+                          :panelOpen="openedChildSideEditor" :blueprint="getBlueprint(element.type, webpage)"
+                          :block="element" @update:modelValue="() => sendBlockUpdate(element)"
                           :uploadImageRoute="{ ...webpage.images_upload_route, parameters: { modelHasWebBlocks: element.id } }" />
                       </div>
                     </Collapse>
@@ -311,14 +332,12 @@ defineExpose({
         </li>
 
         <!-- Copy (Always enabled) -->
-        <li
-          @click="getEditPermissions(contextMenu.block.web_block.layout.data) && copyBlock()"
-          :class="[
-            'flex items-center gap-2 px-3 py-2',
-            getEditPermissions(contextMenu.block.web_block.layout.data)
-              ? 'hover:bg-gray-100 text-gray-800 cursor-pointer'
-              : 'text-gray-400 cursor-not-allowed pointer-events-none'
-          ]">
+        <li @click="getEditPermissions(contextMenu.block.web_block.layout.data) && copyBlock()" :class="[
+          'flex items-center gap-2 px-3 py-2',
+          getEditPermissions(contextMenu.block.web_block.layout.data)
+            ? 'hover:bg-gray-100 text-gray-800 cursor-pointer'
+            : 'text-gray-400 cursor-not-allowed pointer-events-none'
+        ]">
           <font-awesome-icon :icon="faCopy" />
           Copy
         </li>

@@ -89,6 +89,8 @@ trait WithMagentoApiRequest
 
             if ($response->successful()) {
                 return $response->json() ? is_array($response->json()) ? $response->json() : [$response->json()] : [];
+            } else {
+                dd($response->json());
             }
 
             if ($response->status() === 401) {
@@ -203,13 +205,11 @@ trait WithMagentoApiRequest
             ]
         ];
 
-        $result = $this->magentoApiRequest('post', "orders", $orderData);
-
         if (! blank($trackingData) && $status === 'complete') {
             $this->createShipment($orderId, $trackingData);
         }
 
-        return $result;
+        return $this->magentoApiRequest('post', "orders", $orderData);
     }
 
     /**
@@ -413,6 +413,96 @@ trait WithMagentoApiRequest
             Log::warning('Store views endpoint failed: ' . $e->getMessage());
             throw $e;
         }
+    }
+
+    public function getSources(): array
+    {
+        return $this->magentoApiRequest('get', 'inventory/sources');
+    }
+
+    /**
+     * Create inventory source in Magento
+     *
+     * @param array $sourceData Required data structure:
+     * [
+     *     'name' => 'string',         // Source name
+     *     'source_code' => 'string',  // Unique source code
+     *     'enabled' => bool,          // Source status
+     *     'description' => 'string',  // Optional description
+     *     'latitude' => float,        // Optional latitude
+     *     'longitude' => float,       // Optional longitude
+     *     'country_id' => 'string',   // Country code
+     *     'region_id' => int,        // Region/state ID
+     *     'region' => 'string',      // Region/state name
+     *     'city' => 'string',        // City name
+     *     'street' => 'string',      // Street address
+     *     'postcode' => 'string'     // Postal code
+     * ]
+     */
+    public function createSource(array $sourceData): array
+    {
+        return $this->magentoApiRequest('post', 'inventory/sources', [
+            'source' => $sourceData
+        ]);
+    }
+
+    public function getStocks(): array
+    {
+        return $this->magentoApiRequest('get', 'inventory/stocks');
+    }
+
+    /**
+     * Create inventory stock in Magento
+     *
+     * @param array $stockData Required data structure:
+     * [
+     *     'name' => 'string',           // Stock name
+     *     'stock_id' => int,           // Optional stock ID
+     *     'extension_attributes' => [   // Optional extension attributes
+     *         'sales_channels' => [     // Sales channels assigned to stock
+     *             [
+     *                 'type' => 'string',  // Channel type (website/store/store_group)
+     *                 'code' => 'string'   // Channel code
+     *             ]
+     *         ]
+     *     ]
+     * ]
+     */
+    public function createStock(array $stockData): array
+    {
+        return $this->magentoApiRequest('post', 'inventory/stocks', [
+            'stock' => $stockData
+        ]);
+    }
+
+    /**
+     * Assign inventory sources to a stock
+     *
+     * @param int $stockId Stock ID to assign sources to
+     * @param array $sources Array of source assignments in format:
+     * [
+     *     [
+     *         'source_code' => 'string',  // Unique source identification code
+     *         'position' => int,          // Priority position of the source
+     *         'status' => int             // Source status (1 for enabled, 0 for disabled)
+     *     ],
+     *     ...
+     * ]
+     *
+     * @return array Response from Magento API
+     */
+    public function assignSourceToStock(array $sources): array
+    {
+        return $this->magentoApiRequest('post', "inventory/stock-source-links", [
+            'links' => $sources
+        ]);
+    }
+
+    public function updateSourceItemsBySku(array $sourceItems): array
+    {
+        return $this->magentoApiRequest('post', 'inventory/source-items', [
+            'sourceItems' => $sourceItems
+        ]);
     }
 
     /**

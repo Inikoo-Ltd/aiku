@@ -136,7 +136,7 @@ class IndexSubDepartmentWebpages extends OrgAction
                 'product_category_stats.number_current_families',
                 'product_category_stats.number_current_products',
             ])
-            ->allowedSorts(['code', 'type', 'level', 'url'])
+            ->allowedSorts(['code', 'type', 'level', 'url', 'number_current_families', 'number_current_products'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -148,7 +148,7 @@ class IndexSubDepartmentWebpages extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
 
             if (!($parent instanceof Group)) {
@@ -167,9 +167,9 @@ class IndexSubDepartmentWebpages extends OrgAction
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(
                     [
-                            'title' => __("No webpages found"),
-                            'count' => $parent->webStats->number_webpages,
-                        ]
+                        'title' => __("No webpages found"),
+                        'count' => $parent->webStats->number_webpages,
+                    ]
                 )
                 ->column(key: 'level', label: '', icon: 'fal fa-sort-amount-down-alt', tooltip: __('Level'), canBeHidden: false, sortable: true, type: 'icon');
             $table->column(key: 'type', label: '', icon: 'fal fa-shapes', tooltip: __('Type'), canBeHidden: false, type: 'icon');

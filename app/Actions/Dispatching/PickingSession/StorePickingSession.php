@@ -9,14 +9,22 @@
 
 namespace App\Actions\Dispatching\PickingSession;
 
-use App\Actions\Dispatching\PickingSessionItem\StorePickingSessionItem;
+use App\Actions\Dispatching\DeliveryNote\StartHandlingDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToInQueue;
+use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
+use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
+use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
+use App\Models\Dispatching\DeliveryNote;
 use App\Models\Inventory\PickingSession;
 use App\Models\Inventory\Warehouse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rules\Enum;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -29,68 +37,89 @@ class StorePickingSession extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(Warehouse $warehouse, array $modelData): PickingSession
+    public function handle(Warehouse $warehouse, array $modelData, bool $queued = false): PickingSession
     {
-        $pickingSession =  DB::transaction(function () use ($warehouse, $modelData) {
+        $pickingSession = DB::transaction(function () use ($warehouse, $modelData, $queued) {
             $deliveryNoteIds = Arr::pull($modelData, 'delivery_notes');
-            $reference = 'PS-'. $warehouse->pickingSessions()->max('id') + 1;
-    
+            $validDeliveryNoteIds = DeliveryNote::whereIn('id', $deliveryNoteIds)
+                ->get()
+                ->filter(function ($deliveryNote) {
+                    return $deliveryNote->pickingSessions->isEmpty();
+                })
+                ->pluck('id')
+                ->toArray();
+
+            if (empty($validDeliveryNoteIds)) {
+                throw ValidationException::withMessages(
+                    [
+                        'message' => [
+                            'delivery_notes' => 'All selected delivery notes are already in a picking session.',
+                        ]
+                    ]
+                );
+            }
+
+            data_set(
+                $modelData,
+                'reference',
+                GetSerialReference::run(
+                    container: $warehouse->organisation,
+                    modelType: SerialReferenceModelEnum::PICKING_SESSION,
+                )
+            );
+
+            data_set($modelData, 'state', PickingSessionStateEnum::IN_PROCESS->value);
+
             data_set($modelData, 'group_id', $warehouse->group_id);
             data_set($modelData, 'organisation_id', $warehouse->organisation_id);
-            data_set($modelData, 'reference', $reference);
             data_set($modelData, 'user_id', request()->user()->id);
-            data_set($modelData, 'start_at', now());
-    
+
+            /** @var PickingSession $pickingSession */
             $pickingSession = $warehouse->pickingSessions()->create($modelData);
-    
-            $pickingSession->deliveryNotes()->attach($deliveryNoteIds, [
+
+            $pickingSession->deliveryNotes()->attach($validDeliveryNoteIds, [
                 'organisation_id' => $pickingSession->organisation_id,
-                'group_id' => $pickingSession->group_id
+                'group_id'        => $pickingSession->group_id
             ]);
 
             $pickingSession->refresh();
-    
-            $mergedItems = $this->getMergedDeliveryNoteItems($pickingSession);
-            foreach ($mergedItems as $item) {
-                StorePickingSessionItem::dispatch($pickingSession, $item);
+
+            $deliveryNotes = $pickingSession->deliveryNotes;
+
+            $numberItems = 0;
+            $numberDeliveryNotes = 0;
+            foreach ($deliveryNotes as $deliveryNote) {
+                $numberDeliveryNotes++;
+                if ($queued) {
+                    StartHandlingDeliveryNote::make()->action($deliveryNote, request()->user());
+                } else {
+                    UpdateDeliveryNoteStateToInQueue::make()->action($deliveryNote, request()->user());
+                }
+
+                foreach ($deliveryNote->deliveryNoteItems as $item) {
+                    $numberItems++;
+                    UpdateDeliveryNoteItem::make()->action($item, [
+                        'picking_session_id' => $pickingSession->id
+                    ]);
+                }
             }
+
+            $pickingSession->updateQuietly([
+                'number_items' => $numberItems,
+                'number_delivery_notes' => $numberDeliveryNotes,
+            ]);
+
+
             return $pickingSession;
         });
 
         return $pickingSession;
     }
 
-    public function getMergedDeliveryNoteItems(PickingSession $pickingSession): array
-    {
-        $deliveryNotes = $pickingSession->deliveryNotes()->with('deliveryNoteItems')->get();
-
-        $mergedItems = [];
-
-        foreach ($deliveryNotes as $deliveryNote) {
-
-            foreach ($deliveryNote->deliveryNoteItems as $item) {
-                $orgStockId = $item->org_stock_id;
-
-                if (isset($mergedItems[$orgStockId])) {
-                    $mergedItems[$orgStockId]['quantity_required'] += $item->quantity_required;
-                    $mergedItems[$orgStockId]['delivery_note_item_ids'][] = $item->id;
-                } else {
-                    $mergedItems[$orgStockId] = [
-                        'org_stock_id' => $orgStockId,
-                        'quantity_required' => $item->quantity_required,
-                        'delivery_note_item_ids' => [$item->id]
-                    ];
-                }
-            }
-        }
-
-        return array_values($mergedItems);
-    }
-
     public function rules(): array
     {
         $rules = [
-            'delivery_notes'  => ['required', 'array'],
+            'delivery_notes' => ['required', 'array'],
         ];
 
         if (!$this->strict) {
@@ -104,10 +133,33 @@ class StorePickingSession extends OrgAction
         return $rules;
     }
 
-    public function asController(Warehouse $warehouse, ActionRequest $request)
+    /**
+     * @throws \Throwable
+     */
+    public function asController(Warehouse $warehouse, ActionRequest $request): PickingSession
     {
         $this->initialisationFromWarehouse($warehouse, $request);
 
         return $this->handle($warehouse, $this->validatedData);
     }
+
+    /**
+     * @throws \Throwable
+     */
+    public function inQueued(Warehouse $warehouse, ActionRequest $request): PickingSession
+    {
+        $this->initialisationFromWarehouse($warehouse, $request);
+
+        return $this->handle($warehouse, $this->validatedData, true);
+    }
+
+    public function htmlResponse(PickingSession $pickingSession, ActionRequest $request): RedirectResponse
+    {
+        return Redirect::route('grp.org.warehouses.show.dispatching.picking_sessions.show', [
+            'organisation'   => $pickingSession->organisation->slug,
+            'warehouse'      => $pickingSession->warehouse->slug,
+            'pickingSession' => $pickingSession->slug,
+        ]);
+    }
+
 }

@@ -17,6 +17,10 @@ use App\Enums\UI\CRM\CustomerPlatformTabsEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Dropshipping\TiktokUser;
+use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -33,11 +37,16 @@ class ShowCustomerSalesChannel extends OrgAction
         return $customerSalesChannel;
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inPlatform(Organisation $organisation, Shop $shop, Platform $platform, CustomerSalesChannel $customerSalesChannel, ActionRequest $request): CustomerSalesChannel
+    {
+        $this->initialisationFromShop($customerSalesChannel->shop, $request)->withTab(CustomerPlatformTabsEnum::values());
+        return $this->handle($customerSalesChannel);
+    }
+
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, ActionRequest $request): CustomerSalesChannel
     {
         $this->initialisationFromShop($shop, $request)->withTab(CustomerPlatformTabsEnum::values());
-
-
         return $this->handle($customerSalesChannel);
     }
 
@@ -48,9 +57,22 @@ class ShowCustomerSalesChannel extends OrgAction
 
         $actions = [];
 
+        $name = $customerSalesChannel->customer->name;
+        if (in_array($customerSalesChannel->platform->type, [
+            PlatformTypeEnum::SHOPIFY,
+            PlatformTypeEnum::WOOCOMMERCE,
+            PlatformTypeEnum::TIKTOK
+        ])) {
+            /** @var ShopifyUser|WooCommerceUser|TiktokUser $platformUser */
+            $platformUser = $customerSalesChannel->user;
+            if ($platformUser) {
+                $name = $platformUser->name;
+            }
+        }
+
 
         return Inertia::render(
-            'Org/Dropshipping/PlatformInCustomer',
+            'Org/Dropshipping/CustomerSalesChannel',
             [
                 'title'       => __('customer'),
                 'breadcrumbs' => $this->getBreadcrumbs(
@@ -59,7 +81,7 @@ class ShowCustomerSalesChannel extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'pageHead'    => [
-                    ...$this->getCustomerSalesChannelSubNavigationHead($customerSalesChannel, $request),
+                    ...$this->getCustomerSalesChannelSubNavigationHead($customerSalesChannel),
                     'actions' => $actions
                 ],
 
@@ -68,14 +90,14 @@ class ShowCustomerSalesChannel extends OrgAction
                     'navigation' => $navigation
                 ],
 
+                'platform'               => $customerSalesChannel->platform,
+                'customer_sales_channel' => $customerSalesChannel,
+                'platform_user'          => $customerSalesChannel->user,
+
+
                 'showcase' => [
                     'stats' => [
-                        'name'                    => match ($customerSalesChannel->platform->type) {
-                            PlatformTypeEnum::SHOPIFY => $customerSalesChannel->customer->shopifyUser->name,
-                            PlatformTypeEnum::WOOCOMMERCE => $customerSalesChannel->customer->wooCommerceUser->name,
-                            PlatformTypeEnum::TIKTOK => $customerSalesChannel->customer->tiktokUser->name,
-                            default => $customerSalesChannel->customer->name,
-                        },
+                        'name'                    => $name,
                         'number_orders'           => $customerSalesChannel->number_orders,
                         'number_customer_clients' => $customerSalesChannel->number_customer_clients,
                         'number_portfolios'       => $customerSalesChannel->number_portfolios
@@ -87,6 +109,7 @@ class ShowCustomerSalesChannel extends OrgAction
 
     public function getBreadcrumbs(CustomerSalesChannel $customerSalesChannel, string $routeName, array $routeParameters): array
     {
+
         $headCrumb = function (CustomerSalesChannel $customerSalesChannel, array $routeParameters, string $suffix = '') {
             return [
                 [
@@ -108,6 +131,8 @@ class ShowCustomerSalesChannel extends OrgAction
                 ],
             ];
         };
+
+
 
 
         return array_merge(

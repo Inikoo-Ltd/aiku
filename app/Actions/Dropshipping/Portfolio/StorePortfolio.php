@@ -9,23 +9,26 @@
 namespace App\Actions\Dropshipping\Portfolio;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePortfolios;
+use App\Actions\Catalogue\ShopPlatformStats\ShopPlatformStatsHydratePortfolios;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydratePortfolios;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
-use App\Actions\Dropshipping\Shopify\Product\GetShopifyProductFromPortfolio;
+use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolio;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePortfolios;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePortfolios;
 use App\Actions\Traits\Rules\WithNoStrictRules;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
-use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Fulfilment\StoredItem;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 
 class StorePortfolio extends OrgAction
@@ -40,12 +43,6 @@ class StorePortfolio extends OrgAction
     public function handle(CustomerSalesChannel $customerSalesChannel, Product|StoredItem $item, array $modelData): Portfolio
     {
         $rrp = $item->rrp ?? 0;
-
-        $descriptions = $item->description;
-
-        if (!$descriptions) {
-            $descriptions = $item->name;
-        }
 
         data_set($modelData, 'last_added_at', now(), overwrite: false);
         data_set($modelData, 'group_id', $customerSalesChannel->group_id);
@@ -62,6 +59,14 @@ class StorePortfolio extends OrgAction
         data_set($modelData, 'customer_description', $item->description);
         data_set($modelData, 'selling_price', $rrp);
         data_set($modelData, 'customer_price', $rrp);
+        data_set($modelData, 'barcode', $item->barcode);
+        data_set($modelData, 'sku', $this->getSKU($item));
+
+        data_set(
+            $modelData,
+            'platform_handle',
+            Str::slug(Arr::get($modelData, 'customer_product_name'))
+        );
 
         if ($item instanceof Product) {
             data_set($modelData, 'margin', CalculationsProfitMargin::run($rrp, $item->price));
@@ -75,13 +80,10 @@ class StorePortfolio extends OrgAction
             return $portfolio;
         });
 
+        if ($customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
+            $portfolio = CheckShopifyPortfolio::run($portfolio);
+        }
 
-        $platformProductAvailabilities = match ($customerSalesChannel->user?->getMorphClass()) {
-            ShopifyUser::class->getMorphClass() => GetShopifyProductFromPortfolio::run($customerSalesChannel->user, ),
-            default => [],
-        };
-
-        data_set($modelData, 'platform_product_availabilities', $platformProductAvailabilities);
 
 
         GroupHydratePortfolios::dispatch($customerSalesChannel->group)->delay($this->hydratorsDelay);
@@ -89,8 +91,35 @@ class StorePortfolio extends OrgAction
         ShopHydratePortfolios::dispatch($customerSalesChannel->shop)->delay($this->hydratorsDelay);
         CustomerHydratePortfolios::dispatch($customerSalesChannel->customer)->delay($this->hydratorsDelay);
         CustomerSalesChannelsHydratePortfolios::run($customerSalesChannel);
+        ShopPlatformStatsHydratePortfolios::dispatch($portfolio->shop, $portfolio->platform)->delay($this->hydratorsDelay);
 
         return $portfolio;
+    }
+
+    public function getSKU(Product|StoredItem $item): ?string
+    {
+        if ($item instanceof Product) {
+            $product = $item;
+
+            $skuArray = [];
+            foreach ($product->orgStocks as $orgStock) {
+                $stock = $orgStock->stock;
+                if ($stock) {
+                    $skuArray[] = $stock->slug;
+                } else {
+                    $skuArray[] = $orgStock->slug;
+                }
+            }
+            if (!empty($skuArray)) {
+                $sku = implode('-', $skuArray);
+            } else {
+                $sku = null;
+            }
+
+            return $sku;
+        } else {
+            return $item->reference;
+        }
     }
 
     public function authorize(ActionRequest $request): bool

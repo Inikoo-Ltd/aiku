@@ -31,6 +31,7 @@ use App\Models\CRM\Appointment;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Poll;
 use App\Models\CRM\Prospect;
+use App\Models\CRM\TrafficSource;
 use App\Models\CRM\WebUser;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
@@ -188,6 +189,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, PaymentAccountShop> $paymentAccountShops
  * @property-read LaravelCollection<int, Payment> $payments
  * @property-read LaravelCollection<int, Picking> $pickings
+ * @property-read LaravelCollection<int, \App\Models\Catalogue\ShopPlatformStats> $platformStats
  * @property-read LaravelCollection<int, Poll> $polls
  * @property-read LaravelCollection<int, Portfolio> $portfolios
  * @property-read LaravelCollection<int, \App\Models\Catalogue\ProductCategory> $productCategories
@@ -205,12 +207,14 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, Service> $services
  * @property-read LaravelCollection<int, ShippingZoneSchema> $shippingZoneSchemas
  * @property-read LaravelCollection<int, ShippingZone> $shippingZones
+ * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $shopCollections
  * @property-read \App\Models\Catalogue\ShopStats|null $stats
  * @property-read LaravelCollection<int, Task> $tasks
  * @property-read TaxNumber|null $taxNumber
  * @property-read LaravelCollection<int, \App\Models\Catalogue\ShopTimeSeries> $timeSeries
  * @property-read Timezone $timezone
  * @property-read LaravelCollection<int, TopUp> $topUps
+ * @property-read LaravelCollection<int, TrafficSource> $trafficSources
  * @property-read LaravelCollection<int, Transaction> $transactions
  * @property-read UniversalSearch|null $universalSearch
  * @property-read LaravelCollection<int, Upload> $uploads
@@ -519,6 +523,11 @@ class Shop extends Model implements HasMedia, Auditable
         return $this->morphToMany(Collection::class, 'model', 'model_has_collections')->withTimestamps();
     }
 
+    public function shopCollections(): HasMany
+    {
+        return $this->hasMany(Collection::class);
+    }
+
     public function services(): HasMany
     {
         return $this->hasMany(Service::class);
@@ -673,6 +682,16 @@ class Shop extends Model implements HasMedia, Auditable
     public function webUsers(): HasMany
     {
         return $this->hasMany(WebUser::class);
+    }
+
+    public function trafficSources(): HasMany
+    {
+        return $this->hasMany(TrafficSource::class);
+    }
+
+    public function platformStats(): HasMany
+    {
+        return $this->hasMany(ShopPlatformStats::class);
     }
 
 }

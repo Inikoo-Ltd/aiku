@@ -20,6 +20,21 @@ class ProductResource extends JsonResource
     {
         /** @var Product $product */
         $product = $this;
+        $tradeUnits = $product->tradeUnits;
+
+        $tradeUnits->loadMissing(['ingredients']);
+
+        $ingredients = $tradeUnits->flatMap(function ($tradeUnit) {
+            return $tradeUnit->ingredients->pluck('name');
+        })->unique()->values()->all();
+
+        $specifications = [
+            'ingredients'       => $ingredients,
+            'gross_weight'      => $product->gross_weight,
+            'marketing_weights' => $tradeUnits->pluck('marketing_weights')->flatten()->filter()->values()->all(),
+            'barcode'           => $product->barcode,
+            'dimensions'        => $tradeUnits->pluck('dimensions')->flatten()->filter()->values()->all(),
+        ];
 
         return [
             'id'              => $product->id,
@@ -27,14 +42,21 @@ class ProductResource extends JsonResource
             'image_id'        => $product->image_id,
             'code'            => $product->code,
             'name'            => $product->name,
+            'unit'            => $product->unit,
+            'rrp'            => $product->rrp,
+            'barcode'            => $product->barcode,
             'price'           => $product->price,
             'currency_code'   => $product->currency->code,
             'description'     => $product->description,
+            'description_title'     => $product->description_title,
+            'description_extra'     => $product->description_extra,
             'state'           => $product->state,
             'created_at'      => $product->created_at,
             'updated_at'      => $product->updated_at,
             'images'          => ImageResource::collection($product->images),
-            'image_thumbnail' => $product->imageSources(720, 480)
+            'image_thumbnail' => $product->imageSources(720, 480),
+            'stock'                     => $product->available_quantity,
+            'specifications'    => $tradeUnits->count() > 0 ? $specifications : null,
         ];
     }
 }

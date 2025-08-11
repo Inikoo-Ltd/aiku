@@ -19,6 +19,7 @@ use Illuminate\Routing\Route;
 class LogWebUserRequestMiddleware
 {
     use WithLogRequest;
+
     public function handle(Request $request, Closure $next)
     {
         if (!config('app.log_user_requests')) {
@@ -31,7 +32,7 @@ class LogWebUserRequestMiddleware
             return $next($request);
         }
 
-        $skipPrefixes = ['retina.models', 'retina.webhooks', 'iris.json', 'retina.json'];
+        $skipPrefixes = ['retina.models', 'iris.models', 'retina.webhooks', 'iris.json', 'retina.json'];
         if ($routeName == 'retina.logout') {
             return $next($request);
         }
@@ -51,7 +52,6 @@ class LogWebUserRequestMiddleware
 
 
         if (!app()->runningUnitTests() && $webUser && $webUser instanceof WebUser) {
-
             $ip = $request->ip();
             ProcessRetinaWebUserRequest::dispatch(
                 $webUser,
@@ -64,7 +64,6 @@ class LogWebUserRequestMiddleware
                 $ip,
                 $request->header('User-Agent')
             );
-
         }
 
         return $next($request);

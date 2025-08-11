@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Dispatch;
 
+use App\Enums\Fulfilment\PalletReturn\PalletReturnStateEnum;
 use App\Models\Inventory\Warehouse;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -29,6 +30,7 @@ class GetDispatchHubFulfilmentWidget
                     'label' => $todoLabel,
                     'key'   => 'todo',
                     'icon'  => 'fal fa-stream',
+                    // 'icon_state' => PalletReturnStateEnum::stateIcon()[PalletReturnStateEnum::CONFIRMED->value],
                     'value' => $warehouse->stats->number_pallet_returns_state_confirmed,
                     'route' => [
                         'name'       => match (class_basename($warehouse)) {
@@ -46,6 +48,7 @@ class GetDispatchHubFulfilmentWidget
                     'label' => __('Picking'),
                     'key'   => 'picking',
                     'icon'  => 'fal fa-check',
+                    // 'icon_state' => PalletReturnStateEnum::stateIcon()[PalletReturnStateEnum::PICKING->value],
                     'value' => $warehouse->stats->number_pallet_returns_state_picking,
                     'route' => [
                         'name'       => match (class_basename($warehouse)) {
@@ -59,6 +62,7 @@ class GetDispatchHubFulfilmentWidget
                     'label' => __('Picked'),
                     'key'   => 'picked',
                     'icon'  => 'fal fa-parking',
+                    // 'icon_state' => PalletReturnStateEnum::stateIcon()[PalletReturnStateEnum::PICKED->value],
                     'value' => $warehouse->stats->number_pallet_returns_state_picked,
                     'route' => [
                         'name'       => match (class_basename($warehouse)) {

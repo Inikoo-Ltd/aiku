@@ -112,6 +112,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $number_delivery_note_items_state_cancelled
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_customer_sales_channels
+ * @property int $number_customer_sales_channel_broken
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformStats query()

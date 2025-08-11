@@ -13,11 +13,12 @@ use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Http\Resources\CRM\CustomerSalesChannelsResourceTOFIX;
+use App\Http\Resources\CRM\CustomerSalesChannelsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\Platform;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -31,9 +32,9 @@ class IndexCustomerSalesChannels extends OrgAction
 {
     use WithCustomerSubNavigation;
 
-    private Customer $customer;
+    private Customer|Platform $parent;
 
-    public function handle(Customer $customer, $prefix = null): LengthAwarePaginator
+    public function handle(Customer|Platform $parent, Shop $shop = null, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -45,39 +46,56 @@ class IndexCustomerSalesChannels extends OrgAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        return QueryBuilder::for(CustomerSalesChannel::class)
-                ->where('customer_sales_channels.customer_id', $customer->id)
-                ->select([
-                'customer_sales_channels.id',
-                'customer_sales_channels.reference',
-                'customer_sales_channels.name',
-                'customer_sales_channels.slug',
-                'customer_sales_channels.status',
-                'customer_sales_channels.connection_status',
-                'customer_sales_channels.number_customer_clients as number_customer_clients',
-                'customer_sales_channels.number_portfolios as number_portfolios',
-                'customer_sales_channels.number_orders as number_orders',
-                'customer_sales_channels.platform_id',
-                ])
-                ->selectSub(function ($subquery) {
-                    $subquery->from('orders')
-                        ->selectRaw('COALESCE(SUM(total_amount), 0)')
-                        ->whereColumn('orders.customer_sales_channel_id', 'customer_sales_channels.id')
-                        ->whereNotIn('orders.state', [OrderStateEnum::CREATING, OrderStateEnum::SUBMITTED, OrderStateEnum::CANCELLED]);
-                }, 'total_amount')
-                ->defaultSort('customer_sales_channels.reference')
-                ->allowedSorts(['reference', 'number_customer_clients', 'number_portfolios','number_orders'])
-                ->allowedFilters([$globalSearch])
-                ->withPaginator($prefix, tableName: request()->route()->getName())
-                ->withQueryString();
+        $queryBuilder = QueryBuilder::for(CustomerSalesChannel::class);
+        if ($parent instanceof Customer) {
+            $queryBuilder->where('customer_sales_channels.customer_id', $parent->id);
+        } else {
+            $queryBuilder->where('customer_sales_channels.platform_id', $parent->id);
+        }
+
+        if ($shop) {
+            $queryBuilder->where('customer_sales_channels.shop_id', $shop->id);
+        }
+        $queryBuilder->leftJoin('customers', 'customer_sales_channels.customer_id', '=', 'customers.id');
+
+        $queryBuilder->select([
+            'customer_sales_channels.id',
+            'customer_sales_channels.reference',
+            'customer_sales_channels.name',
+            'customer_sales_channels.slug',
+            'customer_sales_channels.status',
+            'customer_sales_channels.can_connect_to_platform',
+            'customer_sales_channels.exist_in_platform',
+            'customer_sales_channels.platform_status',
+            'customer_sales_channels.number_customer_clients as number_customer_clients',
+            'customer_sales_channels.number_portfolios as number_portfolios',
+            'customer_sales_channels.number_portfolio_broken as number_portfolio_broken',
+            'customer_sales_channels.number_orders as number_orders',
+            'customer_sales_channels.platform_id',
+            'customers.contact_name as customer_contact_name',
+            'customers.company_name as customer_company_name',
+            'customers.slug as customer_slug',
+            'customers.id as customer_id',
+        ])
+            ->selectSub(function ($subquery) {
+                $subquery->from('orders')
+                    ->selectRaw('COALESCE(SUM(total_amount), 0)')
+                    ->whereColumn('orders.customer_sales_channel_id', 'customer_sales_channels.id')
+                    ->whereNotIn('orders.state', [OrderStateEnum::CREATING, OrderStateEnum::SUBMITTED, OrderStateEnum::CANCELLED]);
+            }, 'total_amount');
+
+        return $queryBuilder->defaultSort('customer_sales_channels.reference')
+            ->allowedSorts(['reference', 'name', 'number_customer_clients', 'number_portfolios', 'number_orders', 'total_amount','platform_status'])
+            ->allowedFilters([$globalSearch])
+            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withQueryString();
     }
 
     public function htmlResponse(LengthAwarePaginator $platforms, ActionRequest $request): Response
     {
-
-        $subNavigation = $this->getCustomerDropshippingSubNavigation($this->customer, $request);
+        $subNavigation = $this->getCustomerDropshippingSubNavigation($this->parent, $request);
         $icon          = ['fal', 'fa-user'];
-        $title         = $this->customer->name;
+        $title         = $this->parent->name;
         $iconRight     = [
             'icon'  => ['fal', 'fa-user-friends'],
             'title' => $title
@@ -88,10 +106,7 @@ class IndexCustomerSalesChannels extends OrgAction
         ];
 
 
-
-
         $actions = [];
-
 
 
         return Inertia::render(
@@ -111,7 +126,7 @@ class IndexCustomerSalesChannels extends OrgAction
                     'actions'       => $actions
 
                 ],
-                'data'        => CustomerSalesChannelsResourceTOFIX::collection($platforms),
+                'data'        => CustomerSalesChannelsResource::collection($platforms),
             ]
         )->table($this->tableStructure());
     }
@@ -129,19 +144,19 @@ class IndexCustomerSalesChannels extends OrgAction
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'connection', label: __('Status'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'customer_company_name', label: __('Customer'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_portfolios', label: __('Portfolios'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_clients', label: __('Clients'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_orders', label: __('Orders'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'amount', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'total_amount', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
+                ->column(key: 'platform_status', label: __('Status'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'action', label: __('Actions'), canBeHidden: false, searchable: true)
                 ->defaultSort('reference');
         };
     }
 
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, ActionRequest $request): LengthAwarePaginator
     {
-        $this->customer = $customer;
+        $this->parent = $customer;
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($customer);

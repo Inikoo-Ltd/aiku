@@ -6,6 +6,10 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Accounting\OrderPaymentApiPoint\WebHooks\RedirectSuccessPaymentOrder;
+use App\Actions\Accounting\TopUpPaymentApiPoint\WebHooks\RedirectSuccessPaymentTopUp;
+use App\Actions\Iris\UpdateIrisLocale;
+
 Route::middleware(["retina-auth:retina", 'retina-prepare-account'])->group(function () {
     Route::get('/', function () {
         return redirect('/app/dashboard');
@@ -27,6 +31,10 @@ Route::middleware(["retina-auth:retina", 'retina-prepare-account'])->group(funct
     Route::prefix("top-up")
         ->name("top_up.")
         ->group(__DIR__."/top_up.php");
+
+    Route::prefix("catalogue")
+        ->name("catalogue.")
+        ->group(__DIR__."/catalogue.php");
 
     Route::prefix("/")
         ->name("ecom.")
@@ -56,6 +64,11 @@ Route::middleware(["retina-auth:retina", 'retina-prepare-account'])->group(funct
             ->name("profile.")
             ->group(__DIR__."/customer_account/profile.php");
     });
+
+    Route::post('redirect-success-paid-order/{order:id}', RedirectSuccessPaymentOrder::class)->name('redirect_success_paid_order');
+    Route::post('redirect-success-paid-top-up/{creditTransaction:id}', RedirectSuccessPaymentTopUp::class)->name('redirect_success_paid_top_up');
+
+
 });
 require __DIR__."/retina_auth.php";
 require __DIR__."/retina_webhooks.php";

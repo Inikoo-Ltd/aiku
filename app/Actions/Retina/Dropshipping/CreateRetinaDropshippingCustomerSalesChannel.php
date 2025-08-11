@@ -13,6 +13,7 @@ namespace App\Actions\Retina\Dropshipping;
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshippingCustomerSalesChannels;
 use App\Actions\RetinaAction;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -62,11 +63,11 @@ class CreateRetinaDropshippingCustomerSalesChannel extends RetinaAction
                     ])
                 ] : null,
                 'total_channels'     => [
-                    'manual'      => DB::table('customer_sales_channels')->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::MANUAL->value)->count(),
-                    'shopify'     => DB::table('customer_sales_channels')->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::SHOPIFY->value)->count(),
-                    'tiktok'      => DB::table('customer_sales_channels')->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::TIKTOK->value)->count(),
-                    'woocommerce' => DB::table('customer_sales_channels')->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::WOOCOMMERCE->value)->count(),
-                    'ebay'        => DB::table('customer_sales_channels')->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::EBAY->value)->count(),
+                    'manual'      => DB::table('customer_sales_channels')->where('customer_sales_channels.status', CustomerSalesChannelStatusEnum::OPEN->value)->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::MANUAL->value)->count(),
+                    'shopify'     => DB::table('customer_sales_channels')->where('customer_sales_channels.status', CustomerSalesChannelStatusEnum::OPEN->value)->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::SHOPIFY->value)->count(),
+                    'tiktok'      => DB::table('customer_sales_channels')->where('customer_sales_channels.status', CustomerSalesChannelStatusEnum::OPEN->value)->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::TIKTOK->value)->count(),
+                    'woocommerce' => DB::table('customer_sales_channels')->where('customer_sales_channels.status', CustomerSalesChannelStatusEnum::OPEN->value)->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::WOOCOMMERCE->value)->count(),
+                    'ebay'        => DB::table('customer_sales_channels')->where('customer_sales_channels.status', CustomerSalesChannelStatusEnum::OPEN->value)->where('customer_id', $customer->id)->leftJoin('platforms', 'platforms.id', 'customer_sales_channels.platform_id')->where('platforms.type', PlatformTypeEnum::EBAY->value)->count(),
                 ],
                 'tiktokAuth'         => [
                     'url'                    => AuthenticateTiktokAccount::make()->redirectToTikTok($customer),

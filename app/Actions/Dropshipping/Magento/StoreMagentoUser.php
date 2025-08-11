@@ -67,19 +67,59 @@ class StoreMagentoUser extends OrgAction
             $accessToken = $magentoUser->getMagentoToken();
             $stores = $magentoUser->getStores();
 
+            $magentoUser->createSource([
+                'name' => 'AW Source',
+                'source_code' => 'aw-source',
+                'enabled' => true,
+                'country_id' => 'GB',
+                'postcode' => 'S9 1XT'
+            ]);
+
+            $stocks = Arr::get($magentoUser->getStocks(), 'items');
+            $existingStock = collect($stocks)->where('name', 'AW Connect Stock')->first();
+
+            if (! $existingStock) {
+                $stock = $magentoUser->createStock([
+                    'name' => 'AW Connect Stock',
+                    'extension_attributes' => [
+                        'sales_channels' => [
+                            [
+                                'type' => 'website',
+                                'code' => 'base'
+                            ]
+                        ]
+                    ]
+                ]);
+            } else {
+                $stock = [Arr::get($existingStock, 'stock_id')];
+            }
+
+            $magentoUser->assignSourceToStock([
+                [
+                    'stock_id' => Arr::get($stock, '0'),
+                    'source_code' => 'aw-source',
+                    'priority' => 1
+                ]
+            ]);
+
             $magentoUser->update([
                 'customer_sales_channel_id' => $customerSalesChannel->id,
                 'settings' => [
                     'credentials' => [
                         ...Arr::get($magentoUser->settings, 'credentials'),
                         'access_token' => $accessToken
-                    ]
+                    ],
+                    'stock_id' => Arr::get($stock, '0'),
+                    'source_code' => 'aw-source',
+                    'stores' => $stores
                 ],
                 'name' => Arr::get($stores, '0.name')
             ]);
 
             UpdateCustomerSalesChannel::run($customerSalesChannel, [
-                'state' => CustomerSalesChannelStateEnum::AUTHENTICATED
+                'name' => Arr::get($stores, '0.name'),
+                'state' => CustomerSalesChannelStateEnum::READY,
+                'platform_status' => true
             ]);
 
             return $magentoUser;

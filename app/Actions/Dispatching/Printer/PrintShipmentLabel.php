@@ -54,9 +54,10 @@ class PrintShipmentLabel extends OrgAction
     {
         $user      = request()->user();
         $printerId = Arr::get($user->settings, 'preferred_printer_id');
-        if (!$printerId) {
+        $existsPrinter = $this->isExistPrinter($printerId);
+        if (!$printerId || !$existsPrinter) {
             throw ValidationException::withMessages([
-                'messages' => __('You must set a preferred printer in your user settings!'),
+                'messages' => __('Preferred printer is not set or does not exist!'),
             ]);
         }
 

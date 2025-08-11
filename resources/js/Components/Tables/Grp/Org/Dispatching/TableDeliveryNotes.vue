@@ -45,7 +45,7 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
                 [deliveryNote.shop_id, deliveryNote.slug])
         case "grp.org.warehouses.show.dispatching.delivery-notes":
             return route(
-                "grp.org.warehouses.show.dispatching.delivery-notes.show",
+                "grp.org.warehouses.show.dispatching.delivery_notes.show",
                 [route().params["organisation"], route().params["warehouse"], deliveryNote.slug])
         case "grp.org.shops.show.ordering.delivery-notes.index":
             return route(
@@ -55,10 +55,7 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
             return route(
                 "grp.org.shops.show.ordering.show.delivery-note.show",
                 [route().params["organisation"], route().params["shop"], deliveryNote.slug])
-        case "grp.org.shops.show.ordering.orders.show":
-            return route(
-                "grp.org.shops.show.ordering.orders.show.delivery-note",
-                [route().params["organisation"], route().params["shop"], route().params["order"], deliveryNote.slug])
+
         case "grp.org.shops.show.crm.customers.show.delivery_notes.index":
             return route(
                 "grp.org.shops.show.crm.customers.show.delivery_notes.show",
@@ -73,8 +70,8 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
                 [deliveryNote.organisation_slug, deliveryNote.shop_slug, deliveryNote.customer_slug, deliveryNote.slug])
         default:
             return route(
-                "grp.org.warehouses.show.dispatching.delivery-notes.show",
-                [route().params["organisation"], route().params["warehouse"], deliveryNote.slug]);
+                "grp.helpers.redirect_delivery_notes",
+                [deliveryNote.id]);
     }
 }
 
@@ -160,7 +157,7 @@ const onClickPick = () => {
         </template>
         
         <template #cell(effective_weight)="{ item: deliveryNote }">
-            {{ deliveryNote.effective_weight }} kg
+            {{ deliveryNote.effective_weight }} g
         </template>
         
         <template #cell(customer_name)="{ item: deliveryNote }">

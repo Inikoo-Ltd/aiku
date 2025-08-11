@@ -10,16 +10,17 @@ namespace App\Actions\Inventory\Location\UI;
 
 use App\Actions\Fulfilment\Pallet\UI\IndexPalletsInWarehouse;
 use App\Actions\Helpers\History\UI\IndexHistory;
+use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksInLocation;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\Inventory\WarehouseArea\UI\ShowWarehouseArea;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\Traits\Authorisations\Inventory\WithWarehouseAuthorisation;
-use App\Enums\UI\Fulfilment\PalletDeliveryTabsEnum;
 use App\Enums\UI\Inventory\LocationTabsEnum;
 use App\Http\Resources\Fulfilment\PalletsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Inventory\LocationResource;
+use App\Http\Resources\Inventory\OrgStockResource;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\Warehouse;
 use App\Models\Inventory\WarehouseArea;
@@ -64,7 +65,7 @@ class ShowLocation extends OrgAction
         $navigation = LocationTabsEnum::navigation();
 
         if (!$location->allow_stocks) {
-            unset($navigation[LocationTabsEnum::STOCKS->value]);
+            unset($navigation[LocationTabsEnum::ORG_STOCKS->value]);
             unset($navigation[LocationTabsEnum::STOCK_MOVEMENTS->value]);
         }
         if (!$location->allow_fulfilment) {
@@ -72,10 +73,9 @@ class ShowLocation extends OrgAction
         }
         if (!$location->allow_dropshipping) {
             unset($navigation[LocationTabsEnum::PALLETS->value]);
-            unset($navigation[LocationTabsEnum::STOCKS->value]);
+            unset($navigation[LocationTabsEnum::ORG_STOCKS->value]);
             unset($navigation[LocationTabsEnum::STOCK_MOVEMENTS->value]);
         }
-
 
         return Inertia::render(
             'Org/Warehouse/Location',
@@ -107,23 +107,24 @@ class ShowLocation extends OrgAction
                 ],
 
                 LocationTabsEnum::SHOWCASE->value => $this->tab == LocationTabsEnum::SHOWCASE->value ?
-                    fn () => GetLocationShowcase::run($location)
-                    : Inertia::lazy(fn () => GetLocationShowcase::run($location)),
+                    fn() => GetLocationShowcase::run($location)
+                    : Inertia::lazy(fn() => GetLocationShowcase::run($location)),
+
+                LocationTabsEnum::ORG_STOCKS->value => $this->tab == LocationTabsEnum::ORG_STOCKS->value ?
+                    fn() => OrgStockResource::collection(IndexOrgStocksInLocation::run($location))
+                    : Inertia::lazy(fn() => OrgStockResource::collection(IndexOrgStocksInLocation::run($location))),
 
                 LocationTabsEnum::PALLETS->value => $this->tab == LocationTabsEnum::PALLETS->value ?
-                    fn () => PalletsResource::collection(IndexPalletsInWarehouse::run($location))
-                    : Inertia::lazy(fn () => PalletsResource::collection(IndexPalletsInWarehouse::run($location))),
+                    fn() => PalletsResource::collection(IndexPalletsInWarehouse::run($location))
+                    : Inertia::lazy(fn() => PalletsResource::collection(IndexPalletsInWarehouse::run($location))),
 
                 LocationTabsEnum::HISTORY->value => $this->tab == LocationTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($location))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($location)))
+                    fn() => HistoryResource::collection(IndexHistory::run($location))
+                    : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run($location)))
             ]
-        )->table(IndexHistory::make()->tableStructure(prefix: LocationTabsEnum::HISTORY->value))->table(
-            IndexPalletsInWarehouse::make()->tableStructure(
-                $location,
-                prefix: PalletDeliveryTabsEnum::PALLETS->value
-            )
-        );
+        )->table(IndexHistory::make()->tableStructure(prefix: LocationTabsEnum::HISTORY->value))
+            ->table(IndexOrgStocksInLocation::make()->tableStructure($location, prefix: LocationTabsEnum::ORG_STOCKS->value))
+            ->table(IndexPalletsInWarehouse::make()->tableStructure($location, prefix: LocationTabsEnum::PALLETS->value));
     }
 
 
@@ -193,7 +194,6 @@ class ShowLocation extends OrgAction
                     $suffix
                 ),
             ),
-
             default => []
         };
     }
@@ -258,5 +258,4 @@ class ShowLocation extends OrgAction
             ];
         }
     }
-
 }

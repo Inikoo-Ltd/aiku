@@ -106,6 +106,7 @@ class HydrateModels extends HydrateModel
     {
         $command->info('Dropshipping ✊🏼');
 
+        /** @var Shop $shop */
         foreach (Shop::where('type', ShopTypeEnum::DROPSHIPPING)->get() as $shop) {
             $command->call('hydrate:shops', [
                 '-s' => $shop->slug
@@ -140,6 +141,7 @@ class HydrateModels extends HydrateModel
         $command->info('Master section 📐️');
         $command->call('hydrate:master_shops');
         $command->call('hydrate:master_product_categories');
+        $command->call('hydrate:master_assets');
     }
 
     protected function hydrateGoods(Command $command): void

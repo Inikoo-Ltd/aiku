@@ -16,6 +16,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdat
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRegistrationIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSales;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateVisitorsIntervals;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateSalesIntervals;
 use App\Actions\Goods\StockFamily\Hydrators\StockFamilyHydrateSalesIntervals;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateSalesIntervals;
@@ -178,6 +179,12 @@ trait WithResetIntervals
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
             );
+
+            ShopHydrateVisitorsIntervals::dispatch(
+                shop: $shop,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
         }
 
         foreach (
@@ -221,6 +228,13 @@ trait WithResetIntervals
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
             )->delay(now()->addMinute())->onQueue('low-priority');
+
+            ShopHydrateVisitorsIntervals::dispatch(
+                shop: $shop,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            )->delay(now()->addMinute())->onQueue('low-priority');
+
         }
     }
 

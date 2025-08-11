@@ -8,7 +8,7 @@
 
 namespace App\Actions\Billables\Service;
 
-use App\Actions\Catalogue\Asset\UpdateAsset;
+use App\Actions\Catalogue\Asset\UpdateAssetFromModel;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateServices;
 use App\Actions\OrgAction;
@@ -71,7 +71,7 @@ class UpdateService extends OrgAction
             );
         }
 
-        UpdateAsset::run($service->asset, [], $this->hydratorsDelay);
+        UpdateAssetFromModel::run($service->asset, [], $this->hydratorsDelay);
 
 
         if (Arr::hasAny($service->getChanges(), ['state'])) {

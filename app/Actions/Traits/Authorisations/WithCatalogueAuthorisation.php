@@ -33,8 +33,17 @@ trait WithCatalogueAuthorisation
             );
         } else {
             $this->canEdit = $request->user()->authTo("products.{$this->shop->id}.edit");
+            $this->canDelete = $request->user()->authTo("products.{$this->shop->id}.edit");
 
-            return $request->user()->authTo("products.{$this->shop->id}.view");
+            return $request->user()->authTo(
+                [
+                    "products.{$this->shop->id}.view",
+                    "web.$this->shop->id.view",
+                    "group-webmaster.view",
+                    "accounting.{$this->shop->organisation_id}.view"
+
+                ]
+            );
         }
     }
 }
