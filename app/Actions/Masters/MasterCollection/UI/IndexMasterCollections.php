@@ -15,6 +15,7 @@ use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Http\Resources\Masters\MasterCollectionsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Masters\MasterCollection;
+use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
@@ -52,7 +53,8 @@ class IndexMasterCollections extends OrgAction
                 'master_collections.code',
                 'master_collections.description',
                 'master_collections.slug',
-                'master_collections.status',
+                'master_collections.state',
+                'master_collections.products_status',
                 'master_collections.data',
             ]
         );
@@ -96,7 +98,7 @@ class IndexMasterCollections extends OrgAction
 
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'description', label: __('description'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'status', label: __('status'), canBeHidden: false)
+                ->column(key: 'state', label: __('state'), canBeHidden: false)
                 ->defaultSort('code');
         };
     }
@@ -142,6 +144,22 @@ class IndexMasterCollections extends OrgAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'subNavigation' => $subNavigation,
+                    'actions'       => [
+                        [
+                            'type'    => 'button',
+                            'style'   => 'create',
+                            'tooltip' => __('new master collection'),
+                            'label'   => __('master collection'),
+                            'route'   => match ($this->parent::class) {
+                                MasterProductCategory::class => [
+                                ],
+                                default => [
+                                    'name'       => 'grp.masters.master_shops.show.master_collections.create',
+                                    'parameters' => $request->route()->originalParameters()
+                                ]
+                            }
+                        ],
+                    ],
                 ],
                 'data'        => MasterCollectionsResource::collection($masterCollections),
 
