@@ -14,7 +14,7 @@ import SideEditorInputHTML from './CMS/Fields/SideEditorInputHTML.vue'
 
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   master: {
     name: string
     description: string
@@ -24,11 +24,19 @@ const props = defineProps<{
   title: string
   needTranslation: Object
   save_route: routeType
-}>()
+  languages?: {
+    code: string
+    name: string
+  }[]
+}>(), {
+  title: 'Multi-language Translations',
+  
+})
+
 
 // Language options
 const locale = inject('locale', aikuLocaleStructure)
-const langOptions = Object.values(locale.languageOptions)
+const langOptions = props.languages ?   Object.values(props.languages) : Object.values(locale.languageOptions)
 
 // Retrieve from localStorage, or default to first language
 const storedLang = localStorage.getItem('translation_box')
@@ -123,31 +131,20 @@ const saveTranslation = () => {
 
 
 <template>
-  
+
   <div class="px-8 grid grid-cols-2 gap-3">
-     <h2 class="text-xl font-bold flex items-center gap-2">{{ trans(props.title) }}</h2>
+    <h2 v-if="props.title" class="text-lg font-bold flex items-center gap-2">
+      <FontAwesomeIcon :icon="faLanguage" />
+      {{ props.title }}
+    </h2>
     <!-- Right: Translation Panel -->
     <div class="col-span-2">
       <div class="bg-white border rounded-lg shadow-sm p-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <!-- Header & Language Selector -->
-          <div>
-            <h2 class="text-lg font-bold flex items-center gap-2">
-              <FontAwesomeIcon :icon="faLanguage" />
-              {{ trans('Multi-language Translations') }}
-            </h2>
-          </div>
-
-          <div>
+          <div class="col-span-2">
             <div class="flex flex-wrap gap-2">
-              <Button
-                v-for="opt in langOptions"
-                @click="selectedLangCode = opt.code"
-                :key="selectedLangCode + opt.code"
-                :label="opt.name"
-                size="xxs"
-                :type="selectedLangCode === opt.code ? 'primary' : 'tertiary'"
-              />
+              <Button v-for="opt in langOptions" @click="selectedLangCode = opt.code" :key="selectedLangCode + opt.code"
+                :label="opt.name" size="xxs" :type="selectedLangCode === opt.code ? 'primary' : 'tertiary'" />
             </div>
           </div>
 
@@ -162,7 +159,8 @@ const saveTranslation = () => {
               </div>
               <div>
                 <label class="block text-xs text-gray-700 mb-1">{{ trans('Description Title') }}</label>
-                <PureInput v-model="props.master.description_title" placeholder="Enter description title" class="text-sm" />
+                <PureInput v-model="props.master.description_title" placeholder="Enter description title"
+                  class="text-sm" />
               </div>
               <div>
                 <label class="block text-xs text-gray-700 mb-1">{{ trans('Description') }}</label>
@@ -188,7 +186,8 @@ const saveTranslation = () => {
               </div>
               <div>
                 <label class="block text-xs text-gray-700 mb-1">{{ trans('Description Title') }}</label>
-                <PureInput v-model="translationDescTitle" placeholder="Enter translated description title" class="text-sm" />
+                <PureInput v-model="translationDescTitle" placeholder="Enter translated description title"
+                  class="text-sm" />
               </div>
               <div>
                 <label class="block text-xs text-gray-700 mb-1">{{ trans('Description') }}</label>
