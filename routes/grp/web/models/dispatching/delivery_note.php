@@ -21,14 +21,12 @@ use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteDeliveryAddress;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPacking;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPicked;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteStateToPicking;
-use App\Actions\Dispatching\PickingIssue\StorePickingIssue;
 use App\Actions\Dispatching\Shipment\UI\CreateShipmentInDeliveryNoteInWarehouse;
 use Illuminate\Support\Facades\Route;
 
 Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(function () {
     Route::patch('update', UpdateDeliveryNote::class)->name('update');
     Route::patch('copy-notes', CopyOrderNotesToDeliveryNote::class)->name('copy_notes');
-    Route::post('issue', [StorePickingIssue::class, 'inDeliveryNote'])->name('issue.store');
     Route::patch('update-address', UpdateDeliveryNoteDeliveryAddress::class)->name('update_address');
     Route::post('shipment-from-warehouse', CreateShipmentInDeliveryNoteInWarehouse::class)->name('shipment.store');
     Route::patch('employee-pick', PickDeliveryNoteAsEmployee::class)->name('employee.pick');

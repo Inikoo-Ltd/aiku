@@ -12,7 +12,6 @@ use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemCancelStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemSalesTypeEnum;
 use App\Models\Inventory\OrgStock;
-use App\Models\Inventory\PickingIssue;
 use App\Models\Ordering\Transaction;
 use App\Models\Traits\InShop;
 use Eloquent;
@@ -20,7 +19,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
  * App\Models\Dispatching\DeliveryNoteItem
@@ -146,12 +144,6 @@ class DeliveryNoteItem extends Model
     public function orgStock(): BelongsTo
     {
         return $this->belongsTo(OrgStock::class);
-    }
-
-    
-    public function pickingIssues(): MorphMany
-    {
-        return $this->morphMany(PickingIssue::class, 'model');
     }
 
 

@@ -19,7 +19,6 @@ use App\Models\Helpers\Address;
 use App\Models\Helpers\Feedback;
 use App\Models\Helpers\UniversalSearch;
 use App\Models\HumanResources\Employee;
-use App\Models\Inventory\PickingIssue;
 use App\Models\Inventory\PickingSession;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
@@ -311,10 +310,6 @@ class DeliveryNote extends Model implements Auditable
         return $this->belongsTo(CustomerSalesChannel::class);
     }
 
-    public function pickingIssues(): MorphMany
-    {
-        return $this->morphMany(PickingIssue::class, 'model');
-    }
 
     public function pickingSessions(): BelongsToMany
     {
