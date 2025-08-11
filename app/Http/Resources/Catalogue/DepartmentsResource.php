@@ -49,6 +49,7 @@ class DepartmentsResource extends JsonResource
             'shop_name'                      => $this->shop_name,
             'code'                           => $this->code,
             'name'                           => $this->name,
+            'currency_code'                           => $this->currency_code,
             'state'                          => [
                 'label' => $this->state->labels()[$this->state->value],
                 'icon'  => $this->state->stateIcon()[$this->state->value]['icon'],
