@@ -20,14 +20,12 @@ class CreateMasterCollection extends OrgAction
     public function asController(MasterShop $masterShop, ActionRequest $request): Response
     {
         $this->initialisationFromGroup(group(), $request);
-
         return $this->handle($masterShop, $request);
     }
 
     public function inMasterProductCategory(MasterProductCategory $masterProductCategory, ActionRequest $request): Response
     {
         $this->initialisationFromGroup(group(), $request);
-
         return $this->handle($masterProductCategory, $request);
     }
 
@@ -109,7 +107,9 @@ class CreateMasterCollection extends OrgAction
     {
         return array_merge(
             IndexMasterCollections::make()->getBreadcrumbs(
+                parent: $parent,
                 routeName: preg_replace('/create$/', 'index', $routeName),
+                routeParameters: $routeParameters
             ),
             [
                 [

@@ -10,10 +10,8 @@
 
 namespace App\Actions\Masters\MasterCollection\UI;
 
-use App\Actions\Catalogue\Shop\UI\ShowShop;
-use App\Actions\Catalogue\WithCollectionSubNavigation;
-use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\GrpAction;
+use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\UI\SupplyChain\MasterCollectionTabsEnum;
 use App\Http\Resources\Catalogue\CollectionsResource;
@@ -27,7 +25,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowMasterCollection extends GrpAction
 {
-    use WithCollectionSubNavigation;
     use WithMastersAuthorisation;
 
     private MasterShop|Group $parent;
@@ -61,7 +58,7 @@ class ShowMasterCollection extends GrpAction
         return Inertia::render(
             'Org/Catalogue/Collection',
             [
-                'title'       => __('collection'),
+                'title'       => __('master collection'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $masterCollection,
                     $request->route()->getName(),
@@ -76,27 +73,9 @@ class ShowMasterCollection extends GrpAction
                     'model'   => '',
                     'icon'    => [
                         'icon'  => ['fal', 'fa-layer-group'],
-                        'title' => __('collection')
+                        'title' => __('master collection')
                     ],
-                    'actions' => [
-                        [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'label' => 'blueprint',
-                            'route' => [
-                                'name'       => preg_replace('/show$/', 'blueprint', $request->route()->getName()),
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ],
-                        $this->canDelete ? [
-                            'type'  => 'button',
-                            'style' => 'delete',
-                            'route' => [
-                                'name'       => 'shops.show.collections.remove',
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ] : false
-                    ],
+                    'actions' => [],
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
@@ -104,11 +83,10 @@ class ShowMasterCollection extends GrpAction
                 ],
 
                 MasterCollectionTabsEnum::SHOWCASE->value => $this->tab == MasterCollectionTabsEnum::SHOWCASE->value ?
-                    fn () => MasterCollectionResource::make($masterCollection)
-                    : Inertia::lazy(fn () => MasterCollectionResource::make($masterCollection)),
+                    fn () => GetMasterCollectionShowcase::run($masterCollection)
+                    : Inertia::lazy(fn () => GetMasterCollectionShowcase::run($masterCollection)),
             ]
-        )
-            ->table(IndexMailshots::make()->tableStructure($masterCollection));
+        );
     }
 
     public function jsonResponse(MasterCollection $masterCollection): CollectionsResource
@@ -125,7 +103,7 @@ class ShowMasterCollection extends GrpAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Collections')
+                            'label' => __('Master Collections')
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -138,18 +116,18 @@ class ShowMasterCollection extends GrpAction
         };
 
         return match ($routeName) {
-            'grp.org.shops.show.catalogue.collections.show' =>
+            'grp.masters.master_shops.show.master_collections.show' =>
             array_merge(
-                ShowShop::make()->getBreadcrumbs($routeParameters),
+                ShowMasterShop::make()->getBreadcrumbs($masterCollection->masterShop, $routeParameters),
                 $headCrumb(
                     $masterCollection,
                     [
                         'index' => [
-                            'name'       => 'grp.org.shops.show.catalogue.collections.index',
+                            'name'       => 'grp.masters.master_shops.show.master_collections.index',
                             'parameters' => $routeParameters
                         ],
                         'model' => [
-                            'name'       => 'grp.org.shops.show.catalogue.collections.show',
+                            'name'       => 'grp.masters.master_shops.show.master_collections.show',
                             'parameters' => $routeParameters
                         ]
                     ],
@@ -181,15 +159,6 @@ class ShowMasterCollection extends GrpAction
         }
 
         return match ($routeName) {
-            'grp.masters.master_collections.show' => [
-                'label' => $masterCollection->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => [
-                        'masterCollection' => $masterCollection->slug
-                    ]
-                ]
-            ],
             'grp.masters.master_shops.show.master_collections.show' => [
                 'label' => $masterCollection->name,
                 'route' => [
