@@ -11,11 +11,8 @@ namespace App\Actions\Masters\MasterProductCategory\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Catalogue\Collection\CollectionProductsStatusEnum;
-use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Catalogue\MasterCollection\MasterCollectionStateEnum;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Models\Catalogue\ProductCategory;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;

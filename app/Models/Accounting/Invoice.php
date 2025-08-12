@@ -111,6 +111,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $customer_sales_channel_id
  * @property int|null $delivery_address_id
  * @property int|null $delivery_country_id
+ * @property string|null $ulid
  * @property-read Address|null $address
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Address|null $billingAddress

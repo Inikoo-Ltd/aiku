@@ -66,7 +66,7 @@ class IndexMasterSubDepartments extends GrpAction
         $queryBuilder = QueryBuilder::for(MasterProductCategory::class);
         if ($parent instanceof MasterShop) {
             $queryBuilder->where('master_product_categories.master_shop_id', $parent->id);
-        } else{
+        } else {
             $queryBuilder->where('master_product_categories.master_parent_id', $parent->id);
         }
 

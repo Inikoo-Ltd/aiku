@@ -195,7 +195,7 @@ use App\Actions\HumanResources\JobPosition\UpdateJobPosition;
 use App\Actions\HumanResources\Workplace\DeleteWorkplace;
 use App\Actions\HumanResources\Workplace\StoreWorkplace;
 use App\Actions\HumanResources\Workplace\UpdateWorkplace;
-use App\Actions\Masters\MasterProductCategory\AttachFamiliesToMasterSubDepartment;
+use App\Actions\Masters\MasterProductCategory\AttachMasterFamiliesToMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\DetachFamilyToMasterSubDepartment;
 use App\Actions\Masters\MasterCollection\StoreMasterCollection;
 use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
@@ -362,7 +362,7 @@ Route::prefix('mater-department/{masterDepartment:id}')->group(function () {
 
 Route::prefix('master-sub-department/{masterSubDepartment:id}')->name('master-sub-department.')->group(function () {
     Route::post('master-family', [StoreMasterFamily::class, 'inMasterSubDepartment'])->name('master_family.store');
-    Route::post('families/attach', AttachFamiliesToMasterSubDepartment::class)->name('families.attach');
+    Route::post('families/attach', AttachMasterFamiliesToMasterSubDepartment::class)->name('families.attach');
     Route::delete('family/{family:id}/detach', DetachFamilyToMasterSubDepartment::class)->name('family.detach')->withoutScopedBindings();
 });
 

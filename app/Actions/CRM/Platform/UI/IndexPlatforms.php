@@ -59,7 +59,7 @@ class IndexPlatforms extends OrgAction
                 'number_products',
                 'number_orders',
                 'sales',
-                AllowedSort::custom('name', new class implements Sort {
+                AllowedSort::custom('name', new class () implements Sort {
                     public function __invoke(Builder $query, bool $descending, string $property)
                     {
                         $direction = $descending ? 'desc' : 'asc';

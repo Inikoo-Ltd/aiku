@@ -41,6 +41,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Group $group
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterAsset> $masterAssets
+ * @property-read LaravelCollection<int, \App\Models\Masters\MasterCollection> $masterCollections
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategory> $masterProductCategories
  * @property-read \App\Models\Masters\MasterShopOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Masters\MasterShopOrderingStats|null $orderingStats

@@ -120,7 +120,7 @@ class CreateMasterFamily extends OrgAction
                                 'masterShop' => $parent->id
                             ]
                         ],
-                        MasterProductCategory::class => $parent->type == MasterProductCategoryTypeEnum::DEPARTMENT 
+                        MasterProductCategory::class => $parent->type == MasterProductCategoryTypeEnum::DEPARTMENT
                             ? [
                                 'name' => 'grp.models.master_family.store',
                                 'parameters' => [

@@ -14,7 +14,6 @@ use App\Actions\Iris\Portfolio\DeleteIrisPortfolioFromMultiChannels;
 use App\Actions\Iris\Portfolio\StoreIrisPortfolioFavourites;
 use App\Actions\Iris\Portfolio\StoreIrisPortfolioToAllChannels;
 use App\Actions\Iris\Portfolio\StoreIrisPortfolioToMultiChannels;
-use App\Actions\Iris\UpdateIrisLocale;
 use Illuminate\Support\Facades\Route;
 
 Route::post('portfolio-all-channels', StoreIrisPortfolioToAllChannels::class)->name('all_channels.portfolio.store');

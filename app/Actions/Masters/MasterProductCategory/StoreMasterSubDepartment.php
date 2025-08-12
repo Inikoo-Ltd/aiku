@@ -33,7 +33,7 @@ class StoreMasterSubDepartment extends OrgAction
     {
         data_set($modelData, 'type', MasterProductCategoryTypeEnum::SUB_DEPARTMENT);
 
-        $masterSubDepartment= StoreMasterProductCategory::run($parent, $modelData);
+        $masterSubDepartment = StoreMasterProductCategory::run($parent, $modelData);
 
         MasterDepartmentHydrateMasterSubDepartments::dispatch($masterSubDepartment->masterDepartment)->delay($this->hydratorsDelay);
         MasterShopHydrateMasterSubDepartments::dispatch($masterSubDepartment->masterShop)->delay($this->hydratorsDelay);

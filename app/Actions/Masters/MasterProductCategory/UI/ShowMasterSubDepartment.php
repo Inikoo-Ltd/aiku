@@ -234,7 +234,7 @@ class ShowMasterSubDepartment extends GrpAction
 
                         ]
                     ],
-                    $suffix   
+                    $suffix
                 )
             ),
             default => []

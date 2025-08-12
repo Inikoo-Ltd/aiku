@@ -45,14 +45,14 @@ class AttachFamiliesToSubDepartment extends OrgAction
             }
 
             $family->update([
-                'sub_department_id' => $subDepartment->id,
                 'parent_id' => $subDepartment->id,
                 'department_id' => $subDepartment->department_id,
+                'sub_department_id' => $subDepartment->id,
             ]);
 
             DB::table('products')->where('family_id', $family->id)->update([
-                'sub_department_id' => $subDepartment->id,
                 'department_id' => $subDepartment->department_id,
+                'sub_department_id' => $subDepartment->id,
             ]);
 
         }
@@ -65,9 +65,9 @@ class AttachFamiliesToSubDepartment extends OrgAction
         }
 
         foreach ($subDepartmentsToHydrate as $subDepartmentsToHydrateID) {
-            $subDepartmentsToHydrateID = ProductCategory::find($subDepartmentsToHydrateID);
-            ProductCategoryHydrateFamilies::dispatch($subDepartmentsToHydrateID);
-            SubDepartmentHydrateProducts::dispatch($subDepartmentsToHydrateID);
+            $subDepartment = ProductCategory::find($subDepartmentsToHydrateID);
+            ProductCategoryHydrateFamilies::dispatch($subDepartment);
+            SubDepartmentHydrateProducts::dispatch($subDepartment);
         }
 
 

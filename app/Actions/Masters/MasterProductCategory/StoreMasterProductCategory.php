@@ -9,7 +9,7 @@
 namespace App\Actions\Masters\MasterProductCategory;
 
 use App\Actions\GrpAction;
-use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterFamilies;
+use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterFamilies;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamilies;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterSubDepartments;
@@ -17,7 +17,6 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterProductCategories;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -65,7 +64,7 @@ class StoreMasterProductCategory extends GrpAction
         } elseif ($masterProductCategory->type == MasterProductCategoryTypeEnum::FAMILY) {
             MasterShopHydrateMasterFamilies::dispatch($masterProductCategory->masterShop)->delay($this->hydratorsDelay);
             if ($masterProductCategory->department) {
-                MasterDepartmentHydrateMasterFamilies::dispatch($masterProductCategory->department)->delay($this->hydratorsDelay);
+                MasterProductCategoryHydrateMasterFamilies::dispatch($masterProductCategory->department)->delay($this->hydratorsDelay);
             }
         } elseif ($masterProductCategory->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
             MasterShopHydrateMasterSubDepartments::dispatch($masterProductCategory->masterShop)->delay($this->hydratorsDelay);
