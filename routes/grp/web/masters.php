@@ -80,9 +80,9 @@ Route::prefix('/master-departments/{masterDepartment}')->as('master_departments.
     Route::get('/master-sub-departments/create', [CreateMasterSubDepartment::class, 'inMasterDepartment'])->name('.master_sub_departments.create');
     Route::get('/master-sub-departments/{masterSubDepartment}', [ShowMasterSubDepartment::class, 'inMasterDepartment'])->name('.master_sub_departments.show');
     Route::get('/master-sub-departments/{masterSubDepartment}/edit', [EditMasterSubDepartment::class, 'inMasterDepartment'])->name('.master_sub_departments.edit');
-    Route::get('/master-sub-departments/{masterSubDepartment}/families', [IndexMasterFamilies::class, 'inMasterSubDepartmentInMasterDepartment'])->name('.master_sub_departments.show.master_families.index');
-    Route::get('/master-sub-departments/{masterSubDepartment}/families/create', [CreateMasterFamily::class, 'inMasterSubDepartmentInMasterDepartment'])->name('.master_sub_departments.show.master_families.create');
-    Route::get('/master-sub-departments/{masterSubDepartment}/families/{masterFamily}', [ShowMasterFamily::class, 'inMasterSubDepartmentInMasterDepartment'])->name('.master_sub_departments.show.master_families.show');
+    Route::get('/master-sub-departments/{masterSubDepartment}/master-families', [IndexMasterFamilies::class, 'inMasterSubDepartmentInMasterDepartment'])->name('.master_sub_departments.show.master_families.index');
+    Route::get('/master-sub-departments/{masterSubDepartment}/master-families/create', [CreateMasterFamily::class, 'inMasterSubDepartmentInMasterDepartment'])->name('.master_sub_departments.show.master_families.create');
+    Route::get('/master-sub-departments/{masterSubDepartment}/master-families/{masterFamily}', [ShowMasterFamily::class, 'inMasterSubDepartmentInMasterDepartment'])->name('.master_sub_departments.show.master_families.show');
 });
 
 
