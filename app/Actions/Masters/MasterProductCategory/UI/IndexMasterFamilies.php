@@ -51,7 +51,7 @@ class IndexMasterFamilies extends OrgAction
     public function inGroup(ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = group();
-        $parent        = $this->parent;
+        $parent       = $this->parent;
         $this->initialisationFromGroup($parent, $request);
 
         return $this->handle(parent: $parent);
@@ -60,25 +60,40 @@ class IndexMasterFamilies extends OrgAction
     public function inMasterDepartment(MasterProductCategory $masterDepartment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $masterDepartment;
-        $parent        = $this->parent;
+        $parent       = $this->parent;
         $this->initialisationFromGroup($masterDepartment->group, $request);
+
         return $this->handle(parent: $parent);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $masterDepartment;
+        $parent       = $this->parent;
+        $this->initialisationFromGroup($masterDepartment->group, $request);
+
+        return $this->handle(parent: $parent);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
     public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $masterSubDepartment;
-        $parent        = $this->parent;
+        $parent       = $this->parent;
         $this->initialisationFromGroup($masterSubDepartment->group, $request);
-        return $this->handle(parent: $parent, parentType:'sub_department');
+
+        return $this->handle(parent: $parent, parentType: 'sub_department');
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inMasterSubDepartmentInMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $masterSubDepartment;
-        $parent        = $this->parent;
+        $parent       = $this->parent;
         $this->initialisationFromGroup($masterSubDepartment->group, $request);
-        return $this->handle(parent: $parent, parentType:'sub_department');
+
+        return $this->handle(parent: $parent, parentType: 'sub_department');
     }
 
 
@@ -169,12 +184,10 @@ class IndexMasterFamilies extends OrgAction
             }
 
 
-
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current families with this master'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'products', label: __('products'), tooltip: __('current master products'), canBeHidden: false, sortable: true, searchable: true);
-
         };
     }
 
@@ -214,13 +227,13 @@ class IndexMasterFamilies extends OrgAction
             ];
         } elseif ($this->parent instanceof MasterProductCategory) {
             if ($this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
-                $icon = [
+                $icon          = [
                     'icon'  => ['fal', 'fa-folder-tree'],
                     'title' => __('Master department')
                 ];
                 $subNavigation = $this->getMasterDepartmentSubNavigation($this->parent);
             } elseif ($this->parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
-                $icon = [
+                $icon          = [
                     'icon'  => ['fal', 'fa-folder'],
                     'title' => __('Master sub-department')
                 ];
@@ -266,20 +279,20 @@ class IndexMasterFamilies extends OrgAction
         } elseif ($this->parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
             match ($request->route()->getName()) {
                 'grp.masters.master_departments.show.master_sub_departments.show.master_families.index' =>
-                    $createRoute = 'grp.masters.master_departments.show.master_sub_departments.show.master_families.create',
+                $createRoute = 'grp.masters.master_departments.show.master_sub_departments.show.master_families.create',
                 'grp.masters.master_departments.show.master_families.index' =>
-                    $createRoute = 'grp.masters.master_departments.show.master_families.create',
+                $createRoute = 'grp.masters.master_departments.show.master_families.create',
                 default => $createRoute
             };
         }
 
         $actions[] = [
-            'type' => 'button',
-            'style' => 'create',
+            'type'    => 'button',
+            'style'   => 'create',
             'tooltip' => __('master new family'),
-            'label' => __('master family'),
-            'route' => [
-                'name' => $createRoute,
+            'label'   => __('master family'),
+            'route'   => [
+                'name'       => $createRoute,
                 'parameters' => $request->route()->originalParameters()
             ]
         ];

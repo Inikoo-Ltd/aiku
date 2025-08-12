@@ -27,10 +27,10 @@ class MasterProductCategoryHydrateMasterFamilies implements ShouldBeUnique
     public function handle(MasterProductCategory $masterProductCategory): void
     {
 
+
         if ($masterProductCategory->type == MasterProductCategoryTypeEnum::FAMILY) {
             return;
         }
-
         $stats = [
             'number_master_product_categories_type_family' =>  DB::table('master_product_categories')
                 ->where(function ($query) use ($masterProductCategory) {
@@ -56,7 +56,6 @@ class MasterProductCategoryHydrateMasterFamilies implements ShouldBeUnique
                 ->where('deleted_at', null)
                 ->count(),
         ];
-
 
         $masterProductCategory->stats()->update($stats);
     }
