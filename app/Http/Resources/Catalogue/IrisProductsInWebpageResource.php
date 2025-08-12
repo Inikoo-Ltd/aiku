@@ -65,7 +65,8 @@ class IrisProductsInWebpageResource extends JsonResource
             'top_seller' => $this->top_seller,
             'web_images' => $this->web_images,
             'transaction_id' => $this->transaction_id ?? null,
-            'quantity_ordered' => $this->quantity_ordered ?? null,
+            'quantity_ordered' => (int) $this->quantity_ordered ?? 0,
+            'quantity_ordered_new' => (int) $this->quantity_ordered ?? 0,  // To editable in Frontend
         ];
     }
 
