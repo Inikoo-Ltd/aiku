@@ -102,6 +102,7 @@ class EditGroupSettings extends GrpAction
                                 'searchable'    => true,
                                 'mode'          => 'tags',
                                 'labelProp'     => 'name',
+                                 'valueProp' => 'id',
                             ]
 
                         ],

@@ -226,6 +226,7 @@ class EditShop extends OrgAction
                                     'searchable'    => true,
                                     'mode'          => 'tags',
                                     'labelProp'     => 'name',
+                                    'valueProp' => 'id',
                                 ]
 
                             ],

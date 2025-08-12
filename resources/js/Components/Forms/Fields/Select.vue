@@ -34,6 +34,8 @@ onMounted(() => {
         props.form[props.fieldName] = props.options?.[0]?.value
     }
 })
+
+console.log(props)
 </script>
 
 <template>
@@ -61,7 +63,7 @@ onMounted(() => {
 				<template
 					#tag="{ option, handleTagRemove, disabled }: { option: tag, handleTagRemove: Function, disabled: boolean }">
 					<div class="px-0.5 py-[3px]">
-						<Tag :theme="option.id" :label="option[fieldData.labelProp].name" :closeButton="true"
+						<Tag :theme="option.id" :label="option[fieldData.labelProp][fieldData.labelProp]" :closeButton="true"
 							:stringToColor="true" size="sm"
 							@onClose="(event) => handleTagRemove(option, event)" />
 					</div>
