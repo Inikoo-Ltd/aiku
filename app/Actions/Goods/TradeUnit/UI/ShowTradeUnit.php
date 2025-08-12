@@ -136,6 +136,9 @@ class ShowTradeUnit extends GrpAction
                         'icon'  => 'fal fa-atom'
                     ],
                     'title'   => $tradeUnit->code,
+                    'afterTitle'=>[
+                      'label' => $tradeUnit->status->labels()[$tradeUnit->status->value]
+                    ],
                     'actions' => [
                         $this->canEdit ? [
                             'type'  => 'button',
