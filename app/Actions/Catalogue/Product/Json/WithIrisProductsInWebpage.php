@@ -101,14 +101,16 @@ trait WithIrisProductsInWebpage
                 ->where('model_has_trade_units.model_type', 'Product');
         });
         $queryBuilder->join('trade_units', 'trade_units.id', 'model_has_trade_units.trade_unit_id');
+
         if($customer) {
             $basket = $customer->orderInBasket;
 
             if ($basket) {
-                $queryBuilder->leftjoin('historic_assets', 'products.current_historic_asset_id', '=', 'historic_assets.id');
                 $queryBuilder->leftjoin('transactions', function ($join) use ($basket) {
-                    $join->on('transactions.historic_asset_id', '=', 'transactions.id')
-                        ->where('transactions.order_id', '=', $basket->id);
+                    $join->on('transactions.model_id', '=', 'products.id')
+                        ->where('transactions.model_type', '=', 'Product')
+                        ->where('transactions.order_id', '=', $basket->id)
+                        ->whereNull('transactions.deleted_at');
                 });
             }
         }
@@ -134,7 +136,7 @@ trait WithIrisProductsInWebpage
 
     public function getSelect(): array
     {
-        return [
+        $select = [
             'products.id',
             'products.image_id',
             'products.code',
@@ -150,12 +152,17 @@ trait WithIrisProductsInWebpage
             'products.unit',
             'products.top_seller',
             'products.web_images',
-            'transactions.id as transaction_id',
-            'transactions.quantity_ordered as quantity_ordered',
             'webpages.url'
         ];
-    }
 
+        $customer = request()->user()?->customer;
+        if ($customer && $customer->orderInBasket) {
+            $select[] = 'transactions.id as transaction_id';
+            $select[] = 'transactions.quantity_ordered as quantity_ordered';
+        }
+
+        return $select;
+    }
     public function getAllowedSorts(): array
     {
         return [
