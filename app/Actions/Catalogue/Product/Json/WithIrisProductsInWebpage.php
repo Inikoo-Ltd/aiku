@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\Product\Json;
 
 use App\Http\Resources\Catalogue\IrisProductsInWebpageResource;
 use App\Models\Catalogue\Product;
+use App\Models\CRM\Customer;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -84,6 +85,7 @@ trait WithIrisProductsInWebpage
 
     public function getBaseQuery(string $stockMode): QueryBuilder
     {
+        $customer = request()->user()?->customer;
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->leftJoin('webpages', 'webpages.id', '=', 'products.webpage_id');
 
@@ -99,7 +101,17 @@ trait WithIrisProductsInWebpage
                 ->where('model_has_trade_units.model_type', 'Product');
         });
         $queryBuilder->join('trade_units', 'trade_units.id', 'model_has_trade_units.trade_unit_id');
+        if($customer) {
+            $basket = $customer->orderInBasket;
 
+            if ($basket) {
+                $queryBuilder->leftjoin('historic_assets', 'products.current_historic_asset_id', '=', 'historic_assets.id');
+                $queryBuilder->leftjoin('transactions', function ($join) use ($basket) {
+                    $join->on('transactions.id', '=', 'historic_assets.transaction_id')
+                        ->where('transactions.order_id', '=', $basket->id);
+                });
+            }
+        }
 
         return $queryBuilder;
     }
@@ -138,6 +150,8 @@ trait WithIrisProductsInWebpage
             'products.unit',
             'products.top_seller',
             'products.web_images',
+            'transactions.id as transaction_id',
+            'transactions.quantity_ordered as quantity_ordered',
             'webpages.url'
         ];
     }

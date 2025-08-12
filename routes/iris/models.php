@@ -8,6 +8,7 @@
 */
 
 use App\Actions\Iris\Basket\StoreEcomBasketTransaction;
+use App\Actions\Iris\Basket\UpdateEcomBasketTransaction;
 use App\Actions\Iris\Portfolio\DeleteIrisPortfolioFavourites;
 use App\Actions\Iris\Portfolio\DeleteIrisPortfolioFromMultiChannels;
 use App\Actions\Iris\Portfolio\StoreIrisPortfolioFavourites;
@@ -26,3 +27,4 @@ Route::post('favourites/{product:id}', StoreIrisPortfolioFavourites::class)->nam
 Route::delete('un-favourites/{product:id}', DeleteIrisPortfolioFavourites::class)->name('favourites.delete');
 
 Route::post('{product:id}/store-transaction', StoreEcomBasketTransaction::class)->name('transaction.store')->withoutScopedBindings();
+Route::post('{transaction:id}/update-transaction', UpdateEcomBasketTransaction::class)->name('transaction.update')->withoutScopedBindings();
