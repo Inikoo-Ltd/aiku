@@ -92,7 +92,7 @@ class EditGroupSettings extends GrpAction
                                 'options'       => GetLanguagesOptions::make()->all(),
                                 'searchable'    => true
                             ],
-                            'extra_language' => [
+                            'extra_languages' => [
                                 'type'          => 'select',
                                 'label'         => __('Extra language'),
                                 'placeholder'   => __('Select your language'),
