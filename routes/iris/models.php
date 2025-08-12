@@ -25,4 +25,4 @@ Route::post('delete-portfolio-multi-channels', DeleteIrisPortfolioFromMultiChann
 Route::post('favourites/{product:id}', StoreIrisPortfolioFavourites::class)->name('favourites.store');
 Route::delete('un-favourites/{product:id}', DeleteIrisPortfolioFavourites::class)->name('favourites.delete');
 
-Route::post('store-transaction', StoreEcomBasketTransaction::class)->name('transaction.store');
+Route::post('{product:id}/store-transaction', StoreEcomBasketTransaction::class)->name('transaction.store')->withoutScopedBindings();
