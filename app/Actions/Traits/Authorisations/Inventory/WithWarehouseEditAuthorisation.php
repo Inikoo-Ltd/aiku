@@ -9,6 +9,7 @@
 namespace App\Actions\Traits\Authorisations\Inventory;
 
 use Lorisleiva\Actions\ActionRequest;
+use App\Models\Warehouse;
 
 trait WithWarehouseEditAuthorisation
 {
@@ -18,9 +19,15 @@ trait WithWarehouseEditAuthorisation
             return true;
         }
 
+        $warehouseId = $request->route('warehouse');
+
+        if (!$warehouseId) {
+            return false;
+        }
+
         return $request->user()->authTo([
-            "supervisor-locations.".$this->warehouse->id,
-            'locations.'.$this->warehouse->id.'.edit',
+            "supervisor-locations." . $warehouseId,
+            'locations.' . $warehouseId . '.edit',
         ]);
     }
 }
