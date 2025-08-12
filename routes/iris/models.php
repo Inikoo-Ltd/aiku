@@ -7,6 +7,7 @@
  * copyright 2025
 */
 
+use App\Actions\Iris\Basket\StoreEcomBasketTransaction;
 use App\Actions\Iris\Portfolio\DeleteIrisPortfolioFavourites;
 use App\Actions\Iris\Portfolio\DeleteIrisPortfolioFromMultiChannels;
 use App\Actions\Iris\Portfolio\StoreIrisPortfolioFavourites;
@@ -23,3 +24,5 @@ Route::post('delete-portfolio-multi-channels', DeleteIrisPortfolioFromMultiChann
 
 Route::post('favourites/{product:id}', StoreIrisPortfolioFavourites::class)->name('favourites.store');
 Route::delete('un-favourites/{product:id}', DeleteIrisPortfolioFavourites::class)->name('favourites.delete');
+
+Route::post('store-transaction', StoreEcomBasketTransaction::class)->name('transaction.store');
