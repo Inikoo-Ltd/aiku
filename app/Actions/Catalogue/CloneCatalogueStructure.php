@@ -25,6 +25,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -52,14 +53,16 @@ class CloneCatalogueStructure
     public function attachFamiliesToSubDepartments(MasterShop|Shop $fromShop, MasterShop|Shop $shop): void
     {
         $subDepartments = $this->getSubDepartments($shop);
-        foreach ($subDepartments as $department) {
-
-            $fromDepartment = $this->getEquivalentProductCategory($fromShop, $department->code, 'department');
-            if ($fromDepartment) {
-                $fromFamilies=$this->getCategories($fromDepartment, 'family');
+        foreach ($subDepartments as $subDepartment) {
+            $fromSubDepartment = $this->getEquivalentProductCategory($fromShop, $subDepartment->code, 'sub_department');
+            if ($fromSubDepartment) {
+                $fromFamilies = $this->getCategories($fromSubDepartment, 'family');
                 foreach ($fromFamilies as $fromFamily) {
                     $family = $this->getEquivalentProductCategory($shop, $fromFamily->code, 'family');
-                    $this->attachFamily($department, $family);
+                    if($family){
+                        $this->attachFamily($subDepartment, $family);
+                    }
+
                 }
             }
         }
@@ -69,21 +72,23 @@ class CloneCatalogueStructure
     {
         $departments = $this->getDepartments($shop);
         foreach ($departments as $department) {
-
             $fromDepartment = $this->getEquivalentProductCategory($fromShop, $department->code, 'department');
             if ($fromDepartment) {
-                $fromFamilies=$this->getCategories($fromDepartment, 'family');
+                $fromFamilies = $this->getCategories($fromDepartment, 'family');
                 foreach ($fromFamilies as $fromFamily) {
                     $family = $this->getEquivalentProductCategory($shop, $fromFamily->code, 'family');
-                    $this->attachFamily($department, $family);
+                    if($family){
+                        $this->attachFamily($department, $family);
+                    }
+
                 }
             }
         }
     }
 
-    public function getCategories(MasterProductCategory|ProductCategory $parent,string $type):array
+    public function getCategories(MasterProductCategory|ProductCategory $parent, string $type): array
     {
-        $fromFamilies=[];
+        $fromFamilies = [];
         if ($parent instanceof ProductCategory) {
             foreach (
                 DB::table('product_categories')
@@ -109,19 +114,24 @@ class CloneCatalogueStructure
 
     public function getEquivalentProductCategory(MasterShop|Shop $baseShop, string $needle, string $type): null|MasterProductCategory|ProductCategory
     {
+        $family = null;
         if ($baseShop instanceof Shop) {
             $foundFamilyData = DB::table('product_categories')
                 ->where('shop_id', $baseShop->id)
                 ->where('type', $type)
                 ->whereRaw("lower(code) = lower(?)", [$needle])->first();
-
-            $family = ProductCategory::find($foundFamilyData->id);
+            if ($foundFamilyData) {
+                $family = ProductCategory::find($foundFamilyData->id);
+            }
         } else {
             $foundFamilyData = DB::table('master_product_categories')
                 ->where('master_shop_id', $baseShop->id)
                 ->where('type', $type)
                 ->whereRaw("lower(code) = lower(?)", [$needle])->first();
-            $family          = MasterProductCategory::find($foundFamilyData->id);
+
+            if ($foundFamilyData) {
+                $family = MasterProductCategory::find($foundFamilyData->id);
+            }
         }
 
         return $family;
@@ -140,8 +150,6 @@ class CloneCatalogueStructure
             } else {
                 $this->upsertMasterDepartment($shop, $fromDepartment);
             }
-
-
         }
     }
 
@@ -401,11 +409,6 @@ class CloneCatalogueStructure
 
     public function attachFamily(MasterProductCategory|ProductCategory $parent, MasterProductCategory|ProductCategory $family): void
     {
-        if (!$family) {
-            return;
-        }
-
-
         if ($parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             AttachFamiliesToSubDepartment::make()->action(
                 $parent,
@@ -424,7 +427,7 @@ class CloneCatalogueStructure
     }
 
 
-    public function getDepartments(MasterShop|Shop $shop): array
+    public function getDepartments(MasterShop|Shop $shop): array|Collection
     {
         if ($shop instanceof Shop) {
             $departments = $shop->departments();
@@ -433,6 +436,17 @@ class CloneCatalogueStructure
         }
 
         return $departments;
+    }
+
+    public function getSubDepartments(MasterShop|Shop $shop): array|Collection
+    {
+        if ($shop instanceof Shop) {
+            $subDepartments = $shop->subDepartments();
+        } else {
+            $subDepartments = $shop->getMasterSubDepartments();
+        }
+
+        return $subDepartments;
     }
 
     public function getCommandSignature(): string

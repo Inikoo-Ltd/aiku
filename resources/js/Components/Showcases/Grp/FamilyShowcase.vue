@@ -88,7 +88,6 @@ const links = ref([
     </div>
 
      <TranslationBox 
-        v-if="route().current()?.includes('master')"
         :master="data.family.data" 
         :needTranslation="data.family.data" 
         v-bind="data.family.data.translation_box"
