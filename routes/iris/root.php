@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Accounting\Invoice\IrisPdfInvoice;
 use App\Actions\Iris\UpdateIrisLocale;
 use App\Actions\Web\Webpage\Iris\ShowIrisSitemap;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
@@ -37,6 +38,7 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::prefix("")->group(function () {
         Route::group([], __DIR__.'/system.php');
         Route::get('/sitemap.xml', ShowIrisSitemap::class)->name('iris_sitemap');
+        Route::get('/invoice/{invoice:ulid}', IrisPdfInvoice::class)->name('iris_invoice');
         Route::get('/{path?}', ShowIrisWebpage::class)->name('iris_webpage');
         Route::get('/{parentPath1}/{path}', [ShowIrisWebpage::class, 'deep1'])->name('iris_webpage.deep1');
         Route::get('/{parentPath1}/{parentPath2}/{path}', [ShowIrisWebpage::class, 'deep2'])->name('iris_webpage.deep2');

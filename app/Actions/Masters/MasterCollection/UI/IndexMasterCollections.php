@@ -9,6 +9,7 @@
 namespace App\Actions\Masters\MasterCollection\UI;
 
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
+use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
@@ -135,7 +136,7 @@ class IndexMasterCollections extends OrgAction
         return Inertia::render(
             'Masters/MasterCollections',
             [
-                'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName()),
+                'breadcrumbs' => $this->getBreadcrumbs($this->parent, $request->route()->getName(), $request->route()->originalParameters()),
                 'title'       => $title,
                 'pageHead'    => [
                     'title'         => $title,
@@ -167,7 +168,7 @@ class IndexMasterCollections extends OrgAction
         )->table($this->tableStructure());
     }
 
-    public function getBreadcrumbs(string $routeName, string $suffix = null): array
+    public function getBreadcrumbs(MasterShop|MasterProductCategory|Group $parent, string $routeName, array $routeParameters, string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [
@@ -184,13 +185,13 @@ class IndexMasterCollections extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.masters.master_collections.index' =>
+            'grp.masters.master_shops.show.master_collections.index' =>
             array_merge(
-                ShowMastersDashboard::make()->getBreadcrumbs(),
+                ShowMasterShop::make()->getBreadcrumbs($parent, $routeName),
                 $headCrumb(
                     [
                         'name'       => $routeName,
-                        'parameters' => []
+                        'parameters' => $routeParameters
                     ],
                     $suffix
                 ),

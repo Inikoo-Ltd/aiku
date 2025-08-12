@@ -12,6 +12,7 @@ namespace App\Actions\Catalogue\Product\Json;
 use App\Actions\IrisAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\CRM\Customer;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -42,7 +43,6 @@ class GetIrisProductsInProductCategory extends IrisAction
     public function asController(ProductCategory $productCategory, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($request);
-
         return $this->handle(productCategory: $productCategory);
     }
 }

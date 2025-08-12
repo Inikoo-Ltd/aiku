@@ -83,7 +83,9 @@ class UpdateAssetFromModel extends OrgAction
         }
 
         if (Arr::hasAny($changes, ['state', 'master_asset_id'])) {
-            MasterAssetHydrateAssets::run($asset->masterAsset);
+            if ($asset->masterAsset) {
+                MasterAssetHydrateAssets::run($asset->masterAsset);
+            }
             if ($originalMasterAsset != null && $originalMasterAsset->id != $asset->master_asset_id) {
                 MasterAssetHydrateAssets::run($originalMasterAsset);
             }
