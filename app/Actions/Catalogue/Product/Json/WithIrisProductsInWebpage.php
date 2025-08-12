@@ -107,7 +107,7 @@ trait WithIrisProductsInWebpage
             if ($basket) {
                 $queryBuilder->leftjoin('historic_assets', 'products.current_historic_asset_id', '=', 'historic_assets.id');
                 $queryBuilder->leftjoin('transactions', function ($join) use ($basket) {
-                    $join->on('transactions.id', '=', 'historic_assets.transaction_id')
+                    $join->on('transactions.historic_asset_id', '=', 'transactions.id')
                         ->where('transactions.order_id', '=', $basket->id);
                 });
             }
