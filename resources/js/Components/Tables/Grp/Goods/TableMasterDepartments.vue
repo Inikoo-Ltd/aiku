@@ -102,9 +102,9 @@ function familiesRoute(masterDepartment: MasterDepartment) {
             </Link>
       </template>
        <template #cell(sub_departments)="{ item: department }">
-            <Link :href="subdepartmentRoute(department) as string" class="primaryLink">
+            <!-- <Link :href="subdepartmentRoute(department) as string" class="primaryLink"> -->
                 {{ department["sub_departments"] }}
-            </Link>
+            <!-- </Link> -->
       </template>
        <template #cell(collections)="{ item: department }">
             <!-- <Link :href="CollectionsRoute(department) as string" class="primaryLink"> -->
@@ -112,9 +112,9 @@ function familiesRoute(masterDepartment: MasterDepartment) {
          <!--    </Link> -->
       </template>
       <template #cell(families)="{ item: department }">
-            <Link :href="familiesRoute(department) as string" class="primaryLink">
+         <!--    <Link :href="familiesRoute(department) as string" class="primaryLink"> -->
                 {{ department["families"] }}
-            </Link>
+          <!--   </Link> -->
       </template>
     </Table>
 </template>
