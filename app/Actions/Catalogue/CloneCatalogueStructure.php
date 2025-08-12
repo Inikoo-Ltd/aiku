@@ -419,28 +419,36 @@ class CloneCatalogueStructure
             AttachFamiliesToSubDepartment::make()->action(
                 $parent,
                 [
-                    'families_id' => $family->id
+                    'families_id' => [
+                        $family->id
+                    ]
                 ]
             );
         } elseif ($parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
             AttachFamiliesToDepartment::make()->action(
                 $parent,
                 [
-                    'families' => $family->id
+                    'families' => [
+                        $family->id
+                    ]
                 ]
             );
         } elseif ($parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
             AttachMasterFamiliesToMasterDepartment::make()->action(
                 $parent,
                 [
-                    'master_families_id' => $family->id
+                    'master_families' => [
+                        $family->id
+                    ]
                 ]
             );
         } elseif ($parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
             AttachMasterFamiliesToMasterSubDepartment::make()->action(
                 $parent,
                 [
-                    'master_families_id' => $family->id
+                    'master_families' => [
+                        $family->id
+                    ]
                 ]
             );
         }

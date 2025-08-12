@@ -28,7 +28,7 @@ class AttachMasterFamiliesToMasterDepartment extends OrgAction
 
     public function handle(MasterProductCategory $masterDepartment, array $modelData): void
     {
-        foreach ($modelData['master_families_id'] as $masterFamilyId) {
+        foreach ($modelData['master_families'] as $masterFamilyId) {
             $masterFamily = MasterProductCategory::find($masterFamilyId);
             UpdateMasterFamilyMasterDepartment::make()->action($masterFamily, [
                 'master_department_id' => $masterDepartment->id
@@ -40,8 +40,8 @@ class AttachMasterFamiliesToMasterDepartment extends OrgAction
     public function rules(): array
     {
         return [
-            'master_families_id' => ['required', 'array'],
-            'master_families_id.*' => [
+            'master_families' => ['required', 'array'],
+            'master_families.*' => [
                 'required',
                 Rule::exists('master_product_categories', 'id')->where(function ($query) {
                     $query->where('master_shop_id', $this->masterDepartment->master_shop_id);

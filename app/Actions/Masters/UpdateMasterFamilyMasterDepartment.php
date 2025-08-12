@@ -35,6 +35,8 @@ class UpdateMasterFamilyMasterDepartment extends OrgAction
 
     public function handle(MasterProductCategory $masterFamily, array $modelData): MasterProductCategory
     {
+
+
         $oldDepartment    = $masterFamily->masterDepartment ?? null;
         $oldSubDepartment = $masterFamily->masterSubDepartment ?? null;
 
@@ -45,7 +47,7 @@ class UpdateMasterFamilyMasterDepartment extends OrgAction
         $masterFamily = $this->update($masterFamily, $modelData);
         $changes      = $masterFamily->getChanges();
         $masterFamily->refresh();
-        DB::table('master_products')
+        DB::table('master_assets')
             ->where('master_family_id', $masterFamily->id)
             ->update([
                 'master_department_id'     => $masterFamily->department_id,
@@ -54,8 +56,8 @@ class UpdateMasterFamilyMasterDepartment extends OrgAction
 
 
         if (Arr::has($changes, 'master_department_id')) {
-            MasterDepartmentHydrateMasterAssets::dispatch($masterFamily->department);
-            MasterProductCategoryHydrateMasterFamilies::dispatch($masterFamily->department);
+            MasterDepartmentHydrateMasterAssets::dispatch($masterFamily->masterDepartment);
+            MasterProductCategoryHydrateMasterFamilies::dispatch($masterFamily->masterDepartment);
             if ($oldDepartment) {
                 MasterDepartmentHydrateMasterAssets::dispatch($oldDepartment);
                 MasterProductCategoryHydrateMasterFamilies::dispatch($oldDepartment);

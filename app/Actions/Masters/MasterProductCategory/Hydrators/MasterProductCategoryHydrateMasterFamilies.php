@@ -35,9 +35,9 @@ class MasterProductCategoryHydrateMasterFamilies implements ShouldBeUnique
             'number_master_product_categories_type_family' =>  DB::table('master_product_categories')
                 ->where(function ($query) use ($masterProductCategory) {
                     if ($masterProductCategory->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
-                        $query->where('department_id', $masterProductCategory->id);
+                        $query->where('master_department_id', $masterProductCategory->id);
                     } elseif ($masterProductCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
-                        $query->where('sub_department_id', $masterProductCategory->id);
+                        $query->where('master_sub_department_id', $masterProductCategory->id);
                     }
                 })
                 ->where('type', MasterProductCategoryTypeEnum::FAMILY->value)
@@ -46,9 +46,9 @@ class MasterProductCategoryHydrateMasterFamilies implements ShouldBeUnique
             'number_current_master_product_categories_type_family' =>  DB::table('master_product_categories')
                 ->where(function ($query) use ($masterProductCategory) {
                     if ($masterProductCategory->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
-                        $query->where('department_id', $masterProductCategory->id);
+                        $query->where('master_department_id', $masterProductCategory->id);
                     } elseif ($masterProductCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
-                        $query->where('sub_department_id', $masterProductCategory->id);
+                        $query->where('master_sub_department_id', $masterProductCategory->id);
                     }
                 })
                 ->where('status', true)

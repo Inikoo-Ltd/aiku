@@ -36,7 +36,7 @@ class AttachMasterFamiliesToMasterSubDepartment extends OrgAction
         $masterDepartmentsToHydrate[$masterSubDepartment->id]    = $masterSubDepartment->id;
         $masterSubDepartmentsToHydrate[$masterSubDepartment->id] = $masterSubDepartment->id;
 
-        foreach ($modelData['master_families_id'] as $masterFamilyID) {
+        foreach ($modelData['master_families'] as $masterFamilyID) {
             $masterFamily = MasterProductCategory::find($masterFamilyID);
             if ($masterFamily->master_department_id) {
                 $masterDepartmentsToHydrate[$masterFamily->master_department_id] = $masterFamily->master_department_id;
@@ -51,22 +51,29 @@ class AttachMasterFamiliesToMasterSubDepartment extends OrgAction
                 'master_sub_department_id' => $masterSubDepartment->id,
             ]);
 
-            DB::table('master_assets')->where('master_family_id', $masterFamily->id)->update([
-                'department_id'     => $masterSubDepartment->master_department_id,
-                'sub_department_id' => $masterSubDepartment->id,
-            ]);
+            DB::table('master_assets')->where('master_family_id', $masterFamily->id)
+                ->update(
+                    [
+                        'master_department_id'     => $masterSubDepartment->master_department_id,
+                        'master_sub_department_id' => $masterSubDepartment->id,
+                    ]
+                );
         }
 
         foreach ($masterDepartmentsToHydrate as $masterDepartmentID) {
             $masterDepartment = MasterProductCategory::find($masterDepartmentID);
-            MasterDepartmentHydrateMasterAssets::dispatch($masterDepartment);
-            MasterProductCategoryHydrateMasterFamilies::dispatch($masterDepartment);
+            if ($masterDepartment) {
+                MasterDepartmentHydrateMasterAssets::dispatch($masterDepartment);
+                MasterProductCategoryHydrateMasterFamilies::dispatch($masterDepartment);
+            }
         }
 
         foreach ($masterSubDepartmentsToHydrate as $masterSubDepartmentsToHydrateID) {
             $masterSubDepartment = MasterProductCategory::find($masterSubDepartmentsToHydrateID);
-            MasterProductCategoryHydrateMasterFamilies::dispatch($masterSubDepartment);
-            MasterSubDepartmentHydrateMasterAssets::dispatch($masterSubDepartment);
+            if ($masterSubDepartment) {
+                MasterProductCategoryHydrateMasterFamilies::dispatch($masterSubDepartment);
+                MasterSubDepartmentHydrateMasterAssets::dispatch($masterSubDepartment);
+            }
         }
 
 
@@ -76,8 +83,8 @@ class AttachMasterFamiliesToMasterSubDepartment extends OrgAction
     public function rules(): array
     {
         return [
-            'master_families_id'   => ['required', 'array'],
-            'master_families_id.*' => [
+            'master_families'   => ['required', 'array'],
+            'master_families.*' => [
                 'integer',
                 Rule::exists('master_product_categories', 'id')->where(function ($query) {
                     $query->where('master_shop_id', $this->masterSubDepartment->master_shop_id);
