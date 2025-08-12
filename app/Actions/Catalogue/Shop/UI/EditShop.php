@@ -225,6 +225,8 @@ class EditShop extends OrgAction
                                     'options'       => GetLanguagesOptions::make()->getExtraGroupLanguages($shop->group->extra_languages),
                                     'searchable'    => true,
                                     'mode'          => 'tags',
+                                    'labelProp'     => 'name',
+                                    'valueProp' => 'id',
                                 ]
                             ],
                         ],

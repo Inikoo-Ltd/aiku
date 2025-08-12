@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
@@ -219,6 +220,12 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
     {
         return $this->belongsTo(MasterShop::class);
     }
+
+    public function masterCollections(): MorphToMany
+    {
+        return $this->morphToMany(MasterCollection::class, 'model', 'model_has_master_collections')->withTimestamps();
+    }
+
 
 
 }

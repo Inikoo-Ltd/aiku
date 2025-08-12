@@ -12,19 +12,15 @@ import { onMounted, ref, provide, defineAsyncComponent, watch } from "vue"
 import { initialiseApp } from "@/Composables/initialiseApp"
 import { usePage } from "@inertiajs/vue3"
 import Footer from "@/Components/Footer/Footer.vue"
-
 import { useLayoutStore } from "@/Stores/layout"
 import { useLocaleStore } from "@/Stores/locale"
-
 import "@/Composables/Icon/NavigationImportIcon"
-
-
 import TopBar from "@/Layouts/Grp/TopBar.vue"
 import LeftSideBar from "@/Layouts/Grp/LeftSideBar.vue"
 import RightSideBar from "@/Layouts/Grp/RightSideBar.vue"
 import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 import Notification from "@/Components/Utils/Notification.vue"
-import { faStackOverflow } from "@fortawesome/free-brands-svg-icons"
+import { faStackOverflow, faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import {
     faPoll, faAllergies, faSpellCheck, faHandPaper, faHourglassStart, faSadTear,
     faParking, faBoxCheck,
@@ -45,7 +41,6 @@ import {
     faAsterisk, faPauseCircle, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble,
     faSmile
 } from "@fal"
-import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { faSearch, faBell } from "@far"
 import { faAsterisk as fasAsterisk, faExclamation, faInfo, faPlay, faGlobe as fasGlobe } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -221,7 +216,7 @@ onMounted(() => {
 
                     <div class="mt-3 text-center sm:mt-5">
                         <div as="h3" class="font-semibold text-2xl">
-                            {{ trans("Hey, sorry for your incovenience.") }}
+                            {{ trans("Hey, sorry for your inconvenience.") }}
                         </div>
                         <div class="mt-2 text-sm text-gray-500">
                             {{ trans("Our app has new version. Please refresh the page to get the latest updates and avoid any issues happen.") }}

@@ -80,6 +80,7 @@ const isShowDummySlotName = false
                     </div>
                 </template>
 
+                <!-- Section: Main title group -->
                 <div class="flex leading-none py-1.5 items-center gap-x-2 font-bold text-gray-700 text-2xl tracking-tight ">
                     <div v-if="data.container" class="text-slate-500 text-lg">
                         <Link v-if="data.container.href"

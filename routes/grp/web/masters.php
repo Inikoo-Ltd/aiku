@@ -6,8 +6,15 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
+use App\Actions\Goods\TradeUnit\UI\EditTradeUnit;
+use App\Actions\Goods\TradeUnit\UI\IndexTradeUnits;
+use App\Actions\Goods\TradeUnit\UI\ShowTradeUnit;
+use App\Actions\Helpers\Tag\UI\CreateTag;
+use App\Actions\Helpers\Tag\UI\EditTag;
+use App\Actions\Helpers\Tag\UI\IndexTags;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProducts;
 use App\Actions\Masters\MasterAsset\UI\ShowMasterProducts;
+use App\Actions\Masters\MasterCollection\UI\CreateMasterCollection;
 use App\Actions\Masters\MasterCollection\UI\IndexMasterCollections;
 use App\Actions\Masters\MasterProductCategory\UI\CreateMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\CreateMasterFamily;
@@ -104,6 +111,26 @@ Route::prefix('/master-shops/{masterShop}')->as('master_shops.show')->group(func
     });
     Route::prefix('collections')->as('.master_collections.')->group(function () {
         Route::get('', IndexMasterCollections::class)->name('index');
+        Route::get('create', CreateMasterCollection::class)->name('create');
     });
 });
 Route::get('/shops/{masterShop}/blueprint', ShowMasterDepartmentsWorkshop::class)->name('master_shops.blueprint');
+
+
+Route::prefix('trade-units')->as('trade-units.')->group(function () {
+    Route::get('/all', IndexTradeUnits::class)->name('index');
+    Route::get('/active', [IndexTradeUnits::class, 'active'])->name('active');
+    Route::get('/in-process', [IndexTradeUnits::class, 'inProcess'])->name('in_process');
+    Route::get('/discontinued', [IndexTradeUnits::class, 'discontinued'])->name('discontinued');
+    Route::get('/anomality', [IndexTradeUnits::class, 'anomality'])->name('anomality');
+    Route::prefix('{tradeUnit:slug}')->group(function () {
+        Route::get('', ShowTradeUnit::class)->name('show');
+        Route::get('edit', EditTradeUnit::class)->name('edit');
+
+        Route::name('tags.')->prefix('tags')->group(function () {
+            Route::get('/', [IndexTags::class, 'inTradeUnit'])->name('index');
+            Route::get('create', [CreateTag::class, 'inTradeUnit'])->name('create');
+            Route::get('/{tag}/edit', [EditTag::class, 'inTradeUnit'])->name('edit');
+        });
+    });
+});

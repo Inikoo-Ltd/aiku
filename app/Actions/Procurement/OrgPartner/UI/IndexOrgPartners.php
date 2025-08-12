@@ -54,8 +54,8 @@ class IndexOrgPartners extends OrgAction
                 'organisations.slug',
                 'organisations.name',
                 'organisations.email'
-                ])
-            ->allowedSorts(['code', 'organisations.name', 'email'])
+            ])
+            ->allowedSorts(['code', 'organisations.name', 'email', 'name'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -68,7 +68,7 @@ class IndexOrgPartners extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
 
             $table

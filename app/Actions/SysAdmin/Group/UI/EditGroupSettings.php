@@ -101,6 +101,8 @@ class EditGroupSettings extends GrpAction
                                 'options'       => GetLanguagesOptions::make()->all(),
                                 'searchable'    => true,
                                 'mode'          => 'tags',
+                                'labelProp'     => 'name',
+                                 'valueProp' => 'id',
                             ]
 
                         ],

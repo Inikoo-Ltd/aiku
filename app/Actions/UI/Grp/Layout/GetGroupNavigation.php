@@ -220,6 +220,16 @@ class GetGroupNavigation
                         ]
                     ],
                     [
+                        'label' => 'Ingredients',
+                        'icon'  => ['fal', 'fa-apple-crate'],
+                        'root'  => 'grp.goods.ingredients.',
+                        'route' => [
+                            'name'       => 'grp.goods.ingredients.index',
+                            'parameters' => []
+
+                        ]
+                    ],
+                    [
                         'label' => 'Trade Units',
                         'icon'  => ['fal', 'fa-atom'],
                         'root'  => 'grp.goods.trade-units.',
@@ -229,16 +239,7 @@ class GetGroupNavigation
 
                         ]
                     ],
-                    [
-                        'label' => 'Ingredients',
-                        'icon'  => ['fal', 'fa-atom'],
-                        'root'  => 'grp.goods.ingredients.',
-                        'route' => [
-                            'name'       => 'grp.goods.ingredients.index',
-                            'parameters' => []
 
-                        ]
-                    ],
 
                 ]
             ]
@@ -277,49 +278,16 @@ class GetGroupNavigation
 
                         ]
                     ],
-//                    [
-//                        'label' => __('Departments'),
-//                        'tooltip' => __('Master departments'),
-//                        'icon'  => ['fal', 'fa-folder-tree'],
-//                        'root'  => 'grp.masters.master_departments.',
-//                        'route' => [
-//                            'name'       => 'grp.masters.master_departments.index',
-//                            'parameters' => []
-//
-//                        ]
-//                    ],
-//                    [
-//                        'label' => __('Families'),
-//                        'tooltip' => __('Master families'),
-//                        'icon'  => ['fal', 'fa-folder'],
-//                        'root'  => 'grp.masters.master_families.',
-//                        'route' => [
-//                            'name'       => 'grp.masters.master_families.index',
-//                            'parameters' => []
-//
-//                        ]
-//                    ],
-//                    [
-//                        'label' => __('Products'),
-//                        'tooltip' => __('Master products'),
-//                        'icon'  => ['fal', 'fa-cube'],
-//                        'root'  => 'grp.masters.master_products.',
-//                        'route' => [
-//                            'name'       => 'grp.masters.master_products.index',
-//                            'parameters' => []
-//
-//                        ]
-//                    ],
-//                    [
-//                        "label"   => __("Collections"),
-//                        "tooltip" => __("Master Collections"),
-//                        "icon"    => ["fal", "fa-album-collection"],
-//                        'root'    => 'grp.masters.master_collections.',
-//                        "route"   => [
-//                            "name"       => "grp.masters.master_collections.index",
-//                            "parameters" => [],
-//                        ],
-//                    ],
+                    [
+                        'label' => 'Trade Units',
+                        'icon'  => ['fal', 'fa-atom'],
+                        'root'  => 'grp.goods.trade-units.',
+                        'route' => [
+                            'name'       => 'grp.masters.trade-units.active',
+                            'parameters' => []
+
+                        ]
+                    ],
 
 
                 ]
