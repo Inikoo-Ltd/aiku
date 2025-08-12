@@ -29,30 +29,30 @@ trait WithMasterSubDepartmentSubNavigation
                     'tooltip' => __('Sub-department')
                 ]
             ],
-            // [
-            //     'label'    => __('Families'),
-            //     'number'   => $masterSubDepartment->stats->number_families,
-            //     'route'     => [
-            //         'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index',
-            //         'parameters' => [$this->organisation->slug, $this->shop->slug, $masterSubDepartment->department->slug, $masterSubDepartment->slug]
-            //     ],
-            //     'leftIcon' => [
-            //         'icon'    => ['fal', 'fa-folder'],
-            //         'tooltip' => __('families')
-            //     ]
-            // ],
-            // [
-            //     'label'    => __('Collections'),
-            //     'number'   => 0,
-            //     'route'     => [
-            //         'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index',
-            //         'parameters' => [$this->organisation->slug, $this->shop->slug, $masterSubDepartment->department->slug, $masterSubDepartment->slug]
-            //     ],
-            //     'leftIcon' => [
-            //         'icon'    => ['fal', 'fa-album-collection'],
-            //         'tooltip' => __('collections')
-            //     ]
-            // ],
+            [
+                'label'    => __('Families'),
+                'number'   => $masterSubDepartment->stats->number_families,
+                'route'     => [
+                    'name'       => 'grp.masters.master_departments.show.master_sub_departments.show.master_families.index',
+                    'parameters' => [$masterSubDepartment->parent->slug, $masterSubDepartment->slug]
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-folder'],
+                    'tooltip' => __('families')
+                ]
+            ],
+            [
+                'label'    => __('Collections'),
+                'number'   => 0,
+                'route'     => [
+                    // 'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index',
+                    // 'parameters' => [$this->organisation->slug, $this->shop->slug, $masterSubDepartment->department->slug, $masterSubDepartment->slug]
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-album-collection'],
+                    'tooltip' => __('collections')
+                ]
+            ],
         ];
     }
 

@@ -361,6 +361,7 @@ Route::prefix('mater-department/{masterDepartment:id}')->group(function () {
 });
 
 Route::prefix('master-sub-department/{masterSubDepartment:id}')->name('master-sub-department.')->group(function () {
+    Route::post('master-family', [StoreMasterFamily::class, 'inMasterSubDepartment'])->name('master_family.store');
     Route::post('families/attach', AttachFamiliesToMasterSubDepartment::class)->name('families.attach');
     Route::delete('family/{family:id}/detach', DetachFamilyToMasterSubDepartment::class)->name('family.detach')->withoutScopedBindings();
 });

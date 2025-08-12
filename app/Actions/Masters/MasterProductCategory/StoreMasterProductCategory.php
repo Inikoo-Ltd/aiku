@@ -39,9 +39,9 @@ class StoreMasterProductCategory extends GrpAction
             data_set($modelData, 'master_shop_id', $parent->master_shop_id);
             data_set($modelData, 'master_parent_id', $parent->id);
 
-            if ($parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
+            if ($parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
                 data_set($modelData, 'master_department_id', $parent->id);
-            } elseif ($parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            } elseif ($parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
                 data_set($modelData, 'master_sub_department_id', $parent->id);
             }
         } else {
