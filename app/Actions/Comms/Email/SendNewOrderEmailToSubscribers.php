@@ -19,8 +19,10 @@ use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\Outbox\OutboxBuilderEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\Email;
+use App\Models\Helpers\Currency;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 
@@ -89,7 +91,7 @@ class SendNewOrderEmailToSubscribers extends OrgAction
                     'tax_amount'   => $order->tax_amount,
                     'payment_amount' => $order->payment_amount,
                     'payment_type' => $order->payments()->first()->paymentAccount->name ?? 'N/A',
-                    'blade_new_order_transactions' => $this->generateOrderTransactionsHtml($transactions),
+                    'blade_new_order_transactions' => $this->generateOrderTransactionsHtml($transactions, $order->shop->currency),
                     'date' => $order->submitted_at->format('F jS, Y'),
                     'order_link' => route('grp.org.shops.show.crm.customers.show.orders.show', [
                         $order->organisation->slug,
@@ -123,20 +125,19 @@ class SendNewOrderEmailToSubscribers extends OrgAction
         $this->handle($order);
     }
 
-    private function generateOrderTransactionsHtml($transactions): string
+    private function generateOrderTransactionsHtml($transactions, Currency $currency): string
     {
         if (!$transactions) {
             return '';
         }
-
         if (is_string($transactions)) {
             $transactions = json_decode($transactions, true);
         }
-
         $html = '';
+        $currencySymbol = $currency->symbol ?? '£';
+        
         foreach ($transactions as $transaction) {
             $historicAsset = $transaction->historicAsset;
-
             $html .= sprintf(
                 '<tr style="border-bottom: 1px solid #e9e9e9;">
                     <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: left;">
@@ -144,15 +145,15 @@ class SendNewOrderEmailToSubscribers extends OrgAction
                         <span style="color: #666;">%s</span>
                     </td>
                     <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: center;">%s</td>
-                    <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: right;">£%s</td>
+                    <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: right;">%s%s</td>
                 </tr>',
                 $historicAsset->code ?? 'N/A',
                 $historicAsset->name ?? 'N/A',
                 rtrim(rtrim(sprintf('%.3f', $transaction->quantity_ordered ?? 0), '0'), '.') ?? '0',
+                $currencySymbol,
                 $transaction->net_amount ?? '0'
             );
         }
-
         return $html;
     }
 
