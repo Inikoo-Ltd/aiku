@@ -208,7 +208,6 @@ const UnassignCollection = async (id: number) => {
 
 
       <TranslationBox 
-        v-if="route().current()?.includes('master')"
         :master="data.subDepartment" 
         :needTranslation="data.subDepartment" 
          v-bind="data.subDepartment.translation_box" 

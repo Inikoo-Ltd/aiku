@@ -171,7 +171,7 @@ const onSubmitAttach = async ({
         :is="component"
         :data="props[currentTab as keyof typeof props]"
         :tab="currentTab"
-        :routes="props.routes[currentTab]"
+        :routes="props.routes?.[currentTab]"
     />
 
     <!-- Modal: Products -->
