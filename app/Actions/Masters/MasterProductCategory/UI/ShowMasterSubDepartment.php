@@ -176,7 +176,8 @@ class ShowMasterSubDepartment extends GrpAction
 
 
         return match ($routeName) {
-            'grp.masters.master_departments.show.master_sub_departments.show' =>
+            'grp.masters.master_departments.show.master_sub_departments.show',
+            'grp.masters.master_departments.show.master_sub_departments.show.master_families.index' =>
             array_merge(
                 (new IndexMasterSubDepartments())->getBreadcrumbs($masterSubDepartment, $masterSubDepartment->masterDepartment, $routeParameters, $suffix),
                 $headCrumb(
