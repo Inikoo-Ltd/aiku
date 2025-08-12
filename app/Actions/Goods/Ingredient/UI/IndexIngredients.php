@@ -101,7 +101,7 @@ class IndexIngredients extends GrpAction
                     'title'   => __("Ingredients"),
                     'icon'    => [
                         'title' => __("Ingredients"),
-                        'icon'  => 'fal fa-boxes-alt'
+                        'icon'  => 'fal fa-apple-crate'
                     ],
                 ],
                 'data' => IngredientsResource::collection($ingredients),

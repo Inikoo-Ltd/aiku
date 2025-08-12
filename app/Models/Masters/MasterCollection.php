@@ -10,14 +10,20 @@
 
 namespace App\Models\Masters;
 
+use App\Enums\Catalogue\MasterCollection\MasterCollectionProductStatusEnum;
+use App\Enums\Catalogue\MasterCollection\MasterCollectionStateEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
+use App\Models\Traits\HasImage;
+use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InGroup;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
+use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use Spatie\Translatable\HasTranslations;
@@ -53,11 +59,13 @@ use Spatie\Translatable\HasTranslations;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection withoutTrashed()
  * @mixin \Eloquent
  */
-class MasterCollection extends Model implements Auditable
+class MasterCollection extends Model implements Auditable, HasMedia
 {
     use SoftDeletes;
     use HasSlug;
     use HasHistory;
+    use HasImage;
+    use HasUniversalSearch;
     use InGroup;
     use HasTranslations;
 
@@ -66,6 +74,8 @@ class MasterCollection extends Model implements Auditable
     protected $casts = [
         'data'   => 'array',
         'status' => 'boolean',
+        'state'          => MasterCollectionStateEnum::class,
+        'products_status' => MasterCollectionProductStatusEnum::class,
     ];
 
     protected $attributes = [
@@ -103,5 +113,20 @@ class MasterCollection extends Model implements Auditable
     public function stats(): HasOne
     {
         return $this->hasOne(MasterCollectionStats::class);
+    }
+
+    public function salesIntervals(): HasOne
+    {
+        return $this->hasOne(MasterCollectionSalesIntervals::class);
+    }
+
+    public function orderingStats(): HasOne
+    {
+        return $this->hasOne(MasterCollectionOrderingStats::class);
+    }
+
+    public function masterShop(): BelongsTo
+    {
+        return $this->belongsTo(MasterShop::class);
     }
 }
