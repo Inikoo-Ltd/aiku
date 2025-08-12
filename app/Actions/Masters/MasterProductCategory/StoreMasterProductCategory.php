@@ -12,6 +12,7 @@ use App\Actions\GrpAction;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterFamilies;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamilies;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterSubDepartments;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterProductCategories;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -66,6 +67,8 @@ class StoreMasterProductCategory extends GrpAction
             if ($masterProductCategory->department) {
                 MasterDepartmentHydrateMasterFamilies::dispatch($masterProductCategory->department)->delay($this->hydratorsDelay);
             }
+        } elseif ($masterProductCategory->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            MasterShopHydrateMasterSubDepartments::dispatch($masterProductCategory->masterShop)->delay($this->hydratorsDelay);
         }
 
         GroupHydrateMasterProductCategories::dispatch($masterProductCategory->group)->delay($this->hydratorsDelay);

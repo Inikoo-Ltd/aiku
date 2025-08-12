@@ -77,11 +77,11 @@ class IndexMasterDepartments extends OrgAction
             'master_product_categories.description',
             'master_product_categories.created_at',
             'master_product_categories.updated_at',
-            'master_product_category_stats.number_current_departments as used_in',
+            'master_product_category_stats.number_current_master_product_categories_type_department as used_in',
             'master_product_category_stats.number_current_master_product_categories_type_family as families',
             'master_product_category_stats.number_current_master_assets_type_product as products',
-            'master_product_category_stats.number_current_sub_departments as sub_departments',
-            'master_product_category_stats.number_current_collections as collections',
+            'master_product_category_stats.number_current_master_product_categories_type_sub_department as sub_departments',
+            'master_product_category_stats.number_current_master_collections as collections',
         ]);
         if ($parent instanceof MasterShop) {
             $queryBuilder->where('master_product_categories.master_shop_id', $parent->id);

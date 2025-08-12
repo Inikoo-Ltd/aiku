@@ -10,6 +10,7 @@ namespace App\Actions\Masters\MasterProductCategory;
 
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamilies;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterSubDepartments;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterProductCategories;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
@@ -31,6 +32,8 @@ class UpdateMasterProductCategory extends OrgAction
                 MasterShopHydrateMasterDepartments::dispatch($masterProductCategory->masterShop)->delay($this->hydratorsDelay);
             } elseif ($masterProductCategory->type == MasterProductCategoryTypeEnum::FAMILY) {
                 MasterShopHydrateMasterFamilies::dispatch($masterProductCategory->masterShop)->delay($this->hydratorsDelay);
+            } elseif ($masterProductCategory->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                MasterShopHydrateMasterSubDepartments::dispatch($masterProductCategory->masterShop)->delay($this->hydratorsDelay);
             }
 
             GroupHydrateMasterProductCategories::dispatch($masterProductCategory->group)->delay($this->hydratorsDelay);
