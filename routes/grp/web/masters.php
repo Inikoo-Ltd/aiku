@@ -14,6 +14,7 @@ use App\Actions\Masters\MasterProductCategory\UI\CreateMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\CreateMasterFamily;
 use App\Actions\Masters\MasterProductCategory\UI\CreateMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\EditMasterFamily;
+use App\Actions\Masters\MasterProductCategory\UI\EditMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterDepartments;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterFamilies;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterSubDepartments;
@@ -71,6 +72,7 @@ Route::prefix('/master-departments/{masterDepartment}')->as('master_departments.
     Route::get('/master-sub-departments', [IndexMasterSubDepartments::class, 'inMasterDepartment'])->name('.master_sub_departments.index');
     Route::get('/master-sub-departments/create', [CreateMasterSubDepartment::class, 'inMasterDepartment'])->name('.master_sub_departments.create');
     Route::get('/master-sub-departments/{masterSubDepartment}', [ShowMasterSubDepartment::class, 'inMasterDepartment'])->name('.master_sub_departments.show');
+    Route::get('/master-sub-departments/{masterSubDepartment}/edit', [EditMasterSubDepartment::class, 'inMasterDepartment'])->name('.master_sub_departments.edit');
 });
 
 
