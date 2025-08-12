@@ -185,12 +185,6 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
         return $this->belongsTo(MasterProductCategory::class, 'master_sub_department_id');
     }
 
-    public function masterSubDepartments(): HasMany
-    {
-        return $this->hasMany(MasterProductCategory::class, 'master_department_id');
-    }
-
-
     public function parent(): BelongsTo
     {
         return $this->belongsTo(MasterProductCategory::class, 'master_parent_id');

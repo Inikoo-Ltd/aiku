@@ -48,7 +48,7 @@ class HydrateMasterProductCategory extends HydrateModel
         $bar->setFormat('debug');
         $bar->start();
 
-        MasterProductCategory::chunk(1000, function (Collection $models) use ($bar) {
+        MasterProductCategory::where('slug','jewellery-1')->chunk(1000, function (Collection $models) use ($bar) {
             foreach ($models as $model) {
                 $this->handle($model);
                 $bar->advance();

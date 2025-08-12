@@ -31,7 +31,7 @@ trait WithMasterDepartmentSubNavigation
             ],
             [
                 'label'    => __('Master Sub-departments'),
-                'number'   => $masterDepartment->stats->number_sub_departments,
+                'number'   => $masterDepartment->stats->number_current_master_product_categories_type_sub_department,
                 'route'     => [
                     'name'       => 'grp.masters.master_departments.show.master_sub_departments.index',
                     'parameters' => [$masterDepartment->slug]
