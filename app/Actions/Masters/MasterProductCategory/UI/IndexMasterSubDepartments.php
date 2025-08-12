@@ -42,7 +42,7 @@ class IndexMasterSubDepartments extends GrpAction
         return $this->handle(parent: $masterShop);
     }
 
-    public function inMasterDepartment(MasterProductCategory $masterDepartment, ActionRequest $request): LengthAwarePaginator
+    public function inMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $masterDepartment;
         $group        = group();
@@ -208,10 +208,12 @@ class IndexMasterSubDepartments extends GrpAction
             ),
 
             'grp.masters.master_departments.show.master_sub_departments.index',
-            'grp.masters.master_departments.show.master_sub_departments.show' =>
+            'grp.masters.master_departments.show.master_sub_departments.show',
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.index',
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show' =>
             array_merge(
                 ShowMasterDepartment::make()->getBreadcrumbs(
-                    $parent->group,
+                    $parent->masterShop,
                     $parent,
                     $routeName,
                     $routeParameters

@@ -36,7 +36,7 @@ class CreateMasterSubDepartment extends OrgAction
         return $this->handle($masterShop, $request);
     }
 
-    public function inMasterDepartment(MasterProductCategory $masterDepartment, ActionRequest $request): Response
+    public function inMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, ActionRequest $request): Response
     {
         $this->parent = $masterDepartment;
         $group        = group();

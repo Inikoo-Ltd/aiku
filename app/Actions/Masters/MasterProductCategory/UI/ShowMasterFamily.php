@@ -66,7 +66,7 @@ class ShowMasterFamily extends GrpAction
         return $this->handle($masterFamily);
     }
 
-    public function inMasterSubDepartment(MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
+    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
     {
         $group        = group();
         $this->parent = $masterSubDepartment;

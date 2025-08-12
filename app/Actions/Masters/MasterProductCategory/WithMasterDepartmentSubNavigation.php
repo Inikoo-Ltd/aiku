@@ -21,8 +21,8 @@ trait WithMasterDepartmentSubNavigation
                 'isAnchor'   => true,
                 'label'    => __('Master Department'),
                 'route'     => [
-                    'name'       => 'grp.masters.master_departments.show',
-                    'parameters' => [$masterDepartment->slug]
+                    'name'       => 'grp.masters.master_shops.show.master_departments.show',
+                    'parameters' => [$masterDepartment->masterShop->slug, $masterDepartment->slug]
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-stream'],
@@ -33,8 +33,8 @@ trait WithMasterDepartmentSubNavigation
                 'label'    => __('Master Sub-departments'),
                 'number'   => $masterDepartment->stats->number_current_master_product_categories_type_sub_department,
                 'route'     => [
-                    'name'       => 'grp.masters.master_departments.show.master_sub_departments.index',
-                    'parameters' => [$masterDepartment->slug]
+                    'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.index',
+                    'parameters' => [$masterDepartment->masterShop->slug, $masterDepartment->slug]
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-dot-circle'],

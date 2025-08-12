@@ -36,7 +36,7 @@ class CreateMasterFamily extends OrgAction
         return $this->handle($masterDepartment, $request);
     }
 
-    public function inMasterSubDepartment(MasterProductCategory $masterSubDepartment, ActionRequest $request): Response
+    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, ActionRequest $request): Response
     {
         $this->initialisationFromGroup(group(), $request);
 

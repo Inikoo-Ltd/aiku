@@ -21,8 +21,8 @@ trait WithMasterSubDepartmentSubNavigation
                 'isAnchor'   => true,
                 'label'    => __('Sub-department'),
                 'route'     => [
-                    'name'       => 'grp.masters.master_departments.show.master_sub_departments.show',
-                    'parameters' => [$masterSubDepartment->parent->slug,$masterSubDepartment->slug]
+                    'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show',
+                    'parameters' => [$masterSubDepartment->masterShop->slug ,$masterSubDepartment->masterDepartment->slug, $masterSubDepartment->slug]
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-stream'],

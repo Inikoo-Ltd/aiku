@@ -65,7 +65,7 @@ class IndexMasterFamilies extends OrgAction
         return $this->handle(parent: $parent);
     }
 
-    public function inMasterSubDepartment(MasterProductCategory $masterSubDepartment, ActionRequest $request): LengthAwarePaginator
+    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $masterSubDepartment;
         $parent        = $this->parent;
@@ -73,7 +73,7 @@ class IndexMasterFamilies extends OrgAction
         return $this->handle(parent: $parent, parentType:'sub_department');
     }
 
-    public function inMasterSubDepartmentInMasterDepartment(MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, ActionRequest $request): LengthAwarePaginator
+    public function inMasterSubDepartmentInMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $masterSubDepartment;
         $parent        = $this->parent;
