@@ -240,7 +240,7 @@ class IndexPalletReturns extends OrgAction
                     WHERE pallet_return_items.pallet_return_id = pallet_returns.id
                 ) as unique_stored_item_count")
             )
-            ->allowedSorts(['reference', 'customer_reference', 'number_pallets', 'date', 'state'])
+            ->allowedSorts(['reference', 'customer_reference', 'number_pallets', 'date', 'state', 'unique_stored_item_count'])
             ->allowedFilters([$globalSearch, 'type'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
