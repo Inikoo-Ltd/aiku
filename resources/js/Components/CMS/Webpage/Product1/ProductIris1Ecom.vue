@@ -78,6 +78,7 @@ const onAddFavourite = (product: ProductResource) => {
         {
             preserveScroll: true,
             preserveState: true,
+            only: ['iris'],
             onStart: () => { 
                 isLoadingFavourite.value = true
             },
@@ -105,6 +106,7 @@ const onUnselectFavourite = (product: ProductResource) => {
         {
             preserveScroll: true,
             preserveState: true,
+            only: ['iris'],
             onStart: () => { 
                 isLoadingFavourite.value = true
             },
@@ -198,7 +200,7 @@ const toggleExpanded = () => {
                                     <FontAwesomeIcon
                                         :icon="fasHeart"
                                         fixed-width
-                                        class="hidden group-hover:inline text-pink-400"
+                                        class="hidden group-hover:inline text-pink-300"
                                     />
                                     <FontAwesomeIcon
                                         :icon="faHeart"
