@@ -113,6 +113,11 @@ Route::prefix('/master-shops/{masterShop}')->as('master_shops.show')->group(func
                     Route::get('', [IndexMasterFamilies::class, 'inMasterSubDepartment'])->name('index');
                     Route::get('create', [CreateMasterFamily::class, 'inMasterSubDepartment'])->name('create');
                     Route::get('{masterFamily}', [ShowMasterFamily::class, 'inMasterSubDepartment'])->name('show');
+
+                    Route::prefix('{masterFamily}/master-products')->as('master_products.')->group(function () {
+                        Route::get('', [IndexMasterProducts::class, 'inMasterFamilyInMasterSubDepartment'])->name('index');
+                        Route::get('{masterProduct}', [ShowMasterProducts::class, 'inMasterFamilyInMasterDepartment'])->name('show');
+                    });
                 });
             });
 

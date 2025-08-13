@@ -10,6 +10,7 @@ namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\GrpAction;
+use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
@@ -267,6 +268,17 @@ class IndexMasterProducts extends GrpAction
                     $suffix
                 ),
             ),
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index' =>
+            array_merge(
+                ShowMasterFamily::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters,
+                    ],
+                    $suffix
+                ),
+            ),
             default => []
         };
     }
@@ -290,6 +302,15 @@ class IndexMasterProducts extends GrpAction
     }
 
     public function inMasterFamilyInMasterDepartment(MasterProductCategory $masterDepartment, MasterProductCategory $masterFamily, ActionRequest $request): LengthAwarePaginator
+    {
+        $group        = group();
+
+        $this->parent = $masterFamily;
+        $this->initialisation($group, $request);
+        return $this->handle($masterFamily, $request);
+    }
+
+    public function inMasterFamilyInMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): LengthAwarePaginator
     {
         $group        = group();
 
