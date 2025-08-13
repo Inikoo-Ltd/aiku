@@ -1,4 +1,5 @@
 {
+    " if the password is not working, you can reset it from the forgot password page and all will be ok.": "Si la contraseña no funciona, puedes restablecerla desde la página de contraseña olvidada y todo estará bien.",
     "'),\n                            'icon'  => ['far": "'), 'icono' => ['lejos",
     "'), canBeHidden: false, searchable: true);\n            $table->column(key: 'name": "'), canBeHidden: falso, buscable: verdadero);\n$table->column(key: 'nombre",
     "(Active)": "(Activo)",
@@ -1105,6 +1106,7 @@
     "Height": "Altura",
     "Help articles": "Artículos de ayuda",
     "Here is your new API Token": "Aquí está tu nuevo token API",
+    "Hey, as you notice we just got a brand new system for our website.": "Oye, como habrás notado, acabamos de adquirir un sistema completamente nuevo para nuestro sitio web.",
     "Hey, sorry for your inconvenience.": "Hola, disculpa las molestias.",
     "Hide logo": "Ocultar el logotipo",
     "High": "Alto",
@@ -2954,6 +2956,7 @@
     "You can create a new trade unit by clicking the button below.": "Puede crear una nueva unidad comercial haciendo clic en el botón a continuación.",
     "You can edit it in workshop": "Puedes editarlo en el área de trabajo",
     "You can just update the discounts for future bills or apply it to current ones": "Puedes simplemente actualizar los descuentos para futuras facturas o aplicarlos a las actuales.",
+    "You can log in with your old username and password or use your google account to login (if the emails match)": "Puede iniciar sesión con su antiguo nombre de usuario y contraseña o usar su cuenta de Google para iniciar sesión (si los correos electrónicos coinciden)",
     "You can only select up to ${props.maxSelected} images.": "Solo puedes seleccionar hasta ${props.maxSelected} imágenes.",
     "You can pay totally with your current balance": "Puedes pagar totalmente con tu saldo actual",
     "You can reindex again at :date": "Puedes reindexar nuevamente en :date",

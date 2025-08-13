@@ -1,4 +1,5 @@
 {
+    " if the password is not working, you can reset it from the forgot password page and all will be ok.": "",
     "'),\n                            'icon'  => ['far": "'),\n'ikon' => ['långt bort",
     "'), canBeHidden: false, searchable: true);\n            $table->column(key: 'name": "'), kanVarHållbar: falskt, sökbar: sant);\n$tabell->kolumn(nyckel: 'namn",
     "(Active)": "(Aktiv)",
@@ -1105,6 +1106,7 @@
     "Height": "Höjd",
     "Help articles": "Hjälpartiklar",
     "Here is your new API Token": "Här är din nya API-token",
+    "Hey, as you notice we just got a brand new system for our website.": "",
     "Hey, sorry for your inconvenience.": "",
     "Hide logo": "Dölj logotyp",
     "High": "Hög",
@@ -2954,6 +2956,7 @@
     "You can create a new trade unit by clicking the button below.": "Du kan skapa en ny handelsenhet genom att klicka på knappen nedan.",
     "You can edit it in workshop": "Du kan redigera det i workshopen",
     "You can just update the discounts for future bills or apply it to current ones": "Du kan bara uppdatera rabatterna för framtida räkningar eller tillämpa dem på nuvarande",
+    "You can log in with your old username and password or use your google account to login (if the emails match)": "",
     "You can only select up to ${props.maxSelected} images.": "Du kan bara välja upp till ${props.maxSelected} bilder.",
     "You can pay totally with your current balance": "Du kan betala hela beloppet med ditt nuvarande saldo",
     "You can reindex again at :date": "Du kan omindexera igen på :date",

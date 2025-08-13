@@ -1,4 +1,5 @@
 {
+    " if the password is not working, you can reset it from the forgot password page and all will be ok.": "",
     "'),\n                            'icon'  => ['far": "'),\n'ikona' => ['ďaleko",
     "'), canBeHidden: false, searchable: true);\n            $table->column(key: 'name": "'), môžeBeHidden: false, vyhľadávateľné: true);\n$table->column(kľúč: 'názov'",
     "(Active)": "(Aktívne)",
@@ -1105,6 +1106,7 @@
     "Height": "Výška",
     "Help articles": "Články pomoci",
     "Here is your new API Token": "Tu je váš nový token API",
+    "Hey, as you notice we just got a brand new system for our website.": "",
     "Hey, sorry for your inconvenience.": "",
     "Hide logo": "Skryť logo",
     "High": "Vysoká",
@@ -2954,6 +2956,7 @@
     "You can create a new trade unit by clicking the button below.": "Novú obchodnú jednotku môžete vytvoriť kliknutím na tlačidlo nižšie.",
     "You can edit it in workshop": "Môžete to upraviť v dielni",
     "You can just update the discounts for future bills or apply it to current ones": "Môžete len aktualizovať zľavy pre budúce účty alebo ich použiť na tie súčasné",
+    "You can log in with your old username and password or use your google account to login (if the emails match)": "",
     "You can only select up to ${props.maxSelected} images.": "Môžete vybrať maximálne ${props.maxSelected} obrázkov.",
     "You can pay totally with your current balance": "Môžete zaplatiť celú sumu z vášho aktuálneho zostatku",
     "You can reindex again at :date": "Môžete znova indexovať na :date",

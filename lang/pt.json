@@ -1,4 +1,5 @@
 {
+    " if the password is not working, you can reset it from the forgot password page and all will be ok.": "",
     "'),\n                            'icon'  => ['far": "",
     "'), canBeHidden: false, searchable: true);\n            $table->column(key: 'name": "",
     "(Active)": "",
@@ -1105,6 +1106,7 @@
     "Height": "",
     "Help articles": "",
     "Here is your new API Token": "",
+    "Hey, as you notice we just got a brand new system for our website.": "",
     "Hey, sorry for your inconvenience.": "",
     "Hide logo": "",
     "High": "",
@@ -2954,6 +2956,7 @@
     "You can create a new trade unit by clicking the button below.": "",
     "You can edit it in workshop": "",
     "You can just update the discounts for future bills or apply it to current ones": "Você pode simplesmente atualizar os descontos para contas futuras ou aplicá-los às atuais",
+    "You can log in with your old username and password or use your google account to login (if the emails match)": "",
     "You can only select up to ${props.maxSelected} images.": "",
     "You can pay totally with your current balance": "",
     "You can reindex again at :date": "",
