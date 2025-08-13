@@ -14,6 +14,7 @@ use App\Actions\GrpAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Masters\MasterProductCategory\WithMasterSubDepartmentSubNavigation;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
+use App\Enums\UI\Catalogue\DepartmentTabsEnum;
 use App\Enums\UI\SupplyChain\MasterSubDepartmentTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\History\HistoryResource;
@@ -105,7 +106,7 @@ class ShowMasterSubDepartment extends GrpAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => MasterSubDepartmentTabsEnum::navigation()
+                    'navigation' => DepartmentTabsEnum::navigation()
                 ],
 
                 'routes' => [
@@ -217,7 +218,10 @@ class ShowMasterSubDepartment extends GrpAction
                     $suffix
                 )
             ),
-            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show' =>
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show',
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.index',
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show',
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index' =>
             array_merge(
                 ShowMasterDepartment::make()->getBreadcrumbs($masterSubDepartment->masterShop, $masterSubDepartment->masterDepartment, $routeName, $routeParameters, $suffix),
                 $headCrumb(

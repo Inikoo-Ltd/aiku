@@ -21,6 +21,7 @@ use App\Enums\UI\SupplyChain\MasterAssetTabsEnum;
 use App\Enums\UI\SupplyChain\MasterFamilyTabsEnum;
 use App\Http\Resources\Masters\MasterProductResource;
 use App\Models\Masters\MasterAsset;
+use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
 use Inertia\Inertia;
@@ -32,7 +33,7 @@ class ShowMasterProducts extends GrpAction
     use WithFamilySubNavigation;
     use WithMastersAuthorisation;
 
-    private MasterShop|Group|MasterAsset $parent;
+    private MasterShop|Group|MasterAsset|MasterProductCategory $parent;
 
     public function handle(MasterAsset $masterAsset): MasterAsset
     {
@@ -62,7 +63,15 @@ class ShowMasterProducts extends GrpAction
     {
         $group        = group();
         $this->parent = $masterDepartment;
-        $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
+        $this->initialisation($group, $request)->withTab(MasterAssetTabsEnum::values());
+
+        return $this->handle($masterProduct);
+    }
+
+    public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterAsset $masterProduct, ActionRequest $request): MasterAsset
+    {
+        $this->parent = $masterDepartment;
+        $this->initialisation($masterShop->group, $request)->withTab(MasterAssetTabsEnum::values());
 
         return $this->handle($masterProduct);
     }
@@ -136,7 +145,7 @@ class ShowMasterProducts extends GrpAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Asset')
+                            'label' => __('Master Products')
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -205,6 +214,24 @@ class ShowMasterProducts extends GrpAction
                             'parameters' => $routeParameters
 
 
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.masters.master_shops.show.master_departments.show.master_products.show' =>
+            array_merge(
+                ShowMasterDepartment::make()->getBreadcrumbs($masterAsset->masterShop, $masterAsset->masterDepartment, $routeName, $routeParameters, $suffix),
+                $headCrumb(
+                    $masterAsset,
+                    [
+                        'index' => [
+                            'name'       => 'grp.masters.master_shops.show.master_departments.show.master_products.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.masters.master_shops.show.master_departments.show.master_products.show',
+                            'parameters' => $routeParameters
                         ]
                     ],
                     $suffix

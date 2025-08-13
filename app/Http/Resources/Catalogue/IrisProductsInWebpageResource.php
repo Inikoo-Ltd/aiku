@@ -45,7 +45,11 @@ class IrisProductsInWebpageResource extends JsonResource
         }
         $url = '/'.$url.$this->url;
 
-
+        $favourite = false;
+        if($request->user()) {
+            $customer = $request->user()->customer;
+            $favourite = $customer->favourites()->where('product_id', $this->id)->first();
+        }
 
         return [
             'id'         => $this->id,
@@ -67,6 +71,7 @@ class IrisProductsInWebpageResource extends JsonResource
             'transaction_id' => $this->transaction_id ?? null,
             'quantity_ordered' => (int) $this->quantity_ordered ?? 0,
             'quantity_ordered_new' => (int) $this->quantity_ordered ?? 0,  // To editable in Frontend
+            'is_favourite'         => $favourite && !$favourite->unfavourited_at ?? false,
         ];
     }
 

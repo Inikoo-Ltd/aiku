@@ -33,8 +33,8 @@ trait WithMasterSubDepartmentSubNavigation
                 'label'    => __('Families'),
                 'number'   => $masterSubDepartment->stats->number_families,
                 'route'     => [
-                    'name'       => 'grp.masters.master_departments.show.master_sub_departments.show.master_families.index',
-                    'parameters' => [$masterSubDepartment->parent->slug, $masterSubDepartment->slug]
+                    'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.index',
+                    'parameters' => [$masterSubDepartment->masterShop->slug, $masterSubDepartment->masterDepartment->slug, $masterSubDepartment->slug]
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-folder'],

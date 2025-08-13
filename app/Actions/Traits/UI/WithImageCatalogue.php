@@ -14,13 +14,14 @@ use App\Actions\Helpers\Media\SaveModelImage;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Masters\MasterCollection;
+use App\Models\Masters\MasterProductCategory;
 use App\Models\Web\ModelHasContent;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 
 trait WithImageCatalogue
 {
-    public function processCatalogueImage(array $modelData, ProductCategory|Collection|MasterCollection|ModelHasContent $model): ProductCategory|Collection|MasterCollection|ModelHasContent
+    public function processCatalogueImage(array $modelData, MasterProductCategory|ProductCategory|Collection|MasterCollection|ModelHasContent $model): MasterProductCategory|ProductCategory|Collection|MasterCollection|ModelHasContent
     {
         if (Arr::has($modelData, 'image')) {
             /** @var UploadedFile $image */
