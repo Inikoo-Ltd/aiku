@@ -41,7 +41,7 @@ trait WithMasterDepartmentSubNavigation
                     'tooltip' => __('Master sub-departments')
                 ]
             ],
-             [
+            [
                  'label'    => __('Master Families'),
                  'number'   => $masterDepartment->stats->number_current_master_product_categories_type_family,
                  'route'     => [
@@ -52,31 +52,32 @@ trait WithMasterDepartmentSubNavigation
                      'icon'    => ['fal', 'fa-folder'],
                      'tooltip' => __('Master families')
                  ]
-             ],
-            // [
-            //     'label'    => __('Collections'),
-            //     'number'   => 0,
-            //     'route'     => [
-            //         'name'       => 'grp.org.shops.show.catalogue.departments.show.collection.index',
-            //         'parameters' => [$this->organisation->slug, $masterDepartment->shop->slug, $masterDepartment->slug]
-            //     ],
-            //     'leftIcon' => [
-            //         'icon'    => ['fal', 'fa-album-collection'],
-            //         'tooltip' => __('collections')
-            //     ]
-            // ],
-            // [
-            //     'label'    => __('Products'),
-            //     'number'   => $masterDepartment->stats->number_current_products,
-            //     'route'     => [
-            //         'name'       => 'grp.org.shops.show.catalogue.departments.show.products.index',
-            //         'parameters' => [$this->organisation->slug, $masterDepartment->shop->slug, $masterDepartment->slug]
-            //     ],
-            //     'leftIcon' => [
-            //         'icon'    => ['fal', 'fa-cube'],
-            //         'tooltip' => __('products')
-            //     ]
-            // ],
+            ],
+            [
+                'label'    => __('Master Products'),
+                'number'   => $masterDepartment->stats->number_current_products,
+                'route'     => [
+                    'name'       => 'grp.masters.master_shops.show.master_departments.show.master_products.index',
+                    'parameters' => [$masterDepartment->masterShop->slug, $masterDepartment->slug]
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-cube'],
+                    'tooltip' => __('Master products')
+                ]
+            ],
+            [
+                'label'    => __('Master Collections'),
+                'number'   => 0,
+                'route'     => [
+                    'name'       => 'grp.masters.master_shops.show.master_departments.show.master_collections.index',
+                    'parameters' => [$masterDepartment->masterShop->slug, $masterDepartment->slug]
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-album-collection'],
+                    'tooltip' => __('master collections')
+                ]
+            ],
+
 
         ];
     }

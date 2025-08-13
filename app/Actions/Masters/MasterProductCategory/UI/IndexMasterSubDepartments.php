@@ -161,7 +161,7 @@ class IndexMasterSubDepartments extends GrpAction
                             'label'   => __('Sub-department'),
                             'route'   => match ($this->parent::class) {
                                 MasterProductCategory::class => [
-                                    'name'       => 'grp.masters.master_departments.show.master_sub_departments.create',
+                                    'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.create',
                                     'parameters' => $request->route()->originalParameters()
                                 ],
                                 default => [

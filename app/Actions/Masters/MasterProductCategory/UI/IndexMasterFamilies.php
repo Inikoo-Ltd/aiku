@@ -275,7 +275,13 @@ class IndexMasterFamilies extends OrgAction
         if ($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $createRoute = "grp.masters.master_sub_departments.show.master_families.create";
         } elseif ($this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
-            $createRoute = "grp.masters.master_departments.show.master_families.create";
+            match ($request->route()->getName()) {
+                'grp.masters.master_departments.show.master_families.index' =>
+                $createRoute = 'grp.masters.master_departments.show.master_families.create',
+                'grp.masters.master_shops.show.master_departments.show.master_families.index' => 
+                $createRoute = 'grp.masters.master_shops.show.master_departments.show.master_families.create',
+                default => $createRoute
+            };
         } elseif ($this->parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
             match ($request->route()->getName()) {
                 'grp.masters.master_departments.show.master_sub_departments.show.master_families.index' =>
@@ -370,6 +376,23 @@ class IndexMasterFamilies extends OrgAction
             'grp.masters.master_departments.show.master_sub_departments.show.master_families.index' =>
             array_merge(
                 ShowMasterSubDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.masters.master_shops.show.master_departments.show.master_families.index',
+            'grp.masters.master_shops.show.master_departments.show.master_families.create' => 
+            array_merge(
+                ShowMasterDepartment::make()->getBreadcrumbs(
+                    $parent->masterShop,
+                    $parent,
+                    $routeName,
+                    $routeParameters
+                ),
                 $headCrumb(
                     [
                         'name'       => $routeName,
