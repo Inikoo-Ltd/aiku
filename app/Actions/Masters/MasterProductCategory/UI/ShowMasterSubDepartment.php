@@ -174,8 +174,6 @@ class ShowMasterSubDepartment extends GrpAction
             ];
         };
 
-
-
         return match ($routeName) {
             'grp.masters.master_departments.show.master_sub_departments.show',
             'grp.masters.master_departments.show.master_sub_departments.show.master_families.index' =>
@@ -221,7 +219,8 @@ class ShowMasterSubDepartment extends GrpAction
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show',
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.index',
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show',
-            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index' =>
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index',
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.edit' =>
             array_merge(
                 ShowMasterDepartment::make()->getBreadcrumbs($masterSubDepartment->masterShop, $masterSubDepartment->masterDepartment, $routeName, $routeParameters, $suffix),
                 $headCrumb(
