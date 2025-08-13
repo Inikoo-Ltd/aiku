@@ -94,6 +94,21 @@ trait WithMasterCatalogueSubNavigation
                 ]
             ],
 
+            [
+                'number'   => $masterShop->stats->number_master_collections,
+                'label'    => __('Master Collections'),
+                'route'    => [
+                    'name'       => 'grp.masters.master_shops.show.master_collections.index',
+                    'parameters' => [
+                        'masterShop' => $masterShop->slug
+                    ]
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-stream'],
+                    'tooltip' => __('Master Collections')
+                ]
+            ],
+
 
         ];
     }

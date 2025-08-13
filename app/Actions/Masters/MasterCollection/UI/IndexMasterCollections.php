@@ -132,6 +132,10 @@ class IndexMasterCollections extends OrgAction
             ];
         }
 
+
+        if($this->parent instanceof MasterShop) {
+            $subNavigation = $this->getMasterShopNavigation($this->parent);
+        }
         return Inertia::render(
             'Masters/MasterCollections',
             [

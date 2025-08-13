@@ -123,7 +123,7 @@ class CreateMasterCollection extends OrgAction
 
     public function getBreadcrumbs(MasterProductCategory|MasterShop $parent, string $routeName, array $routeParameters): array
     {
-        if($parent instanceof MasterShop) {
+        if ($parent instanceof MasterShop) {
             return array_merge(
                 IndexMasterCollections::make()->getBreadcrumbs(
                     parent: $parent,
