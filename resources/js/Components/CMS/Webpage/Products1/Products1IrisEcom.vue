@@ -363,7 +363,7 @@ const responsiveGridClass = computed(() => {
 
     const columnCount = {
         desktop: perRow.desktop ?? 4,
-        tablet: perRow.tablet ?? 4,
+        tablet: perRow.tablet ?? 3,
         mobile: perRow.mobile ?? 2
     }
 
@@ -377,7 +377,7 @@ const responsiveGridClass = computed(() => {
 </script>
 
 <template>
-    <div id="products-1">
+    <div id="products-1-ecom">
         <ConfirmDialog>
             <template #icon>
                 <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
@@ -471,7 +471,7 @@ const responsiveGridClass = computed(() => {
                     <template v-else-if="products.length">
                         <div v-for="(product, index) in products" :key="index"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
-                            class="border p-3 relative rounded"
+                            class="border relative rounded"
                             :class="product.stock ? '' : 'bg-red-100'"
                         >
                             <ProductRenderEcom

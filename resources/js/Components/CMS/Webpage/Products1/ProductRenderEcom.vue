@@ -58,7 +58,7 @@ interface ProductResource {
 
 const props = defineProps<{
     product: ProductResource
-    productHasPortfolio : Array<Number>
+    productHasPortfolio: number[]
     style?: Object|null
 }>()
 
@@ -208,56 +208,28 @@ const xxxxxxx = Math.random() > 0.5
 </script>
 
 <template>
-    <div class="relative flex flex-col justify-between h-full">
+    <div class="pb-3 relative flex flex-col justify-between h-full" comp="product-render-ecom">
 
-        <!-- Top Section -->
-        <div>
+        <!-- Top Section: Stock, Images, Title, Code, Price -->
+        <div class="">
             <div v-if="product?.top_seller"
-                class="absolute top-2 left-2 border border-black text-xs font-bold px-2 py-0.5 rounded">
-                <FontAwesomeIcon :icon="faMedal" class="w-3.5 h-3.5 mr-0 md:mr-2" :class="{
+                class="absolute top-2 left-2 border border-black/50 text-xs font-bold px-2 py-0.5 rounded"
+                :class="{
+                    'text-[#FFD700] bg-[#FFD70011] border-[#FFD700]': product.top_seller === 1, // Gold
+                    'text-[#C0C0C0] bg-[#C0C0C033] border-[#C0C0C0]': product.top_seller === 2, // Silver
+                    'text-[#CD7F32] bg-[#CD7F3211] border-[#CD7F32]': product.top_seller === 3  // Bronze
+                }"
+            >
+                <FontAwesomeIcon :icon="faMedal" class=" mr-0 md:mr-2"  />
 
-                        'text-[#FFD700]': product.top_seller === 1, // Gold
-                        'text-[#C0C0C0]': product.top_seller === 2, // Silver
-                        'text-[#CD7F32]': product.top_seller === 3  // Bronze
-                    }" />
-
-                <span class="hidden md:inline">BESTSELLER</span>
+                <span class="hidden md:inline">{{ trans("BESTSELLER") }}</span>
             </div>
 
-            <!-- Favorite Icon -->
-            <template v-if="layout?.retina?.type != 'dropshipping' && layout?.iris?.is_logged_in">
-
-                <div v-if="isLoadingFavourite" class="absolute top-2 right-2 text-gray-500 text-xl">
-                    <LoadingIcon />
-                </div>
-                <div v-else @click="() => product.is_favourite ? onUnselectFavourite(product) : onAddFavourite(product)"
-                    class="cursor-pointer absolute top-2 right-2 group text-xl ">
-
-                    <FontAwesomeIcon 
-                        v-if="product.is_favourite" 
-                        :icon="fasHeart" 
-                        fixed-width 
-                        class="text-pink-500" 
-                    />
-                    <div v-else class="relative">
-                        <FontAwesomeIcon
-                            :icon="fasHeart"
-                            class="hidden group-hover:inline text-pink-400"
-                            fixed-width
-                        />
-                        <FontAwesomeIcon
-                            :icon="faHeart"
-                            class="inline group-hover:hidden text-pink-300"
-                            fixed-width
-                        />
-                    </div>
-
-                </div>
-            </template>
+            
 
 
             <!-- Icon: status (stocks) -->
-            <template v-if="layout?.iris?.is_logged_in">
+            <!-- <template v-if="layout?.iris?.is_logged_in">
 
                 <div class="absolute top-9 right-2">
                     <div class="cursor-pointer group text-xl ">
@@ -277,7 +249,7 @@ const xxxxxxx = Math.random() > 0.5
                         />
                     </div>
                 </div>
-            </template>
+            </template> -->
 
 
             <!-- Product Image -->
@@ -286,71 +258,101 @@ const xxxxxxx = Math.random() > 0.5
                     :style="{ objectFit: 'contain' }" />
             </component>
 
-            <!-- Title -->
-
-            <Link v-if="product.url" :href="product.url"
-                class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
-            {{ product.name }}
-
-            </Link>
-            <div v-else class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
+            <div class="px-3">
+                <!-- Title -->
+                <Link v-if="product.url" :href="product.url"
+                    class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
                 {{ product.name }}
-            </div>
-
-            <!-- SKU and RRP -->
-            <div class="flex justify-between text-xs text-gray-600 mb-1 capitalize">
-                <span>{{ product?.code }}</span>
-                <span v-if="product.rpp">
-                    RRP: {{ locale.currencyFormat((currency.code,product.rpp || 0)) }}/ {{ product.unit }}
-                </span>
-            </div>
-
-            <!-- Rating and Stock -->
-            <div class="flex justify-between items-center text-xs mb-2">
-
-                <div v-if="layout?.iris?.is_logged_in" class="flex items-center gap-1"
-                    :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'">
-
-                    <FontAwesomeIcon :icon="faCircle" class="text-[8px]" />
-                    <span>({{ product.stock > 0 ? product.stock : 0 }} {{trans('available')}})</span>
+                </Link>
+                <div v-else class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
+                    {{ product.name }}
                 </div>
-                <div class="flex items-center space-x-[1px] text-gray-500">
 
-                </div>
-            </div>
-
-            <!-- Prices -->
-            <div v-if="layout?.iris?.is_logged_in" class="mb-3">
-                <div class="flex justify-between text-sm ">
-                    <div>
-                        {{ trans('Price') }}: <span class="" :class="xxxxxxx ? 'line-through text-gray-400' : 'font-semibold'">{{ locale.currencyFormat(currency.code,product.price) }}</span>
-                        <span v-if="xxxxxxx" class="ml-1 font-semibold text-green-600">{{ locale.currencyFormat(currency.code,product.price) }}</span>
+                <!-- SKU and RRP -->
+                <div class="flex gap-x-2">
+                    <div class="w-full">
+                        <div class="flex justify-between text-xs text-gray-600 mb-1 capitalize">
+                            <span>{{ product?.code }}</span>
+                            <!-- <span v-if="product.rrp">
+                                RRP: {{ locale.currencyFormat(currency.code,product.rrp) }}/ {{ product.unit }}
+                            </span> -->
+                        </div>
+                        
+                        <!-- Rating and Stock -->
+                        <div class="flex justify-between items-center text-xs mb-2">
+                            <div v-if="layout?.iris?.is_logged_in" class="flex items-center gap-1"
+                                :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'">
+                                <FontAwesomeIcon :icon="faCircle" class="text-[8px]" :class="product.stock > 0 ? 'animate-pulse' : ''" />
+                                <span>({{ product.stock > 0 ? product.stock : 0 }} {{trans('available')}})</span>
+                            </div>
+                            <div class="flex items-center space-x-[1px] text-gray-500">
+                            </div>
+                        </div>
                     </div>
 
-                    <div>
-                        <span v-tooltip="trans('Recommended retail price')" >{{trans('RRP')}}</span>:  <span class="font-semibold">{{ locale.currencyFormat(currency.code,product.rrp) }}</span>
+                    <!-- Favorite Icon -->
+                    <div v-if="layout?.iris?.is_logged_in" class="flex items-center">
+
+                        <div v-if="isLoadingFavourite" class="xabsolute top-2 right-2 text-gray-500 text-xl px-2 -mr-2">
+                            <LoadingIcon />
+                        </div>
+                        <div v-else @click="() => product.is_favourite ? onUnselectFavourite(product) : onAddFavourite(product)"
+                            class="cursor-pointer xabsolute top-2 right-2 group text-xl px-2 -mr-2">
+
+                            <FontAwesomeIcon 
+                                v-if="product.is_favourite" 
+                                :icon="fasHeart" 
+                                fixed-width 
+                                class="text-pink-500" 
+                            />
+                            <div v-else class="relative">
+                                <FontAwesomeIcon
+                                    :icon="fasHeart"
+                                    class="hidden group-hover:inline text-pink-400"
+                                    fixed-width
+                                />
+                                <FontAwesomeIcon
+                                    :icon="faHeart"
+                                    class="inline group-hover:hidden text-pink-300"
+                                    fixed-width
+                                />
+                            </div>
+
+                        </div>
                     </div>
-
                 </div>
-            </div>
 
-            <!-- Section: Coupon -->
-            <div class="mb-2">
-                <div v-if="!xxxxxxx" class="cursor-pointer rounded py-1 px-3 bg-gray-100 border border-gray-300 w-fit text-xs" >
-                    <FontAwesomeIcon icon="fas fa-star-half-alt" class="" fixed-width aria-hidden="true" />
-                    <span class="">↓5%</span>
-                    <InformationIcon :information="trans('Information')" />
+                <!-- Section: Price & RRP -->
+                <div v-if="layout?.iris?.is_logged_in" class="mb-3">
+                    <div class="flex justify-between text-sm items-center">
+                        <div>
+                            {{ trans('Price') }}: <span class="" :class="xxxxxxx ? 'line-through text-gray-400' : 'font-semibold'">{{ locale.currencyFormat(currency.code,product.price) }}</span>
+                            <span v-if="xxxxxxx" class="ml-1 font-semibold text-green-600">{{ locale.currencyFormat(currency.code,product.price) }}</span>
+                        </div>
+                        <div class="opacity-70 text-xs">
+                            <span v-tooltip="trans('Recommended retail price')" >{{trans('RRP')}}</span>:  <span class="font-semibold">{{ locale.currencyFormat(currency.code,product.rrp) }}</span>
+                        </div>
+                    </div>
                 </div>
-                <div v-else class="cursor-pointer rounded py-1 px-3 bg-green-100 border border-green-300 text-green-700 w-fit text-xs" >
-                    <FontAwesomeIcon icon="fas fa-star-half-alt" class="" fixed-width aria-hidden="true" />
-                    <span class="">↓5%</span>
-                    <InformationIcon :information="trans('Information')" />
+
+                <!-- Section: Coupon -->
+                <div class="mb-2">
+                    <div v-if="!xxxxxxx" class="cursor-pointer rounded py-1 px-3 bg-gray-100 border border-gray-300 w-fit text-xs" >
+                        <FontAwesomeIcon icon="fas fa-star-half-alt" class="" fixed-width aria-hidden="true" />
+                        <span class="">↓5%</span>
+                        <InformationIcon :information="trans('Information')" />
+                    </div>
+                    <div v-else class="cursor-pointer rounded py-1 px-3 bg-green-100 border border-green-300 text-green-700 w-fit text-xs" >
+                        <FontAwesomeIcon icon="fas fa-star-half-alt" class="" fixed-width aria-hidden="true" />
+                        <span class="">↓5%</span>
+                        <InformationIcon :information="trans('Information')" />
+                    </div>
                 </div>
             </div>
         </div>
 
 
-        <div>
+        <div class="px-3">
             <div v-if="layout?.iris?.is_logged_in" class="w-full">
                 <!-- <pre>{{ product }}</pre> -->
                 <div v-if="product.stock > 0" class="flex flex-col items-center gap-2 xmt-2">
@@ -393,7 +395,7 @@ const xxxxxxx = Math.random() > 0.5
             </div>
 
             <Link v-else href="/app/login" class="text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
-                {{ trans("Login to add to your portfolio") }}
+                {{ trans("Login to add to your basket") }}
             </Link>
         </div>
     </div>
