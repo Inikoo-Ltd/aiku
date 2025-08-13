@@ -52,21 +52,21 @@ const props = defineProps<{
     screenType: "mobile" | "tablet" | "desktop"
 }>()
 
-const categoryId = props.fieldValue.model_id
 const layout = inject("layout", retinaLayoutStructure)
 const products = ref<any[]>(toRaw(props.fieldValue.products.data || []))
-const loadingInitial = ref(false)
-const loadingMore = ref(false)
 const q = ref("")
 const orderBy = ref(route()?.params?.order_by)
 const page = ref(toRaw(props.fieldValue.products.meta.current_page))
 const lastPage = ref(toRaw(props.fieldValue.products.meta.last_page))
 const filter = ref({ data: {} })
-const showFilters = ref(false)
-const showAside = ref(false)
 const totalProducts = ref(props.fieldValue.products.meta.total)
+
+const isShowFilters = ref(false)
+const isShowAside = ref(false)
 const isFetchingOutOfStock = ref(false)
 const isNewArrivals = ref(false)
+const isLoadingInitial = ref(false)
+const isLoadingMore = ref(false)
 
 
 const getRoutes = () => {
@@ -147,9 +147,9 @@ function buildFilters(): Record<string, any> {
 
 const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = false) => {
     if (isLoadMore) {
-        loadingMore.value = true
+        isLoadingMore.value = true
     } else {
-        loadingInitial.value = true
+        isLoadingInitial.value = true
     }
 
     const filters = buildFilters()
@@ -192,8 +192,8 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
         console.log(error)
         notify({ title: "Error", text: "Failed to load products.", type: "error" })
     } finally {
-        loadingInitial.value = false
-        loadingMore.value = false
+        isLoadingInitial.value = false
+        isLoadingMore.value = false
     }
 }
 
@@ -224,7 +224,7 @@ watch(filter, () => {
 
 
 const loadMore = () => {
-    if (page.value < lastPage.value && !loadingMore.value) {
+    if (page.value < lastPage.value && !isLoadingMore.value) {
         page.value += 1
         debFetchProducts(true)
     }
@@ -390,7 +390,7 @@ const responsiveGridClass = computed(() => {
 
             <!-- Sidebar Filters for Desktop -->
             <transition name="slide-fade">
-                <aside v-show="!isMobile && showAside" class="w-68 p-4 transition-all duration-300 ease-in-out">
+                <aside v-show="!isMobile && isShowAside" class="w-68 p-4 transition-all duration-300 ease-in-out">
                     <FilterProducts v-model="filter" :productCategory="props.fieldValue.model_id" />
                 </aside>
             </transition>
@@ -400,16 +400,16 @@ const responsiveGridClass = computed(() => {
                 <!-- Search & Sort -->
                 <div class="px-4 pt-4 pb-2 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div class="flex items-center w-full md:w-1/3 gap-2">
-                        <Button v-if="isMobile" :icon="faFilter" @click="showFilters = true" class="!p-3 !w-auto"
+                        <Button v-if="isMobile" :icon="faFilter" @click="isShowFilters = true" class="!p-3 !w-auto"
                             aria-label="Open Filters" />
 
                         <!-- Sidebar Toggle for Desktop -->
                         <div v-else class="py-4">
-                            <Button :icon="faFilter" @click="showAside = !showAside" class="!p-3 !w-auto"
+                            <Button :icon="faFilter" @click="isShowAside = !isShowAside" class="!p-3 !w-auto"
                                 aria-label="Open Filters" />
                         </div>
                         <PureInput v-model="q" @keyup.enter="handleSearch" type="text" placeholder="Search products..."
-                            :clear="true" :isLoading="loadingInitial" :prefix="{ icon: faSearch, label: '' }" />
+                            :clear="true" :isLoading="isLoadingInitial" :prefix="{ icon: faSearch, label: '' }" />
                     </div>
 
                     <!-- Sort Tabs -->
@@ -429,7 +429,7 @@ const responsiveGridClass = computed(() => {
                                 sortKey === option.value
                                     ? `border-b-2 text-[${layout?.app?.theme?.[0] || '#1F2937'}] border-[${layout?.app?.theme?.[0] || '#1F2937'}]`
                                     : `text-gray-600 hover:text-[${layout?.app?.theme?.[0] || '#1F2937'}]`
-                            ]" :disabled="loadingInitial || loadingMore">
+                            ]" :disabled="isLoadingInitial || isLoadingMore">
                             {{ option.label }} {{ getArrow(option.value) }}
                         </button>
                     </div>
@@ -459,7 +459,7 @@ const responsiveGridClass = computed(() => {
                 <!-- Product Grid -->
                 <div :class="responsiveGridClass" class="grid gap-6 p-4"
                     :style="getStyles(fieldValue?.container?.properties, screenType)">
-                    <template v-if="loadingInitial">
+                    <template v-if="isLoadingInitial">
                         <div v-for="n in 10" :key="n" class="border p-3 rounded shadow-sm bg-white">
                             <Skeleton height="200px" class="mb-3" />
                             <Skeleton width="80%" class="mb-2" />
@@ -490,10 +490,10 @@ const responsiveGridClass = computed(() => {
 
                 <!-- Load More -->
                 <!--  {{ page   }}{{ lastPage }} -->
-                <div v-if="page < lastPage && !loadingInitial" class="flex justify-center my-4  mb-12">
-                    <Button @click="loadMore" type="tertiary" :disabled="loadingMore"
+                <div v-if="page < lastPage && !isLoadingInitial" class="flex justify-center my-4  mb-12">
+                    <Button @click="loadMore" type="tertiary" :disabled="isLoadingMore"
                         :injectStyle="{ padding: '14px 65px', fontSize: '1.2rem' }">
-                        <template v-if="loadingMore">
+                        <template v-if="isLoadingMore">
                             <LoadingText />
                         </template>
                         <template v-else>{{ trans("Load More") }}</template>
@@ -502,7 +502,7 @@ const responsiveGridClass = computed(() => {
             </main>
 
             <!-- Mobile Filters Drawer -->
-            <Drawer v-model:visible="showFilters" position="left" :modal="true" :dismissable="true"
+            <Drawer v-model:visible="isShowFilters" position="left" :modal="true" :dismissable="true"
                 :closeOnEscape="true" :showCloseIcon="false" class="w-80 transition-transform duration-300 ease-in-out">
                 <div class="p-4">
                     <FilterProducts v-model="filter" :productCategory="props.fieldValue.model_id" />
