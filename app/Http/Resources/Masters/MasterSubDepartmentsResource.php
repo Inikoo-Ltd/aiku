@@ -25,24 +25,26 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $shop_name
  * @property int $number_current_families
  * @property int $number_current_products
+ * @property int $number_families
  */
 class MasterSubDepartmentsResource extends JsonResource
 {
     public function toArray($request): array
     {
         return [
-            'id'                 => $this->id,
-            'slug'               => $this->slug,
-            'code'               => $this->code,
-            'name'               => $this->name,
-            'description'              => $this->description,
-            'created_at'               => $this->created_at,
-            'updated_at'               => $this->updated_at,
-             'translation_box' => [
-                'title' => __('Multi-language Translations'),
+            'id'              => $this->id,
+            'slug'            => $this->slug,
+            'code'            => $this->code,
+            'name'            => $this->name,
+            'description'     => $this->description,
+            'created_at'      => $this->created_at,
+            'updated_at'      => $this->updated_at,
+            'number_families' => $this->number_families,
+            'translation_box' => [
+                'title'      => __('Multi-language Translations'),
                 'save_route' => [
-                     'name'       => 'grp.models.master_product_categories.translations.update',
-                     'parameters' => []
+                    'name'       => 'grp.models.master_product_categories.translations.update',
+                    'parameters' => []
                 ],
             ],
         ];

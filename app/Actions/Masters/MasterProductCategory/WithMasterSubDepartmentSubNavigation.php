@@ -31,7 +31,7 @@ trait WithMasterSubDepartmentSubNavigation
             ],
             [
                 'label'    => __('Families'),
-                'number'   => $masterSubDepartment->stats->number_families,
+                'number'   => $masterSubDepartment->stats->number_current_master_product_categories_type_family,
                 'route'     => [
                     'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.index',
                     'parameters' => [$masterSubDepartment->masterShop->slug, $masterSubDepartment->masterDepartment->slug, $masterSubDepartment->slug]

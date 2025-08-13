@@ -154,7 +154,7 @@ class IndexMasterFamilies extends OrgAction
 
         return $queryBuilder
             ->defaultSort('master_product_categories.code')
-            ->allowedSorts(['code', 'name'])
+            ->allowedSorts(['code', 'name','used_in','products'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
