@@ -149,33 +149,33 @@ class MasterCollection extends Model implements Auditable, HasMedia
     // Warning this includes both direct products and products in families
     public function masterProducts(): MorphToMany
     {
-        return $this->morphedByMany(MasterAsset::class, 'model', 'master_collection_has_models')
+        return $this->morphedByMany(MasterAsset::class, 'model', 'model_has_master_collections')
             ->withTimestamps()->withPivot('type');
     }
 
     public function masterFamilies(): MorphToMany
     {
-        return $this->morphedByMany(MasterProductCategory::class, 'model', 'master_collection_has_models')
+        return $this->morphedByMany(MasterProductCategory::class, 'model', 'model_has_master_collections')
             ->withTimestamps();
     }
 
     public function masterCollections(): MorphToMany
     {
-        return $this->morphedByMany(MasterCollection::class, 'model', 'master_collection_has_models')
+        return $this->morphedByMany(MasterCollection::class, 'model', 'model_has_master_collections')
             ->withTimestamps();
     }
 
     public function departments(): MorphToMany
     {
-        return $this->morphedByMany(MasterProductCategory::class, 'model', 'master_collection_has_models')
-            ->wherePivot('type', 'department')
+        return $this->morphedByMany(MasterProductCategory::class, 'model', 'model_has_master_collections')
+            ->wherePivot('type', 'master_department')
             ->withTimestamps();
     }
 
     public function subDepartments(): MorphToMany
     {
-        return $this->morphedByMany(MasterProductCategory::class, 'model', 'master_collection_has_models')
-            ->wherePivot('type', 'sub_department')
+        return $this->morphedByMany(MasterProductCategory::class, 'model', 'model_has_master_collections')
+            ->wherePivot('type', 'master_sub_department')
             ->withTimestamps();
     }
 

@@ -15,6 +15,7 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterProductCategory;
+use App\Models\Masters\MasterShop;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +24,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class AttachMultipleParentsToAMasterCollection extends GrpAction
 {
+    private MasterShop $masterShop;
+
     public function handle(MasterCollection $masterCollection, array $modelData): MasterCollection
     {
         // Attach departments
@@ -57,9 +60,9 @@ class AttachMultipleParentsToAMasterCollection extends GrpAction
     {
         return [
             'departments'       => ['nullable', 'array'],
-            'departments.*'     => [Rule::exists('product_categories', 'id')->where('type', ProductCategoryTypeEnum::DEPARTMENT)->where('shop_id', $this->shop->id)],
+            'departments.*'     => [Rule::exists('master_product_categories', 'id')->where('type', ProductCategoryTypeEnum::DEPARTMENT)->where('master_shop_id', $this->masterShop->id)],
             'sub_departments'   => ['nullable', 'array'],
-            'sub_departments.*' => [Rule::exists('product_categories', 'id')->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)->where('shop_id', $this->shop->id)],
+            'sub_departments.*' => [Rule::exists('master_product_categories', 'id')->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)->where('master_shop_id', $this->masterShop->id)],
             'shops'             => ['nullable', 'array'],
             'shops.*'           => [Rule::exists('shops', 'id')],
         ];
@@ -76,6 +79,7 @@ class AttachMultipleParentsToAMasterCollection extends GrpAction
 
     public function asController(MasterCollection $masterCollection, ActionRequest $request): MasterCollection
     {
+        $this->masterShop = $masterCollection->masterShop;
         $this->initialisation($masterCollection->group, $request);
 
         return $this->handle($masterCollection, $this->validatedData);

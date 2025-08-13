@@ -27,6 +27,8 @@ use App\Actions\Catalogue\ProductCategory\Json\GetFamilies;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInCollection;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInProductCategory;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInShop;
+use App\Actions\Masters\MasterCollection\UI\GetMasterDepartments;
+use App\Actions\Masters\MasterCollection\UI\GetMasterSubDepartments;
 use App\Actions\Masters\MasterProductCategory\Json\GetFamiliesInMasterProductCategory;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInWorkshop;
 use App\Actions\Catalogue\ProductCategory\Json\GetProductCategoryFamilies;
@@ -168,3 +170,6 @@ Route::get('mini-delivery-note-shipments/{deliveryNote:id}', GetMiniDeliveryNote
 
 
 Route::get('customer-sales-channel/{customerSalesChannel:id}/shopify-products', GetShopifyProducts::class)->name('dropshipping.customer_sales_channel.shopify_products');
+
+Route::get('master-shop/{masterShop}/scopes/{scope}/departments', GetMasterDepartments::class)->name('master_shop.master_departments');
+Route::get('master-shop/{masterShop}/scopes/{scope}/sub-departments', GetMasterSubDepartments::class)->name('master_shop.master_sub_departments');
