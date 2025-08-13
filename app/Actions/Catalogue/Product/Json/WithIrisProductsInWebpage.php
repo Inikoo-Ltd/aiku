@@ -10,7 +10,6 @@ namespace App\Actions\Catalogue\Product\Json;
 
 use App\Http\Resources\Catalogue\IrisProductsInWebpageResource;
 use App\Models\Catalogue\Product;
-use App\Models\CRM\Customer;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -102,7 +101,7 @@ trait WithIrisProductsInWebpage
         });
         $queryBuilder->join('trade_units', 'trade_units.id', 'model_has_trade_units.trade_unit_id');
 
-        if($customer) {
+        if ($customer) {
             $basket = $customer->orderInBasket;
 
             if ($basket) {

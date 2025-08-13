@@ -46,7 +46,7 @@ class ShowMasterSubDepartment extends GrpAction
         return $this->handle($masterSubDepartment);
     }
 
-    public function inMasterDepartment(MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, ActionRequest $request): MasterProductCategory
+    public function inMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, ActionRequest $request): MasterProductCategory
     {
         $this->parent = $masterDepartment;
         $group        = group();
@@ -176,7 +176,8 @@ class ShowMasterSubDepartment extends GrpAction
 
 
         return match ($routeName) {
-            'grp.masters.master_departments.show.master_sub_departments.show' =>
+            'grp.masters.master_departments.show.master_sub_departments.show',
+            'grp.masters.master_departments.show.master_sub_departments.show.master_families.index' =>
             array_merge(
                 (new IndexMasterSubDepartments())->getBreadcrumbs($masterSubDepartment, $masterSubDepartment->masterDepartment, $routeParameters, $suffix),
                 $headCrumb(
@@ -208,6 +209,26 @@ class ShowMasterSubDepartment extends GrpAction
                         ],
                         'model' => [
                             'name'       => 'grp.masters.master_shops.show.master_sub_departments.show',
+                            'parameters' => $routeParameters
+
+
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show' =>
+            array_merge(
+                ShowMasterDepartment::make()->getBreadcrumbs($masterSubDepartment->masterShop, $masterSubDepartment->masterDepartment, $routeName, $routeParameters, $suffix),
+                $headCrumb(
+                    $masterSubDepartment,
+                    [
+                        'index' => [
+                            'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show',
                             'parameters' => $routeParameters
 
 

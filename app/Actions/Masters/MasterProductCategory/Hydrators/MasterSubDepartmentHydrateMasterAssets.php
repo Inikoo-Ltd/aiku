@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Tue, 12 Aug 2025 15:31:21 Central European Summer Time, Torremolinos, Spain
+ * Created: Tue, 12 Aug 2025 15:32:37 Central European Summer Time, Malaga, Spain
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
@@ -16,25 +16,25 @@ use App\Models\Masters\MasterProductCategory;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class MasterDepartmentHydrateMasterAssets implements ShouldBeUnique
+class MasterSubDepartmentHydrateMasterAssets implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;
 
-    public function getJobUniqueId(MasterProductCategory $masterDepartment): string
+    public function getJobUniqueId(MasterProductCategory $masterSubDepartment): string
     {
-        return $masterDepartment->id;
+        return $masterSubDepartment->id;
     }
 
-    public function handle(MasterProductCategory $masterDepartment): void
+    public function handle(MasterProductCategory $masterSubDepartment): void
     {
-        if ($masterDepartment->type != MasterProductCategoryTypeEnum::DEPARTMENT) {
+        if ($masterSubDepartment->type != MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
             return;
         }
 
         $stats = [
-            'number_master_assets' => $masterDepartment->masterAssets()->count(),
-            'number_current_master_assets' => $masterDepartment->masterAssets()->where('status', true)->count(),
+            'number_master_assets' => $masterSubDepartment->masterAssets()->count(),
+            'number_current_master_assets' => $masterSubDepartment->masterAssets()->where('status', true)->count(),
         ];
 
         $stats = array_merge(
@@ -44,8 +44,8 @@ class MasterDepartmentHydrateMasterAssets implements ShouldBeUnique
                 field: 'type',
                 enum: MasterAssetTypeEnum::class,
                 models: MasterAsset::class,
-                where: function ($q) use ($masterDepartment) {
-                    $q->where('master_department_id', $masterDepartment->id)->where('status', true);
+                where: function ($q) use ($masterSubDepartment) {
+                    $q->where('master_sub_department_id', $masterSubDepartment->id)->where('status', true);
                 }
             )
         );
@@ -57,14 +57,14 @@ class MasterDepartmentHydrateMasterAssets implements ShouldBeUnique
                 field: 'type',
                 enum: MasterAssetTypeEnum::class,
                 models: MasterAsset::class,
-                where: function ($q) use ($masterDepartment) {
-                    $q->where('master_department_id', $masterDepartment->id);
+                where: function ($q) use ($masterSubDepartment) {
+                    $q->where('master_sub_department_id', $masterSubDepartment->id);
                 }
             )
         );
 
 
-        $masterDepartment->stats()->update($stats);
+        $masterSubDepartment->stats()->update($stats);
     }
 
 

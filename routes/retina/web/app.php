@@ -8,7 +8,6 @@
 
 use App\Actions\Accounting\OrderPaymentApiPoint\WebHooks\RedirectSuccessPaymentOrder;
 use App\Actions\Accounting\TopUpPaymentApiPoint\WebHooks\RedirectSuccessPaymentTopUp;
-use App\Actions\Iris\UpdateIrisLocale;
 
 Route::middleware(["retina-auth:retina", 'retina-prepare-account'])->group(function () {
     Route::get('/', function () {

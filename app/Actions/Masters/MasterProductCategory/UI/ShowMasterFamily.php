@@ -66,6 +66,24 @@ class ShowMasterFamily extends GrpAction
         return $this->handle($masterFamily);
     }
 
+    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
+    {
+        $group        = group();
+        $this->parent = $masterSubDepartment;
+        $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
+
+        return $this->handle($masterFamily);
+    }
+
+    public function inMasterSubDepartmentInMasterDepartment(MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
+    {
+        $group        = group();
+        $this->parent = $masterSubDepartment;
+        $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
+
+        return $this->handle($masterFamily);
+    }
+
     public function htmlResponse(MasterProductCategory $masterFamily, ActionRequest $request): Response
     {
         return Inertia::render(
@@ -186,7 +204,7 @@ class ShowMasterFamily extends GrpAction
             ),
             'grp.masters.master_departments.show.master_families.show' =>
             array_merge(
-                (new ShowMasterDepartment())->getBreadcrumbs($this->parent, $routeName, $routeParameters),
+                (new ShowMasterDepartment())->getBreadcrumbs($this->parent, $masterFamily->masterDepartment, $routeName, $routeParameters),
                 $headCrumb(
                     $masterFamily,
                     [

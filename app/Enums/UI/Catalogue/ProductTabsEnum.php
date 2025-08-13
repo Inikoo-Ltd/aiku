@@ -18,7 +18,7 @@ enum ProductTabsEnum: string
 
     case SHOWCASE = 'showcase';
     case SALES = 'sales';
-   // case VARIATIONS = 'variations';
+    // case VARIATIONS = 'variations';
     case HISTORY = 'history';
     case IMAGES = 'images';
     case STOCKS = 'stocks';
@@ -35,10 +35,10 @@ enum ProductTabsEnum: string
                 'title' => __('overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
-//            ProductTabsEnum::VARIATIONS => [
-//                'title' => __('variations'),
-//                'icon'  => 'fal fa-stream',
-//            ],
+            //            ProductTabsEnum::VARIATIONS => [
+            //                'title' => __('variations'),
+            //                'icon'  => 'fal fa-stream',
+            //            ],
             ProductTabsEnum::SALES => [
                 'title' => __('sales'),
                 'icon'  => 'fal fa-money-bill-wave',

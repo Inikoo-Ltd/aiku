@@ -217,7 +217,9 @@ class ShowMasterDepartment extends GrpAction
                     $suffix
                 )
             ),
-            'grp.masters.master_shops.show.master_departments.show' =>
+            'grp.masters.master_shops.show.master_departments.show',
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.index',
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show' =>
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($parent, $routeName),
                 $headCrumb(

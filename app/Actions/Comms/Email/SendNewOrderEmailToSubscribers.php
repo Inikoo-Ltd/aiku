@@ -19,7 +19,6 @@ use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
 use App\Enums\Comms\Outbox\OutboxBuilderEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
-use App\Models\Catalogue\Shop;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\Email;
 use App\Models\Helpers\Currency;
@@ -68,7 +67,7 @@ class SendNewOrderEmailToSubscribers extends OrgAction
 
             $balance = '';
 
-            if($paymentAccount->type == PaymentAccountTypeEnum::ACCOUNT) {
+            if ($paymentAccount->type == PaymentAccountTypeEnum::ACCOUNT) {
                 $balance = 'Customer Balance: '.$order->shop->currency->symbol.$order->customer->balance;
             }
 
@@ -135,7 +134,7 @@ class SendNewOrderEmailToSubscribers extends OrgAction
         }
         $html = '';
         $currencySymbol = $currency->symbol ?? '£';
-        
+
         foreach ($transactions as $transaction) {
             $historicAsset = $transaction->historicAsset;
             $html .= sprintf(

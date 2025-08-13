@@ -15,7 +15,6 @@ use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\UI\SupplyChain\MasterCollectionTabsEnum;
 use App\Http\Resources\Catalogue\CollectionsResource;
-use App\Http\Resources\Masters\MasterCollectionResource;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;

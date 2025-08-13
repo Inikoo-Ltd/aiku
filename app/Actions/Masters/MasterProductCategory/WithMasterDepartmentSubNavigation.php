@@ -21,36 +21,36 @@ trait WithMasterDepartmentSubNavigation
                 'isAnchor'   => true,
                 'label'    => __('Master Department'),
                 'route'     => [
-                    'name'       => 'grp.masters.master_departments.show',
-                    'parameters' => [$masterDepartment->slug]
+                    'name'       => 'grp.masters.master_shops.show.master_departments.show',
+                    'parameters' => [$masterDepartment->masterShop->slug, $masterDepartment->slug]
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-stream'],
-                    'tooltip' => __('Department')
+                    'tooltip' => __('Master Department')
                 ]
             ],
             [
                 'label'    => __('Master Sub-departments'),
-                'number'   => $masterDepartment->stats->number_sub_departments,
+                'number'   => $masterDepartment->stats->number_current_master_product_categories_type_sub_department,
                 'route'     => [
-                    'name'       => 'grp.masters.master_departments.show.master_sub_departments.index',
-                    'parameters' => [$masterDepartment->slug]
+                    'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.index',
+                    'parameters' => [$masterDepartment->masterShop->slug, $masterDepartment->slug]
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-dot-circle'],
-                    'tooltip' => __('sub-departments')
+                    'tooltip' => __('Master sub-departments')
                 ]
             ],
              [
                  'label'    => __('Master Families'),
-                 'number'   => $masterDepartment->stats->number_master_product_categories_type_family,
+                 'number'   => $masterDepartment->stats->number_current_master_product_categories_type_family,
                  'route'     => [
-                     'name'       => 'grp.masters.master_departments.show.master_families.index',
-                     'parameters' => [$masterDepartment->slug]
+                     'name'       => 'grp.masters.master_shops.show.master_departments.show.master_families.index',
+                     'parameters' => [$masterDepartment->masterShop->slug, $masterDepartment->slug]
                  ],
                  'leftIcon' => [
                      'icon'    => ['fal', 'fa-folder'],
-                     'tooltip' => __('families')
+                     'tooltip' => __('Master families')
                  ]
              ],
             // [
