@@ -29,9 +29,11 @@ class StoreEcomBasketTransaction extends IrisAction
 
         $historicAsset = $product->currentHistoricProduct;
 
-        return StoreTransaction::make()->action($order, $historicAsset, [
+        $transaction = StoreTransaction::make()->action($order, $historicAsset, [
             'quantity_ordered' => Arr::get($modelData, 'quantity')
         ]);
+
+        return $transaction;
     }
 
     public function rules(): array
@@ -52,5 +54,13 @@ class StoreEcomBasketTransaction extends IrisAction
     public function htmlResponse(): RedirectResponse
     {
         return back();
+    }
+
+    public function jsonResponse(Transaction $transaction): array
+    {
+        return [
+            'transaction_id'    => $transaction->id,
+            'quantity_ordered'  => (int) $transaction->quantity_ordered
+        ];
     }
 }
