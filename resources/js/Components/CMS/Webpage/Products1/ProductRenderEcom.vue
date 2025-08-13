@@ -22,39 +22,14 @@ import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 import { InputNumber } from 'primevue'
 import { get, set } from 'lodash-es'
+import ButtonAddToBasket from '@/Components/Iris/Products/ButtonAddToBasket.vue'
+import { ProductResource } from '@/types/Iris/Products'
 library.add(faStarHalfAlt, faQuestionCircle)
 
 const layout = inject('layout', retinaLayoutStructure)
 
 const locale = useLocaleStore()
 
-interface ProductResource {
-    id: number
-    name: string
-    code: string
-    image?: {
-        source: ImageTS,
-    }
-    rpp?: number
-    unit: string
-    stock: number
-    rating: number
-    price: number
-    url: string | null
-    units: number
-    bestseller?: boolean
-    is_favourite?: boolean
-    top_seller : number | null
-    web_images : {
-        main : {
-            original: ImageTS,
-            gallery : ImageTS
-        }    
-    }
-    quantity_ordered: number
-    quantity_ordered_new: number
-    transaction_id: number | null
-}
 
 const props = defineProps<{
     product: ProductResource
@@ -134,72 +109,7 @@ const onUnselectFavourite = (product: ProductResource) => {
     )
 }
 
-const isLoadingSubmitQuantityProduct = ref(false)
-const onAddToBasket = (product: ProductResource) => {
-    router.post(
-        route('iris.models.transaction.store', {
-            product: product.id
-        }),
-        {
-            quantity: get(product, ['quantity_ordered_new'], product.quantity_ordered)
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            only: ['iris'],
-            onStart: () => { 
-                isLoadingSubmitQuantityProduct.value = true
-            },
-            onSuccess: () => {
-                product.quantity_ordered = product.quantity_ordered_new
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: errors.message || trans("Failed to add product to basket"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingSubmitQuantityProduct.value = false
-            },
-        }
-    )
-}
 
-const onUpdateQuantity = (product: ProductResource) => {
-
-    // Section: Submit
-    router.post(
-        route('iris.models.transaction.update', {
-            transaction: product.transaction_id
-        }),
-        {
-            quantity: get(product, ['quantity_ordered_new'], product.quantity_ordered)
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            only: ['iris'],
-            onStart: () => { 
-                isLoadingSubmitQuantityProduct.value = true
-            },
-            onSuccess: () => {
-                product.quantity_ordered = product.quantity_ordered_new
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: errors.message || trans("Failed to update product quantity in basket"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                isLoadingSubmitQuantityProduct.value = false
-            },
-        }
-    )
-}
 
 
 
@@ -354,40 +264,11 @@ const xxxxxxx = Math.random() > 0.5
 
         <div class="px-3">
             <div v-if="layout?.iris?.is_logged_in" class="w-full">
-                <!-- <pre>{{ product }}</pre> -->
-                <div v-if="product.stock > 0" class="flex flex-col items-center gap-2 xmt-2">
-                    <!-- {{ get(product, ['quantity_ordered_new'], product.quantity_ordered) }} -->
-                    <InputNumber
-                        :modelValue="get(product, ['quantity_ordered_new'], product.quantity_ordered) || product.quantity_ordered"
-                        @update:modelValue="(e) => set(product, ['quantity_ordered_new'], e)"
-                        inputId="integeronly"
-                        fluid
-                        showButtons
-                        :min="0"
-                        :max="product.stock"
-                    />
-                    
-                    <Button
-                        v-if="!product.quantity_ordered"
-                        @click="() => onAddToBasket(product)"
-                        icon="fal fa-shopping-cart"
-                        :label="trans('Add to basket')"
-                        type="secondary"
-                        full
-                        :loading="isLoadingSubmitQuantityProduct"
-                        :disabled="product.quantity_ordered_new === product.quantity_ordered"
-                    />
-                    <Button
-                        v-else
-                        @click="() => onUpdateQuantity(product)"
-                        icon="fal fa-plus"
-                        :label="trans('Update quantity in basket')"
-                        type="tertiary"
-                        full
-                        :loading="isLoadingSubmitQuantityProduct"
-                        :disabled="product.quantity_ordered_new === product.quantity_ordered"
-                    />
-                </div>
+
+                <ButtonAddToBasket
+                    v-if="product.stock > 0"
+                    :product
+                />
 
                 <div v-else>
                     <Button :label="trans('Out of stock')" type="tertiary" disabled full />
