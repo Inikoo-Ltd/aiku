@@ -18,12 +18,12 @@ trait WithMasterFamilySubNavigation
     {
         $routeFamily = [
             'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show',
-            'parameters' => [$masterFamily->masterShop->slug, $masterFamily->masterDepartment->slug, $masterFamily->masterSubDepartment->slug, $masterFamily->slug]
+            'parameters' => request()->route()->originalParameters()
         ];
 
         $routeProducts = [
             'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index',
-            'parameters' => [$masterFamily->masterShop->slug, $masterFamily->masterDepartment->slug, $masterFamily->masterSubDepartment->slug, $masterFamily->slug]
+            'parameters' => request()->route()->originalParameters()
         ];
 
         if (in_array(request()->route()->getName(), ["grp.masters.master_shops.show.master_families.show", "grp.masters.master_shops.show.master_families.master_products.index"])) {
