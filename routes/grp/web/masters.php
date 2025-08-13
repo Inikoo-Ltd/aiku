@@ -144,7 +144,13 @@ Route::prefix('/master-shops/{masterShop}')->as('master_shops.show')->group(func
         Route::get('', IndexMasterFamilies::class)->name('index');
         Route::get('create', CreateMasterFamily::class)->name('create');
         Route::get('{masterFamily}', ShowMasterFamily::class)->name('show');
+        Route::get('{masterFamily}/edit', EditMasterFamily::class)->name('edit');
         Route::get('/master-families/{masterFamily}/blueprint', ShowMasterFamilyWorkshop::class)->name('blueprint');
+
+        Route::prefix('{masterFamily}/master-products')->as('master_products.')->group(function () {
+            Route::get('', [IndexMasterProducts::class, 'inMasterFamilyInMasterShop'])->name('index');
+            Route::get('{masterProduct}', [ShowMasterProducts::class, 'inMasterFamilyInMasterShop'])->name('show');
+        });
     });
 
     Route::prefix('master-sub-departments')->as('.master_sub_departments.')->group(function () {

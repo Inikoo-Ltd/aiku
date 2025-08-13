@@ -18,7 +18,6 @@ use App\Actions\Masters\MasterProductCategory\UI\ShowMasterSubDepartment;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\UI\SupplyChain\MasterAssetTabsEnum;
-use App\Enums\UI\SupplyChain\MasterFamilyTabsEnum;
 use App\Http\Resources\Masters\MasterProductResource;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
@@ -73,6 +72,15 @@ class ShowMasterProducts extends GrpAction
         $this->parent = $masterDepartment;
         $this->initialisation($masterShop->group, $request)->withTab(MasterAssetTabsEnum::values());
 
+        return $this->handle($masterProduct);
+    }
+
+    public function inMasterFamilyInMasterShop(MasterShop $masterShop, MasterProductCategory $masterFamily, MasterAsset $masterProduct, ActionRequest $request): MasterAsset
+    {
+        $group        = group();
+
+        $this->parent = $masterFamily;
+        $this->initialisation($group, $request);
         return $this->handle($masterProduct);
     }
 

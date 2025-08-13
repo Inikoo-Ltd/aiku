@@ -195,9 +195,12 @@ class ShowMasterFamily extends GrpAction
 
 
         return match ($routeName) {
-            'grp.masters.master_shops.show.master_families.show' =>
+            'grp.masters.master_shops.show.master_families.show',
+            'grp.masters.master_shops.show.master_families.edit',
+            'grp.masters.master_shops.show.master_families.create',
+            'grp.masters.master_shops.show.master_families.master_products.index' =>
             array_merge(
-                ShowMasterShop::make()->getBreadcrumbs($this->parent, $routeParameters),
+                ShowMasterShop::make()->getBreadcrumbs($masterFamily->masterShop, $routeParameters),
                 $headCrumb(
                     $masterFamily,
                     [

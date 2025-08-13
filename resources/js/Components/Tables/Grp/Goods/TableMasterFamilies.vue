@@ -27,7 +27,15 @@ function familyRoute(masterFamily: MasterFamily) {
     } else if (route().current() == "grp.masters.master_shops.show.master_departments.show.master_families.index") {
         return route(
             "grp.masters.master_shops.show.master_departments.show.master_families.show",
-            { masterShop: (route().params as RouteParams).masterShop, masterDepartment: (route().params as RouteParams).masterDepartment, masterFamily: masterFamily.slug });
+            {
+                masterShop: (route().params as RouteParams).masterShop,
+                masterDepartment: (route().params as RouteParams).masterDepartment,
+                masterFamily: masterFamily.slug
+            });
+    } else if (route().current() == "grp.masters.master_shops.show.master_families.index") {
+        return route(
+            "grp.masters.master_shops.show.master_families.show",
+            {...route().params, masterFamily: masterFamily.slug});
     } else {
         return route(
             "grp.masters.master_families.show",
