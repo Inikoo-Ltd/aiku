@@ -278,7 +278,7 @@ const toggleExpanded = () => {
                 <div class="text-xs font-medium text-gray-800" :style="getStyles(fieldValue?.description?.description_content, screenType)">
                     <div v-html="fieldValue.product.description"></div>
                 </div>
-                <div v-if="fieldValue.setting.information" class="my-4 space-y-2">
+                <div v-if="fieldValue.setting?.information" class="my-4 space-y-2">
                     <InformationSideProduct v-if="fieldValue?.information?.length > 0"
                         :informations="fieldValue?.information" :styleData="fieldValue?.information_style"/>
                     <div v-if="fieldValue?.paymentData?.length > 0"
