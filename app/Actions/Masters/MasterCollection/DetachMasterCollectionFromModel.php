@@ -24,7 +24,7 @@ class DetachMasterCollectionFromModel extends GrpAction
         $parent->masterCollections()->detach($masterCollection);
 
         if ($parent instanceof MasterProductCategory) {
-            $shop = $parent->shop;
+            $shop = $parent->masterShop;
             MasterProductCategoryHydrateMasterCollections::dispatch($parent);
         } else {
             $shop = $parent;
