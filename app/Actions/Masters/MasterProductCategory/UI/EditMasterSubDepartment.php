@@ -24,11 +24,20 @@ class EditMasterSubDepartment extends OrgAction
     /**
      * @var \App\Models\Masters\MasterProductCategory|\App\Models\Masters\MasterShop
      */
-    private MasterProductCategory $parent;
+    private MasterProductCategory|MasterShop $parent;
 
     public function inMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, ActionRequest $request): Response
     {
         $this->parent = $masterDepartment;
+        $group        = group();
+        $this->initialisationFromGroup($group, $request)->withTab(MasterSubDepartmentTabsEnum::values());
+
+        return $this->handle($masterSubDepartment, $request);
+    }
+
+    public function asController(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, ActionRequest $request): Response
+    {
+        $this->parent = $masterSubDepartment;
         $group        = group();
         $this->initialisationFromGroup($group, $request)->withTab(MasterSubDepartmentTabsEnum::values());
 
@@ -102,7 +111,7 @@ class EditMasterSubDepartment extends OrgAction
                 MasterShop::class => IndexMasterShops::make()->getBreadcrumbs(),
                 MasterProductCategory::class => ShowMasterSubDepartment::make()->getBreadcrumbs(
                     masterSubDepartment: $masterSubDepartment,
-                    routeName: preg_replace('/create$/', 'index', $routeName),
+                    routeName: $routeName,
                     routeParameters: $routeParameters,
                 )
             },

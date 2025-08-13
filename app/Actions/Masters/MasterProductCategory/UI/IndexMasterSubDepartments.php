@@ -195,12 +195,14 @@ class IndexMasterSubDepartments extends GrpAction
         };
 
         return match ($routeName) {
-            'grp.masters.master_shops.show.master_sub_departments.index' =>
+            'grp.masters.master_shops.show.master_sub_departments.index',
+            'grp.masters.master_shops.show.master_sub_departments.show',
+            'grp.masters.master_shops.show.master_sub_departments.edit' =>
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($parent, $routeName),
                 $headCrumb(
                     [
-                        'name'       => $routeName,
+                        'name'       => 'grp.masters.master_shops.show.master_sub_departments.index',
                         'parameters' => $routeParameters
                     ],
                     $suffix
