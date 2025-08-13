@@ -96,7 +96,10 @@ class GetMasterCollectionShowcase
                     'method'     => 'post'
                 ],
                 'detach_parent'         => [
-                    'name'       => 'grp.models.master_collection.detach-models',
+                    'name'       => 'grp.models.master_product_category.master_collection.detach',
+                    'parameters' => [
+                        'masterCollection' => $masterCollection->id,
+                    ],
                     'method'     => 'delete'
                 ],
             ],
