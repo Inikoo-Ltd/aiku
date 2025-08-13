@@ -16,14 +16,33 @@ trait WithMasterFamilySubNavigation
 {
     protected function getMasterFamilySubNavigation(MasterProductCategory $masterFamily): array
     {
+        $routeFamily = [
+            'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show',
+            'parameters' => [$masterFamily->masterShop->slug, $masterFamily->masterDepartment->slug, $masterFamily->masterSubDepartment->slug, $masterFamily->slug]
+        ];
+
+        $routeProducts = [
+            'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show',
+            'parameters' => [$masterFamily->masterShop->slug, $masterFamily->masterDepartment->slug, $masterFamily->masterSubDepartment->slug, $masterFamily->slug]
+        ];
+
+        if (in_array(request()->route()->getName(), ["grp.masters.master_shops.show.master_families.show", "grp.masters.master_shops.show.master_families.master_products.index"])) {
+            $routeFamily = [
+                'name'       => 'grp.masters.master_shops.show.master_families.show',
+                'parameters' => request()->route()->originalParameters()
+            ];
+
+            $routeProducts = [
+                'name'       => 'grp.masters.master_shops.show.master_families.master_products.index',
+                'parameters' => request()->route()->originalParameters()
+            ];
+        }
+
         return [
             [
                 'isAnchor'   => true,
                 'label'    => __('Master Family'),
-                'route'     => [
-                    'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show',
-                    'parameters' => [$masterFamily->masterShop->slug, $masterFamily->masterDepartment->slug, $masterFamily->masterSubDepartment->slug, $masterFamily->slug]
-                ],
+                'route'     => $routeFamily,
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-stream'],
                     'tooltip' => __('Department')
@@ -32,10 +51,7 @@ trait WithMasterFamilySubNavigation
              [
                  'label'    => __('Master Products'),
                  'number'   => $masterFamily->stats->number_current_products,
-                 'route'     => [
-                     'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index',
-                     'parameters' => [$masterFamily->masterShop->slug, $masterFamily->masterDepartment->slug, $masterFamily->masterSubDepartment->slug, $masterFamily->slug]
-                 ],
+                 'route'     => $routeProducts,
                  'leftIcon' => [
                      'icon'    => ['fal', 'fa-cube'],
                      'tooltip' => __('products')

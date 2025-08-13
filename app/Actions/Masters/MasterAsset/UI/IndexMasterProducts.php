@@ -13,6 +13,7 @@ use App\Actions\GrpAction;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
+use App\Actions\Masters\MasterProductCategory\WithMasterFamilySubNavigation;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
@@ -36,6 +37,7 @@ class IndexMasterProducts extends GrpAction
 {
     use WithMasterCatalogueSubNavigation;
     use WithMasterDepartmentSubNavigation;
+    use WithMasterFamilySubNavigation;
     use WithMastersAuthorisation;
 
     private Group|MasterShop|MasterProductCategory $parent;
@@ -209,10 +211,10 @@ class IndexMasterProducts extends GrpAction
             if ($this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
                 $subNavigation = $this->getMasterDepartmentSubNavigation($this->parent);
             }
-
+            if ($this->parent->type == MasterProductCategoryTypeEnum::FAMILY) {
+                $subNavigation = $this->getMasterFamilySubNavigation($this->parent);
+            }
         }
-
-
 
         return Inertia::render(
             'Masters/MasterProducts',
@@ -276,7 +278,8 @@ class IndexMasterProducts extends GrpAction
                     $suffix
                 ),
             ),
-            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index' =>
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index',
+            'grp.masters.master_shops.show.master_families.master_products.index' =>
             array_merge(
                 ShowMasterFamily::make()->getBreadcrumbs($this->parent, $routeName, $routeParameters),
                 $headCrumb(
@@ -335,6 +338,15 @@ class IndexMasterProducts extends GrpAction
     }
 
     public function inMasterFamilyInMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): LengthAwarePaginator
+    {
+        $group        = group();
+
+        $this->parent = $masterFamily;
+        $this->initialisation($group, $request);
+        return $this->handle($masterFamily, $request);
+    }
+
+    public function inMasterFamilyInMasterShop(MasterShop $masterShop, MasterProductCategory $masterFamily, ActionRequest $request): LengthAwarePaginator
     {
         $group        = group();
 
