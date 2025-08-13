@@ -68,7 +68,16 @@ class ShowMasterFamily extends GrpAction
         return $this->handle($masterFamily);
     }
 
-    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
+    public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
+    {
+        $group        = group();
+        $this->parent = $masterDepartment;
+        $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
+
+        return $this->handle($masterFamily);
+    }
+
+    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
     {
         $group        = group();
         $this->parent = $masterSubDepartment;
@@ -237,6 +246,26 @@ class ShowMasterFamily extends GrpAction
                         ],
                         'model' => [
                             'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show',
+                            'parameters' => $routeParameters
+
+
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.masters.master_shops.show.master_departments.show.master_families.show' =>
+            array_merge(
+                ShowMasterDepartment::make()->getBreadcrumbs($masterFamily->masterShop, $masterFamily->masterDepartment, $routeName, $routeParameters, $suffix),
+                $headCrumb(
+                    $masterFamily,
+                    [
+                        'index' => [
+                            'name'       => 'grp.masters.master_shops.show.master_departments.show.master_families.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.masters.master_shops.show.master_departments.show.master_families.show',
                             'parameters' => $routeParameters
                         ]
                     ],

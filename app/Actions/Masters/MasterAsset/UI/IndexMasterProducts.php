@@ -11,6 +11,8 @@ namespace App\Actions\Masters\MasterAsset\UI;
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\GrpAction;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
+use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
+use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
@@ -33,6 +35,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexMasterProducts extends GrpAction
 {
     use WithMasterCatalogueSubNavigation;
+    Use WithMasterDepartmentSubNavigation;
     use WithMastersAuthorisation;
 
     private Group|MasterShop|MasterProductCategory $parent;
@@ -202,6 +205,11 @@ class IndexMasterProducts extends GrpAction
             $iconRight     = [
                 'icon' => 'fal fa-cube',
             ];
+        } elseif ($this->parent instanceof MasterProductCategory) {
+            if($this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
+                $subNavigation = $this->getMasterDepartmentSubNavigation($this->parent);
+            }
+
         }
 
 
@@ -279,6 +287,22 @@ class IndexMasterProducts extends GrpAction
                     $suffix
                 ),
             ),
+            'grp.masters.master_shops.show.master_departments.show.master_products.index' =>
+            array_merge(
+                ShowMasterDepartment::make()->getBreadcrumbs(
+                    $parent->masterShop,
+                    $parent,
+                    $routeName,
+                    $routeParameters
+                ),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
+                    ],
+                    $suffix
+                )
+            ),
             default => []
         };
     }
@@ -317,6 +341,13 @@ class IndexMasterProducts extends GrpAction
         $this->parent = $masterFamily;
         $this->initialisation($group, $request);
         return $this->handle($masterFamily, $request);
+    }
+
+    public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $masterDepartment;
+        $this->initialisation($masterDepartment->group, $request);
+        return $this->handle($masterDepartment, $request);
     }
 
 }

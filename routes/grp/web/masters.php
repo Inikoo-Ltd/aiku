@@ -16,6 +16,7 @@ use App\Actions\Masters\MasterAsset\UI\IndexMasterProducts;
 use App\Actions\Masters\MasterAsset\UI\ShowMasterProducts;
 use App\Actions\Masters\MasterCollection\UI\CreateMasterCollection;
 use App\Actions\Masters\MasterCollection\UI\IndexMasterCollections;
+use App\Actions\Masters\MasterCollection\UI\IndexMasterCollectionsInMasterProductCategory;
 use App\Actions\Masters\MasterCollection\UI\ShowMasterCollection;
 use App\Actions\Masters\MasterProductCategory\UI\CreateMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\CreateMasterFamily;
@@ -93,14 +94,12 @@ Route::prefix('/master-shops/{masterShop}')->as('master_shops.show')->group(func
         Route::prefix('{masterDepartment}')->name('show')->group(function () {
             Route::get('', ShowMasterDepartment::class);
 
-
             Route::prefix('master-families')->as('.master_families.')->group(function () {
                 Route::get('', [IndexMasterFamilies::class, 'inMasterDepartmentInMasterShop'])->name('index');
                 Route::get('create', [CreateMasterFamily::class, 'inMasterDepartmentInMasterShop'])->name('create');
-
                 Route::prefix('{masterFamily}')->group(function () {
                     Route::get('//blueprint', ShowMasterFamilyWorkshop::class)->name('blueprint');
-                    Route::get('', [ShowMasterFamily::class, 'inMasterDepartment'])->name('show');
+                    Route::get('', [ShowMasterFamily::class, 'inMasterDepartmentInMasterShop'])->name('show');
                 });
             });
 
@@ -119,6 +118,17 @@ Route::prefix('/master-shops/{masterShop}')->as('master_shops.show')->group(func
                         Route::get('{masterProduct}', [ShowMasterProducts::class, 'inMasterFamilyInMasterDepartment'])->name('show');
                     });
                 });
+            });
+
+            Route::prefix('master-products')->as('.master_products.')->group(function () {
+                Route::get('', [IndexMasterProducts::class, 'inMasterDepartmentInMasterShop'])->name('index');
+                Route::get('{masterProduct}', [ShowMasterProducts::class, 'inMasterDepartmentInMasterShop'])->name('show');
+            });
+            
+            Route::prefix('master-collections')->as('.master_collections.')->group(function () {
+                Route::get('', [IndexMasterCollectionsInMasterProductCategory::class, 'inMasterDepartmentInMasterShop'])->name('index');
+                Route::get('create', [CreateMasterCollection::class, 'inMasterDepartmentInMasterShop'])->name('create');
+                Route::get('{masterCollection}', [ShowMasterCollection::class, 'inMasterDepartmentInMasterShop'])->name('show');
             });
 
         });

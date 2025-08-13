@@ -63,7 +63,7 @@ class CreateMasterSubDepartment extends OrgAction
                             'style' => 'cancel',
                             'label' => __('cancel'),
                             'route' => [
-                                'name'       => 'grp.masters.master_departments.show.master_sub_departments.index',
+                                'name'       => preg_replace('/\.create$/', '.index', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())
                             ],
                         ]
