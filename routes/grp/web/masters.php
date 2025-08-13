@@ -110,7 +110,7 @@ Route::prefix('/master-shops/{masterShop}')->as('master_shops.show')->group(func
                 Route::get('{masterSubDepartment}/edit', [EditMasterSubDepartment::class, 'inMasterDepartment'])->name('edit');
 
                 Route::prefix('/{masterSubDepartment}/families')->as('master_families.')->group(function () {
-                    Route::get('', [IndexMasterFamilies::class, 'inMasterSubDepartment'])->name('index');
+                    Route::get('', [IndexMasterFamilies::class, 'inMasterSubDepartmentInMasterDepartment'])->name('index');
                     Route::get('create', [CreateMasterFamily::class, 'inMasterSubDepartment'])->name('create');
                     Route::get('{masterFamily}', [ShowMasterFamily::class, 'inMasterSubDepartment'])->name('show');
 
@@ -158,9 +158,10 @@ Route::prefix('/master-shops/{masterShop}')->as('master_shops.show')->group(func
         Route::get('/master-sub-departments/create', CreateMasterSubDepartment::class)->name('create');
         Route::get('{masterSubDepartment}', ShowMasterSubDepartment::class)->name('show');
         Route::get('{masterSubDepartment}/edit', EditMasterSubDepartment::class)->name('edit');
-        Route::prefix('/{masterSubDepartment}/families')->as('.master_families.')->group(function () {
+
+        Route::prefix('/{masterSubDepartment}/families')->as('master_families.')->group(function () {
             Route::get('', [IndexMasterFamilies::class, 'inMasterSubDepartment'])->name('index');
-            Route::get('create', [CreateMasterFamily::class, 'inMasterSubDepartment'])->name('.create');
+            Route::get('create', [CreateMasterFamily::class, 'inMasterSubDepartment'])->name('create');
             Route::get('{masterFamily}', [ShowMasterFamily::class, 'inMasterSubDepartment'])->name('show');
         });
     });

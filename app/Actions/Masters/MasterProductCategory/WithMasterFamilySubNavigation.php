@@ -22,7 +22,7 @@ trait WithMasterFamilySubNavigation
         ];
 
         $routeProducts = [
-            'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show',
+            'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index',
             'parameters' => [$masterFamily->masterShop->slug, $masterFamily->masterDepartment->slug, $masterFamily->masterSubDepartment->slug, $masterFamily->slug]
         ];
 

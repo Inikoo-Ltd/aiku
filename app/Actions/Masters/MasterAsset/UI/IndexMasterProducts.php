@@ -213,6 +213,18 @@ class IndexMasterProducts extends GrpAction
             }
             if ($this->parent->type == MasterProductCategoryTypeEnum::FAMILY) {
                 $subNavigation = $this->getMasterFamilySubNavigation($this->parent);
+                $title         = $this->parent->name;
+                $model         = '';
+                $icon          = [
+                    'icon'  => ['fal', 'fa-store-alt'],
+                    'title' => __('master shop')
+                ];
+                $afterTitle    = [
+                    'label' => __('Master Products')
+                ];
+                $iconRight     = [
+                    'icon' => 'fal fa-cube',
+                ];
             }
         }
 
