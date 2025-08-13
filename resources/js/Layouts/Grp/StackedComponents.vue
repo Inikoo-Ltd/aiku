@@ -21,27 +21,31 @@ const getTranslateX = (listLength: number, idxComponent: number) => {
     <div class="p-6 fixed top-0 left-0 h-screen w-screen flex justify-end isolate z-[100]">
         <template v-if="layout.stackedComponents.length">
             <TransitionGroup name="stacked-component">
-                <div
-                    v-for="(component, idxComponent) in layout.stackedComponents"
+                <div v-for="(component, idxComponent) in layout.stackedComponents"
                     :key="'stackedComponent' + idxComponent"
-                    class="absolute top-0 left-0 h-screen w-screen flex justify-end isolate z-[100]"
-                >
+                    class="absolute top-0 left-0 h-screen w-screen flex justify-end isolate z-[100]">
                     <div @click="layout.stackedComponents.pop()" class="fixed inset-0 z-10 cursor-pointer" />
-                    <div class="py-6 z-20 absolute h-screen w-10/12 transition-all" :style="{
+
+                    <!-- Panel -->
+                    <div class="py-6 z-20 absolute h-screen w-10/12 transition-all overflow-y-auto" :style="{
                         backgroundColor: '#fff',
                         transform: `translateX(${getTranslateX(layout.stackedComponents.length, idxComponent)}px)`
                     }">
-                    <!-- {{ (idxComponent + 1) < layout.stackedComponents.length }} -->
                         <!-- Button: close -->
-                        <div @click="layout.stackedComponents.pop()" class="absolute right-4 top-1 text-gray-400 hover:text-gray-600 cursor-pointer">
-                            <FontAwesomeIcon icon='fal fa-times' class='lg' l fixed-width aria-hidden='true' />
+                        <div @click="layout.stackedComponents.pop()"
+                            class="absolute right-4 top-1 text-gray-400 hover:text-gray-600 cursor-pointer">
+                            <FontAwesomeIcon icon="fal fa-times" class="lg" fixed-width aria-hidden="true" />
                         </div>
-                        
+
                         <!-- Section: main component -->
-                        <component :is="component.component" :data="component.data"/>
+                        <component :is="component.component" :data="component.data" />
                     </div>
+
+                    <!-- Dimmed background for stacked layers -->
                     <Transition>
-                        <div v-if="(idxComponent + 1) < layout.stackedComponents.length" @click="layout.stackedComponents.pop()" class="fixed inset-0 bg-black/40 z-30 cursor-pointer" />
+                        <div v-if="(idxComponent + 1) < layout.stackedComponents.length"
+                            @click="layout.stackedComponents.pop()"
+                            class="fixed inset-0 bg-black/40 z-30 cursor-pointer" />
                     </Transition>
                 </div>
             </TransitionGroup>

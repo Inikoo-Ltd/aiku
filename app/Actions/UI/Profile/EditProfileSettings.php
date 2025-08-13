@@ -83,7 +83,7 @@ class EditProfileSettings
 
                             ],
                             'preferred_printer' => [
-                                'type'     => 'select',
+                                'type'     => 'select_printer',
                                 'label'    => __('preferred printer'),
                                 'required' => false,
                                 'options'  => $printers,
