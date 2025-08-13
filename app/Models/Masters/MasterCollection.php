@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
@@ -139,4 +140,38 @@ class MasterCollection extends Model implements Auditable, HasMedia
     {
         return $this->belongsTo(MasterShop::class);
     }
+
+        // Warning this includes both direct products and products in families
+    public function masterProducts(): MorphToMany
+    {
+        return $this->morphedByMany(MasterAsset::class, 'model', 'master_collection_has_models')
+            ->withTimestamps()->withPivot('type');
+    }
+    
+    public function masterFamilies(): MorphToMany
+    {
+        return $this->morphedByMany(MasterProductCategory::class, 'model', 'master_collection_has_models')
+            ->withTimestamps();
+    }
+
+    public function masterCollections(): MorphToMany
+    {
+        return $this->morphedByMany(MasterCollection::class, 'model', 'master_collection_has_models')
+            ->withTimestamps();
+    }
+
+    public function departments(): MorphToMany
+    {
+        return $this->morphedByMany(MasterProductCategory::class, 'model', 'master_collection_has_models')
+            ->wherePivot('type', 'department')
+            ->withTimestamps();
+    }
+
+    public function subDepartments(): MorphToMany
+    {
+        return $this->morphedByMany(MasterProductCategory::class, 'model', 'master_collection_has_models')
+            ->wherePivot('type', 'sub_department')
+            ->withTimestamps();
+    }
+
 }
