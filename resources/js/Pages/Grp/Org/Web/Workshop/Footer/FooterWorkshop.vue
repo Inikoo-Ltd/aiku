@@ -330,7 +330,7 @@ watch(currentView, (newValue) => {
         </HeaderListModal>
     </Modal>
 
-    <Drawer v-model:visible="darwerRight" :header="`Translation ${selectedLang}`" position="right"  :pt="{root: { style: 'width: 80vw' }}">
+    <Drawer v-model:visible="darwerRight" :dismissable="false" :header="`Translation ${selectedLang}`" position="right"  :pt="{root: { style: 'width: 80vw' }}">
         <div>
              <component 
                    :is="getTranslationComponent(usedTemplates?.code)" 
