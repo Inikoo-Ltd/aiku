@@ -121,6 +121,7 @@ Route::prefix('/master-shops/{masterShop}')->as('master_shops.show')->group(func
             
             Route::prefix('master-collections')->as('.master_collections.')->group(function () {
                 Route::get('', [IndexMasterCollectionsInMasterProductCategory::class, 'inMasterDepartmentInMasterShop'])->name('index');
+                Route::get('create', [CreateMasterCollection::class, 'inMasterDepartmentInMasterShop'])->name('create');
                 Route::get('{masterCollection}', [ShowMasterCollection::class, 'inMasterDepartmentInMasterShop'])->name('show');
             });
 

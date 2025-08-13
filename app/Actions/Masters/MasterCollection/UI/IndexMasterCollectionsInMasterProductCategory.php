@@ -168,40 +168,35 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
 
 
 
-        $actions = [];
-        // $actions = array_values(array_filter([
-        //     ... (function () use ($request) {
-        //         if (!$this->canEdit) {
-        //             return [];
-        //         }
+        // $actions = [];
+        $actions = array_values(array_filter([
+            ... (function () use ($request) {
+                $routes = [
+                    'grp.masters.master_shops.show.master_departments.show.master_collections.index' => 'grp.masters.master_shops.show.master_departments.show.master_collections.create',
+                ];
 
-        //         $routes = [
-        //             'grp.org.shops.show.catalogue.departments.show.collection.index'                                  => 'grp.org.shops.show.catalogue.departments.show.collection.create',
-        //             'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index'             => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.create',
-        //         ];
+                $currentRoute = $request->route()->getName();
 
-        //         $currentRoute = $request->route()->getName();
+                if (!isset($routes[$currentRoute])) {
+                    return [];
+                }
 
-        //         if (!isset($routes[$currentRoute])) {
-        //             return [];
-        //         }
-
-        //         return [
-        //             [
-        //                 'type'    => 'button',
-        //                 'style'   => 'create',
-        //                 'tooltip' => __('new collection'),
-        //                 'label'   => __('collection'),
-        //                 'route'   => [
-        //                     'name'       => $routes[$currentRoute],
-        //                     'parameters' => $request->route()->originalParameters()
-        //                 ]
-        //             ]
-        //         ];
-        //     })(),
+                return [
+                    [
+                        'type'    => 'button',
+                        'style'   => 'create',
+                        'tooltip' => __('new collection'),
+                        'label'   => __('collection'),
+                        'route'   => [
+                            'name'       => $routes[$currentRoute],
+                            'parameters' => $request->route()->originalParameters()
+                        ]
+                    ]
+                ];
+            })(),
 
 
-        // ]));
+        ]));
 
 
         return Inertia::render(

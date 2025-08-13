@@ -11,11 +11,13 @@
 namespace App\Actions\Masters\MasterCollection\UI;
 
 use App\Actions\GrpAction;
+use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\UI\SupplyChain\MasterCollectionTabsEnum;
 use App\Http\Resources\Catalogue\CollectionsResource;
 use App\Models\Masters\MasterCollection;
+use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
 use Inertia\Inertia;
@@ -26,7 +28,7 @@ class ShowMasterCollection extends GrpAction
 {
     use WithMastersAuthorisation;
 
-    private MasterShop|Group $parent;
+    private MasterShop|MasterProductCategory|Group $parent;
 
     public function handle(MasterCollection $masterCollection): MasterCollection
     {
@@ -36,6 +38,36 @@ class ShowMasterCollection extends GrpAction
     public function asController(MasterShop $masterShop, MasterCollection $masterCollection, ActionRequest $request): MasterCollection
     {
         $this->parent = $masterShop;
+        $group = group();
+
+        $this->initialisation($group, $request)->withTab(MasterCollectionTabsEnum::values());
+
+        return $this->handle($masterCollection);
+    }
+
+    public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterCollection $masterCollection, ActionRequest $request): MasterCollection
+    {
+        $this->parent = $masterDepartment;
+        $group = group();
+
+        $this->initialisation($group, $request)->withTab(MasterCollectionTabsEnum::values());
+
+        return $this->handle($masterCollection);
+    }
+
+    public function inMasterSubDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, MasterCollection $masterCollection, ActionRequest $request): MasterCollection
+    {
+        $this->parent = $masterSubDepartment;
+        $group = group();
+
+        $this->initialisation($group, $request)->withTab(MasterCollectionTabsEnum::values());
+
+        return $this->handle($masterCollection);
+    }
+
+    public function inMasterSubDepartmentInMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterCollection $masterCollection, ActionRequest $request): MasterCollection
+    {
+        $this->parent = $masterSubDepartment;
         $group = group();
 
         $this->initialisation($group, $request)->withTab(MasterCollectionTabsEnum::values());
@@ -127,6 +159,24 @@ class ShowMasterCollection extends GrpAction
                         ],
                         'model' => [
                             'name'       => 'grp.masters.master_shops.show.master_collections.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.masters.master_shops.show.master_departments.show.master_collections.show' =>
+            array_merge(
+                ShowMasterDepartment::make()->getBreadcrumbs($masterCollection->masterShop, $this->parent, $routeName, $routeParameters, $suffix),
+                $headCrumb(
+                    $masterCollection,
+                    [
+                        'index' => [
+                            'name'       => 'grp.masters.master_shops.show.master_departments.show.master_collections.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.masters.master_shops.show.master_departments.show.master_collections.show',
                             'parameters' => $routeParameters
                         ]
                     ],
