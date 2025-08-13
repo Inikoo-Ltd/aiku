@@ -117,7 +117,7 @@ test("UI Show master shop", function (MasterShop $masterShop) {
         $page
             ->component("Masters/MasterShop")
             ->has("title")
-            ->has("breadcrumbs", 4)
+            ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) =>
@@ -194,7 +194,7 @@ test("UI Index Master Departments", function (MasterShop $masterShop) {
         $page
             ->component("Masters/MasterDepartments")
             ->has("title")
-            ->has("breadcrumbs", 5)
+            ->has("breadcrumbs", 4)
             ->has("data")
             ->has(
                 "pageHead",
@@ -229,7 +229,7 @@ test("UI Index Master Families", function (MasterShop $masterShop) {
         $page
             ->component("Masters/MasterFamilies")
             ->has("title")
-            ->has("breadcrumbs", 5)
+            ->has("breadcrumbs", 4)
             ->has("data")
             ->has(
                 "pageHead",
