@@ -54,6 +54,7 @@ const onAddFavourite = (product: ProductResource) => {
         },
         {
             preserveScroll: true,
+            only: ['iris'],
             preserveState: true,
             onStart: () => { 
                 isLoadingFavourite.value = true
@@ -84,6 +85,7 @@ const onUnselectFavourite = (product: ProductResource) => {
         {
             preserveScroll: true,
             preserveState: true,
+            only: ['iris'],
             onStart: () => { 
                 isLoadingFavourite.value = true
             },
