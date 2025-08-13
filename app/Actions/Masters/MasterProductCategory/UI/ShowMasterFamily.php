@@ -77,7 +77,7 @@ class ShowMasterFamily extends GrpAction
         return $this->handle($masterFamily);
     }
 
-    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
+    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
     {
         $group        = group();
         $this->parent = $masterSubDepartment;
@@ -236,7 +236,7 @@ class ShowMasterFamily extends GrpAction
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show',
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index' =>
             array_merge(
-                (new ShowMasterSubDepartment())->getBreadcrumbs($masterFamily, $routeName, $routeParameters),
+                (new ShowMasterSubDepartment())->getBreadcrumbs($masterFamily->parent, $routeName, $routeParameters),
                 $headCrumb(
                     $masterFamily,
                     [

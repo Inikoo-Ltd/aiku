@@ -278,14 +278,14 @@ class IndexMasterFamilies extends OrgAction
             match ($request->route()->getName()) {
                 'grp.masters.master_departments.show.master_families.index' =>
                 $createRoute = 'grp.masters.master_departments.show.master_families.create',
-                'grp.masters.master_shops.show.master_departments.show.master_families.index' => 
+                'grp.masters.master_shops.show.master_departments.show.master_families.index' =>
                 $createRoute = 'grp.masters.master_shops.show.master_departments.show.master_families.create',
                 default => $createRoute
             };
         } elseif ($this->parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
             match ($request->route()->getName()) {
-                'grp.masters.master_departments.show.master_sub_departments.show.master_families.index' =>
-                $createRoute = 'grp.masters.master_departments.show.master_sub_departments.show.master_families.create',
+                'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.index' =>
+                $createRoute = 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.create',
                 'grp.masters.master_departments.show.master_families.index' =>
                 $createRoute = 'grp.masters.master_departments.show.master_families.create',
                 default => $createRoute
@@ -375,7 +375,7 @@ class IndexMasterFamilies extends OrgAction
                 )
             ),
             'grp.masters.master_shops.show.master_departments.show.master_families.index',
-            'grp.masters.master_shops.show.master_departments.show.master_families.create' => 
+            'grp.masters.master_shops.show.master_departments.show.master_families.create' =>
             array_merge(
                 ShowMasterDepartment::make()->getBreadcrumbs(
                     $parent->masterShop,

@@ -36,7 +36,7 @@ class CreateMasterFamily extends OrgAction
         return $this->handle($masterDepartment, $request);
     }
 
-        /** @noinspection PhpUnusedParameterInspection */
+    /** @noinspection PhpUnusedParameterInspection */
     public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, ActionRequest $request): Response
     {
         $this->initialisationFromGroup($masterDepartment->group, $request);
@@ -45,7 +45,7 @@ class CreateMasterFamily extends OrgAction
     }
 
 
-    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, ActionRequest $request): Response
+    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, ActionRequest $request): Response
     {
         $this->initialisationFromGroup(group(), $request);
 
