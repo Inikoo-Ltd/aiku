@@ -9,6 +9,7 @@ import { useTabChange } from '@/Composables/tab-change'
 import { capitalize } from '@/Composables/capitalize'
 import { trans } from 'laravel-vue-i18n'
 import { notify } from '@kyvg/vue3-notification'
+import MasterCollectionShowcase from '@/Components/Navigation/MasterCollectionShowcase.vue'
 
 import {
     PageHeading as PageHeadingTypes
@@ -65,7 +66,7 @@ const handleTabUpdate = (tabSlug: string) => {
 
 const component = computed(() => {
     const components: Record<string, Component> = {
-        showcase: CollectionsShowcase,
+        showcase: MasterCollectionShowcase,
         families: TableFamilies,
         products: TableProducts,
         collections: TableCollections,
