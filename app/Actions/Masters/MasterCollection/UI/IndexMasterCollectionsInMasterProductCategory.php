@@ -8,30 +8,18 @@
 
 namespace App\Actions\Masters\MasterCollection\UI;
 
-use App\Actions\Catalogue\ProductCategory\UI\ShowDepartment;
-use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
-use App\Actions\Catalogue\WithCollectionSubNavigation;
-use App\Actions\Catalogue\WithDepartmentSubNavigation;
-use App\Actions\Catalogue\WithFamilySubNavigation;
-use App\Actions\Catalogue\WithSubDepartmentSubNavigation;
 use App\Actions\GrpAction;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
 use App\Actions\Masters\MasterProductCategory\WithMasterSubDepartmentSubNavigation;
-use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Http\Resources\Catalogue\CollectionsResource;
 use App\Http\Resources\Masters\MasterCollectionsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
-use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -267,7 +255,7 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
     public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $masterDepartment;
-        $this->initialisation($masterShop->group, $request);    
+        $this->initialisation($masterShop->group, $request);
 
         return $this->handle($masterDepartment);
     }

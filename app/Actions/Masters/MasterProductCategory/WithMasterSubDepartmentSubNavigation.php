@@ -10,44 +10,70 @@
 
 namespace App\Actions\Masters\MasterProductCategory;
 
+use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Masters\MasterProductCategory;
+use App\Models\Masters\MasterShop;
 
 trait WithMasterSubDepartmentSubNavigation
 {
     protected function getMasterSubDepartmentSubNavigation(MasterProductCategory $masterSubDepartment): array
     {
+        $subRoute = [
+            'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show',
+            'parameters' => [$masterSubDepartment->masterShop->slug ,$masterSubDepartment->masterDepartment->slug, $masterSubDepartment->slug]
+        ];
+
+        $routeFamilies = [
+            'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.index',
+            'parameters' => [$masterSubDepartment->masterShop->slug, $masterSubDepartment->masterDepartment->slug, $masterSubDepartment->slug]
+        ];
+
+        $routeCollections = [
+            // 'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index',
+            // 'parameters' => [$this->organisation->slug, $this->shop->slug, $masterSubDepartment->department->slug, $masterSubDepartment->slug]
+        ];
+
+        if ($this->parent instanceof MasterShop || ($this->parent instanceof MasterProductCategory && $this->parent->type === MasterProductCategoryTypeEnum::SUB_DEPARTMENT)) {
+            $subRoute = [
+                'name'       => 'grp.masters.master_shops.show.master_sub_departments.show',
+                'parameters' => request()->route()->originalParameters(),
+            ];
+
+            $routeFamilies = [
+                'name'       => 'grp.masters.master_shops.show.master_sub_departments.master_families.index',
+                'parameters' => request()->route()->originalParameters(),
+            ];
+
+            $routeCollections = [
+                // 'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index',
+                // 'parameters' => [$this->organisation->slug, $this->shop->slug, $masterSubDepartment->department->slug, $masterSubDepartment->slug]
+            ];
+
+        }
+
         return [
             [
                 'isAnchor'   => true,
-                'label'    => __('Sub-department'),
-                'route'     => [
-                    'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show',
-                    'parameters' => [$masterSubDepartment->masterShop->slug ,$masterSubDepartment->masterDepartment->slug, $masterSubDepartment->slug]
-                ],
+                'label'    => __('Master Sub-department'),
+                'route'     => $subRoute,
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-stream'],
                     'tooltip' => __('Sub-department')
                 ]
             ],
             [
-                'label'    => __('Families'),
-                'number'   => $masterSubDepartment->stats->number_families,
-                'route'     => [
-                    'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.index',
-                    'parameters' => [$masterSubDepartment->masterShop->slug, $masterSubDepartment->masterDepartment->slug, $masterSubDepartment->slug]
-                ],
+                'label'    => __('Master Families'),
+                'number'   => $masterSubDepartment->stats->number_current_master_product_categories_type_family,
+                'route'     => $routeFamilies,
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-folder'],
                     'tooltip' => __('families')
                 ]
             ],
             [
-                'label'    => __('Collections'),
+                'label'    => __('Master Collections'),
                 'number'   => 0,
-                'route'     => [
-                    // 'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index',
-                    // 'parameters' => [$this->organisation->slug, $this->shop->slug, $masterSubDepartment->department->slug, $masterSubDepartment->slug]
-                ],
+                'route'     => $routeCollections,
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-album-collection'],
                     'tooltip' => __('collections')

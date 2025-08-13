@@ -59,11 +59,7 @@ class ShowMasterSubDepartment extends GrpAction
 
     public function htmlResponse(MasterProductCategory $masterSubDepartment, ActionRequest $request): Response
     {
-        $subNavigation = false;
-
-        if ($this->parent instanceof MasterProductCategory) {
-            $subNavigation = $this->getMasterSubDepartmentSubNavigation($masterSubDepartment);
-        }
+        $subNavigation = $this->getMasterSubDepartmentSubNavigation($masterSubDepartment);
 
         return Inertia::render(
             'Masters/MasterSubDepartment',
@@ -198,6 +194,7 @@ class ShowMasterSubDepartment extends GrpAction
                 )
             ),
             'grp.masters.master_shops.show.master_sub_departments.show',
+            'grp.masters.master_shops.show.master_sub_departments.master_families.index',
             'grp.masters.master_shops.show.master_sub_departments.edit' =>
             array_merge(
                 (new ShowMasterShop())->getBreadcrumbs($masterSubDepartment->masterShop, $routeName, $suffix),

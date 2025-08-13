@@ -15,7 +15,6 @@ use App\Models\Catalogue\Product;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Helpers\ImageResource;
 use Illuminate\Support\Facades\DB;
-use Symfony\Component\Uid\NilUlid;
 
 class WebBlockProductResourceEcom extends JsonResource
 {
@@ -52,7 +51,7 @@ class WebBlockProductResourceEcom extends JsonResource
         $favourite = false;
         $quantityOrdered = 0;
         $transactionId = null;
-        if($request->user()) {
+        if ($request->user()) {
             $customer = $request->user()->customer;
             $favourite = $customer->favourites()->where('product_id', $product->id)->first();
 

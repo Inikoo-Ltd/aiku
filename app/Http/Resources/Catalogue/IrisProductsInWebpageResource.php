@@ -46,7 +46,7 @@ class IrisProductsInWebpageResource extends JsonResource
         $url = '/'.$url.$this->url;
 
         $favourite = false;
-        if($request->user()) {
+        if ($request->user()) {
             $customer = $request->user()->customer;
             $favourite = $customer->favourites()->where('product_id', $this->id)->first();
         }

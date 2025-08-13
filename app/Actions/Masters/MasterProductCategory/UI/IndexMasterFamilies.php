@@ -77,7 +77,7 @@ class IndexMasterFamilies extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, ActionRequest $request): LengthAwarePaginator
+    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $masterSubDepartment;
         $parent       = $this->parent;
@@ -154,7 +154,7 @@ class IndexMasterFamilies extends OrgAction
 
         return $queryBuilder
             ->defaultSort('master_product_categories.code')
-            ->allowedSorts(['code', 'name'])
+            ->allowedSorts(['code', 'name','used_in','products'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -240,7 +240,6 @@ class IndexMasterFamilies extends OrgAction
                 $subNavigation = $this->getMasterSubDepartmentSubNavigation($this->parent);
             }
         }
-
 
         return Inertia::render(
             'Masters/MasterFamilies',
@@ -362,7 +361,7 @@ class IndexMasterFamilies extends OrgAction
                     $suffix
                 )
             ),
-            'grp.masters.master_shops.show.master_sub_departments..master_families.index',
+            'grp.masters.master_shops.show.master_sub_departments.master_families.index',
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.index' =>
             array_merge(
                 ShowMasterSubDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),

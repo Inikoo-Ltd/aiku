@@ -9,7 +9,6 @@
 namespace App\Actions\Masters\MasterProductCategory\Hydrators;
 
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
@@ -34,9 +33,10 @@ class MasterProductCategoryHydrateMasterFamilies implements ShouldBeUnique
         $stats = [
             'number_master_product_categories_type_family' =>  DB::table('master_product_categories')
                 ->where(function ($query) use ($masterProductCategory) {
+
                     if ($masterProductCategory->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
                         $query->where('master_department_id', $masterProductCategory->id);
-                    } elseif ($masterProductCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                    } elseif ($masterProductCategory->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
                         $query->where('master_sub_department_id', $masterProductCategory->id);
                     }
                 })
@@ -47,7 +47,7 @@ class MasterProductCategoryHydrateMasterFamilies implements ShouldBeUnique
                 ->where(function ($query) use ($masterProductCategory) {
                     if ($masterProductCategory->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
                         $query->where('master_department_id', $masterProductCategory->id);
-                    } elseif ($masterProductCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                    } elseif ($masterProductCategory->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
                         $query->where('master_sub_department_id', $masterProductCategory->id);
                     }
                 })
@@ -57,7 +57,21 @@ class MasterProductCategoryHydrateMasterFamilies implements ShouldBeUnique
                 ->count(),
         ];
 
+
         $masterProductCategory->stats()->update($stats);
+    }
+
+    public function getCommandSignature(): string
+    {
+        return 'master_product_categories:hydrate_master_families';
+
+    }
+
+    public function asCommand(): void
+    {
+        $masterProductCategories = MasterProductCategory::where('slug', 'sd-a')->first();
+        $this->handle($masterProductCategories);
+
     }
 
 

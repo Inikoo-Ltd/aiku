@@ -136,7 +136,7 @@ class ShowMasterFamily extends GrpAction
                             ]
                         ] : false
                     ],
-                     'subNavigation' => $this->getMasterFamilySubNavigation($masterFamily, $this->parent, $request)
+                     'subNavigation' => $this->getMasterFamilySubNavigation($masterFamily)
 
                 ],
                 'tabs'        => [

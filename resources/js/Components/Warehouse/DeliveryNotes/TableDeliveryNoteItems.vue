@@ -252,17 +252,33 @@ onMounted(() => {
                         </span>
                     </div>
 
-                    <ButtonWithLink
-                        v-if="!item.is_packed"
-                        v-tooltip="trans('Undo')"
-                        type="negative"
-                        size="xxs"
-                        icon="fal fa-undo-alt"
-                        :routeTarget="picking.undo_picking_route"
-                        :bindToLink="{ preserveScroll: true }"
-                        @click="onUndoPick(picking.undo_picking_route, item, `undo-pick-${picking.id}`)"
-                        :loading="get(isLoadingUndoPick, `undo-pick-${picking.id}`, false)"
-                    />
+                    <div class="hidden lg:block">
+                        <ButtonWithLink
+                            v-if="!item.is_packed"
+                            v-tooltip="trans('Undo')"
+                            type="negative"
+                            size="xxs"
+                            icon="fal fa-undo-alt"
+                            :routeTarget="picking.undo_picking_route"
+                            :bindToLink="{ preserveScroll: true }"
+                            @click="onUndoPick(picking.undo_picking_route, item, `undo-pick-${picking.id}`)"
+                            :loading="get(isLoadingUndoPick, `undo-pick-${picking.id}`, false)"
+                        />
+                    </div>
+
+                    <div class="lg:hidden">
+                        <ButtonWithLink
+                            v-if="!item.is_packed"
+                            v-tooltip="trans('Undo')"
+                            type="negative"
+                            size="sm"
+                            icon="fal fa-undo-alt"
+                            :routeTarget="picking.undo_picking_route"
+                            :bindToLink="{ preserveScroll: true }"
+                            @click="onUndoPick(picking.undo_picking_route, item, `undo-pick-${picking.id}`)"
+                            :loading="get(isLoadingUndoPick, `undo-pick-${picking.id}`, false)"
+                        />
+                    </div>
                 </div>
 
             </div>
