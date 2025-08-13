@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 07 Jul 2025 22:51:10 British Summer Time, Sheffield, UK
+ * Created: Mon, 07 Jul 2025 22:51:13 British Summer Time, Sheffield, UK
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
@@ -12,9 +12,9 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithPrintNode;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\ActionRequest;
-use Rawilk\Printing\Api\PrintNode\Resources\Printer;
+use Rawilk\Printing\Api\PrintNode\Resources\Computer;
 
-class GetPrinters extends OrgAction
+class GetPrintNodeComputers extends OrgAction
 {
     use WithPrintNode;
 
@@ -22,18 +22,30 @@ class GetPrinters extends OrgAction
     public function handle(): Collection
     {
         $this->ensureClientInitialized();
-        return Printer::all();
+
+        $options = [
+            'limit' => 50,
+            'dir' => 'desc',
+        ];
+
+        if ($after = $this->get('after')) {
+            $options['after'] = $after;
+        }
+
+        return Computer::all(
+            $options
+        );
     }
 
-    public function jsonResponse(Collection $printers): Collection
+    public function jsonResponse(Collection $computers): Collection
     {
-        return $printers;
+        return $computers;
     }
 
     public function rules(): array
     {
         return [
-            'after' => ['nullable', 'integer'],
+            'after' => ['sometimes', 'integer'],
         ];
     }
 
@@ -42,19 +54,9 @@ class GetPrinters extends OrgAction
         $this->set('after', $request->get('after'));
     }
 
-
-
     public function asController(ActionRequest $request): Collection
     {
         $this->initialisationFromGroup(group(), $request);
-
-        return $this->handle();
-    }
-
-    public function action(array $modelData): Collection
-    {
-        $this->asAction = true;
-        $this->initialisationFromGroup(group(), $modelData);
 
         return $this->handle();
     }

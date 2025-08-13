@@ -46,8 +46,8 @@ use App\Actions\Dispatching\DeliveryNote\Json\GetMiniDeliveryNoteShipments;
 use App\Actions\Dispatching\Picking\Packer\Json\GetPackers;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickers;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickerUsers;
-use App\Actions\Dispatching\Printer\Json\GetComputers;
-use App\Actions\Dispatching\Printer\Json\GetPrinters;
+use App\Actions\Dispatching\Printer\Json\GetPrintNodeComputers;
+use App\Actions\Dispatching\Printer\Json\GetPrintNodePrinters;
 use App\Actions\Dispatching\Shipper\Json\GetShippers;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetShopifyProducts;
 use App\Actions\Fulfilment\Pallet\Json\GetFulfilmentCustomerStoringPallets;
@@ -160,8 +160,8 @@ Route::get('/{organisation}/payment-service-providers', GetOrgPaymentServiceProv
 Route::get('tags', GetGrpTags::class)->name('tags.index');
 Route::get('brands', GetGrpBrands::class)->name('brands.index');
 
-Route::get('printing/computers', GetComputers::class)->name('computers.index');
-Route::get('printing/printers', GetPrinters::class)->name('printers.index');
+Route::get('printing/computers', GetPrintNodeComputers::class)->name('computers.index');
+Route::get('printing/printers', GetPrintNodePrinters::class)->name('printers.index');
 
 Route::get('products-for-portfolio-select/{customerSalesChannel:id}', GetProductsForPortfolioSelect::class)->name('products_for_portfolio_select');
 

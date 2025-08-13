@@ -8,7 +8,7 @@
 
 namespace App\Actions\UI\Profile;
 
-use App\Actions\Dispatching\Printer\Json\GetPrinters;
+use App\Actions\Dispatching\Printer\Json\GetPrintNodePrinters;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\UI\WithInertia;
 use App\Http\Resources\UI\LoggedUserResource;
@@ -40,7 +40,7 @@ class EditProfileSettings
         try {
             $cacheKey = "user_printers_" . $user->id;
             $printers = cache()->remember($cacheKey, now()->addMinutes(1), function () {
-                return GetPrinters::make()->action([])->map(function ($printer) {
+                return GetPrintNodePrinters::make()->action([])->map(function ($printer) {
                     return [
                         'value' => $printer->id,
                         'label' => $printer->name . ' (' . $printer->computer->name . ')'  . ' - ' . $printer->state,
