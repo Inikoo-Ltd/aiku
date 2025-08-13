@@ -14,6 +14,8 @@ use App\Http\Resources\HasSelfCall;
 use App\Models\Catalogue\Product;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Helpers\ImageResource;
+use Illuminate\Support\Facades\DB;
+use Symfony\Component\Uid\NilUlid;
 
 class WebBlockProductResourceEcom extends JsonResource
 {
@@ -48,9 +50,23 @@ class WebBlockProductResourceEcom extends JsonResource
         ];
 
         $favourite = false;
+        $quantityOrdered = 0;
+        $transactionId = null;
         if($request->user()) {
             $customer = $request->user()->customer;
             $favourite = $customer->favourites()->where('product_id', $product->id)->first();
+
+            $basket = $customer->borderInBasket;
+
+            $transaction = DB::table('transactions')->where('order_id', $basket->id)
+                ->where('model_id', $product->id)->where('model_type', 'Product')
+                ->whereNull('deleted_at')
+                ->select('id', 'quantity_ordered')
+                ->first();
+            if ($transaction) {
+                $quantityOrdered = $transaction->quantity_ordered;
+                $transactionId = $transaction->id;
+            }
         }
 
         return [
@@ -77,8 +93,9 @@ class WebBlockProductResourceEcom extends JsonResource
             'updated_at'        => $product->updated_at,
             'images'            => ImageResource::collection($product->images)->toArray($request),
             'tags'              => TagResource::collection($product->tradeUnitTagsViaTradeUnits())->toArray($request),
-            'quantity_ordered'      => (int) $product->quantity_ordered ?? 0,
-            'quantity_ordered_new'  => (int) $product->quantity_ordered ?? 0,  // To editable in Frontend
+            'transaction_id'      => $transactionId,
+            'quantity_ordered'      => (int) $quantityOrdered,
+            'quantity_ordered_new'  => (int) $quantityOrdered,  // To editable in Frontend
             'is_favourite'          => $favourite && !$favourite->unfavourited_at ?? false,
         ];
     }
