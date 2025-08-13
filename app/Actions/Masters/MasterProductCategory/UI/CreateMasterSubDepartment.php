@@ -36,7 +36,7 @@ class CreateMasterSubDepartment extends OrgAction
         return $this->handle($masterShop, $request);
     }
 
-    public function inMasterDepartment(MasterProductCategory $masterDepartment, ActionRequest $request): Response
+    public function inMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, ActionRequest $request): Response
     {
         $this->parent = $masterDepartment;
         $group        = group();
@@ -63,7 +63,7 @@ class CreateMasterSubDepartment extends OrgAction
                             'style' => 'cancel',
                             'label' => __('cancel'),
                             'route' => [
-                                'name'       => 'grp.masters.master_departments.show.master_sub_departments.index',
+                                'name'       => preg_replace('/\.create$/', '.index', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())
                             ],
                         ]

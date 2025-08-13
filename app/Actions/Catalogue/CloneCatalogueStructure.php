@@ -14,6 +14,8 @@ use App\Actions\Catalogue\ProductCategory\DeleteProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreSubDepartment;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
+use App\Actions\Masters\MasterProductCategory\AttachMasterFamiliesToMasterDepartment;
+use App\Actions\Masters\MasterProductCategory\AttachMasterFamiliesToMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\DeleteMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\StoreMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\StoreMasterSubDepartment;
@@ -56,13 +58,18 @@ class CloneCatalogueStructure
         foreach ($subDepartments as $subDepartment) {
             $fromSubDepartment = $this->getEquivalentProductCategory($fromShop, $subDepartment->code, 'sub_department');
             if ($fromSubDepartment) {
+                print "$subDepartment->slug $subDepartment->id | $fromSubDepartment->id  \n";
+
+
                 $fromFamilies = $this->getCategories($fromSubDepartment, 'family');
                 foreach ($fromFamilies as $fromFamily) {
+                    print "  >>> $fromFamily->code   \n";
                     $family = $this->getEquivalentProductCategory($shop, $fromFamily->code, 'family');
-                    if($family){
+                    if ($family) {
+                        print "     ---->>> $fromFamily->code   \n";
+
                         $this->attachFamily($subDepartment, $family);
                     }
-
                 }
             }
         }
@@ -77,10 +84,9 @@ class CloneCatalogueStructure
                 $fromFamilies = $this->getCategories($fromDepartment, 'family');
                 foreach ($fromFamilies as $fromFamily) {
                     $family = $this->getEquivalentProductCategory($shop, $fromFamily->code, 'family');
-                    if($family){
+                    if ($family) {
                         $this->attachFamily($department, $family);
                     }
-
                 }
             }
         }
@@ -413,14 +419,36 @@ class CloneCatalogueStructure
             AttachFamiliesToSubDepartment::make()->action(
                 $parent,
                 [
-                    'families_id' => $family->id
+                    'families_id' => [
+                        $family->id
+                    ]
                 ]
             );
         } elseif ($parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
             AttachFamiliesToDepartment::make()->action(
                 $parent,
                 [
-                    'families' => $family->id
+                    'families' => [
+                        $family->id
+                    ]
+                ]
+            );
+        } elseif ($parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
+            AttachMasterFamiliesToMasterDepartment::make()->action(
+                $parent,
+                [
+                    'master_families' => [
+                        $family->id
+                    ]
+                ]
+            );
+        } elseif ($parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            AttachMasterFamiliesToMasterSubDepartment::make()->action(
+                $parent,
+                [
+                    'master_families' => [
+                        $family->id
+                    ]
                 ]
             );
         }

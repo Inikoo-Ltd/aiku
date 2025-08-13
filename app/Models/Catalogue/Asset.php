@@ -50,11 +50,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $current_historic_asset_id
  * @property AssetStateEnum $state
  * @property bool $status
- * @property string $code mirror of asset model
- * @property string|null $name mirror of asset model
- * @property string|null $price mirror of asset model
- * @property numeric $units mirror of asset model
- * @property string|null $unit mirror of asset model
+ * @property string $code mirror of the asset model
+ * @property string|null $name mirror of the asset model
+ * @property string|null $price mirror of the asset model
+ * @property numeric $units mirror of the asset model
+ * @property string|null $unit mirror of the asset model
  * @property int $currency_id
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at

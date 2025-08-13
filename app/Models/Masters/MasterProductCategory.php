@@ -64,11 +64,11 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Group $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
+ * @property-read LaravelCollection<int, \App\Models\Masters\MasterCollection> $masterCollections
  * @property-read MasterProductCategory|null $masterDepartment
  * @property-read LaravelCollection<int, MasterProductCategory> $masterProductCategories
  * @property-read \App\Models\Masters\MasterShop $masterShop
  * @property-read MasterProductCategory|null $masterSubDepartment
- * @property-read LaravelCollection<int, MasterProductCategory> $masterSubDepartments
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\Masters\MasterProductCategoryOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Masters\MasterProductCategoryOrderingStats|null $orderingStats

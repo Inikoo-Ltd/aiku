@@ -170,7 +170,7 @@ class ShowShop extends OrgAction
                 data: $this->getOrdersWidgetData($shop),
             );
         }
-        
+
         return [
             'dashboard_stats' => [
                 'widgets' => [

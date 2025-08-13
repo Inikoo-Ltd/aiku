@@ -12,7 +12,6 @@ namespace App\Actions\Catalogue\Product\Json;
 use App\Actions\IrisAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\CRM\Customer;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -36,6 +35,25 @@ class GetIrisProductsInProductCategory extends IrisAction
         }
         $baseUrl = $productCategory?->url ?? '';
         $queryBuilder->selectRaw('\'' . $baseUrl . '\' as parent_url');
+
+        // Section: Sort
+        $orderBy = request()->query('order_by');
+        if ($orderBy) {
+            // Check if "-" prefix is used for DESC
+            if (str_starts_with($orderBy, '-')) {
+                $column = ltrim($orderBy, '-');
+                $direction = 'desc';
+            } else {
+                $column = $orderBy;
+                $direction = 'asc';
+            }
+
+            $allowedColumnsToOrder = ['name', 'rrp', 'price', 'code'];
+            if (in_array($column, $allowedColumnsToOrder)) {
+                $queryBuilder->orderBy($column, $direction);
+            }
+        }
+
         return $this->getData($queryBuilder, $perPage);
     }
 

@@ -89,7 +89,7 @@ class ShowPickingSession extends OrgAction
         $navigation = PickingSessionTabsEnum::navigation();
 
 
-        if(!request()->get('tab')){
+        if (!request()->get('tab')) {
             if ($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
                 $this->tab = PickingSessionTabsEnum::ITEMS->value;
             } elseif ($pickingSession->state == PickingSessionStateEnum::HANDLING) {

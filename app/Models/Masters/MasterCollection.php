@@ -38,15 +38,25 @@ use Spatie\Translatable\HasTranslations;
  * @property string $code
  * @property string|null $name
  * @property string|null $description
- * @property bool $status
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property int|null $image_id
+ * @property MasterCollectionStateEnum $state
+ * @property MasterCollectionProductStatusEnum $products_status
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Group $group
+ * @property-read \App\Models\Helpers\Media|null $image
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
+ * @property-read \App\Models\Masters\MasterShop $masterShop
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
+ * @property-read \App\Models\Masters\MasterCollectionOrderingStats|null $orderingStats
+ * @property-read \App\Models\Masters\MasterCollectionSalesIntervals|null $salesIntervals
+ * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Masters\MasterCollectionStats|null $stats
  * @property-read mixed $translations
+ * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection onlyTrashed()

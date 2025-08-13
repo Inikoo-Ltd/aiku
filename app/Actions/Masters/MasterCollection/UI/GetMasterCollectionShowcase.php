@@ -8,10 +8,6 @@
 
 namespace App\Actions\Masters\MasterCollection\UI;
 
-use App\Http\Resources\Api\Dropshipping\ShopResource;
-use App\Http\Resources\Catalogue\DepartmentResource;
-use App\Http\Resources\Catalogue\SubDepartmentResource;
-use App\Models\Catalogue\Collection;
 use App\Models\Masters\MasterCollection;
 use Lorisleiva\Actions\Concerns\AsObject;
 
