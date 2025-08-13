@@ -35,7 +35,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexMasterProducts extends GrpAction
 {
     use WithMasterCatalogueSubNavigation;
-    Use WithMasterDepartmentSubNavigation;
+    use WithMasterDepartmentSubNavigation;
     use WithMastersAuthorisation;
 
     private Group|MasterShop|MasterProductCategory $parent;
@@ -206,7 +206,7 @@ class IndexMasterProducts extends GrpAction
                 'icon' => 'fal fa-cube',
             ];
         } elseif ($this->parent instanceof MasterProductCategory) {
-            if($this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
+            if ($this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
                 $subNavigation = $this->getMasterDepartmentSubNavigation($this->parent);
             }
 
@@ -278,7 +278,7 @@ class IndexMasterProducts extends GrpAction
             ),
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index' =>
             array_merge(
-                ShowMasterFamily::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
+                ShowMasterFamily::make()->getBreadcrumbs($this->parent, $routeName, $routeParameters),
                 $headCrumb(
                     [
                         'name'       => $routeName,
