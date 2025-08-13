@@ -47,7 +47,9 @@ class PdfPalletReturn
             'organisation' => $palletReturn->organisation,
         ], [], $config);
 
-        return $pdf->stream($filename);
+        return response($pdf->stream($filename . '.pdf'), 200)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'inline; filename="' . $filename . '.pdf"');
     }
 
     /**

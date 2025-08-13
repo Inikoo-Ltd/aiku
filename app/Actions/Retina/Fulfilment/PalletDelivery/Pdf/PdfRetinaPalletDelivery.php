@@ -55,7 +55,9 @@ class PdfRetinaPalletDelivery
         $filename = 'pallet-delivery-' . $palletDelivery->slug . '.pdf';
 
         $pdf = $this->handle($palletDelivery);
-        return $pdf->stream($filename);
+        return response($pdf->stream($filename . '.pdf'), 200)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'inline; filename="' . $filename . '.pdf"');
 
     }
 }
