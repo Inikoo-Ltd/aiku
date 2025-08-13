@@ -129,7 +129,7 @@ onMounted(() => {
         <Breadcrumbs
             class="bg-white fixed z-[19] transition-all duration-200 ease-in-out"
             :class="[
-                layout.leftSidebar.show ? 'left-0 md:left-48 w-[calc(100%-192px)]' : 'left-0 md:left-12 w-[calc(100%-48px)]',
+                layout.leftSidebar.show ? 'left-0 md:left-48 w-[calc(100%-144px)]' : 'left-0 md:left-12 w-[calc(100%-48px)]',
                 layout.app.environment === 'staging' ? 'top-11 lg:top-16' : 'top-11 lg:top-10'
             ]"
             :breadcrumbs="usePage().props.breadcrumbs ?? []" :navigation="usePage().props.navigation ?? []"
@@ -147,7 +147,7 @@ onMounted(() => {
 
         <!-- Main Content -->
         <main
-            class="h-full relative flex flex-col pt-[76px] md:pt-[70px] lg:pt-20 xl:pt-16 pb-6 md:pb-24 text-gray-700 transition-all duration-200 ease-in-out"
+            class="h-full relative flex flex-col pt-[76px] md:pt-[63px] lg:pt-20 xl:pt-16 pb-6 md:pb-24 text-gray-700 transition-all duration-200 ease-in-out"
             :class="[
                 layout.leftSidebar.show ? 'ml-0 md:ml-48' : 'ml-0 md:ml-12',
                 layout.app.environment === 'staging' ? 'mt-6' : ''
@@ -312,7 +312,7 @@ onMounted(() => {
     [background-size:100%_0.2em]
     motion-safe:transition-all motion-safe:duration-200
     hover:[background-size:100%_100%]
-    focus:[background-size:100%_100%] px-1 py-0.5
+    focus:[background-size:100%_100%] px-1 py-1 lg:py-0.5
 }
 
 .secondaryLink {
