@@ -101,8 +101,8 @@ function ProductRoute(masterFamily: MasterDepartment) {
                 {{ department["master_department_code"] }}
             </Link>
             <span v-else class="opacity-70  text-red-500">
-        {{ trans("No department") }}
-      </span>
+                {{ trans("No department") }}
+            </span>
         </template>
 
         <template #cell(code)="{ item: family }">
