@@ -355,7 +355,7 @@ Route::prefix('master-shops/{masterShop:id}')->as('master_shops.')->group(functi
 
 Route::prefix('master-product-category/{masterProductCategory:id}')->name('master_product_category.')->group(function () {
     Route::post('master-collection', [StoreMasterCollection::class, 'inMasterProductCategory'])->name('master_collection.store');
-     Route::post('master-collection/{masterCollection:id}/attach', AttachMasterCollectionToModel::class)->name('master_collection.attach');
+    Route::post('master-collection/{masterCollection:id}/attach', AttachMasterCollectionToModel::class)->name('master_collection.attach');
     Route::delete('master-collection/{masterCollection:id}/detach', DetachMasterCollectionFromModel::class)->name('master_collection.detach');
 });
 

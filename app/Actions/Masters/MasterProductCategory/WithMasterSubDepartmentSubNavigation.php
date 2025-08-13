@@ -63,7 +63,7 @@ trait WithMasterSubDepartmentSubNavigation
             ],
             [
                 'label'    => __('Master Families'),
-                'number'   => $masterSubDepartment->stats->number_families,
+                'number'   => $masterSubDepartment->stats->number_current_master_product_categories_type_family,
                 'route'     => $routeFamilies,
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-folder'],
