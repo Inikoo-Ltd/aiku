@@ -66,6 +66,23 @@ function masterShopRoute(masterFamily: MasterFamily) {
     );
 }
 
+function ProductRoute(masterFamily: MasterDepartment) {
+  if (route().current()=='grp.masters.master_shops.show.master_families.index') {
+    return route('grp.masters.master_shops.show.master_families.master_products.index',
+      {
+        masterFamily: masterFamily.slug,
+        masterShop: (route().params as RouteParams).masterShop
+    }
+    )
+  } 
+  
+  return route('grp.masters.master_shops.show.master_families.master_products.index',
+    {
+      masterShop: (route().params as RouteParams).masterShop,
+      masterFamily: masterFamily.slug }
+  )
+}
+
 </script>
 
 <template>
@@ -91,6 +108,12 @@ function masterShopRoute(masterFamily: MasterFamily) {
         <template #cell(code)="{ item: family }">
             <Link :href="familyRoute(family)" class="primaryLink">
                 {{ family["code"] }}
+            </Link>
+        </template>
+
+         <template #cell(products)="{ item: family }">
+            <Link :href="ProductRoute(family)" class="primaryLink">
+                {{ family["products"] }}
             </Link>
         </template>
 
