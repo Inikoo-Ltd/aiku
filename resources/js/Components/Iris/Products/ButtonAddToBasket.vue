@@ -10,9 +10,9 @@ import { ProductResource } from '@/types/Iris/Products'
 import axios from 'axios'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faTrashAlt } from "@fal"
+import { faTrashAlt, faShoppingCart, faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-library.add(faTrashAlt)
+library.add(faTrashAlt, faShoppingCart, faTimes)
 
 const props = defineProps<{
     product: ProductResource
@@ -90,16 +90,10 @@ const onUpdateQuantity = (product: ProductResource) => {
     )
 }
 
-watch(() => props.product, (e) => {
-    console.log('xxx', e.quantity_ordered, e.quantity_ordered_new)
-}, {
-    deep: true
-})
-
 </script>
 
 <template>
-    <div class="flex flex-col items-center gap-2 xmt-2">
+    <div class="w-full flex flex-col items-center gap-2 xmt-2">
         <InputNumber
             :modelValue="get(product, ['quantity_ordered_new'], null) === null ? product.quantity_ordered : get(product, ['quantity_ordered_new'], 0) "
             @update:modelValue="(e) => set(product, ['quantity_ordered_new'], e)"
