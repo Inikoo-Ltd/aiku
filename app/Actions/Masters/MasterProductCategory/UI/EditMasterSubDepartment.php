@@ -119,7 +119,7 @@ class EditMasterSubDepartment extends OrgAction
                 [
                     'type' => 'creatingModel',
                     'creatingModel' => [
-                        'label' => __('Creating sub-department'),
+                        'label' => __('Editing sub-department'),
                     ]
                 ]
             ]

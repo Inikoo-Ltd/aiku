@@ -13,6 +13,7 @@ namespace App\Actions\Masters\MasterProductCategory\UI;
 use App\Actions\GrpAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Masters\MasterProductCategory\WithMasterSubDepartmentSubNavigation;
+use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\UI\Catalogue\DepartmentTabsEnum;
 use App\Enums\UI\SupplyChain\MasterSubDepartmentTabsEnum;
@@ -160,7 +161,7 @@ class ShowMasterSubDepartment extends GrpAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Sub-departments')
+                            'label' => __('master sub-departments')
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -199,7 +200,7 @@ class ShowMasterSubDepartment extends GrpAction
             'grp.masters.master_shops.show.master_sub_departments.show',
             'grp.masters.master_shops.show.master_sub_departments.edit' =>
             array_merge(
-                (new IndexMasterSubDepartments())->getBreadcrumbs($masterSubDepartment->masterShop, $routeName, $routeParameters, $suffix),
+                (new ShowMasterShop())->getBreadcrumbs($masterSubDepartment->masterShop, $routeName, $suffix),
                 $headCrumb(
                     $masterSubDepartment,
                     [
