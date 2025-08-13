@@ -6,7 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Catalogue\Collection;
+namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateFamilies;
 use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateProducts;

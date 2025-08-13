@@ -6,7 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Catalogue\Collection;
+namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\GrpAction;
 use App\Actions\Masters\MasterCollection\AttachModelToMasterCollection;
