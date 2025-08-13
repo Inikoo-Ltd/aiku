@@ -521,7 +521,6 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
     Route::post('pallet-return-item-upload', [ImportPalletReturnItem::class, 'fromGrp'])->name('pallet-return-item.upload');
 
     Route::post('revert-to-in-process', RevertPalletReturnToInProcess::class)->name('revert-to-in-process');
-    // This is wrong ImportPalletsInPalletDelivery is used when creating a pallet delivery
     Route::post('pallet-upload', ImportPalletsInPalletDelivery::class)->name('pallet.upload');
     Route::patch('/', UpdatePalletReturn::class)->name('update');
     Route::get('stored-item-picking-pdf', PdfPickingStoredItemReturn::class)->name('stored_item_picking.pdf');
