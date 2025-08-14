@@ -48,7 +48,6 @@ class IndexMasterProductsInMasterCollection extends OrgAction
                 'master_assets.id',
                 'master_assets.code',
                 'master_assets.name',
-                'master_assets.state',
                 'master_assets.price',
                 'master_assets.created_at',
                 'master_assets.updated_at',

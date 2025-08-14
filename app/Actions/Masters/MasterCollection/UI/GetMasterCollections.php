@@ -33,7 +33,7 @@ class GetMasterCollections extends GrpAction
             $queryBuilder->whereNotIn('master_collections.id', $scope->masterCollections()->pluck('master_collection_id'))
                             ->where('master_collections.id', '!=', $scope->id);
         } elseif ($scope instanceof MasterCollection) {
-            $queryBuilder->whereNotIn('master_collections.id', $scope->masterCollections()->pluck('master_collection_id'))
+            $queryBuilder->whereNotIn('master_collections.id', $scope->masterCollections()->pluck('model_id'))
                             ->where('master_collections.id', '!=', $scope->id);
         }
         $queryBuilder

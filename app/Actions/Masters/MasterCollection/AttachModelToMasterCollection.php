@@ -8,10 +8,10 @@
 
 namespace App\Actions\Masters\MasterCollection;
 
-use App\Actions\Catalogue\Collection\Hydrators\MasterCollectionHydrateMasterProducts;
 use App\Actions\GrpAction;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateFamilies;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterCollections;
+use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterProducts;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterAsset;
@@ -23,10 +23,10 @@ class AttachModelToMasterCollection extends GrpAction
     public function handle(MasterCollection $collection, MasterProductCategory|MasterAsset|MasterCollection $model): MasterCollection
     {
 
-        if ($model instanceof Product) {
+        if ($model instanceof MasterAsset) {
             $collection->masterProducts()->attach($model->id);
             MasterCollectionHydrateMasterProducts::dispatch($collection);
-        } elseif ($model instanceof Collection) {
+        } elseif ($model instanceof MasterCollection) {
             $collection->masterCollections()->attach($model->id);
             MasterCollectionHydrateMasterCollections::dispatch($collection);
         } else {
