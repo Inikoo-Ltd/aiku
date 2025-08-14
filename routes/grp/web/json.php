@@ -62,6 +62,9 @@ use App\Actions\Helpers\Tag\Json\GetGrpTags;
 use App\Actions\Helpers\Tag\Json\GetTags;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocks;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
+use App\Actions\Masters\MasterCollection\UI\GetMasterCollections;
+use App\Actions\Masters\MasterCollection\UI\GetMasterFamilies;
+use App\Actions\Masters\MasterCollection\UI\GetMasterProductsNotAttachedToAMasterCollection;
 use App\Actions\Ordering\Order\UI\IndexRecentOrderTransactionUploads;
 use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProducts;
 use App\Actions\SysAdmin\User\GetSupervisorUsers;
@@ -173,3 +176,9 @@ Route::get('customer-sales-channel/{customerSalesChannel:id}/shopify-products', 
 
 Route::get('master-shop/{masterShop}/scopes/{scope}/departments', GetMasterDepartments::class)->name('master_shop.master_departments');
 Route::get('master-shop/{masterShop}/scopes/{scope}/sub-departments', GetMasterSubDepartments::class)->name('master_shop.master_sub_departments');
+
+
+Route::get('master-shop/{masterShop}/scopes/{scope}/families', GetMasterFamilies::class)->name('master_shop.master_families_not_attached_to_master_collection');
+Route::get('master-shop/{masterShop}/scope/{scope}/collections', [GetMasterCollections::class, 'inMasterCollection'])->name('master_shop.master_collections_not_attached_to_master_collection');
+Route::get('master-shop/{masterShop}/master-collection/{masterCollection}/products', GetMasterProductsNotAttachedToAMasterCollection::class)->name('master_shop.master_products_not_attached_to_master_collection');
+

@@ -117,6 +117,74 @@ class ShowMasterCollection extends GrpAction
                     'current'    => $this->tab,
                     'navigation' => MasterCollectionTabsEnum::navigation()
                 ],
+                'routes'      => [
+                    'families'    => [
+                        'dataList'     => [
+                            'name'       => 'grp.json.master_shop.master_families_not_attached_to_master_collection',
+                            'parameters' => [
+                                'masterShop'  => $masterCollection->masterShop->slug,
+                                'scope' => $masterCollection->slug
+                            ]
+                        ],
+                        'submitAttach' => [
+                            'name'       => 'grp.models.master_collection.attach-models',
+                            'parameters' => [
+                                'masterCollection' => $masterCollection->id
+                            ]
+                        ],
+                        'detach'       => [
+                            'method'     => 'delete',
+                            'name'       => 'grp.models.master_collection.detach-models',
+                            'parameters' => [
+                                'masterCollection' => $masterCollection->id
+                            ]
+                        ]
+                    ],
+                    'products'    => [
+                        'dataList'     => [
+                            'name'       => 'grp.json.master_shop.master_products_not_attached_to_master_collection',
+                            'parameters' => [
+                                'masterShop'          => $masterCollection->masterShop->slug,
+                                'masterCollection'    => $masterCollection->slug
+                            ]
+                        ],
+                        'submitAttach' => [
+                            'name'       => 'grp.models.master_collection.attach-models',
+                            'parameters' => [
+                                'masterCollection' => $masterCollection->id
+                            ]
+                        ],
+                        'detach'       => [
+                            'method'     => 'delete',
+                            'name'       => 'grp.models.master_collection.detach-models',
+                            'parameters' => [
+                                'masterCollection' => $masterCollection->id
+                            ]
+                        ]
+                    ],
+                    'collections' => [
+                        'dataList'     => [
+                            'name'       => 'grp.json.master_shop.master_collections_not_attached_to_master_collection',
+                            'parameters' => [
+                                'masterShop'  => $masterCollection->masterShop->slug,
+                                'scope' => $masterCollection->slug
+                            ]
+                        ],
+                        'submitAttach' => [
+                            'name'       => 'grp.models.master_collection.attach-models',
+                            'parameters' => [
+                                'masterCollection' => $masterCollection->id
+                            ]
+                        ],
+                        'detach'       => [
+                            'method'     => 'delete',
+                            'name'       => 'grp.models.master_collection.detach-models',
+                            'parameters' => [
+                                'masterCollection' => $masterCollection->id
+                            ]
+                        ]
+                    ]
+                ],
 
                 MasterCollectionTabsEnum::SHOWCASE->value => $this->tab == MasterCollectionTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterCollectionShowcase::run($masterCollection)

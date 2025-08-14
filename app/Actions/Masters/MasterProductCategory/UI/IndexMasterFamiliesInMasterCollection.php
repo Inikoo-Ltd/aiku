@@ -55,13 +55,10 @@ class IndexMasterFamiliesInMasterCollection extends GrpAction
                 'master_product_categories.slug',
                 'master_product_categories.code',
                 'master_product_categories.name',
-                'master_product_categories.state',
                 'master_product_categories.description',
                 'master_product_categories.created_at',
                 'master_product_categories.image_id',
                 'master_product_categories.updated_at',
-                'master_product_category_sales_intervals.sales_grp_currency_all as sales_all',
-                'master_product_category_ordering_intervals.invoices_all as invoices_all',
 
             ])
             ->allowedSorts(['code', 'name'])
