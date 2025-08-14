@@ -67,7 +67,7 @@ const onLogoutAuth = () => {
     >
         <!-- Toggle: collapse-expand LeftSideBar -->
         <div @click="handleToggleLeftBar"
-             class="hidden absolute z-10 right-0 top-2/4 -translate-y-full translate-x-1/2 w-7 lg:w-5 aspect-square border border-gray-300 rounded-full md:flex md:justify-center md:items-center cursor-pointer"
+             class="hidden absolute z-10 right-0 top-2/4 -translate-y-full translate-x-1/2 w-8 lg:w-5 aspect-square border border-gray-300 rounded-full md:flex md:justify-center md:items-center cursor-pointer"
              :title="layout.leftSidebar.show ? 'Collapse the bar' : 'Expand the bar'"
              :style="{
                 'background-color':  `color-mix(in srgb, ${layout.app.theme[0]} 85%, black)`,
