@@ -10,6 +10,7 @@ import {
   IframeHTMLAttributes
 } from "vue";
 import { Head, router } from "@inertiajs/vue3";
+import * as Sentry from "@sentry/vue"
 import { capitalize } from "@/Composables/capitalize";
 import axios from "axios";
 import { debounce } from 'lodash-es';
@@ -173,9 +174,6 @@ const debounceSaveWorkshop = (block) => {
     isLoadingBlock.value = block.id;
     isSavingBlock.value = true;
 
-    /* const source = axios.CancelToken.source();
-    cancelTokens.value[block.id] = source.cancel; */
-
     try {
       const response = await axios.patch(
         url,
@@ -192,25 +190,20 @@ const debounceSaveWorkshop = (block) => {
           },
         }
       );
-   /*    data.value = response.data.data */
       sendToIframe({ key: "reload", value: {} });
-    } catch (error) {
-      /* if (!axios.isCancel(error)) {
-        notify({
-          title: trans("Something went wrong"),
-          text: error?.response?.data?.message || error.message,
-          type: "error",
-        });
-      } else { */
+    }
+    catch (error) {
+        Sentry.captureException(error)
        if (error?.response?.data?.message) {
         notify({
-          title: trans("Failed to auto save."),
-          text: error?.response?.data?.message || error.message,
-          type: "error",
+            title: "Failed to auto save. A",
+            text: error.response.data.message,
+            type: "error"
         });
-      } else {
-         notify({
-          title: trans("Failed to auto save."),
+       } else {
+
+           notify({
+               title: "Failed to auto save. B",
           text: error.message,
           type: "error",
         });
