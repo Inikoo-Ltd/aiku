@@ -130,8 +130,9 @@ class StoreMasterCollection extends GrpAction
 
     public function htmlResponse(MasterCollection $masterCollection, ActionRequest $request): RedirectResponse
     {
-        return Redirect::route('grp.overview.catalogue.master-collections.show', [
-            'masterCollection' => $masterCollection->slug,
+        return Redirect::route('grp.masters.master_shops.show.master_collections.index', [
+            'masterShop' => $masterCollection->masterShop->slug,
+            'masterCollection' => $masterCollection->slug
         ]);
     }
 }
