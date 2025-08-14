@@ -24,15 +24,24 @@ class EditMasterSubDepartment extends OrgAction
     /**
      * @var \App\Models\Masters\MasterProductCategory|\App\Models\Masters\MasterShop
      */
-    private MasterProductCategory $parent;
+    private MasterProductCategory|MasterShop $parent;
 
-    public function inMasterDepartment(MasterProductCategory $masterDepartment, ActionRequest $request): Response
+    public function inMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, ActionRequest $request): Response
     {
         $this->parent = $masterDepartment;
         $group        = group();
         $this->initialisationFromGroup($group, $request)->withTab(MasterSubDepartmentTabsEnum::values());
 
-        return $this->handle($masterDepartment, $request);
+        return $this->handle($masterSubDepartment, $request);
+    }
+
+    public function asController(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, ActionRequest $request): Response
+    {
+        $this->parent = $masterSubDepartment;
+        $group        = group();
+        $this->initialisationFromGroup($group, $request)->withTab(MasterSubDepartmentTabsEnum::values());
+
+        return $this->handle($masterSubDepartment, $request);
     }
 
     public function handle(MasterProductCategory $masterProductCategory, ActionRequest $request): Response
@@ -41,6 +50,7 @@ class EditMasterSubDepartment extends OrgAction
             'EditModel',
             [
                  'breadcrumbs' => $this->getBreadcrumbs(
+                     $masterProductCategory,
                      $request->route()->getName(),
                      $request->route()->originalParameters()
                  ),
@@ -94,14 +104,14 @@ class EditMasterSubDepartment extends OrgAction
     }
 
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(MasterProductCategory $masterSubDepartment, string $routeName, array $routeParameters): array
     {
         return array_merge(
             match ($this->parent::class) {
                 MasterShop::class => IndexMasterShops::make()->getBreadcrumbs(),
-                MasterProductCategory::class => IndexMasterSubDepartments::make()->getBreadcrumbs(
-                    parent: $this->parent,
-                    routeName: preg_replace('/create$/', 'index', $routeName),
+                MasterProductCategory::class => ShowMasterSubDepartment::make()->getBreadcrumbs(
+                    masterSubDepartment: $masterSubDepartment,
+                    routeName: $routeName,
                     routeParameters: $routeParameters,
                 )
             },
@@ -109,7 +119,7 @@ class EditMasterSubDepartment extends OrgAction
                 [
                     'type' => 'creatingModel',
                     'creatingModel' => [
-                        'label' => __('Creating sub-department'),
+                        'label' => __('Editing sub-department'),
                     ]
                 ]
             ]

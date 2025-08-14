@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 07 Jul 2025 22:51:13 British Summer Time, Sheffield, UK
+ * Created: Mon, 07 Jul 2025 22:51:10 British Summer Time, Sheffield, UK
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
@@ -12,40 +12,31 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithPrintNode;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\ActionRequest;
-use Rawilk\Printing\Api\PrintNode\Resources\Computer;
+use Rawilk\Printing\Api\PrintNode\Resources\Printer;
 
-class GetComputers extends OrgAction
+class GetPrintNodePrinters extends OrgAction
 {
     use WithPrintNode;
 
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function handle(): Collection
     {
         $this->ensureClientInitialized();
-
-        $options = [
-            'limit' => 50,
-            'dir' => 'desc',
-        ];
-
-        if ($after = $this->get('after')) {
-            $options['after'] = $after;
-        }
-
-        return Computer::all(
-            $options
-        );
+        return Printer::all();
     }
 
-    public function jsonResponse(Collection $computers): Collection
+    public function jsonResponse(Collection $printers): Collection
     {
-        return $computers;
+        return $printers;
     }
 
     public function rules(): array
     {
         return [
-            'after' => ['sometimes', 'integer'],
+            'after' => ['nullable', 'integer'],
         ];
     }
 
@@ -54,9 +45,24 @@ class GetComputers extends OrgAction
         $this->set('after', $request->get('after'));
     }
 
+
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function asController(ActionRequest $request): Collection
     {
         $this->initialisationFromGroup(group(), $request);
+
+        return $this->handle();
+    }
+
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function action(array $modelData): Collection
+    {
+        $this->asAction = true;
+        $this->initialisationFromGroup(group(), $modelData);
 
         return $this->handle();
     }

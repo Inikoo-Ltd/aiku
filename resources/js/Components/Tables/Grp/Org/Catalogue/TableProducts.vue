@@ -130,6 +130,10 @@ function productRoute(product: Product) {
                     (route().params as RouteParams).family,
                     product.slug
                 ]);
+        case "grp.masters.master_shops.show.master_collections.show":
+            return route(
+                "grp.masters.master_shops.show.master_products.show",
+                [(route().params as RouteParams).masterShop, product.slug])
 
         case "retina.dropshipping.products.index":
             return route(

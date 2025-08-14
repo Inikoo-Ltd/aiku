@@ -35,6 +35,7 @@ import Step2Iris from '@/Components/CMS/Webpage/Step1/Step1Iris.vue'
 import NotFoundComponent from "@/Components/CMS/Webpage/NotFoundComponent.vue"
 import FamilyIris1 from '@/Components/CMS/Webpage/Family-1/family1Iris.vue'
 import ProductIris1 from '@/Components/CMS/Webpage/Product1/ProductIris1.vue'
+import ProductIris1Ecom from '@/Components/CMS/Webpage/Product1/ProductIris1Ecom.vue'
 import Carousel1Iris from '@/Components/CMS/Webpage/Carousel-1/Carousel1Iris.vue'
 import Products1Iris from '@/Components/CMS/Webpage/Products1/Products1Iris.vue'
 import Products1IrisEcom from '@/Components/CMS/Webpage/Products1/Products1IrisEcom.vue'
@@ -87,7 +88,7 @@ const components = (shop_type?: string): Record<string, Component> => {
         'families-1' : families1Iris,
 
         //product
-        'product-1' : ProductIris1,
+        'product-1': shop_type === 'b2b' ? ProductIris1Ecom : ProductIris1,
         
 
         //product list

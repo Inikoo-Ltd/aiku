@@ -42,6 +42,7 @@ class IndexMasterSubDepartments extends GrpAction
         return $this->handle(parent: $masterShop);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $masterDepartment;
@@ -64,6 +65,7 @@ class IndexMasterSubDepartments extends GrpAction
         }
 
         $queryBuilder = QueryBuilder::for(MasterProductCategory::class);
+        $queryBuilder->leftJoin('master_product_category_stats', 'master_product_categories.id', '=', 'master_product_category_stats.master_product_category_id');
         if ($parent instanceof MasterShop) {
             $queryBuilder->where('master_product_categories.master_shop_id', $parent->id);
         } else {
@@ -81,9 +83,10 @@ class IndexMasterSubDepartments extends GrpAction
                 'master_product_categories.description',
                 'master_product_categories.created_at',
                 'master_product_categories.updated_at',
+                'master_product_category_stats.number_current_master_product_categories_type_family as number_families',
             ])
             ->where('master_product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
-            ->allowedSorts(['code', 'name'])
+            ->allowedSorts(['code', 'name','number_families'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -108,7 +111,9 @@ class IndexMasterSubDepartments extends GrpAction
                 );
 
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_families', label: __('M. Families'), canBeHidden: false, sortable: false, searchable: false);
+
         };
     }
 
@@ -195,12 +200,14 @@ class IndexMasterSubDepartments extends GrpAction
         };
 
         return match ($routeName) {
-            'grp.masters.master_shops.show.master_sub_departments.index' =>
+            'grp.masters.master_shops.show.master_sub_departments.index',
+            'grp.masters.master_shops.show.master_sub_departments.show',
+            'grp.masters.master_shops.show.master_sub_departments.edit' =>
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($parent, $routeName),
                 $headCrumb(
                     [
-                        'name'       => $routeName,
+                        'name'       => 'grp.masters.master_shops.show.master_sub_departments.index',
                         'parameters' => $routeParameters
                     ],
                     $suffix

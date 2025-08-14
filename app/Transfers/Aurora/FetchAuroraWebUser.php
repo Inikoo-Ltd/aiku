@@ -33,7 +33,7 @@ class FetchAuroraWebUser extends FetchAurora
             return;
         }
 
-        if ($customer->shop->type == ShopTypeEnum::FULFILMENT) {
+        if ($customer->shop->type == ShopTypeEnum::FULFILMENT || $customer->shop->type == ShopTypeEnum::DROPSHIPPING) {
             return;
         }
 

@@ -59,6 +59,10 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $description_extra_i8n
  * @property string|null $description_title
  * @property string|null $description_extra
+ * @property bool $in_process
+ * @property bool $mark_for_discontinued
+ * @property string|null $mark_for_discontinued_at
+ * @property string|null $discontinued_at
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, MasterProductCategory> $children
  * @property-read Group $group

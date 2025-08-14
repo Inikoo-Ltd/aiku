@@ -154,7 +154,7 @@ class IndexMasterFamilies extends OrgAction
 
         return $queryBuilder
             ->defaultSort('master_product_categories.code')
-            ->allowedSorts(['code', 'name'])
+            ->allowedSorts(['code', 'name','used_in','products'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -241,7 +241,6 @@ class IndexMasterFamilies extends OrgAction
             }
         }
 
-
         return Inertia::render(
             'Masters/MasterFamilies',
             [
@@ -278,14 +277,14 @@ class IndexMasterFamilies extends OrgAction
             match ($request->route()->getName()) {
                 'grp.masters.master_departments.show.master_families.index' =>
                 $createRoute = 'grp.masters.master_departments.show.master_families.create',
-                'grp.masters.master_shops.show.master_departments.show.master_families.index' => 
+                'grp.masters.master_shops.show.master_departments.show.master_families.index' =>
                 $createRoute = 'grp.masters.master_shops.show.master_departments.show.master_families.create',
                 default => $createRoute
             };
         } elseif ($this->parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
             match ($request->route()->getName()) {
-                'grp.masters.master_departments.show.master_sub_departments.show.master_families.index' =>
-                $createRoute = 'grp.masters.master_departments.show.master_sub_departments.show.master_families.create',
+                'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.index' =>
+                $createRoute = 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.create',
                 'grp.masters.master_departments.show.master_families.index' =>
                 $createRoute = 'grp.masters.master_departments.show.master_families.create',
                 default => $createRoute
@@ -362,18 +361,8 @@ class IndexMasterFamilies extends OrgAction
                     $suffix
                 )
             ),
-            'grp.masters.master_shops.show.master_sub_departments..master_families.index' =>
-            array_merge(
-                ShowMasterSubDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
-                $headCrumb(
-                    [
-                        'name'       => $routeName,
-                        'parameters' => $routeParameters
-                    ],
-                    $suffix
-                )
-            ),
-            'grp.masters.master_departments.show.master_sub_departments.show.master_families.index' =>
+            'grp.masters.master_shops.show.master_sub_departments.master_families.index',
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.index' =>
             array_merge(
                 ShowMasterSubDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
                 $headCrumb(
@@ -385,7 +374,7 @@ class IndexMasterFamilies extends OrgAction
                 )
             ),
             'grp.masters.master_shops.show.master_departments.show.master_families.index',
-            'grp.masters.master_shops.show.master_departments.show.master_families.create' => 
+            'grp.masters.master_shops.show.master_departments.show.master_families.create' =>
             array_merge(
                 ShowMasterDepartment::make()->getBreadcrumbs(
                     $parent->masterShop,

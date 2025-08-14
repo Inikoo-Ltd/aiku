@@ -29,6 +29,24 @@ class CreateMasterCollection extends OrgAction
         return $this->handle($masterProductCategory, $request);
     }
 
+    public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, ActionRequest $request): Response
+    {
+        $this->initialisationFromGroup(group(), $request);
+        return $this->handle($masterDepartment, $request);
+    }
+
+    public function inMasterSubDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, ActionRequest $request): Response
+    {
+        $this->initialisationFromGroup(group(), $request);
+        return $this->handle($masterSubDepartment, $request);
+    }
+
+    public function inMasterSubDepartmentInMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, ActionRequest $request): Response
+    {
+        $this->initialisationFromGroup(group(), $request);
+        return $this->handle($masterSubDepartment, $request);
+    }
+
     public function handle(MasterProductCategory|MasterShop $parent, ActionRequest $request): Response
     {
         return Inertia::render(
@@ -105,20 +123,38 @@ class CreateMasterCollection extends OrgAction
 
     public function getBreadcrumbs(MasterProductCategory|MasterShop $parent, string $routeName, array $routeParameters): array
     {
-        return array_merge(
-            IndexMasterCollections::make()->getBreadcrumbs(
-                parent: $parent,
-                routeName: preg_replace('/create$/', 'index', $routeName),
-                routeParameters: $routeParameters
-            ),
-            [
+        if ($parent instanceof MasterShop) {
+            return array_merge(
+                IndexMasterCollections::make()->getBreadcrumbs(
+                    parent: $parent,
+                    routeName: preg_replace('/create$/', 'index', $routeName),
+                    routeParameters: $routeParameters
+                ),
                 [
-                    'type'          => 'creatingModel',
-                    'creatingModel' => [
-                        'label' => __('Creating collection'),
+                    [
+                        'type'          => 'creatingModel',
+                        'creatingModel' => [
+                            'label' => __('Creating collection'),
+                        ]
                     ]
                 ]
-            ]
-        );
+            );
+        } else {
+            return array_merge(
+                IndexMasterCollectionsInMasterProductCategory::make()->getBreadcrumbs(
+                    parent: $parent,
+                    routeName: preg_replace('/create$/', 'index', $routeName),
+                    routeParameters: $routeParameters
+                ),
+                [
+                    [
+                        'type'          => 'creatingModel',
+                        'creatingModel' => [
+                            'label' => __('Creating collection'),
+                        ]
+                    ]
+                ]
+            );
+        }
     }
 }

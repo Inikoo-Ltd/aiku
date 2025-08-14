@@ -30,6 +30,7 @@ class MasterCollectionsResource extends JsonResource
             'id'             => $this->id,
             'slug'           => $this->slug,
             'code'           => $this->code,
+            'name'           => $this->name,
             'description'    => $this->description,
             'state'         => $this->state,
             'products_status' => $this->products_status,

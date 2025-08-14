@@ -54,8 +54,8 @@ const unassignLoadingIds = ref<number[]>([])
 const UnassignCollectionFormWebpage = async (id: number) => {
   unassignLoadingIds.value.push(id)
   const url = route(props.data.routes.detach_parent.name,{
+    ...props.data.routes.detach_parent.parameters,
     productCategory: id,
-    collection: props.data.id,
   })
 
   router.delete(url, {
