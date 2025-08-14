@@ -173,8 +173,8 @@ const debounceSaveWorkshop = (block) => {
     isLoadingBlock.value = block.id;
     isSavingBlock.value = true;
 
-    const source = axios.CancelToken.source();
-    cancelTokens.value[block.id] = source.cancel;
+    /* const source = axios.CancelToken.source();
+    cancelTokens.value[block.id] = source.cancel; */
 
     try {
       const response = await axios.patch(
@@ -186,7 +186,7 @@ const debounceSaveWorkshop = (block) => {
           show: block.show,
         },
         {
-          cancelToken: source.token,
+          /* cancelToken: source.token, */
           headers: {
             "X-Requested-With": "XMLHttpRequest",
           },
@@ -195,20 +195,19 @@ const debounceSaveWorkshop = (block) => {
    /*    data.value = response.data.data */
       sendToIframe({ key: "reload", value: {} });
     } catch (error) {
-      console.log(error)
-      if (!axios.isCancel(error)) {
+      /* if (!axios.isCancel(error)) {
         notify({
           title: trans("Something went wrong"),
           text: error?.response?.data?.message || error.message,
           type: "error",
         });
-      } else {
+      } else { */
         notify({
           title: trans("Failed to auto save."),
           text: error?.response?.data?.message || error.message,
           type: "error",
         });
-      }
+    /*   } */
     } finally {
       isLoadingBlock.value = null;
       isSavingBlock.value = false;
