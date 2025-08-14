@@ -89,9 +89,9 @@ class MasterCollection extends Model implements Auditable, HasMedia
     public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
 
     protected $casts = [
-        'data'   => 'array',
-        'status' => 'boolean',
-        'state'          => MasterCollectionStateEnum::class,
+        'data'            => 'array',
+        'status'          => 'boolean',
+        'state'           => MasterCollectionStateEnum::class,
         'products_status' => MasterCollectionProductStatusEnum::class,
     ];
 
@@ -127,6 +127,7 @@ class MasterCollection extends Model implements Auditable, HasMedia
             ->doNotGenerateSlugsOnUpdate()
             ->slugsShouldBeNoLongerThan(64);
     }
+
     public function stats(): HasOne
     {
         return $this->hasOne(MasterCollectionStats::class);

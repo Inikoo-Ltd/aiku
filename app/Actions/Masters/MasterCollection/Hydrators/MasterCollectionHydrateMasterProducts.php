@@ -6,7 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Catalogue\Collection\Hydrators;
+namespace App\Actions\Masters\MasterCollection\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Models\Masters\MasterCollection;
