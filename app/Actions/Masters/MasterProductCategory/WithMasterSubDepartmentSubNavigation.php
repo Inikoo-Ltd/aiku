@@ -29,7 +29,7 @@ trait WithMasterSubDepartmentSubNavigation
         ];
 
         $routeCollections = [
-             'name'       => 'grp.masters.master_shops.show.master_departments.master_collections.index',
+             'name'       => 'grp.masters.master_shops.show.master_sub_departments.master_collections.index',
              'parameters' => request()->route()->originalParameters()
         ];
 
