@@ -22,10 +22,13 @@ const props = defineProps<{
 }>()
 
 const showModal = ref(false)
+const searchQuery = ref("")
 
 onMounted(() => {
   if (props.fieldData?.required && !props.form[props.fieldName]) {
-    props.form[props.fieldName] = props.fieldData.mode === "multiple" ? [] : props.options?.[0]?.value
+    props.form[props.fieldName] = props.fieldData.mode === "multiple"
+      ? []
+      : props.options?.[0]?.value
   }
 })
 
@@ -35,9 +38,15 @@ const openModal = () => {
 
 const closeModal = () => {
   showModal.value = false
+  searchQuery.value = ""
 }
 
-const filteredOptions = computed(() => props.fieldData.options)
+const filteredOptions = computed(() => {
+  if (!searchQuery.value.trim()) return props.options
+  return props.options.filter(option =>
+    option.label.toLowerCase().includes(searchQuery.value.toLowerCase())
+  )
+})
 
 const selectOption = (val: string) => {
   if (props.fieldData.mode === "multiple" || props.fieldData.mode === "tags") {
@@ -91,7 +100,15 @@ const selectOption = (val: string) => {
       header="Select Options"
       :style="{ width: '35rem' }"
     >
-      <!-- Options list with scroll -->
+    <div class="py-2">
+      <input
+        v-model="searchQuery"
+        type="text"
+        placeholder="Search..."
+        class="w-full p-2 mb-3 border rounded-md"
+      />
+
+      <!-- Options list -->
       <div class="grid gap-2 overflow-y-auto" style="max-height: 300px;">
         <button
           v-for="option in filteredOptions"
@@ -99,13 +116,26 @@ const selectOption = (val: string) => {
           @click="selectOption(option.value)"
           class="p-3 border rounded-md text-left hover:bg-gray-100 flex justify-between items-center"
           :class="{
-            'bg-indigo-50 border-indigo-400': Array.isArray(form[fieldName]) ? form[fieldName].includes(option.value) : form[fieldName] === option.value
+            'bg-indigo-50 border-indigo-400':
+              Array.isArray(form[fieldName])
+                ? form[fieldName].includes(option.value)
+                : form[fieldName] === option.value
           }"
         >
           <span>{{ option.label }}</span>
-          <span v-if="Array.isArray(form[fieldName]) ? form[fieldName].includes(option.value) : form[fieldName] === option.value" class="text-indigo-500 font-bold">✔</span>
+          <span
+            v-if="Array.isArray(form[fieldName])
+              ? form[fieldName].includes(option.value)
+              : form[fieldName] === option.value"
+            class="text-indigo-500 font-bold"
+          >
+            ✔
+          </span>
         </button>
       </div>
+
+    </div>
+      
 
       <template #footer>
         <button
