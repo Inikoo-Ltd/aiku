@@ -45,6 +45,7 @@ import Video1Workshop from '@/Components/CMS/Webpage/Video/Video1Workshop.vue'
 import UserSubscribeWorkshop from '@/Components/CMS/Webpage/UserSubscribe/UserSubscribeWorkshop.vue'
 import Cta4 from '@/Components/CMS/Webpage/Cta4/Cta4Workshop.vue'
 import SeeAlso1Workshop from '@/Components/CMS/Webpage/SeeAlso1/SeeAlso1Workshop.vue'
+import EditFooter1Translation from '@/Components/CMS/Website/Footers/footerTheme1/EditFooter1Translation.vue'
 
 
 
@@ -119,3 +120,12 @@ export const getComponent = (componentName: string) => {
     return components[componentName] ?? NotFoundComponents
 }
 
+
+
+export const getTranslationComponent = (componentName: string) => {
+    const components: Component = {
+        'footer-1': EditFooter1Translation,
+    }
+
+    return components[componentName] ?? NotFoundComponents
+}
