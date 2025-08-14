@@ -9,7 +9,7 @@ import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue'
 import { getStyles } from '@/Composables/styles';
 import Image from '@/Components/Image.vue';
 import { sendMessageToParent } from '@/Composables/Workshop';
-
+import { isObject } from 'lodash-es';
 import { FieldValue } from '@/types/Website/Website/footer1'
 
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -469,15 +469,21 @@ const layout = inject('layout', {})
                 <div class="flex flex-col flex-col-reverse gap-y-6 md:block">
                     <div>
                         <address class="mt-10 md:mt-0 mb-4">
-                            <Editor :key="editorKey" v-model="modelValue.columns.column_4.data.textBox1"
+                            <Editor v-if="!isObject(modelValue?.columns.column_4.data.textBox1)" :key="editorKey" v-model="modelValue.columns.column_4.data.textBox1"
                                 :editable="editable"     @onEditClick="selectAllEditor"
                                 @update:model-value="(e) => { modelValue.columns.column_4.data.textBox1 = e, emits('update:modelValue', modelValue) }" />
+                            <Editor v-else :key="editorKey" v-model="modelValue.columns.column_4.data.textBox1.text"
+                                :editable="editable"     @onEditClick="selectAllEditor"
+                                @update:model-value="(e) => { modelValue.columns.column_4.data.textBox1.text = e, emits('update:modelValue', modelValue) }" />
                         </address>
 
                         <div class="mt-10 md:mt-0 mb-4 w-full">
-                            <Editor :key="editorKey" v-model="modelValue.columns.column_4.data.textBox2"
+                            <Editor v-if="!isObject(modelValue?.columns.column_4.data.textBox2)" :key="editorKey" v-model="modelValue.columns.column_4.data.textBox2"
                                 :editable="editable"     @onEditClick="selectAllEditor"
                                 @update:model-value="(e) => { modelValue.columns.column_4.data.textBox2 = e, emits('update:modelValue', modelValue) }" />
+                            <Editor v-else :key="editorKey" v-model="modelValue.columns.column_4.data.textBox2.text"
+                                :editable="editable"     @onEditClick="selectAllEditor"
+                                @update:model-value="(e) => { modelValue.columns.column_4.data.textBox2.text = e, emits('update:modelValue', modelValue) }" />
                         </div>
 
                         <div class="w-full">
