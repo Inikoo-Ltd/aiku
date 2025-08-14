@@ -77,6 +77,7 @@ class PalletReturnsResource extends JsonResource
             'dispatched_at'         => $this->dispatched_at,
             'cancel_at'             => $this->cancel_at,
             'customer_has_platform_id' => $this->customer_has_platform_id ?? null,
+            'unique_stored_item_count' => $this->unique_stored_item_count ?? 0,
         ];
     }
 }

@@ -31,6 +31,7 @@ use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -222,8 +223,26 @@ class IndexPalletReturns extends OrgAction
         $queryBuilder->defaultSort('-date');
 
         return $queryBuilder
-            ->select('pallet_returns.id', 'state', 'slug', 'reference', 'customer_reference', 'number_pallets', 'number_services', 'number_physical_goods', 'date', 'dispatched_at', 'type', 'total_amount', 'currencies.code as currency_code')
-            ->allowedSorts(['reference', 'customer_reference', 'number_pallets', 'date', 'state'])
+->select(
+                'pallet_returns.id',
+                'state',
+                'slug',
+                'reference',
+                'customer_reference',
+                'pallet_return_stats.number_pallets as number_pallets',
+                'pallet_return_stats.number_services as number_services',
+                'pallet_returns.created_at as date',
+                'dispatched_at',
+                'type',
+                'total_amount',
+                'currencies.code as currency_code',
+                DB::raw("(
+                    SELECT COUNT(DISTINCT stored_item_id) 
+                    FROM pallet_return_items 
+                    WHERE pallet_return_items.pallet_return_id = pallet_returns.id
+                ) as unique_stored_item_count")
+            )
+            ->allowedSorts(['reference', 'customer_reference', 'number_pallets', 'date', 'state', 'unique_stored_item_count'])
             ->allowedFilters([$globalSearch, 'type'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -273,6 +292,7 @@ class IndexPalletReturns extends OrgAction
                 ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'customer_reference', label: __('customer reference'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_pallets', label: __('pallets'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'unique_stored_item_count', label: __('stored items'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
         };
     }
