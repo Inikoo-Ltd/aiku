@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -88,9 +89,9 @@ class MasterCollection extends Model implements Auditable, HasMedia
     public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
 
     protected $casts = [
-        'data'   => 'array',
-        'status' => 'boolean',
-        'state'          => MasterCollectionStateEnum::class,
+        'data'            => 'array',
+        'status'          => 'boolean',
+        'state'           => MasterCollectionStateEnum::class,
         'products_status' => MasterCollectionProductStatusEnum::class,
     ];
 
@@ -126,9 +127,15 @@ class MasterCollection extends Model implements Auditable, HasMedia
             ->doNotGenerateSlugsOnUpdate()
             ->slugsShouldBeNoLongerThan(64);
     }
+
     public function stats(): HasOne
     {
         return $this->hasOne(MasterCollectionStats::class);
+    }
+
+    public function parent(): MorphTo
+    {
+        return $this->morphTo();
     }
 
     public function salesIntervals(): HasOne
@@ -149,33 +156,33 @@ class MasterCollection extends Model implements Auditable, HasMedia
     // Warning this includes both direct products and products in families
     public function masterProducts(): MorphToMany
     {
-        return $this->morphedByMany(MasterAsset::class, 'model', 'master_collection_has_models')
+        return $this->morphedByMany(MasterAsset::class, 'model', 'model_has_master_collections')
             ->withTimestamps()->withPivot('type');
     }
 
     public function masterFamilies(): MorphToMany
     {
-        return $this->morphedByMany(MasterProductCategory::class, 'model', 'master_collection_has_models')
+        return $this->morphedByMany(MasterProductCategory::class, 'model', 'model_has_master_collections')
             ->withTimestamps();
     }
 
     public function masterCollections(): MorphToMany
     {
-        return $this->morphedByMany(MasterCollection::class, 'model', 'master_collection_has_models')
+        return $this->morphedByMany(MasterCollection::class, 'model', 'model_has_master_collections')
             ->withTimestamps();
     }
 
     public function departments(): MorphToMany
     {
-        return $this->morphedByMany(MasterProductCategory::class, 'model', 'master_collection_has_models')
-            ->wherePivot('type', 'department')
+        return $this->morphedByMany(MasterProductCategory::class, 'model', 'model_has_master_collections')
+            ->wherePivot('type', 'master_department')
             ->withTimestamps();
     }
 
     public function subDepartments(): MorphToMany
     {
-        return $this->morphedByMany(MasterProductCategory::class, 'model', 'master_collection_has_models')
-            ->wherePivot('type', 'sub_department')
+        return $this->morphedByMany(MasterProductCategory::class, 'model', 'model_has_master_collections')
+            ->wherePivot('type', 'master_sub_department')
             ->withTimestamps();
     }
 

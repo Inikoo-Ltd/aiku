@@ -26,6 +26,8 @@ class GetMasterCollectionShowcase
             'state'          => $masterCollection->state,
             'products_status' => $masterCollection->products_status,
             'data'           => $masterCollection->data,
+            'parent_departments' => $masterCollection->departments,
+            'parent_subdepartments' => $masterCollection->subDepartments,
             'description_title'     => $masterCollection->description_title,
             'description_extra'     => $masterCollection->description_extra,
             'name_i8n'              => $masterCollection->getTranslations('name_i8n'),
@@ -69,6 +71,36 @@ class GetMasterCollectionShowcase
                         'value' => '+4',
                         'label' => __('from last month'),
                     ]
+                ],
+            ],
+            'routes' => [
+                'departments_route'     => [
+                    'name'       => 'grp.json.master_shop.master_departments',
+                    'parameters' => [
+                        'masterShop'  => $masterCollection->masterShop->slug,
+                        'scope' => $masterCollection->slug,
+                    ],
+                ],
+                'sub_departments_route' => [
+                    'name'       => 'grp.json.master_shop.master_sub_departments',
+                    'parameters' => [
+                        'masterShop'  => $masterCollection->masterShop->slug,
+                        'scope' => $masterCollection->slug,
+                    ],
+                ],
+                'attach_parent'         => [
+                    'name'       => 'grp.models.master_collection.attach_parents',
+                    'parameters' => [
+                        'masterCollection' => $masterCollection->id,
+                    ],
+                    'method'     => 'post'
+                ],
+                'detach_parent'         => [
+                    'name'       => 'grp.models.master_product_category.master_collection.detach',
+                    'parameters' => [
+                        'masterCollection' => $masterCollection->id,
+                    ],
+                    'method'     => 'delete'
                 ],
             ],
             'translation_box' => [

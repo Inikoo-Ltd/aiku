@@ -27,6 +27,8 @@ use App\Actions\Catalogue\ProductCategory\Json\GetFamilies;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInCollection;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInProductCategory;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInShop;
+use App\Actions\Masters\MasterCollection\UI\GetMasterDepartments;
+use App\Actions\Masters\MasterCollection\UI\GetMasterSubDepartments;
 use App\Actions\Masters\MasterProductCategory\Json\GetFamiliesInMasterProductCategory;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInWorkshop;
 use App\Actions\Catalogue\ProductCategory\Json\GetProductCategoryFamilies;
@@ -44,8 +46,8 @@ use App\Actions\Dispatching\DeliveryNote\Json\GetMiniDeliveryNoteShipments;
 use App\Actions\Dispatching\Picking\Packer\Json\GetPackers;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickers;
 use App\Actions\Dispatching\Picking\Picker\Json\GetPickerUsers;
-use App\Actions\Dispatching\Printer\Json\GetComputers;
-use App\Actions\Dispatching\Printer\Json\GetPrinters;
+use App\Actions\Dispatching\Printer\Json\GetPrintNodeComputers;
+use App\Actions\Dispatching\Printer\Json\GetPrintNodePrinters;
 use App\Actions\Dispatching\Shipper\Json\GetShippers;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetShopifyProducts;
 use App\Actions\Fulfilment\Pallet\Json\GetFulfilmentCustomerStoringPallets;
@@ -158,8 +160,8 @@ Route::get('/{organisation}/payment-service-providers', GetOrgPaymentServiceProv
 Route::get('tags', GetGrpTags::class)->name('tags.index');
 Route::get('brands', GetGrpBrands::class)->name('brands.index');
 
-Route::get('printing/computers', GetComputers::class)->name('computers.index');
-Route::get('printing/printers', GetPrinters::class)->name('printers.index');
+Route::get('printing/computers', GetPrintNodeComputers::class)->name('computers.index');
+Route::get('printing/printers', GetPrintNodePrinters::class)->name('printers.index');
 
 Route::get('products-for-portfolio-select/{customerSalesChannel:id}', GetProductsForPortfolioSelect::class)->name('products_for_portfolio_select');
 
@@ -168,3 +170,6 @@ Route::get('mini-delivery-note-shipments/{deliveryNote:id}', GetMiniDeliveryNote
 
 
 Route::get('customer-sales-channel/{customerSalesChannel:id}/shopify-products', GetShopifyProducts::class)->name('dropshipping.customer_sales_channel.shopify_products');
+
+Route::get('master-shop/{masterShop}/scopes/{scope}/departments', GetMasterDepartments::class)->name('master_shop.master_departments');
+Route::get('master-shop/{masterShop}/scopes/{scope}/sub-departments', GetMasterSubDepartments::class)->name('master_shop.master_sub_departments');

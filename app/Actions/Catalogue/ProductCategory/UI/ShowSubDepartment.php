@@ -51,6 +51,7 @@ class ShowSubDepartment extends OrgAction
 
     public function htmlResponse(ProductCategory $subDepartment, ActionRequest $request): Response
     {
+
         $parentTag = [
                     [
                         'label' => $subDepartment->department->name,

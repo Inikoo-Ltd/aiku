@@ -164,7 +164,14 @@ Route::prefix('/master-shops/{masterShop}')->as('master_shops.show')->group(func
             Route::get('create', [CreateMasterFamily::class, 'inMasterSubDepartment'])->name('create');
             Route::get('{masterFamily}', [ShowMasterFamily::class, 'inMasterSubDepartment'])->name('show');
         });
+
+        Route::prefix('{masterSubDepartment}/master-collections')->as('master_collections.')->group(function () {
+            Route::get('', [IndexMasterCollectionsInMasterProductCategory::class, 'inMasterSubDepartmentInMasterShop'])->name('index');
+            Route::get('create', [CreateMasterCollection::class, 'inMasterSubDepartmentInMasterShop'])->name('create');
+            Route::get('{masterCollection}', [ShowMasterCollection::class, 'inMasterSubDepartmentInMasterShop'])->name('show');
+        });
     });
+
     Route::prefix('master-products')->as('.master_products.')->group(function () {
         Route::get('', [IndexMasterProducts::class, 'inMasterShop'])->name('index');
         Route::get('{masterProduct}', ShowMasterProducts::class)->name('show');

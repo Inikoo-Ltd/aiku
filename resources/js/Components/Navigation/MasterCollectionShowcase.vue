@@ -55,7 +55,7 @@ const UnassignCollectionFormWebpage = async (id: number) => {
   unassignLoadingIds.value.push(id)
   const url = route(props.data.routes.detach_parent.name,{
     ...props.data.routes.detach_parent.parameters,
-    productCategory: id,
+    masterProductCategory: id,
   })
 
   router.delete(url, {
