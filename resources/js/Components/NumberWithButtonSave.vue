@@ -248,7 +248,7 @@ const onClickPlusButton = () => {
 						:max="max || undefined"
 						style="width: 100%"
 						:disabled="props.readonly || form.processing"
-						inputClass="!p-1 md:!p-0"
+						inputClass="!p-1 lg:!p-0"
 						:inputStyle="{
 							width: bindToTarget?.fluid ? undefined : '50px',
 							color: props.readonly ? '#6b7280' : colorTheme ?? '#374151',

@@ -155,7 +155,6 @@ const breakpoint = ref('')
 const innerWidth = ref(0)
 onMounted(() => {
     innerWidth.value = window.innerWidth
-    // breakpoint.value = twBreakPoint(window.innerWidth)
 })
 </script>
 
