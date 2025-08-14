@@ -56,7 +56,7 @@ class EditWebpage extends OrgAction
         return [
             'code'     => $webpage->code,
             'id'       => $webpage->id,
-            'href'     => 'https://'.$webpage->website->domain.'/'.$webpage->url,
+            'href'     => 'https://' . $webpage->website->domain . '/' . $webpage->url,
             "typeIcon" => $webpage->type->stateIcon()[$webpage->type->value] ?? ["fal", "fa-browser"],
         ];
     }
@@ -102,7 +102,7 @@ class EditWebpage extends OrgAction
                             'label'  => __('Webpage'),
                             'icon'   => 'fal fa-browser',
                             'fields' => [
-                                 "seo_image"         => [
+                                "seo_image"         => [
                                     "type"    => "image_crop_square",
                                     "label"   => __("Preview image"),
                                     "value"   => $webpage->imageSources(1200, 1200, 'seoImage'),
@@ -111,6 +111,13 @@ class EditWebpage extends OrgAction
                                         "maxAspectRatio" => 12 / 4,
                                     ]
                                 ],
+                                'code'       => [
+                                    'type'                => 'input',
+                                    'label'               => __('Code'),
+                                    'label_no_capitalize' => true,
+                                    'value'               => $webpage->code,
+                                    'required'            => true,
+                                ],
                                 'title'       => [
                                     'type'                => 'input',
                                     'label'               => __('Title'),
@@ -118,7 +125,14 @@ class EditWebpage extends OrgAction
                                     'value'               => $webpage->title,
                                     'required'            => true,
                                 ],
-                                 'description'       => [
+                                'url'       => [
+                                    'type'                => 'input',
+                                    'label'               => __('URL'),
+                                    'label_no_capitalize' => true,
+                                    'value'               => $webpage->url,
+                                    'required'            => true,
+                                ],
+                                'description'       => [
                                     'type'                => 'textarea',
                                     'label'               => __('Description'),
                                     'label_no_capitalize' => true,
@@ -220,9 +234,7 @@ class EditWebpage extends OrgAction
         return ShowWebpage::make()->getBreadcrumbs(
             $routeName,
             $routeParameters,
-            suffix: '('.__('settings').')'
+            suffix: '(' . __('settings') . ')'
         );
     }
-
-
 }
