@@ -202,11 +202,19 @@ const debounceSaveWorkshop = (block) => {
           type: "error",
         });
       } else { */
+       if (error?.response?.data?.message) {
         notify({
           title: trans("Failed to auto save."),
           text: error?.response?.data?.message || error.message,
           type: "error",
         });
+      } else {
+         notify({
+          title: trans("Failed to auto save."),
+          text: error.message,
+          type: "error",
+        });
+      }
     /*   } */
     } finally {
       isLoadingBlock.value = null;
