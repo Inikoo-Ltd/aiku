@@ -166,16 +166,30 @@ const duplicateBlock = async (modelHasWebBlock = Number) => {
 
 
 const debounceSaveWorkshop = (block) => {
-  if (debounceTimers.value[block.id]) clearTimeout(debounceTimers.value[block.id]);
+  // Clear any pending debounce timers for this block
+  if (debounceTimers.value[block.id]) {
+    clearTimeout(debounceTimers.value[block.id]);
+  }
 
   debounceTimers.value[block.id] = setTimeout(async () => {
-    const url = route(props.webpage.update_model_has_web_blocks_route.name, { modelHasWebBlocks: block.id });
+    const url = route(props.webpage.update_model_has_web_blocks_route.name, {
+      modelHasWebBlocks: block.id,
+    });
+
+    // Cancel any previous request for this block
+    if (cancelTokens.value[block.id]) {
+      cancelTokens.value[block.id](); // call previous cancel function
+    }
+
+    // Create a new cancel token
+    const source = axios.CancelToken.source();
+    cancelTokens.value[block.id] = source.cancel;
 
     isLoadingBlock.value = block.id;
     isSavingBlock.value = true;
 
     try {
-      const response = await axios.patch(
+      await axios.patch(
         url,
         {
           layout: block.web_block.layout,
@@ -184,31 +198,36 @@ const debounceSaveWorkshop = (block) => {
           show: block.show,
         },
         {
-          /* cancelToken: source.token, */
+          cancelToken: source.token,
           headers: {
             "X-Requested-With": "XMLHttpRequest",
           },
         }
       );
-      sendToIframe({ key: "reload", value: {} });
-    }
-    catch (error) {
-        Sentry.captureException(error)
-       if (error?.response?.data?.message) {
-        notify({
-            title: "Failed to auto save. A",
-            text: error.response.data.message,
-            type: "error"
-        });
-       } else {
 
-           notify({
-               title: "Failed to auto save. B",
+      // Reload the preview
+      sendToIframe({ key: "reload", value: {} });
+    } catch (error) {
+      if (axios.isCancel?.(error) || error?.code === "ERR_CANCELED") {
+       console.log(error)
+        return;
+      }
+
+      Sentry.captureException(error);
+
+      if (error?.response?.data?.message) {
+        notify({
+          title: "Failed to auto save. A",
+          text: error.response.data.message,
+          type: "error",
+        });
+      } else {
+        notify({
+          title: "Failed to auto save. B",
           text: error.message,
           type: "error",
         });
       }
-    /*   } */
     } finally {
       isLoadingBlock.value = null;
       isSavingBlock.value = false;
