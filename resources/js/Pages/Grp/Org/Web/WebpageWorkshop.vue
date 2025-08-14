@@ -223,7 +223,7 @@ const debounceSaveWorkshop = (block) => {
         });
       } else {
         notify({
-          title: "Failed to auto save. B",
+          title: "Failed to auto save. B2",
           text: error.message,
           type: "error",
         });
