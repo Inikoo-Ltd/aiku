@@ -10,6 +10,7 @@ namespace App\Actions\Masters\MasterCollection\UI;
 
 use App\Actions\GrpAction;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
+use App\Actions\Masters\MasterProductCategory\UI\ShowMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
 use App\Actions\Masters\MasterProductCategory\WithMasterSubDepartmentSubNavigation;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
@@ -261,7 +262,7 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inMasterSubDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, ActionRequest $request): LengthAwarePaginator
+    public function inMasterSubDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $masterSubDepartment;
         $this->initialisation($masterShop->group, $request);
@@ -292,6 +293,22 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
             array_merge(
                 ShowMasterDepartment::make()->getBreadcrumbs(
                     $parent->masterShop,
+                    $parent,
+                    $routeName,
+                    $routeParameters
+                ),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.masters.master_shops.show.master_sub_departments.master_collections.index',
+            'grp.masters.master_shops.show.master_sub_departments.master_collections.show' =>
+            array_merge(
+                ShowMasterSubDepartment::make()->getBreadcrumbs(
                     $parent,
                     $routeName,
                     $routeParameters

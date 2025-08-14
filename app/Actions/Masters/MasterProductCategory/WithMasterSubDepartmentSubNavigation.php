@@ -20,17 +20,17 @@ trait WithMasterSubDepartmentSubNavigation
     {
         $subRoute = [
             'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show',
-            'parameters' => [$masterSubDepartment->masterShop->slug ,$masterSubDepartment->masterDepartment->slug, $masterSubDepartment->slug]
+            'parameters' => request()->route()->originalParameters()
         ];
 
         $routeFamilies = [
             'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.index',
-            'parameters' => [$masterSubDepartment->masterShop->slug, $masterSubDepartment->masterDepartment->slug, $masterSubDepartment->slug]
+            'parameters' => request()->route()->originalParameters()
         ];
 
         $routeCollections = [
-            // 'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index',
-            // 'parameters' => [$this->organisation->slug, $this->shop->slug, $masterSubDepartment->department->slug, $masterSubDepartment->slug]
+             'name'       => 'grp.masters.master_shops.show.master_departments.master_collections.index',
+             'parameters' => request()->route()->originalParameters()
         ];
 
         if ($this->parent instanceof MasterShop || ($this->parent instanceof MasterProductCategory && $this->parent->type === MasterProductCategoryTypeEnum::SUB_DEPARTMENT)) {
@@ -45,10 +45,9 @@ trait WithMasterSubDepartmentSubNavigation
             ];
 
             $routeCollections = [
-                // 'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index',
-                // 'parameters' => [$this->organisation->slug, $this->shop->slug, $masterSubDepartment->department->slug, $masterSubDepartment->slug]
+                 'name'       => 'grp.masters.master_shops.show.master_sub_departments.master_collections.index',
+                 'parameters' => request()->route()->originalParameters(),
             ];
-
         }
 
         return [
