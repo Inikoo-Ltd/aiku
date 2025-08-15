@@ -12,6 +12,7 @@ use App\Actions\Comms\Outbox\UI\IndexOutboxes;
 use App\Actions\Comms\Outbox\UI\ShowOutbox;
 use App\Actions\Comms\Outbox\UI\ShowOutboxWorkshop;
 use App\Actions\Helpers\Snapshot\UI\IndexSnapshots;
+use App\Actions\Helpers\Snapshot\UI\ShowSnapshot;
 use App\Actions\Web\Banner\UI\CreateBanner;
 use App\Actions\Web\Banner\UI\EditBanner;
 use App\Actions\Web\Banner\UI\IndexBanners;
@@ -117,6 +118,10 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
                     Route::get('create', [CreateRedirect::class, 'inWebpage'])->name('.create');
                     Route::get('{redirect}', [ShowRedirect::class, 'inWebpage'])->name('.show');
                     Route::get('{redirect}/edit', [EditRedirect::class, 'inWebpage'])->name('.edit');
+                });
+            Route::name('snapshot')->prefix('snapshot')
+                ->group(function () {
+                    Route::get('{snapshot}', ShowSnapshot::class)->name('.show');
                 });
         });
 });
