@@ -10,7 +10,7 @@ import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 import Table from '@/Components/Table/Table.vue'
-import { routeType } from '@/types/route'
+import { Link } from '@inertiajs/vue3'
 
 
 const props = defineProps<{
@@ -19,12 +19,17 @@ const props = defineProps<{
     data: {},
 }>()
 
-
-
 </script>
 
 <template>
+
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
-    <Table :resource="data"/>
+    <Table :resource="data">
+        <template #cell(url)="{ item: data }">
+            <Link :href="data['href']" class="secondaryLink">
+            {{ data["href"] }}
+            </Link>
+        </template>
+    </Table>
 </template>
