@@ -88,7 +88,6 @@ class ShowPurchaseOrder extends OrgAction
 
     public function htmlResponse(PurchaseOrder $purchaseOrder, ActionRequest $request): Response
     {
-        // dd($purchaseOrder->id);
         $this->validateAttributes();
 
         $timeline = [];
@@ -106,7 +105,6 @@ class ShowPurchaseOrder extends OrgAction
                 'label'     => $state->labels()[$state->value],
                 'tooltip'   => $state->labels()[$state->value],
                 'key'       => $state->value,
-                /* 'icon'    => $palletDelivery->state->stateIcon()[$state->value]['icon'], */
                 'timestamp' => $timestamp
             ];
         }
@@ -374,20 +372,20 @@ class ShowPurchaseOrder extends OrgAction
                 //     : Inertia::lazy(fn () => new PurchaseOrderResource(($purchaseOrder))),
 
                 PurchaseOrderTabsEnum::TRANSACTIONS->value => $this->tab == PurchaseOrderTabsEnum::TRANSACTIONS->value ?
-                    fn() => PurchaseOrderTransactionResource::collection(IndexPurchaseOrderTransactions::run($purchaseOrder))
-                    : Inertia::lazy(fn() => PurchaseOrderTransactionResource::collection(IndexPurchaseOrderTransactions::run($purchaseOrder))),
+                    fn () => PurchaseOrderTransactionResource::collection(IndexPurchaseOrderTransactions::run($purchaseOrder))
+                    : Inertia::lazy(fn () => PurchaseOrderTransactionResource::collection(IndexPurchaseOrderTransactions::run($purchaseOrder))),
 
                 PurchaseOrderTabsEnum::PRODUCTS->value => $this->tab == PurchaseOrderTabsEnum::PRODUCTS->value ?
-                    fn() => PurchaseOrderOrgSupplierProductsResource::collection(IndexPurchaseOrderOrgSupplierProducts::run($purchaseOrder->parent, $purchaseOrder))
-                    : Inertia::lazy(fn() => PurchaseOrderOrgSupplierProductsResource::collection(IndexPurchaseOrderOrgSupplierProducts::run($purchaseOrder->parent, $purchaseOrder))),
+                    fn () => PurchaseOrderOrgSupplierProductsResource::collection(IndexPurchaseOrderOrgSupplierProducts::run($purchaseOrder->parent, $purchaseOrder))
+                    : Inertia::lazy(fn () => PurchaseOrderOrgSupplierProductsResource::collection(IndexPurchaseOrderOrgSupplierProducts::run($purchaseOrder->parent, $purchaseOrder))),
 
                 PurchaseOrderTabsEnum::HISTORY->value => $this->tab == PurchaseOrderTabsEnum::HISTORY->value ?
-                    fn() => HistoryResource::collection(IndexHistory::run($purchaseOrder))
-                    : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run($purchaseOrder))),
+                    fn () => HistoryResource::collection(IndexHistory::run($purchaseOrder))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($purchaseOrder))),
 
                 PurchaseOrderTabsEnum::ATTACHMENTS->value => $this->tab == PurchaseOrderTabsEnum::ATTACHMENTS->value ?
-                    fn() => AttachmentsResource::collection(IndexAttachments::run($purchaseOrder))
-                    : Inertia::lazy(fn() => AttachmentsResource::collection(IndexAttachments::run($purchaseOrder)))
+                    fn () => AttachmentsResource::collection(IndexAttachments::run($purchaseOrder))
+                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($purchaseOrder)))
             ]
         )->table(IndexPurchaseOrderTransactions::make()->tableStructure(prefix: PurchaseOrderTabsEnum::TRANSACTIONS->value))
             ->table(IndexAttachments::make()->tableStructure(prefix: PurchaseOrderTabsEnum::ATTACHMENTS->value))

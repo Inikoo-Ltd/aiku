@@ -268,6 +268,16 @@ class GetShopNavigation
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
+                        [
+                            "label"   => __("traffic sources"),
+                            "tooltip" => __("Traffic sources"),
+                            "icon"    => ["fal", "fa-chart-line"],
+                            'root'    => 'grp.org.shops.show.marketing.traffic_sources.',
+                            "route"   => [
+                                "name"       => "grp.org.shops.show.marketing.traffic_sources.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
 
 
                     ],
@@ -469,9 +479,7 @@ class GetShopNavigation
                     "parameters" => [$shop->organisation->slug, $shop->slug],
                 ],
                 "topMenu" => [
-                    "subSections" => [
-
-                    ],
+                    "subSections" => [],
                 ],
             ];
         }

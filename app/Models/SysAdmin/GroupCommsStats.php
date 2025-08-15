@@ -89,6 +89,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_outboxes_type_pallet_delivery_deleted
  * @property int $number_outboxes_type_pallet_return_deleted
  * @property int $number_outboxes_type_pallet_deleted
+ * @property int $number_traffic_sources
  * @property-read \App\Models\SysAdmin\Group $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupCommsStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupCommsStats newQuery()
