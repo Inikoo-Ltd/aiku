@@ -35,7 +35,7 @@ class MasterProductsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                     => $this->id, 
+            'id'                     => $this->id,
             'slug'                   => $this->slug,
             'code'                   => $this->code,
             'name'                   => $this->name,

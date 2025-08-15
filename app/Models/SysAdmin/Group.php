@@ -132,6 +132,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property array<array-key, mixed>|null $extra_languages
  * @property-read \App\Models\SysAdmin\GroupAccountingStats|null $accountingStats
  * @property-read LaravelCollection<int, Adjustment> $adjustments
  * @property-read LaravelCollection<int, Agent> $agents
@@ -285,6 +286,7 @@ class Group extends Authenticatable implements Auditable, HasMedia
             'limits'   => 'array',
             'data'     => 'array',
             'settings' => 'array',
+            'extra_languages' => 'array'
         ];
     }
 
@@ -292,6 +294,7 @@ class Group extends Authenticatable implements Auditable, HasMedia
         'limits'   => '{}',
         'data'     => '{}',
         'settings' => '{}',
+        'extra_languages' => '{}'
     ];
 
     public function getSlugOptions(): SlugOptions

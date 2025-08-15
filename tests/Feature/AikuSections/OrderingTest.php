@@ -90,14 +90,14 @@ beforeEach(function () {
         $this->organisation,
         $this->user,
         $this->shop
-        ) = createShop();
+    ) = createShop();
 
     $this->group = $this->organisation->group;
 
     list(
         $this->tradeUnit,
         $this->product
-        ) = createProduct($this->shop);
+    ) = createProduct($this->shop);
 
     $this->customer = createCustomer($this->shop);
 
@@ -172,10 +172,10 @@ test('get order products', function (Order $order) {
     // Create a transaction if needed (may not be necessary if the order already has products)
     $order->transactions->first()
         ?: StoreTransaction::make()->action(
-        $order,
-        $this->product->historicAsset,
-        Transaction::factory()->definition()
-    );
+            $order,
+            $this->product->historicAsset,
+            Transaction::factory()->definition()
+        );
 
     $order->refresh();
 
@@ -627,7 +627,7 @@ test('UI create asset shipping', function () {
             ->has('breadcrumbs', 4)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'new schema')
                     ->etc()
             )
@@ -646,7 +646,7 @@ test('UI show asset shipping', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $shippingZoneSchema->name)
                     ->etc()
             )
@@ -666,7 +666,7 @@ test('UI edit asset shipping', function () {
             ->has('breadcrumbs', 3)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $shippingZoneSchema->name)
                     ->etc()
             )
@@ -685,7 +685,7 @@ test('UI show ordering backlog', function () {
             ->has('breadcrumbs', 4)
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'orders backlog')
                     ->etc()
             );
@@ -703,7 +703,7 @@ test('UI index ordering purges', function () {
             ->has('data')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'Purges')
                     ->etc()
             );
@@ -718,7 +718,7 @@ test('UI create ordering purge', function () {
             ->component('CreateModel')
             ->where('title', 'new purge')
             ->has('breadcrumbs', 4)
-            ->has('formData', fn($page) => $page
+            ->has('formData', fn ($page) => $page
                 ->where('route', [
                     'name'       => 'grp.models.purge.store',
                     'parameters' => [
@@ -728,7 +728,7 @@ test('UI create ordering purge', function () {
                 ->etc())
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', 'new purge')
                     ->etc()
             );
@@ -744,7 +744,7 @@ test('UI edit ordering purge', function () {
             ->component('EditModel')
             ->where('title', 'Purge')
             ->has('breadcrumbs', 3)
-            ->has('formData', fn($page) => $page
+            ->has('formData', fn ($page) => $page
                 ->where('args', [
                     'updateRoute' => [
                         'name'       => 'grp.models.purge.update',
@@ -755,7 +755,7 @@ test('UI edit ordering purge', function () {
                 ->etc())
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $purge->scheduled_at->toISOString())
                     ->etc()
             );

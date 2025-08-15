@@ -19,7 +19,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexMasterCollectionsInMasterCollection extends OrgAction
 {
-
     public function handle(MasterCollection $masterCollection, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {

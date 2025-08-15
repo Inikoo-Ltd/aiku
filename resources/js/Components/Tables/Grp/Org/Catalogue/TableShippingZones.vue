@@ -9,6 +9,8 @@ import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import type { Links, Meta } from "@/types/Table"
 import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faArrowRight, faTruck } from "@fal"
 defineProps<{
     data: {
         data: {}
@@ -33,9 +35,9 @@ function shopRoute(zone: {}) {
     }
 }
 
-function mapTerritories(territories: { country_code: string }[]) {
+/* function mapTerritories(territories: { country_code: string }[]) {
     return territories.map((territory) => territory.country_code)
-}
+} */
 </script>
 
 <template>
@@ -54,32 +56,85 @@ function mapTerritories(territories: { country_code: string }[]) {
             {{ position["position"] }}
         </template>
         <template #cell(territories)="{ item: territories }">
-            <AddressLocation v-for="(territory, index) in mapTerritories(territories.territories)" :key="index"
-                :data="[territory, territory, territory]" />
-        </template>
-        <template #cell(price)="{ item: price }">
-            <div class="shipping-price-table">
-                <div v-if="price['price'].type === 'TBC'">Shipping price: TBC</div>
-                <div v-else-if="price['price'].type === 'Step Order Items Net Amount'">
-                    <div v-for="(priceStep, index) in price['price'].steps" :key="index" class="shipping-tier">
-                        <div class="shipping-price-row">
-                            <span>£{{ priceStep.from.toFixed(2) }}</span>
-                            <span>→</span>
-                            <span>
-                                <span v-if="priceStep.to !== 'INF'">
-                                    £{{ Number(priceStep.to).toFixed(2) }}
-                                </span>
-                                <span v-else>∞</span>
-                            </span>
-                            <span class="shipping-cost"> £{{ priceStep.price.toFixed(2) }} </span>
-                        </div>
+            <div v-for="(item, index) in territories.territories" :key="index" class="text-xs text-gray-800">
+                <!-- Baris Utama: Country + Flag -->
+                <div class="flex items-center gap-1 font-medium">
+                    <img class="inline-block h-[14px] w-[20px] object-cover rounded-sm"
+                        :src="'/flags/' + item.country_code.toLowerCase() + '.png'"
+                        :alt="`Bendera ${item.country_code}`" loading="lazy" />
+                    <span>{{ item.country_code }}</span>
+                
 
-                        <div v-if="priceStep.price === 0" class="shipping-free-row">
-                            <span>free</span>
-                        </div>
+                <!-- Postal Code Info (Compact) -->
+                <div v-if="item.included_postal_codes || item.excluded_postal_codes" class="mt-1 ml-5 space-y-1">
+                    <!-- Included -->
+                    <div v-if="item.included_postal_codes" class="text-green-600">
+                        <span class="font-semibold">✔ Included:</span>
+                        <span class="text-gray-700 font-mono">{{ item.included_postal_codes }}</span>
                     </div>
+
+                    <!-- Excluded -->
+                    <div v-if="item.excluded_postal_codes" class="text-red-600">
+                        <span class="font-semibold">✘ Excluded:</span>
+                        <span class="text-gray-700 font-mono">{{ item.excluded_postal_codes }}</span>
+                    </div>
+                </div>
                 </div>
             </div>
         </template>
+
+
+      <template #cell(price)="{ item: price }">
+  <div class="space-y-1 text-xs text-gray-800">
+    <!-- TBC Case -->
+    <div v-if="price.price.type === 'TBC'" class="text-gray-500 italic">
+      <font-awesome-icon icon="fas fa-clock" class="text-yellow-500 mr-1" />
+      Shipping price: TBC
+    </div>
+
+    <!-- Step Pricing -->
+    <div v-else class="space-y-1">
+      <div
+        v-for="(priceStep, index) in price.price.steps"
+        :key="index"
+        class="grid grid-cols-[80px_100px_80px] items-center gap-2 text-xs"
+      >
+        <!-- Type -->
+        <div class="flex items-center gap-1 font-medium text-gray-600">
+          <font-awesome-icon
+            :icon="price.price.type === 'Step Order Estimated Weight' ? 'fas fa-weight' : 'fas fa-box'"
+            class="text-blue-500"
+          />
+          <span>
+            {{ price.price.type === 'Step Order Estimated Weight' ? 'Weight' : 'Items' }}
+          </span>
+        </div>
+
+        <!-- Range -->
+        <div class="flex items-center gap-1 text-gray-700">
+          <span>£{{ priceStep.from }}</span>
+          <font-awesome-icon icon="fas fa-arrow-right" />
+          <span v-if="priceStep.to !== 'INF'">£{{ Number(priceStep.to) }}</span>
+          <span v-else>∞</span>
+        </div>
+
+        <!-- Price -->
+        <div
+          class="font-bold text-right"
+          :class="priceStep.price === 0 ? 'text-green-600' : 'text-black'"
+        >
+          <span v-if="priceStep.price === 0">
+            <font-awesome-icon icon="fas fa-truck" class="mr-1" />
+            Free
+          </span>
+          <span v-else>
+            £{{ priceStep.price }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
     </Table>
 </template>
