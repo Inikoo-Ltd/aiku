@@ -209,7 +209,6 @@ class EditWebpage extends OrgAction
                                         'method'     => 'patch',
                                         'name'       => 'grp.models.webpage.delete',
                                         'parameters' => [
-                                            // 'shop'    => $webpage->shop->id,
                                             'webpage' => $webpage->id,
                                         ]
                                     ],
