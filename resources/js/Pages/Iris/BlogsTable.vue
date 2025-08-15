@@ -9,27 +9,14 @@ import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
-import { ref } from "vue"
-import Button from '@/Components/Elements/Buttons/Button.vue'
-import { trans } from 'laravel-vue-i18n'
+import Table from '@/Components/Table/Table.vue'
 import { routeType } from '@/types/route'
 
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
     title: string
-    tabs: {
-        current: string
-        navigation: {}
-    },
     data: {},
-    index?: {}
-    sales?: {}
-    routes: {
-        families_route: routeType
-        submit_route: routeType
-    }
-    is_orphan_products?: boolean
 }>()
 
 
@@ -37,9 +24,7 @@ const props = defineProps<{
 </script>
 
 <template>
-    <Head :title="capitalize(title)"/>
+    <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"></PageHeading>
-dsfsdf
-   
+    <Table :resource="data"/>
 </template>
-
