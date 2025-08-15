@@ -14,6 +14,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { set, get } from 'lodash-es'
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 import { ref, watch } from "vue"
+import PurePricingZone from "@/Components/Pure/PurePricingZone.vue"
 
 const props = defineProps<{
     form: any
@@ -30,7 +31,6 @@ const props = defineProps<{
 
 const emits = defineEmits()
 
-console.log("Input.vue", props)
 const setFormValue = (data: Object, fieldName: String) => {
     if (Array.isArray(fieldName)) {
         return getNestedValue(data, fieldName)
@@ -67,41 +67,7 @@ const updateFormValue = (newValue) => {
 <template>
     <div class="relative">
         <div class="relative">
-            <PureInput
-                v-model="value"
-                :inputName="fieldName"
-                :readonly="fieldData?.readonly"
-                :type="fieldData?.type ?? 'text'"
-                :placeholder="fieldData?.placeholder"
-                :maxlength="fieldData?.maxLength"
-                :copyButton="fieldData?.copyButton"
-                :isError="!!form.errors[fieldName]"
-                :class="
-                    !!form.errors[fieldName] ? 'errorShake' : ''
-                "
-            >
-                <!-- Icon: Error, Success, Loading -->
-                <template #stateIcon>
-                    <div class="mr-2 h-full flex items-center pointer-events-none">
-                        <FontAwesomeIcon v-if="get(form, ['errors', `${fieldName}`])" icon="fas fa-exclamation-circle"
-                            class="h-5 w-5 text-red-500" aria-hidden="true" />
-                        <FontAwesomeIcon v-if="form.recentlySuccessful" icon="fas fa-check-circle"
-                            class="h-5 w-5 text-green-500" aria-hidden="true" />
-                        <!-- <FontAwesomeIcon v-if="form.processing" icon="fad fa-spinner-third" class="h-5 w-5 animate-spin" /> -->
-                    </div>
-                </template>
-            </PureInput>
-
-
-        </div>
-
-        <!-- Counter: Letters and Words -->
-        <div v-if="props.options?.counter"
-            class="grid grid-flow-col text-xs italic text-gray-500 mt-2 space-x-12 justify-start">
-            <p class="">{{ trans('Letters') }}: {{ form[fieldName]?.length ?? 0 }}</p>
-            <p class="">
-                {{ trans('Words') }}: {{ form[fieldName]?.trim().split(/\s+/).filter(Boolean).length ?? 0 }}
-            </p>
+            <PurePricingZone v-model="value" />
         </div>
     </div>
     <p v-if="get(form, ['errors', `${fieldName}`])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">

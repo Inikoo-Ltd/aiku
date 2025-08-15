@@ -214,6 +214,7 @@ use App\Actions\Masters\MasterProductCategory\UploadImageMasterProductCategory;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Purge\StorePurge;
 use App\Actions\Ordering\Purge\UpdatePurge;
+use App\Actions\Ordering\ShippingZone\UpdateShippingZone;
 use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
@@ -321,6 +322,9 @@ Route::prefix('clocking-machine/{clockingMachine:id}')->name('clocking_machine..
     Route::delete('', DeleteClockingMachine::class)->name('delete');
 });
 
+Route::prefix('shipping-zone/{shippingZone:id}')->name('shipping_zone.')->group(function () {
+    Route::patch('', UpdateShippingZone::class)->name('update');
+});
 
 Route::patch('fulfilment/{fulfilment:id}', UpdateFulfilment::class)->name('fulfilment.update');
 Route::patch('customer/{customer:id}', UpdateCustomer::class)->name('customer.update')->withoutScopedBindings();
