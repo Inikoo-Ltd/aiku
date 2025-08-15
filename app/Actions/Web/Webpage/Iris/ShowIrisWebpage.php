@@ -37,7 +37,7 @@ class ShowIrisWebpage
         $webPageLayout = $webpage->published_layout;
 
 
-        $webBlocks = $this->getIrisWebBlocks(
+        $webBlocks  = $this->getIrisWebBlocks(
             webpage: $webpage,
             webBlocks: Arr::get($webPageLayout, 'web_blocks', []),
             isLoggedIn: auth()->check()
@@ -48,14 +48,14 @@ class ShowIrisWebpage
         }
 
         return [
-            'status'         => 'ok',
-            'breadcrumbs'    => $this->getIrisBreadcrumbs(
+            'status'      => 'ok',
+            'breadcrumbs' => $this->getIrisBreadcrumbs(
                 webpage: $webpage,
                 parentPaths: $parentPaths
             ),
-            'webpage'        => $webpage,
-            'webpage_img'    => $webpageImg,
-            'web_blocks'     => $webBlocks,
+            'webpage'     => $webpage,
+            'webpage_img' => $webpageImg,
+            'web_blocks'  => $webBlocks,
         ];
     }
 
@@ -190,10 +190,9 @@ class ShowIrisWebpage
 
         if ($webpage->url && $webpage->url != '/') {
             $breadcrumbs[] = [
-
                 'type'   => 'simple',
                 'simple' => [
-                    'label' => $webpage->breadcrumb_label,
+                    'label' => $webpage->breadcrumb_label ?? $webpage->title,
                     'url'   => $runningUrl.$webpage->url
                 ]
 
