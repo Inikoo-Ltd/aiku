@@ -217,13 +217,13 @@ const debounceSaveWorkshop = (block) => {
 
       if (error?.response?.data?.message) {
         notify({
-          title: "Failed to auto save. A",
+          title: "Failed to auto save",
           text: error.response.data.message,
           type: "error",
         });
       } else {
         notify({
-          title: "Failed to auto save. B2",
+          title: "Failed to auto save",
           text: error.message,
           type: "error",
         });
