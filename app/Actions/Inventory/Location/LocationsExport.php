@@ -36,12 +36,12 @@ class LocationsExport implements FromQuery, WithMapping, WithHeadings, ShouldQue
 
         broadcast(new FileDownloadProgress($this->warehouse->id, (int) $progress));
 
-        return collect($this->columns)->map(fn($col) => $row->{$col} ?? '')->toArray();
+        return collect($this->columns)->map(fn ($col) => $row->{$col} ?? '')->toArray();
     }
 
     public function headings(): array
     {
-        return array_map(fn($col) => str_replace('_', ' ', ucfirst($col)), $this->columns);
+        return array_map(fn ($col) => str_replace('_', ' ', ucfirst($col)), $this->columns);
     }
 
     public function query()

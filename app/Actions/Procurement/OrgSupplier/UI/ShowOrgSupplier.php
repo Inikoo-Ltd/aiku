@@ -112,12 +112,12 @@ class ShowOrgSupplier extends OrgAction
                 ],
 
                 SupplierTabsEnum::SHOWCASE->value => $this->tab == SupplierTabsEnum::SHOWCASE->value ?
-                    fn() => GetOrgSupplierShowcase::run($orgSupplier)
-                    : Inertia::lazy(fn() => GetOrgSupplierShowcase::run($orgSupplier)),
+                    fn () => GetOrgSupplierShowcase::run($orgSupplier)
+                    : Inertia::lazy(fn () => GetOrgSupplierShowcase::run($orgSupplier)),
 
                 SupplierTabsEnum::HISTORY->value => $this->tab == SupplierTabsEnum::HISTORY->value ?
-                    fn() => HistoryResource::collection(IndexHistory::run($orgSupplier))
-                    : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run($orgSupplier)))
+                    fn () => HistoryResource::collection(IndexHistory::run($orgSupplier))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($orgSupplier)))
             ]
         )->table(IndexHistory::make()->tableStructure(prefix: SupplierTabsEnum::HISTORY->value));
     }

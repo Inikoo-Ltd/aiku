@@ -6,7 +6,6 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Comms\Mailshot\UI\HasUIMailshots;
 use App\Actions\Comms\Mailshot\UI\WithIndexMailshots;
 use App\Actions\OrgAction;
-use App\Actions\Traits\WithCustomersSubNavigation;
 use App\Http\Resources\CRM\TrafficSourcesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
@@ -56,7 +55,6 @@ class IndexTrafficSources extends OrgAction
         });
 
 
-
         $selectFields = [
             'traffic_sources.id',
             'traffic_sources.slug',
@@ -99,7 +97,7 @@ class IndexTrafficSources extends OrgAction
     ): Closure {
         return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
-                $table->name($prefix)->pageName($prefix . 'Page');
+                $table->name($prefix)->pageName($prefix.'Page');
             }
 
             $table
@@ -110,8 +108,7 @@ class IndexTrafficSources extends OrgAction
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_customers', label: __('Registrations'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_customer_purchases', label: __('Orders'), canBeHidden: false, sortable: true)
-                ->column(key: 'cost', label: __('Cost'), canBeHidden: false, sortable: false)
-
+                ->column(key: 'cost', label: __('Cost'), canBeHidden: false)
                 ->column(key: 'total_customer_revenue', label: __('Revenue'), canBeHidden: false, sortable: true, type: 'currency');
         };
     }
@@ -119,17 +116,14 @@ class IndexTrafficSources extends OrgAction
     public function htmlResponse(LengthAwarePaginator $trafficSources, ActionRequest $request): Response
     {
         $subNavigation = null;
-        // if ($this->parent instanceof Shop) {
-        //     $subNavigation = $this->getSubNavigation($request);
-        // }
-        $title      = __('Traffic Sources');
-        $model      = __('Traffic Source');
-        $icon       = [
+        $title         = __('Traffic Sources');
+        $model         = __('Traffic Source');
+        $icon          = [
             'icon'  => ['fal', 'fa-route'],
             'title' => __('traffic sources')
         ];
-        $afterTitle = null;
-        $iconRight  = null;
+        $afterTitle    = null;
+        $iconRight     = null;
 
         if ($this->parent instanceof Shop) {
             $title      = $this->parent->name;
