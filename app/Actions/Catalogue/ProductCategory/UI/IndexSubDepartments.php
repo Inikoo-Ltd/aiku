@@ -80,6 +80,7 @@ class IndexSubDepartments extends OrgAction
                 'product_categories.name',
                 'product_categories.state',
                 'product_categories.description',
+                'product_categories.master_product_category_id',
                 'product_categories.created_at',
                 'product_categories.updated_at',
                 'departments.slug as department_slug',

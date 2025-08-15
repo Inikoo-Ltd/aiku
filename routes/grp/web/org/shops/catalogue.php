@@ -14,6 +14,7 @@ use App\Actions\Catalogue\Collection\UI\ShowCollection;
 use App\Actions\Catalogue\Product\GetProductUploadedImages;
 use App\Actions\Catalogue\Product\UI\CreateProduct;
 use App\Actions\Catalogue\Product\UI\EditProduct;
+use App\Actions\Catalogue\Product\UI\IndexProducts;
 use App\Actions\Catalogue\Product\UI\IndexProductsInCatalogue;
 use App\Actions\Catalogue\Product\UI\IndexProductsInCollection;
 use App\Actions\Catalogue\Product\UI\IndexProductsInProductCategory;
@@ -159,6 +160,9 @@ Route::name("departments.")->prefix('departments')
                                 Route::get('create', [CreateProduct::class, 'inFamilyInSubDepartmentInDepartment'])->name('create');
                             });
                         });
+                    });
+                    Route::prefix('products')->name('.product.')->group(function () {
+                        Route::get('index', [IndexProductsInProductCategory::class, 'inSubDepartmentInDepartment'])->name('index');
                     });
                 });
             });
