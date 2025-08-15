@@ -50,12 +50,12 @@ class TradeUnitHydrateStatus implements ShouldBeUnique
     {
 
 
-        if ( $stats->number_current_stocks >0  && ($stats->number_current_products>0 || $stats->number_customer_exclusive_current_products>0    )   ) {
+        if ($stats->number_current_stocks > 0  && ($stats->number_current_products > 0 || $stats->number_customer_exclusive_current_products > 0)) {
             return TradeUnitStatusEnum::ACTIVE;
         }
 
 
-        if ($stats->number_stocks_state_discontinued == 0 && $stats->number_stocks_state_suspended == 0  &&  $stats->number_products_state_discontinued==0 && $stats->number_customer_exclusive_products_state_discontinued  ) {
+        if ($stats->number_stocks_state_discontinued == 0 && $stats->number_stocks_state_suspended == 0  &&  $stats->number_products_state_discontinued == 0 && $stats->number_customer_exclusive_products_state_discontinued) {
             return TradeUnitStatusEnum::IN_PROCESS;
         }
 

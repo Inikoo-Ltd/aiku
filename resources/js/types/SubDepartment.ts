@@ -18,4 +18,5 @@ export interface SubDepartmentx {
     description: string
     created_at: string
     updated_at: string
+    master_product_category_id: number
 }

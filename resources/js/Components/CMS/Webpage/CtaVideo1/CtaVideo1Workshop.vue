@@ -114,7 +114,7 @@ onMounted(() => {
 						}
 					}" />
 
-					<div class="flex justify-center">
+					<div v-if="modelValue?.button?.show !== false" class="flex justify-center">
 						<Button :injectStyle="getStyles(modelValue?.button?.container?.properties, screenType)"
 							:label="modelValue?.button?.text" @click.stop="() => {
 								sendMessageToParent('activeBlock', indexBlock)

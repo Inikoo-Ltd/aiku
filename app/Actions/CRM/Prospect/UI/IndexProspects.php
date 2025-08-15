@@ -32,7 +32,6 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -279,14 +278,9 @@ class IndexProspects extends OrgAction
             ];
         }
         $subNavigation = $this->getSubNavigation($request);
-        $dataProspect  = [
-            'data' => $this->tab == ProspectsTabsEnum::PROSPECTS->value
-                ? ProspectsResource::collection($prospects)
-                : Inertia::lazy(fn() => ProspectsResource::collection($prospects)),
 
-        ];
 
-        if( $this->parent instanceof Group) {
+        if ($this->parent instanceof Group) {
             unset($navigation[ProspectsTabsEnum::DASHBOARD->value]);
             $subNavigation = null;
         }
@@ -298,27 +292,27 @@ class IndexProspects extends OrgAction
             ],
 
             ProspectsTabsEnum::DASHBOARD->value => $this->tab == ProspectsTabsEnum::DASHBOARD->value ?
-                fn() => GetProspectsDashboard::run($this->parent, $request)
-                : Inertia::lazy(fn() => GetProspectsDashboard::run($this->parent, $request)),
+                fn () => GetProspectsDashboard::run($this->parent, $request)
+                : Inertia::lazy(fn () => GetProspectsDashboard::run($this->parent, $request)),
 
             ProspectsTabsEnum::PROSPECTS->value => $this->tab == ProspectsTabsEnum::PROSPECTS->value ?
-                fn() => ProspectsResource::collection($prospects)
-                : Inertia::lazy(fn() => ProspectsResource::collection($prospects)),
+                fn () => ProspectsResource::collection($prospects)
+                : Inertia::lazy(fn () => ProspectsResource::collection($prospects)),
             ProspectsTabsEnum::CONTACTED->value => $this->tab == ProspectsTabsEnum::CONTACTED->value ?
-                fn() => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::CONTACTED->value, scope: 'contacted'))
-                : Inertia::lazy(fn() => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::CONTACTED->value, scope: 'contacted'))),
+                fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::CONTACTED->value, scope: 'contacted'))
+                : Inertia::lazy(fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::CONTACTED->value, scope: 'contacted'))),
 
             ProspectsTabsEnum::FAILED->value => $this->tab == ProspectsTabsEnum::FAILED->value ?
-                fn() => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::FAILED->value, scope: 'fail'))
-                : Inertia::lazy(fn() => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::FAILED->value, scope: 'fail'))),
+                fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::FAILED->value, scope: 'fail'))
+                : Inertia::lazy(fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::FAILED->value, scope: 'fail'))),
 
             ProspectsTabsEnum::SUCCESS->value => $this->tab == ProspectsTabsEnum::SUCCESS->value ?
-                fn() => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::SUCCESS->value, scope: 'success'))
-                : Inertia::lazy(fn() => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::SUCCESS->value, scope: 'success'))),
+                fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::SUCCESS->value, scope: 'success'))
+                : Inertia::lazy(fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::SUCCESS->value, scope: 'success'))),
 
             ProspectsTabsEnum::HISTORY->value => $this->tab == ProspectsTabsEnum::HISTORY->value ?
-                fn() => HistoryResource::collection(IndexHistory::run(model: Prospect::class, prefix: ProspectsTabsEnum::HISTORY->value))
-                : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run(model: Prospect::class, prefix: ProspectsTabsEnum::HISTORY->value))),
+                fn () => HistoryResource::collection(IndexHistory::run(model: Prospect::class, prefix: ProspectsTabsEnum::HISTORY->value))
+                : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run(model: Prospect::class, prefix: ProspectsTabsEnum::HISTORY->value))),
         ];
 
         return Inertia::render(

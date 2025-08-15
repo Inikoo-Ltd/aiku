@@ -11,6 +11,7 @@
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -33,6 +34,29 @@ class CreateMasterFamily extends OrgAction
         $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($masterDepartment, $request);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, ActionRequest $request): Response
+    {
+        $this->initialisationFromGroup($masterDepartment->group, $request);
+
+        return $this->handle($masterDepartment, $request);
+    }
+
+
+    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, ActionRequest $request): Response
+    {
+        $this->initialisationFromGroup(group(), $request);
+
+        return $this->handle($masterSubDepartment, $request);
+    }
+
+    public function inMasterSubDepartmentInMasterDepartment(MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, ActionRequest $request): Response
+    {
+        $this->initialisationFromGroup(group(), $request);
+
+        return $this->handle($masterSubDepartment, $request);
     }
 
     public function handle(MasterProductCategory|MasterShop $parent, ActionRequest $request): Response
@@ -105,12 +129,19 @@ class CreateMasterFamily extends OrgAction
                                 'masterShop' => $parent->id
                             ]
                         ],
-                        MasterProductCategory::class => [
-                            'name' => 'grp.models.master_family.store',
-                            'parameters' => [
-                                'masterDepartment' => $parent->id
+                        MasterProductCategory::class => $parent->type == MasterProductCategoryTypeEnum::DEPARTMENT
+                            ? [
+                                'name' => 'grp.models.master_family.store',
+                                'parameters' => [
+                                    'masterDepartment' => $parent->id
+                                ]
                             ]
-                        ],
+                            : [
+                                'name' => 'grp.models.master-sub-department.master_family.store',
+                                'parameters' => [
+                                    'masterSubDepartment' => $parent->id
+                                ]
+                            ],
                         default => null
                     }
                 ]

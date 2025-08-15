@@ -10,7 +10,6 @@ namespace App\Actions\Masters\MasterCollection\UI;
 
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
-use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Http\Resources\Masters\MasterCollectionsResource;
@@ -133,6 +132,10 @@ class IndexMasterCollections extends OrgAction
             ];
         }
 
+
+        if ($this->parent instanceof MasterShop) {
+            $subNavigation = $this->getMasterShopNavigation($this->parent);
+        }
         return Inertia::render(
             'Masters/MasterCollections',
             [

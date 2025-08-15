@@ -16,7 +16,6 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class RepairInvoiceMissingUlid
 {
-
     use AsAction;
 
     public function handle(Invoice $invoice): void
@@ -37,7 +36,7 @@ class RepairInvoiceMissingUlid
         $bar->setFormat('debug');
         $bar->start();
 
-        Invoice::orderBy('id','desc')->whereNull('ulid')
+        Invoice::orderBy('id', 'desc')->whereNull('ulid')
             ->chunk(100, function (Collection $models) use ($bar) {
                 foreach ($models as $model) {
                     $this->handle($model);

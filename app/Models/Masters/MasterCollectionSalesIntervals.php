@@ -22,7 +22,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $sales_1m
  * @property string $sales_1w
  * @property string $sales_3d
- * @property string $sales_1d
  * @property string $sales_ytd
  * @property string $sales_qtd
  * @property string $sales_mtd
@@ -36,7 +35,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $sales_1m_ly
  * @property string $sales_1w_ly
  * @property string $sales_3d_ly
- * @property string $sales_1d_ly
  * @property string $sales_ytd_ly
  * @property string $sales_qtd_ly
  * @property string $sales_mtd_ly
@@ -61,7 +59,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $sales_grp_currency_1m
  * @property string $sales_grp_currency_1w
  * @property string $sales_grp_currency_3d
- * @property string $sales_grp_currency_1d
  * @property string $sales_grp_currency_ytd
  * @property string $sales_grp_currency_qtd
  * @property string $sales_grp_currency_mtd
@@ -75,7 +72,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $sales_grp_currency_1m_ly
  * @property string $sales_grp_currency_1w_ly
  * @property string $sales_grp_currency_3d_ly
- * @property string $sales_grp_currency_1d_ly
  * @property string $sales_grp_currency_ytd_ly
  * @property string $sales_grp_currency_qtd_ly
  * @property string $sales_grp_currency_mtd_ly

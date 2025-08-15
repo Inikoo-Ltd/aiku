@@ -311,6 +311,19 @@ const generateLinkPallet = (pallet: {}) => {
                 {{ item.rental_name }}
         </template>
 
+        <!-- Column: Customer Reference, Notes -->
+        <template #cell(customer_reference)="{ item }">
+            <div>
+                {{ item.customer_reference }}
+                <div v-if="item.notes" class="text-gray-400">
+                    <FontAwesomeIcon v-tooltip="trans('Pallet\'s note')" icon="fal fa-sticky-note" fixed-width aria-hidden="true" />
+                    <span>
+                        {{ item.notes }}
+                    </span>
+                </div>
+            </div>
+        </template>
+
         <!-- Column: State -->
 		<!-- <template #cell(state)="{ item: palletDelivery }">
             <div v-if="layout.app.name == 'retina'" class="px-3">

@@ -25,6 +25,12 @@ export const initialiseIrisApp = () => {
         layout.currentRoute = route().current()  // current route
     })
 
+    if (usePage().props?.iris?.locale) {
+        loadLanguageAsync(usePage().props?.iris?.locale)
+    } else if (usePage().props.localeData?.language?.code) {
+        loadLanguageAsync(usePage().props.localeData?.language?.code)
+    }
+
     watchEffect(() => {
         // Set currency to used by global
         if (usePage().props.iris?.currency) {       

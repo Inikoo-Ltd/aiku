@@ -128,7 +128,7 @@ class IndexDepartments extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
 
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {

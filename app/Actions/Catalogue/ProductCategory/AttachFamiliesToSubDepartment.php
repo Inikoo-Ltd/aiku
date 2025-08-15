@@ -27,12 +27,11 @@ class AttachFamiliesToSubDepartment extends OrgAction
 
     public function handle(ProductCategory $subDepartment, array $modelData): ProductCategory
     {
-
-        $departmentsToHydrate = [];
+        $departmentsToHydrate    = [];
         $subDepartmentsToHydrate = [];
 
         $departmentsToHydrate[$subDepartment->department_id] = $subDepartment->department_id;
-        $subDepartmentsToHydrate[$subDepartment->id] = $subDepartment->id;
+        $subDepartmentsToHydrate[$subDepartment->id]         = $subDepartment->id;
 
 
         foreach ($modelData['families_id'] as $familyID) {
@@ -45,29 +44,31 @@ class AttachFamiliesToSubDepartment extends OrgAction
             }
 
             $family->update([
+                'parent_id'         => $subDepartment->id,
+                'department_id'     => $subDepartment->department_id,
                 'sub_department_id' => $subDepartment->id,
-                'parent_id' => $subDepartment->id,
-                'department_id' => $subDepartment->department_id,
             ]);
 
             DB::table('products')->where('family_id', $family->id)->update([
+                'department_id'     => $subDepartment->department_id,
                 'sub_department_id' => $subDepartment->id,
-                'department_id' => $subDepartment->department_id,
             ]);
-
         }
 
         foreach ($departmentsToHydrate as $departmentID) {
             $department = ProductCategory::find($departmentID);
-            DepartmentHydrateProducts::dispatch($department);
-            ProductCategoryHydrateFamilies::dispatch($department);
-
+            if ($department) {
+                DepartmentHydrateProducts::dispatch($department);
+                ProductCategoryHydrateFamilies::dispatch($department);
+            }
         }
 
         foreach ($subDepartmentsToHydrate as $subDepartmentsToHydrateID) {
-            $subDepartmentsToHydrateID = ProductCategory::find($subDepartmentsToHydrateID);
-            ProductCategoryHydrateFamilies::dispatch($subDepartmentsToHydrateID);
-            SubDepartmentHydrateProducts::dispatch($subDepartmentsToHydrateID);
+            $subDepartment = ProductCategory::find($subDepartmentsToHydrateID);
+            if ($subDepartment) {
+                ProductCategoryHydrateFamilies::dispatch($subDepartment);
+                SubDepartmentHydrateProducts::dispatch($subDepartment);
+            }
         }
 
 
@@ -77,7 +78,7 @@ class AttachFamiliesToSubDepartment extends OrgAction
     public function rules(): array
     {
         return [
-            'families_id' => ['required', 'array'],
+            'families_id'   => ['required', 'array'],
             'families_id.*' => [
                 'integer',
                 Rule::exists('product_categories', 'id')->where('shop_id', $this->shop->id),
@@ -87,7 +88,6 @@ class AttachFamiliesToSubDepartment extends OrgAction
 
     public function asController(ProductCategory $subDepartment, ActionRequest $request): ProductCategory
     {
-
         $this->initialisationFromShop($subDepartment->shop, $request);
 
         return $this->handle($subDepartment, $this->validatedData);
@@ -103,7 +103,7 @@ class AttachFamiliesToSubDepartment extends OrgAction
     {
         $this->asAction = true;
         $this->initialisationFromShop($subDepartment->shop, $familiesToAttach);
-        return $this->handle($subDepartment, $this->validatedData);
 
+        return $this->handle($subDepartment, $this->validatedData);
     }
 }

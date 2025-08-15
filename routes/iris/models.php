@@ -7,12 +7,13 @@
  * copyright 2025
 */
 
+use App\Actions\Iris\Basket\StoreEcomBasketTransaction;
+use App\Actions\Iris\Basket\UpdateEcomBasketTransaction;
 use App\Actions\Iris\Portfolio\DeleteIrisPortfolioFavourites;
 use App\Actions\Iris\Portfolio\DeleteIrisPortfolioFromMultiChannels;
 use App\Actions\Iris\Portfolio\StoreIrisPortfolioFavourites;
 use App\Actions\Iris\Portfolio\StoreIrisPortfolioToAllChannels;
 use App\Actions\Iris\Portfolio\StoreIrisPortfolioToMultiChannels;
-use App\Actions\Iris\UpdateIrisLocale;
 use Illuminate\Support\Facades\Route;
 
 Route::post('portfolio-all-channels', StoreIrisPortfolioToAllChannels::class)->name('all_channels.portfolio.store');
@@ -23,3 +24,6 @@ Route::post('delete-portfolio-multi-channels', DeleteIrisPortfolioFromMultiChann
 
 Route::post('favourites/{product:id}', StoreIrisPortfolioFavourites::class)->name('favourites.store');
 Route::delete('un-favourites/{product:id}', DeleteIrisPortfolioFavourites::class)->name('favourites.delete');
+
+Route::post('{product:id}/store-transaction', StoreEcomBasketTransaction::class)->name('transaction.store')->withoutScopedBindings();
+Route::post('{transaction:id}/update-transaction', UpdateEcomBasketTransaction::class)->name('transaction.update')->withoutScopedBindings();

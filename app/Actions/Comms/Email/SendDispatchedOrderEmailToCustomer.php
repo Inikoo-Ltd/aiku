@@ -103,7 +103,7 @@ class SendDispatchedOrderEmailToCustomer extends OrgAction
                                         </td>
                                     </tr>';
 
-        if ($pdfInvoices=$this->generateInvoicePdfHtml($order)) {
+        if ($pdfInvoices = $this->generateInvoicePdfHtml($order)) {
             $orderHtmlBlock .= '  <tr style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
                                         <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; border-top: 1px solid #eee; margin: 0; padding: 8px 0;" valign="top">
                                             <strong><span class="fallback-text">'.__('PDF invoice').':</span></strong>

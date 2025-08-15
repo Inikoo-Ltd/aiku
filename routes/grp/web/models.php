@@ -195,7 +195,13 @@ use App\Actions\HumanResources\JobPosition\UpdateJobPosition;
 use App\Actions\HumanResources\Workplace\DeleteWorkplace;
 use App\Actions\HumanResources\Workplace\StoreWorkplace;
 use App\Actions\HumanResources\Workplace\UpdateWorkplace;
-use App\Actions\Masters\MasterProductCategory\AttachFamiliesToMasterSubDepartment;
+use App\Actions\Masters\MasterCollection\AttachMasterCollectionToModel;
+use App\Actions\Masters\MasterCollection\AttachModelsToMasterCollection;
+use App\Actions\Masters\MasterCollection\AttachMultipleParentsToAMasterCollection;
+use App\Actions\Masters\MasterCollection\DeleteMasterCollection;
+use App\Actions\Masters\MasterCollection\DetachMasterCollectionFromModel;
+use App\Actions\Masters\MasterCollection\DetachModelFromMasterCollection;
+use App\Actions\Masters\MasterProductCategory\AttachMasterFamiliesToMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\DetachFamilyToMasterSubDepartment;
 use App\Actions\Masters\MasterCollection\StoreMasterCollection;
 use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
@@ -208,6 +214,7 @@ use App\Actions\Masters\MasterProductCategory\UploadImageMasterProductCategory;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Purge\StorePurge;
 use App\Actions\Ordering\Purge\UpdatePurge;
+use App\Actions\Ordering\ShippingZone\UpdateShippingZone;
 use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
@@ -315,6 +322,9 @@ Route::prefix('clocking-machine/{clockingMachine:id}')->name('clocking_machine..
     Route::delete('', DeleteClockingMachine::class)->name('delete');
 });
 
+Route::prefix('shipping-zone/{shippingZone:id}')->name('shipping_zone.')->group(function () {
+    Route::patch('', UpdateShippingZone::class)->name('update');
+});
 
 Route::patch('fulfilment/{fulfilment:id}', UpdateFulfilment::class)->name('fulfilment.update');
 Route::patch('customer/{customer:id}', UpdateCustomer::class)->name('customer.update')->withoutScopedBindings();
@@ -349,6 +359,15 @@ Route::prefix('master-shops/{masterShop:id}')->as('master_shops.')->group(functi
 
 Route::prefix('master-product-category/{masterProductCategory:id}')->name('master_product_category.')->group(function () {
     Route::post('master-collection', [StoreMasterCollection::class, 'inMasterProductCategory'])->name('master_collection.store');
+    Route::post('master-collection/{masterCollection:id}/attach', AttachMasterCollectionToModel::class)->name('master_collection.attach');
+    Route::delete('master-collection/{masterCollection:id}/detach', DetachMasterCollectionFromModel::class)->name('master_collection.detach');
+});
+
+Route::prefix('master-collection/{masterCollection:id}')->name('master_collection.')->group(function () {
+    Route::post('attach-models', AttachModelsToMasterCollection::class)->name('attach-models');
+    Route::delete('detach-models', DetachModelFromMasterCollection::class)->name('detach-models');
+    Route::delete('delete', DeleteMasterCollection::class)->name('delete');
+    Route::post('attach-parents', AttachMultipleParentsToAMasterCollection::class)->name('attach_parents');
 });
 
 Route::prefix('department/{productCategory:id}')->name('department.')->group(function () {
@@ -361,7 +380,8 @@ Route::prefix('mater-department/{masterDepartment:id}')->group(function () {
 });
 
 Route::prefix('master-sub-department/{masterSubDepartment:id}')->name('master-sub-department.')->group(function () {
-    Route::post('families/attach', AttachFamiliesToMasterSubDepartment::class)->name('families.attach');
+    Route::post('master-family', [StoreMasterFamily::class, 'inMasterSubDepartment'])->name('master_family.store');
+    Route::post('families/attach', AttachMasterFamiliesToMasterSubDepartment::class)->name('families.attach');
     Route::delete('family/{family:id}/detach', DetachFamilyToMasterSubDepartment::class)->name('family.detach')->withoutScopedBindings();
 });
 

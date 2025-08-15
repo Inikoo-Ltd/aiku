@@ -10,6 +10,8 @@
 
 namespace App\Actions\Masters\MasterProductCategory;
 
+use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterSubDepartments;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterSubDepartments;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Masters\MasterProductCategory;
@@ -31,7 +33,11 @@ class StoreMasterSubDepartment extends OrgAction
     {
         data_set($modelData, 'type', MasterProductCategoryTypeEnum::SUB_DEPARTMENT);
 
-        return StoreMasterProductCategory::run($parent, $modelData);
+        $masterSubDepartment = StoreMasterProductCategory::run($parent, $modelData);
+
+        MasterDepartmentHydrateMasterSubDepartments::dispatch($masterSubDepartment->masterDepartment)->delay($this->hydratorsDelay);
+        MasterShopHydrateMasterSubDepartments::dispatch($masterSubDepartment->masterShop)->delay($this->hydratorsDelay);
+        return $masterSubDepartment;
     }
 
     public function rules(): array

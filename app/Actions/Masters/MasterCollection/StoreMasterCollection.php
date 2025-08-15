@@ -15,11 +15,9 @@ use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterCollections;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterCollections;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageCatalogue;
-use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
-use App\Models\SysAdmin\Group;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
@@ -132,8 +130,9 @@ class StoreMasterCollection extends GrpAction
 
     public function htmlResponse(MasterCollection $masterCollection, ActionRequest $request): RedirectResponse
     {
-        return Redirect::route('grp.overview.catalogue.master-collections.show', [
-            'masterCollection' => $masterCollection->slug,
+        return Redirect::route('grp.masters.master_shops.show.master_collections.index', [
+            'masterShop' => $masterCollection->masterShop->slug,
+            'masterCollection' => $masterCollection->slug
         ]);
     }
 }

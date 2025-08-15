@@ -54,6 +54,7 @@ class StoreShipment extends OrgAction
             $shipmentData = match ($shipper->api_shipper) {
                 'apc-gb' => CallApiApcGbShipping::run($parent, $shipper),
                 'gls-sk' => CallApiGlsSKShipping::run($parent, $shipper),
+                'gls-es' => CallApiGlsSKShipping::run($parent, $shipper),
                 // 'dpd-gb' => DpdGbCallShipperApi::run($parent, $shipper),
                 'packeta-sk' => CallApiPacketaShipping::run($parent, $shipper),
                 'dpd-gb' => CallApiDpdGbShipping::run($parent, $shipper),

@@ -31,6 +31,7 @@ use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -417,6 +418,8 @@ class IndexPalletReturns extends OrgAction
         };
 
         return match ($routeName) {
+
+
             'grp.org.fulfilments.show.crm.customers.show.pallet_returns.index' => array_merge(
                 ShowFulfilmentCustomer::make()->getBreadcrumbs(
                     $routeParameters

@@ -59,16 +59,20 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $description_extra_i8n
  * @property string|null $description_title
  * @property string|null $description_extra
+ * @property bool $in_process
+ * @property bool $mark_for_discontinued
+ * @property string|null $mark_for_discontinued_at
+ * @property string|null $discontinued_at
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, MasterProductCategory> $children
  * @property-read Group $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
+ * @property-read LaravelCollection<int, \App\Models\Masters\MasterCollection> $masterCollections
  * @property-read MasterProductCategory|null $masterDepartment
  * @property-read LaravelCollection<int, MasterProductCategory> $masterProductCategories
  * @property-read \App\Models\Masters\MasterShop $masterShop
  * @property-read MasterProductCategory|null $masterSubDepartment
- * @property-read LaravelCollection<int, MasterProductCategory> $masterSubDepartments
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\Masters\MasterProductCategoryOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Masters\MasterProductCategoryOrderingStats|null $orderingStats
@@ -184,12 +188,6 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
     {
         return $this->belongsTo(MasterProductCategory::class, 'master_sub_department_id');
     }
-
-    public function masterSubDepartments(): HasMany
-    {
-        return $this->hasMany(MasterProductCategory::class, 'master_department_id');
-    }
-
 
     public function parent(): BelongsTo
     {

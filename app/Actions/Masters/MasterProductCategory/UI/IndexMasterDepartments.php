@@ -80,8 +80,8 @@ class IndexMasterDepartments extends OrgAction
             'master_product_category_stats.number_current_departments as used_in',
             'master_product_category_stats.number_current_master_product_categories_type_family as families',
             'master_product_category_stats.number_current_master_assets_type_product as products',
-            'master_product_category_stats.number_current_sub_departments as sub_departments',
-            'master_product_category_stats.number_current_collections as collections',
+            'master_product_category_stats.number_current_master_product_categories_type_sub_department as sub_departments',
+            'master_product_category_stats.number_collections_state_active as collections',
         ]);
         if ($parent instanceof MasterShop) {
             $queryBuilder->where('master_product_categories.master_shop_id', $parent->id);
@@ -97,7 +97,7 @@ class IndexMasterDepartments extends OrgAction
 
         return $queryBuilder
             ->defaultSort('master_product_categories.code')
-            ->allowedSorts(['code', 'name'])
+            ->allowedSorts(['code', 'name','used_in','sub_departments','collections','families','products'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();

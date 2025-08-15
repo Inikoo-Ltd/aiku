@@ -10,6 +10,10 @@ namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\GrpAction;
+use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
+use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
+use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
+use App\Actions\Masters\MasterProductCategory\WithMasterFamilySubNavigation;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
@@ -32,6 +36,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexMasterProducts extends GrpAction
 {
     use WithMasterCatalogueSubNavigation;
+    use WithMasterDepartmentSubNavigation;
+    use WithMasterFamilySubNavigation;
     use WithMastersAuthorisation;
 
     private Group|MasterShop|MasterProductCategory $parent;
@@ -95,16 +101,12 @@ class IndexMasterProducts extends GrpAction
                 'departments.name as master_department_name'
             ]);
         } elseif ($parent instanceof MasterProductCategory) {
-
             if ($parent->type == MasterProductCategoryTypeEnum::FAMILY) {
                 $queryBuilder->where('master_assets.master_family_id', $parent->id);
-
             } elseif ($parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
                 $queryBuilder->where('master_assets.master_department_id', $parent->id);
-
             } else {
                 $queryBuilder->where('master_assets.master_sub_department_id', $parent->id);
-
             }
 
 
@@ -169,22 +171,22 @@ class IndexMasterProducts extends GrpAction
     {
         $title = __('master products');
 
-        $icon = '';
-        $model = null;
-        $afterTitle = null;
-        $iconRight = null;
+        $icon          = '';
+        $model         = null;
+        $afterTitle    = null;
+        $iconRight     = null;
         $subNavigation = null;
 
         if ($this->parent instanceof Group) {
-            $model         = '';
-            $icon          = [
+            $model      = '';
+            $icon       = [
                 'icon'  => ['fal', 'fa-cube'],
                 'title' => $title
             ];
-            $afterTitle    = [
+            $afterTitle = [
                 'label' => __('In group')
             ];
-            $iconRight     = [
+            $iconRight  = [
                 'icon' => 'fal fa-city',
             ];
         } elseif ($this->parent instanceof MasterShop) {
@@ -201,8 +203,26 @@ class IndexMasterProducts extends GrpAction
             $iconRight     = [
                 'icon' => 'fal fa-cube',
             ];
+        } elseif ($this->parent instanceof MasterProductCategory) {
+            if ($this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
+                $subNavigation = $this->getMasterDepartmentSubNavigation($this->parent);
+            }
+            if ($this->parent->type == MasterProductCategoryTypeEnum::FAMILY) {
+                $subNavigation = $this->getMasterFamilySubNavigation($this->parent);
+                $title         = $this->parent->name;
+                $model         = '';
+                $icon          = [
+                    'icon'  => ['fal', 'fa-store-alt'],
+                    'title' => __('master shop')
+                ];
+                $afterTitle    = [
+                    'label' => __('Master Products')
+                ];
+                $iconRight     = [
+                    'icon' => 'fal fa-cube',
+                ];
+            }
         }
-
 
 
         return Inertia::render(
@@ -267,6 +287,34 @@ class IndexMasterProducts extends GrpAction
                     $suffix
                 ),
             ),
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index',
+            'grp.masters.master_shops.show.master_families.master_products.index' =>
+            array_merge(
+                ShowMasterFamily::make()->getBreadcrumbs($this->parent, $routeName, $routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters,
+                    ],
+                    $suffix
+                ),
+            ),
+            'grp.masters.master_shops.show.master_departments.show.master_products.index' =>
+            array_merge(
+                ShowMasterDepartment::make()->getBreadcrumbs(
+                    $parent->masterShop,
+                    $parent,
+                    $routeName,
+                    $routeParameters
+                ),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
+                    ],
+                    $suffix
+                )
+            ),
             default => []
         };
     }
@@ -277,7 +325,7 @@ class IndexMasterProducts extends GrpAction
         $this->parent = $group;
         $this->initialisation($group, $request);
 
-        return $this->handle($group, $request);
+        return $this->handle($group);
     }
 
     public function inMasterShop(MasterShop $masterShop, ActionRequest $request): LengthAwarePaginator
@@ -286,16 +334,47 @@ class IndexMasterProducts extends GrpAction
         $this->parent = $masterShop;
         $this->initialisation($group, $request);
 
-        return $this->handle($masterShop, $request);
+        return $this->handle($masterShop);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inMasterFamilyInMasterDepartment(MasterProductCategory $masterDepartment, MasterProductCategory $masterFamily, ActionRequest $request): LengthAwarePaginator
+    {
+        $group = group();
+
+        $this->parent = $masterFamily;
+        $this->initialisation($group, $request);
+
+        return $this->handle($masterFamily);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inMasterFamilyInMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): LengthAwarePaginator
     {
         $group        = group();
 
         $this->parent = $masterFamily;
         $this->initialisation($group, $request);
         return $this->handle($masterFamily, $request);
+    }
+
+    public function inMasterFamilyInMasterShop(MasterShop $masterShop, MasterProductCategory $masterFamily, ActionRequest $request): LengthAwarePaginator
+    {
+        $group        = group();
+
+        $this->parent = $masterFamily;
+        $this->initialisation($group, $request);
+
+        return $this->handle($masterFamily);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $masterDepartment;
+        $this->initialisation($masterDepartment->group, $request);
+
+        return $this->handle($masterDepartment);
     }
 
 }
