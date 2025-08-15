@@ -11,6 +11,7 @@ namespace App\Actions\Web\ModelHasWebBlocks;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\WebBlock\StoreWebBlock;
+use App\Actions\Web\WebBlockHistory\StoreWebBlockHistory;
 use App\Actions\Web\Webpage\ReorderWebBlocks;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Http\Resources\Web\WebpageResource;
@@ -65,6 +66,10 @@ class StoreModelHasWebBlock extends OrgAction
                 'web_block_id'    => $webBlock->id,
             ]
         );
+        StoreWebBlockHistory::make()->action($modelHasWebBlock, [
+            'layout' => $webBlock->layout,
+        ]);
+
         UpdateWebpageContent::run($webpage->refresh());
 
         return $modelHasWebBlock;

@@ -12,11 +12,11 @@ use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Helpers\Media;
+use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -46,10 +46,9 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @method static Builder<static>|WebBlock query()
  * @mixin \Eloquent
  */
-class WebBlock extends Model implements HasMedia
+class WebBlockHistory extends Model
 {
-    use HasFactory;
-    use InteractsWithMedia;
+    use InShop;
 
     protected $casts = [
         'layout' => 'object',
@@ -69,44 +68,18 @@ class WebBlock extends Model implements HasMedia
         return $this->belongsTo(WebBlockType::class);
     }
 
-    public function images(): MorphToMany
+    public function website(): BelongsTo
     {
-        return $this->morphToMany(Media::class, 'model', 'model_has_media');
+        return $this->belongsTo(Website::class);
     }
 
-    public function products(): MorphToMany
+    public function webpage(): BelongsTo
     {
-        return $this->morphedByMany(Product::class, 'model', 'web_block_has_models')->withTimestamps();
+        return $this->belongsTo(Webpage::class);
     }
 
-    public function productCategories(): MorphToMany
+    public function webBlock(): BelongsTo
     {
-        return $this->morphedByMany(ProductCategory::class, 'model', 'web_block_has_models')->withTimestamps();
+        return $this->belongsTo(WebBlock::class);
     }
-
-    public function collections(): MorphToMany
-    {
-        return $this->morphedByMany(Collection::class, 'model', 'web_block_has_models')->withTimestamps();
-    }
-
-    public function externalLinks()
-    {
-        return $this->belongsToMany(ExternalLink::class, 'web_block_has_external_link')
-                    ->withPivot('group_id', 'organisation_id', 'webpage_id', 'website_id', 'webpage_id', 'show')
-                    ->withTimestamps();
-    }
-
-    public function webpages(): MorphToMany
-    {
-        return $this->morphedByMany(Webpage::class, 'model', 'model_has_web_blocks')
-            ->orderByPivot('position')
-            ->withPivot('id', 'position', 'show', 'show_logged_in', 'show_logged_out')
-            ->withTimestamps();
-    }
-
-    public function histories(): HasMany
-    {
-        return $this->hasMany(WebBlockHistory::class);
-    }
-
 }
