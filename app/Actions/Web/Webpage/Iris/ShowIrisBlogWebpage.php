@@ -37,7 +37,7 @@ class ShowIrisBlogWebpage
         $webPageLayout = $webpage->published_layout;
 
 
-        $webBlocks = $this->getIrisWebBlocks(
+        $webBlocks  = $this->getIrisWebBlocks(
             webpage: $webpage,
             webBlocks: Arr::get($webPageLayout, 'web_blocks', []),
             isLoggedIn: auth()->check()
@@ -48,14 +48,14 @@ class ShowIrisBlogWebpage
         }
 
         return [
-            'status'         => 'ok',
-            'breadcrumbs'    => $this->getIrisBreadcrumbs(
+            'status'      => 'ok',
+            'breadcrumbs' => $this->getIrisBreadcrumbs(
                 webpage: $webpage,
                 parentPaths: $parentPaths
             ),
-            'webpage'        => $webpage,
-            'webpage_img'    => $webpageImg,
-            'web_blocks'     => $webBlocks,
+            'webpage'     => $webpage,
+            'webpage_img' => $webpageImg,
+            'web_blocks'  => $webBlocks,
         ];
     }
 
@@ -100,25 +100,7 @@ class ShowIrisBlogWebpage
         return $this->handle($path, [], $request);
     }
 
-    public function deep1(ActionRequest $request, string $parentPath1, string $path): array
-    {
-        return $this->handle($path, [$parentPath1], $request);
-    }
 
-    public function deep2(ActionRequest $request, string $parentPath1, string $parentPath2, string $path = null): array
-    {
-        return $this->handle($path, [$parentPath1, $parentPath2], $request);
-    }
-
-    public function deep3(ActionRequest $request, string $parentPath1, string $parentPath2, string $parentPath3, string $path = null): array
-    {
-        return $this->handle($path, [$parentPath1, $parentPath2, $parentPath3], $request);
-    }
-
-    public function deep4(ActionRequest $request, string $parentPath1, string $parentPath2, string $parentPath3, string $parentPath4, string $path = null): array
-    {
-        return $this->handle($path, [$parentPath1, $parentPath2, $parentPath3, $parentPath4], $request);
-    }
 
 
     public function htmlResponse($webpageData): Response
