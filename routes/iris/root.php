@@ -34,6 +34,9 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
         ->name("models.")
         ->group(__DIR__."/models.php");
 
+    Route::prefix("catalogue")
+        ->name("catalogue.")
+        ->group(__DIR__."/catalogue.php");
 
     Route::prefix("")->group(function () {
         Route::group([], __DIR__.'/system.php');
