@@ -134,7 +134,15 @@ class ShowInventoryDashboard extends OrgAction
                 'value' => $case->value,
                 'icon'  => OrgStockStateEnum::stateIcon()[$case->value],
                 'count' => $count,
-                'label' => OrgStockStateEnum::labels()[$case->value]
+                'label' => OrgStockStateEnum::labels()[$case->value],
+                'route' => [
+                    'name'       => 'grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.index',
+                    'parameters' => [
+                        'organisation' => $this->organisation->slug,
+                        'warehouse'    => request()->route()->originalParameters()['warehouse'],
+                        'elements[state]'        => $case->value
+                    ]
+                ]
             ];
         }
 

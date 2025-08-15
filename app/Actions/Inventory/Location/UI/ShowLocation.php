@@ -77,7 +77,6 @@ class ShowLocation extends OrgAction
             unset($navigation[LocationTabsEnum::STOCK_MOVEMENTS->value]);
         }
 
-
         return Inertia::render(
             'Org/Warehouse/Location',
             [
@@ -195,7 +194,6 @@ class ShowLocation extends OrgAction
                     $suffix
                 ),
             ),
-
             default => []
         };
     }
@@ -260,5 +258,4 @@ class ShowLocation extends OrgAction
             ];
         }
     }
-
 }

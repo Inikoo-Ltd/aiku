@@ -43,7 +43,6 @@ class UpdateWebUser extends OrgAction
         }
 
         data_forget($modelData, 'image');
-
         if ($webUser->is_root) {
             $customerDataToUpdate = [];
             if (Arr::has($modelData, 'contact_name')) {
@@ -51,6 +50,9 @@ class UpdateWebUser extends OrgAction
             }
             if (Arr::has($modelData, 'email')) {
                 $customerDataToUpdate['email'] = Arr::pull($modelData, 'email');
+            }
+            if (Arr::has($modelData, 'phone')) {
+                $customerDataToUpdate['phone'] = Arr::pull($modelData, 'phone');
             }
             UpdateCustomer::make()->action($webUser->customer, $customerDataToUpdate);
         }

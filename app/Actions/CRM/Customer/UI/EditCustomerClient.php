@@ -17,7 +17,6 @@ use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
-use App\Models\Helpers\Address;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -88,14 +87,7 @@ class EditCustomerClient extends OrgAction
                                     'address'      => [
                                         'type'    => 'address',
                                         'label'   => __('Address'),
-                                        'value'   => AddressFormFieldsResource::make(
-                                            new Address(
-                                                [
-                                                    'country_id' => $customerClient->shop->country_id,
-
-                                                ]
-                                            )
-                                        )->getArray(),
+                                        'value'   => AddressFormFieldsResource::make($customerClient->address)->getArray(),
                                         'options' => [
                                             'countriesAddressData' => GetAddressData::run()
 

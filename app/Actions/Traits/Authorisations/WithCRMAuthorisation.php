@@ -14,10 +14,6 @@ trait WithCRMAuthorisation
 {
     public function authorize(ActionRequest $request): bool
     {
-        if ($this->asAction) {
-            return true;
-        }
-
         $routeName = $request->route()->getName();
 
         if (str_starts_with($routeName, 'grp.overview.')) {
@@ -59,7 +55,6 @@ trait WithCRMAuthorisation
                 ]
             );
         }
-
 
         return false;
     }

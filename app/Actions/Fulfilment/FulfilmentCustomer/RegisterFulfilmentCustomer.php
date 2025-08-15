@@ -57,11 +57,11 @@ class RegisterFulfilmentCustomer extends OrgAction
         /** @var FulfilmentCustomer $fulfilmentCustomer */
         $fulfilmentCustomer = UpdateFulfilmentCustomer::run($customer->fulfilmentCustomer, $fulfilmmentCustomerModelData);
 
-        SendCustomerWelcomeEmail::run($fulfilmentCustomer->customer);
+        SendCustomerWelcomeEmail::dispatch($fulfilmentCustomer->customer);
 
-        SendNewCustomerNotification::run($fulfilmentCustomer->customer);
+        SendNewCustomerNotification::dispatch($fulfilmentCustomer->customer);
 
-        ShopHydrateCrmStats::run($fulfilment->shop);
+        ShopHydrateCrmStats::dispatch($fulfilment->shop);
 
         auth('retina')->login($webUser);
 

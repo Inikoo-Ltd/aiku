@@ -26,7 +26,10 @@ class StoreShopifyProductVariant extends RetinaAction
     public int $jobBackoff = 5;
 
 
-    public function handle(Portfolio $portfolio): array
+    /** level 1: upload includes price
+     *  level 0: match excludes price
+     */
+    public function handle(Portfolio $portfolio, $level = 1): array
     {
         $customerSalesChannel = $portfolio->customerSalesChannel;
 
@@ -106,6 +109,10 @@ class StoreShopifyProductVariant extends RetinaAction
                 ]
             ];
 
+            if ($level === 1) {
+                data_set($variants[0], 'price', $product->rrp);
+                data_set($variants[0], 'compareAtPrice', $product->rrp);
+            }
 
             $variables = [
                 'productId' => $productID,

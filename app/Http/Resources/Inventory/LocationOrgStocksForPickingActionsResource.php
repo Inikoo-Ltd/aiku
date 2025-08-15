@@ -40,9 +40,11 @@ class LocationOrgStocksForPickingActionsResource extends JsonResource
 
         $orgStockPackedIn = $this->org_stock_packed_in;
 
-        if($orgStockPackedIn == '') {
+        if ($orgStockPackedIn == '') {
             $orgStockPackedIn = null;
         }
+
+        $quantity = floor($this->quantity * 100) / 100; // Always round up to 3 decimal places
 
         return [
             'id'                  => $this->id,
@@ -52,7 +54,7 @@ class LocationOrgStocksForPickingActionsResource extends JsonResource
             'quantity'            => $this->quantity,
             'quantity_fractional' => riseDivisor(
                 divideWithRemainder(
-                    findSmallestFactors($this->quantity)
+                    findSmallestFactors($quantity)
                 ),
                 $orgStockPackedIn
             ),

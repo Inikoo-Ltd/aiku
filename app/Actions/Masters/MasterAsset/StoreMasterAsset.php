@@ -14,6 +14,7 @@ use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterAssets;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
+use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
@@ -75,7 +76,7 @@ class StoreMasterAsset extends OrgAction
             }
             $masterAsset->stocks()->sync($stocks);
 
-            return $masterAsset;
+            return ModelHydrateSingleTradeUnits::run($masterAsset);
         });
 
         GroupHydrateMasterAssets::dispatch($parent->group)->delay($this->hydratorsDelay);

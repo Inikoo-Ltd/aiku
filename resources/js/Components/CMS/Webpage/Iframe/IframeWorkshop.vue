@@ -62,7 +62,10 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || [];
 			@click="() => sendMessageToParent('activeBlock', props.indexBlock)"
 			:title="props.modelValue?.title || `iframe-${uuidv4()}`"
 			:src="props.modelValue?.link"
-			:style="getStyles(props.modelValue.container?.properties, props.screenType)"
+			:style="{
+			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+			...getStyles(modelValue.container?.properties, screenType)
+		}"
 			class="w-full max-w-full h-auto block border-0"
 			allowfullscreen
 			loading="lazy"

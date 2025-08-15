@@ -32,6 +32,8 @@ trait WithPrintNode
             if (!$isProduction) {
                 $driver = config('printing.driver');
                 $apiKey = config('printing.drivers.' . $driver . '.key');
+
+
             } else {
                 $group  = group();
                 $apiKey = Arr::get($group->settings, 'printnode.apikey');

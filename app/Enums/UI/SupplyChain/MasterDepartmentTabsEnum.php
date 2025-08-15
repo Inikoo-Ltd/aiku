@@ -1,12 +1,10 @@
 <?php
 
 /*
- * Author: Ganes <gustiganes@gmail.com>
- * Created on: 15-04-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
- * Copyright: 2025
- *
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sat, 11 May 2024 20:50:14 British Summer Time, Sheffield, UK
+ * Copyright (c) 2024, Raul A Perusquia Flores
+ */
 
 namespace App\Enums\UI\SupplyChain;
 
@@ -18,23 +16,55 @@ enum MasterDepartmentTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-
     case SHOWCASE = 'showcase';
-    case HISTORY  = 'history';
+    case SALES = 'sales';
+    case OFFERS = 'offers';
+    case RELATED_CATEGORIES = 'related_categories';
 
-
+    case HISTORY = 'history';
+    case DATA = 'data';
+    case IMAGES = 'images';
+    case CUSTOMERS = 'customers';
 
 
     public function blueprint(): array
     {
         return match ($this) {
-
-            MasterDepartmentTabsEnum::HISTORY => [
-                'align' => 'right',
+            MasterDepartmentTabsEnum::DATA => [
+                'title' => __('database'),
+                'icon'  => 'fal fa-database',
                 'type'  => 'icon',
-                'title' => __('changelog'),
+                'align' => 'right',
+            ],
+            MasterDepartmentTabsEnum::SALES => [
+                'title' => __('sales'),
+                'icon'  => 'fal fa-money-bill-wave',
+            ],
+            MasterDepartmentTabsEnum::CUSTOMERS => [
+                'title' => __('customers'),
+                'icon'  => 'fal fa-user',
+                'type'  => 'icon',
+                'align' => 'right',
+            ],
+            MasterDepartmentTabsEnum::OFFERS => [
+                'title' => __('offers'),
+                'icon'  => 'fal fa-tags',
+            ],
+            MasterDepartmentTabsEnum::RELATED_CATEGORIES => [
+                'title' => __('related categories'),
+                'icon'  => 'fal fa-project-diagram',
+            ],
+            MasterDepartmentTabsEnum::IMAGES => [
+                'title' => __('images'),
+                'icon'  => 'fal fa-camera-retro',
+                'type'  => 'icon',
+                'align' => 'right',
+            ],
+            MasterDepartmentTabsEnum::HISTORY => [
+                'title' => __('history'),
                 'icon'  => 'fal fa-clock',
-
+                'type'  => 'icon',
+                'align' => 'right',
             ],
             MasterDepartmentTabsEnum::SHOWCASE => [
                 'title' => __('overview'),

@@ -274,11 +274,11 @@ class IndexStockFamilies extends OrgAction
         $subNavigation = $this->getStockFamiliesSubNavigation();
 
         $title = match ($this->bucket) {
-            'active' => __('Active SKU Families'),
-            'in_process' => __('In process SKU Families'),
-            'discontinuing' => __('Discontinuing SKU Families'),
-            'discontinued' => __('Discontinued SKU Families'),
-            default => __('SKU Families')
+            'active' => __('Active Master SKU Families'),
+            'in_process' => __('In process Master SKU Families'),
+            'discontinuing' => __('Discontinuing Master SKU Families'),
+            'discontinued' => __('Discontinued Master SKU Families'),
+            default => __('Master SKU Families')
         };
 
         return Inertia::render(
@@ -289,15 +289,15 @@ class IndexStockFamilies extends OrgAction
                 'pageHead'    => [
                     'title'         => $title,
                     'icon'          => [
-                        'title' => __("SKUs families"),
+                        'title' => __("Master SKUs families"),
                         'icon'  => 'fal fa-boxes-alt'
                     ],
                     'actions'       => [
                         $this->canEdit && $request->route()->getName() == 'grp.goods.stock-families.index' ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new SKU family'),
-                            'label'   => __('SKU family'),
+                            'tooltip' => __('new master SKU family'),
+                            'label'   => __('Master SKU family'),
                             'route'   => [
                                 'name'       => 'grp.goods.stock-families.create',
                                 'parameters' => array_values($request->route()->originalParameters())
@@ -322,7 +322,7 @@ class IndexStockFamilies extends OrgAction
                         'route' => [
                             'name' => 'grp.goods.stock-families.index'
                         ],
-                        'label' => __("SKUs families"),
+                        'label' => __("Master SKUs families"),
                         'icon'  => 'fal fa-bars',
                     ],
                     'suffix' => $suffix

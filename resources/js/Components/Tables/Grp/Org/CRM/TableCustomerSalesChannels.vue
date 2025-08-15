@@ -51,6 +51,27 @@ function customerSalesChannelRoute(customerSalesChannel: CustomerSalesChannel) {
     }
 }
 
+function customerRoute(customerSalesChannel: CustomerSalesChannel) {
+
+    switch (route().current()) {
+        case "grp.org.shops.show.crm.platforms.show":
+            return route("grp.org.shops.show.crm.customers.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    customerSalesChannel.customer_slug]
+            )
+            break
+        default:
+            return route("grp.org.shops.show.crm.customers.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    customerSalesChannel.customer_slug]
+            )
+    }
+}
+
 function portfoliosRoute(customerSalesChannel: CustomerSalesChannel) {
     switch (route().current()) {
         case "grp.org.shops.show.crm.platforms.show":
@@ -147,6 +168,13 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
                      :alt="customerSalesChannel.platform_name" class="w-6 h-6" />
                 <Link :href="(customerSalesChannelRoute(customerSalesChannel) as string)" class="primaryLink">
                     {{ customerSalesChannel.name || customerSalesChannel.reference }}
+                </Link>
+            </div>
+        </template>
+        <template #cell(customer_company_name)="{ item: customerSalesChannel }">
+            <div class="flex items-center gap-2">
+                <Link :href="(customerRoute(customerSalesChannel) as string)" class="primaryLink">
+                    {{ customerSalesChannel.customer_company_name }}
                 </Link>
             </div>
         </template>

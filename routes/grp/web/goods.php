@@ -118,7 +118,6 @@ Route::prefix('trade-units')->as('trade-units.')->group(function () {
             Route::get('/{tag}/edit', [EditTag::class, 'inTradeUnit'])->name('edit');
         });
     });
-
 });
 
 

@@ -40,14 +40,14 @@ class SetDeliveryNoteStateAsPacked extends OrgAction
         }
         $defaultParcel = [
             [
-                'weight' => $deliveryNote->effective_weight/1000,
+                'weight' => $deliveryNote->effective_weight / 1000,
                 'dimensions' => [5, 5, 5]
             ]
         ];
 
         data_set($modelData, 'parcels', $defaultParcel);
 
-        UpdateOrderStateToPacked::make()->action($deliveryNote->orders->first());
+        UpdateOrderStateToPacked::make()->action($deliveryNote->orders->first(), true);
 
         $deliveryNote = $this->update($deliveryNote, $modelData);
 

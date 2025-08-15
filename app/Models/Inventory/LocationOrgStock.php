@@ -74,7 +74,7 @@ class LocationOrgStock extends Model implements Auditable
 
     public function generateTags(): array
     {
-        return ['inventory','location_org_stock'];
+        return ['inventory', 'location_org_stock'];
     }
 
     protected array $auditInclude = [
@@ -87,7 +87,6 @@ class LocationOrgStock extends Model implements Auditable
         'identity_document_type',
         'identity_document_number',
     ];
-
 
     public function orgStock(): BelongsTo
     {

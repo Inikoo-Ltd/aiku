@@ -1235,6 +1235,7 @@ test('UI show invoice in Organisation', function () {
             ->has(
                 'box_stats',
                 fn (AssertableInertia $page) => $page
+                    ->has('delivery_notes')
                     ->has(
                         'customer',
                         fn (AssertableInertia $page) => $page
@@ -1292,6 +1293,7 @@ test('UI show invoice in Shop', function () {
             ->has(
                 'box_stats',
                 fn (AssertableInertia $page) => $page
+                    ->has('delivery_notes')
                     ->has(
                         'customer',
                         fn (AssertableInertia $page) => $page

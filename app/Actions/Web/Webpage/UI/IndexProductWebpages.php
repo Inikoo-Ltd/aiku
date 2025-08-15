@@ -208,8 +208,6 @@ class IndexProductWebpages extends OrgAction
 
         $subNavigation = $this->getWebpageNavigation($this->website);
 
-        $routeCreate = '';
-
         return Inertia::render(
             'Org/Web/Webpages',
             [
@@ -227,14 +225,26 @@ class IndexProductWebpages extends OrgAction
                     'subNavigation' => $subNavigation,
                     'actions'       => [
                         [
+                            'key'   => 'product_webpage_create',
                             'type'  => 'button',
-                            'style' => 'create',
-                            'label' => __('webpage'),
-                            'route' => [
-                                'name'       => $routeCreate,
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ],
+                            // 'style' => 'create',
+                            // 'label' => __('Product Webpage'),
+                            // 'route' => [
+                            //     'name'       => $routeCreate,
+                            //     'parameters' => array_values($request->route()->originalParameters())
+                            // ],
                         ]
+                    ]
+                ],
+                'routes_list' => [
+                    'fetch_products_without_webpage' => [
+                        'name'       => 'grp.json.shop.products.no-webpage',
+                        'parameters' => [
+                            'shop' => $this->shop->id,
+                        ]
+                    ],
+                    'submit_product_webpage' => [
+                        'name'       => 'grp.models.webpages.product.store',
                     ]
                 ],
                 'data'        => WebpagesResource::collection($webpages),

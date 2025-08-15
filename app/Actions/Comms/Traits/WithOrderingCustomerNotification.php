@@ -80,6 +80,34 @@ trait WithOrderingCustomerNotification
         return '';
     }
 
+    public function getPdfInvoiceLink(?Invoice $invoice): string
+    {
+        if (!$invoice || $invoice->ulid == '') {
+            return '';
+        }
+
+        $shop     = $invoice->shop;
+        $shopType = $shop->type;
+
+        if ($shopType == ShopTypeEnum::FULFILMENT) {
+            $baseUrl = 'https://fulfilment.test';
+            if (app()->isProduction()) {
+                $baseUrl = 'https://'.$shop->website->domain;
+            }
+
+            return $baseUrl.'/invoice/'.$invoice->ulid;
+        } elseif ($shopType == ShopTypeEnum::DROPSHIPPING) {
+            $baseUrl = 'https://ds.test';
+            if (app()->isProduction()) {
+                $baseUrl = 'https://'.$shop->website->domain;
+            }
+
+            return $baseUrl.'/invoice/'.$invoice->ulid;
+        }
+
+        return '';
+    }
+
     public function getEmailBody(Customer $customer, OutboxCodeEnum $outboxCode): array
     {
         $recipient       = $customer;

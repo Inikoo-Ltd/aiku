@@ -11,7 +11,8 @@ namespace App\Actions\Masters\MasterProductCategory;
 use App\Actions\HydrateModel;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateDepartments;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterAssets;
-use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterFamilies;
+use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterFamilies;
+use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterSubDepartments;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateFamilies;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateMasterAssets;
 use App\Actions\Traits\WithNormalise;
@@ -28,9 +29,10 @@ class HydrateMasterProductCategory extends HydrateModel
 
     public function handle(MasterProductCategory $masterProductCategory): void
     {
-        MasterDepartmentHydrateMasterFamilies::run($masterProductCategory);
+        MasterProductCategoryHydrateMasterFamilies::run($masterProductCategory);
         MasterDepartmentHydrateMasterAssets::run($masterProductCategory);
         MasterDepartmentHydrateDepartments::run($masterProductCategory);
+        MasterDepartmentHydrateMasterSubDepartments::run($masterProductCategory);
 
         MasterFamilyHydrateMasterAssets::run($masterProductCategory);
         MasterFamilyHydrateFamilies::run($masterProductCategory);
