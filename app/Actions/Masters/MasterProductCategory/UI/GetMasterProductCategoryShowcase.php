@@ -26,11 +26,11 @@ class GetMasterProductCategoryShowcase
 
         return match ($productCategory->type) {
             MasterProductCategoryTypeEnum::DEPARTMENT => [
-                'department' => MasterProductCategoryResource::make($productCategory),
+                'department' => MasterProductCategoryResource::make($productCategory)->resolve(),
                 'families' => MasterProductCategoryResource::collection($productCategory->masterFamilies()),
             ],
             MasterProductCategoryTypeEnum::SUB_DEPARTMENT => [
-                'subDepartment' => MasterSubDepartmentsResource::make($productCategory),
+                'subDepartment' => MasterSubDepartmentsResource::make($productCategory)->resolve(),
                 'families' => MasterFamiliesResource::collection($productCategory->masterFamilies()),
             ],
             default => [

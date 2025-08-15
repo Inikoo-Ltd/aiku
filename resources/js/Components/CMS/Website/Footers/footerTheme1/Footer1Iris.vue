@@ -365,7 +365,7 @@ const onSubmitSubscribe = async () => {
                             autocomplete="email"
                             required
                             class="w-full min-w-0 rounded-md bg-white/5 px-3 py-1 text-base text-white outline outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 md:w-56 md:text-sm/6"
-                            :placeholder="modelValue?.subscribe?.placeholder ?? 'Enter your email'"
+                            :placeholder="modelValue?.subscribe?.placeholder ?? trans('Enter your email')"
                             :class="[
                                 currentState === 'error' ? 'errorShake' : '',
                             ]"
@@ -379,7 +379,7 @@ const onSubmitSubscribe = async () => {
                             <Button
                                 @click.prevent="onSubmitSubscribe"
                                 xtype="submit"
-                                label="Subscribe"
+                                :label="trans('Subscribe')"
                                 :loading="isLoadingSubmit"
                                 full
                             />

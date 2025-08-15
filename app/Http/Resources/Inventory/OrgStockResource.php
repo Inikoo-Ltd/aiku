@@ -18,19 +18,24 @@ class OrgStockResource extends JsonResource
     public static $wrap = null;
     public function toArray($request): array
     {
-        /** @var OrgStock $orgStock */
+        // /** @var OrgStock $orgStock */
         $orgStock = $this;
 
+        $locationStock = ($orgStock->locationOrgStocks ?? collect())->first();
+
+        // Akses properti secara langsung karena mereka ada di objek hasil join
         return [
-            'id'                 => $orgStock->id,
-            'slug'               => $orgStock->slug,
-            'code'               => $orgStock->code,
-            'unit_value'         => $orgStock->unit_value,
-            'description'        => $orgStock->stock?->description,
-            'number_locations'   => $orgStock->stats?->number_locations,
-            'quantity_locations' => $orgStock->quantity_in_locations,
-            'photo'              => $orgStock->stock?->imageSources(),
-            'locations'          => LocationOrgStocksResource::collection($orgStock->locationOrgStocks)
+            'id'                  => $this->id,
+            'code'                => $this->code,
+            'name'                => $this->name,
+            'slug'                => $this->slug,
+            'unit_value'          => $this->unit_value,
+            'type'                => $this->type,
+            'picking_priority'    => $this->picking_priority,
+            'value'               => $this->value,
+            'dropshipping_pipe'   => $this->dropshipping_pipe,
+            'quantity'            => $this->quantity,
+            'notes'               => $this->notes,
         ];
     }
 }

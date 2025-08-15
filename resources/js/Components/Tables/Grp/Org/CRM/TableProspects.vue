@@ -100,16 +100,14 @@ function prospectRoute(prospect: Prospect) {
                 'grp.org.shops.show.crm.prospects.show',
                 [route().params["organisation"], route().params['shop'], prospect.slug]);
         default:
-            return route(
-                'prospects.show',
-                [prospect.slug]);
+            return '';
     }
 }
 
 </script>
 
 <template>
-    <Table :resource="data.data" :name="tab" class="mt-5">
+    <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(state)="{ item: prospect }">
             <Icon :data="prospect.state_icon"></Icon>
         </template>

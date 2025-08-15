@@ -173,7 +173,7 @@ const toggleExpanded = () => {
                         </template>
                     </div>
                 </div>
-                <div class="flex items-end pb-3 mb-3">
+                <div v-if="layout.iris?.is_logged_in" class="flex items-end pb-3 mb-3">
                     <div class="text-gray-900 font-semibold text-3xl capitalize leading-none flex-grow min-w-0">
                         {{ locale.currencyFormat(currency?.code, modelValue.product.price || 0) }}
                         <span class="text-sm text-gray-900 ml-2 whitespace-nowrap">({{
@@ -252,7 +252,7 @@ const toggleExpanded = () => {
         <ImageProducts :images="modelValue.product.images" />
         <div class="flex justify-between items-start gap-4 mt-4">
             <!-- Price + Unit Info -->
-            <div>
+            <div v-if="layout.iris?.is_logged_in">
                 <div class="text-lg font-semibold">
                     {{ locale.currencyFormat(modelValue.product.currency_code, modelValue.product.price || 0) }}
                     <span class="text-xs text-gray-500 ml-1">

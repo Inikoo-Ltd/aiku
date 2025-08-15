@@ -38,6 +38,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrders;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePaymentAccounts;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePayments;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePlatformStats;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePolls;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProducts;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePurges;
@@ -100,6 +101,7 @@ class HydrateShops
         ShopHydratePolls::run($shop);
         ShopHydrateWebUsers::run($shop);
         ShopHydrateVisitorsIntervals::run($shop);
+        ShopHydratePlatformStats::run($shop);
     }
 
 }

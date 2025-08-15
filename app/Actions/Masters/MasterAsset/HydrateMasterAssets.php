@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterAsset;
 
+use App\Actions\Masters\MasterAsset\Hydrators\MasterAssetHydrateAssets;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Models\Masters\MasterAsset;
@@ -25,6 +26,7 @@ class HydrateMasterAssets
     public function handle(MasterAsset $masterAsset): void
     {
         ModelHydrateSingleTradeUnits::run($masterAsset);
+        MasterAssetHydrateAssets::run($masterAsset);
     }
 
 }

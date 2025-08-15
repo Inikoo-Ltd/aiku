@@ -43,7 +43,7 @@ class StoreMasterFamily extends OrgAction
                 'max:32',
                 new AlphaDashDot(),
                 new IUnique(
-                    table: 'product_categories',
+                    table: 'master_product_categories',
                     extraConditions: [
                         ['column' => 'group_id', 'value' => $this->group->id],
                         ['column' => 'deleted_at', 'operator' => 'notNull'],
@@ -86,6 +86,14 @@ class StoreMasterFamily extends OrgAction
         return $this->handle($masterDepartment, $this->validatedData);
     }
 
+    public function inMasterSubDepartment(MasterProductCategory $masterSubDepartment, ActionRequest $request): MasterProductCategory
+    {
+        $this->parent = $masterSubDepartment;
+        $this->initialisationFromGroup(group(), $request);
+
+        return $this->handle($masterSubDepartment, $this->validatedData);
+    }
+
 
     public function htmlResponse(MasterProductCategory $masterProductCategory, ActionRequest $request): RedirectResponse
     {
@@ -97,7 +105,7 @@ class StoreMasterFamily extends OrgAction
         }
 
         return Redirect::route('grp.masters.master_departments.show.master_families.show', [
-            'masterDepartment' => $this->parent->slug,
+            'masterDepartment' => $masterProductCategory->masterDepartment->slug,
             'masterFamily' => $masterProductCategory->slug,
         ]);
     }

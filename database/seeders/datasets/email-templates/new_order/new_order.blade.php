@@ -116,11 +116,13 @@
                 <tr style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; margin: 0;">
                   <td class="content-block" style="font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; box-sizing: border-box; font-size: 14px; vertical-align: top; margin: 0; padding: 0 0 20px;"
                       valign="top">
-                    <strong>Order Reference:</strong> <a href="[Order Link]" target="_blank" style="color: #3498DB; text-decoration: underline;">[Order Reference]</a><br/>
+                    <strong>Order Reference:</strong> <a href="[Order Link]" target="_blank" style="color: #3498DB; text-decoration: underline;">[Order Reference]</a> - [Platform]<br/>
                     <strong>Customer:</strong> <a href="[Customer Link]" target="_blank" style="color: #3498DB; text-decoration: underline;">[Customer Name]</a><br/>
                     <strong>Order Date:</strong> [Order Date]<br/>
                     <br>
                     [Payment Type] [Currency][Payment Amount]
+                    <br>
+                    [Balance]
                   </td>
                 </tr>
               </table>

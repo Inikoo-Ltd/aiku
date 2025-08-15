@@ -1,23 +1,24 @@
 <script setup lang="ts">
 import {trans} from 'laravel-vue-i18n'
 import {router} from '@inertiajs/vue3'
-import Button from '@/Components/Elements/Buttons/Button.vue'
 import {faUnlink, faThLarge, faBars, faSeedling, faCheck, faFolderTree} from "@fal"
 import {library} from "@fortawesome/fontawesome-svg-core"
 import {notify} from '@kyvg/vue3-notification'
 import {routeType} from '@/types/route'
 import {ref, provide} from 'vue'
-import EmptyState from '../Utils/EmptyState.vue'
 import Image from '../Image.vue'
 import {Image as ImageTS} from '@/types/Image'
 import {FontAwesomeIcon} from '@fortawesome/vue-fontawesome'
-import Icon from "@/Components/Icon.vue"
-import CollectionList from "@/Components/Departement&Family/CollectionList.vue"
+import TranslationBox from '@/Components/TranslationBox.vue';
 
 library.add(faUnlink, faThLarge, faBars, faSeedling, faCheck)
 
 const props = defineProps<{
     data: {
+        translation_box : {
+            title: string
+            save_route: routeType
+        }
         subDepartment: {
             slug: string
             image_id: ImageTS | string | null
@@ -204,5 +205,12 @@ const UnassignCollection = async (id: number) => {
 
         </div>
     </div>
+
+
+      <TranslationBox 
+        :master="data.subDepartment" 
+        :needTranslation="data.subDepartment" 
+         v-bind="data.subDepartment.translation_box" 
+    />
 </template>
 

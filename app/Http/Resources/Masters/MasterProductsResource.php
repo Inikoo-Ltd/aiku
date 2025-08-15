@@ -25,6 +25,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $master_family_slug
  * @property mixed $master_family_code
  * @property mixed $master_family_name
+ * @property mixed $show_in_website
+ * @property mixed $used_in
  */
 class MasterProductsResource extends JsonResource
 {
@@ -33,6 +35,7 @@ class MasterProductsResource extends JsonResource
     public function toArray($request): array
     {
         return [
+            'id'                     => $this->id, 
             'slug'                   => $this->slug,
             'code'                   => $this->code,
             'name'                   => $this->name,
@@ -46,6 +49,7 @@ class MasterProductsResource extends JsonResource
             'master_family_code'     => $this->master_family_code,
             'master_family_name'     => $this->master_family_name,
             'show_in_website'        => $this->show_in_website,
+            'used_in'                => $this->used_in
         ];
     }
 }

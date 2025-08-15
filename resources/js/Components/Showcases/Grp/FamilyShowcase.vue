@@ -11,11 +11,16 @@ import {library} from "@fortawesome/fontawesome-svg-core";
 import {trans} from "laravel-vue-i18n";
 import {ref} from "vue";
 import {faAlbum, faAlbumCollection} from "@fal";
+import TranslationBox from '@/Components/TranslationBox.vue';
 
 library.add(faAlbumCollection);
 
 const props = defineProps<{
     data: {
+        translation_box: {
+            title: string
+            save_route: routeType
+        }
         family: {
             data: {},
         },
@@ -81,4 +86,10 @@ const links = ref([
             </div>
         </div>
     </div>
+
+     <TranslationBox 
+        :master="data.family.data" 
+        :needTranslation="data.family.data" 
+        v-bind="data.family.data.translation_box"
+    />
 </template>

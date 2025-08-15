@@ -12,8 +12,11 @@ const props = defineProps<{
     tag_routes: Record<string, routeType>
     tags: {}[]
     tags_selected_id: number[]
+    translation_box: {
+      title: string
+      save_route: routeType
   }
-}>()
+}}>()
 
 
 </script>
@@ -30,12 +33,10 @@ const props = defineProps<{
     />
   </div>
 
-   <TranslationBox 
+   <TranslationBox
+        v-bind="data.translation_box" 
         :master="data.tradeUnit" 
         :needTranslation="data.tradeUnit" 
-        :route-to-save="{
-            name: 'grp.models.trade-unit.translations.update',
-            parameters: { tradeUnit: data.tradeUnit.id }
-        }"
+        
     />
 </template>

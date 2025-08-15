@@ -102,9 +102,9 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
             </div>
 
             <div class="border border-gray-300 p-5 rounded mb-4 ">
-                <p>Hey, as you notice we just got a brand new system for our website.</p>
-                <p class="py-3">You can log in with your old username and password or use your google account to login (if the emails match).</p>
-                <p>if the password is not working, you can reset it from the forgot password page and all will be ok.</p>
+                <p>  {{ trans('Hey, as you notice we just got a brand new system for our website.') }} </p>
+                <p class="py-3"> {{ trans('You can log in with your old username and password or use your google account to login (if the emails match)') }}.</p>
+                <p>{{ trans(' if the password is not working, you can reset it from the forgot password page and all will be ok.') }}</p>
             </div>
 
 
@@ -152,7 +152,6 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 
                 <!-- Submit Button -->
                 <div class="w-full">
-                    <!-- <Button full @click.prevent="submit" :loading="isLoading" label="Sign in" :type="'tertiary'" :class="'!bg-[#C1A027] !text-white'" /> -->
                     <button
                         @click.prevent="submit"
                         class="w-full relative flex items-center justify-center gap-2 bg-[#1D252E] disabled:bg-[#393e49] text-white disabled:text-gray-300 hover:bg-black font-normal border border-[#1D252E] rounded-sm px-16 py-2 cursor-pointer transition duration-75 ease-in-out"

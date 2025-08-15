@@ -16,7 +16,7 @@ import Image from '@/Components/Image.vue'
 
 const props = defineProps<{
   images: { source: string; thumbnail: string }[]
-  breakpoints: {
+  breakpoints?: {
     [key: number]: {
       slidesPerView: number
     }

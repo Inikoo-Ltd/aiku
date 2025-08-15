@@ -42,7 +42,8 @@ class IndexMasterSubDepartments extends GrpAction
         return $this->handle(parent: $masterShop);
     }
 
-    public function inMasterDepartment(MasterProductCategory $masterDepartment, ActionRequest $request): LengthAwarePaginator
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $masterDepartment;
         $group        = group();
@@ -64,8 +65,11 @@ class IndexMasterSubDepartments extends GrpAction
         }
 
         $queryBuilder = QueryBuilder::for(MasterProductCategory::class);
+        $queryBuilder->leftJoin('master_product_category_stats', 'master_product_categories.id', '=', 'master_product_category_stats.master_product_category_id');
         if ($parent instanceof MasterShop) {
             $queryBuilder->where('master_product_categories.master_shop_id', $parent->id);
+        } else {
+            $queryBuilder->where('master_product_categories.master_parent_id', $parent->id);
         }
 
         return $queryBuilder
@@ -79,9 +83,11 @@ class IndexMasterSubDepartments extends GrpAction
                 'master_product_categories.description',
                 'master_product_categories.created_at',
                 'master_product_categories.updated_at',
+                'master_product_category_stats.number_current_master_product_categories_type_family as number_families',
+                'master_product_category_stats.number_current_master_assets_type_product as number_products',
             ])
             ->where('master_product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
-            ->allowedSorts(['code', 'name'])
+            ->allowedSorts(['code', 'name', 'number_families', 'number_products'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -105,8 +111,10 @@ class IndexMasterSubDepartments extends GrpAction
                     ],
                 );
 
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'code', label: __('code'), sortable: true, searchable: true)
+                ->column(key: 'name', label: __('name'), sortable: true, searchable: true)
+                ->column(key: 'number_families', label: __('M. Families'), sortable: true)
+                ->column(key: 'number_products', label: __('M. Products'), sortable: true);
         };
     }
 
@@ -152,16 +160,22 @@ class IndexMasterSubDepartments extends GrpAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'actions'       => [
-                        $this->parent instanceof MasterProductCategory ? [
+                        [
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('new master Sub-department'),
                             'label'   => __('Sub-department'),
-                            'route'   => [
-                                'name'       => 'grp.masters.master_departments.show.master_sub_departments.create',
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ] : [],
+                            'route'   => match ($this->parent::class) {
+                                MasterProductCategory::class => [
+                                    'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.create',
+                                    'parameters' => $request->route()->originalParameters()
+                                ],
+                                default => [
+                                    'name'       => 'grp.masters.master_shops.show.master_sub_departments.create',
+                                    'parameters' => $request->route()->originalParameters()
+                                ]
+                            }
+                        ],
                     ],
                     'subNavigation' => $subNavigation,
                 ],
@@ -187,12 +201,14 @@ class IndexMasterSubDepartments extends GrpAction
         };
 
         return match ($routeName) {
-            'grp.masters.master_shops.show.master_sub_departments.index' =>
+            'grp.masters.master_shops.show.master_sub_departments.index',
+            'grp.masters.master_shops.show.master_sub_departments.show',
+            'grp.masters.master_shops.show.master_sub_departments.edit' =>
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($parent, $routeName),
                 $headCrumb(
                     [
-                        'name'       => $routeName,
+                        'name'       => 'grp.masters.master_shops.show.master_sub_departments.index',
                         'parameters' => $routeParameters
                     ],
                     $suffix
@@ -200,9 +216,16 @@ class IndexMasterSubDepartments extends GrpAction
             ),
 
             'grp.masters.master_departments.show.master_sub_departments.index',
-            'grp.masters.master_departments.show.master_sub_departments.show' =>
+            'grp.masters.master_departments.show.master_sub_departments.show',
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.index',
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show' =>
             array_merge(
-                ShowMasterDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
+                ShowMasterDepartment::make()->getBreadcrumbs(
+                    $parent->masterShop,
+                    $parent,
+                    $routeName,
+                    $routeParameters
+                ),
                 $headCrumb(
                     [
                         'name'       => $routeName,
@@ -211,7 +234,6 @@ class IndexMasterSubDepartments extends GrpAction
                     $suffix
                 )
             ),
-
 
 
             default => []

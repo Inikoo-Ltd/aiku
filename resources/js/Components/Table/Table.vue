@@ -854,12 +854,6 @@ const isLoading = ref<string | boolean>(false)
                                 :tableName="props.name" />
                         </div>
 
-                        <!-- Filter: Checkbox element -->
-                        <div v-if="Object.keys(queryBuilderProps?.elementGroups || [])?.length" class="w-fit">
-                            <TableElements :elements="queryBuilderProps.elementGroups"
-                                @checkboxChanged="(data) => queryBuilderData.elementFilter = data"
-                                :tableName="props.name" />
-                        </div>
 
                         <!-- Filter: Radio element -->
                         <div v-if="queryBuilderProps.radioFilter?.radio" class="w-fit">
@@ -913,6 +907,12 @@ const isLoading = ref<string | boolean>(false)
                         :on-remove="disableSearchInput" />
                 </slot> -->
 
+                <!-- Filter: Checkbox element -->
+                <div v-if="Object.keys(queryBuilderProps?.elementGroups || [])?.length" class="w-full">
+                    <TableElements :elements="queryBuilderProps.elementGroups"
+                        @checkboxChanged="(data) => queryBuilderData.elementFilter = data"
+                        :tableName="props.name" />
+                </div>
             </div>
 
             <!-- <pre>{{ compResourceData }}</pre> -->

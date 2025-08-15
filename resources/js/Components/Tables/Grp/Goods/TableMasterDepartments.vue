@@ -40,6 +40,76 @@ function masterShopRoute(masterDepartment: MasterDepartment) {
   )
 }
 
+
+function subdepartmentRoute(masterDepartment: MasterDepartment) {
+  if (route().current()=='grp.masters.master_shops.show.master_departments.index') {
+    return route('grp.masters.master_shops.show.master_departments.show.master_sub_departments.index',
+      {
+        masterDepartment: masterDepartment.slug,
+        masterShop: (route().params as RouteParams).masterShop
+      }
+    )
+  } 
+  
+  return route('grp.masters.master_shops.show.master_departments.show.master_sub_departments.index',
+    {
+      masterShop: (route().params as RouteParams).masterShop,
+      masterDepartment: masterDepartment.slug }
+  )
+}
+
+
+function CollectionsRoute(masterDepartment: MasterDepartment) {
+  if (route().current()=='grp.masters.master_shops.show.master_departments.index') {
+    return route('grp.masters.master_shops.show.master_departments.show.master_collections.index',
+      {
+        masterDepartment: masterDepartment.slug,
+        masterShop: (route().params as RouteParams).masterShop,
+      }
+    )
+  } 
+  
+  return route('grp.masters.master_shops.show.master_departments.show.master_collections.index',
+    {
+      masterShop: (route().params as RouteParams).masterShop,
+      masterDepartment: masterDepartment.slug }
+  )
+}
+
+function familiesRoute(masterDepartment: MasterDepartment) {
+  if (route().current()=='grp.masters.master_shops.show.master_departments.index') {
+    return route('grp.masters.master_shops.show.master_departments.show.master_families.index',
+      {
+        masterDepartment: masterDepartment.slug,
+        masterShop: (route().params as RouteParams).masterShop
+    }
+    )
+  } 
+  
+  return route('grp.masters.master_shops.show.master_departments.show.master_families.index',
+    {
+      masterShop: (route().params as RouteParams).masterShop,
+      masterDepartment: masterDepartment.slug }
+  )
+}
+
+function ProductRoute(masterDepartment: MasterDepartment) {
+  if (route().current()=='grp.masters.master_shops.show.master_departments.index') {
+    return route('grp.masters.master_shops.show.master_departments.show.master_products.index',
+      {
+        masterDepartment: masterDepartment.slug,
+        masterShop: (route().params as RouteParams).masterShop
+    }
+    )
+  } 
+  
+  return route('grp.masters.master_shops.show.master_departments.show.master_products.index',
+    {
+      masterShop: (route().params as RouteParams).masterShop,
+      masterDepartment: masterDepartment.slug }
+  )
+}
+
 </script>
 
 <template>
@@ -49,10 +119,30 @@ function masterShopRoute(masterDepartment: MasterDepartment) {
           {{ department["master_shop_code"] }}
         </Link>
       </template>
-        <template #cell(code)="{ item: department }">
+      <template #cell(code)="{ item: department }">
             <Link :href="departmentRoute(department) as string" class="primaryLink">
                 {{ department["code"] }}
             </Link>
-        </template>
+      </template>
+       <template #cell(sub_departments)="{ item: department }">
+            <Link :href="subdepartmentRoute(department) as string" class="primaryLink">
+                {{ department["sub_departments"] }}
+            </Link>
+      </template>
+       <template #cell(collections)="{ item: department }">
+            <Link :href="CollectionsRoute(department) as string" class="primaryLink">
+                {{ department["collections"] }}
+           </Link>
+      </template>
+      <template #cell(families)="{ item: department }">
+            <Link :href="familiesRoute(department) as string" class="primaryLink">
+                {{ department["families"] }}
+            </Link>
+      </template>
+      <template #cell(products)="{ item: department }">
+            <Link :href="ProductRoute(department) as string" class="primaryLink">
+                {{ department["products"] }}
+            </Link>
+      </template>
     </Table>
 </template>

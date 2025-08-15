@@ -16,7 +16,6 @@ const props = defineProps<{
 </script>
 
 <template>
-
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <TableMasterCollections :data="data" />

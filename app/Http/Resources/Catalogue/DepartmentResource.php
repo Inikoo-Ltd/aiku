@@ -40,7 +40,6 @@ class DepartmentResource extends JsonResource
             ];
         }
 
-
         return [
             'slug' => $department->slug,
             'id' => $department->id,

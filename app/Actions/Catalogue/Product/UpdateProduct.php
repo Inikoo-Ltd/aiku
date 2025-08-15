@@ -8,7 +8,7 @@
 
 namespace App\Actions\Catalogue\Product;
 
-use App\Actions\Catalogue\Asset\UpdateAsset;
+use App\Actions\Catalogue\Asset\UpdateAssetFromModel;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Search\ProductRecordSearch;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
@@ -74,7 +74,7 @@ class UpdateProduct extends OrgAction
             );
         }
 
-        UpdateAsset::run($product->asset, $assetData, $this->hydratorsDelay);
+        UpdateAssetFromModel::run($product->asset, $assetData, $this->hydratorsDelay);
 
         if (Arr::hasAny($changed, ['state', 'status', 'exclusive_for_customer_id'])) {
             $this->productHydrators($product);

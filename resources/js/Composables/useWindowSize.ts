@@ -14,3 +14,34 @@ export const breakpointType = (screen?: number) => {
         return '2xl';
     }
 }
+
+export const twBreakPoint = () => {
+    let screen = 0
+    if (window) {
+        screen = window.innerWidth
+    }
+
+    let type = []
+    
+    if (screen >= 640) {
+        type.push('sm')
+    }
+
+    if (screen >= 768) {
+        type.push('md')
+    }
+
+    if (screen >= 1024) {
+        type.push('lg')
+    }
+
+    if (screen >= 1280) {
+        type.push('xl')
+    }
+
+    if (screen >= 1536) {
+        type.push('2xl')
+    }
+
+    return type
+}

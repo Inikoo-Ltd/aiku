@@ -58,6 +58,10 @@ class CustomerSalesChannelsResource extends JsonResource
             'exist_in_platform'       => $customerSalesChannels->exist_in_platform,
             'platform_status'         => $customerSalesChannels->platform_status,
 
+            'customer_company_name'   => $this->customer_company_name ?? $this->customer_contact_name,
+            'customer_slug'           => $this->customer_slug,
+            'customer_id'             => $this->customer_id,
+
 
         ];
     }
