@@ -1,4 +1,9 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 15 Aug 2025 17:28:18 Central European Summer Time, Torremolinos, Spain
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;

@@ -1,4 +1,9 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 15 Aug 2025 17:26:53 Central European Summer Time, Torremolinos, Spain
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
 use App\Enums\CRM\TrafficSourceCampaign\TrafficSourceCampaignTypeEnum;
 use Illuminate\Database\Migrations\Migration;
