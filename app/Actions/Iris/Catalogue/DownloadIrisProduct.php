@@ -20,72 +20,36 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class DownloadIrisProduct extends IrisAction
 {
-    /**
-     * @throws \PhpOffice\PhpSpreadsheet\Exception
-     * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
-     * @throws \Exception
-     */
-    public function handle(Shop|ProductCategory|Product|Collection $parent, string $type): BinaryFileResponse|Response
+    public function handle(Shop|ProductCategory|Product|Collection $parent): BinaryFileResponse|Response
     {
-        return DownloadProduct::run($parent, $type);
+        return DownloadProduct::run($parent, 'products_csv');
     }
-    /**
-     * @throws \PhpOffice\PhpSpreadsheet\Exception
-     * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
-     */
 
     public function asController(Shop $shop, ActionRequest $request): BinaryFileResponse|Response
     {
-
-        $type = $request->query('type', 'products_csv');
-
-        if (!in_array($type, ['products_csv', 'products_images'])) {
-            abort(404);
-        }
-
-
         $this->initialisation($request);
 
-        return $this->handle($shop, $type);
+        return $this->handle($shop);
     }
 
     public function inProductCategory(ProductCategory $productCategory, ActionRequest $request): BinaryFileResponse|Response
     {
-        $type = $request->query('type', 'products_csv');
-
-        if (!in_array($type, ['products_csv', 'products_images'])) {
-            abort(404);
-        }
-
         $this->initialisation($request);
 
-        return $this->handle($productCategory, $type);
+        return $this->handle($productCategory);
     }
 
     public function inCollection(Collection $collection, ActionRequest $request): BinaryFileResponse|Response
     {
-        $type = $request->query('type', 'products_csv');
-
-        if (!in_array($type, ['products_csv', 'products_images'])) {
-            abort(404);
-        }
-
         $this->initialisation($request);
 
-        return $this->handle($collection, $type);
+        return $this->handle($collection);
     }
 
     public function inProduct(Product $product, ActionRequest $request): BinaryFileResponse|Response
     {
-        $type = $request->query('type', 'products_csv');
-
-        if (!in_array($type, ['products_csv', 'products_images'])) {
-            abort(404);
-        }
-
-
         $this->initialisation($request);
 
-        return $this->handle($product, $type);
+        return $this->handle($product);
     }
 }
