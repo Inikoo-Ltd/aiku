@@ -161,6 +161,7 @@ class IndexFamilies extends OrgAction
                 'organisations.slug as organisation_slug',
                 'product_category_sales_intervals.sales_grp_currency_all as sales_all',
                 'product_category_ordering_intervals.invoices_all as invoices_all',
+                'product_categories.master_product_category_id',
                 DB::raw(
                     "(
                     SELECT json_agg(json_build_object(
@@ -191,7 +192,7 @@ class IndexFamilies extends OrgAction
                 'department_name',
                 AllowedSort::custom(
                     'collections',
-                    new class () implements Sort {
+                    new class() implements Sort {
                         public function __invoke(Builder $query, bool $descending, string $property)
                         {
                             $direction = $descending ? 'desc' : 'asc';
@@ -223,7 +224,7 @@ class IndexFamilies extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
 
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
@@ -444,12 +445,12 @@ class IndexFamilies extends OrgAction
                     'navigation' => $navigation,
                 ],
                 ProductCategoryTabsEnum::INDEX->value => $this->tab == ProductCategoryTabsEnum::INDEX->value ?
-                    fn () => FamiliesResource::collection($families)
-                    : Inertia::lazy(fn () => FamiliesResource::collection($families)),
+                    fn() => FamiliesResource::collection($families)
+                    : Inertia::lazy(fn() => FamiliesResource::collection($families)),
 
                 ProductCategoryTabsEnum::SALES->value => $this->tab == ProductCategoryTabsEnum::SALES->value ?
-                    fn () => FamiliesResource::collection($families)
-                    : Inertia::lazy(fn () => FamiliesResource::collection($families)),
+                    fn() => FamiliesResource::collection($families)
+                    : Inertia::lazy(fn() => FamiliesResource::collection($families)),
             ]
         )->table($this->tableStructure(parent: $this->parent, modelOperations: null, canEdit: false, prefix: ProductCategoryTabsEnum::INDEX->value, sales: false))
             ->table($this->tableStructure(parent: $this->parent, modelOperations: null, canEdit: false, prefix: ProductCategoryTabsEnum::SALES->value, sales: $this->sales));
