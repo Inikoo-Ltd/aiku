@@ -67,8 +67,8 @@ class ShowTrafficSource extends OrgAction
             ],
 
             TrafficSourceTabsEnum::CUSTOMERS->value => $this->tab == TrafficSourceTabsEnum::CUSTOMERS->value
-                ? fn() => CustomersResource::collection(IndexCustomers::run($trafficSource, TrafficSourceTabsEnum::CUSTOMERS->value))
-                : Inertia::lazy(fn() => CustomersResource::collection(IndexCustomers::run($trafficSource, TrafficSourceTabsEnum::CUSTOMERS->value))),
+                ? fn () => CustomersResource::collection(IndexCustomers::run($trafficSource, TrafficSourceTabsEnum::CUSTOMERS->value))
+                : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run($trafficSource, TrafficSourceTabsEnum::CUSTOMERS->value))),
 
 
         ])->table(IndexCustomers::make()->tableStructure($trafficSource, [], TrafficSourceTabsEnum::CUSTOMERS->value));
