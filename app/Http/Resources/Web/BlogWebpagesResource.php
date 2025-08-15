@@ -10,6 +10,7 @@ namespace App\Http\Resources\Web;
 
 use App\Enums\Web\Website\WebsiteTypeEnum;
 use App\Http\Resources\HasSelfCall;
+use App\Models\Web\Website;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -48,10 +49,11 @@ class BlogWebpagesResource extends JsonResource
                 $href .= $this->website->domain;
             }
         } else {
-            if($request->get('website')->type == WebsiteTypeEnum::DROPSHIPPING) {
+            $website = $request->get('website') ?? Website::find($this->website_id);
+            if($website == WebsiteTypeEnum::DROPSHIPPING) {
                 $href = 'https://ds.test';
             }
-            elseif ($request->get('website')->type == WebsiteTypeEnum::FULFILMENT) {
+            elseif ($website->type == WebsiteTypeEnum::FULFILMENT) {
                 $href = 'https://fulfilment.test';
             }
         }
