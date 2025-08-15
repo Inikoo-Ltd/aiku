@@ -19,7 +19,6 @@ use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Email;
 use App\Models\Ordering\Order;
-use Illuminate\Support\Arr;
 
 class SendNewOrderEmailToCustomer extends OrgAction
 {
@@ -52,12 +51,13 @@ class SendNewOrderEmailToCustomer extends OrgAction
                 'customer_name' => $order->customer->name,
                 'order' => $this->generateOrderDetailsHtml($order),
                 'pay_info' => $this->generateOrderPaymentsHtml($order),
-                'date' => $order->created_at->format('F jS, Y'),
+                'date' => $order->submitted_at->format('F jS, Y'),
                 'order_link' => $this->getOrderLink($order),
                 'delivery_address' => $order->deliveryAddress->getHtml(),
                 'invoice_address' => $order->billingAddress->getHtml(),
                 'customer_note' => $order->customer_notes,
                 'order_number' => $this->getOrderLinkHtml($order),
+                'order_reference' => $this->getOrderLinkHtml($order),
             ]
         );
     }
@@ -227,7 +227,7 @@ class SendNewOrderEmailToCustomer extends OrgAction
                 $order->reference ?? $order->slug ?? 'View Order'
             );
         }
-        // TODO important do this bor B2B
+        // TODO important do this for B2B
 
         return sprintf(
             '<span style="color: #555; font-weight: 500;">%s</span>',

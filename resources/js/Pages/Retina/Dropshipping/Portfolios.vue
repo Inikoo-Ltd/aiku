@@ -320,34 +320,12 @@ const key = ulid()
                 </a>
 
                 <a :href="downloadUrl('images') as string" target="_blank" rel="noopener">
-                    <Button :icon="faImage" label="Images" type="tertiary" class="border-l-0 border-r-0 rounded-none" />
+                    <Button :icon="faImage" label="Images" type="tertiary" class="border-l-0  rounded-l-none" />
                 </a>
 
-                <!-- Section: Download button -->
-                <Button @click="(e) => _popover?.toggle(e)" v-tooltip="trans('Open another options')"
-                    :icon="faEllipsisV" xloading="!!isLoadingSpecificChannel.length"
-                    class="!px-2 border-l-0 rounded-l-none h-full" type="tertiary" key="" />
 
-                <Popover ref="_popover">
-                    <div class="w-64 relative">
-                        <div class="text-sm mb-2">
-                            {{ trans("Select another download file type") }}:
-                        </div>
 
-                        <div class="flex flex-col gap-y-2">
-                            <a :href="downloadUrl('xlsx') as string" target="_blank" rel="noopener">
-                                <Button :icon="faFileExcel" label="Excel" full :style="'tertiary'" />
-                            </a>
-                            <a :href="downloadUrl('json') as string" target="_blank" rel="noopener">
-                                <Button :icon="faBracketsCurly" label="JSON" full :style="'tertiary'" />
-                            </a>
-                            <a :href="downloadUrl('images') as string" target="_blank" rel="noopener">
-                                <Button :icon="faImage" :label="trans('Images')" full :style="'tertiary'" />
-                            </a>
-                        </div>
 
-                    </div>
-                </Popover>
             </div>
 
             <Button @click="() => (isOpenModalPortfolios = true)" :label="trans('Add products')"

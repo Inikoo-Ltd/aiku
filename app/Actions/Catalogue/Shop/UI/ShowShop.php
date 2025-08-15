@@ -178,7 +178,7 @@ class ShowShop extends OrgAction
                     'components'   => $widgetComponents
                 ]
             ],
-            'statsBox'  => $this->getStatsBox($shop),
+            'statsBox'  => $shop->type->value == 'dropshipping' ? $this->getStatsBox($shop) : null,
         ];
     }
 

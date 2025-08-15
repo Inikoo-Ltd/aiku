@@ -27,7 +27,7 @@ class MatchPortfolioToCurrentShopifyProduct extends OrgAction
         ]);
 
         $portfolio->refresh();
-        StoreShopifyProductVariant::run($portfolio);
+        StoreShopifyProductVariant::run($portfolio, 0);
         $portfolio = CheckShopifyPortfolio::run($portfolio);
 
         UploadProductToShopifyProgressEvent::dispatch($portfolio->customerSalesChannel->user, $portfolio);

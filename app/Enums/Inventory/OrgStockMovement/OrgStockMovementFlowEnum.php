@@ -17,16 +17,16 @@ enum OrgStockMovementFlowEnum: string
     use EnumHelperTrait;
 
 
-    case IN        = 'in';
-    case OUT       = 'out';
-    case NO_CHANGE = 'no-change';
+    case IN = 'in';
+    case OUT = 'out';
+    case AUDIT = 'audit';
 
     public static function labels(): array
     {
         return [
-            'in'        => __('In'),
-            'out'       => __('Out'),
-            'no-change' => __('No Change')
+            'in'    => __('In'),
+            'out'   => __('Out'),
+            'audit' => __('Audit')
         ];
     }
 
@@ -35,9 +35,9 @@ enum OrgStockMovementFlowEnum: string
         $stats = $parent->inventoryStats;
 
         return [
-            'in'        => $stats->number_org_stock_movements_flow_in,
-            'out'       => $stats->number_org_stock_movements_flow_out,
-            'no-change' => $stats->number_org_stock_movements_flow_no_change
+            'in'    => $stats->number_org_stock_movements_flow_in,
+            'out'   => $stats->number_org_stock_movements_flow_out,
+            'audit' => $stats->number_org_stock_movements_flow_audit
         ];
     }
 

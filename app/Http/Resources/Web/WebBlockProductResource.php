@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Web;
 
+use App\Helpers\NaturalLanguage;
 use App\Http\Resources\Catalogue\TagResource;
 use App\Http\Resources\HasSelfCall;
 use App\Models\Catalogue\Product;
@@ -35,11 +36,15 @@ class WebBlockProductResource extends JsonResource
 
 
         $specifications = [
+            'country_of_origin' => NaturalLanguage::make()->country($product->country_of_origin),
             'ingredients'       => $ingredients,
             'gross_weight'      => $product->gross_weight,
             'marketing_weights' => $tradeUnits->pluck('marketing_weights')->flatten()->filter()->values()->all(),
             'barcode'           => $product->barcode,
-            'dimensions'        => $tradeUnits->pluck('dimensions')->flatten()->filter()->values()->all(),
+            'dimensions'        => NaturalLanguage::make()->dimensions(json_encode($product->marketing_dimensions)),
+            'cpnp'              => $product->cpnp_number,
+            'net_weight'        => $product->marketing_weight,
+            'unit'              => $product->unit,
         ];
 
         return [

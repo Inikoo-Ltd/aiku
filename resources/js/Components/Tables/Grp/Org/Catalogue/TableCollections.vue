@@ -151,6 +151,19 @@ function collectionRoute(collection: {}) {
                 (route().params as RouteParams).department,
                 (route().params as RouteParams).subDepartment,
                 collection.slug]);
+    } else if (currentRoute === "grp.masters.master_shops.show.master_departments.show.master_collections.index") {
+        return route(
+            "grp.masters.master_shops.show.master_departments.show.master_collections.show",
+            [
+                (route().params as RouteParams).masterShop,
+                (route().params as RouteParams).masterDepartment,
+                collection.slug]);
+    } else if (currentRoute === "grp.masters.master_shops.show.master_collections.show") {
+        return route(
+            "grp.masters.master_shops.show.master_collections.show",
+            [
+                (route().params as RouteParams).masterShop,
+                collection.slug]);
     }
     // The empty case for "grp.org.shops.show.catalogue.families.show.collection.index" is omitted as it had no implementation
 }

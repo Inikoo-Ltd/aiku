@@ -6,6 +6,8 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Accounting\Invoice\IrisPdfInvoice;
+use App\Actions\Iris\UpdateIrisLocale;
 use App\Actions\Web\Webpage\Iris\ShowIrisBlogDashboard;
 use App\Actions\Web\Webpage\Iris\ShowIrisSitemap;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
@@ -27,15 +29,20 @@ Route::prefix("json")
     ->name("json.")
     ->group(__DIR__."/json.php");
 
-
+Route::patch('/locale/{locale}', UpdateIrisLocale::class)->name('locale.update');
 Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::prefix("models")
         ->name("models.")
         ->group(__DIR__."/models.php");
 
+    Route::prefix("catalogue")
+        ->name("catalogue.")
+        ->group(__DIR__."/catalogue.php");
+
     Route::prefix("")->group(function () {
         Route::group([], __DIR__.'/system.php');
         Route::get('/sitemap.xml', ShowIrisSitemap::class)->name('iris_sitemap');
+        Route::get('/invoice/{invoice:ulid}', IrisPdfInvoice::class)->name('iris_invoice');
         Route::get('/blog', ShowIrisBlogDashboard::class)->name('iris_blog');
         Route::get('/{path?}', ShowIrisWebpage::class)->name('iris_webpage');
         Route::get('/{parentPath1}/{path}', [ShowIrisWebpage::class, 'deep1'])->name('iris_webpage.deep1');

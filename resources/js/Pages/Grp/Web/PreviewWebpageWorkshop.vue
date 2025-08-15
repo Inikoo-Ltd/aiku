@@ -174,7 +174,7 @@ watch(filterBlock, () => {
   </div>
 </template>
 
-<style lang="scss" scoped>
+<style lang="scss">
 
 .trapezoid-button {
   @apply absolute z-[99] top-[-37px] left-1/2 px-5 py-1 text-white text-xs font-bold transition;
@@ -187,5 +187,9 @@ watch(filterBlock, () => {
   &:hover {
     background-color: v-bind('layout?.app?.theme[0]') !important;
   }
+}
+
+#jsd-widget{
+    display: none !important;
 }
 </style>

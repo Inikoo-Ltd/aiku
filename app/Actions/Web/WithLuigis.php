@@ -86,6 +86,7 @@ trait WithLuigis
         }
 
         $response = Http::withHeaders($header)
+            ->retry(3, 100)
             ->withBody($body, $content_type)
             ->{strtolower($method)}('https://live.luigisbox.com/' . $endPoint);
 

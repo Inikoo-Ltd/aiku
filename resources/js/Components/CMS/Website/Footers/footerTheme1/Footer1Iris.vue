@@ -21,7 +21,8 @@ library.add(faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinked
 
 const props = defineProps<{
     fieldValue?: FieldValue,
-    modelValue: FieldValue
+    modelValue?: FieldValue,
+    screenType?: string
 }>();
 
 const layout = inject('layout', retinaLayoutStructure)
@@ -86,7 +87,7 @@ const onSubmitSubscribe = async () => {
 		}">
         <div
             class="w-full flex flex-col md:flex-row gap-4 md:gap-8 pt-2 pb-4 md:pb-6 mb-4 md:mb-10 border-0 border-b border-solid border-gray-700">
-            <div class="h-36 md:h-24 overflow-hidden xflex-1 flex items-center justify-center md:justify-start ">
+            <!-- <div class="h-36 md:h-24 overflow-hidden xflex-1 flex items-center justify-center md:justify-start">
                 <Image v-if="modelValue?.logo?.source"
                     :src="modelValue?.logo?.source"
                     :imageCover="true"
@@ -96,7 +97,22 @@ const onSubmitSubscribe = async () => {
                     :imgAttributes="modelValue?.logo?.attributes"
                     :style="getStyles(unset(modelValue?.logo?.properties, 'dimension.height'))"
                 />
-            </div>
+            </div> -->
+
+            <div>
+					<component
+						v-if="modelValue?.logo?.source"
+						:is="'span'"
+						rel="noopener noreferrer"
+						class="block w-fit h-auto pt-3">
+						<Image
+							:style="getStyles(modelValue.logo.properties, screenType)"
+							:alt="modelValue?.logo?.alt"
+							:imageCover="true"
+							:src="modelValue?.logo?.source">
+						</Image>
+					</component>
+				</div>
 
             <div v-if="modelValue?.email"
                 class="relative group flex-1 flex justify-center md:justify-start items-center">
@@ -349,7 +365,7 @@ const onSubmitSubscribe = async () => {
                             autocomplete="email"
                             required
                             class="w-full min-w-0 rounded-md bg-white/5 px-3 py-1 text-base text-white outline outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 md:w-56 md:text-sm/6"
-                            :placeholder="modelValue?.subscribe?.placeholder ?? 'Enter your email'"
+                            :placeholder="modelValue?.subscribe?.placeholder ?? trans('Enter your email')"
                             :class="[
                                 currentState === 'error' ? 'errorShake' : '',
                             ]"
@@ -363,7 +379,7 @@ const onSubmitSubscribe = async () => {
                             <Button
                                 @click.prevent="onSubmitSubscribe"
                                 xtype="submit"
-                                label="Subscribe"
+                                :label="trans('Subscribe')"
                                 :loading="isLoadingSubmit"
                                 full
                             />

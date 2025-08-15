@@ -149,6 +149,13 @@ const handleFinaliseAndDispatch = () => {
         }),
         {},
         {
+            onError: (e) => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: e.message || "Please try again later or contact administrator.",
+                    type: "error",
+                })
+            },
             onFinish: () => loadingFinal.value = false,
             onSuccess: () => emits('SuccsesUpdateState'),
         }

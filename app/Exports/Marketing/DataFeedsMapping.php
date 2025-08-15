@@ -8,57 +8,94 @@
 
 namespace App\Exports\Marketing;
 
-use App\Actions\Helpers\Images\GetImgProxyUrl;
-use App\Models\Web\Webpage;
+use App\Helpers\NaturalLanguage;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 
 trait DataFeedsMapping
 {
     public function map($row): array
     {
-        /** @var \App\Models\Catalogue\Product $product */
-        $product = $row;
+        $dimensions      = NaturalLanguage::make()->dimensions($row->marketing_dimensions);
+        $htmlDescription = trim($row->description_title.' '.$row->description.' '.$row->description_extra);
+        $description     = strip_tags($htmlDescription);
+
+        $images = '';
+
+        if ($row->web_images && $rawImages = json_decode($row->web_images, true)) {
+            foreach (Arr::get($rawImages, 'all', []) as $image) {
+                $images .= Arr::get($image, 'original.original').' ';
+            }
+        }
+        $images = preg_replace('/ $/', '', $images);
 
 
+        $status       = $row->state;
+        $statusString = (string)$status;
+        $status       = Str::studly($statusString);
 
-        $webpage = Webpage::where('model_id', $product->id)->where('model_type', 'Product')->first();
+
+        $availableQuantity = $row->available_quantity;
+        if ($availableQuantity < 0) {
+            $availableQuantity = 0;
+        }
+
+        if ($row->state == 'discontinued') {
+            $availabilityStatus = 'Discontinued';
+        } elseif ($row->state == 'discontinuing') {
+            $availabilityStatus = 'Discontinuing';
+        } else {
+            $availabilityStatus = 'Normal';
+            if ($availableQuantity == 0) {
+                $availabilityStatus = 'OutofStock';
+            } elseif ($availableQuantity < 5) {
+                $availabilityStatus = 'VeryLow';
+            } elseif ($availableQuantity < 20) {
+                $availabilityStatus = 'Low';
+            }
+        }
+
+
         return [
-            $product->status->value,
-            $product->code,
-            '',
-            $product->family?->name,
-            $product->barcode,
-            '', // CPNP number
-            '', // TODO: need add column for total price in protfolio
-            $product->units,
-            $product->unit,
-            $product->price, // unit price
-            $product->name,
-            $product->rrp, // unit RRP check this is correct or not
-            '', // TODO: unit net weight
-            $product->gross_weight,
-            '', // TODO: unit dimensions
-            '', // TODO: materials/ingredients
-            '', // TODO: webpage description (html)
-            $webpage?->description, // webpage description (plain text)
-            $product->currency->code, // country of origin
-            '', // TODO: tariff code
-            '', // TODO: duty rate
-            '', // TODO: HTS US
-            $product->available_quantity,
-            $product->image ? GetImgProxyUrl::run($product->image?->getImage()) : '',
-            $product->updated_at,
-            '', // TODO: stock updated
-            '', // TODO: price updated
-            $product->images->sortByDesc('updated_at')->first()?->updated_at,
+            $status,
+            $row->code,
+            $row->family_name,
+            $row->barcode,
+            $row->cpnp_number ?? '',
+            round($row->price, 2),
+            round($row->units, 3),
+            $row->unit,
+            $row->price / $row->units,
+            $row->name,
+            $row->rrp / $row->units,
+            $row->marketing_weight / 1000,
+            $row->gross_weight / 1000,
+            $dimensions,
+            $row->marketing_ingredients ?? '',
+            $htmlDescription,
+            $description,
+            $row->country_of_origin ?? '',
+            $row->tariff_code ?? '',
+            $row->duty_rate ?? '',
+            $row->hts_us ?? '',
+            $availabilityStatus,
+            $images,
+            $row->updated_at,
+            $row->available_quantity_updated_at ?? '',
+            $row->price_updated_at ?? '',
+            $row->images_updated_at ?? '',
+            $availableQuantity
+
+
         ];
     }
+
 
     public function headings(): array
     {
         return [
             'Status',
             'Product code',
-            'Product user reference',
             'Family',
             'Barcode',
             'CPNP number',
@@ -84,6 +121,7 @@ trait DataFeedsMapping
             'Stock updated',
             'Price updated',
             'Images updated',
+            'Available Quantity'
         ];
     }
 

@@ -271,6 +271,16 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
             return [];
         }
 
+        $dutyRate = $productPropertiesInfo->{'Product Duty Rate'} ?? null;
+        // Clean the duty rate string to remove any non-ASCII characters or encoding issues
+        if ($dutyRate) {
+            // Convert to UTF-8 and remove any invalid characters
+            $dutyRate = mb_convert_encoding($dutyRate, 'UTF-8', 'UTF-8');
+            // Replace any remaining non-ASCII characters with their closest ASCII equivalent or remove them
+            $dutyRate = preg_replace('/[^\x20-\x7E]/', '', $dutyRate);
+        }
+
+
         return [
             'un_number'                    => $productPropertiesInfo->{'Product UN Number'} ?? null,
             'un_class'                     => $productPropertiesInfo->{'Product UN Class'} ?? null,
@@ -295,7 +305,7 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
             'cpnp_number'                  => $productPropertiesInfo->{'Product CPNP Number'} ?? null,
             'country_of_origin'            => $productPropertiesInfo->{'Product Origin Country Code'} ?? null,
             'tariff_code'                  => $productPropertiesInfo->{'Product Tariff Code'} ?? null,
-            'duty_rate'                    => $productPropertiesInfo->{'Product Duty Rate'} ?? null,
+            'duty_rate'                    => $dutyRate,
             'hts_us'                       => $productPropertiesInfo->{'Product HTSUS Code'} ?? null,
         ];
     }

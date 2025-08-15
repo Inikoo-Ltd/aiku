@@ -48,6 +48,14 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
         );
 
 
+        return $this->processSuccessfulPayment($orderPaymentApiPoint, $paymentAccountShop, $checkoutComPayment);
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function processSuccessfulPayment(OrderPaymentApiPoint $orderPaymentApiPoint, PaymentAccountShop $paymentAccountShop, array $checkoutComPayment): array
+    {
         $amount = Arr::get($checkoutComPayment, 'amount', 0) / 100;
 
         $paymentData = [
@@ -94,16 +102,20 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
         });
 
         return [
-            'success' => true,
-            'reason'  => 'Order paid successfully',
-            'order'   => $order,
+            'status'   => 'success',
+            'success'  => true,
+            'reason'   => 'Order paid successfully',
+            'order'    => $order,
+            'order_id' => $order->id,
+
         ];
     }
+
 
     public function rules(): array
     {
         return [
-            'cko-payment-id'         => ['required', 'string'],
+            'cko-payment-id' => ['required', 'string'],
         ];
     }
 

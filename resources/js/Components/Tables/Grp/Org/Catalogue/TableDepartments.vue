@@ -10,19 +10,25 @@ import Table from "@/Components/Table/Table.vue";
 import { Department } from "@/types/department";
 import Icon from "@/Components/Icon.vue";
 import { remove as loRemove } from "lodash-es";
-import { ref } from "vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { faSeedling } from "@fal";
+import { faOctopusDeploy } from  "@fortawesome/free-brands-svg-icons"
 import { library } from "@fortawesome/fontawesome-svg-core";
 import routes from "../../../../../../../han/src/constants/Routes";
 import { RouteParams } from "@/types/route-params";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { trans } from "laravel-vue-i18n"
+import { inject, ref } from "vue"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
-library.add(faSeedling);
+library.add(faSeedling,faOctopusDeploy);
 
 defineProps<{
     data: {}
     tab?: string
 }>();
+
+const locale = inject('locale', aikuLocaleStructure)
 
 function departmentRoute(department: Department) {
     switch (route().current()) {
@@ -58,7 +64,7 @@ function shopRoute(department: Department) {
                 (route().params as RouteParams).organisation,
                 department.shop_slug]);
     }
-    return undefined;
+    return '';
 }
 
 
@@ -72,7 +78,7 @@ function subDepartmentsRoute(department: Department) {
                 department.slug
             ]);
     }
-    return undefined;
+    return '';
 }
 
 function subCollectionsRoute(department: Department) {
@@ -85,7 +91,7 @@ function subCollectionsRoute(department: Department) {
                 department.slug
             ]);
     }
-    return undefined;
+    return '';
 }
 
 
@@ -98,7 +104,7 @@ function familyRoute(department: Department) {
                 (route().params as RouteParams).shop,
                 department.slug]);
     }
-    return undefined;
+    return '';
 }
 
 function productRoute(department: Department) {
@@ -110,7 +116,7 @@ function productRoute(department: Department) {
                 (route().params as RouteParams).shop,
                 department.slug]);
     }
-    return undefined;
+    return '';
 }
 
 function organisationRoute(department: Department) {
@@ -123,6 +129,16 @@ function departmentsInShopRoute(department: Department) {
     return route(
         "grp.org.shops.show.catalogue.departments.index",
         [department.organisation_slug, department.shop_slug]);
+}
+
+function masterDepartmentRoute(department: Department) {
+    if(!department.master_product_category_id){
+        return '';
+    }
+
+    return route(
+        "grp.helpers.redirect_master_product_category",
+        [department.master_product_category_id]);
 }
 
 
@@ -140,9 +156,13 @@ const isLoadingDetach = ref<string[]>([]);
         </template>
 
         <template #cell(shop_code)="{ item: department }">
-            <Link v-tooltip='department["shop_name"]' :href="departmentsInShopRoute(department) as string" class="secondaryLink">
+            <Link v-tooltip='department["shop_name"]' :href="(departmentsInShopRoute(department) as string)" class="secondaryLink">
                 {{ department["shop_code"] }}
             </Link>
+        </template>
+
+        <template #cell(sales)="{ item: department }">
+            <span class="tabular-nums">{{ locale.currencyFormat(department.currency_code, department.sales) }}</span>
         </template>
 
         <template #cell(state)="{ item: department }">
@@ -150,27 +170,40 @@ const isLoadingDetach = ref<string[]>([]);
             </Icon>
         </template>
         <template #cell(code)="{ item: department }">
-            <Link :href="departmentRoute(department) as string" class="primaryLink">
+            <div class="whitespace-nowrap">
+            <Link  :href="(masterDepartmentRoute(department) as string)"  v-tooltip="trans('Go to Master')" class="mr-1"  :class="[ department.master_product_category_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
+                <FontAwesomeIcon
+                    icon="fab fa-octopus-deploy"
+                    color="#4B0082"
+                />
+            </Link>
+
+            <Link :href="(departmentRoute(department) as string)" class="primaryLink">
                 {{ department["code"] }}
             </Link>
+            </div>
         </template>
+
         <template #cell(number_current_families)="{ item: department }">
-            <Link :href="familyRoute(department) as string" class="secondaryLink">
+            <Link :href="(familyRoute(department) as string)" class="secondaryLink">
                 {{ department["number_current_families"] }}
             </Link>
         </template>
+
         <template #cell(number_current_sub_departments)="{ item: department }">
-            <Link :href="subDepartmentsRoute(department) as string" class="secondaryLink">
+            <Link :href="(subDepartmentsRoute(department) as string)" class="secondaryLink">
                 {{ department["number_current_sub_departments"] }}
             </Link>
         </template>
+
         <template #cell(number_current_collections)="{ item: department }">
-            <Link :href="subCollectionsRoute(department) as string" class="secondaryLink">
+            <Link :href="(subCollectionsRoute(department) as string)" class="secondaryLink">
                 {{ department["number_current_collections"] }}
             </Link>
         </template>
+
         <template #cell(number_current_products)="{ item: department }">
-            <Link :href="productRoute(department) as string" class="secondaryLink">
+            <Link :href="(productRoute(department) as string)" class="secondaryLink">
                 {{ department["number_current_products"] }}
             </Link>
         </template>

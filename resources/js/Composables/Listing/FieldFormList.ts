@@ -53,6 +53,7 @@ import ToggleStateWebpage from '@/Components/Forms/Fields/ToggleStateWebpage.vue
 import DeleteWebpage from '@/Components/Forms/Fields/DeleteWebpage.vue'
 import InputTranslation from '@/Components/Forms/Fields/InputTranslation.vue'
 import TextEditorTranslation from '@/Components/Forms/Fields/TextEditorTranslation.vue'
+import SelectPrinter from '@/Components/Forms/Fields/SelectPrinter.vue'
 
 
 export const componentsList: {[key: string]: Component} = {
@@ -81,6 +82,7 @@ export const componentsList: {[key: string]: Component} = {
     'webRegistrations': WebRegistrations,
     'mailshotRecipient' : MailshotRecipient,
     'select_billing_cycle': SelectBillingCycle,
+    'select_printer' : SelectPrinter,
 
     'action': Action,
     'theme': Theme,

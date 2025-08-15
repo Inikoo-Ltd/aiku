@@ -2,16 +2,23 @@
 import Editor from '@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue'
 import { EditorContent } from '@tiptap/vue-3'
 
-const props = defineProps<{}>()
-const model = defineModel()
+const props = withDefaults(defineProps<{
+  rows?: number
+}>(), {
+  rows: 3 // default 3 rows
+})
 
+const model = defineModel()
 </script>
 
 <template>
-  <div class="">
+  <div>
     <Editor v-model="model">
       <template #editor-content="{ editor }">
-        <div class="editor-wrapper border-2 border-gray-300 rounded-lg p-3 shadow-sm focus-within:border-blue-400">
+        <div
+          class="editor-wrapper border-2 border-gray-300 rounded-lg p-3 shadow-sm focus-within:border-blue-400"
+          :style="{ minHeight: `${props.rows * 24}px` }"
+        >
           <EditorContent :editor="editor" class="editor-content focus:outline-none" />
         </div>
       </template>
@@ -25,13 +32,12 @@ const model = defineModel()
 }
 
 .editor-content {
-  min-height: 150px;
   font-size: 1rem;
   line-height: 1.5;
   display: grid;
 }
 
-:deep(.editor-content .ProseMirror ) {
-  @apply h-full ;
+:deep(.editor-content .ProseMirror) {
+  @apply h-full;
 }
 </style>

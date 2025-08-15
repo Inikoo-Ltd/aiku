@@ -10,6 +10,7 @@ namespace App\Models\Masters;
 
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Goods\Stock;
+use App\Models\Goods\TradeUnit;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
@@ -19,11 +20,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use Spatie\Translatable\HasTranslations;
 
 /**
  *
@@ -59,6 +62,15 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
+ * @property array<array-key, mixed>|null $name_i8n
+ * @property array<array-key, mixed>|null $description_i8n
+ * @property array<array-key, mixed>|null $description_title_i8n
+ * @property array<array-key, mixed>|null $description_extra_i8n
+ * @property bool $is_single_trade_unit Indicates if the master asset has a single trade unit
+ * @property bool $in_process
+ * @property bool $mark_for_discontinued
+ * @property string|null $mark_for_discontinued_at
+ * @property string|null $discontinued_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Group $group
  * @property-read \App\Models\Helpers\Media|null $image
@@ -77,11 +89,17 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Masters\MasterAssetStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Stock> $stocks
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Masters\MasterAssetTimeSeries> $timeSeries
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, TradeUnit> $tradeUnits
+ * @property-read mixed $translations
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset whereJsonContainsLocale(string $column, string $locale, ?mixed $value, string $operand = '=')
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset whereJsonContainsLocales(string $column, array $locales, ?mixed $value, string $operand = '=')
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset whereLocale(string $column, string $locale)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset whereLocales(string $column, array $locales)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset withTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset withoutTrashed()
  * @mixin \Eloquent
@@ -93,6 +111,9 @@ class MasterAsset extends Model implements Auditable, HasMedia
     use HasUniversalSearch;
     use HasHistory;
     use HasImage;
+    use HasTranslations;
+
+    public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
 
     protected $guarded = [];
 
@@ -214,6 +235,11 @@ class MasterAsset extends Model implements Auditable, HasMedia
             Stock::class,
             'master_asset_has_stocks',
         )->withPivot(['quantity', 'notes'])->withTimestamps();
+    }
+
+    public function tradeUnits(): MorphToMany
+    {
+        return $this->morphToMany(TradeUnit::class, 'model', 'model_has_trade_units')->withPivot(['quantity', 'notes'])->withTimestamps();
     }
 
 }

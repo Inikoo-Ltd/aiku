@@ -8,6 +8,7 @@
 
 namespace App\Models\SysAdmin;
 
+use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\Accounting\Invoice;
@@ -943,5 +944,11 @@ class Group extends Authenticatable implements Auditable, HasMedia
     {
         return $this->hasMany(WebUserRequest::class);
     }
+
+    public function getMasterFamilies(): LaravelCollection
+    {
+        return $this->masterProductCategories()->where('type', MasterProductCategoryTypeEnum::FAMILY)->get();
+    }
+
 
 }

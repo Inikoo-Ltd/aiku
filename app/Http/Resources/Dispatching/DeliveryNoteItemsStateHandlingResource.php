@@ -33,6 +33,9 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
 {
     public function toArray($request): array
     {
+
+
+
         $requiredFactionalData =
             riseDivisor(
                 divideWithRemainder(
@@ -63,6 +66,8 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
                 'locations.code as location_code',
                 'locations.slug as location_slug',
             ])
+
+            ->selectRaw('\''.$this->packed_in.'\' as org_stock_packed_in')
             ->selectRaw(
                 '(
         SELECT concat(sum(quantity),\';\',string_agg(id::char,\',\')) FROM pickings
@@ -85,6 +90,17 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
         $pickings = Picking::where('delivery_note_item_id', $this->id)->get();
 
 
+        $warehouseArea = '';
+        if ($this->warehouse_area_picking_position) {
+            $warehouseArea = __('Sort:').': '.$this->warehouse_area_picking_position.' ';
+        }
+
+        if ($this->warehouse_area_code) {
+            $warehouseArea .= __('Area').': '.$this->warehouse_area_code;
+        }
+        if ($warehouseArea == '') {
+            $warehouseArea = __('No Area');
+        }
 
         return [
             'id'                           => $this->id,
@@ -108,6 +124,8 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'is_handled'                   => $this->is_handled,
             'is_packed'                    => $isPacked,
             'quantity_required_fractional' => $requiredFactionalData,
+            'warehouse_area'                  => $warehouseArea,
+
 
             'upsert_picking_route' => [
                 'name'       => 'grp.models.delivery_note_item.picking.upsert',

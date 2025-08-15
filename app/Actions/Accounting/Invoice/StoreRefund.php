@@ -9,6 +9,7 @@
 namespace App\Actions\Accounting\Invoice;
 
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithFixedAddressActions;
@@ -48,6 +49,12 @@ class StoreRefund extends OrgAction
 
         $date = now();
         data_set($modelData, 'date', $date, overwrite: false);
+
+        $orgExchange = GetCurrencyExchange::run($invoice->shop->currency, $invoice->organisation->currency);
+        $grpExchange = GetCurrencyExchange::run($invoice->shop->currency, $invoice->group->currency);
+
+        data_set($modelData, 'org_exchange', $orgExchange);
+        data_set($modelData, 'grp_exchange', $grpExchange);
 
 
         data_set($modelData, 'group_id', $invoice->group_id);
