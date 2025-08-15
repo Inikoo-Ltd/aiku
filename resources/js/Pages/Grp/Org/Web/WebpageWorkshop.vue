@@ -39,7 +39,9 @@ import {
   faStars, faTimes, faBars, faExternalLink, faExpandWide, faCompressWide,
   faHome, faSignIn, faHammer, faCheckCircle, faBroadcastTower, faSkull,
   faEye,
-  faWindWarning
+  faWindWarning,
+  faUndo,
+  faRedo
 } from "@fal";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -523,6 +525,12 @@ console.log('props',props)
           </div>
           <div v-tooltip="'Full screen'" @click="fullScreen = !fullScreen" class="cursor-pointer">
             <FontAwesomeIcon :icon="!fullScreen ? faExpandWide : faCompressWide" fixed-width />
+          </div>
+           <div v-tooltip="'Undo'" class="cursor-pointer">
+            <FontAwesomeIcon :icon="faUndo" fixed-width />
+          </div>
+           <div v-tooltip="'Redo'" class="cursor-pointer">
+            <FontAwesomeIcon :icon="faRedo" fixed-width />
           </div>
         </div>
 
