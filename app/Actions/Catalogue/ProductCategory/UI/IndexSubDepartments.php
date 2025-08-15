@@ -85,13 +85,14 @@ class IndexSubDepartments extends OrgAction
                 'departments.slug as department_slug',
                 'departments.code as department_code',
                 'departments.name as department_name',
-                'product_category_stats.number_families as number_families',
+                'product_category_stats.number_current_families as number_families',
+                'product_category_stats.number_current_products as number_products',
 
             ])
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
             ->where('product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
             ->leftjoin('product_categories as departments', 'departments.id', 'product_categories.department_id')
-            ->allowedSorts(['code', 'name', 'shop_code', 'department_code'])
+            ->allowedSorts(['code', 'name', 'shop_code', 'department_code', 'number_families', 'number_products'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -145,14 +146,15 @@ class IndexSubDepartments extends OrgAction
 
 
             if ($parent instanceof Organisation) {
-                $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
-                $table->column(key: 'department_code', label: __('department'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'shop_code', label: __('shop'), sortable: true, searchable: true);
+                $table->column(key: 'department_code', label: __('department'), sortable: true, searchable: true);
             }
 
 
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_families', label: __('families'), canBeHidden: false, sortable: false, searchable: false);
+            $table->column(key: 'code', label: __('code'), sortable: true, searchable: true)
+                ->column(key: 'name', label: __('name'), sortable: true, searchable: true)
+                ->column(key: 'number_families', label: __('families'), sortable: true)
+                ->column(key: 'number_products', label: __('products'), sortable: true);
         };
     }
 
@@ -178,15 +180,12 @@ class IndexSubDepartments extends OrgAction
         $iconRight  = null;
 
         if ($this->parent instanceof ProductCategory && $this->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
-            $title      = $this->parent->name;
-            $icon       = [
+            $title     = $this->parent->name;
+            $icon      = [
                 'icon'  => ['fal', 'fa-folder-tree'],
                 'title' => __('department')
             ];
-            // $iconRight  = [
-            //     'icon' => 'fal fa-dot-circle',
-            // ];
-            $iconRight  = $this->parent->state->stateIcon()[$this->parent->state->value];
+            $iconRight = $this->parent->state->stateIcon()[$this->parent->state->value];
 
             $afterTitle = [
 
