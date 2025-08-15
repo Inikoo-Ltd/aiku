@@ -44,6 +44,9 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
         Route::get('/sitemap.xml', ShowIrisSitemap::class)->name('iris_sitemap');
         Route::get('/invoice/{invoice:ulid}', IrisPdfInvoice::class)->name('iris_invoice');
         Route::get('/blog', ShowIrisBlogDashboard::class)->name('iris_blog');
+      //  Route::get('/blog/articles', ShowIrisArticlesIndex::class)->name('iris_blog.articles.index');
+     //   Route::get('/blog/articles/{webpage}', ShowIrisBlogArticle::class)->name('iris_blog.articles.show');;
+
         Route::get('/{path?}', ShowIrisWebpage::class)->name('iris_webpage');
         Route::get('/{parentPath1}/{path}', [ShowIrisWebpage::class, 'deep1'])->name('iris_webpage.deep1');
         Route::get('/{parentPath1}/{parentPath2}/{path}', [ShowIrisWebpage::class, 'deep2'])->name('iris_webpage.deep2');
