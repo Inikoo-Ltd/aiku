@@ -164,8 +164,8 @@ const duplicateBlock = async (modelHasWebBlock = Number) => {
   );
 };
 
-
 const debounceSaveWorkshop = (block) => {
+  console.log('debounceSaveWorkshop', block);
   // Clear any pending debounce timers for this block
   if (debounceTimers.value[block.id]) {
     clearTimeout(debounceTimers.value[block.id]);
@@ -189,7 +189,7 @@ const debounceSaveWorkshop = (block) => {
     isSavingBlock.value = true;
 
     try {
-      await axios.patch(
+    const response =  await axios.patch(
         url,
         {
           layout: block.web_block.layout,
@@ -206,10 +206,11 @@ const debounceSaveWorkshop = (block) => {
       );
 
       // Reload the preview
+      data.value.layout = response.data.data.layout;
       sendToIframe({ key: "reload", value: {} });
     } catch (error) {
       if (axios.isCancel?.(error) || error?.code === "ERR_CANCELED") {
-       console.log(error)
+        console.log(error)
         return;
       }
 
@@ -373,6 +374,7 @@ const beforePublish = (route, popover) => {
   const validation = JSON.stringify(data.value.layout);
   if(props.webpage.type == "catalogue") onPublish(route, popover)
   else {
+    console.log('validation', validation)
      validation.includes('<h1') || validation.includes('<H1')
     ? onPublish(route, popover)
     : confirmPublish(route, popover);
