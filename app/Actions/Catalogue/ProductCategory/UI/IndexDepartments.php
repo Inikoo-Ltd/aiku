@@ -128,7 +128,7 @@ class IndexDepartments extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
 
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
@@ -307,12 +307,12 @@ class IndexDepartments extends OrgAction
                     'navigation' => $navigation,
                 ],
                 ProductCategoryTabsEnum::INDEX->value => $this->tab == ProductCategoryTabsEnum::INDEX->value ?
-                    fn () => DepartmentsResource::collection($departments)
-                    : Inertia::lazy(fn () => DepartmentsResource::collection($departments)),
+                    fn() => DepartmentsResource::collection($departments)
+                    : Inertia::lazy(fn() => DepartmentsResource::collection($departments)),
 
                 ProductCategoryTabsEnum::SALES->value => $this->tab == ProductCategoryTabsEnum::SALES->value ?
-                    fn () => DepartmentsResource::collection($departments)
-                    : Inertia::lazy(fn () => DepartmentsResource::collection($departments)),
+                    fn() => DepartmentsResource::collection($departments)
+                    : Inertia::lazy(fn() => DepartmentsResource::collection($departments)),
             ]
         )->table($this->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::INDEX->value, sales: false))
             ->table($this->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::SALES->value, sales: $this->sales));

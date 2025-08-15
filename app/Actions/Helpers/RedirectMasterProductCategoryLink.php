@@ -39,10 +39,9 @@ class RedirectMasterProductCategoryLink extends OrgAction
             );
         } else {
             return Redirect::route(
-                'grp.org.shops.show.catalogue.families.show',
+                'grp.masters.master_shops.show.master_families.show',
                 [
-                    $masterProductCategory->organisation->slug,
-                    $masterProductCategory->shop->slug,
+                    $masterProductCategory->masterShop->slug,
                     $masterProductCategory->slug,
                 ]
             );
@@ -55,5 +54,4 @@ class RedirectMasterProductCategoryLink extends OrgAction
 
         return $this->handle($masterProductCategory);
     }
-
 }
