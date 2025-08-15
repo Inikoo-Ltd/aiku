@@ -52,6 +52,10 @@ const MailshotRecipient = defineAsyncComponent(() => import('@/Components/Forms/
 import ToggleStateWebpage from '@/Components/Forms/Fields/ToggleStateWebpage.vue'
 import DeleteWebpage from '@/Components/Forms/Fields/DeleteWebpage.vue'
 import InputTranslation from '@/Components/Forms/Fields/InputTranslation.vue'
+import TextEditorTranslation from '@/Components/Forms/Fields/TextEditorTranslation.vue'
+import Pricing_zone from '@/Components/Forms/Fields/Pricing_zone.vue'
+import Teritory_zone from '@/Components/Forms/Fields/Teritory_zone.vue'
+import SelectPrinter from '@/Components/Forms/Fields/SelectPrinter.vue'
 
 
 export const componentsList: {[key: string]: Component} = {
@@ -80,6 +84,7 @@ export const componentsList: {[key: string]: Component} = {
     'webRegistrations': WebRegistrations,
     'mailshotRecipient' : MailshotRecipient,
     'select_billing_cycle': SelectBillingCycle,
+    'select_printer' : SelectPrinter,
 
     'action': Action,
     'theme': Theme,
@@ -102,7 +107,10 @@ export const componentsList: {[key: string]: Component} = {
     'delete_webpage': DeleteWebpage,
     'button' : ButtonForm,
     'input_translation' : InputTranslation,
-    'select_infinite': SelectInfiniteScroll
+    'select_infinite': SelectInfiniteScroll,
+    'textEditor_translation' : TextEditorTranslation,
+    'pricing_zone': Pricing_zone,
+    'teritory_zone': Teritory_zone
 }
 
 export const getComponent = (componentName: string) => {

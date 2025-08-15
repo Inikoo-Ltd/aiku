@@ -149,6 +149,13 @@ const handleFinaliseAndDispatch = () => {
         }),
         {},
         {
+            onError: (e) => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: e.message || "Please try again later or contact administrator.",
+                    type: "error",
+                })
+            },
             onFinish: () => loadingFinal.value = false,
             onSuccess: () => emits('SuccsesUpdateState'),
         }
@@ -194,7 +201,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="max-h-[500px] overflow-auto">
+    <div class="min-h-[350px]  max-h-[500px] overflow-auto">
 
     <PageHeading v-if="props.deliveryNote" :data="pageHead" isButtonGroupWithBorder :key="props.deliveryNote?.state">
         <template #other>

@@ -9,7 +9,6 @@ use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
 use App\Actions\UI\WithInertia;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
-use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
 use App\Enums\UI\Dispatch\PickingSessionTabsEnum;
 use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsGroupedResource;
 use App\Http\Resources\Dispatching\PickingSessionDeliveryNoteItemsStateHandlingResource;
@@ -36,6 +35,7 @@ class ShowPickingSession extends OrgAction
 
     public function handle(PickingSession $pickingSession): PickingSession
     {
+
         return $pickingSession;
     }
 
@@ -88,17 +88,20 @@ class ShowPickingSession extends OrgAction
         $actions   = null;
         $navigation = PickingSessionTabsEnum::navigation();
 
-        if($pickingSession->state == PickingSessionStateEnum::IN_PROCESS)
-        {
-            $this->tab = PickingSessionTabsEnum::ITEMS->value;
-        } elseif($pickingSession->state == PickingSessionStateEnum::HANDLING)
-        {
-            $this->tab = PickingSessionTabsEnum::ITEMIZED->value;
-        } else {
-            $this->tab = PickingSessionTabsEnum::GROUPED->value;
+
+        if (!request()->get('tab')) {
+            if ($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
+                $this->tab = PickingSessionTabsEnum::ITEMS->value;
+            } elseif ($pickingSession->state == PickingSessionStateEnum::HANDLING) {
+                $this->tab = PickingSessionTabsEnum::ITEMIZED->value;
+            } else {
+                $this->tab = PickingSessionTabsEnum::GROUPED->value;
+            }
         }
 
-        
+
+
+
         if ($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
             $actions[] = [
                 'type'    => 'button',
@@ -152,6 +155,8 @@ class ShowPickingSession extends OrgAction
         ];
 
 
+
+
         $props = array_merge($props, $this->getItems($pickingSession));
 
         $inertiaResponse = Inertia::render(
@@ -162,7 +167,7 @@ class ShowPickingSession extends OrgAction
             $inertiaResponse->table(IndexDeliveryNoteItemsInPickingSession::make()->tableStructure(parent: $pickingSession, prefix: PickingSessionTabsEnum::ITEMS->value));
         } else {
             $inertiaResponse->table(IndexDeliveryNoteItemsInPickingSessionGrouped::make()->tableStructure(parent: $pickingSession, prefix: PickingSessionTabsEnum::GROUPED->value))
-                            ->table(IndexDeliveryNoteItemsInPickingSessionStateActive::make()->tableStructure(parent: $pickingSession, prefix: PickingSessionTabsEnum::ITEMIZED->value));
+                            ->table(IndexDeliveryNoteItemsInPickingSessionStateActive::make()->tableStructure(prefix: PickingSessionTabsEnum::ITEMIZED->value));
         }
 
         return $inertiaResponse;
@@ -189,7 +194,7 @@ class ShowPickingSession extends OrgAction
             ];
         }
 
-        return [];
+
     }
 
     public function getBreadcrumbs(PickingSession $pickingSession, string $routeName, array $routeParameters, string $suffix = ''): array

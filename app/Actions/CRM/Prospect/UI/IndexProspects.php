@@ -32,11 +32,11 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedSort;
 
 class IndexProspects extends OrgAction
 {
@@ -186,7 +186,20 @@ class IndexProspects extends OrgAction
 
         return $queryBuilder
             ->defaultSort('prospects.name')
-            ->allowedSorts(['name', 'email', 'phone', 'contact_website'])
+            ->allowedSorts([
+                'name',
+                'email',
+                'phone',
+                'contact_website',
+                'is_opt_in',
+                AllowedSort::callback('website', function ($query, $direction) {
+                    $direction = strtolower($direction);
+                    if (!in_array($direction, ['asc', 'desc'])) {
+                        $direction = 'asc';
+                    }
+                    return $query->orderBy('contact_website', $direction);
+                }),
+            ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -198,7 +211,7 @@ class IndexProspects extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
             if (class_basename($parent) != 'Tag' && !($parent instanceof Group)) {
                 foreach ($this->getElementGroups($parent, $scope) as $key => $elementGroup) {
@@ -229,8 +242,6 @@ class IndexProspects extends OrgAction
                 ->column(key: 'email', label: __('email'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'phone', label: __('phone'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'website', label: __('website'), canBeHidden: false, sortable: true, searchable: true);
-
-
         };
     }
 
@@ -249,10 +260,12 @@ class IndexProspects extends OrgAction
             unset($navigation[ProspectsTabsEnum::SUCCESS->value]);
         }
 
+
+
         if ($this->parent instanceof Shop) {
             $spreadsheetRoute = [
                 'event'           => 'action-progress',
-                'channel'         => 'grp.personal.'.$this->group->id,
+                'channel'         => 'grp.personal.' . $this->group->id,
                 'required_fields' => ["id:prospect_key", "company", "contact_name", "email", "telephone"],
                 'route'           => [
                     'upload' => [
@@ -265,12 +278,12 @@ class IndexProspects extends OrgAction
             ];
         }
         $subNavigation = $this->getSubNavigation($request);
-        $dataProspect  = [
-            'data' => $this->tab == ProspectsTabsEnum::PROSPECTS->value
-                ? ProspectsResource::collection($prospects)
-                : Inertia::lazy(fn () => ProspectsResource::collection($prospects)),
 
-        ];
+
+        if ($this->parent instanceof Group) {
+            unset($navigation[ProspectsTabsEnum::DASHBOARD->value]);
+            $subNavigation = null;
+        }
 
         $tabs = [
             'tabs' => [
@@ -281,10 +294,10 @@ class IndexProspects extends OrgAction
             ProspectsTabsEnum::DASHBOARD->value => $this->tab == ProspectsTabsEnum::DASHBOARD->value ?
                 fn () => GetProspectsDashboard::run($this->parent, $request)
                 : Inertia::lazy(fn () => GetProspectsDashboard::run($this->parent, $request)),
-            ProspectsTabsEnum::PROSPECTS->value => $this->tab == ProspectsTabsEnum::PROSPECTS->value ?
-                fn () => $dataProspect
-                : Inertia::lazy(fn () => $dataProspect),
 
+            ProspectsTabsEnum::PROSPECTS->value => $this->tab == ProspectsTabsEnum::PROSPECTS->value ?
+                fn () => ProspectsResource::collection($prospects)
+                : Inertia::lazy(fn () => ProspectsResource::collection($prospects)),
             ProspectsTabsEnum::CONTACTED->value => $this->tab == ProspectsTabsEnum::CONTACTED->value ?
                 fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::CONTACTED->value, scope: 'contacted'))
                 : Inertia::lazy(fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::CONTACTED->value, scope: 'contacted'))),
@@ -302,20 +315,6 @@ class IndexProspects extends OrgAction
                 : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run(model: Prospect::class, prefix: ProspectsTabsEnum::HISTORY->value))),
         ];
 
-        if ($this->parent instanceof Group) {
-            $subNavigation = null;
-            $tabs          = [
-                'tabs'                              => [
-                    'current'    => $this->tab,
-                    'navigation' => Arr::except(ProspectsTabsEnum::navigation(), [ProspectsTabsEnum::DASHBOARD->value]),
-                ],
-                ProspectsTabsEnum::PROSPECTS->value => $this->tab == ProspectsTabsEnum::PROSPECTS->value ?
-                    fn () => $dataProspect
-                    : Inertia::lazy(fn () => $dataProspect),
-            ];
-        }
-
-
         return Inertia::render(
             'Org/Shop/CRM/Prospects',
             [
@@ -331,30 +330,30 @@ class IndexProspects extends OrgAction
                         $this->canEdit ? [
                             'type'    => 'buttonGroup',
                             'buttons' =>
-                                match (class_basename($this->parent)) {
-                                    'Shop' => [
-                                        [
-                                            'style' => 'primary',
-                                            'icon'  => ['fal', 'fa-upload'],
-                                            'label' => 'upload',
-                                            'route' => [
-                                                'name'       => 'grp.org.models.shop.prospects.upload',
-                                                'parameters' => $this->parent->id
+                            match (class_basename($this->parent)) {
+                                'Shop' => [
+                                    [
+                                        'style' => 'primary',
+                                        'icon'  => ['fal', 'fa-upload'],
+                                        'label' => 'upload',
+                                        'route' => [
+                                            'name'       => 'grp.org.models.shop.prospects.upload',
+                                            'parameters' => $this->parent->id
 
-                                            ],
                                         ],
-                                        [
-                                            'type'  => 'button',
-                                            'style' => 'create',
-                                            'label' => __('prospect'),
-                                            'route' => [
-                                                'name'       => 'grp.org.shops.show.prospects.create',
-                                                'parameters' => $request->route()->originalParameters()
-                                            ]
-                                        ]
                                     ],
-                                    default => []
-                                }
+                                    [
+                                        'type'  => 'button',
+                                        'style' => 'create',
+                                        'label' => __('prospect'),
+                                        'route' => [
+                                            'name'       => 'grp.org.shops.show.prospects.create',
+                                            'parameters' => $request->route()->originalParameters()
+                                        ]
+                                    ]
+                                ],
+                                default => []
+                            }
 
 
                         ] : false
@@ -368,7 +367,7 @@ class IndexProspects extends OrgAction
                         ]
                     ],
                     'event'     => class_basename(Prospect::class),
-                    'channel'   => 'uploads.org.'.request()->user()->id
+                    'channel'   => 'uploads.org.' . request()->user()->id
                 ],
                 'upload_spreadsheet' => $spreadsheetRoute ?? null,
                 'uploadRoutes'       => [

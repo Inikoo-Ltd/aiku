@@ -16,6 +16,8 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheck } from "@fal";
 import { RouteParams } from "@/types/route-params";
+import { trans } from "laravel-vue-i18n"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 library.add(faCheck)
 
@@ -65,6 +67,10 @@ function familyRoute(family: Family) {
             return route(
                 "grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show",
                 [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, (route().params as RouteParams).department, (route().params as RouteParams).subDepartment, family.slug])
+        case "grp.masters.master_shops.show.master_collections.show":
+            return route(
+                "grp.masters.master_shops.show.master_families.show",
+                [(route().params as RouteParams).masterShop, family.slug])
         case 'grp.overview.catalogue.families.index':
             return route(
                 'grp.org.shops.show.catalogue.families.show',
@@ -108,6 +114,27 @@ function departmentRoute(family: Family) {
     }
 }
 
+function collectionRoute(shop_slug: string, collection: { id: string, name: string, code?: string }) {
+    switch (route().current()) {
+        case 'xxxxxxxxx':
+            return route(
+                "grp.org.shops.show.catalogue.collections.show",
+                {
+                    organisation: (route().params as RouteParams).organisation,
+                    shop: shop_slug,
+                    collection: collection.slug
+                })
+        default:
+            return route(
+                "grp.org.shops.show.catalogue.collections.show",
+                {
+                    organisation: (route().params as RouteParams).organisation,
+                    shop: shop_slug,
+                    collection: collection.slug
+                })
+    }
+}
+
 function subDepartmentRoute(family: Family) {
     switch (route().current()) {
         case 'grp.org.shops.show.catalogue.families.index':
@@ -119,6 +146,16 @@ function subDepartmentRoute(family: Family) {
                 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
                 [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, family.department_slug, family.sub_department_slug])
     }
+}
+
+function masterFamilyRoute(family: Family) {
+    if(!family.master_product_category_id){
+        return '';
+    }
+
+    return route(
+        "grp.helpers.redirect_master_product_category",
+        [family.master_product_category_id]);
 }
 
 const isLoadingDetach = ref<string[]>([])
@@ -137,9 +174,18 @@ const isLoadingDetach = ref<string[]>([])
             <Icon :data="family.state" />
         </template>
         <template #cell(code)="{ item: family }">
-            <Link :href="familyRoute(family)" class="primaryLink">
-                {{ family["code"] }}
-            </Link>
+            <div class="whitespace-nowrap">
+                <Link  :href="(masterFamilyRoute(family) as string)"  v-tooltip="trans('Go to Master')" class="mr-1"  :class="[ family.master_product_category_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
+                    <FontAwesomeIcon
+                        icon="fab fa-octopus-deploy"
+                        color="#4B0082"
+                    />
+                </Link>
+            
+                <Link :href="familyRoute(family)" class="primaryLink">
+                    {{ family["code"] }}
+                </Link>
+            </div>
         </template>
         <template #cell(shop_code)="{ item: family }">
             <Link :href="shopRoute(family)" class="secondaryLink">
@@ -168,6 +214,19 @@ const isLoadingDetach = ref<string[]>([])
             <Link v-if="family.department_slug" :href="departmentRoute(family)" class="secondaryLink">
                 {{ family["department_name"] }}
             </Link>
+        </template>
+
+        <!-- Column: Collections -->
+        <template #cell(collections)="{ item: family }">
+            <div class="flex flex-col gap-2">
+                <ul>
+                    <li v-for="collect in family.collections" :key="collect.id" class="list-disc">
+                        <Link :href="collectionRoute(family.shop_slug, collect)" class="secondaryLink w-fit">
+                            {{ collect.name }} <span v-if="collect.code" class="text-gray-400 italic">({{ collect.code }})</span>
+                        </Link>
+                    </li>
+                </ul>
+            </div>
         </template>
 
         <template #cell(product_categories)="{ item: family }">
@@ -222,4 +281,5 @@ const isLoadingDetach = ref<string[]>([])
             </Link>
         </template>
     </Table>
+    <!-- <pre>{{ data.data[0] }}</pre> -->
 </template>

@@ -57,11 +57,9 @@ import { faSpinnerThird } from "@far"
 import DeliveryAddressManagementModal from "@/Components/Utils/DeliveryAddressManagementModal.vue"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.vue"
-import { useTruncate } from "@/Composables/useTruncate"
-import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
-import ShipmentSection from "@/Components/Warehouse/DeliveryNotes/ShipmentSection.vue"
+
 import Icon from "@/Components/Icon.vue"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird)
 
@@ -112,7 +110,7 @@ const props = defineProps<{
     }
 
     upload_spreadsheet?: UploadPallet
-    address_management: {
+    delivery_address_management: {
         can_open_address_management: boolean
         updateRoute: routeType
         addresses: AddressManagement
@@ -389,7 +387,35 @@ const generateRouteDeliveryNote = (slug: string) => {
                     :icon="action.icon"
                     @click="() => openModal(action)"
                     :key="`ActionButton${action.label}${action.style}`"
-                    :tooltip="action.tooltip" />
+                    :tooltip="action.tooltip"
+                />
+            </div>
+        </template>
+
+        <!-- Button: rollback -->
+        <template #button-rollback="{ action }">
+            <div class="relative">
+
+                <ModalConfirmationDelete
+                    :routeDelete="action.route"
+                    :title="trans('Are you sure you want to rollback the Order??')"
+                    :description="trans('The state of the Order will go back to finalised state.')"
+                    isFullLoading
+                    :noLabel="trans('Yes, rollback')"
+                    noIcon="far fa-undo-alt"
+                >
+                    <template #default="{ changeModel }">
+                        <Button
+                            @click="changeModel"
+                            type="negative"
+                            :label="trans('Undispatch')"
+                            icon="far fa-undo-alt"
+                            :tooltip="trans('Rollback the dispatch')"
+                        />
+                    </template>
+                </ModalConfirmationDelete>
+
+
             </div>
         </template>
 
@@ -603,9 +629,7 @@ const generateRouteDeliveryNote = (slug: string) => {
         <!-- Box: Payment/Invoices/Delivery Notes  -->
         <BoxStatPallet class="py-4 px-3" icon="fal fa-user">
             <div class="text-xs md:text-sm">
-				<div class="font-semibold xmb-2 text-base">
-					{{ trans("Delivery Note") }}
-				</div>
+
 				
 				<div class="xspace-y-0.5 pl-1">
                     <!-- Field: Billing -->
@@ -667,29 +691,7 @@ const generateRouteDeliveryNote = (slug: string) => {
                         </a>
                     </div>
         
-                   <!--  <div v-for="delivery_note in  box_stats.delivery_notes" >
-        
-                        <dl class="flex">
-                            <dt class="flex-none">
-                                <FontAwesomeIcon icon="fal fa-truck" fixed-width aria-hidden="true" class="text-gray-500" />
-                            </dt>
-                            <dd class="text-gray-500 w-full" >
-                                <Link
-                                    :href="route('grp.helpers.redirect_delivery_notes', delivery_note.id)"
-                                    class="primaryLink cursor-pointer">
-                                    {{ delivery_note.reference }}
-                                </Link>
-        
-                                <div class="">
-                                    <ShipmentSection
-                                        :shipments="delivery_note.shipments"
-                                    />
-                                </div>
-                            </dd>
-                        </dl>
-        
-        
-                    </div> -->
+
                     
                     <div v-if="box_stats?.delivery_notes?.length" class="mt-4 border rounded-lg p-4 pt-3 bg-white shadow-sm">
                         <!-- Section Title -->
@@ -758,8 +760,6 @@ const generateRouteDeliveryNote = (slug: string) => {
                 <section aria-labelledby="summary-heading" class="rounded-lg px-4 py-4 sm:px-6 lg:mt-0">
                     <OrderSummary :order_summary="box_stats.order_summary" :currency_code="currency.code" />
                 </section>
-				<!-- <div class="xspace-y-0.5 pl-1">
-                </div> -->
             </div>
         </BoxStatPallet>
     </div>
@@ -780,9 +780,9 @@ const generateRouteDeliveryNote = (slug: string) => {
 
     <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)" width="w-full max-w-5xl">
         <DeliveryAddressManagementModal
-            :address_modal_title="address_management.address_modal_title"
-            :addresses="address_management.addresses"
-            :updateRoute="address_management.address_update_route"
+            :address_modal_title="delivery_address_management.address_modal_title"
+            :addresses="delivery_address_management.addresses"
+            :updateRoute="delivery_address_management.address_update_route"
             keyPayloadEdit="address"
             @onDone="() => (isModalAddress = false)"
         />

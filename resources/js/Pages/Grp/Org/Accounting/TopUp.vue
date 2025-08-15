@@ -19,6 +19,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue";
 import { capitalize } from "@/Composables/capitalize"
 import PaymentShowcase from './PaymentShowcase.vue';
 import { PageHeading as PageHeadingTS } from '@/types/PageHeading'
+import TopupShowcase from '@/Components/Accounting/TopupShowcase.vue'
 
 library.add(faCoins);
 
@@ -32,6 +33,8 @@ const props = defineProps<{
         navigation: {};
     }
     showcase?: {}
+    details: {}
+    history: {}
 }>()
 
 let currentTab = ref(props.tabs.current);
@@ -40,6 +43,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 const component = computed(() => {
 
     const components = {
+        showcase: TopupShowcase,
         details: ModelDetails,
         history: ModelChangelog,
     };

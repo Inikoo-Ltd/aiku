@@ -200,7 +200,7 @@ class GetGroupNavigation
             'topMenu' => [
                 'subSections' => [
                     [
-                        'label' => __('SKUs families'),
+                        'label' => __('Master SKUs families'),
                         'icon'  => ['fal', 'fa-boxes-alt'],
                         'root'  => 'grp.goods.stock-families.',
                         'route' => [
@@ -210,11 +210,21 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => 'SKUs',
+                        'label' => __('Master SKUs'),
                         'icon'  => ['fal', 'fa-box'],
                         'root'  => 'grp.goods.stocks.',
                         'route' => [
                             'name'       => 'grp.goods.stocks.active_stocks.index',
+                            'parameters' => []
+
+                        ]
+                    ],
+                    [
+                        'label' => 'Ingredients',
+                        'icon'  => ['fal', 'fa-apple-crate'],
+                        'root'  => 'grp.goods.ingredients.',
+                        'route' => [
+                            'name'       => 'grp.goods.ingredients.index',
                             'parameters' => []
 
                         ]
@@ -229,16 +239,7 @@ class GetGroupNavigation
 
                         ]
                     ],
-                    [
-                        'label' => 'Ingredients',
-                        'icon'  => ['fal', 'fa-atom'],
-                        'root'  => 'grp.goods.ingredients.',
-                        'route' => [
-                            'name'       => 'grp.goods.ingredients.index',
-                            'parameters' => []
 
-                        ]
-                    ],
 
                 ]
             ]
@@ -250,7 +251,7 @@ class GetGroupNavigation
     {
         return [
             'label'   => __('Masters'),
-            'icon'    => ['fal', 'fa-ruler-triangle'],
+            'icon'    => ['fab', 'fa-octopus-deploy'],
             'root'    => 'grp.masters.',
             'route'   => [
                 'name' => 'grp.masters.dashboard'
@@ -267,7 +268,7 @@ class GetGroupNavigation
                         ],
                     ],
                     [
-                        'label' => __('Shops'),
+                        'label' => __('Master Shops'),
                         'tooltip' => __('Master shops'),
                         'icon'  => ['fal', 'fa-store-alt'],
                         'root'  => 'grp.masters.master_shops.',
@@ -278,47 +279,14 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => __('Departments'),
-                        'tooltip' => __('Master departments'),
-                        'icon'  => ['fal', 'fa-folder-tree'],
-                        'root'  => 'grp.masters.master_departments.',
+                        'label' => 'Trade Units',
+                        'icon'  => ['fal', 'fa-atom'],
+                        'root'  => 'grp.goods.trade-units.',
                         'route' => [
-                            'name'       => 'grp.masters.master_departments.index',
+                            'name'       => 'grp.masters.trade-units.active',
                             'parameters' => []
 
                         ]
-                    ],
-                    [
-                        'label' => __('Families'),
-                        'tooltip' => __('Master families'),
-                        'icon'  => ['fal', 'fa-folder'],
-                        'root'  => 'grp.masters.master_families.',
-                        'route' => [
-                            'name'       => 'grp.masters.master_families.index',
-                            'parameters' => []
-
-                        ]
-                    ],
-                    [
-                        'label' => __('Products'),
-                        'tooltip' => __('Master products'),
-                        'icon'  => ['fal', 'fa-cube'],
-                        'root'  => 'grp.masters.master_products.',
-                        'route' => [
-                            'name'       => 'grp.masters.master_products.index',
-                            'parameters' => []
-
-                        ]
-                    ],
-                    [
-                        "label"   => __("Collections"),
-                        "tooltip" => __("Master Collections"),
-                        "icon"    => ["fal", "fa-album-collection"],
-                        'root'    => 'grp.masters.master_collections.',
-                        "route"   => [
-                            "name"       => "grp.masters.master_collections.index",
-                            "parameters" => [],
-                        ],
                     ],
 
 

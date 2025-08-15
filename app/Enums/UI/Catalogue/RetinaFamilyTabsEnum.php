@@ -9,7 +9,6 @@
 namespace App\Enums\UI\Catalogue;
 
 use App\Enums\EnumHelperTrait;
-use App\Enums\HasTabs;
 use App\Enums\HasTabsWithQuantity;
 use App\Models\Catalogue\ProductCategory;
 

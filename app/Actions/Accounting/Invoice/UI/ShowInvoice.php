@@ -26,6 +26,7 @@ use App\Http\Resources\Accounting\RefundsResource;
 use App\Http\Resources\Mail\DispatchedEmailsResource;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
+use App\Models\Dispatching\DeliveryNote;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -182,6 +183,32 @@ class ShowInvoice extends OrgAction
         $actions              = $this->getInvoiceActions($invoice, $request, $payBoxData);
         $exportInvoiceOptions = $this->getExportOptions($invoice);
 
+
+        $deliveryNoteRoute    = null;
+
+        /** @var DeliveryNote $firstDeliveryNote */
+        $firstDeliveryNote = $invoice->order?->deliveryNotes()->first();
+
+        if ($firstDeliveryNote) {
+            $deliveryNoteRoute = [
+                'deliveryNoteRoute'    => [
+                    'name'       => 'grp.org.shops.show.ordering.orders.show.delivery-note',
+                    'parameters' => [
+                        'organisation' => $invoice->organisation->slug,
+                        'shop' => $invoice->shop->slug,
+                        'order' => $invoice->order->slug,
+                        'deliveryNote' => $firstDeliveryNote->slug
+                    ]
+                ],
+                'deliveryNotePdfRoute' => [
+                    'name'       => 'grp.pdfs.delivery-notes',
+                    'parameters' => [
+                        'deliveryNote' => $firstDeliveryNote->slug,
+                    ],
+                ]
+            ];
+        }
+
         return Inertia::render(
             'Org/Accounting/Invoice',
             [
@@ -215,7 +242,9 @@ class ShowInvoice extends OrgAction
                 ...$payBoxData,
 
                 'invoiceExportOptions' => $exportInvoiceOptions,
-
+                'routes'      => [
+                    'delivery_note'    => $deliveryNoteRoute
+                ],
 
                 'box_stats'    => $this->getBoxStats($invoice),
                 'list_refunds' => RefundResource::collection($invoice->refunds),

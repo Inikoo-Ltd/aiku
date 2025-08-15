@@ -21,7 +21,6 @@ class StockFamilyRecordSearch
 
     public function handle(StockFamily $stockFamily): void
     {
-
         if ($stockFamily->trashed()) {
             $stockFamily->universalSearch()->delete();
 
@@ -31,35 +30,35 @@ class StockFamilyRecordSearch
         $stockFamily->universalSearch()->updateOrCreate(
             [],
             [
-                'group_id'          => $stockFamily->group_id,
-                'sections'          => ['goods'],
-                'haystack_tier_1'   => trim($stockFamily->code.' '.$stockFamily->name),
-                'keyword'           => $stockFamily->code,
-                'result'            => [
-                    'route'     => [
-                        'name'          => 'grp.goods.stock-families.show',
-                        'parameters'    => [
+                'group_id'        => $stockFamily->group_id,
+                'sections'        => ['goods'],
+                'haystack_tier_1' => trim($stockFamily->code.' '.$stockFamily->name),
+                'keyword'         => $stockFamily->code,
+                'result'          => [
+                    'route'       => [
+                        'name'       => 'grp.goods.stock-families.show',
+                        'parameters' => [
                             $stockFamily->slug
                         ]
                     ],
-                    'description'      => [
+                    'description' => [
                         'label' => $stockFamily->name,
                     ],
-                    'code' => [
+                    'code'        => [
                         'label' => $stockFamily->code,
                     ],
-                    'icon'      => [
+                    'icon'        => [
                         'icon' => 'fal fa-boxes-alt',
                     ],
-                    'meta'      => [
+                    'meta'        => [
                         [
-                            'label' => $stockFamily->state,
+                            'label'   => $stockFamily->state,
                             'tooltip' => __('State')
                         ],
                         [
                             'type'   => 'number',
-                            'label'  => __('SKUs') . ': ',
-                            'number' => (int) $stockFamily->stats->number_current_org_stocks
+                            'label'  => __('SKUs').': ',
+                            'number' => $stockFamily->stats->number_current_stocks
                         ],
 
                     ],

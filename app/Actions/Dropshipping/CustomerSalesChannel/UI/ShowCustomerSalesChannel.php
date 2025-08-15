@@ -17,6 +17,7 @@ use App\Enums\UI\CRM\CustomerPlatformTabsEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\TiktokUser;
 use App\Models\Dropshipping\WooCommerceUser;
@@ -36,11 +37,16 @@ class ShowCustomerSalesChannel extends OrgAction
         return $customerSalesChannel;
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inPlatform(Organisation $organisation, Shop $shop, Platform $platform, CustomerSalesChannel $customerSalesChannel, ActionRequest $request): CustomerSalesChannel
+    {
+        $this->initialisationFromShop($customerSalesChannel->shop, $request)->withTab(CustomerPlatformTabsEnum::values());
+        return $this->handle($customerSalesChannel);
+    }
+
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, ActionRequest $request): CustomerSalesChannel
     {
         $this->initialisationFromShop($shop, $request)->withTab(CustomerPlatformTabsEnum::values());
-
-
         return $this->handle($customerSalesChannel);
     }
 
@@ -66,7 +72,7 @@ class ShowCustomerSalesChannel extends OrgAction
 
 
         return Inertia::render(
-            'Org/Dropshipping/PlatformInCustomer',
+            'Org/Dropshipping/CustomerSalesChannel',
             [
                 'title'       => __('customer'),
                 'breadcrumbs' => $this->getBreadcrumbs(
@@ -75,7 +81,7 @@ class ShowCustomerSalesChannel extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'pageHead'    => [
-                    ...$this->getCustomerSalesChannelSubNavigationHead($customerSalesChannel, $request),
+                    ...$this->getCustomerSalesChannelSubNavigationHead($customerSalesChannel),
                     'actions' => $actions
                 ],
 
@@ -83,6 +89,11 @@ class ShowCustomerSalesChannel extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => $navigation
                 ],
+
+                'platform'               => $customerSalesChannel->platform,
+                'customer_sales_channel' => $customerSalesChannel,
+                'platform_user'          => $customerSalesChannel->user,
+
 
                 'showcase' => [
                     'stats' => [
@@ -98,6 +109,7 @@ class ShowCustomerSalesChannel extends OrgAction
 
     public function getBreadcrumbs(CustomerSalesChannel $customerSalesChannel, string $routeName, array $routeParameters): array
     {
+
         $headCrumb = function (CustomerSalesChannel $customerSalesChannel, array $routeParameters, string $suffix = '') {
             return [
                 [
@@ -119,6 +131,8 @@ class ShowCustomerSalesChannel extends OrgAction
                 ],
             ];
         };
+
+
 
 
         return array_merge(

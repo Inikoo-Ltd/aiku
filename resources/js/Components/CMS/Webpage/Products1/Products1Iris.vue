@@ -268,8 +268,10 @@ onMounted(() => {
         isAscending.value = !sortParam.startsWith("-");
     }
 
-    if (layout?.iris?.is_logged_in)
+    if (layout?.iris?.is_logged_in){
         fetchProductHasPortfolio();
+    }
+       
 
 
     /* debFetchProducts() */

@@ -58,13 +58,15 @@ trait WithProductCategoryHydrators
 
     public function masterProductCategoryUsageHydrators(ProductCategory $productCategory, ?MasterProductCategory $masterProductCategory): void
     {
+
         if (!$masterProductCategory) {
             return;
         }
-
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
+            MasterDepartmentHydrateDepartments::run($masterProductCategory);
             MasterDepartmentHydrateDepartments::dispatch($masterProductCategory)->delay($this->hydratorsDelay);
         } elseif ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
+
             MasterFamilyHydrateFamilies::dispatch($masterProductCategory)->delay($this->hydratorsDelay);
         }
     }

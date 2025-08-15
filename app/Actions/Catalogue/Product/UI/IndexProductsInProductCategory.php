@@ -10,9 +10,11 @@ namespace App\Actions\Catalogue\Product\UI;
 
 use App\Actions\Catalogue\ProductCategory\UI\ShowDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
+use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\Catalogue\WithDepartmentSubNavigation;
 use App\Actions\Catalogue\WithFamilySubNavigation;
+use App\Actions\Catalogue\WithSubDepartmentSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\Product\ProductStateEnum;
@@ -38,6 +40,7 @@ class IndexProductsInProductCategory extends OrgAction
     use WithDepartmentSubNavigation;
     use WithFamilySubNavigation;
     use WithCatalogueAuthorisation;
+    use WithSubDepartmentSubNavigation;
 
 
     private ProductCategory $parent;
@@ -89,6 +92,8 @@ class IndexProductsInProductCategory extends OrgAction
             $queryBuilder->where('products.department_id', $productCategory->id);
         } elseif ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
             $queryBuilder->where('products.family_id', $productCategory->id);
+        } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            $queryBuilder->where('products.sub_department_id', $productCategory->id);
         } else {
             abort(419);
         }
@@ -176,6 +181,8 @@ class IndexProductsInProductCategory extends OrgAction
             $subNavigation = $this->getDepartmentSubNavigation($productCategory);
         } elseif ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
             $subNavigation = $this->getFamilySubNavigation($productCategory, $this->grandParent ?? $productCategory->shop, $request);
+        } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            $subNavigation = $this->getSubDepartmentSubNavigation($productCategory);
         }
 
 
@@ -205,6 +212,17 @@ class IndexProductsInProductCategory extends OrgAction
             $icon  = [
                 'icon'  => ['fal', 'fa-folder'],
                 'title' => __('Family')
+            ];
+            $iconRight  = $productCategory->state->stateIcon()[$productCategory->state->value];
+            $afterTitle = [
+                'label' => __('Products')
+            ];
+        } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            $title = $productCategory->name;
+            $model = '';
+            $icon  = [
+                'icon'  => ['fal', 'fa-dot-circle'],
+                'title' => __('Sub Department')
             ];
             $iconRight  = $productCategory->state->stateIcon()[$productCategory->state->value];
             $afterTitle = [
@@ -302,6 +320,15 @@ class IndexProductsInProductCategory extends OrgAction
         $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::values());
 
         return $this->handle(productCategory: $department, prefix: ProductsTabsEnum::INDEX->value);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inSubDepartmentInDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $department;
+        $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::values());
+
+        return $this->handle(productCategory: $subDepartment, prefix: ProductsTabsEnum::INDEX->value);
     }
 
 
@@ -402,6 +429,20 @@ class IndexProductsInProductCategory extends OrgAction
                 ShowFamily::make()->getBreadcrumbs(
                     $productCategory,
                     'grp.org.shops.show.catalogue.families.show',
+                    $routeParameters
+                ),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.product.index' =>
+            array_merge(
+                ShowSubDepartment::make()->getBreadcrumbs(
+                    $productCategory,
                     $routeParameters
                 ),
                 $headCrumb(

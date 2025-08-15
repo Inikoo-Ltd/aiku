@@ -99,12 +99,12 @@ const debounceUpdateQuantity = debounce(
         <!-- Column: Quantity -->
         <template #cell(quantity_ordered)="{ item }">
             <div class="flex items-center justify-end">
-                
                 <div v-if="state === 'creating' || state === 'xsubmitted'" class="w-fit">
                     <NumberWithButtonSave
                         :modelValue="item.quantity_ordered"
                         :routeSubmit="item.updateRoute"
                         :bindToTarget="{ min: 0 }"
+                        isWithRefreshModel
                         keySubmit="quantity_ordered"
                         :isLoading="isLoading === 'quantity' + item.id"
                         :readonly="readonly"

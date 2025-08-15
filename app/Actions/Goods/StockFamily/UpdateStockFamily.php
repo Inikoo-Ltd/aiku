@@ -50,7 +50,11 @@ class UpdateStockFamily extends OrgAction
         if (Arr::hasAny($stockFamily->getChanges(), ['state'])) {
             GroupHydrateStockFamilies::dispatch($stockFamily->group)->delay($this->hydratorsDelay);
         }
-        StockFamilyRecordSearch::dispatch($stockFamily);
+
+
+        if (Arr::hasAny($changes, ['code', 'name', 'state'])) {
+            StockFamilyRecordSearch::dispatch($stockFamily);
+        }
 
 
         return $stockFamily;

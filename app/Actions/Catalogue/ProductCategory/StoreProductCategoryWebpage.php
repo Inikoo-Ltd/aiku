@@ -77,6 +77,9 @@ class StoreProductCategoryWebpage extends OrgAction
         );
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(ProductCategory $productCategory, ActionRequest $request): Webpage
     {
         $this->initialisationFromShop($productCategory->shop, $request);
@@ -84,6 +87,9 @@ class StoreProductCategoryWebpage extends OrgAction
         return $this->handle($productCategory);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(ProductCategory $productCategory): Webpage
     {
         $this->asAction = true;

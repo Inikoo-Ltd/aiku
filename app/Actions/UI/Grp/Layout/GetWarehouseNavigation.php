@@ -215,10 +215,10 @@ class GetWarehouseNavigation
                                 'parameters' => [$warehouse->organisation->slug, $warehouse->slug]
                             ],
                         ] : null,
-                        $user->hasPermissionTo("dispatching.$warehouse->id.view") &&  !app()->environment('production') ?
+                        $user->hasPermissionTo("dispatching.$warehouse->id.view") ?
                         [
                             'label' => __('picking sessions'),
-                            'icon'  => ['fal', 'fa-truck'],
+                            'icon'  => ['fab', 'fa-stack-overflow'],
                             'root'  => 'grp.org.warehouses.show.dispatching.picking_sessions.',
                             'route' => [
                                 "name"       => "grp.org.warehouses.show.dispatching.picking_sessions.index",

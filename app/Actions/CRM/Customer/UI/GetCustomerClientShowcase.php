@@ -19,7 +19,9 @@ class GetCustomerClientShowcase
     public function handle(CustomerClient $customerClient): array
     {
         return [
-               'customer' => CustomerClientResource::make($customerClient)->getArray()
+               'customer' => CustomerClientResource::make($customerClient)->getArray(),
+            'addresses'             => null,  // TODO
+            'address_update_route' => null,  // TODO
         ];
     }
 }

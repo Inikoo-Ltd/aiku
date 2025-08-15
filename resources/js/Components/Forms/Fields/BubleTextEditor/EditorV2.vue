@@ -1065,6 +1065,7 @@ const convertRemToPx = (remString) => {
 
 :deep(.ProseMirror h3) {
     margin-block-end: 0em;
+    @apply m-0;
 }
 
 /* :deep(.ProseMirror img) {

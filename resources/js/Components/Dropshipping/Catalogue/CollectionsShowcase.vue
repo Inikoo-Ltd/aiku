@@ -54,8 +54,8 @@ const unassignLoadingIds = ref<number[]>([])
 const UnassignCollectionFormWebpage = async (id: number) => {
   unassignLoadingIds.value.push(id)
   const url = route(props.data.routes.detach_parent.name,{
+    ...props.data.routes.detach_parent.parameters,
     productCategory: id,
-    collection: props.data.id,
   })
 
   router.delete(url, {
@@ -142,7 +142,7 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
             <hr class="mt-2 border-gray-200" />
           </div>
 
-          <div v-if="data.parent_departments.length" class="space-y-1 max-h-64 overflow-auto">
+          <div v-if="data.parent_departments?.length" class="space-y-1 max-h-64 overflow-auto">
             <div v-for="dept in data.parent_departments" :key="dept.id"
               class="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-md p-3 hover:shadow-sm transition">
              <!--  <Icon v-if="dept?.typeIcon" :data="dept.typeIcon" size="lg" class="text-gray-600 shrink-0" /> -->
@@ -170,7 +170,7 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
             <hr class="mt-2 border-gray-200" />
           </div>
 
-          <div v-if="data.parent_subdepartments.length" class="space-y-1 max-h-64 overflow-auto">
+          <div v-if="data.parent_subdepartments?.length" class="space-y-1 max-h-64 overflow-auto">
             <div v-for="dept in data.parent_subdepartments" :key="dept.id"
               class="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-md p-3 hover:shadow-sm transition">
             <!--   <Icon v-if="dept?.typeIcon" :data="dept.typeIcon" size="lg" class="text-gray-600 shrink-0" /> -->

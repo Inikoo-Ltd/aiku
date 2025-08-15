@@ -10,23 +10,16 @@
 
 namespace App\Actions\Retina\Dropshipping\Product;
 
-use App\Actions\Catalogue\Asset\ExportProductsInProductCategory;
-use App\Actions\Catalogue\Asset\ExportProductsInShop;
 use App\Actions\RetinaAction;
-use App\Exports\Marketing\ProductsInCollectionExport;
-use App\Exports\Marketing\ProductsInProductCategoryExport;
-use App\Exports\Marketing\ProductsInShopExport;
-use App\Exports\Marketing\SingleProductExport;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
-use App\Models\CRM\Customer;
-use App\Models\Dropshipping\CustomerSalesChannel;
+use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\Response;
-use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Illuminate\Support\Str;
 
 class DownloadProduct extends RetinaAction
 {
@@ -37,36 +30,21 @@ class DownloadProduct extends RetinaAction
      */
     public function handle(Shop|ProductCategory|Product|Collection $parent, string $type): BinaryFileResponse|Response
     {
-        $filename =  'products' . '_' . now()->format('Ymd');
+        $baseFilename = Str::snake(class_basename($parent));
+        if ($parent instanceof ProductCategory) {
+            $baseFilename = $parent->type->value;
+        }
+
+        $filename = $baseFilename . '_' . $parent->slug . '.csv';
+        $path = Str::snake(class_basename($parent)) . '/' . $filename;
 
         if ($type == 'products_images') {
             $filename .= '_images.zip';
-            return response()->streamDownload(function () use ($parent) {
-                ProductZipExport::make()->handle($parent);
+            return response()->streamDownload(function () use ($parent, $filename) {
+                ProductZipExport::make()->handle($parent, $filename);
             }, $filename);
         } else {
-            $filename .= '.csv';
-            if ($parent instanceof ProductCategory) {
-                return Excel::download(new ProductsInProductCategoryExport($parent), $filename, null, [
-                    'Content-Type' => 'text/csv',
-                    'Cache-Control' => 'max-age=0',
-                ]);
-            } elseif ($parent instanceof Product) {
-                return Excel::download(new SingleProductExport($parent), $filename, null, [
-                    'Content-Type' => 'text/csv',
-                    'Cache-Control' => 'max-age=0',
-                ]);
-            } elseif ($parent instanceof Collection) {
-                return Excel::download(new ProductsInCollectionExport($parent), $filename, null, [
-                    'Content-Type' => 'text/csv',
-                    'Cache-Control' => 'max-age=0',
-                ]);
-            } else {
-                return Excel::download(new ProductsInShopExport($parent), $filename, null, [
-                    'Content-Type' => 'text/csv',
-                    'Cache-Control' => 'max-age=0',
-                ]);
-            }
+            return Storage::disk('data-feeds')->download($path);
         }
     }
     /**

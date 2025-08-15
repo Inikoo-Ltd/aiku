@@ -105,3 +105,6 @@ rr
 isdoc-pdf
 rgb.icc
 /storage/app/sitemaps/
+/storage/app/data-feeds/**
+
+/slim_restore.sh

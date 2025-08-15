@@ -17,7 +17,7 @@ import AlertMessage from "@/Components/Utils/AlertMessage.vue";
 import BoxNote from "@/Components/Pallet/BoxNote.vue";
 import Timeline from "@/Components/Utils/Timeline.vue";
 import { Timeline as TSTimeline } from "@/types/Timeline";
-import { computed, provide, ref, watch  } from "vue";
+import { computed, provide, ref, watch, onMounted  } from "vue";
 import type { Component } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
 import BoxStatsDeliveryNote from "@/Components/Warehouse/DeliveryNotes/BoxStatsDeliveryNote.vue";
@@ -38,6 +38,7 @@ import PureInput from "@/Components/Pure/PureInput.vue";
 import ToggleSwitch from 'primevue/toggleswitch';
 import PureAddress from "@/Components/Pure/PureAddress.vue"
 import Message from 'primevue/message';
+import { debounce } from "lodash-es";
 
 
 library.add(faSmileWink,faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck);
@@ -129,11 +130,18 @@ const disable = ref(props.box_stats.state);
 const isLoading = ref<{ [key: string]: boolean }>({});
 const isLoadingToQueue = ref(false);
 const onUpdatePicker = () => {
+    const isUnassigned = props.delivery_note.state == 'unassigned';
+
+    const routeName = isUnassigned ? props.routes.set_queue.name : props.routes.update.name;
+    const routeParams = {
+        ...props.routes[isUnassigned ? 'set_queue' : 'update'].parameters,
+        ...(isUnassigned ? { user: selectedPicker.value.id } : {})
+    };
+    const payload = isUnassigned ? {} : { picker_user_id: selectedPicker.value.id };
+
     router.patch(
-        route(props.routes.update.name, props.routes.update.parameters),
-        {
-            picker_user_id: selectedPicker.value.id
-        },
+        route(routeName, routeParams),
+        payload,
         {
             onError: (error) => {
                 notify({
@@ -151,7 +159,6 @@ const onUpdatePicker = () => {
         }
     );
 };
-
 
 // Section: Shipment
 const isLoadingButton = ref<string | boolean>(false);
@@ -272,6 +279,37 @@ watch(pickingView, (val) => {
 });
 
 console.log(props)
+const showWarningMessage = ref(true);
+
+
+const debReloadPage = debounce(() => {
+    router.reload({
+        except: ['auth', 'breadcrumbs', 'flash', 'layout', 'localeData', 'pageHead', 'ziggy']
+    })
+}, 1200)
+
+const selectSocketBasedPlatform = (porto) => {
+    return {
+      event: `grp.dn.${porto.id}`,
+      action: '.dn-note-update'
+    }
+}
+
+onMounted(() => {
+  const socketConfig = selectSocketBasedPlatform(props.delivery_note)
+
+  if (!socketConfig) {
+    console.warn('Socket config not found for platform:', props.delivery_note.id)
+    return
+  }
+
+  const channel = window.Echo
+    .private(socketConfig.event)
+    .listen(socketConfig.action, (eventData: any) => {
+      debReloadPage()
+    })
+  console.log('Subscribed to channel for porto ID:', props.delivery_note.id, 'Channel:', channel)
+})
 </script>
 
 
@@ -324,39 +362,41 @@ console.log(props)
 
 
     </PageHeading>
-
     <!-- Section: Pallet Warning -->
     <div v-if="alert?.status" class="p-2 pb-0">
         <AlertMessage :alert />
     </div>
 
-    <div v-if="warning" class="p-4">
-        <Message severity="warn" class="p-4 rounded-md border-l-4 border-yellow-500 bg-yellow-50 text-yellow-800">
-            <div class="flex items-start gap-3">
-                <!-- Icon -->
-                <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500 mt-1 w-5 h-5 flex-shrink-0" />
+  <div v-if="warning && showWarningMessage" class="p-1">
+  <Message 
+    severity="warn"
+    class="p-1 rounded-md border-l-4 border-yellow-500 bg-yellow-50 text-yellow-800"
+    :closable="true"
+    @close="showWarningMessage = false"
+  >
+    <div class="flex items-start gap-3">
+      <!-- Icon -->
+      <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500 w-4 h-4 flex-shrink-0" />
 
-                <!-- Main Content -->
-                <div class="flex flex-col gap-2">
-                    <!-- Warning Text -->
-                    <div class="text-sm font-medium">
-                        {{ warning?.text }}
-                    </div>
+      <!-- Main Content -->
+      <div class="flex gap-2 flex-wrap items-center">
+        <!-- Warning Text -->
+        <div class="text-sm font-medium">
+          {{ warning?.text }}
+        </div>
 
-                    <!-- Session Links -->
-                    <div class="flex flex-col gap-1">
-                        <template v-for="(item, idx) in warning?.picking_sessions" :key="idx">
-                            <Link :href="route(item.route.name, item.route.parameters)"
-                                class="text-sm  hover:underline">
-                            {{ item.reference }}
-                            </Link>
-                        </template>
-                    </div>
-                </div>
-            </div>
-        </Message>
-
+        <!-- Session Links in One Line -->
+        <div class="flex flex-wrap items-center gap-2 font-bold underline">
+          <template v-for="(item, idx) in warning?.picking_sessions" :key="idx">
+            <Link :href="route(item.route.name, item.route.parameters)" class="text-sm hover:underline">
+              {{ item.reference }}
+            </Link>
+          </template>
+        </div>
+      </div>
     </div>
+  </Message>
+</div>
 
 
     <!-- Section: Box Note -->

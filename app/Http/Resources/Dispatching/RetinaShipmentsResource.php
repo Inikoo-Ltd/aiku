@@ -37,15 +37,19 @@ class RetinaShipmentsResource extends JsonResource
 
         $formattedTrackingURls = [];
         foreach ($shipment->trackings as $key => $tracking) {
-            $formattedTrackingURls[] = [
-                'url'      => Arr::get($shipment->tracking_urls, $key, __('tracking')),
-                'tracking' => $tracking
-            ];
+            $url = Arr::get($shipment->tracking_urls, $key);
+            if ($url) {
+                $formattedTrackingURls[] = [
+                    'url'      => Arr::get($shipment->tracking_urls, $key),
+                    'tracking' => $tracking
+                ];
+            }
         }
 
         return [
             'id'                      => $shipment->id,
             'name'                    => $shipment->shipper->trade_as ?? $shipment->shipper->name,
+            'shipper_url'             => $shipment->shipper->tracking_url,
             'reference'               => $shipment->reference,
             'tracking'                => $shipment->tracking,
             'trackings'               => $shipment->trackings,

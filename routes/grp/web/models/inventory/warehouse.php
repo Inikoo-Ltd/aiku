@@ -31,6 +31,7 @@ Route::name('warehouse.')->prefix('warehouse/{warehouse:id}')->group(function ()
     Route::patch('location/{pallet:id}', [UpdatePalletLocation::class, 'inWarehouse'])->name('pallets.location.update');
     Route::delete('', DeleteWarehouse::class)->name('delete');
     Route::post('picking-session', StorePickingSession::class)->name('picking_session.store');
+    Route::post('queued-picking-session', [StorePickingSession::class, 'inQueued'])->name('queued_picking_session.store');
 });
 
 Route::patch('picking-session/{pickingSession:id}', UpdatePickingSession::class)->name('picking_session.update')->withoutScopedBindings();

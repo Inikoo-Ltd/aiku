@@ -80,6 +80,7 @@ const isShowDummySlotName = false
                     </div>
                 </template>
 
+                <!-- Section: Main title group -->
                 <div class="flex leading-none py-1.5 items-center gap-x-2 font-bold text-gray-700 text-2xl tracking-tight ">
                     <div v-if="data.container" class="text-slate-500 text-lg">
                         <Link v-if="data.container.href"
@@ -135,7 +136,7 @@ const isShowDummySlotName = false
                             </div>
                         </slot>
                         <slot name="platform">
-                            <div v-if="data.platform" v-tooltip="data.platform.title" class=" h-6 max-w-7 min-w-5 w-auto text-gray-400 font-normal text-lg leading-none" v-html="ChannelLogo(data.platform.type)">
+                            <div v-if="data.platform" v-tooltip="data.platform.title || data.platform.name" class=" h-6 max-w-7 min-w-5 w-auto text-gray-400 font-normal text-lg leading-none" v-html="ChannelLogo(data.platform.type)">
                             </div>
 
                         </slot>

@@ -29,13 +29,13 @@ class StoreRetinaPortfoliosFromProductCategoryToAllChannels extends RetinaAction
         foreach ($customer->customerSalesChannels as $customerSalesChannel) {
             $portfolios = $customerSalesChannel->portfolios->where('item_type', 'Product');
             $portfolioItemIds = $portfolios->pluck('item_id')->all();
-    
+
             $products = $productCategory->getProducts()->reject(function ($product) use ($portfolioItemIds) {
                 return in_array($product->id, $portfolioItemIds);
             });
-    
+
             $data = $products->pluck('id')->all();
-    
+
             DB::transaction(function () use ($customerSalesChannel, $data) {
                 StoreMultiplePortfolios::run($customerSalesChannel, $data);
             });

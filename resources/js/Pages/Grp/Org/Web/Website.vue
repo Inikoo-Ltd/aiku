@@ -75,6 +75,11 @@ const props = defineProps<{
         fetch_live_webpages: routeType
         submit: routeType
     }
+    luigi_data: {
+        luigisbox_tracker_id: string
+        luigisbox_private_key: string
+        luigisbox_lbx_code: string
+    }
 }>()
 
 /* provide('layout', {})
@@ -129,7 +134,6 @@ const submitForm = () => {
 
 
 <template>
-
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #other v-if="currentTab == 'redirects'">
@@ -137,7 +141,13 @@ const submitForm = () => {
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" :route_storefront />
+    <component
+        :is="component"
+        :data="props[currentTab]"
+        :tab="currentTab"
+        :route_storefront
+        :luigi_data
+    />
 
     <Modal :isOpen="openModal" width="w-full max-w-md" closeButton @onClose="openModal = false">
         <slot name="modal" :closeModal="() => openModal = false">

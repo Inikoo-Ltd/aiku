@@ -31,6 +31,14 @@ export const initialiseApp = () => {
         echoPersonal.subscribe(usePage().props.auth.user.id)
 
         router.on('navigate', (event) => {
+            
+            // To see Vue filename in console (component.vue())
+            if (usePage().component) {
+                window.component = {
+                    vue: usePage().component
+                }
+            }
+
             // console.log('layout env', layout.app.environment)
             layout.currentParams = route().v().params  // current params
             layout.currentQuery = route().v().query  // current query
@@ -123,6 +131,10 @@ export const initialiseApp = () => {
 
     watchEffect(() => {
         // Aiku
+
+        if (usePage().props.help_portal_url) {
+            layout.help_portal_url = usePage().props.help_portal_url
+        }
 
         // Set group
         if (usePage().props.layout?.group) {

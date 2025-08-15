@@ -34,7 +34,7 @@ class RepairMissingFixedWebBlocksInHomeWebpages
 
         if (count($collectionsWebBlock) == 0) {
             $command->error('Webpage '.$webpage->code.' Collection Web Block not found');
-            $this->createWebBlock($webpage, 'collections-1', $webpage);
+            $this->createWebBlock($webpage, 'collections-1');
         } elseif (count($collectionsWebBlock) > 1) {
             $command->error('Webpage '.$webpage->code.' MORE than 1 Collection Web Block found');
         }

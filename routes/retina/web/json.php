@@ -7,8 +7,8 @@
  */
 
 use App\Actions\Catalogue\Product\Json\GetRetinaPortfoliosInProduct;
-use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductCategorySalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetRetinaCustomerProductCategorySalesChannelIds;
+use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetShopifyProducts;
 use App\Actions\Fulfilment\PalletReturn\Json\GetPalletsInReturnPalletWholePallets;
 use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfolioZipImages;
 use App\Actions\Retina\Fulfilment\PalletDelivery\Json\GetRetinaFulfilmentPhysicalGoods;
@@ -31,3 +31,4 @@ Route::get('dropshipping/{product:id}/channels_list', GetRetinaPortfoliosInProdu
 
 Route::get('product-category/{productCategory:id}/channels', GetRetinaCustomerProductCategorySalesChannelIds::class)->name('product_category.channel_ids.index');
 
+Route::get('customer-sales-channel/{customerSalesChannel:id}/shopify-products', GetShopifyProducts::class)->name('dropshipping.customer_sales_channel.shopify_products');

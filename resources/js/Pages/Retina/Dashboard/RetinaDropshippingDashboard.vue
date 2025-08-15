@@ -163,9 +163,8 @@ const onSubmitCreateOrder = () => {
                     </div>
 
                     <!-- Section: Shortcut -->
-                    <div v-if="
-                        data.shortcut.order.is_show_button
-                    " class="max-w-64 w-full">
+                    <div v-if="data.shortcut.order.is_show_button ||
+                    data.shortcut?.create_customer_sales_channel?.route_create?.name" class="max-w-64 w-full">
                         <Fieldset :legend="trans('Quick links (Shortcuts)')">
                             <div class="flex flex-col">
                                 <Button
@@ -173,8 +172,19 @@ const onSubmitCreateOrder = () => {
                                     @click="isModalCreateOrder = true"
                                     :label="trans('Create manual Order')"
                                     full
+                                    iconRight="fal fa-shopping-cart"
                                     type="tertiary"
                                     icon="fas fa-plus"
+                                />
+                                <ButtonWithLink
+                                    v-if="data.shortcut?.create_customer_sales_channel?.route_create?.name"
+                                    :label="trans('Create Customer Sales Channel')"
+                                    :routeTarget="data.shortcut.create_customer_sales_channel.route_create"
+                                    full
+                                    type="tertiary"
+                                    icon="fas fa-plus"
+                                    iconRight="fal fa-code-branch"
+                                    iconRightRotation="90"
                                 />
                             </div>
                         </Fieldset>
@@ -278,13 +288,13 @@ const onSubmitCreateOrder = () => {
                     </div>
                 </div>
 
+                <!-- Button: Create new client -->
                 <Link
                     :href="route('retina.dropshipping.customer_sales_channels.client.create', {
                         customerSalesChannel: data.shortcut.order.manual_data.slug
                     })"
                 >
                     <Button
-                        xclick="() => onSubmitCreateOrder()"
                         label="Create new client"
                         full
                         type="tertiary"

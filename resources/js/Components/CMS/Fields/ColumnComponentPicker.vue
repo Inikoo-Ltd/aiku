@@ -79,7 +79,7 @@ onMounted(() => {
 	</div>
 		
 	<Modal :isOpen="modelModalBlocklist" @onClose="modelModalBlocklist = false">
-		<BlockList :onPickBlock="onPickBlock" :webBlockTypes="webBlockTypes"   />
+		<BlockList :onPickBlock="onPickBlock" :webBlockTypes="webBlockTypes"  scope="element" />
 	</Modal>
 </template>
 

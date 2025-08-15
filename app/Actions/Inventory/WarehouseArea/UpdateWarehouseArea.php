@@ -16,6 +16,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Inventory\WarehouseAreaResource;
 use App\Models\Inventory\WarehouseArea;
 use App\Rules\IUnique;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateWarehouseArea extends OrgAction
@@ -28,15 +29,29 @@ class UpdateWarehouseArea extends OrgAction
     public function handle(WarehouseArea $warehouseArea, array $modelData): WarehouseArea
     {
         $warehouseArea = $this->update($warehouseArea, $modelData, ['data']);
-        WarehouseAreaRecordSearch::dispatch($warehouseArea);
+
+        $changes = $warehouseArea->getChanges();
+        if (isset($changes['code']) || isset($changes['picking_position'])) {
+            HydrateWarehouseAreaLocationsSortLocations::dispatch($warehouseArea);
+        }
+
+
+        if (Arr::hasAny($changes, [
+            'name',
+            'code',
+            'state',
+
+        ])) {
+            WarehouseAreaRecordSearch::dispatch($warehouseArea);
+        }
 
         return $warehouseArea;
     }
 
     public function rules(): array
     {
-        $rules =  [
-            'code' => [
+        $rules = [
+            'code'             => [
                 'sometimes',
                 'required',
                 'max:16',
@@ -53,8 +68,8 @@ class UpdateWarehouseArea extends OrgAction
                     ]
                 ),
             ],
-            'name'                     => ['sometimes', 'required', 'max:250', 'string'],
-            'picking_position'         => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'name'             => ['sometimes', 'required', 'max:250', 'string'],
+            'picking_position' => ['sometimes', 'nullable', 'numeric', 'min:0'],
         ];
 
         if (!$this->strict) {
@@ -69,8 +84,8 @@ class UpdateWarehouseArea extends OrgAction
         if (!$audit) {
             WarehouseArea::disableAuditing();
         }
-        $this->asAction      = true;
-        $this->warehouseArea = $warehouseArea;
+        $this->asAction       = true;
+        $this->warehouseArea  = $warehouseArea;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->strict         = $strict;
         $this->initialisation($warehouseArea->organisation, $modelData);

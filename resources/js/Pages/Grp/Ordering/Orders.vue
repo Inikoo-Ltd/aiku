@@ -19,6 +19,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTags, faTasksAlt, faChartPie } from "@fal"
 import TableInvoices from "@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue";
 import TableDeliveryNotes from "@/Components/Tables/Grp/Org/Dispatching/TableDeliveryNotes.vue";
+import TableLastOrders from '@/Components/Tables/Grp/Org/Ordering/TableLastOrders.vue'
 
 
 library.add(faTags, faTasksAlt, faChartPie)
@@ -37,6 +38,11 @@ const props = defineProps<{
     mailshots?: {}
     stats?: {}
     history?: {}
+    last_orders?: {
+        icon: Icon
+        label: string
+        date_key: string
+    }[]
 
 }>()
 
@@ -47,6 +53,7 @@ const component = computed(() => {
     const components: any = {
         stats: OrdersStats,
         orders: TableOrders,
+        last_orders: TableLastOrders,
         invoices: TableInvoices,
         delivery_notes: TableDeliveryNotes,
         history: TableHistories

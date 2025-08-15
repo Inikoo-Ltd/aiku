@@ -88,7 +88,7 @@ class StoreNotPickPicking extends OrgAction
 
     public function action(DeliveryNoteItem $deliveryNoteItem, User $user, array $modelData): Picking
     {
-        $this->cancel = $cancel;
+        $this->asAction         = true;
         $this->user             = $user;
         $this->deliveryNoteItem = $deliveryNoteItem;
 

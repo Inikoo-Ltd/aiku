@@ -8,9 +8,12 @@
 
 namespace App\Actions\Catalogue\Product\Hydrators;
 
+use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Models\Catalogue\Product;
+use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -26,9 +29,13 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
 
     public function handle(Product $product): void
     {
-
         if ($product->state == ProductStateEnum::DISCONTINUED) {
-            $product->update(['available_quantity' => null]);
+            UpdateProduct::run($product, [
+                'available_quantity' => null,
+                'status'             => ProductStatusEnum::DISCONTINUED,
+            ]);
+
+
             return;
         }
 
@@ -53,26 +60,63 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
             }
 
             $numberOrgStocksChecked++;
+        }
 
+        if ($availableQuantity < 0) {
+            $availableQuantity = 0;
         }
 
 
+        $dataToUpdate = [
+            'available_quantity' => $availableQuantity,
+        ];
 
-        $product->update(['available_quantity' => $availableQuantity]);
 
+        if (in_array($product->status, [ProductStatusEnum::FOR_SALE, ProductStatusEnum::OUT_OF_STOCK])) {
+            if ($availableQuantity == 0) {
+                $status = ProductStatusEnum::OUT_OF_STOCK;
+            } else {
+                $status = ProductStatusEnum::FOR_SALE;
+            }
 
+            $dataToUpdate['status'] = $status;
+        }
+
+        UpdateProduct::run($product, $dataToUpdate);
     }
 
-    public string $commandSignature = 'aaa';
+    public string $commandSignature = 'product:hydrate-available-quantity';
 
-    public function asCommand()
+    public function asCommand(Command $command): void
     {
-        $product = Product::find(235799);
+        $chunkSize = 100; // Process 100 products at a time to save memory
+        $count     = 0;
 
-        foreach (Product::all() as $product) {
-            $this->handle($product);
+        // Get total count for progress bar
+        $total = Product::count();
+
+        if ($total === 0) {
+            $command->info("No products found.");
+
+            return;
         }
 
+        // Create a progress bar
+        $progressBar = $command->getOutput()->createProgressBar($total);
+        $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
+        $progressBar->start();
+
+        Product::chunk($chunkSize, function ($products) use (&$count, $progressBar) {
+            foreach ($products as $product) {
+                $this->handle($product);
+                $count++;
+                $progressBar->advance();
+            }
+        });
+
+        $progressBar->finish();
+        $command->newLine();
+        $command->info("Updated available quantity for $count products.");
     }
 
 }

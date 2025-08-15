@@ -110,6 +110,10 @@ class UpdateShop extends OrgAction
             data_set($modelData, "settings.registration.require_approval", Arr::pull($modelData, 'required_approval'));
         }
 
+        if (Arr::exists($modelData, 'stand_alone_invoice_numbers')) {
+            data_set($modelData, "settings.invoicing.stand_alone_invoice_numbers", Arr::pull($modelData, 'stand_alone_invoice_numbers'));
+        }
+
 
         $shop    = $this->update($shop, $modelData, ['data', 'settings']);
         $changes = $shop->getChanges();
@@ -145,6 +149,7 @@ class UpdateShop extends OrgAction
     {
         $rules = [
             'registration_needs_approval' => ['sometimes', 'boolean'],
+            'stand_alone_invoice_numbers' => ['sometimes', 'boolean'],
             'master_shop_id'              => [
                 'sometimes',
                 'nullable',
@@ -194,6 +199,7 @@ class UpdateShop extends OrgAction
             'vat_number'               => ['sometimes', 'string'],
             'required_approval'        => ['sometimes', 'boolean'],
             'invoice_footer'           => ['sometimes', 'string', 'max:10000'],
+            'extra_languages'          => ['sometimes', 'array', 'nullable'],
             'image'                    => [
                 'sometimes',
                 'nullable',

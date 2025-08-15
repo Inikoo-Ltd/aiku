@@ -8,7 +8,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Http\Resources\Helpers\LanguageResource;
 use App\Http\Resources\UI\LoggedWebUserResource;
 use App\Http\Resources\Web\WebsiteIrisResource;
 use App\Models\CRM\WebUser;
@@ -19,6 +21,9 @@ trait WithIrisInertia
 {
     public function getIrisData(Website $website, ?WebUser $webUser): array
     {
+
+        $shop = $website->shop;
+
         $headerLayout   = Arr::get($website->published_layout, 'header');
         $isHeaderActive = Arr::get($headerLayout, 'status');
         $footerLayout   = Arr::get($website->published_layout, 'footer');
@@ -29,7 +34,7 @@ trait WithIrisInertia
 
         $cartCount  = 0;
         $cartAmount = 0;
-        if ($webUser && $webUser->website->shop->type == ShopTypeEnum::B2B) {
+        if ($webUser && $shop->type == ShopTypeEnum::B2B) {
             $orderInBasket = $webUser->customer->orderInBasket;
             $cartCount     = $orderInBasket ? $orderInBasket->stats->number_item_transactions : 0;
             $cartAmount    = $orderInBasket ? $orderInBasket->total_amount : 0;
@@ -59,10 +64,10 @@ trait WithIrisInertia
                 $isMenuActive == 'active' ? Arr::get($website->published_layout, 'menu') : [],
             ),
             'shop'                 => [
-                'type' => $website->shop?->type?->value,
-                'id'   => $website->shop?->id,
-                'slug' => $website->shop?->slug,
-                'name' => $website->shop?->name,
+                'type' => $shop->type->value,
+                'id'   => $shop->id,
+                'slug' => $shop->slug,
+                'name' => $shop->name,
             ],
             "website"              => WebsiteIrisResource::make($website)->getArray(),
             'theme'                => Arr::get($website->published_layout, 'theme'),
@@ -70,9 +75,14 @@ trait WithIrisInertia
             'is_logged_in'         => (bool)$webUser,
             'is_have_gtm'          => (bool) Arr::get($website->settings, 'google_tag_id'),
             'currency'             => [
-                'code'   => $website->shop->currency->code,
-                'symbol' => $website->shop->currency->symbol,
-                'name'   => $website->shop->currency->name,
+                'code'   => $shop->currency->code,
+                'symbol' => $shop->currency->symbol,
+                'name'   => $shop->currency->name,
+            ],
+            'locale'               => app()->getLocale(),
+            'website_i18n' => [
+                'language' => LanguageResource::make($shop->language)->getArray(),
+                'language_options' => GetLanguagesOptions::make()->translated(),
             ],
             'user_auth'            => $webUser ? LoggedWebUserResource::make($webUser)->getArray() : null,
             'customer'             => $webUser?->customer,

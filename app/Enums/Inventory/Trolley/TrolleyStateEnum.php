@@ -8,7 +8,7 @@
  *
 */
 
-namespace App\Enums\Inventory\Warehouse;
+namespace App\Enums\Inventory\Trolley;
 
 use App\Enums\EnumHelperTrait;
 use App\Models\SysAdmin\Group;

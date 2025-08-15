@@ -40,12 +40,23 @@ class UpdateWarehouse extends OrgAction
 
         $warehouse = $this->update($warehouse, $modelData, ['data', 'settings']);
 
+        $changes = $warehouse->getChanges();
 
         if ($warehouse->wasChanged('state')) {
             GroupHydrateWarehouses::dispatch($warehouse->group)->delay($this->hydratorsDelay);
             OrganisationHydrateWarehouses::dispatch($warehouse->organisation)->delay($this->hydratorsDelay);
         }
-        WarehouseRecordSearch::dispatch($warehouse);
+
+        if (Arr::hasAny($changes, [
+            'name',
+            'code',
+            'state',
+
+        ])) {
+            WarehouseRecordSearch::dispatch($warehouse);
+        }
+
+
 
         return $warehouse;
     }

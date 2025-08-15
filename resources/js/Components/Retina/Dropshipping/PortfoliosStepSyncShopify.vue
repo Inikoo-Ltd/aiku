@@ -177,7 +177,7 @@ const valueTableFilter = ref({})
                         {{ data.name }}
                     </div>
 
-                    <div v-if="data.is_code_exist" class="text-xs text-amber-500">
+                    <div v-if="data.is_code_exist_in_platform" class="text-xs text-amber-500">
                         <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
                         <span class="pr-2">We found same product in your shop, do you want to create new or use existing? (default: use existing):</span>
                         <Button label="Use Existing" icon="fal fa-link" :disabled="data?.product_availability?.options === 'use_existing'" :type="data?.product_availability?.options === 'use_existing' ? 'primary' : 'tertiary'" size="xxs" />

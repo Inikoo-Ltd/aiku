@@ -39,6 +39,12 @@ class PayOrderWithMitCard
      */
     public function handle(Order $order, MitSavedCard $mitSavedCard): array
     {
+
+        if ($mitSavedCard->state != 'success') {
+            return [];
+        }
+
+
         $paymentAccountShop = $order->shop->paymentAccountShops()
             ->where('type', PaymentAccountTypeEnum::CHECKOUT)
             ->where('state', PaymentAccountShopStateEnum::ACTIVE)->first();
@@ -70,6 +76,7 @@ class PayOrderWithMitCard
             ->build();
 
         $channelID = $paymentAccountShop->getCheckoutComChannel();
+
 
 
         $request                        = new PaymentRequest();
@@ -119,12 +126,13 @@ class PayOrderWithMitCard
             $http_status_code = isset($e->http_metadata) ? $e->http_metadata->getStatusCode() : null;
 
             $result = [
+                'debug'            => 'PayOrderWithMitCard.php',
                 'status'           => 'error',
                 'message'          => $e->getMessage(),
                 'error_details'    => $error_details,
                 'http_status_code' => $http_status_code,
             ];
-            print_r($result);
+
         }
 
         return $result;
@@ -138,7 +146,7 @@ class PayOrderWithMitCard
      */
     public function asCommand(): int
     {
-        $order = Order::find(1186846);
+        $order = Order::find(1195254);
 
         $mitSavedCard = MitSavedCard::where('customer_id', $order->customer_id)->first();
 

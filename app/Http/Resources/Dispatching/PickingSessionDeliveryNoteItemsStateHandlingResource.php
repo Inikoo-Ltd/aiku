@@ -27,12 +27,26 @@ use Illuminate\Support\Facades\DB;
  * @property mixed $quantity_not_picked
  * @property mixed $quantity_dispatched
  * @property mixed $org_stock_slug
+ * @property mixed $packed_in
+ * @property mixed $delivery_note_reference
+ * @property mixed $delivery_note_slug
+ * @property mixed $delivery_note_id
+ * @property mixed $delivery_note_state
+ * @property mixed $picking_position
+ * @property mixed $warehouse_area_code
+ * @property mixed $warehouse_area_picking_position
  */
 class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $requiredFactionalData = divideWithRemainder(findSmallestFactors($this->quantity_required));
+        $requiredFactionalData = riseDivisor(
+            divideWithRemainder(
+                findSmallestFactors($this->quantity_required)
+            ),
+            $this->packed_in
+        );
+
 
         $deliveryNoteItem = DeliveryNoteItem::find($this->id);
         $fullWarning      = [
@@ -56,6 +70,7 @@ class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
                 'locations.code as location_code',
                 'locations.slug as location_slug',
             ])
+            ->selectRaw('\''.$this->packed_in.'\' as org_stock_packed_in')
             ->selectRaw(
                 '(
         SELECT concat(sum(quantity),\';\',string_agg(id::char,\',\')) FROM pickings
@@ -76,6 +91,21 @@ class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
 
 
         $pickings = Picking::where('delivery_note_item_id', $this->id)->get();
+
+
+        $warehouseArea = '';
+        if ($this->warehouse_area_picking_position) {
+            $warehouseArea = __('Sort:').': '.$this->warehouse_area_picking_position.' ';
+        }
+
+        if ($this->warehouse_area_code) {
+            $warehouseArea .= __('Area').': '.$this->warehouse_area_code;
+        }
+        if ($warehouseArea == '') {
+            $warehouseArea = __('No Area');
+        }
+
+
         return [
             'id'                           => $this->id,
             'is_picked'                    => $isPicked,
@@ -83,7 +113,7 @@ class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
             'state_icon'                   => $this->state->stateIcon()[$this->state->value],
             'quantity_required'            => $this->quantity_required,
             'quantity_to_pick'             => $quantityToPick,
-            'quantity_to_pick_fractional'  => divideWithRemainder(findSmallestFactors($quantityToPick)),
+            'quantity_to_pick_fractional'  => riseDivisor(divideWithRemainder(findSmallestFactors($quantityToPick)), $this->packed_in),
             'quantity_picked'              => $this->quantity_picked,
             'quantity_not_picked'          => $this->quantity_not_picked,
             'quantity_packed'              => $this->quantity_packed,
@@ -92,7 +122,7 @@ class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
             'org_stock_slug'               => $this->org_stock_slug,
             'org_stock_name'               => $this->org_stock_name,
             'locations'                    => $pickingLocations->isNotEmpty() ? LocationOrgStocksForPickingActionsResource::collection($pickingLocations) : [],
-            'pickings'                     => PickingsResource::collection($pickings),
+            'pickings'                     => PickingResource::collection($pickings),
             'packings'                     => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
             'warning'                      => $fullWarning,
             'is_handled'                   => $this->is_handled,
@@ -100,9 +130,14 @@ class PickingSessionDeliveryNoteItemsStateHandlingResource extends JsonResource
             'delivery_note_slug'           => $this->delivery_note_slug,
             'delivery_note_id'             => $this->delivery_note_id,
             'delivery_note_state'          => $this->delivery_note_state,
+            'delivery_note_customer_notes'   => $this->delivery_note_customer_notes,
+            'delivery_note_public_notes'     => $this->delivery_note_public_notes,
+            'delivery_note_internal_notes'   => $this->delivery_note_internal_notes,
+            'delivery_note_shipping_notes'   => $this->delivery_note_shipping_notes,
             'is_packed'                    => $isPacked,
             'quantity_required_fractional' => $requiredFactionalData,
 
+            'warehouse_area'       => $warehouseArea,
             'upsert_picking_route' => [
                 'name'       => 'grp.models.delivery_note_item.picking.upsert',
                 'parameters' => [

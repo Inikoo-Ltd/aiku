@@ -41,10 +41,25 @@ export default {
 			],
 		},
 		{
+			name: "Logout",
+            key:['logout'],
+			icon: {
+				icon: "fal fa-sign-out",
+				tooltip: "Logout",
+			},
+			replaceForm: [
+				{
+					key: ['text'],
+					label :'Button Text',
+					type: "text",
+				},
+			],
+		},
+		{
 			name: "Login",
             key:['login'],
 			icon: {
-				icon: "fal fa-sign-in-alt",
+				icon: "fal fa-sign-in",
 				tooltip: "Login",
 			},
 			replaceForm: [

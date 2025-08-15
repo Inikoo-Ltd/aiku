@@ -25,13 +25,18 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $org_stock_slug
  * @property mixed $delivery_note_reference
  * @property mixed $delivery_note_slug
+ * @property mixed $packed_in
  */
 class PickingSessionDeliveryNoteItemsStateUnassignedResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $requiredFactionalData = divideWithRemainder(findSmallestFactors($this->quantity_required));
-
+        $requiredFactionalData = riseDivisor(
+            divideWithRemainder(
+                findSmallestFactors($this->quantity_required)
+            ),
+            $this->packed_in
+        );
 
         return [
             'id'                           => $this->id,

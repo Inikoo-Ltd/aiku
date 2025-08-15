@@ -13,6 +13,7 @@ use App\Http\Resources\Mail\MailshotResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Mailshot;
+use App\Models\Comms\OrgPostRoom;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\PostRoom;
 use App\Models\SysAdmin\Group;
@@ -25,7 +26,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 trait WithIndexMailshots
 {
-    public function handleMailshot(?OutboxCodeEnum $outboxCode, Group|Outbox|PostRoom|Organisation|Shop $parent, $prefix = null): LengthAwarePaginator
+    public function handleMailshot(?OutboxCodeEnum $outboxCode, Group|Outbox|PostRoom|OrgPostRoom|Organisation|Shop $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
