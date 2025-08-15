@@ -224,24 +224,24 @@ class IndexPalletReturns extends OrgAction
 
         return $queryBuilder
 ->select(
-                'pallet_returns.id',
-                'state',
-                'slug',
-                'reference',
-                'customer_reference',
-                'pallet_return_stats.number_pallets as number_pallets',
-                'pallet_return_stats.number_services as number_services',
-                'pallet_returns.created_at as date',
-                'dispatched_at',
-                'type',
-                'total_amount',
-                'currencies.code as currency_code',
-                DB::raw("(
+    'pallet_returns.id',
+    'state',
+    'slug',
+    'reference',
+    'customer_reference',
+    'pallet_return_stats.number_pallets as number_pallets',
+    'pallet_return_stats.number_services as number_services',
+    'pallet_returns.created_at as date',
+    'dispatched_at',
+    'type',
+    'total_amount',
+    'currencies.code as currency_code',
+    DB::raw("(
                     SELECT COUNT(DISTINCT stored_item_id) 
                     FROM pallet_return_items 
                     WHERE pallet_return_items.pallet_return_id = pallet_returns.id
                 ) as unique_stored_item_count")
-            )
+)
             ->allowedSorts(['reference', 'customer_reference', 'number_pallets', 'date', 'state', 'unique_stored_item_count'])
             ->allowedFilters([$globalSearch, 'type'])
             ->withPaginator($prefix, tableName: request()->route()->getName())

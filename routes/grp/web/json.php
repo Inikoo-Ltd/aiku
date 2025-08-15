@@ -181,4 +181,3 @@ Route::get('master-shop/{masterShop}/scopes/{scope}/sub-departments', GetMasterS
 Route::get('master-shop/{masterShop}/scopes/{scope}/families', GetMasterFamilies::class)->name('master_shop.master_families_not_attached_to_master_collection');
 Route::get('master-shop/{masterShop}/scope/{scope}/collections', [GetMasterCollections::class, 'inMasterCollection'])->name('master_shop.master_collections_not_attached_to_master_collection');
 Route::get('master-shop/{masterShop}/master-collection/{masterCollection}/products', GetMasterProductsNotAttachedToAMasterCollection::class)->name('master_shop.master_products_not_attached_to_master_collection');
-

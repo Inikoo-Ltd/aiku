@@ -203,20 +203,20 @@ class ShowMasterCollection extends GrpAction
                     : Inertia::lazy(fn () => MasterCollectionsResource::collection(IndexMasterCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::COLLECTIONS->value))),
             ]
         )->table(
-                IndexMasterFamiliesInMasterCollection::make()->tableStructure(
-                    masterCollection: $masterCollection,
-                    prefix: MasterCollectionTabsEnum::FAMILIES->value,
-                )
+            IndexMasterFamiliesInMasterCollection::make()->tableStructure(
+                masterCollection: $masterCollection,
+                prefix: MasterCollectionTabsEnum::FAMILIES->value,
+            )
         )->table(
-                IndexMasterProductsInMasterCollection::make()->tableStructure(
-                    masterCollection: $masterCollection,
-                    prefix: MasterCollectionTabsEnum::PRODUCTS->value,
-                )
+            IndexMasterProductsInMasterCollection::make()->tableStructure(
+                masterCollection: $masterCollection,
+                prefix: MasterCollectionTabsEnum::PRODUCTS->value,
+            )
         )->table(
-                IndexMasterCollectionsInMasterCollection::make()->tableStructure(
-                    masterCollection: $masterCollection,
-                    prefix: MasterCollectionTabsEnum::COLLECTIONS->value,
-                )
+            IndexMasterCollectionsInMasterCollection::make()->tableStructure(
+                masterCollection: $masterCollection,
+                prefix: MasterCollectionTabsEnum::COLLECTIONS->value,
+            )
         );
     }
 

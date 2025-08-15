@@ -134,6 +134,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $invoice_footer
  * @property string|null $colour
  * @property bool $registration_needs_approval
+ * @property array<array-key, mixed>|null $extra_languages
  * @property-read \App\Models\Catalogue\ShopAccountingStats|null $accountingStats
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses

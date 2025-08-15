@@ -40,9 +40,9 @@ enum MasterCollectionTabsEnum: string
                 'icon'  => 'fal fa-clock',
 
             ],
-              MasterCollectionTabsEnum::FAMILIES => [
-                'title' => __('Families'),
-                'icon'  => 'fal fa-folder',
+            MasterCollectionTabsEnum::FAMILIES => [
+              'title' => __('Families'),
+              'icon'  => 'fal fa-folder',
             ],
             MasterCollectionTabsEnum::PRODUCTS => [
                 'title' => __('Products'),
