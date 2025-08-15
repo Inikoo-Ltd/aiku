@@ -88,16 +88,16 @@ class EditGroupSettings extends GrpAction
                                 'label'         => __('Main language'),
                                 'placeholder'   => __('Select your language'),
                                 'required'      => true,
-                                'value'         => 'test',
+                                'value'         => $group->language_id,
                                 'options'       => GetLanguagesOptions::make()->all(),
                                 'searchable'    => true
                             ],
-                            'extra_language' => [
+                            'extra_languages' => [
                                 'type'          => 'select',
                                 'label'         => __('Extra language'),
                                 'placeholder'   => __('Select your language'),
                                 'required'      => true,
-                                'value'         => [],
+                                'value'         => $group->extra_languages,
                                 'options'       => GetLanguagesOptions::make()->all(),
                                 'searchable'    => true,
                                 'mode'          => 'tags',

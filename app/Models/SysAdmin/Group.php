@@ -285,6 +285,7 @@ class Group extends Authenticatable implements Auditable, HasMedia
             'limits'   => 'array',
             'data'     => 'array',
             'settings' => 'array',
+            'extra_languages' => 'array'
         ];
     }
 
@@ -292,6 +293,7 @@ class Group extends Authenticatable implements Auditable, HasMedia
         'limits'   => '{}',
         'data'     => '{}',
         'settings' => '{}',
+        'extra_languages' => '{}'
     ];
 
     public function getSlugOptions(): SlugOptions
