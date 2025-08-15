@@ -30,7 +30,7 @@ class ShowPupilDashboard
     {
         $additionalProps = [];
         $routes          = [];
-        /** @var \App\Models\Dropshipping\ShopifyUser $shopifyUser */
+        /** @var ShopifyUser $shopifyUser */
         $shopifyUser = $request->user('pupil');
 
         if ($shopifyUser) {
@@ -59,7 +59,6 @@ class ShowPupilDashboard
             ];
         }
 
-        // TODO: We need open it for all shops: fulfilment and dropships
         $query = Shop::where('slug', 'awd')
             ->where('state', ShopStateEnum::OPEN)
             ->get();
@@ -83,18 +82,12 @@ class ShowPupilDashboard
             $render_page = 'Dashboard/PupilWelcome';
         }
 
-        //        if ($shopifyUser?->customer?->shop?->name) {
-        //            $render_page = 'WelcomeShop';
-        //        } else {
-        //            $render_page = 'Dashboard/PupilWelcome';
-        //        }
+
 
         return Inertia::render($render_page, [
             'shop'    => $shopifyUser?->customer?->shop?->name,
-            // 'shopUrl' => $this->getShopUrl($shopifyUser?->customer?->shop, $shopifyUser),
             'shopUrl' => 'https://' . $shopifyUser?->customer?->shop?->website?->domain . '/app/login?ref=/app/dropshipping/channels/' . $shopifyUser?->customerSalesChannel?->slug,
             'user'    => $shopifyUser,
-            // 'showIntro'             => !Arr::get($shopifyUser?->settings, 'webhooks'),
             'shops'   => $query->map(function (Shop $shop) {
                 return [
                     'id'   => $shop->id,
@@ -107,23 +100,7 @@ class ShowPupilDashboard
         ]);
     }
 
-    public function getShopUrl(?Shop $shop, ShopifyUser $shopifyUser): string|null
-    {
-        if (!$shop) {
-            return null;
-        }
 
-        $subdomain = 'www';
-        if ($shop->website->is_migrating) {
-            $subdomain = 'v2';
-        }
-
-        return match (app()->environment()) {
-            'production' => 'https://'.$subdomain.'.'.$shop->website?->domain.'/app/auth-shopify?shopify='.base64_encode($shopifyUser->password),
-            'staging' => 'https://canary.'.$shop->website?->domain.'/app/auth-shopify?shopify='.base64_encode($shopifyUser->password),
-            default => 'https://fulfilment.test/app/auth-shopify?shopify='.base64_encode($shopifyUser->password)
-        };
-    }
 
 
 }

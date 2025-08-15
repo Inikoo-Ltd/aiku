@@ -71,6 +71,7 @@ use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
  * @property bool $can_connect_to_platform
  * @property bool $exist_in_platform
  * @property bool $platform_status
+ * @property int $number_portfolio_broken
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\CustomerClient> $clients
  * @property-read Customer|null $customer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, PalletReturn> $fulfilmentOrders

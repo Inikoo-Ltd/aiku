@@ -46,10 +46,8 @@ const props = defineProps<{
             <p v-if="props.notification.item.title" class="font-bold">
                 {{ props.notification.item.title }}
             </p>
-            <!-- <button class="close" @click="props.notification.close">
-                        <i class="fa fa-fw fa-close"></i>
-                    </button> -->
-            <p v-if="props.notification.item.text" class="text-sm truncate mb-0 max-w-full">
+
+            <p v-if="props.notification.item.text" class="text-sm  mb-0 max-w-full">
                 {{ props.notification.item.text }}
             </p>
             <div @click.stop="(e) => (props.notification.item.data?.function())" v-html="props.notification.item.data?.html">

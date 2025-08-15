@@ -28,7 +28,7 @@ enum CreditTransactionReasonEnum: string
             CreditTransactionReasonEnum::COMPENSATE_CUSTOMER => 'Compensate customer',
             CreditTransactionReasonEnum::TRANSFER => 'Transfer from other customer account',
             CreditTransactionReasonEnum::MONEY_BACK => 'Customer want money back',
-            CreditTransactionReasonEnum::OTHER => 'Othe reason',
+            CreditTransactionReasonEnum::OTHER => 'Other reason',
         };
     }
 

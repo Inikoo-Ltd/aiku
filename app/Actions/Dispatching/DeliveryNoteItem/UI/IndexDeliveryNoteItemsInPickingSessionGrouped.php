@@ -43,6 +43,10 @@ class IndexDeliveryNoteItemsInPickingSessionGrouped extends OrgAction
                 'delivery_notes.id as delivery_note_id',
                 'delivery_notes.reference as delivery_note_reference',
                 'delivery_notes.state as delivery_note_state',
+                'delivery_notes.customer_notes as delivery_note_customer_notes',
+                'delivery_notes.public_notes as delivery_note_public_notes',
+                'delivery_notes.internal_notes as delivery_note_internal_notes',
+                'delivery_notes.shipping_notes as delivery_note_shipping_notes',
             ])
             ->allowedSorts(['delivery_note_slug', 'delivery_note_id', 'delivery_note_reference', 'delivery_note_state'])
             ->allowedFilters([$globalSearch])

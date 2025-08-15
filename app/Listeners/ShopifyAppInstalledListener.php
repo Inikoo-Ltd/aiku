@@ -2,14 +2,13 @@
 
 namespace App\Listeners;
 
-use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
-use App\Actions\Dropshipping\Shopify\Webhook\StoreWebhooksToShopify;
+use App\Actions\Dropshipping\Shopify\CheckShopifyChannel;
+use App\Actions\Dropshipping\Shopify\FulfilmentService\StoreFulfilmentService;
+use App\Actions\Dropshipping\Shopify\Webhook\CreateShopifyWebhooks;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum;
-use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Models\Dropshipping\ShopifyUser;
-use Illuminate\Support\Arr;
 use Osiset\ShopifyApp\Messaging\Events\AppInstalledEvent;
+use Sentry;
 
 class ShopifyAppInstalledListener
 {
@@ -32,23 +31,20 @@ class ShopifyAppInstalledListener
     {
         $shopifyUser = ShopifyUser::find($event->shopId->toNative());
 
-        StoreWebhooksToShopify::run($shopifyUser);
+        if (!$shopifyUser) {
+            Sentry::captureMessage('Shopify user not found in ShopifyAppInstalledListener');
+            return;
+        }
 
-        $shopApi = $shopifyUser->api()->getRestClient()->request('GET', '/admin/api/2024-07/shop.json');
-        $store   = Arr::get($shopApi, 'body.shop');
 
-        $shopifyUser = $this->update($shopifyUser, [
-            'data' => [
-                'store' => $store
-            ]
-        ]);
+        CreateShopifyWebhooks::run($shopifyUser);
 
         if ($shopifyUser->customerSalesChannel) {
-            UpdateCustomerSalesChannel::run($shopifyUser->customerSalesChannel, [
-                'name'              => Arr::get($shopifyUser->data, 'store.name'),
-                'state'             => CustomerSalesChannelStateEnum::AUTHENTICATED,
-                'connection_status' => CustomerSalesChannelConnectionStatusEnum::CONNECTED
-            ]);
+
+            CheckShopifyChannel::run($shopifyUser->customerSalesChannel);
+            StoreFulfilmentService::run($shopifyUser->customerSalesChannel);
+
         }
+
     }
 }

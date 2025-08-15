@@ -79,16 +79,16 @@ class CreateWebpage extends OrgAction
                             'type'  => 'button',
                             'style' => 'cancel',
                             'route' =>
-                                match ($request->route()->getName()) {
-                                    'org.websites.show.webpages.show.webpages.create' => [
-                                        'name'       => 'org.websites.show.webpages.show' ,
-                                        'parameters' => array_values($request->route()->originalParameters())
-                                    ],
-                                    default => [
-                                        'name'       => preg_replace('/create$/', 'index', $request->route()->getName()),
-                                        'parameters' => array_values($request->route()->originalParameters())
-                                    ]
-                                }
+                            match ($request->route()->getName()) {
+                                'org.websites.show.webpages.show.webpages.create' => [
+                                    'name'       => 'org.websites.show.webpages.show',
+                                    'parameters' => array_values($request->route()->originalParameters())
+                                ],
+                                default => [
+                                    'name'       => preg_replace('/create$/', 'index', $request->route()->getName()),
+                                    'parameters' => array_values($request->route()->originalParameters())
+                                ]
+                            }
 
 
                         ]
@@ -98,8 +98,6 @@ class CreateWebpage extends OrgAction
                 ],
                 'formData'    => [
                     'blueprint' => [
-
-
                         [
                             'title'  => __('Id'),
                             'icon'   => ['fal', 'fa-fingerprint'],
@@ -116,37 +114,37 @@ class CreateWebpage extends OrgAction
                                     'value'    => '',
                                     'required' => true,
                                 ],
-//                                'type' => [
-//                                    'type'     => 'select',
-//                                    'label'    => __('type'),
-//                                    'options'  => Options::forEnum(WebpageTypeEnum::class),
-//                                    'value'    => '',
-//                                    'required' => true,
-//                                ],
-//                                'sub_type' => [
-//                                    'type'     => 'select',
-//                                    'label'    => __('sub type'),
-//                                    'options'  => Options::forEnum(WebpageSubTypeEnum::class),
-//                                    'value'    => '',
-//                                    'required' => true,
-//                                ],
+                                //                                'type' => [
+                                //                                    'type'     => 'select',
+                                //                                    'label'    => __('type'),
+                                //                                    'options'  => Options::forEnum(WebpageTypeEnum::class),
+                                //                                    'value'    => '',
+                                //                                    'required' => true,
+                                //                                ],
+                                //                                'sub_type' => [
+                                //                                    'type'     => 'select',
+                                //                                    'label'    => __('sub type'),
+                                //                                    'options'  => Options::forEnum(WebpageSubTypeEnum::class),
+                                //                                    'value'    => '',
+                                //                                    'required' => true,
+                                //                                ],
                                 'url' => [
                                     'type'      => 'inputWithAddOn',
                                     'label'     => __('URL'),
                                     'label_no_capitalize' => true,
                                     'leftAddOn' => [
-                                        'label' => 'https://'.($parent instanceof Webpage ? $parent->website->domain : $parent->domain).'/'
+                                        'label' => 'https://' . ($parent instanceof Webpage ? $parent->website->domain : $parent->domain) . '/'
                                     ],
                                     'value'     => '',
                                     'required'  => true,
                                 ],
                                 'seo_structure_type' => [
-                                        'type'     => 'select',
-                                        'required'  => true,
-                                        'label'    => __('seo structure type'),
-                                        'options'  => Options::forEnum(WebpageSeoStructureTypeEnum::class),
-                                        'value'    => '',
-                                        'required' => false,
+                                    'type'     => 'select',
+                                    'required'  => true,
+                                    'label'    => __('seo structure type'),
+                                    'options'  => Options::forEnum(WebpageSeoStructureTypeEnum::class),
+                                    'value'    => null,
+                                    'required' => false,
                                 ],
 
                             ]
@@ -191,9 +189,5 @@ class CreateWebpage extends OrgAction
             ),
             default => []
         };
-
-
     }
-
-
 }

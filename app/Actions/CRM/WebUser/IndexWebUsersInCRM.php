@@ -57,6 +57,10 @@ class IndexWebUsersInCRM extends OrgAction
             $queryBuilder->where('shop_id', $parent->id);
         }
 
+        $queryBuilder
+            ->leftJoin('organisations', 'web_users.organisation_id', '=', 'organisations.id')
+            ->leftJoin('shops', 'web_users.shop_id', '=', 'shops.id');
+
 
         return $queryBuilder
             ->defaultSort('username')
@@ -66,6 +70,14 @@ class IndexWebUsersInCRM extends OrgAction
                 'web_users.email',
                 'web_users.slug',
                 'web_users.created_at',
+                'web_users.customer_id',
+                'organisations.name as organisation_name',
+                'organisations.code as organisation_code',
+                'organisations.slug as organisation_slug',
+                'shops.name as shop_name',
+                'shops.code as shop_code',
+                'shops.slug as shop_slug',
+                'shops.type as shop_type',
             ])
             ->allowedSorts(['email', 'username', 'created_at', 'organisation_name'])
             ->allowedFilters([$globalSearch])
@@ -76,8 +88,6 @@ class IndexWebUsersInCRM extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $webUsers, ActionRequest $request): Response
     {
-
-
         $icon       = ['fal', 'fa-terminal'];
         $title      = __('web users');
         $afterTitle = null;
@@ -106,12 +116,12 @@ class IndexWebUsersInCRM extends OrgAction
         return Inertia::render(
             'Org/Shop/CRM/WebUsers',
             [
-                'breadcrumbs'                     => $this->getBreadcrumbs(
+                'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
-                'title'                           => $title,
-                'pageHead'                        => [
+                'title'       => $title,
+                'pageHead'    => [
                     'title'         => $title,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
@@ -121,7 +131,7 @@ class IndexWebUsersInCRM extends OrgAction
                         ($this->canEdit && $this->parent instanceof Customer) ? [
                             'type'  => 'button',
                             'style' => 'create',
-                            'label' => $title,
+                            'label' => __('website user'),
                             'route' => [
                                 'name'       => 'grp.org.shops.show.crm.customers.show.web_users.create',
                                 'parameters' => $request->route()->originalParameters()
@@ -129,7 +139,6 @@ class IndexWebUsersInCRM extends OrgAction
                         ] : false
                     ]
                 ],
-
 
 
                 'data' => WebUsersResource::collection($webUsers),

@@ -9,6 +9,7 @@
 
 namespace App\Actions\Traits;
 
+use App\Models\Dropshipping\Platform;
 use Lorisleiva\Actions\ActionRequest;
 
 trait WithCustomersSubNavigation
@@ -40,18 +41,18 @@ trait WithCustomersSubNavigation
 
 
 
-        $meta[] = [
-            // 'route'     => [
-            //     'name'       => 'grp.org.shops.show.crm.prospects.lists.index',
-            //     'parameters' => $request->route()->originalParameters()
-            // ],
-            'number'   => $this->parent->crmStats->number_prospect_queries,
-            'label'    => __('Lists'),
-            'leftIcon' => [
-                'icon'    => 'fal fa-code-branch',
-                'tooltip' => __('lists')
-            ]
-        ];
+        // $meta[] = [
+        // 'route'     => [
+        //     'name'       => 'grp.org.shops.show.crm.prospects.lists.index',
+        //     'parameters' => $request->route()->originalParameters()
+        // ],
+        //     'number'   => $this->parent->crmStats->number_prospect_queries,
+        //     'label'    => __('Lists'),
+        //     'leftIcon' => [
+        //         'icon'    => 'fal fa-code-branch',
+        //         'tooltip' => __('lists')
+        //     ]
+        // ];
 
 
 
@@ -81,6 +82,18 @@ trait WithCustomersSubNavigation
             ]
         ];
 
+        $meta[] = [
+            'route'     => [
+                'name'       => 'grp.org.shops.show.crm.platforms.index',
+                'parameters' => $request->route()->originalParameters()
+            ],
+            'number'   => Platform::all()->count(), // Fix Later with hydrators
+            'label'    => __('Platforms'),
+            'leftIcon' => [
+                'icon'    => 'fal fa-route',
+                'tooltip' => __('platforms')
+            ]
+        ];
 
         $meta[] = [
             'route'     => [

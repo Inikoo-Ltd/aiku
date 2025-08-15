@@ -15,7 +15,6 @@ use App\Actions\Dropshipping\Portfolio\DeletePortfolio;
 use App\Actions\Dropshipping\ShopifyUser\DeleteShopifyUser;
 use App\Actions\Dropshipping\WooCommerce\DeleteWooCommerceUser;
 use App\Actions\OrgAction;
-use App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -42,7 +41,6 @@ class DeleteCustomerSalesChannel extends OrgAction
                 $customerSalesChannel,
                 [
                     'status' => CustomerSalesChannelStatusEnum::CLOSED,
-                    'connection_status' => CustomerSalesChannelConnectionStatusEnum::DISCONNECTED,
                     'closed_at' => now()
                 ]
             );

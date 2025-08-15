@@ -256,13 +256,13 @@ class ShowWebpage extends OrgAction
                 ];
             }
 
-            $actions[] = [
-                'type'    => 'button',
-                'style'   => 'edit',
-                'icon'    => ["fal", "fa-object-group"],
-                'tooltip' => __('Blueprint'),
-                'route'   => $workshopRoute
-            ];
+            /*  $actions[] = [
+                 'type'    => 'button',
+                 'style'   => 'edit',
+                 'icon'    => ["fal", "fa-object-group"],
+                 'tooltip' => __('Blueprint'),
+                 'route'   => $workshopRoute
+             ]; */
         }
 
 
@@ -350,6 +350,7 @@ class ShowWebpage extends OrgAction
                     'navigation' => WebpageTabsEnum::navigation()
                 ],
                 'root_active' => $subNavigationRoot,
+                'webpage_url'   => $webpage->getUrl(),
 
                 WebpageTabsEnum::SHOWCASE->value => $this->tab == WebpageTabsEnum::SHOWCASE->value ?
                     fn () => WebpageResource::make($webpage)->getArray()

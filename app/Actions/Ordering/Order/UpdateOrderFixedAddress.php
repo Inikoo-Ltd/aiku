@@ -38,7 +38,8 @@ class UpdateOrderFixedAddress extends OrgAction
             $oldAddress = $order->deliveryAddress;
         }
 
-        if ($oldAddress and $oldAddress->checksum == $modelData['address']->getChecksum()) {
+
+        if ($oldAddress && $oldAddress->checksum == $modelData['address']->getChecksum()) {
             return $order;
         }
 

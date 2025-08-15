@@ -10,10 +10,11 @@
 
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
-use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\GrpAction;
+use App\Actions\Masters\MasterProductCategory\WithMasterFamilySubNavigation;
+use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\UI\SupplyChain\MasterFamilyTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
@@ -28,8 +29,9 @@ class ShowMasterFamily extends GrpAction
 {
     use WithFamilySubNavigation;
     use WithMastersAuthorisation;
+    use WithMasterFamilySubNavigation;
 
-    private MasterShop|Group $parent;
+    private MasterShop|Group|MasterProductCategory $parent;
 
     public function handle(MasterProductCategory $masterFamily): MasterProductCategory
     {
@@ -57,6 +59,42 @@ class ShowMasterFamily extends GrpAction
         return $this->handle($masterFamily);
     }
 
+    public function inMasterDepartment(MasterProductCategory $masterDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
+    {
+        $group        = group();
+        $this->parent = $masterDepartment;
+        $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
+
+        return $this->handle($masterFamily);
+    }
+
+    public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
+    {
+        $group        = group();
+        $this->parent = $masterDepartment;
+        $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
+
+        return $this->handle($masterFamily);
+    }
+
+    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
+    {
+        $group        = group();
+        $this->parent = $masterSubDepartment;
+        $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
+
+        return $this->handle($masterFamily);
+    }
+
+    public function inMasterSubDepartmentInMasterDepartment(MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
+    {
+        $group        = group();
+        $this->parent = $masterSubDepartment;
+        $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
+
+        return $this->handle($masterFamily);
+    }
+
     public function htmlResponse(MasterProductCategory $masterFamily, ActionRequest $request): Response
     {
         return Inertia::render(
@@ -74,7 +112,7 @@ class ShowMasterFamily extends GrpAction
                 ],
                 'pageHead'    => [
                     'title'   => $masterFamily->name,
-                    'model'   => '',
+                    'model'   => __('Master Family'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-folder'],
                         'title' => __('department')
@@ -98,7 +136,7 @@ class ShowMasterFamily extends GrpAction
                             ]
                         ] : false
                     ],
-                    // 'subNavigation' => $this->getFamilySubNavigation($masterFamily, $this->parent, $request)
+                     'subNavigation' => $this->getMasterFamilySubNavigation($masterFamily)
 
                 ],
                 'tabs'        => [
@@ -141,7 +179,7 @@ class ShowMasterFamily extends GrpAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('Families')
+                            'label' => __('Master families')
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
@@ -157,36 +195,39 @@ class ShowMasterFamily extends GrpAction
 
 
         return match ($routeName) {
-            'grp.org.shops.show.catalogue.families.show' =>
+            'grp.masters.master_shops.show.master_families.show',
+            'grp.masters.master_shops.show.master_families.edit',
+            'grp.masters.master_shops.show.master_families.create',
+            'grp.masters.master_shops.show.master_families.master_products.index' =>
             array_merge(
-                ShowShop::make()->getBreadcrumbs($routeParameters),
+                ShowMasterShop::make()->getBreadcrumbs($masterFamily->masterShop, $routeParameters),
                 $headCrumb(
                     $masterFamily,
                     [
                         'index' => [
-                            'name'       => 'grp.org.shops.show.catalogue.families.index',
+                            'name'       => 'grp.masters.master_shops.show.master_families.index',
                             'parameters' => $routeParameters
                         ],
                         'model' => [
-                            'name'       => 'grp.org.shops.show.catalogue.families.show',
+                            'name'       => 'grp.masters.master_shops.show.master_families.show',
                             'parameters' => $routeParameters
                         ]
                     ],
                     $suffix
                 )
             ),
-            'grp.org.shops.show.catalogue.departments.show.families.show' =>
+            'grp.masters.master_departments.show.master_families.show' =>
             array_merge(
-                (new ShowMasterDepartment())->getBreadcrumbs('grp.org.shops.show.catalogue.departments.show', $routeParameters),
+                (new ShowMasterDepartment())->getBreadcrumbs($masterFamily, $masterFamily->masterDepartment, $routeName, $routeParameters),
                 $headCrumb(
                     $masterFamily,
                     [
                         'index' => [
-                            'name'       => 'grp.org.shops.show.catalogue.departments.show.families.index',
+                            'name'       => 'grp.masters.master_departments.show.master_families.index',
                             'parameters' => $routeParameters
                         ],
                         'model' => [
-                            'name'       => 'grp.org.shops.show.catalogue.departments.show.families.show',
+                            'name'       => 'grp.masters.master_departments.show.master_families.show',
                             'parameters' => $routeParameters
 
 
@@ -195,21 +236,40 @@ class ShowMasterFamily extends GrpAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show' =>
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show',
+            'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index' =>
             array_merge(
-                (new ShowMasterSubDepartment())->getBreadcrumbs('grp.org.shops.show.catalogue.departments.show.sub_departments.show', $routeParameters),
+                (new ShowMasterSubDepartment())->getBreadcrumbs($masterFamily->parent, $routeName, $routeParameters),
                 $headCrumb(
                     $masterFamily,
                     [
                         'index' => [
-                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index',
+                            'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.index',
                             'parameters' => $routeParameters
                         ],
                         'model' => [
-                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show',
+                            'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show',
                             'parameters' => $routeParameters
 
 
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.masters.master_shops.show.master_departments.show.master_families.show' =>
+            array_merge(
+                ShowMasterDepartment::make()->getBreadcrumbs($masterFamily->masterShop, $masterFamily->masterDepartment, $routeName, $routeParameters, $suffix),
+                $headCrumb(
+                    $masterFamily,
+                    [
+                        'index' => [
+                            'name'       => 'grp.masters.master_shops.show.master_departments.show.master_families.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.masters.master_shops.show.master_departments.show.master_families.show',
+                            'parameters' => $routeParameters
                         ]
                     ],
                     $suffix

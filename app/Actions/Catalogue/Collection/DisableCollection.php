@@ -17,6 +17,7 @@ use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\Web\Webpage;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -30,7 +31,7 @@ class DisableCollection extends OrgAction
     use WithAttributes;
 
 
-    public function handle(Collection $collection, array $modelData): void
+    public function handle(Collection $collection, array $modelData): Collection
     {
         $collection->update([
             'state' => CollectionStateEnum::INACTIVE->value,
@@ -44,6 +45,18 @@ class DisableCollection extends OrgAction
             ]
         );
 
+        return $collection;
+    }
+
+    public function htmlResponse(Collection $collection): RedirectResponse
+    {
+        return redirect()->route(
+            'grp.org.shops.show.catalogue.collections.inactive.index',
+            [
+                'organisation' => $collection->organisation->slug,
+                'shop'         => $collection->shop->slug
+            ]
+        );
     }
 
     public function rules(): array
@@ -83,9 +96,9 @@ class DisableCollection extends OrgAction
 
     }
 
-    public function asController(Collection $collection, ActionRequest $request): void
+    public function asController(Collection $collection, ActionRequest $request)
     {
         $this->initialisationFromShop($collection->shop, $request);
-        $this->handle($collection, $this->validatedData);
+        return $this->handle($collection, $this->validatedData);
     }
 }

@@ -35,6 +35,7 @@ class ShowPickingSession extends OrgAction
 
     public function handle(PickingSession $pickingSession): PickingSession
     {
+
         return $pickingSession;
     }
 
@@ -87,13 +88,18 @@ class ShowPickingSession extends OrgAction
         $actions   = null;
         $navigation = PickingSessionTabsEnum::navigation();
 
-        if ($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
-            $this->tab = PickingSessionTabsEnum::ITEMS->value;
-        } elseif ($pickingSession->state == PickingSessionStateEnum::HANDLING) {
-            $this->tab = PickingSessionTabsEnum::ITEMIZED->value;
-        } else {
-            $this->tab = PickingSessionTabsEnum::GROUPED->value;
+
+        if (!request()->get('tab')) {
+            if ($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
+                $this->tab = PickingSessionTabsEnum::ITEMS->value;
+            } elseif ($pickingSession->state == PickingSessionStateEnum::HANDLING) {
+                $this->tab = PickingSessionTabsEnum::ITEMIZED->value;
+            } else {
+                $this->tab = PickingSessionTabsEnum::GROUPED->value;
+            }
         }
+
+
 
 
         if ($pickingSession->state == PickingSessionStateEnum::IN_PROCESS) {
@@ -149,6 +155,8 @@ class ShowPickingSession extends OrgAction
         ];
 
 
+
+
         $props = array_merge($props, $this->getItems($pickingSession));
 
         $inertiaResponse = Inertia::render(
@@ -186,7 +194,7 @@ class ShowPickingSession extends OrgAction
             ];
         }
 
-        return [];
+
     }
 
     public function getBreadcrumbs(PickingSession $pickingSession, string $routeName, array $routeParameters, string $suffix = ''): array

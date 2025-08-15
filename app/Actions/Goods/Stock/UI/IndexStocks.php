@@ -233,8 +233,8 @@ class IndexStocks extends OrgAction
                 'action'      => $this->canEdit && $parent->goodsStats->number_stock_families == 0 ? [
                     'type'    => 'button',
                     'style'   => 'create',
-                    'tooltip' => __('new SKUs family'),
-                    'label'   => __('SKUs family'),
+                    'tooltip' => __('new naster SKUs family'),
+                    'label'   => __('Master SKUs family'),
                     'route'   => [
                         'name'       => 'grp.goods.stock-families.create',
                         'parameters' => []
@@ -249,8 +249,8 @@ class IndexStocks extends OrgAction
                 'action'      => $this->canEdit ? [
                     'type'    => 'button',
                     'style'   => 'create',
-                    'tooltip' => __('new SKU'),
-                    'label'   => __('SKU'),
+                    'tooltip' => __('new master SKU'),
+                    'label'   => __('Master SKU'),
                     'route'   => [
                         'name'       => 'inventory.stock-families.show.stocks.create',
                         'parameters' => [$parent->slug]
@@ -331,11 +331,11 @@ class IndexStocks extends OrgAction
         $subNavigation = $this->getStocksSubNavigation();
 
         $title = match ($this->bucket) {
-            'active' => __('Active SKUs'),
-            'in_process' => __('In process SKUs'),
-            'discontinuing' => __('Discontinuing SKUs'),
-            'discontinued' => __('Discontinued SKUs'),
-            default => __('SKUs')
+            'active' => __('Active Master SKUs'),
+            'in_process' => __('In process Master SKUs'),
+            'discontinuing' => __('Discontinuing Master SKUs'),
+            'discontinued' => __('Discontinued Master SKUs'),
+            default => __('Master SKUs')
         };
 
         return Inertia::render(
@@ -350,14 +350,14 @@ class IndexStocks extends OrgAction
                     'title'         => $title,
                     'iconRight'     => [
                         'icon'  => ['fal', 'fa-box'],
-                        'title' => __('SKU')
+                        'title' => __('Master SKU')
                     ],
                     'actions'       => [
                         $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new SKU'),
-                            'label'   => __('SKU'),
+                            'tooltip' => __('new Master SKU'),
+                            'label'   => __('Master SKU'),
                             'route'   => match ($request->route()->getName()) {
                                 'inventory.stock-families.show.stocks.index' => [
                                     'name'       => 'inventory.stock-families.show.stocks.create',

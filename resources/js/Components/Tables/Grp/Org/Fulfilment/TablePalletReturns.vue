@@ -181,7 +181,6 @@ const locale = inject('locale', aikuLocaleStructure)
         <template #cell(state)="{ item: palletReturn }">
             <Icon :data="palletReturn['type_icon']" class="px-1"/>
             <TagPallet v-if="layout.app.name == 'retina'" :stateIcon="palletReturn.state_icon" />
-            <!-- <Icon v-else :data="palletReturn['state_icon']" class="px-1"/> -->
         </template>
 
         <template #cell(customer)="{ item: palletReturn }">
@@ -189,7 +188,6 @@ const locale = inject('locale', aikuLocaleStructure)
             <span class="text-xs text-gray-500">
                 <AddressLocation :data="palletReturn.customer.location" />
             </span>
-            <!-- <pre>{{ palletReturn.customer }}</pre> -->
         </template>
 
         <!-- Column: Pallets -->
@@ -203,6 +201,7 @@ const locale = inject('locale', aikuLocaleStructure)
         </template>
 
         <template #cell(number_stored_items)="{ item: palletReturn }">
+
             <div v-if="palletReturn.number_stored_items" class="tabular-nums">
                 {{ palletReturn.number_stored_items }}
             </div>

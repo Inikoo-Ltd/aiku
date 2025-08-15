@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Collection\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
+use App\Actions\Catalogue\WithCollectionsSubNavigation;
 use App\Actions\Catalogue\WithCollectionSubNavigation;
 use App\Actions\Catalogue\WithDepartmentSubNavigation;
 use App\Actions\Catalogue\WithFamilySubNavigation;
@@ -16,6 +17,8 @@ use App\Actions\Catalogue\WithSubDepartmentSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Catalogue\Collection\CollectionProductsStatusEnum;
+use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Http\Resources\Catalogue\CollectionsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Collection;
@@ -38,7 +41,28 @@ class IndexCollections extends OrgAction
     use WithDepartmentSubNavigation;
     use WithSubDepartmentSubNavigation;
     use WithFamilySubNavigation;
+    use WithCollectionsSubNavigation;
 
+    private $bucket;
+
+    protected function getElementGroups(Shop $parent): array
+    {
+        return [
+            'state' => [
+                'label'    => __('State'),
+                'elements' => array_merge_recursive(
+                    CollectionProductsStatusEnum::labels(),
+                    CollectionProductsStatusEnum::count($parent)
+                ),
+
+                'engine' => function ($query, $elements) {
+                    $query->whereIn('collections.products_status', $elements);
+                }
+            ],
+
+
+        ];
+    }
 
     public function handle(Shop $shop, $prefix = null): LengthAwarePaginator
     {
@@ -61,8 +85,26 @@ class IndexCollections extends OrgAction
         $queryBuilder
             ->leftJoin('webpages', function ($join) {
                 $join->on('collections.id', '=', 'webpages.model_id')
-                    ->where('webpages.model_type', '=', 'Collection');
+                    ->where('webpages.model_type', '=', 'Collection')
+                    ->whereNull('webpages.deleted_at');
             });
+
+        if ($this->bucket == 'active') {
+            $queryBuilder->where('collections.state', CollectionStateEnum::ACTIVE);
+        } elseif ($this->bucket == 'inactive') {
+            $queryBuilder->where('collections.state', CollectionStateEnum::INACTIVE);
+        } elseif ($this->bucket == 'in_process') {
+            $queryBuilder->where('collections.state', CollectionStateEnum::IN_PROCESS);
+        }
+
+        foreach ($this->getElementGroups($shop) as $key => $elementGroup) {
+            $queryBuilder->whereElementGroup(
+                key: $key,
+                allowedElements: array_keys($elementGroup['elements']),
+                engine: $elementGroup['engine'],
+                prefix: $prefix
+            );
+        }
 
         $queryBuilder
             ->leftJoin('organisations', 'collections.organisation_id', '=', 'organisations.id')
@@ -74,6 +116,7 @@ class IndexCollections extends OrgAction
                 'collections.id',
                 'collections.code',
                 'collections.state',
+                'collections.products_status',
                 'collections.name',
                 'collections.description',
                 'collections.created_at',
@@ -121,6 +164,14 @@ class IndexCollections extends OrgAction
                 $table->name($prefix)->pageName($prefix.'Page');
             }
 
+            foreach ($this->getElementGroups($shop) as $key => $elementGroup) {
+                $table->elementGroup(
+                    key: $key,
+                    label: $elementGroup['label'],
+                    elements: $elementGroup['elements']
+                );
+            }
+
             $table
                 ->withGlobalSearch()
                 ->withEmptyState(
@@ -153,7 +204,7 @@ class IndexCollections extends OrgAction
     {
         $container = null;
 
-        $subNavigation = null;
+        $subNavigation = $this->getCollectionsSubNavigation($this->shop);
 
         $title     = __('Collections');
         $icon      = [
@@ -187,7 +238,6 @@ class IndexCollections extends OrgAction
         if ($this->shop->website) {
             $websiteDomain = 'https://'.$this->shop->website->domain;
         }
-
 
         return Inertia::render(
             'Org/Catalogue/Collections',
@@ -256,6 +306,31 @@ class IndexCollections extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
+        $this->bucket = 'all';
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle(shop: $shop);
+    }
+
+    public function active(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = 'active';
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle(shop: $shop);
+    }
+
+    public function inactive(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = 'inactive';
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle(shop: $shop);
+    }
+
+    public function inProcess(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = 'in_process';
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle(shop: $shop);
@@ -289,6 +364,39 @@ class IndexCollections extends OrgAction
                         'parameters' => $routeParameters
                     ],
                     $suffix
+                )
+            ),
+            'grp.org.shops.show.catalogue.collections.active.index' =>
+            array_merge(
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
+                    ],
+                    __('(Active)')
+                )
+            ),
+            'grp.org.shops.show.catalogue.collections.inactive.index' =>
+            array_merge(
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
+                    ],
+                    __('(Inactive)')
+                )
+            ),
+            'grp.org.shops.show.catalogue.collections.in_process.index' =>
+            array_merge(
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
+                    ],
+                    __('(In Process)')
                 )
             ),
 

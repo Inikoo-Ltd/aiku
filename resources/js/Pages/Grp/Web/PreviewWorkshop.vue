@@ -16,7 +16,10 @@ import "@/../css/Iris/editor.css"
 import { getStyles } from "@/Composables/styles";
 import { Root as RootWebpage } from '@/types/webpageTypes'
 import ButtonPreviewLogin from '@/Components/Workshop/Tools/ButtonPreviewLogin.vue';
-
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faTimes } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faTimes)
 
 defineOptions({ layout: WebPreview })
 const props = defineProps<{
@@ -52,6 +55,7 @@ const updateIrisLayout = (isLoggedIn: boolean) => {
     currency: defaultCurrency,
     is_logged_in: isLoggedIn,
   }
+  router.reload()
 }
 
 const showWebpage = (activityItem) => {
@@ -112,7 +116,7 @@ watch(isPreviewLoggedIn, (value) => {
 
 
 <template>
-    <div class="editor-class">
+    <div class="editor-class" :class="route().params?.mode !== 'iris' ? 'is-not-mode-iris' : ''">
         <div v-if="isInWorkshop" class="bg-gray-200 shadow-xl px-8 py-4 flex justify-center items-center gap-x-2">
             <ButtonPreviewLogin v-model="isPreviewLoggedIn" />
         </div>
@@ -151,22 +155,28 @@ watch(isPreviewLoggedIn, (value) => {
 
 
 
-<style scoped lang="scss">
-:deep(.hover-dashed) {
-    @apply relative;
-
-    &::after {
-        content: "";
-        @apply absolute inset-0 hover:bg-gray-200/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
+<style lang="scss">
+.is-not-mode-iris {
+    .hover-dashed {
+        @apply relative;
+    
+        &::after {
+            content: "";
+            @apply absolute inset-0 hover:bg-gray-200/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
+        }
+    }
+    
+    .hover-text-input {
+        @apply relative isolate;
+    
+        &::after {
+            content: "";
+            @apply -z-10 absolute inset-0 hover:bg-yellow-500/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
+        }
     }
 }
 
-:deep(.hover-text-input) {
-    @apply relative isolate;
-
-    &::after {
-        content: "";
-        @apply -z-10 absolute inset-0 hover:bg-yellow-500/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
-    }
+#jsd-widget{
+    display: none !important;
 }
 </style>

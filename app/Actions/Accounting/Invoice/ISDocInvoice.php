@@ -177,7 +177,7 @@ class ISDocInvoice extends OrgAction
                 new Delivery(
                     new Party(
                         new PartyIdentification($deliveryAddress->id),
-                        new PartyName($customer->company_name),
+                        new PartyName($customer->company_name ?? $customer->contact_name),
                         new PostalAddress(
                             $deliveryAddress->address_line_1,
                             $deliveryAddress->address_line_2,

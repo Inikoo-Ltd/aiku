@@ -41,7 +41,7 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
         $query->leftjoin('warehouse_areas', 'warehouse_areas.id', '=', 'locations.warehouse_area_id');
 
         return $query
-            ->defaultSort('warehouse_areas.picking_position', 'locations.code', 'org_stocks.code')
+            ->defaultSort('locations.sort_code', 'org_stocks.code')
             ->select([
                 'delivery_note_items.id',
                 'delivery_note_items.state',
@@ -59,7 +59,13 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
                 'delivery_notes.id as delivery_note_id',
                 'delivery_notes.reference as delivery_note_reference',
                 'delivery_notes.state as delivery_note_state',
-                'warehouse_areas.picking_position as picking_position',
+                'locations.sort_code as picking_position',
+                'warehouse_areas.code as warehouse_area_code',
+                'warehouse_areas.picking_position as warehouse_area_picking_position',
+                'delivery_notes.customer_notes as delivery_note_customer_notes',
+                'delivery_notes.public_notes as delivery_note_public_notes',
+                'delivery_notes.internal_notes as delivery_note_internal_notes',
+                'delivery_notes.shipping_notes as delivery_note_shipping_notes',
             ])
             ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required', 'quantity_picked', 'quantity_packed', 'state', 'picking_position'])
             ->allowedFilters([$globalSearch])

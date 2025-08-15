@@ -28,7 +28,6 @@ class Kernel extends ConsoleKernel
         $schedule->command('domain:check-cloudflare-status')->hourly();
 
 
-
         $schedule->job(FulfilmentCustomersHydrateStatus::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
             monitorSlug: 'FulfilmentCustomersHydrateStatus',
         );
@@ -61,6 +60,11 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'DeleteTempIsdoc',
         );
 
+
+        $schedule->command('data_feeds:save')->hourly()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'SaveDataFeeds',
+        );
+
         $schedule->command('fetch:orders -w full -B')->everyFiveMinutes()->timezone('UTC')->sentryMonitor(
             monitorSlug: 'FetchOrdersInBasket',
         );
@@ -84,6 +88,7 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'FetchWooOrders',
         );
 
+
         (new Schedule())->command('hydrate -s ful')->everyFourHours('23:00')->timezone('UTC');
         (new Schedule())->command('hydrate -s sys')->everyTwoHours('23:00')->timezone('UTC');
         (new Schedule())->command('hydrate:shops')->everyTwoHours('23:00')->timezone('UTC');
@@ -98,7 +103,6 @@ class Kernel extends ConsoleKernel
         );
 
         $schedule->command('schedule:platform-orders')->everyMinute()->timezone('UTC')->sentryMonitor('GetPlatformOrders');
-
     }
 
 

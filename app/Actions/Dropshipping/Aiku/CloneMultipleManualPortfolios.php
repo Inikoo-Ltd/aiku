@@ -9,7 +9,6 @@
 
 namespace App\Actions\Dropshipping\Aiku;
 
-use App\Actions\Dropshipping\Portfolio\StoreMultiplePortfolios;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -28,11 +27,8 @@ class CloneMultipleManualPortfolios extends OrgAction
      */
     public function handle(CustomerSalesChannel $sourceCustomerSalesChannel, CustomerSalesChannel $targetCustomerSalesChannel): void
     {
-        $items = $sourceCustomerSalesChannel->portfolios()->pluck('item_id')->toArray();
+        CloneFromChannelToChannel::dispatch($sourceCustomerSalesChannel, $targetCustomerSalesChannel);
 
-        StoreMultiplePortfolios::make()->action($targetCustomerSalesChannel, [
-            'items' => $items
-        ]);
     }
 
     /**

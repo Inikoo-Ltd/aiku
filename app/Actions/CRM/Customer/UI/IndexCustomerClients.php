@@ -189,7 +189,7 @@ class IndexCustomerClients extends OrgAction
             $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->parent, $request);
         } elseif ($this->parent instanceof CustomerSalesChannel && $this->shop->type == ShopTypeEnum::DROPSHIPPING) {
             $scope         = $this->parent->customer;
-            $subNavigation = $this->getCustomerSalesChannelSubNavigation($this->parent, $request);
+            $subNavigation = $this->getCustomerSalesChannelSubNavigation($this->parent);
             $title         = $this->parent->customer->name.' ('.$this->parent->customer->reference.')';
             $afterTitle    = [
                 'label' => __('Clients').' @'.$this->parent->platform->name,
@@ -204,24 +204,6 @@ class IndexCustomerClients extends OrgAction
         $newClientLabel = __('New Client');
 
         $actions = [];
-        if ($this->parent instanceof CustomerSalesChannel) {
-            $actions[] = [
-                'type'    => 'button',
-                'style'   => 'create',
-                'tooltip' => $newClientLabel,
-                'label'   => $newClientLabel,
-                'route'   => [
-                    'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.create',
-                    'parameters' => [
-                        'organisation'         => $scope->organisation->slug,
-                        'shop'                 => $scope->shop->slug,
-                        'customer'             => $scope->slug,
-                        'customerSalesChannel' => $this->parent->slug
-                    ]
-                ]
-            ];
-        }
-
 
         return Inertia::render(
             'Org/Shop/CRM/CustomerClients',

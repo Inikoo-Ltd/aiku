@@ -173,24 +173,7 @@ watch(filterBlock, () => {
   </div>
 </template>
 
-<style lang="scss" scoped>
-:deep(.hover-dashed) {
-  @apply relative;
-
-  &::after {
-    content: "";
-    @apply absolute inset-0 hover:bg-gray-200/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
-  }
-}
-
-:deep(.hover-text-input) {
-  @apply relative isolate;
-
-  &::after {
-    content: "";
-    @apply -z-10 absolute inset-0 hover:bg-gray-200/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
-  }
-}
+<style lang="scss">
 
 .trapezoid-button {
   @apply absolute z-[99] top-[-37px] left-1/2 px-5 py-1 text-white text-xs font-bold transition;
@@ -203,5 +186,9 @@ watch(filterBlock, () => {
   &:hover {
     background-color: v-bind('layout?.app?.theme[0]') !important;
   }
+}
+
+#jsd-widget{
+    display: none !important;
 }
 </style>

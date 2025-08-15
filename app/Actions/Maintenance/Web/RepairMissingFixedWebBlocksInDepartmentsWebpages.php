@@ -73,7 +73,7 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
         $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'sub-departments-1');
 
         if (count($countFamilyWebBlock) == 0) {
-            $this->createWebBlock($webpage, 'sub-departments-1', $department);
+            $this->createWebBlock($webpage, 'sub-departments-1');
         }
 
         $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'overview_aurora');
@@ -113,7 +113,7 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
 
         if (count($productsWebBlock) == 0) {
             $command->error('Webpage '.$webpage->code.' Products Web Block not found');
-            $this->createWebBlock($webpage, 'products-1', $department);
+            $this->createWebBlock($webpage, 'products-1');
         } elseif (count($productsWebBlock) > 1) {
             $command->error('Webpage '.$webpage->code.' MORE than 1 Products Web Block found');
         }
@@ -123,7 +123,7 @@ class RepairMissingFixedWebBlocksInDepartmentsWebpages
 
         if (count($productsWebBlock) == 0) {
             $command->error('Webpage '.$webpage->code.' Families Web Block not found');
-            $this->createWebBlock($webpage, 'families-1', $department);
+            $this->createWebBlock($webpage, 'families-1');
         } elseif (count($productsWebBlock) > 1) {
             $command->error('Webpage '.$webpage->code.' MORE than 1 Families Web Block found');
         }

@@ -8,7 +8,7 @@
 
 namespace App\Models\Masters;
 
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
@@ -40,6 +41,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Group $group
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterAsset> $masterAssets
+ * @property-read LaravelCollection<int, \App\Models\Masters\MasterCollection> $masterCollections
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategory> $masterProductCategories
  * @property-read \App\Models\Masters\MasterShopOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Masters\MasterShopOrderingStats|null $orderingStats
@@ -131,17 +133,17 @@ class MasterShop extends Model implements Auditable
 
     public function getMasterDepartments(): LaravelCollection
     {
-        return $this->masterProductCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->get();
+        return $this->masterProductCategories()->where('type', MasterProductCategoryTypeEnum::DEPARTMENT)->get();
     }
 
     public function getMasterSubDepartments(): LaravelCollection
     {
-        return $this->masterProductCategories()->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)->get();
+        return $this->masterProductCategories()->where('type', MasterProductCategoryTypeEnum::SUB_DEPARTMENT)->get();
     }
 
     public function getMasterFamilies(): LaravelCollection
     {
-        return $this->masterProductCategories()->where('type', ProductCategoryTypeEnum::FAMILY)->get();
+        return $this->masterProductCategories()->where('type', MasterProductCategoryTypeEnum::FAMILY)->get();
     }
 
     public function getMasterProducts(): BelongsToMany
@@ -159,6 +161,11 @@ class MasterShop extends Model implements Auditable
     public function masterAssets(): HasMany
     {
         return $this->hasMany(MasterAsset::class);
+    }
+
+    public function masterCollections(): MorphToMany
+    {
+        return $this->morphToMany(MasterCollection::class, 'model', 'model_has_master_collections')->withTimestamps();
     }
 
 }

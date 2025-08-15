@@ -19,6 +19,8 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { trans } from "laravel-vue-i18n"
 import Modal from "@/Components/Utils/Modal.vue"
 import { notify } from "@kyvg/vue3-notification"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import deliveryNote from "@/Pages/Grp/Org/Dispatching/DeliveryNote.vue"
 
 const props = defineProps<{
     data: TableTS,
@@ -76,6 +78,13 @@ function deliveryNoteRoute(deliveryNote: DeliveryNote) {
                 "grp.org.warehouses.show.dispatching.delivery_notes.show",
                 [route().params["organisation"], route().params["warehouse"], deliveryNote.slug]);
     }
+}
+
+
+function pickingSessionRoute(id) {
+    return route(
+        "grp.helpers.redirect_picking_session",
+        [id])
 }
 
 function customerRoute(deliveryNote: DeliveryNote) {
@@ -173,15 +182,44 @@ const onCheckedAll = ({ data, allChecked }) => {
         @onCheckedAll="(data) => onCheckedAll(data)"
         checkboxKey='id' 
         :isChecked="(item) => selectedDeliveryNotes.includes(item.id)"
+        :disabledCheckbox="(item) => item.picking_sessions_count > 0"
     >
+    
+       <!--  <template #header-checkbox="data">
+            <div></div>
+        </template> -->
+
+        <template #disable-checkbox>
+            <div></div>
+        </template>
+
         <template #cell(status)="{ item: deliveryNote }">
             <Icon :data="deliveryNote.state_icon" />
+        </template>
+
+        <template #cell(effective_weight)="{ item: deliveryNote }">
+            {{ deliveryNote.effective_weight }} g
         </template>
 
         <template #cell(reference)="{ item: deliveryNote }">
             <Link :href="deliveryNoteRoute(deliveryNote)" class="primaryLink">
             {{ deliveryNote["reference"] }}
             </Link>
+
+            <template v-if="deliveryNote.picking_sessions_count > 0 && deliveryNote.picking_session_ids">
+                <Link
+                    v-for="id in deliveryNote.picking_session_ids.split(',')"
+                    :key="id"
+                    :href="pickingSessionRoute(id)" class="secondaryLink">
+                <FontAwesomeIcon
+                    icon="fab fa-stack-overflow" 
+                    class="text-yellow-500" 
+                    fixed-width 
+                    aria-hidden="true" 
+                />
+                </Link>
+            </template>
+
         </template>
 
         <template #cell(date)="{ item }">
