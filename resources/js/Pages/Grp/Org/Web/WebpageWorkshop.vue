@@ -476,7 +476,7 @@ const pushToHistory = () => {
 };
 
 // Undo
-const undo = () => {
+const undo = async () => {
   if (undoStack.value.length === 0) return;
 
   // Move current state to redo
@@ -492,18 +492,18 @@ const undo = () => {
 
   saveHistoryToLocalStorage();
   console.log('Redo stack:', redoStack.value);
-  /* try {
-		const response: any = await axios.get(
-			route('grp.json.web-block.web_block_histories.index', {webBlock : props.form.id}),
+  try {
+		const response = await axios.get(
+			route('grp.json.web-block.web_block_histories.index', {webBlock : 554988, webpage : props.webpage.id }),
 		)
-		
+		console.log('Undo stack:', response);
 	} catch (error: any) {
 		console.log(error)
-	} */
+	}
 };
 
 // Redo
-const redo = () => {
+const redo = async () => {
   if (redoStack.value.length === 0) return;
 
   // Move current state to undo
@@ -520,14 +520,14 @@ const redo = () => {
   saveHistoryToLocalStorage();
 
   console.log('Redo stack:', undoStack.value);
-  /* try {
-		const response: any = await axios.get(
-			route('grp.json.web-block.web_block_histories.index', {webBlock : props.form.id}),
+  try {
+		const response = await axios.get(
+			route('grp.json.web-block.web_block_histories.index', {webBlock : 554988, webpage : props.webpage.id }),
 		)
-		
+		console.log('Undo stack:', response);
 	} catch (error: any) {
 		console.log(error)
-	} */
+	}
 };
 
 // Clear all history
