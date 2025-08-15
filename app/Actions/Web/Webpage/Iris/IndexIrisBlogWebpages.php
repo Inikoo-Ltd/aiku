@@ -93,7 +93,7 @@ class IndexIrisBlogWebpages extends IrisAction
     public function htmlResponse(LengthAwarePaginator $webpages, ActionRequest $request): Response
     {
         return Inertia::render(
-            'Org/Web/Webpages',
+            'BlogsTable',
             [
                 'title'       => __('blogs'),
                 'pageHead'    => [
