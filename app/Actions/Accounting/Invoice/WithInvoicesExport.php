@@ -70,8 +70,6 @@ trait WithInvoicesExport
                 }
             }
 
-            // dd($refundData);
-
             $config = [
                 'title'                  => $invoice->reference,
                 'margin_left'            => 8,
