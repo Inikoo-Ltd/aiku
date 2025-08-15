@@ -8,6 +8,7 @@
 
 use App\Actions\Accounting\Invoice\IrisPdfInvoice;
 use App\Actions\Iris\UpdateIrisLocale;
+use App\Actions\Web\Webpage\Iris\IndexIrisBlogWebpages;
 use App\Actions\Web\Webpage\Iris\ShowIrisBlogDashboard;
 use App\Actions\Web\Webpage\Iris\ShowIrisSitemap;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
@@ -44,7 +45,7 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
         Route::get('/sitemap.xml', ShowIrisSitemap::class)->name('iris_sitemap');
         Route::get('/invoice/{invoice:ulid}', IrisPdfInvoice::class)->name('iris_invoice');
         Route::get('/blog', ShowIrisBlogDashboard::class)->name('iris_blog');
-      //  Route::get('/blog/articles', ShowIrisArticlesIndex::class)->name('iris_blog.articles.index');
+       Route::get('/blog/articles', IndexIrisBlogWebpages::class)->name('iris_blog.articles.index');
      //   Route::get('/blog/articles/{webpage}', ShowIrisBlogArticle::class)->name('iris_blog.articles.show');
 
         Route::get('/{path?}', ShowIrisWebpage::class)->name('iris_webpage');
