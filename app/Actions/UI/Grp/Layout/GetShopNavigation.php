@@ -326,6 +326,17 @@ class GetShopNavigation
                                 ],
                             ],
                             [
+                                "label"   => __("blogs"),
+                                "tooltip" => __("Blogs"),
+                                "icon"    => ["fal", "fa-newspaper"],
+                                "root"    => "grp.org.shops.show.web.blogs.",
+
+                                "route" => [
+                                    "name"       => "grp.org.shops.show.web.blogs.index",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug, $shop->website->slug],
+                                ],
+                            ],
+                            [
                                 "label"   => __("banners"),
                                 "tooltip" => __("banners"),
                                 "icon"    => ["fal", "fa-sign"],

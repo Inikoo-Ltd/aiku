@@ -147,9 +147,12 @@ class StoreWebpage extends OrgAction
                         $this->createWebBlock($webpage, 'family-1');
                         $this->createWebBlock($webpage, 'products-1');
                     }
+                } 
+
+                if($webpage->type == WebpageTypeEnum::BLOG) {
+                    $this->createWebBlock($webpage, 'blog', $webpage);
                 }
             }
-
 
             return $webpage;
         });
@@ -174,12 +177,20 @@ class StoreWebpage extends OrgAction
                 'website'      => $webpage->website->slug,
                 'webpage'      => $webpage->slug
             ])),
-            default => Inertia::location(route('grp.org.shops.show.web.webpages.show', [
-                'organisation' => $this->shop->organisation->slug,
-                'shop'         => $this->shop->slug,
-                'website'      => $webpage->website->slug,
-                'webpage'      => $webpage->slug
-            ]))
+            default => match ($webpage->type) {
+                WebpageTypeEnum::BLOG => Inertia::location(route('grp.org.shops.show.web.blogs.show', [
+                    'organisation' => $this->shop->organisation->slug,
+                    'shop'         => $this->shop->slug,
+                    'website'      => $webpage->website->slug,
+                    'webpage'      => $webpage->slug
+                ])),
+                default => Inertia::location(route('grp.org.shops.show.web.webpages.show', [
+                    'organisation' => $this->shop->organisation->slug,
+                    'shop'         => $this->shop->slug,
+                    'website'      => $webpage->website->slug,
+                    'webpage'      => $webpage->slug
+                ]))
+            }
         };
     }
 
@@ -288,6 +299,20 @@ class StoreWebpage extends OrgAction
     {
         $this->parent  = $website;
         $this->website = $website;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($website, $this->validatedData);
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function inBlog(Shop $shop, Website $website, ActionRequest $request): Webpage
+    {
+        $this->parent  = $website;
+        $this->website = $website;
+        $this->set('type', WebpageTypeEnum::BLOG);
+        $this->set('sub_type', WebpageSubTypeEnum::BLOG);
         $this->initialisationFromShop($shop, $request);
 
         return $this->handle($website, $this->validatedData);

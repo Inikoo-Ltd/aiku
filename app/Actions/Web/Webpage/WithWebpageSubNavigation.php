@@ -100,18 +100,18 @@ trait WithWebpageSubNavigation
                 ],
             ],
 
-            [
-                "number"   => $website->webStats->number_webpages_type_blog,
-                "label"    => __("Blog"),
-                "route"    => [
-                    "name"       => "grp.org.shops.show.web.webpages.index.type.blog",
-                    "parameters" => [$shop->organisation->slug, $shop->slug, $website->slug],
-                ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-newspaper"],
-                    "tooltip" => __("Operations blog"),
-                ],
-            ],
+            // [
+            //     "number"   => $website->webStats->number_webpages_type_blog,
+            //     "label"    => __("Blog"),
+            //     "route"    => [
+            //         "name"       => "grp.org.shops.show.web.webpages.index.type.blog",
+            //         "parameters" => [$shop->organisation->slug, $shop->slug, $website->slug],
+            //     ],
+            //     "leftIcon" => [
+            //         "icon"    => ["fal", "fa-newspaper"],
+            //         "tooltip" => __("Operations blog"),
+            //     ],
+            // ],
 
             [
                 "number"   => $website->webStats->number_webpages,

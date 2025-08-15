@@ -137,7 +137,7 @@ class ShowWebsite extends OrgAction
             [
                 'label' => __('Blogs'),
                 'route' => [
-                    'name'       => 'grp.org.shops.show.web.webpages.index.type.blog',
+                    'name'       => 'grp.org.shops.show.web.blogs.index',
                     'parameters' => [
                         'organisation' => $shop->organisation->slug,
                         'shop'         => $shop->slug,
