@@ -122,9 +122,9 @@ class UpdateWebpage extends OrgAction
                 ]);
             }
 
-            $key = config('iris.cache.webpage_path.prefix').'_'.$webpage->website_id.'_'.strtolower($webpage->url);
+            $key = config('iris.cache.webpage_path.prefix') . '_' . $webpage->website_id . '_' . strtolower($webpage->url);
             Cache::forget($key);
-            $key = config('iris.cache.webpage_path.prefix').'_'.$webpage->website_id.'_'.strtolower($oldUrl);
+            $key = config('iris.cache.webpage_path.prefix') . '_' . $webpage->website_id . '_' . strtolower($oldUrl);
             Cache::forget($key);
         }
 
@@ -150,7 +150,6 @@ class UpdateWebpage extends OrgAction
 
         return $webpage;
     }
-
 
     public function rules(): array
     {
@@ -204,8 +203,8 @@ class UpdateWebpage extends OrgAction
                     ->max(12 * 1024)
             ],
             'seo_data'                  => ['sometimes', 'array:meta_title'],
-         //   'seo_data.meta_title'       => ['sometimes', 'nullable', 'string', 'max:72'],
-         //   'seo_data.meta_description' => ['sometimes', 'nullable', 'string', 'max:320'],
+            //   'seo_data.meta_title'       => ['sometimes', 'nullable', 'string', 'max:72'],
+            //   'seo_data.meta_description' => ['sometimes', 'nullable', 'string', 'max:320'],
             'level'                     => ['sometimes', 'integer'],
             'sub_type'                  => ['sometimes', Rule::enum(WebpageSubTypeEnum::class)],
             'type'                      => ['sometimes', Rule::enum(WebpageTypeEnum::class)],
