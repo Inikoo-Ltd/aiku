@@ -78,6 +78,7 @@ class SnapshotResource extends JsonResource
                 ]
             },
             'comment'          => $comment,
+            'label'            => $snapshot->label
         ];
     }
 }
