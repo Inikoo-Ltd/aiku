@@ -10,6 +10,7 @@ use App\Actions\Accounting\Invoice\IrisPdfInvoice;
 use App\Actions\Iris\UpdateIrisLocale;
 use App\Actions\Web\Webpage\Iris\IndexIrisBlogWebpages;
 use App\Actions\Web\Webpage\Iris\ShowIrisBlogDashboard;
+use App\Actions\Web\Webpage\Iris\ShowIrisBlogWebpage;
 use App\Actions\Web\Webpage\Iris\ShowIrisSitemap;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use Illuminate\Support\Facades\Route;
@@ -46,7 +47,7 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
         Route::get('/invoice/{invoice:ulid}', IrisPdfInvoice::class)->name('iris_invoice');
         Route::get('/blog', ShowIrisBlogDashboard::class)->name('iris_blog');
        Route::get('/blog/articles', IndexIrisBlogWebpages::class)->name('iris_blog.articles.index');
-     //   Route::get('/blog/articles/{webpage}', ShowIrisBlogArticle::class)->name('iris_blog.articles.show');
+       Route::get('/blog/articles/{webpage}', ShowIrisBlogWebpage::class)->name('iris_blog.articles.show');
 
         Route::get('/{path?}', ShowIrisWebpage::class)->name('iris_webpage');
         Route::get('/{parentPath1}/{path}', [ShowIrisWebpage::class, 'deep1'])->name('iris_webpage.deep1');
