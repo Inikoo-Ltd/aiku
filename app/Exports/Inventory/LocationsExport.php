@@ -11,9 +11,8 @@ namespace App\Exports\Inventory;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\Warehouse;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Database\Eloquent\Builder; // Perbaiki import Builder
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as QueryBuilder;
-// use Illuminate\Database\Query\Builder;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -27,7 +26,7 @@ class LocationsExport implements FromQuery, WithMapping, ShouldAutoSize, WithHea
     public function __construct(Warehouse $warehouse, array $columns)
     {
         $this->warehouse = $warehouse;
-        $this->columns = $columns;
+        $this->columns   = $columns;
     }
 
     public function query(): Relation|Builder|QueryBuilder
