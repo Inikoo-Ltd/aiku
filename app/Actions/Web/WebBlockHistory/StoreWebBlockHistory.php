@@ -30,6 +30,7 @@ class StoreWebBlockHistory
         /** @var WebBlockHistory $webBlockHistory */
         data_set($modelData, 'group_id', $modelHasWebBlocks->group_id);
         data_set($modelData, 'website_id', $modelHasWebBlocks->website_id);
+        data_set($modelData, 'web_block_id', $modelHasWebBlocks->web_block_id);
         data_set($modelData, 'web_block_type_id', $modelHasWebBlocks->webBlock->web_block_type_id);
         data_set($modelData, 'checksum', md5(json_encode(Arr::get($modelData, 'layout', []))));
         $webBlockHistory = $webpage->webBlockHistories()->create($modelData);
