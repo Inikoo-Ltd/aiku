@@ -164,7 +164,7 @@ const resolvedGap = computed(() => {
       }">
         <div v-for="(image, index) in fieldValue?.value?.images || []" :key="index"
           class="group relative hover:bg-white/40 flex flex-col h-full">
-          <component :is="getHref(image) ? 'a' : 'div'" :href="getHref(image) || undefined" target="_blank"
+          <component :is="getHref(index) ? 'a' : 'div'" :href="getHref(index) || undefined" target="_blank"
             rel="noopener noreferrer" class="block w-full h-full">
             <Image v-if="image?.source" :src="image.source" :alt="image.properties?.alt || `image ${index + 1}`"
               :imageCover="true" class="w-full h-full aspect-square object-cover rounded-lg" :style="{
