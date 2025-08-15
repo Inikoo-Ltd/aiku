@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { trans } from 'laravel-vue-i18n'
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive } from 'vue'
 import { Popover, PopoverButton, PopoverPanel, Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChevronDown, faCheckSquare, faSquare } from '@fal'
@@ -10,8 +10,6 @@ import { useLocaleStore } from '@/Stores/locale'
 import Button from '../Elements/Buttons/Button.vue'
 import Icon from '@/Components/Icon.vue'
 import { Icon as IconTS } from '@/types/Utils/Icon'
-import { Collapse } from 'vue-collapsed'
-
 library.add(faChevronDown, faCheckSquare, faSquare)
 
 
@@ -105,17 +103,11 @@ onMounted(() => {
     // console.log('rr', asdfzxc.some(elementName => window.location.search.includes(`elements[${elementName}]`)))
 })
 
-
-const elementsArray = computed(() => {
-    return Object.entries(props.elements?.[selectedGroup.value]?.elements).map(([key, [label, number]]) => ({
-        key: key,
-        value: [label, number]
-    }))
-})
-const isOpenCollapsed = ref(false)
 </script>
 
 <template>
+    <!-- <pre>{{ elements }}</pre> -->
+
     <Popover class="relative md:hidden">
         <!-- Button: Filter table -->
         <PopoverButton :as="Button" type="tertiary" label="Filter table" icon="fal fa-filter" />
@@ -155,75 +147,30 @@ const isOpenCollapsed = ref(false)
         </Transition>
     </Popover>
 
-    <div v-if="!!selectedGroup" class="my-1 hidden md:flex items-center text-xs justify-between w-fit">
-        <div class="w-fit flex gap-x-1 lg:gap-x-0 justify-end border border-gray-200 rounded">
+    <div v-if="!!selectedGroup" class="hidden md:flex items-center text-xs justify-end w-full">
+        <div class=" w-fit flex gap-x-1 lg:gap-x-0  border border-gray-200 rounded">
             <!-- List of element (checkbox) -->
-            <div class="grid relative">
-                <div class="relative w-full max-w-lg rounded overflow-hidden flex flex-wrap justify-end gap-0.5 ">
-                    <template v-if="elementsArray?.length > 3">
-                        <div v-for="(zzz, ykey) of elementsArray.slice(0, 3)" :key="zzz.key"
-                            class="hover:bg-gray-100 flex flex-auto items-center gap-x-1 px-3 py-2.5 cursor-pointer select-none"
-                            :class="[selectedElement[selectedGroup]?.includes(zzz.key) ? 'bg-gray-50' : 'bg-white']"
-                            @click="onClickCheckbox(zzz.key, selectedGroup)"
-                            @dblclick="onDoubleClickCheckbox(zzz.key, selectedGroup)"
-                            role="filter"
-                            :id="zzz.value[0].replace(' ','-')"
-                        >
-                            <FontAwesomeIcon v-if="selectedElement[selectedGroup]?.includes(zzz.key)" icon="fal fa-check-square" aria-hidden="true" />
-                            <FontAwesomeIcon v-else icon="fal fa-square" aria-hidden="true" />
-                            <div class="capitalize space-x-1"
-                                :class="[
-                                    selectedElement[selectedGroup]?.includes(zzz.key)
-                                    ? 'text-gray-700'
-                                    : 'text-gray-400'
-                            ]">
-                                <span class="hidden lg:inline font-normal">{{ zzz.value[0] }}</span>
-                                <span class="lg:hidden font-normal">{{ zzz.value[2] || zzz.value[0] }}</span>
-                                <span :class="[zzz.value[1] ? 'font-semibold' : 'text-gray-400']" class="">({{ useLocaleStore().number(zzz.value[1] || 0) }})</span>
-                                <Icon v-if="zzz.value?.[3]?.icon" :data="zzz.value[3]" />
-                            </div>
-                        </div>
-                    </template>
-                </div>
-
-                <Collapse as="section" :when="isOpenCollapsed" class="relative w-full max-w-lg rounded overflow-hidden flex flex-wrap justify-end gap-0.5 ">
-                    <div v-for="(zzz, ykey) of elementsArray.slice(3)" :key="zzz.key"
-                        class="hover:bg-gray-100 flex flex-auto items-center gap-x-1 px-3 py-2.5 cursor-pointer select-none"
-                        :class="[selectedElement[selectedGroup]?.includes(zzz.key) ? 'bg-gray-50' : 'bg-white']"
-                        @click="onClickCheckbox(zzz.key, selectedGroup)"
-                        @dblclick="onDoubleClickCheckbox(zzz.key, selectedGroup)"
-                        role="filter"
-                        :id="zzz.value[0].replace(' ','-')"
-                    >
-                        <FontAwesomeIcon v-if="selectedElement[selectedGroup]?.includes(zzz.key)" icon="fal fa-check-square" aria-hidden="true" />
-                        <FontAwesomeIcon v-else icon="fal fa-square" aria-hidden="true" />
-                        <div class="capitalize space-x-1"
-                            :class="[
-                                selectedElement[selectedGroup]?.includes(zzz.key)
-                                ? 'text-gray-700'
-                                : 'text-gray-400'
-                        ]">
-                            <span class="hidden lg:inline font-normal">{{ zzz.value[0] }}</span>
-                            <span class="lg:hidden font-normal">{{ zzz.value[2] || zzz.value[0] }}</span>
-                            <span :class="[zzz.value[1] ? 'font-semibold' : 'text-gray-400']" class="">({{ useLocaleStore().number(zzz.value[1] || 0) }})</span>
-                            <Icon v-if="zzz.value?.[3]?.icon" :data="zzz.value[3]" />
-                        </div>
-                    </div>
-                </Collapse>
-
-                
-                <!-- Toggle: collapse-expand LeftSideBar -->
-                <div @click="() => isOpenCollapsed = !isOpenCollapsed"
-                    class="bg-white flex justify-center py-2 lg:py-px cursor-pointer hover:bg-gray-100 opacity-60 hover:opacity-100"
-            
+            <div class="w-fit rounded overflow-hidden flex flex-wrap justify-end gap-0.5 ">
+                <div v-for="(value, element, index) of elements[selectedGroup]?.elements" :key="element"
+                    class="hover:bg-gray-100 flex flex-auto items-center gap-x-1 px-3 py-2.5 cursor-pointer select-none"
+                    :class="[selectedElement[selectedGroup]?.includes(element) ? 'bg-gray-50' : 'bg-white']"
+                    @click="onClickCheckbox(element, selectedGroup)"
+                    @dblclick="onDoubleClickCheckbox(element, selectedGroup)"
+                    role="filter"
+                    :id="value[0].replace(' ','-')"
                 >
-                    <div class="flex items-center justify-center transition-all duration-300 ease-in-out"
-                        
-                    >
-                        <FontAwesomeIcon icon="far fa-chevron-left" class="h-[10px] leading-none" :class="[isOpenCollapsed ? 'rotate-90' : '-rotate-90']" fixed-width aria-hidden="true"
-                                        xclass="layout.leftSidebar.show ? '-translate-x-[1px]' : ''"
-                        />
-                        {{ isOpenCollapsed ? trans('closed') : trans('open') }}
+                    <FontAwesomeIcon v-if="selectedElement[selectedGroup]?.includes(element)" icon="fal fa-check-square" aria-hidden="true" />
+                    <FontAwesomeIcon v-else icon="fal fa-square" aria-hidden="true" />
+                    <div class="capitalize space-x-1"
+                        :class="[
+                            selectedElement[selectedGroup]?.includes(element)
+                            ? 'text-gray-700'
+                            : 'text-gray-400'
+                    ]">
+                        <span class="hidden lg:inline font-normal">{{ value[0] }}</span>
+                        <span class="lg:hidden font-normal">{{ value[2] || value[0] }}</span>
+                        <span :class="[value[1] ? 'font-semibold' : 'text-gray-400']" class="">({{ useLocaleStore().number(value[1] || 0) }})</span>
+                        <Icon v-if="value?.[3]?.icon" :data="value[3]" />
                     </div>
                 </div>
             </div>
