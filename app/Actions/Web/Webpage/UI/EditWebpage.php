@@ -125,12 +125,15 @@ class EditWebpage extends OrgAction
                                     'value'               => $webpage->title,
                                     'required'            => true,
                                 ],
-                                'url'       => [
-                                    'type'                => 'input',
-                                    'label'               => __('URL'),
+                                'url' => [
+                                    'type'      => 'inputWithAddOn',
+                                    'label'     => __('URL'),
                                     'label_no_capitalize' => true,
-                                    'value'               => $webpage->url,
-                                    'required'            => true,
+                                    'leftAddOn' => [
+                                        'label' => 'https://' . $webpage->website->domain . '/'
+                                    ],
+                                    'value'     => $webpage->url,
+                                    'required'  => true,
                                 ],
                                 'description'       => [
                                     'type'                => 'textarea',
