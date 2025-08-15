@@ -160,6 +160,9 @@ Route::name("departments.")->prefix('departments')
                             });
                         });
                     });
+                    Route::prefix('products')->name('.product.')->group(function () {
+                        Route::get('index', [IndexProductsInProductCategory::class, 'inSubDepartmentInDepartment'])->name('index');
+                    });
                 });
             });
         });

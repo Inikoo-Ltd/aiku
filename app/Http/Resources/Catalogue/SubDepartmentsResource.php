@@ -41,6 +41,7 @@ class SubDepartmentsResource extends JsonResource
             'shop_code'       => $this->shop_code,
             'shop_name'       => $this->shop_name,
             'department_slug' => $this->department_slug,
+            'master_product_category_id' => $this->master_product_category_id,
             'department_code' => $this->department_code,
             'department_name' => $this->department_name,
             'image'           => $this->imageSources(720, 480),

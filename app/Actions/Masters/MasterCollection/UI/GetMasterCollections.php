@@ -20,7 +20,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class GetMasterCollections extends GrpAction
 {
-
     private MasterShop $parent;
 
     public function handle(MasterShop $parent, MasterCollection|MasterShop|MasterProductCategory $scope, $prefix = null): LengthAwarePaginator
@@ -70,7 +69,6 @@ class GetMasterCollections extends GrpAction
 
     public function inMasterCollection(MasterShop $masterShop, MasterCollection $scope, ActionRequest $request): LengthAwarePaginator
     {
-        // dd('xx');
         $this->parent = $masterShop;
         $this->initialisation($masterShop->group, $request);
         return $this->handle(parent: $masterShop, scope: $scope);

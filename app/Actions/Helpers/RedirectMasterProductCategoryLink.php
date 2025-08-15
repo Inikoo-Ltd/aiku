@@ -21,11 +21,9 @@ class RedirectMasterProductCategoryLink extends OrgAction
     {
         if ($masterProductCategory->type === MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
             return Redirect::route(
-                'grp.org.shops.show.catalogue.departments.show.master_sub_departments.show',
+                'grp.masters.master_shops.show.master_sub_departments.show',
                 [
-                    $masterProductCategory->organisation->slug,
-                    $masterProductCategory->shop->slug,
-                    $masterProductCategory->department->slug,
+                    $masterProductCategory->masterShop->slug,
                     $masterProductCategory->slug,
                 ]
             );

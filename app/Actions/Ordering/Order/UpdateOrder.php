@@ -59,9 +59,9 @@ class UpdateOrder extends OrgAction
                 ShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->shop, $intervalsExceptHistorical, []);
             }
 
-            if($order->deliveryNotes->first()) {
+            if ($order->deliveryNotes->first()) {
                 $deliveryNote = $order->deliveryNotes->first();
-                
+
                 if (Arr::has($changes, 'customer_notes')) {
                     $deliveryNote = CopyOrderNotesToDeliveryNote::make()->action($deliveryNote, [
                             'customer_notes' => true,

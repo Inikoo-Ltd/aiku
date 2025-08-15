@@ -2,6 +2,7 @@
 
 namespace App\Models\CRM;
 
+use App\Models\Ordering\Order;
 use App\Models\Traits\InShop;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
@@ -9,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -25,8 +27,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property bool $status
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\TrafficSourceCampaign> $campaigns
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CRM\Customer> $customers
  * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Order> $orders
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read \App\Models\CRM\TrafficSourceStat|null $stats
@@ -65,9 +69,23 @@ class TrafficSource extends Model
         return $this->hasOne(TrafficSourceStat::class, 'traffic_source_id');
     }
 
-    public function customers(): HasMany
+
+    public function orders(): MorphToMany
     {
-        return $this->hasMany(Customer::class, 'traffic_source_id');
+        return $this->morphedByMany(Order::class, 'model', 'model_has_traffic_sources')
+            ->withPivot('share')
+            ->withTimestamps();
     }
 
+    public function customers(): MorphToMany
+    {
+        return $this->morphedByMany(Customer::class, 'model', 'model_has_traffic_sources')
+            ->withPivot('share')
+            ->withTimestamps();
+    }
+
+    public function campaigns(): HasMany
+    {
+        return $this->hasMany(TrafficSourceCampaign::class, 'traffic_source_id');
+    }
 }

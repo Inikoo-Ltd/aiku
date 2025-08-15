@@ -452,6 +452,19 @@ onMounted(() => {
 
 
                 </div>
+                <div v-else>
+
+                    {{itemValue.quantity_to_pick}}
+
+                    <ButtonWithLink
+                        type="negative"
+                        tooltip="Set as not picked"
+                        icon="fal fa-debug"
+                        :size="innerWidth > 768 ? undefined : 'lg'"
+                        :routeTarget="itemValue.not_picking_route"
+                        :bindToLink="{preserveScroll: true}"
+                    />
+                </div>
             </div>
 
             <div v-else>

@@ -152,8 +152,6 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
     Route::patch('/', DeleteRetinaPalletReturn::class)->name('delete');
 });
 
-
-
 Route::post('pallet-delivery', StoreRetinaPalletDelivery::class)->name('pallet-delivery.store');
 Route::name('pallet-delivery.')->prefix('pallet-delivery/{palletDelivery:id}')->group(function () {
     Route::post('attachment/attach', [AttachRetinaAttachmentToModel::class, 'inPalletDelivery'])->name('attachment.attach');
@@ -164,7 +162,7 @@ Route::name('pallet-delivery.')->prefix('pallet-delivery/{palletDelivery:id}')->
     Route::post('pallet', StoreRetinaPalletFromDelivery::class)->name('pallet.store');
     Route::post('multiple-pallet', StoreRetinaMultiplePalletsFromDelivery::class)->name('multiple-pallets.store');
     Route::patch('update', UpdateRetinaPalletDelivery::class)->name('update');
-    Route::post('transaction', [StoreRetinaFulfilmentTransaction::class,'fromRetinaInPalletDelivery'])->name('transaction.store');
+    Route::post('transaction', [StoreRetinaFulfilmentTransaction::class, 'fromRetinaInPalletDelivery'])->name('transaction.store');
     Route::post('submit', SubmitRetinaPalletDelivery::class)->name('submit');
     Route::get('pdf', PdfRetinaPalletDelivery::class)->name('pdf');
     Route::patch('/', DeleteRetinaPalletDelivery::class)->name('delete');
@@ -281,8 +279,6 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::get('ebay/{ebayUser:id}/catch-orders', FetchEbayUserOrders::class)->name('ebay.orders.catch')->withoutScopedBindings();
     Route::get('amazon/{amazonUser:id}/catch-orders', GetRetinaOrdersFromAmazon::class)->name('amazon.orders.catch')->withoutScopedBindings();
     Route::get('magento/{magentoUser:id}/catch-orders', GetRetinaOrdersFromMagento::class)->name('magento.orders.catch')->withoutScopedBindings();
-
-
 });
 
 Route::name('web-users.')->prefix('web-users')->group(function () {
@@ -318,4 +314,4 @@ Route::name('mit_saved_card.')->prefix('mit-saved-card')->group(function () {
     Route::patch('{mitSavedCard:id}/set-to-default', SetAsDefaultRetinaMitSavedCard::class)->name('set_to_default');
 });
 
-\Route::patch('/locale/{locale}', UpdateIrisLocale::class)->name('locale.update');
+Route::patch('/locale/{locale}', UpdateIrisLocale::class)->name('locale.update');

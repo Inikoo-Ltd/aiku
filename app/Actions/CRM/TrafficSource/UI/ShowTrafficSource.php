@@ -12,7 +12,6 @@ namespace App\Actions\CRM\TrafficSource\UI;
 
 use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Traits\WithCustomersSubNavigation;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\CRM\TrafficSourceResource;
@@ -26,7 +25,6 @@ use Lorisleiva\Actions\ActionRequest;
 class ShowTrafficSource extends OrgAction
 {
     use WithCustomersSubNavigation;
-    use WithCRMAuthorisation;
 
     private Organisation|Shop $parent;
 
@@ -45,18 +43,6 @@ class ShowTrafficSource extends OrgAction
 
     public function htmlResponse(TrafficSource $trafficSource, ActionRequest $request): Response
     {
-        // $actions = [
-        //     [
-        //         'type'  => 'button',
-        //         'style' => 'edit',
-        //         'label' => __('edit'),
-        //         'route' => [
-        //             'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-        //             'parameters' => array_values($request->route()->originalParameters())
-        //         ]
-        //     ]
-        // ];
-
         $navigations = TrafficSourceTabsEnum::navigation();
 
 
@@ -67,9 +53,9 @@ class ShowTrafficSource extends OrgAction
                 $request->route()->originalParameters()
             ),
             'pageHead'    => [
-                'title'   => $trafficSource->name,
-                'model'   => __('TrafficSource'),
-                'icon'    => [
+                'title' => $trafficSource->name,
+                'model' => __('TrafficSource'),
+                'icon'  => [
                     'icon'  => ['fal', 'fa-TrafficSource'],
                     'title' => __('TrafficSource')
                 ],
@@ -80,7 +66,6 @@ class ShowTrafficSource extends OrgAction
                 'navigation' => $navigations,
             ],
 
-            // 'data'        => TrafficSourceResource::make($trafficSource)->toarray($request),
             TrafficSourceTabsEnum::CUSTOMERS->value => $this->tab == TrafficSourceTabsEnum::CUSTOMERS->value
                 ? fn () => CustomersResource::collection(IndexCustomers::run($trafficSource, TrafficSourceTabsEnum::CUSTOMERS->value))
                 : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run($trafficSource, TrafficSourceTabsEnum::CUSTOMERS->value))),

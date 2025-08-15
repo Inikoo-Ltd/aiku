@@ -29,6 +29,8 @@ use Illuminate\Support\Facades\DB;
  * @property mixed $quantity_dispatched
  * @property mixed $org_stock_slug
  * @property mixed $packed_in
+ * @property mixed $warehouse_area_picking_position
+ * @property mixed $warehouse_area_code
  */
 class DeliveryNoteItemsStateHandlingResource extends JsonResource
 {
@@ -81,7 +83,9 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             ->orderBy('picking_priority')->get();
 
 
-        $quantityToPick = max(0, $this->quantity_required - $this->quantity_picked);
+        $quantityToPick = max(0, $this->quantity_required - $this->quantity_picked - $this->quantity_not_picked);
+
+
 
 
         $isPicked = $quantityToPick == 0;
