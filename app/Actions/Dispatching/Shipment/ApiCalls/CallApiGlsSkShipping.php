@@ -27,7 +27,7 @@ use Lorisleiva\Actions\Concerns\WithAttributes;
 use SoapClient;
 use SoapFault;
 
-class CallApiGlsSKShipping extends OrgAction
+class CallApiGlsSkShipping extends OrgAction
 {
     use AsAction;
     use WithAttributes;

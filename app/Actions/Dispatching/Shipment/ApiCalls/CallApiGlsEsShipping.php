@@ -16,7 +16,7 @@ use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class CallApiGlsESShipping extends OrgAction
+class CallApiGlsEsShipping extends OrgAction
 {
     use AsAction;
     use WithAttributes;
