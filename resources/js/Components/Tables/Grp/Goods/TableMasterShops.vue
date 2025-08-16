@@ -5,37 +5,43 @@
   -->
 
 <script setup lang="ts">
-import {Link} from "@inertiajs/vue3";
-import Table from "@/Components/Table/Table.vue";
-import {MasterShop} from "@/types/master-shop";
+import { Link } from "@inertiajs/vue3"
+import Table from "@/Components/Table/Table.vue"
+import { MasterShop } from "@/types/master-shop"
 
 defineProps<{
     data: {}
     tab?: string
-}>();
+}>()
 
 function masterShopRoute(masterShop: MasterShop) {
     return route(
         "grp.masters.master_shops.show",
-        [masterShop.slug]);
+        [masterShop.slug])
 }
 
 function masterDepartmentsRoute(masterShop: MasterShop) {
     return route(
         "grp.masters.master_shops.show.master_departments.index",
-        [masterShop.slug]);
+        [masterShop.slug])
+}
+
+function masterSubDepartmentsRoute(masterShop: MasterShop) {
+    return route(
+        "grp.masters.master_shops.show.master_sub_departments.index",
+        [masterShop.slug])
 }
 
 function masterFamiliesRoute(masterShop: MasterShop) {
     return route(
         "grp.masters.master_shops.show.master_families.index",
-        [masterShop.slug]);
+        [masterShop.slug])
 }
 
 function masterProductsRoute(masterShop: MasterShop) {
     return route(
         "grp.masters.master_shops.show.master_products.index",
-        [masterShop.slug]);
+        [masterShop.slug])
 }
 
 
@@ -54,6 +60,11 @@ function masterProductsRoute(masterShop: MasterShop) {
         <template #cell(departments)="{ item: masterShop }">
             <Link :href="masterDepartmentsRoute(masterShop) as string" class="secondaryLink">
                 {{ masterShop["departments"] }}
+            </Link>
+        </template>
+        <template #cell(sub_departments)="{ item: masterShop }">
+            <Link :href="masterSubDepartmentsRoute(masterShop) as string" class="secondaryLink">
+                {{ masterShop["sub_departments"] }}
             </Link>
         </template>
         <template #cell(families)="{ item: masterShop }">

@@ -56,18 +56,6 @@ function departmentRoute(department: Department) {
     }
 }
 
-function shopRoute(department: Department) {
-    if (route().current() === "grp.org.shops.index") {
-        return route(
-            "grp.org.shops.show.catalogue.dashboard",
-            [
-                (route().params as RouteParams).organisation,
-                department.shop_slug]);
-    }
-    return '';
-}
-
-
 function subDepartmentsRoute(department: Department) {
     if (route().current() === "grp.org.shops.show.catalogue.departments.index") {
         return route(
