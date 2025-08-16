@@ -23,22 +23,18 @@ class UpdateProspectEmailSoftBounced extends OrgAction
         ];
 
 
-        if ($prospect->state == ProspectStateEnum::NO_CONTACTED or $prospect->state == ProspectStateEnum::CONTACTED) {
-
-            $dataToUpdate['state']       = ProspectStateEnum::CONTACTED;
+        if ($prospect->state == ProspectStateEnum::NO_CONTACTED || $prospect->state == ProspectStateEnum::CONTACTED) {
+            $dataToUpdate['state'] = ProspectStateEnum::CONTACTED;
 
             if ($prospect->contacted_state == ProspectContactedStateEnum::NA) {
                 $dataToUpdate['contacted_state'] = ProspectContactedStateEnum::SOFT_BOUNCED;
             }
-
         }
 
-        $prospect = UpdateProspect::run(
+        return UpdateProspect::run(
             $prospect,
             $dataToUpdate
         );
-
-        return $prospect;
     }
 
     public function action(Prospect $prospect, Carbon $date): Prospect

@@ -103,7 +103,7 @@ class ApcGbPrepareShipment
         if ($request->get('service_type') != '') {
             $params['ProductCode'] = $request->get('service_type');
 
-            if ($params['ProductCode'] == 'MP16' or $params['ProductCode'] == 'CP16') {
+            if ($params['ProductCode'] == 'MP16' || $params['ProductCode'] == 'CP16') {
                 $params['ShipmentDetails']['NumberOfPieces'] = 1;
 
                 $weight = $params['ShipmentDetails']['Items']['Item'][0]['Weight'];
@@ -122,20 +122,18 @@ class ApcGbPrepareShipment
                     $parcelsData[0]['depth']
                 ];
                 rsort($dimensions);
-                if ($parcelsData[0]['weight'] <= 5 and $dimensions[0] <= 45 and $dimensions[1] <= 35 and $dimensions[2] <= 20) {
+                if ($parcelsData[0]['weight'] <= 5 && $dimensions[0] <= 45 && $dimensions[1] <= 35 && $dimensions[2] <= 20) {
                     $productCode = 'LW16';
                 }
 
-                if ($parcelsData[0]['weight'] <= 5 and $dimensions[0] <= 45 and $dimensions[1] <= 35 and $dimensions[2] <= 20) {
+                if ($parcelsData[0]['weight'] <= 5 && $dimensions[0] <= 45 && $dimensions[1] <= 35 && $dimensions[2] <= 20) {
                     $productCode = 'LW16';
                 }
             }
 
 
-            if (!preg_match('/^(BT51|IV(\d\s|20|25|30|31|32|33|34|35|36|37|63)|AB(41|51|52)|PA79)/', $postalCode)) {
-                if (preg_match('/^((JE|GG|IM|KW|HS|ZE|IV)\d+)|AB(30|33|34|35|36|37|38)|AB[4-5][0-9]|DD[89]|FK(16)|PA(20|36|4\d|6\d|7\d)|PH((15|16|17|18|19)|[2-5][0-9])|KA(27|28)/', $postalCode)) {
+            if (!preg_match('/^(BT51|IV(\d\s|20|25|30|31|32|33|34|35|36|37|63)|AB(41|51|52)|PA79)/', $postalCode) && preg_match('/^((JE|GG|IM|KW|HS|ZE|IV)\d+)|AB(30|33|34|35|36|37|38)|AB[4-5][0-9]|DD[89]|FK(16)|PA(20|36|4\d|6\d|7\d)|PH((15|16|17|18|19)|[2-5][0-9])|KA(27|28)/', $postalCode)) {
                     $productCode = 'TDAY';
-                }
             }
 
             if ($productCode == '') {

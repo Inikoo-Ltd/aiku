@@ -51,10 +51,10 @@ class DpdSkPrepareShipment
         $pickUpTimeWindow = [];
 
         if (Arr::get($pickUp, 'start')) {
-            $pickUpTimeWindow['beginning'] = preg_replace('/:/', '', Arr::get($pickUp, 'start'));
+            $pickUpTimeWindow['beginning'] = str_replace(':', '', Arr::get($pickUp, 'start'));
         }
         if (Arr::get($pickUp, 'end')) {
-            $pickUpTimeWindow['end'] = preg_replace('/:/', '', Arr::get($pickUp, 'end'));
+            $pickUpTimeWindow['end'] = str_replace(':', '', Arr::get($pickUp, 'end'));
         }
         if ($pickUpTimeWindow == []) {
             $pickUpTimeWindow['end'] = '1600';
@@ -120,32 +120,32 @@ class DpdSkPrepareShipment
         $reference = preg_replace("/[^A-Za-z0-9]/", '', $request->get('reference'));
 
 
-        $street       = preg_replace("/&/", ' ', Arr::get($shipTo, 'address_line_1'));
-        $streetDetail = preg_replace("/&/", '', Arr::get($shipTo, 'address_line_2'));
+        $street       = str_replace('&', ' ', Arr::get($shipTo, 'address_line_1'));
+        $streetDetail = str_replace('&', '', Arr::get($shipTo, 'address_line_2'));
 
 
-        $street       = preg_replace("/²/", '2', $street);
-        $streetDetail = preg_replace("/²/", '2', $streetDetail);
+        $street       = str_replace('²', '2', $street);
+        $streetDetail = str_replace('²', '2', $streetDetail);
 
 
-        $street       = preg_replace("/'/", '', $street);
-        $streetDetail = preg_replace("/'/", '', $streetDetail);
+        $street       = str_replace("'", '', $street);
+        $streetDetail = str_replace("'", '', $streetDetail);
 
-        $street       = preg_replace("/`/", '', $street);
-        $streetDetail = preg_replace("/`/", '', $streetDetail);
+        $street       = str_replace('`', '', $street);
+        $streetDetail = str_replace('`', '', $streetDetail);
 
-        $street       = preg_replace("/\"/", '', $street);
-        $streetDetail = preg_replace("/\"/", '', $streetDetail);
+        $street       = str_replace('"', '', $street);
+        $streetDetail = str_replace('"', '', $streetDetail);
 
-        $street       = preg_replace("/Ø/", 'ø', $street);
-        $streetDetail = preg_replace("/Ø/", 'ø', $streetDetail);
+        $street       = str_replace('Ø', 'ø', $street);
+        $streetDetail = str_replace('Ø', 'ø', $streetDetail);
 
 
         $streetDetail = Str::limit($streetDetail, 35, '');
 
 
         $phone = trim(Arr::get($shipTo, 'phone'));
-        if (!preg_match('/^\+/', $phone) and $phone != '') {
+        if (!preg_match('/^\+/', $phone) && $phone != '') {
             $phone = '+'.$phone;
         }
 
@@ -183,7 +183,7 @@ class DpdSkPrepareShipment
 
     private function get_pick_up_date(Carbon $pickup_date): Carbon
     {
-        if ($pickup_date->isWeekend() or $this->is_bank_holiday($pickup_date)) {
+        if ($pickup_date->isWeekend() || $this->is_bank_holiday($pickup_date)) {
             return $this->get_pick_up_date($pickup_date->addDay());
         }
         return $pickup_date;
@@ -195,7 +195,7 @@ class DpdSkPrepareShipment
         try {
             $holidays = Yasumi::create('Slovakia', $date->format('Y'));
             foreach ($holidays as $day) {
-                if ($day == $formatted_date and in_array(
+                if ($day == $formatted_date && in_array(
                     $day->getType(),
                     [
                             'bank',
