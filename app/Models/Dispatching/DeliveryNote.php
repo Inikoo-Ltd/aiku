@@ -310,6 +310,7 @@ class DeliveryNote extends Model implements Auditable
         return $this->belongsTo(CustomerSalesChannel::class);
     }
 
+
     public function pickingSessions(): BelongsToMany
     {
         return $this->belongsToMany(

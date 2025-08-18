@@ -146,6 +146,7 @@ class DeliveryNoteItem extends Model
         return $this->belongsTo(OrgStock::class);
     }
 
+
     public function transaction(): BelongsTo
     {
         return $this->belongsTo(Transaction::class);
