@@ -233,6 +233,13 @@ class EditWebpage extends OrgAction
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
+        if($routeName == 'grp.org.shops.show.web.blogs.edit') {
+            return ShowBlogWebpage::make()->getBreadcrumbs(
+                $routeName,
+                $routeParameters,
+                suffix: '(' . __('settings') . ')'
+            );
+        }
         return ShowWebpage::make()->getBreadcrumbs(
             $routeName,
             $routeParameters,
