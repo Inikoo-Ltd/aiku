@@ -111,6 +111,15 @@ function webpageRoute(webpage: Webpage) {
                     route().params['website'],
                     webpage.slug
                 ]);
+        case 'grp.org.shops.show.web.blogs.index':
+            return route(
+                'grp.org.shops.show.web.blogs.show',
+                [
+                    route().params['organisation'],
+                    route().params['shop'],
+                    route().params['website'],
+                    webpage.slug
+                ]);
 
         case 'grp.org.fulfilments.show.web.webpages.index':
             return route(
