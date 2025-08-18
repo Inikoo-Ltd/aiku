@@ -231,7 +231,7 @@ class IndexBlogWebpages extends OrgAction
             $actions[] = [
                 'type'  => 'button',
                 'style' => 'create',
-                'label' => __('webpage'),
+                'label' => __('Blog'),
                 'route' => [
                     'name'       => $routeCreate,
                     'parameters' => array_values($request->route()->originalParameters())

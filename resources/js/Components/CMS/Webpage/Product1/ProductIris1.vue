@@ -179,7 +179,7 @@ const toggleExpanded = () => {
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             marginLeft : 'auto', marginRight : 'auto'
 		}" class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block">
-        <div class="grid grid-cols-12 gap-x-10 mb-2">
+        <div class="grid grid-cols-12 gap-x-10 mb-2"> 
             <div class="col-span-7">
                 <div class="py-1 w-full">
                     <ImageProducts :images="fieldValue.product.images" />
@@ -200,9 +200,12 @@ const toggleExpanded = () => {
                 <div class="flex justify-between mb-4 items-start">
                     <div class="w-full">
                         <h1 class="text-2xl font-bold text-gray-900">{{ fieldValue.product.name }}</h1>
-                        <div class="flex flex-wrap gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
+                        <div class="flex flex-wrap justify-between gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
                             <div>Product code: {{ fieldValue.product.code }}</div>
                             <div class="flex items-center gap-[1px]">
+                                <a :href="route('iris.catalogue.feeds.product.download', {product: fieldValue.product.slug})" target="_blank" class="hidden">
+                                    download
+                                </a>
                             </div>
                         </div>
                         <div v-if="layout?.iris?.is_logged_in" class="flex items-center gap-2 text-sm text-gray-600 mb-4">

@@ -15,6 +15,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Select from 'primevue/select'
 import IftaLabel from 'primevue/iftalabel'
 import { trans } from "laravel-vue-i18n";
+import Icon from "../Icon.vue"
 
 library.add(faInfoCircle, faRoad, faClock, faDatabase, faPallet, faCircle, faNetworkWired, faSpinnerThird, faEye, faThLarge,faTachometerAltFast, faMoneyBillWave, faHeart, faShoppingCart, faCameraRetro, faStream)
 
@@ -117,16 +118,17 @@ const renderLabelBasedOnType = (label?: string | number, type?: string, options?
                             class="group tabular-nums relative cursor-pointer text-xl px-2 hover:underline"
                             xclass="tab.tab_slug === currentTab ? 'text-indigo-600' : 'text-gray-500'"
                         >
-                            <template v-if="box.icon">
+                            <template v-if="tab.icon || tab.icon_data">
                                 <LoadingIcon v-if="tabLoading == tab.tab_slug" class="animate-spin text-xl" />
-                                <FontAwesomeIcon v-else :icon='box.icon' class='text-xl' fixed-width aria-hidden='true' />
+                                <Icon v-else-if="tab.icon_data" :data="tab.icon_data" class='text-xl' />
+                                <FontAwesomeIcon v-else :icon='tab.icon' class='text-xl' fixed-width aria-hidden='true' />
                             </template>
                             
-                            <div class="relative ">
+                            <div class="relative text-center">
                                 <span class="inline" :class="tabLoading == tab.tab_slug ? 'opacity-0' : 'opacity-80 group-hover:opacity-100'">
                                     {{ renderLabelBasedOnType(tab.value, tab.type, {currency_code: box.currency_code}) }}
                                 </span>
-                                <div v-if="!box.icon && tabLoading == tab.tab_slug" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                                <div v-if="!(tab.icon || tab.icon_data) && tabLoading == tab.tab_slug" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
                                     <LoadingIcon />
                                 </div>
                             </div>
