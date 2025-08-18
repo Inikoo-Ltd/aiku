@@ -52,7 +52,7 @@ class ShowSnapshot extends OrgAction
         // $subNavigation = $this->getWebpageNavigation($snapshot->parent->website);
 
         return Inertia::render(
-            'Org/Web/SnapshotShowcase',
+            'Org/Web/SnapshotWebpageShowcase',
             [
                 // 'breadcrumbs' => $this->getBreadcrumbs(
                 //     $request->route()->getName(),
@@ -70,7 +70,7 @@ class ShowSnapshot extends OrgAction
                     ],
                     // 'subNavigation' => $subNavigation,
                 ],
-                'data' => SnapshotResource::make($snapshot)
+                'data' => SnapshotResource::make($snapshot)->resolve()
             ]
         );
     }
