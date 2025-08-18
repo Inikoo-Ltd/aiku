@@ -131,6 +131,7 @@ Route::prefix('{website}/blogs')->name('blogs.')->group(function () {
     Route::get('', IndexBlogWebpages::class)->name('index');
     Route::get('create', CreateBlogWebpage::class)->name('create');
     Route::get('{webpage}', ShowBlogWebpage::class)->name('show');
+    Route::get('{webpage}/edit', EditWebpage::class)->name('edit');
     Route::get('{webpage}/workshop', ShowBlogWebpageWorkshop::class)->name('workshop');
 });
 

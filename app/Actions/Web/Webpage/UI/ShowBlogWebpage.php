@@ -59,38 +59,12 @@ class ShowBlogWebpage extends OrgAction
         return $webpage;
     }
 
-    public function getTypeSpecificActions(Webpage $webpage): array
-    {
-        $actions = [];
-
-        if (!$this->canEdit) {
-            return $actions;
-        }
-
-            $actions[] = [
-                'type'  => 'button',
-                'style' => 'create',
-                'label' => __('new article'),
-                'route' => [
-                    'name'       => 'org.websites.show.blog.article.create',
-                    'parameters' => [
-                        'website' => $webpage->website->slug,
-                    ]
-                ]
-            ];
-        
-
-        return $actions;
-    }
-
     public function htmlResponse(Webpage $webpage, ActionRequest $request): Response
     {
 
         $actions = [];
 
         $actions = array_merge($actions, $this->workshopActions($request));
-        $actions = array_merge($actions, $this->getTypeSpecificActions($webpage));
-
 
         $subNavigationRoot = '';
 
@@ -158,7 +132,7 @@ class ShowBlogWebpage extends OrgAction
         $website = request()->route()->parameter('website');
 
         return match ($routeName) {
-            'grp.org.shops.show.web.blogs.show', 'grp.org.shops.show.web.webpages.edit', 'grp.org.shops.show.web.blogs.workshop', 'grp.org.shops.show.web.webpages.redirect.create' => array_merge(
+            'grp.org.shops.show.web.blogs.show', 'grp.org.shops.show.web.webpages.edit', 'grp.org.shops.show.web.blogs.workshop', 'grp.org.shops.show.web.webpages.redirect.create', 'grp.org.shops.show.web.blogs.edit' => array_merge(
                 ShowWebsite::make()->getBreadcrumbs(
                     $website,
                     'grp.org.shops.show.web.websites.show',
