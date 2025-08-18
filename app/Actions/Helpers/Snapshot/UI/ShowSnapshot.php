@@ -23,6 +23,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use PhpOffice\PhpSpreadsheet\Calculation\Web;
 
 class ShowSnapshot extends OrgAction
 {
@@ -30,10 +31,11 @@ class ShowSnapshot extends OrgAction
     use WithInertia;
     use WithWebAuthorisation;
     // use WithWebpageSubNavigation;
-
+    private Webpage $webpage;
 
     public function asController(Organisation $organisation, Shop $shop, Website $website, Webpage $webpage, Snapshot $snapshot, ActionRequest $request): Snapshot
     {
+        $this->webpage = $webpage;
         $this->initialisationFromShop($shop, $request);
 
         return $snapshot;
@@ -42,6 +44,7 @@ class ShowSnapshot extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, Webpage $webpage, Snapshot $snapshot, ActionRequest $request): Snapshot
     {
+        $this->webpage = $webpage;
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(WebpageTabsEnum::values());
 
         return $snapshot;
@@ -50,6 +53,22 @@ class ShowSnapshot extends OrgAction
     public function htmlResponse(Snapshot $snapshot, ActionRequest $request): Response
     {
         // $subNavigation = $this->getWebpageNavigation($snapshot->parent->website);
+        $actions = [];
+
+        $actions[] = [
+            'type'    => 'button',
+            'style'   => 'create',
+            'tooltip' => __('Set Live'),
+            'icon'    => ["fal", "fa-album-collection"],
+            'route'   => [
+                'name'       => 'grp.models.webpage.set-snapshot-as-live',
+                'parameters' => [
+                    'webpage' => $this->webpage->id,
+                    'snapshot' => $snapshot->id
+                ],
+                'method' => 'post'
+            ]
+        ];
 
         return Inertia::render(
             'Org/Web/SnapshotWebpageShowcase',
@@ -68,6 +87,7 @@ class ShowSnapshot extends OrgAction
                         'title' => __('snapshot'),
                         'icon'  => 'fal fa-browser'
                     ],
+                    'actions'       => $actions,
                     // 'subNavigation' => $subNavigation,
                 ],
                 'data' => SnapshotResource::make($snapshot)->resolve()

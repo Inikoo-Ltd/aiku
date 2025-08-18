@@ -51,7 +51,12 @@ class StoreModelHasWebBlock extends OrgAction
 
         $webBlockType = WebBlockType::find($modelData['web_block_type_id']);
 
-        $webBlock = StoreWebBlock::run($webBlockType, $modelData);
+        $webBlockData = $modelData;
+        if(Arr::exists($modelData, 'layout')) {
+           data_set($webBlockData, 'layout', Arr::pull($modelData, 'layout'));
+        }
+        $webBlock = StoreWebBlock::run($webBlockType, $webBlockData);
+
         /** @var ModelHasWebBlocks $modelHasWebBlock */
         $modelHasWebBlock = $webpage->modelHasWebBlocks()->create(
             [
@@ -83,6 +88,9 @@ class StoreModelHasWebBlock extends OrgAction
                 Rule::Exists('web_block_types', 'id')->where('group_id', $this->organisation->group_id)
             ],
             'position' => [
+                'sometimes'
+            ],
+            'layout' => [
                 'sometimes'
             ]
         ];

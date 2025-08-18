@@ -53,19 +53,21 @@ class WebBlockProductResourceEcom extends JsonResource
         $transactionId = null;
         if ($request->user()) {
             $customer = $request->user()->customer;
-            $favourite = $customer->favourites()->where('product_id', $product->id)->first();
-
-            $basket = $customer->borderInBasket;
-
-            if ($basket) {
-                $transaction = DB::table('transactions')->where('order_id', $basket->id)
-                    ->where('model_id', $product->id)->where('model_type', 'Product')
-                    ->whereNull('deleted_at')
-                    ->select('id', 'quantity_ordered')
-                    ->first();
-                if ($transaction) {
-                    $quantityOrdered = $transaction->quantity_ordered;
-                    $transactionId = $transaction->id;
+            if($customer) {
+                $favourite = $customer->favourites()->where('product_id', $product->id)->first();
+    
+                $basket = $customer->borderInBasket;
+    
+                if ($basket) {
+                    $transaction = DB::table('transactions')->where('order_id', $basket->id)
+                        ->where('model_id', $product->id)->where('model_type', 'Product')
+                        ->whereNull('deleted_at')
+                        ->select('id', 'quantity_ordered')
+                        ->first();
+                    if ($transaction) {
+                        $quantityOrdered = $transaction->quantity_ordered;
+                        $transactionId = $transaction->id;
+                    }
                 }
             }
         }
