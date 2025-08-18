@@ -57,6 +57,7 @@ class IndexIrisBlogWebpages extends IrisAction
         $queryBuilder = QueryBuilder::for(Webpage::class);
         $queryBuilder->where('webpages.website_id', $website->id);
         $queryBuilder->where('webpages.type', WebpageTypeEnum::BLOG);
+        $queryBuilder->where('webpages.state', WebpageStateEnum::LIVE);
         
         return $queryBuilder
             ->defaultSort('id')
