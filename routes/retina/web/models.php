@@ -32,7 +32,9 @@ use App\Actions\Retina\Accounting\MitSavedCard\SetAsDefaultRetinaMitSavedCard;
 use App\Actions\Retina\Accounting\Payment\PlaceOrderPayByBank;
 use App\Actions\Retina\Accounting\TopUp\StoreRetinaTopUp;
 use App\Actions\Retina\CRM\DeleteRetinaCustomerDeliveryAddress;
+use App\Actions\Retina\CRM\DeleteRetinaFavourite;
 use App\Actions\Retina\CRM\StoreRetinaCustomerClient;
+use App\Actions\Retina\CRM\StoreRetinaFavourite;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerAddress;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerDeliveryAddress;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerSettings;
@@ -312,6 +314,11 @@ Route::post('portfolio/product-category/{productCategory:id}/multi-channels/stor
 Route::name('mit_saved_card.')->prefix('mit-saved-card')->group(function () {
     Route::delete('{mitSavedCard:id}/delete', DeleteMitSavedCard::class)->name('delete');
     Route::patch('{mitSavedCard:id}/set-to-default', SetAsDefaultRetinaMitSavedCard::class)->name('set_to_default');
+});
+
+Route::name('product.')->prefix('product')->group(function () {
+    Route::delete('{product:id}/favourite', StoreRetinaFavourite::class)->name('favourite');
+    Route::patch('{product:id}/unfavourite', DeleteRetinaFavourite::class)->name('unfavourite');
 });
 
 Route::patch('/locale/{locale}', UpdateIrisLocale::class)->name('locale.update');
