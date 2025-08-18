@@ -49,6 +49,8 @@ class AutosaveWebsiteMarginal extends OrgAction
                     $website,
                     [
                         'scope'  => SnapshotScopeEnum::MENU,
+                        'publisher_id'   => Arr::get($modelData, 'publisher_id'),
+                        'publisher_type' => Arr::get($modelData, 'publisher_type'),
                         'layout' => []
                     ]
                 );
@@ -75,6 +77,8 @@ class AutosaveWebsiteMarginal extends OrgAction
                     $website,
                     [
                         'scope'  => SnapshotScopeEnum::DEPARTMENT,
+                        'publisher_id'   => Arr::get($modelData, 'publisher_id'),
+                        'publisher_type' => Arr::get($modelData, 'publisher_type'),
                         'layout' => []
                     ]
                 );
@@ -100,6 +104,8 @@ class AutosaveWebsiteMarginal extends OrgAction
                     $website,
                     [
                         'scope'  => SnapshotScopeEnum::SUB_DEPARTMENT,
+                        'publisher_id'   => Arr::get($modelData, 'publisher_id'),
+                        'publisher_type' => Arr::get($modelData, 'publisher_type'),
                         'layout' => []
                     ]
                 );
@@ -125,6 +131,8 @@ class AutosaveWebsiteMarginal extends OrgAction
                     $website,
                     [
                         'scope'  => SnapshotScopeEnum::FAMILY,
+                        'publisher_id'   => Arr::get($modelData, 'publisher_id'),
+                        'publisher_type' => Arr::get($modelData, 'publisher_type'),
                         'layout' => []
                     ]
                 );
@@ -150,6 +158,8 @@ class AutosaveWebsiteMarginal extends OrgAction
                     $website,
                     [
                         'scope'  => SnapshotScopeEnum::PRODUCT,
+                        'publisher_id'   => Arr::get($modelData, 'publisher_id'),
+                        'publisher_type' => Arr::get($modelData, 'publisher_type'),
                         'layout' => []
                     ]
                 );
@@ -175,6 +185,8 @@ class AutosaveWebsiteMarginal extends OrgAction
                     $website,
                     [
                         'scope'  => SnapshotScopeEnum::PRODUCTS,
+                        'publisher_id'   => Arr::get($modelData, 'publisher_id'),
+                        'publisher_type' => Arr::get($modelData, 'publisher_type'),
                         'layout' => []
                     ]
                 );
@@ -200,7 +212,9 @@ class AutosaveWebsiteMarginal extends OrgAction
                     $website,
                     [
                         'scope'  => SnapshotScopeEnum::COLLECTION,
-                        'layout' => []
+                        'publisher_id'   => Arr::get($modelData, 'publisher_id'),
+                        'publisher_type' => Arr::get($modelData, 'publisher_type'),
+                        'layout' => [],
                     ]
                 );
 
@@ -225,12 +239,8 @@ class AutosaveWebsiteMarginal extends OrgAction
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        $request->merge(
-            [
-                'publisher_id'   => $request->user()->id,
-                'publisher_type' => 'User'
-            ]
-        );
+        $this->set('publisher_id', $request->user()->id);
+        $this->set('publisher_type', class_basename($request->user()));
     }
 
     public function rules(): array
