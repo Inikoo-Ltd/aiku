@@ -110,7 +110,7 @@ class StoreProductCategory extends OrgAction
                     ->max(12 * 1024)
             ],
             'state'       => ['sometimes', Rule::enum(ProductCategoryStateEnum::class)],
-            'description' => ['sometimes', 'max:5000'],
+            'description' => ['sometimes', 'max:65500'],
 
         ];
 

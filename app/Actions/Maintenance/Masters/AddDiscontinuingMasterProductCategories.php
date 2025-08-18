@@ -30,10 +30,7 @@ class AddDiscontinuingMasterProductCategories
      */
     public function handle(Shop $fromShop, MasterShop $shop): void
     {
-        $categoriesToAdd = $fromShop->productCategories()->whereIn('state', [
-            ProductCategoryStateEnum::DISCONTINUING,
-            ProductCategoryStateEnum::DISCONTINUED,
-        ])->get();
+        $categoriesToAdd = $fromShop->productCategories()->where('type', MasterProductCategoryTypeEnum::FAMILY)->get();
 
         foreach ($categoriesToAdd as $categoryToAdd) {
             $this->upsertMasterFamily($shop, $categoryToAdd);
@@ -43,7 +40,7 @@ class AddDiscontinuingMasterProductCategories
     /**
      * @throws \Throwable
      */
-    public function upsertMasterFamily(MasterShop $masterShop, ProductCategory $family): MasterProductCategory
+    public function upsertMasterFamily(MasterShop $masterShop, ProductCategory $family): ?MasterProductCategory
     {
         $code = $family->code;
 
@@ -52,25 +49,31 @@ class AddDiscontinuingMasterProductCategories
             ->where('type', MasterProductCategoryTypeEnum::FAMILY->value)
             ->whereRaw("lower(code) = lower(?)", [$code])->first();
 
+        $foundMasterFamily = null;
+
 
         if (!$foundMasterFamilyData) {
-            $foundMasterFamily = StoreMasterProductCategory::make()->action(
-                $this->getMasterParent($masterShop, $family),
-                [
-                    'code'        => $family->code,
-                    'name'        => $family->name,
-                    'description' => $family->description,
-                    'type'        => MasterProductCategoryTypeEnum::FAMILY,
-                ]
-            );
+            $masterParent = $this->getMasterParent($masterShop, $family);
+            if ($masterParent) {
+                $foundMasterFamily = StoreMasterProductCategory::make()->action(
+                    $masterParent,
+                    [
+                        'code'        => $family->code,
+                        'name'        => $family->name,
+                        'description' => $family->description,
+                        'type'        => MasterProductCategoryTypeEnum::FAMILY,
+                    ]
+                );
+            }
         } else {
+
             $foundMasterFamily = MasterProductCategory::find($foundMasterFamilyData->id);
 
             $dataToUpdate = [
                 'code' => $family->code,
                 'name' => $family->name,
             ];
-            if ($family->description) {
+            if ($family->description && !$foundMasterFamily->description) {
                 data_set($dataToUpdate, 'description', $family->description);
             }
 
@@ -80,33 +83,34 @@ class AddDiscontinuingMasterProductCategories
             );
         }
 
-        $markForDiscontinued = false;
-        $status              = true;
-        $discontinuingAt     = null;
-        $discontinuedAt      = null;
+        if ($foundMasterFamily) {
+            $markForDiscontinued = false;
+            $status              = true;
+            $discontinuingAt     = null;
+            $discontinuedAt      = null;
 
 
-        if ($family->state == ProductCategoryStateEnum::DISCONTINUED) {
-            $status          = false;
-            $discontinuedAt  = $family->discontinued_at;
-            $discontinuingAt = $family->discontinuing_at;
+            if ($family->state == ProductCategoryStateEnum::DISCONTINUED) {
+                $status          = false;
+                $discontinuedAt  = $family->discontinued_at;
+                $discontinuingAt = $family->discontinuing_at;
+            }
+
+            if ($family->state == ProductCategoryStateEnum::DISCONTINUING) {
+                $markForDiscontinued = true;
+                $discontinuingAt     = $family->discontinuing_at;
+            }
+
+            UpdateMasterProductCategory::run(
+                $foundMasterFamily,
+                [
+                    'status'                   => $status,
+                    'mark_for_discontinued'    => $markForDiscontinued,
+                    'mark_for_discontinued_at' => $discontinuingAt,
+                    'discontinued_at'          => $discontinuedAt,
+                ]
+            );
         }
-
-        if ($family->state == ProductCategoryStateEnum::DISCONTINUING) {
-            $markForDiscontinued = true;
-            $discontinuingAt     = $family->discontinuing_at;
-        }
-
-        UpdateMasterProductCategory::run(
-            $foundMasterFamily,
-            [
-                'status'                   => $status,
-                'mark_for_discontinued'    => $markForDiscontinued,
-                'mark_for_discontinued_at' => $discontinuingAt,
-                'discontinued_at'          => $discontinuedAt,
-            ]
-        );
-
 
         return $foundMasterFamily;
     }
