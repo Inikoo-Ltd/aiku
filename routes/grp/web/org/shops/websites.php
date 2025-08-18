@@ -13,6 +13,7 @@ use App\Actions\Comms\Outbox\UI\ShowOutbox;
 use App\Actions\Comms\Outbox\UI\ShowOutboxWorkshop;
 use App\Actions\Helpers\Snapshot\UI\IndexSnapshots;
 use App\Actions\Helpers\Snapshot\UI\ShowSnapshot;
+use App\Actions\Helpers\Snapshot\UI\ShowSnapshotPreview;
 use App\Actions\Web\Banner\UI\CreateBanner;
 use App\Actions\Web\Banner\UI\EditBanner;
 use App\Actions\Web\Banner\UI\IndexBanners;
@@ -122,6 +123,7 @@ Route::prefix('{website}/webpages')->name('webpages.')->group(function () {
             Route::name('snapshot')->prefix('snapshot')
                 ->group(function () {
                     Route::get('{snapshot}', ShowSnapshot::class)->name('.show');
+                    Route::get('{snapshot}/preview', ShowSnapshotPreview::class)->name('.preview');
                 });
         });
 });
