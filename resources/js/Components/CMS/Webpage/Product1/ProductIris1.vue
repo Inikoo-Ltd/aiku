@@ -179,7 +179,7 @@ const toggleExpanded = () => {
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             marginLeft : 'auto', marginRight : 'auto'
 		}" class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block">
-        <div class="grid grid-cols-12 gap-x-10 mb-2">
+        <div class="grid grid-cols-12 gap-x-10 mb-2"> 
             <div class="col-span-7">
                 <div class="py-1 w-full">
                     <ImageProducts :images="fieldValue.product.images" />
