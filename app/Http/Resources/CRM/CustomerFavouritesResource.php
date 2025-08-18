@@ -10,6 +10,8 @@
 namespace App\Http\Resources\CRM;
 
 use App\Http\Resources\HasSelfCall;
+use App\Http\Resources\Helpers\ImageResource;
+use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -26,13 +28,21 @@ class CustomerFavouritesResource extends JsonResource
 
     public function toArray($request): array
     {
+        $media = null;
+        if ($this->image_id) {
+            $media = Media::find($this->image_id);
+        }
+        
+        // dd($this);
         return [
+            'image'         => $this->image_id ? ImageResource::make($media)->getArray() : null,
             'id'                     => $this->id,
             'code'                   => $this->code,
             'slug'                   => $this->slug,
             'name'                   => $this->name,
             'description'            => $this->description,
             'price'                  => $this->price,
+            'url'                    => $this->webpage_url  // This not correct yet
         ];
     }
 }

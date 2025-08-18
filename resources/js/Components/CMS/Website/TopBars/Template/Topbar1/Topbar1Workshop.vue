@@ -116,7 +116,7 @@ const layout = inject('layout', {})
             <!-- Section: Register -->
             <span @click="()=> emits('setPanelActive', 'register')" class="xhover-dashed">
                 <a v-if="checkVisible(model?.register?.visible || null, isLoggedIn)"
-                    class="space-x-1.5 cursor-pointer whitespace-nowrap hover-dashed"
+                    class="space-x-1.5 cursor-pointer whitespace-nowrap"
                     :style="getStyles(model?.register.container?.properties)"
                 >
                     <FontAwesomeIcon icon='fal fa-user-plus' class='' fixed-width aria-hidden='true' />
