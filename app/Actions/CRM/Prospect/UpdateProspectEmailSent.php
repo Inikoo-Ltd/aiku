@@ -17,12 +17,11 @@ class UpdateProspectEmailSent extends OrgAction
 {
     public function handle(Prospect $prospect): Prospect
     {
-
-        if ($prospect->state == ProspectStateEnum::NO_CONTACTED or $prospect->state == ProspectStateEnum::CONTACTED) {
+        if ($prospect->state == ProspectStateEnum::NO_CONTACTED || $prospect->state == ProspectStateEnum::CONTACTED) {
             $dataToUpdate = [
-                'state'            => ProspectStateEnum::CONTACTED,
+                'state' => ProspectStateEnum::CONTACTED,
                 'last_contacted_at' => now()
-                ];
+            ];
 
             if (!$prospect->contacted_at) {
                 $dataToUpdate['contacted_at'] = now();
@@ -39,9 +38,9 @@ class UpdateProspectEmailSent extends OrgAction
 
 
             $prospect = UpdateProspect::run($prospect, $dataToUpdate);
-
-            return $prospect;
         }
+
+        return $prospect;
     }
 
     public function action(Prospect $prospect): Prospect

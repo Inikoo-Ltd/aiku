@@ -105,33 +105,6 @@ class ShowOrgSupplier extends OrgAction
                             ]
                         ] : false,
                     ],
-                    // 'meta'    => [
-                    //     [
-                    //         'name'     => trans_choice('Purchases|Sales', $orgSupplier->stats->number_open_purchase_orders),
-                    //         'number'   => $orgSupplier->stats->number_open_purchase_orders,
-                    //         'route'     => [
-                    //             'grp.org.procurement.org_supplier_products.show',
-                    //             $orgSupplier->slug
-                    //         ],
-                    //         'leftIcon' => [
-                    //             'icon'    => 'fal fa-person-dolly',
-                    //             'tooltip' => __('sales')
-                    //         ]
-                    //     ],
-                    //     [
-                    //         'name'     => trans_choice('product|products', $orgSupplier->stats->number_supplier_products),
-                    //         'number'   => $orgSupplier->stats->number_supplier_products,
-                    //         'route'     => [
-                    //             'grp.org.procurement.org_supplier_products.show',
-                    //             $orgSupplier->slug
-                    //         ],
-                    //         'leftIcon' => [
-                    //             'icon'    => 'fal fa-box-usd',
-                    //             'tooltip' => __('products')
-                    //         ]
-                    //     ],
-                    // ]
-
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
@@ -270,5 +243,4 @@ class ShowOrgSupplier extends OrgAction
             ],
         };
     }
-
 }

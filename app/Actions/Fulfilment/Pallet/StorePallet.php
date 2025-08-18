@@ -50,8 +50,7 @@ class StorePallet extends OrgAction
             data_set($modelData, 'notes', '');
         }
 
-        if (Arr::exists($modelData, 'state') and Arr::get($modelData, 'state') != PalletStateEnum::IN_PROCESS) {
-            if (!Arr::get($modelData, 'reference')) {
+        if (Arr::exists($modelData, 'state') && Arr::get($modelData, 'state') != PalletStateEnum::IN_PROCESS && !Arr::get($modelData, 'reference')) {
                 data_set(
                     $modelData,
                     'reference',
@@ -60,7 +59,6 @@ class StorePallet extends OrgAction
                         modelType: SerialReferenceModelEnum::PALLET
                     )
                 );
-            }
         }
 
         data_set($modelData, 'group_id', $fulfilmentCustomer->group_id);

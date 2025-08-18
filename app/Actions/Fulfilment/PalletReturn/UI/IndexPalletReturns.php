@@ -48,7 +48,6 @@ class IndexPalletReturns extends OrgAction
     private ?string $restriction = null;
 
 
-
     public function asController(Organisation $organisation, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent      = $fulfilment;
@@ -128,7 +127,6 @@ class IndexPalletReturns extends OrgAction
         return $this->handle($fulfilmentCustomer, PalletReturnsTabsEnum::RETURNS->value);
     }
 
-
     protected function getElementGroups(Organisation|FulfilmentCustomer|Fulfilment|PalletDelivery|PalletReturn|RecurringBill $parent): array
     {
         $allowedStates = PalletReturnStateEnum::labels(forElements: true);
@@ -176,7 +174,6 @@ class IndexPalletReturns extends OrgAction
             $queryBuilder->where('pallet_returns.fulfilment_customer_id', $parent->id);
         }
 
-
         if ($this->restriction == 'all' || $this->restriction == 'new') {
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                 $queryBuilder->whereElementGroup(
@@ -223,7 +220,7 @@ class IndexPalletReturns extends OrgAction
         $queryBuilder->defaultSort('-date');
 
         return $queryBuilder
-->select(
+            ->select(
                 'pallet_returns.id',
                 'state',
                 'slug',
@@ -236,11 +233,13 @@ class IndexPalletReturns extends OrgAction
                 'type',
                 'total_amount',
                 'currencies.code as currency_code',
-                DB::raw("(
-                    SELECT COUNT(DISTINCT stored_item_id) 
-                    FROM pallet_return_items 
+                DB::raw(
+                    "(
+                    SELECT COUNT(DISTINCT stored_item_id)
+                    FROM pallet_return_items
                     WHERE pallet_return_items.pallet_return_id = pallet_returns.id
-                ) as unique_stored_item_count")
+                ) as unique_stored_item_count"
+                )
             )
             ->allowedSorts(['reference', 'customer_reference', 'number_pallets', 'date', 'state', 'unique_stored_item_count'])
             ->allowedFilters([$globalSearch, 'type'])
@@ -304,7 +303,6 @@ class IndexPalletReturns extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $returns, ActionRequest $request): Response
     {
-
         $navigation = PalletReturnsTabsEnum::navigation();
 
         $subNavigation = [];
@@ -331,7 +329,6 @@ class IndexPalletReturns extends OrgAction
             $subNavigation = $this->getPalletReturnSubNavigation($this->parent, $request);
         }
 
-
         $actions = [];
 
 
@@ -349,21 +346,19 @@ class IndexPalletReturns extends OrgAction
                 ]
             ];
         }
-        if ($this->parent->items_storage) {
-            if ($this->parent->number_pallets_with_stored_items_state_storing > 0) {
-                $actions[] = [
-                    'type'        => 'button',
-                    'style'       => 'create',
-                    'tooltip'     => __('Create new return (Customer SKUs)'),
-                    'label'       => __('Return (Customer SKUs)'),
-                    'fullLoading' => true,
-                    'route'       => [
-                        'method'     => 'post',
-                        'name'       => 'grp.models.fulfilment-customer.pallet-return-stored-items.store',
-                        'parameters' => [$this->parent->id]
-                    ]
-                ];
-            }
+        if ($this->parent->items_storage && $this->parent->number_pallets_with_stored_items_state_storing > 0) {
+            $actions[] = [
+                'type'        => 'button',
+                'style'       => 'create',
+                'tooltip'     => __('Create new return (Customer SKUs)'),
+                'label'       => __('Return (Customer SKUs)'),
+                'fullLoading' => true,
+                'route'       => [
+                    'method'     => 'post',
+                    'name'       => 'grp.models.fulfilment-customer.pallet-return-stored-items.store',
+                    'parameters' => [$this->parent->id]
+                ]
+            ];
         }
 
         return Inertia::render(
@@ -394,6 +389,7 @@ class IndexPalletReturns extends OrgAction
                     fn () => PalletReturnsResource::collection($returns)
                     : Inertia::lazy(fn () => PalletReturnsResource::collection($returns)),
 
+
                 PalletReturnsTabsEnum::UPLOADS->value => $this->tab == PalletReturnsTabsEnum::UPLOADS->value ?
                     fn () => PalletReturnItemUploadsResource::collection(IndexPalletReturnItemUploads::run($this->parent, PalletReturnsTabsEnum::UPLOADS->value))
                     : Inertia::lazy(fn () => PalletReturnItemUploadsResource::collection(IndexPalletReturnItemUploads::run($this->parent, PalletReturnsTabsEnum::UPLOADS->value))),
@@ -419,8 +415,6 @@ class IndexPalletReturns extends OrgAction
         };
 
         return match ($routeName) {
-
-
             'grp.org.fulfilments.show.crm.customers.show.pallet_returns.index' => array_merge(
                 ShowFulfilmentCustomer::make()->getBreadcrumbs(
                     $routeParameters

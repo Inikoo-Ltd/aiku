@@ -39,7 +39,6 @@ class ShowPaymentAccount extends OrgAction
     }
 
 
-
     public function inOrganisation(Organisation $organisation, PaymentAccount $paymentAccount, ActionRequest $request): PaymentAccount
     {
         $this->initialisation($organisation, $request)->withTab(PaymentAccountTabsEnum::values());
@@ -79,16 +78,15 @@ class ShowPaymentAccount extends OrgAction
                 ],
                 'pageHead'    => [
                     'subNavigation' => $this->getPaymentAccountNavigation($paymentAccount),
-                    'icon'      =>
+                    'icon'          =>
                         [
                             'icon'  => ['fal', 'fa-money-check-alt'],
                             'title' => __('payment account')
                         ],
-                    'title'  => $paymentAccount->name,
-                    'create' => $this->canEdit
+                    'title'         => $paymentAccount->name,
+                    'create'        => $this->canEdit
                     && (
-                        $request->route()->getName() == 'grp.org.accounting.org_payment_service_providers.show.payment-accounts.show' or
-                        $request->route()->getName() == 'grp.org.accounting.payment-accounts.show'
+                        $request->route()->getName() == 'grp.org.accounting.org_payment_service_providers.show.payment-accounts.show' || $request->route()->getName() == 'grp.org.accounting.payment-accounts.show'
                     ) ? [
                         'route' => [
                             'name'       => preg_replace('/show$/', 'show.payments.create', $request->route()->getName()),
@@ -96,30 +94,7 @@ class ShowPaymentAccount extends OrgAction
                         ],
                         'label' => __('payment')
                     ] : false,
-//                    'meta'   => [
-//                        [
-//                            'name'     => trans_choice('payment | payments', $paymentAccount->stats->number_payments),
-//                            'number'   => $paymentAccount->stats->number_payments,
-//                            'route'     => match ($request->route()->getName()) {
-//                                'grp.org.accounting.org_payment_service_providers.show.payment-accounts.show' => [
-//                                    'name'       => 'grp.org.accounting.org_payment_service_providers.show.payment-accounts.show.payments.index',
-//                                    'parameters' => [$paymentAccount->organisation->slug, $paymentAccount->orgPaymentServiceProvider->slug, $paymentAccount->slug]
-//                                ],
-//                                default => [
-//                                    'name'       => 'grp.org.accounting.payment-accounts.show.payments.index',
-//                                    'parameters' => [
-//                                        $this->organisation,
-//                                        $paymentAccount->slug
-//                                    ]
-//                                ]
-//                            },
-//                            'leftIcon' => [
-//                                'icon'    => 'fal fa-coins',
-//                                'tooltip' => __('payments')
-//                            ]
-//                        ],
-//
-//                    ],
+
                     'actions' => [
                         [
                             'type'    => 'button',
@@ -139,93 +114,34 @@ class ShowPaymentAccount extends OrgAction
 
                 ],
 
-                // PaymentAccountTabsEnum::PAYMENTS->value => $this->tab == PaymentAccountTabsEnum::PAYMENTS->value
-                //     ?
-                //     fn () => PaymentsResource::collection(
-                //         IndexPayments::run(
-                //             parent: $this->paymentAccount,
-                //             prefix: 'payments'
-                //         )
-                //     )
-                //     : Inertia::lazy(fn () => PaymentsResource::collection(
-                //         IndexPayments::run(
-                //             parent: $this->paymentAccount,
-                //             prefix: 'payments'
-                //         )
-                //     )),
-                'overview'      => [
+
+                'overview' => [
                     'dashboard' => [
-                        // 'interval_options'  => $this->getIntervalOptions(),
-                        // 'settings' => [
-                        //     'db_settings'   => $userSettings,
-                        //     'key_currency'  =>  'grp',
-                        //     'options_currency'  => [
-                        //         [
-                        //             'value' => 'grp',
-                        //             'label' => $group->currency->symbol,
-                        //         ],
-                        //         [
-                        //             'value' => 'org',
-                        //             'label' => $orgCurrenciesSymbol,
-                        //         ]
-                        //     ]
-                        // ],
-                        'table' => [],
+
+                        'table'   => [],
                         'widgets' => [
-                            'column_count'    => 4,
-                            'components' => []
+                            'column_count' => 4,
+                            'components'   => []
                         ]
                     ]
                 ],
-                'stats'      => [
+                'stats'    => [
                     'dashboard' => [
-                        // 'interval_options'  => $this->getIntervalOptions(),
-                        // 'settings' => [
-                        //     'db_settings'   => $userSettings,
-                        //     'key_currency'  =>  'grp',
-                        //     'options_currency'  => [
-                        //         [
-                        //             'value' => 'grp',
-                        //             'label' => $group->currency->symbol,
-                        //         ],
-                        //         [
-                        //             'value' => 'org',
-                        //             'label' => $orgCurrenciesSymbol,
-                        //         ]
-                        //     ]
-                        // ],
-                        'table' => [],
+                        'table'   => [],
                         'widgets' => [
-                            'column_count'    => 4,
-                            'components' => []
+                            'column_count' => 4,
+                            'components'   => []
                         ]
                     ]
                 ],
-                // PaymentAccountTabsEnum::OVERVIEW->value  => $this->tab == PaymentAccountTabsEnum::OVERVIEW->value ?
-                //     fn () => HistoryResource::collection(IndexHistory::run($paymentAccount))
-                //     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($paymentAccount))),
-                PaymentAccountTabsEnum::HISTORY->value  => $this->tab == PaymentAccountTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($paymentAccount))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($paymentAccount)))
+
+                PaymentAccountTabsEnum::HISTORY->value => $this->tab == PaymentAccountTabsEnum::HISTORY->value ?
+                    fn() => HistoryResource::collection(IndexHistory::run($paymentAccount))
+                    : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run($paymentAccount)))
 
             ]
         )
-        // ->table(
-        //     IndexPayments::make()->tableStructure(
-        //         parent: $paymentAccount,
-        //         modelOperations: [
-        //             'createLink' => $this->canEdit ? [
-        //                 'route' => [
-        //                     'name'       => 'grp.org.accounting.payment-accounts.show.payments.create',
-        //                     'parameters' => array_values([$paymentAccount->slug])
-        //                 ],
-        //                 'label' => __('products')
-        //             ] : false
-        //         ],
-        //         prefix: 'payments'
-        //     )
-        // )
-        ->table(IndexHistory::make()->tableStructure(prefix: PaymentAccountTabsEnum::HISTORY->value));
+            ->table(IndexHistory::make()->tableStructure(prefix: PaymentAccountTabsEnum::HISTORY->value));
     }
 
 

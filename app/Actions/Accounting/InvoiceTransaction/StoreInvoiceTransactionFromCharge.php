@@ -40,7 +40,7 @@ class StoreInvoiceTransactionFromCharge extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if ($this->charge and $this->charge->shop_id != $this->shop->id) {
+        if ($this->charge && $this->charge->shop_id != $this->shop->id) {
             $validator->errors()->add('charge', 'Charge does not belong to this shop');
         }
     }

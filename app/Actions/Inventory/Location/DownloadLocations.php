@@ -14,6 +14,7 @@ use App\Models\Inventory\Warehouse;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\SysAdmin\Organisation;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\Inventory\LocationsExport;
 
 class DownloadLocations extends OrgAction
 {
@@ -21,11 +22,11 @@ class DownloadLocations extends OrgAction
      * @throws \PhpOffice\PhpSpreadsheet\Exception
      * @throws \PhpOffice\PhpSpreadsheet\Writer\Exception
      */
-    public function handle(Warehouse $warehouse, array $modelData): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    public function handle(Warehouse $warehouse, array $columns): \Symfony\Component\HttpFoundation\BinaryFileResponse
     {
-        $fileName = 'locations_warehouse_'.$warehouse->id.'.xlsx';
+        $fileName = 'locations_warehouse_' . $warehouse->id . '.xlsx';
 
-        return Excel::download(new LocationsExport($warehouse, $modelData), $fileName);
+        return Excel::download(new LocationsExport($warehouse, $columns), $fileName);
     }
 
     /**

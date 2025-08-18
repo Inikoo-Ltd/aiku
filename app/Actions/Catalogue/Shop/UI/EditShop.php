@@ -216,19 +216,18 @@ class EditShop extends OrgAction
                                     'options'       => GetLanguagesOptions::make()->all(),
                                     'searchable'    => true
                                 ],
-                                'extra_language' => [
+                                'extra_languages' => [
                                     'type'          => 'select',
                                     'label'         => __('Extra language'),
                                     'placeholder'   => __('Select your language'),
                                     'required'      => true,
-                                    'value'         => [],
-                                    'options'       => GetLanguagesOptions::make()->all(),
+                                    'value'         => $shop->extra_languages,
+                                    'options'       => GetLanguagesOptions::make()->getExtraGroupLanguages($shop->group->extra_languages),
                                     'searchable'    => true,
                                     'mode'          => 'tags',
                                     'labelProp'     => 'name',
                                     'valueProp' => 'id',
                                 ]
-
                             ],
                         ],
                     ],

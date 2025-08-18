@@ -52,28 +52,31 @@ class StoreInvoiceTransaction extends OrgAction
 
 
         if ($model instanceof Transaction) {
-            $modelData['transaction_id'] = $model->id;
-            $modelData['order_id']       = $model->order_id;
+            $modelData['transaction_id']    = $model->id;
+            $modelData['order_id']          = $model->order_id;
+            $modelData['asset_id']          = $model->asset_id;
+            $modelData['historic_asset_id'] = $model->historic_asset_id;
             if ($this->strict) {
                 $historicAsset = $model->historicAsset;
             } else {
                 $historicAsset = $model->getHistoricAssetWithTrashed();
             }
         } else {
-            $historicAsset = $model;
+            $historicAsset                  = $model;
+            $modelData['asset_id']          = $historicAsset->asset_id;
+            $modelData['historic_asset_id'] = $historicAsset->id;
         }
 
-        $modelData['asset_id']          = $historicAsset->asset_id;
-        $modelData['historic_asset_id'] = $historicAsset->id;
+        if($historicAsset) {
+            if ($historicAsset->model_type == 'Product') {
+                /** @var Product $product */
+                $product = $historicAsset->model;
 
-        if ($historicAsset->model_type == 'Product') {
-            /** @var Product $product */
-            $product = $historicAsset->model;
-
-            $modelData['family_id']     = $product->family_id;
-            $modelData['department_id'] = $product->department_id;
-        } elseif ($historicAsset->model_type == 'Service' && $invoice->shop->type == ShopTypeEnum::FULFILMENT) {
-            $modelData = $this->processFulfilmentService($historicAsset->model, $modelData);
+                $modelData['family_id']     = $product->family_id;
+                $modelData['department_id'] = $product->department_id;
+            } elseif ($historicAsset->model_type == 'Service' && $invoice->shop->type == ShopTypeEnum::FULFILMENT) {
+                $modelData = $this->processFulfilmentService($historicAsset->model, $modelData);
+            }
         }
 
         /** @var InvoiceTransaction $invoiceTransaction */
@@ -87,9 +90,11 @@ class StoreInvoiceTransaction extends OrgAction
 
         $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
 
-        AssetHydrateSales::dispatch($invoiceTransaction->asset, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
-        AssetHydrateInvoices::dispatch($invoiceTransaction->asset, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
-        AssetHydrateInvoicedCustomers::dispatch($invoiceTransaction->asset, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+        if($invoiceTransaction->asset){
+            AssetHydrateSales::dispatch($invoiceTransaction->asset, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+            AssetHydrateInvoices::dispatch($invoiceTransaction->asset, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+            AssetHydrateInvoicedCustomers::dispatch($invoiceTransaction->asset, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+        }
 
         return $invoiceTransaction;
     }

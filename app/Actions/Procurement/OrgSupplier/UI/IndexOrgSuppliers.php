@@ -59,7 +59,7 @@ class IndexOrgSuppliers extends OrgAction
                             null,
                             [
                                 'icon' => 'fal fa-check',
-                            'class' => 'text-red-500'
+                                'class' => 'text-red-500'
                             ]
                         ]
                     ],
@@ -68,8 +68,6 @@ class IndexOrgSuppliers extends OrgAction
                         if (count($elements) == 1) {
                             $query->where('org_suppliers.status', reset($elements) == 'active');
                         }
-
-
                     }
 
                 ],
@@ -97,8 +95,6 @@ class IndexOrgSuppliers extends OrgAction
         if (class_basename($parent) == 'OrgAgent') {
 
             $queryBuilder->where('org_suppliers.org_agent_id', $parent->id);
-
-
         } else {
             $queryBuilder->where('org_suppliers.organisation_id', $parent->id);
             $queryBuilder->whereNull('org_suppliers.org_agent_id');
@@ -117,14 +113,21 @@ class IndexOrgSuppliers extends OrgAction
         return $queryBuilder
             ->defaultSort('suppliers.code')
             ->select([
-                'suppliers.code', 'suppliers.slug', 'suppliers.name', 'suppliers.location', 'number_org_supplier_products',
+                'suppliers.code',
+                'suppliers.slug',
+                'suppliers.name',
+                'suppliers.location',
+                'number_org_supplier_products',
                 'number_purchase_orders_delivery_state_in_process',
-                'number_purchase_orders', 'org_suppliers.status as status', 'org_suppliers.slug as org_supplier_slug'])
+                'number_purchase_orders',
+                'org_suppliers.status as status',
+                'org_suppliers.slug as org_supplier_slug'
+            ])
             ->leftJoin('suppliers', 'org_suppliers.supplier_id', 'suppliers.id')
 
             ->leftJoin('org_supplier_stats', 'org_supplier_stats.org_supplier_id', 'org_suppliers.id')
 
-            ->allowedSorts(['code', 'name', 'agent_name', 'supplier_locations', 'number_org_supplier_products', 'number_purchase_orders', 'number_purchase_orders_delivery_state_in_process'])
+            ->allowedSorts(['code', 'name', 'agent_name', 'location', 'number_org_supplier_products', 'number_purchase_orders', 'number_purchase_orders_delivery_state_in_process'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -142,7 +145,7 @@ class IndexOrgSuppliers extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
             foreach ($this->getSupplierElementGroups($parent) as $key => $elementGroup) {
                 $table->elementGroup(
@@ -165,7 +168,7 @@ class IndexOrgSuppliers extends OrgAction
                 ->column(key: 'status', label: '', type: 'icon', canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'location', label: __('location'), canBeHidden: false)
+                ->column(key: 'location', label: __('location'), sortable: true, canBeHidden: false)
                 ->column(key: 'number_org_supplier_products', label: __('products'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_purchase_orders', label: __('purchase orders'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_purchase_orders_delivery_state_in_process', label: __('orders delivery'), canBeHidden: false, sortable: true)
