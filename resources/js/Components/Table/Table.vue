@@ -746,6 +746,14 @@ const isLoading = ref<string | boolean>(false)
             :class="{ 'opacity-75': isVisiting || isParentLoading }">
             <div class="py-2 sm:py-0 my-0">
                 <!-- Wrapper -->
+                 
+                <!-- Filter: Checkbox element -->
+                <div v-if="Object.keys(queryBuilderProps?.elementGroups || [])?.length" class="w-full border-b border-gray-300">
+                    <TableElements :elements="queryBuilderProps.elementGroups"
+                        @checkboxChanged="(data) => queryBuilderData.elementFilter = data"
+                        :tableName="props.name" />
+                </div>
+
                 <div class="grid grid-flow-col justify-between items-center flex-nowrap px-3 sm:px-4">
 
                     <!-- Left Section: Records, Model Operations, MO Bulk, Search -->
@@ -907,12 +915,6 @@ const isLoading = ref<string | boolean>(false)
                         :on-remove="disableSearchInput" />
                 </slot> -->
 
-                <!-- Filter: Checkbox element -->
-                <div v-if="Object.keys(queryBuilderProps?.elementGroups || [])?.length" class="w-full">
-                    <TableElements :elements="queryBuilderProps.elementGroups"
-                        @checkboxChanged="(data) => queryBuilderData.elementFilter = data"
-                        :tableName="props.name" />
-                </div>
             </div>
 
             <!-- <pre>{{ compResourceData }}</pre> -->
