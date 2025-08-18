@@ -99,7 +99,7 @@ class IndexMasterSubDepartments extends GrpAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
             $table
                 ->defaultSort('code')
