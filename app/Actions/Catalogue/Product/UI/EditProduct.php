@@ -109,13 +109,13 @@ class EditProduct extends OrgAction
                         ]
                     ]
                 ],
-                'off_product_route' => [
-                    'name'       => 'grp.models.product.offline',
-                    'parameters' => [
-                        'product' => $product->id
-                    ],
-                    'method'    => 'patch'
-                ],
+                // 'off_product_route' => [
+                //     'name'       => 'grp.models.product.offline',
+                //     'parameters' => [
+                //         'product' => $product->id
+                //     ],
+                //     'method'    => 'patch'
+                // ],
                 'formData'    => [
                     'blueprint' => $this->getBlueprint($product),
                     'args'      => [
@@ -275,22 +275,22 @@ class EditProduct extends OrgAction
                         'value'    => $product->state,
                         'options'  => Options::forEnum(AssetStateEnum::class)
                     ],
-                     'button'       => [
-                        'type'     => 'button',
-                        'label'    => __('off product'),
-                         'noSaveButton'          => true,
-                        'value'    => null,
-                        'icon'    => ['far', 'fa-power-off'],
-                        'type_button'   => 'negative',
-                        'label_button'    => __('off product'),
-                        'route'    => [
-                            'name'       => 'grp.models.product.offline',
-                            'parameters' => [
-                                'product' => $product->id
-                            ],
-                            'method'    => 'patch'
-                        ]
-                    ],
+                    //  'button'       => [
+                    //     'type'     => 'button',
+                    //     'label'    => __('off product'),
+                    //      'noSaveButton'          => true,
+                    //     'value'    => null,
+                    //     'icon'    => ['far', 'fa-power-off'],
+                    //     'type_button'   => 'negative',
+                    //     'label_button'    => __('off product'),
+                    //     'route'    => [
+                    //         'name'       => 'grp.models.product.offline',
+                    //         'parameters' => [
+                    //             'product' => $product->id
+                    //         ],
+                    //         'method'    => 'patch'
+                    //     ]
+                    // ],
                 ]
             ],
             [
