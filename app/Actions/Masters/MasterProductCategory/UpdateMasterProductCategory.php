@@ -66,7 +66,7 @@ class UpdateMasterProductCategory extends OrgAction
             'name'                     => ['sometimes', 'max:250', 'string'],
             'image_id'                 => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->group->id)],
             'status'                   => ['sometimes', 'required', 'boolean'],
-            'description'              => ['sometimes', 'required', 'max:1500'],
+            'description'              => ['sometimes', 'required', 'max:5000'],
             'master_department_id'     => ['sometimes', 'nullable', 'exists:product_categories,id'],
             'master_sub_department_id' => ['sometimes', 'nullable', 'exists:product_categories,id'],
             'show_in_website'          => ['sometimes', 'boolean'],
