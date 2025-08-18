@@ -79,16 +79,20 @@ class CreateWebpage extends OrgAction
                             'type'  => 'button',
                             'style' => 'cancel',
                             'route' =>
-                            match ($request->route()->getName()) {
-                                'org.websites.show.webpages.show.webpages.create' => [
-                                    'name'       => 'org.websites.show.webpages.show',
-                                    'parameters' => array_values($request->route()->originalParameters())
-                                ],
-                                default => [
-                                    'name'       => preg_replace('/create$/', 'index', $request->route()->getName()),
-                                    'parameters' => array_values($request->route()->originalParameters())
-                                ]
-                            }
+                                match ($request->route()->getName()) {
+                                    'org.websites.show.webpages.show.webpages.create' => [
+                                        'name'       => 'org.websites.show.webpages.show' ,
+                                        'parameters' => array_values($request->route()->originalParameters())
+                                    ],
+                                    'grp.org.shops.show.web.blogs.create' => [
+                                        'name'       => 'grp.org.shops.show.web.blogs.index' ,
+                                        'parameters' => array_values($request->route()->originalParameters())
+                                    ],
+                                    default => [
+                                        'name'       => preg_replace('/create$/', 'index', $request->route()->getName()),
+                                        'parameters' => array_values($request->route()->originalParameters())
+                                    ]
+                                }
 
 
                         ]
@@ -166,6 +170,18 @@ class CreateWebpage extends OrgAction
             'org.websites.show.webpages.show.webpages.create' =>
             array_merge(
                 ShowWebpage::make()->getBreadcrumbs('org.websites.show.webpages.show.webpages.show', $routeParameters),
+                [
+                    [
+                        'type'          => 'creatingModel',
+                        'creatingModel' => [
+                            'label' => __("webpage"),
+                        ]
+                    ]
+                ]
+            ),
+            'grp.org.shops.show.web.blogs.create' =>
+            array_merge(
+                IndexBlogWebpages::make()->getBreadcrumbs('grp.org.shops.show.web.blogs.index', $routeParameters),
                 [
                     [
                         'type'          => 'creatingModel',
