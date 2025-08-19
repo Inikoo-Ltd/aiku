@@ -188,6 +188,7 @@ const setError = (e) => {
 
                         <slot v-if="action.type == 'button'"
                               :name="`button-${kebabCase(action.key ? action.key : action.label)}`" :action="action">
+                              {{ `button-${kebabCase(action.key ? action.key : action.label)}` }}
                             <slot :name="`button-index-${actIndex}`" :action="action">
                                 <span v-if="isShowDummySlotName">{{ `button-${kebabCase(action.key ? action.key : action.label)}` }}</span>
                                 <Action v-if="action" :action="action" :dataToSubmit="dataToSubmit" />
