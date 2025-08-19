@@ -456,7 +456,7 @@ class ShowWebpage extends OrgAction
         $website = request()->route()->parameter('website');
 
         return match ($routeName) {
-            'grp.org.shops.show.web.webpages.show', 'grp.org.shops.show.web.webpages.edit', 'grp.org.shops.show.web.webpages.workshop', 'grp.org.shops.show.web.webpages.redirect.create' => array_merge(
+            'grp.org.shops.show.web.webpages.show', 'grp.org.shops.show.web.webpages.edit', 'grp.org.shops.show.web.webpages.workshop', 'grp.org.shops.show.web.webpages.redirect.create', 'grp.org.shops.show.web.webpages.snapshot.show' => array_merge(
                 ShowWebsite::make()->getBreadcrumbs(
                     $website,
                     'grp.org.shops.show.web.websites.show',

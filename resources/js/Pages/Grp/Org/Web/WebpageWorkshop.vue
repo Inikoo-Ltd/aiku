@@ -475,9 +475,9 @@ const //pushToHistory = () => {
   redoStack.value = [];
 
   saveHistoryToLocalStorage();
-};
+}; */
 
-// Undo
+/* // Undo
 const undo = async () => {
   if (undoStack.value.length === 0) return;
 
@@ -549,7 +549,7 @@ onUnmounted(() => {
 window.addEventListener('beforeunload', () => {
   clearHistory();
 });
- */
+
 
 onMounted(() => {
   window.addEventListener("message", (event) => {
@@ -634,8 +634,8 @@ console.log('props',props)
           </div>
            <!-- <div v-tooltip="'Undo'" class="cursor-pointer">
             <FontAwesomeIcon  @click="undo" :icon="faUndo" fixed-width />
-          </div>
-           <div v-tooltip="'Redo'" class="cursor-pointer">
+          </div> -->
+          <!--  <div v-tooltip="'Redo'" class="cursor-pointer">
             <FontAwesomeIcon  @click="redo" :icon="faRedo" fixed-width />
           </div> -->
         </div>
