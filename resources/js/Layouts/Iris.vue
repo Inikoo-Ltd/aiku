@@ -91,7 +91,7 @@ onBeforeUnmount(() => {
     <div class="editor-class">
         <ScreenWarning v-if="layout.app.environment === 'staging'">
             {{ trans("This environment is for testing and development purposes only. The data you enter will be deleted in the future.") }}
-        </ScreenWarning> 
+        </ScreenWarning>
 
         <Modal v-if="layout.app.environment === 'staging'" :isOpen="firstVisit"
             :diazxclogStyle="{ background: '#fff', border: '0px solid #ff0000' }" width="w-fit">
