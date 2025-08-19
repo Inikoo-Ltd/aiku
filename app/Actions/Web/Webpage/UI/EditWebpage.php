@@ -132,7 +132,7 @@ class EditWebpage extends OrgAction
                                     'label'     => __('URL'),
                                     'label_no_capitalize' => true,
                                     'leftAddOn' => [
-                                        'label' => 'https://' . $webpage->website->domain . '/'
+                                        'label' => $isBlog ? 'https://' . $webpage->website->domain . '/blog' : 'https://' . $webpage->website->domain . '/'
                                     ],
                                     'value'     => $webpage->url,
                                     'required'  => true,
