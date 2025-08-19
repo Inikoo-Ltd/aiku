@@ -30,7 +30,7 @@ class SingleProductExport implements FromQuery, WithMapping, ShouldAutoSize, Wit
         return DB::table('products')
             ->select('products.*', 'product_categories.name as family_name')
             ->leftJoin('product_categories', 'products.family_id', '=', 'product_categories.id')
-            ->where('products.slug', $this->product->slug)
+            ->where('products.id', $this->product->id)
             ->orderBy('id');
     }
 }
