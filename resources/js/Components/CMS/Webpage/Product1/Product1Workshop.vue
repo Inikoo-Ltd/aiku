@@ -139,7 +139,7 @@ const toggleExpanded = () => {
                         <div class="flex flex-wrap justify-between gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
                             <div>Product code: {{ modelValue.product.code }}</div>
                             
-                            <div v-tooltip="trans('This is not work, try in website.')" class="flex items-center gap-[1px]">
+                            <div v-tooltip="trans('This is not work in workshop, try in website.')" class="flex items-center gap-[1px]">
                                 <FontAwesomeIcon icon="fas fa-file-download" class="opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />
                                 <span>Download (csv)</span>
                             </div>
