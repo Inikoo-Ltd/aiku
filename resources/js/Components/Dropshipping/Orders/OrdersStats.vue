@@ -22,7 +22,7 @@ const locale = inject('locale', aikuLocaleStructure)
     <div class="flex gap-x-3 gap-y-4 p-4 flex-wrap">
         <div class="bg-gray-50 min-w-64 border border-gray-300 rounded-md p-6">
             <div class="flex justify-between items-center mb-1">
-                <div class="">Number Orders</div>
+                <div class="">Total Orders</div>
                 <FontAwesomeIcon icon='fal fa-shopping-cart ' class=' text-xl text-gray-400' fixed-width aria-hidden='true' />
             </div>
 
