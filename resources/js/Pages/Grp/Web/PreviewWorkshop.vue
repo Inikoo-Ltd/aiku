@@ -111,7 +111,7 @@ watch(isPreviewLoggedIn, (value) => {
      updateIrisLayout(isPreviewLoggedIn.value)
 }, { immediate: true });
 
-console.log('aaa',props)
+
 </script>
 
 
