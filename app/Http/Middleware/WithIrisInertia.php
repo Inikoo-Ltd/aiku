@@ -82,7 +82,7 @@ trait WithIrisInertia
             'locale'               => app()->getLocale(),
             'website_i18n' => [
                 'language' => LanguageResource::make($shop->language)->getArray(),
-                'language_options' => GetLanguagesOptions::make()->translated(),
+                'language_options' => GetLanguagesOptions::make()->getExtraShopLanguages($shop->extra_languages),
             ],
             'user_auth'            => $webUser ? LoggedWebUserResource::make($webUser)->getArray() : null,
             'customer'             => $webUser?->customer,
