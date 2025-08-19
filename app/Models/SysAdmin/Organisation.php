@@ -871,6 +871,4 @@ class Organisation extends Model implements HasMedia, Auditable
     {
         return $this->hasMany(WebUserRequest::class);
     }
-
-
 }

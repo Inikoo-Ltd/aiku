@@ -14,6 +14,7 @@ use App\Actions\Accounting\Invoice\PdfInvoice;
 use App\Actions\Accounting\Invoice\UI\EditInvoice;
 use App\Actions\Accounting\Invoice\UI\IndexDeletedInvoices;
 use App\Actions\Accounting\Invoice\UI\IndexInvoices;
+use App\Actions\Accounting\Invoice\UI\IndexInvoicesInStore;
 use App\Actions\Accounting\Invoice\UI\IndexRefunds;
 use App\Actions\Accounting\Invoice\UI\ShowDeletedInvoice;
 use App\Actions\Accounting\Invoice\UI\ShowInvoice;
@@ -105,6 +106,7 @@ Route::get('/invoices-deleted', IndexDeletedInvoices::class)->name('deleted_invo
 Route::get('/invoices-deleted/{invoiceSlug}', ShowDeletedInvoice::class)->name('deleted_invoices.show');
 
 Route::get('/invoice-categories', IndexInvoiceCategories::class)->name('invoice-categories.index');
+Route::get('/invoice-per-store', IndexInvoicesInStore::class)->name('invoice-per-store.index');
 Route::get('/invoice-categories/create', CreateInvoiceCategory::class)->name('invoice-categories.create');
 Route::get('/invoice-categories/{invoiceCategory}', ShowInvoiceCategory::class)->name('invoice-categories.show');
 Route::get('/invoice-categories/{invoiceCategory}/invoices', [IndexInvoices::class, 'inInvoiceCategory'])->name('invoice-categories.show.invoices.index');

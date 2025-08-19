@@ -22,6 +22,7 @@ import TableRefunds from '@/Components/Tables/Grp/Org/Accounting/TableRefunds.vu
 import { Icon } from "@/types/Utils/Icon";
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { faOmega } from '@fas'
+import TableInvoicesStore from '@/Components/Tables/Grp/Org/Accounting/TableInvoicesStore.vue';
 
 library.add(faFileMinus, faArrowCircleLeft, faOmega);
 
@@ -46,7 +47,6 @@ const props = defineProps<{
   }[]
 }>()
 
-
 const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab);
 let currentTab = ref();
 let component = ref();
@@ -55,7 +55,7 @@ if (props.tabs) {
   currentTab = ref(props.tabs.current);
   component = computed(() => {
       const components = {
-        invoices: TableInvoices,
+        invoices: TableInvoicesStore,
         refunds: TableRefunds,
         in_process: TableInvoices
       };

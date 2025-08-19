@@ -41,7 +41,7 @@ class GetGroupOverview extends OrgAction
         return [
 
             __('Sysadmin')                    => $this->getSysAdminSections($group),
-            __('Comms').' & '.__('Marketing') => $this->getCommsAndMarketingSections($group),
+            __('Comms') . ' & ' . __('Marketing') => $this->getCommsAndMarketingSections($group),
             __('Catalogue')                   => $this->getCatalogueSections($group),
             __('Billables')                   => $this->getBillablesSections($group),
             __('Offers')                      => $this->getOffersSections($group),
@@ -453,6 +453,12 @@ class GetGroupOverview extends OrgAction
                 'count' => $group->orderingStats->number_invoices_type_invoice ?? 0
             ],
             [
+                'name'  => __('Invoices per Stores'),
+                'icon'  => 'fal fa-store',
+                'route' => route('grp.overview.accounting.invoices_store.index'),
+                'count' => $group->orderingStats->number_invoices_type_invoice ?? 0
+            ],
+            [
                 'name'  => __('Refunds'),
                 'icon'  => 'fal fa-file-minus',
                 'route' => route('grp.overview.accounting.refunds.index'),
@@ -514,5 +520,4 @@ class GetGroupOverview extends OrgAction
             ],
         ];
     }
-
 }

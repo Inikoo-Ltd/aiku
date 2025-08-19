@@ -114,6 +114,18 @@ class ShowAccountingDashboard extends OrgAction
 
                             ]
                         ],
+                        [
+                            'name'  => __('Invoices per Shop'),
+                            'icon'  => ['fal', 'fa-store'],
+                            'route' => [
+                                'name'       => 'grp.org.accounting.invoice-per-store.index',
+                                'parameters' => $parameters
+                            ],
+                            'index' => [
+                                'number' => $organisation->accountingStats->number_payments
+                            ]
+
+                        ],
 
                     ]
                 ]

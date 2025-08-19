@@ -35,7 +35,7 @@ class ShopHydrateCustomers implements ShouldBeUnique
 
 
         $stats = array_merge($stats, $this->getEnumStats(
-            model:'customers',
+            model: 'customers',
             field: 'state',
             enum: CustomerStateEnum::class,
             models: Customer::class,
@@ -45,7 +45,7 @@ class ShopHydrateCustomers implements ShouldBeUnique
         ));
 
         $stats = array_merge($stats, $this->getEnumStats(
-            model:'customers',
+            model: 'customers',
             field: 'trade_state',
             enum: CustomerTradeStateEnum::class,
             models: Customer::class,
@@ -57,6 +57,4 @@ class ShopHydrateCustomers implements ShouldBeUnique
 
         $shop->crmStats()->update($stats);
     }
-
-
 }

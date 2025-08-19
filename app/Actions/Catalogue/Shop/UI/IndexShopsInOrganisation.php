@@ -30,11 +30,10 @@ class IndexShopsInOrganisation extends OrgAction
         return $this->handle($organisation);
     }
 
-
     public function htmlResponse(LengthAwarePaginator $shops, ActionRequest $request): Response
     {
         $afterTitle = [
-            'label' => '@ '.__('organisation').' '.$this->organisation->code,
+            'label' => '@ ' . __('organisation') . ' ' . $this->organisation->code,
         ];
 
         return Inertia::render(
@@ -48,12 +47,9 @@ class IndexShopsInOrganisation extends OrgAction
                         'icon'  => ['fal', 'fa-store-alt'],
                         'title' => __('shop'),
                         'afterTitle' => $afterTitle,
-
                     ],
-
                 ],
                 'data'        => ShopsResource::collection($shops),
-
             ]
         )->table($this->tableStructure(parent: $this->group, prefix: null));
     }

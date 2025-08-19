@@ -17,7 +17,7 @@ trait WithLayoutNavigation
 {
     public function getWarehouseNavs(User $user, Organisation $organisation, array $navigation): array
     {
-        if ($user->authTo(['org-supervisor.'.$organisation->id, 'warehouses-view.'.$organisation->id])) {
+        if ($user->authTo(['org-supervisor.' . $organisation->id, 'warehouses-view.' . $organisation->id])) {
 
             $navigation['warehouses_index'] = [
                 'label'   => __('Warehouses'),
@@ -49,7 +49,6 @@ trait WithLayoutNavigation
             } else {
                 $navigation['warehouses_navigation'][$warehouse->slug] = GetWarehouseNavigation::run($warehouse, $user);
             }
-
         }
 
         return $navigation;
@@ -242,7 +241,7 @@ trait WithLayoutNavigation
 
     public function getReportsNavs(User $user, Organisation $organisation, array $navigation): array
     {
-        if ($user->authTo('org-reports.'.$organisation->id)) {
+        if ($user->authTo('org-reports.' . $organisation->id)) {
             $navigation['reports'] = [
                 'label'   => __('Reports'),
                 'tooltip' => __('Reports'),
@@ -256,9 +255,7 @@ trait WithLayoutNavigation
 
                 'topMenu' => [
 
-                    'subSections' => [
-
-                    ]
+                    'subSections' => []
                 ],
             ];
         }
@@ -267,7 +264,7 @@ trait WithLayoutNavigation
 
     public function getSettingsNavs(User $user, Organisation $organisation, array $navigation): array
     {
-        if ($user->authTo('org-supervisor.'.$organisation->id)) {
+        if ($user->authTo('org-supervisor.' . $organisation->id)) {
             $navigation['setting'] = [
                 "root"    => "grp.org.settings.",
                 "icon"    => ["fal", "fa-sliders-h"],
@@ -277,9 +274,7 @@ trait WithLayoutNavigation
                     "parameters" => [$organisation->slug],
                 ],
                 "topMenu" => [
-                    "subSections" => [
-
-                    ],
+                    "subSections" => [],
                 ],
             ];
         }
@@ -317,7 +312,7 @@ trait WithLayoutNavigation
                             "icon"    => ["fal", "fa-map-signs"],
                             "route"   => [
                                 "name"       =>
-                                    "grp.org.warehouses.show.infrastructure.warehouse_areas.index",
+                                "grp.org.warehouses.show.infrastructure.warehouse_areas.index",
                                 "parameters" => [$warehouse->organisation->slug, $warehouse->slug],
                             ],
                         ],
@@ -338,5 +333,4 @@ trait WithLayoutNavigation
 
         return $navigation;
     }
-
 }
