@@ -49,6 +49,7 @@ const props = defineProps<{
         container?: any
         model_type: string
         model_id: number
+        model_slug: string
     }
     webpageData?: any
     blockData?: Object
@@ -449,8 +450,11 @@ const responsiveGridClass = computed(() => {
             <!-- Main Content -->
             <main class="flex-1 mt-4">
                 <div class="px-4 xpt-4 mb-2 text-base font-normal">
+                    <div class="hidden">
+                        {{ fieldValue.model_type }}
+                    </div>
                     <a
-                        :href="route().has('iris.catalogue.feeds.product_category.download') ? route('iris.catalogue.feeds.product_category.download', { productCategory: fieldValue.model_slug }) : '#'"
+                        :href="route().has('iris.catalogue.feeds.product_category.download') && fieldValue.model_slug ? route('iris.catalogue.feeds.product_category.download', { productCategory: fieldValue.model_slug }) : '#'"
                         target="_blank"
                         class="group hover:underline">
                         <FontAwesomeIcon icon="fas fa-file-download" class="text-sm opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />

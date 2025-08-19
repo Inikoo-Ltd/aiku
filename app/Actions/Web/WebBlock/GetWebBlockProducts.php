@@ -42,7 +42,7 @@ class GetWebBlockProducts
         data_set($webBlock, 'web_block.layout.data.fieldValue.products', $products);
         data_set($webBlock, 'web_block.layout.data.fieldValue.model_type', $webpage->model_type);
         data_set($webBlock, 'web_block.layout.data.fieldValue.model_id', $webpage->model_id);
-        data_set($webBlock, 'web_block.layout.data.fieldValue.model_slug', $webpage->model->slug);
+        data_set($webBlock, 'web_block.layout.data.fieldValue.model_slug', $webpage->model?->slug);
         if ($isLoggedIn) {
             data_set($webBlock, 'web_block.layout.data.fieldValue.products_out_of_stock', $productsOutOfStock);
         }
