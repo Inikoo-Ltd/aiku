@@ -328,4 +328,9 @@ class Webpage extends Model implements Auditable, HasMedia
         return $this->hasMany(WebUserRequest::class);
     }
 
+    public function webBlockHistories(): HasMany
+    {
+        return $this->hasMany(WebBlockHistory::class);
+    }
+
 }

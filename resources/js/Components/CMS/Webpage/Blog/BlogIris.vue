@@ -120,7 +120,7 @@ console.log(props.fieldValue)
       <div class="mt-10">
         <div class="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">Latest Posts</div>
         <div class="space-y-3">
-          <div v-for="post in fieldValue.latest_blogs" :key="post.id"
+          <a v-for="post in fieldValue.latest_blogs" :key="post.id" :href="post.url"
             class="flex items-center gap-3 group hover:bg-gray-50 p-2 rounded-md transition">
            <!--  <img :src="post.image" :alt="post.title"
               class="w-16 h-14 object-cover rounded-md border border-gray-200 shadow-sm" /> -->
@@ -130,18 +130,18 @@ console.log(props.fieldValue)
             <div class="text-sm font-medium text-gray-700 group-hover:text-gray-900">
               {{ post.title }}
             </div>
-          </div>
+          </a>
         </div>
       </div>
     </aside>
 
     <!-- Main Content -->
     <article class="max-w-3xl mx-auto">
-      <!--  <h1 class="text-4xl font-bold tracking-tight mb-3 leading-snug text-gray-900">
+      <!-- <h1 class="text-4xl font-bold tracking-tight mb-3 leading-snug text-gray-900">
         {{ fieldValue.title }}
       </h1> -->
 
-      <div v-html="fieldValue.title" :style="getStyles(fieldValue.properties, screenType)" class="mb-3" />
+      <div v-html="fieldValue.title" :style="getStyles(fieldValue.properties, screenType)" class="text-4xl font-bold tracking-tight mb-3 leading-snug text-gray-900"/>
 
       <div class="text-sm text-gray-500 mb-6">
         {{ useFormatTime(displayDate) }}
