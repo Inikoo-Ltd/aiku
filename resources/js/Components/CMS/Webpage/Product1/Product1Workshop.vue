@@ -132,6 +132,7 @@ const toggleExpanded = () => {
                     </div>
                 </div>
             </div>
+            
             <div class="col-span-5 self-start">
                 <div class="flex justify-between mb-4 items-start">
                     <div class="w-full">
