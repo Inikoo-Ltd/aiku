@@ -11,6 +11,7 @@ namespace App\Actions\Helpers\Snapshot\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\UI\WithInertia;
+use App\Actions\Web\Webpage\UI\ShowWebpage;
 use App\Enums\UI\Web\WebpageTabsEnum;
 use App\Http\Resources\Helpers\SnapshotResource;
 use App\Models\Catalogue\Shop;
@@ -19,6 +20,7 @@ use App\Models\Helpers\Snapshot;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -54,29 +56,13 @@ class ShowSnapshot extends OrgAction
     {
         // $subNavigation = $this->getWebpageNavigation($snapshot->parent->website);
         $actions = [];
-
-        $actions[] = [
-            'type'    => 'button',
-            'style'   => 'create',
-            'tooltip' => __('Set Live'),
-            'icon'    => ["fal", "fa-album-collection"],
-            'route'   => [
-                'name'       => 'grp.models.webpage.set-snapshot-as-live',
-                'parameters' => [
-                    'webpage' => $this->webpage->id,
-                    'snapshot' => $snapshot->id
-                ],
-                'method' => 'post'
-            ]
-        ];
-
         return Inertia::render(
             'Org/Web/SnapshotWebpageShowcase',
             [
-                // 'breadcrumbs' => $this->getBreadcrumbs(
-                //     $request->route()->getName(),
-                //     $request->route()->originalParameters()
-                // ),
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    $request->route()->getName(),
+                    $request->route()->originalParameters()
+                ),
                 'title'       => __('snapshot'),
                 'pageHead'    => [
                     'title'         => $snapshot->label ?? __('Snapshot ').$snapshot->parent->code,
@@ -88,10 +74,63 @@ class ShowSnapshot extends OrgAction
                         'icon'  => 'fal fa-browser'
                     ],
                     'actions'       => $actions,
-                    // 'subNavigation' => $subNavigation,
                 ],
                 'data' => SnapshotResource::make($snapshot)->resolve()
             ]
         );
+    }
+
+    public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = ''): array
+    {
+        $headCrumb = function (Snapshot $snapshot, array $routeParameters, string $suffix) {
+            return [
+                [
+
+                    'type'           => 'modelWithIndex',
+                    'modelWithIndex' => [
+                        'index' => [
+                            'route' => $routeParameters['index'],
+                            'label' => __('Snapshots')
+                        ],
+                        'model' => [
+                            'route' => $routeParameters['model'],
+                            'label' => $snapshot->label ?? 'snapshot-'. $snapshot->published_at,
+                        ],
+
+                    ],
+                    'suffix'         => $suffix
+
+                ],
+            ];
+        };
+
+
+        $snapshot = Snapshot::where('id', $routeParameters['snapshot'])->first();
+        /** @var Website $website */
+        $website = request()->route()->parameter('website');
+
+        return match ($routeName) {
+            'grp.org.shops.show.web.webpages.snapshot.show' => array_merge(
+                ShowWebpage::make()->getBreadcrumbs(
+                    'grp.org.shops.show.web.webpages.snapshot.show',
+                    Arr::only($routeParameters, ['organisation', 'shop', 'website', 'webpage'])
+                ),
+                $headCrumb(
+                    $snapshot,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.web.webpages.show',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'website', 'webpage'])
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.web.webpages.snapshot.show',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'website', 'webpage', 'snapshot'])
+                        ]
+                    ],
+                    $suffix
+                ),
+            ),
+            default => [],
+        };
     }
 }

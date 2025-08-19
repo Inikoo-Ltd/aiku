@@ -390,9 +390,9 @@ class ShowWebpage extends OrgAction
                     fn () => RedirectsResource::collection(IndexRedirects::run($webpage))
                     : Inertia::lazy(fn () => RedirectsResource::collection(IndexRedirects::run($webpage))),
 
-                WebpageTabsEnum::LABELED_SNAPSHOTS->value => $this->tab == WebpageTabsEnum::LABELED_SNAPSHOTS->value ?
-                    fn () => SnapshotResource::collection(IndexSnapshots::run(parent: $webpage, withLabel: true))
-                    : Inertia::lazy(fn () => SnapshotResource::collection(IndexSnapshots::run(parent: $webpage, withLabel: true)))
+                // WebpageTabsEnum::LABELED_SNAPSHOTS->value => $this->tab == WebpageTabsEnum::LABELED_SNAPSHOTS->value ?
+                //     fn () => SnapshotResource::collection(IndexSnapshots::run(parent: $webpage, withLabel: true))
+                //     : Inertia::lazy(fn () => SnapshotResource::collection(IndexSnapshots::run(parent: $webpage, withLabel: true)))
 
 
             ]
@@ -405,13 +405,15 @@ class ShowWebpage extends OrgAction
                 parent: $webpage,
                 prefix: 'snapshots'
             )
-        )->table(
-            IndexSnapshots::make()->tableStructure(
-                parent: $webpage,
-                withLabel: true,
-                prefix: WebpageTabsEnum::LABELED_SNAPSHOTS->value
-            )
-        )->table(
+        )
+        // ->table(
+        //     IndexSnapshots::make()->tableStructure(
+        //         parent: $webpage,
+        //         withLabel: true,
+        //         prefix: WebpageTabsEnum::LABELED_SNAPSHOTS->value
+        //     )
+        // )
+        ->table(
             IndexRedirects::make()->tableStructure(
                 parent: $webpage,
                 prefix: WebpageTabsEnum::REDIRECTS->value
@@ -454,7 +456,7 @@ class ShowWebpage extends OrgAction
         $website = request()->route()->parameter('website');
 
         return match ($routeName) {
-            'grp.org.shops.show.web.webpages.show', 'grp.org.shops.show.web.webpages.edit', 'grp.org.shops.show.web.webpages.workshop', 'grp.org.shops.show.web.webpages.redirect.create' => array_merge(
+            'grp.org.shops.show.web.webpages.show', 'grp.org.shops.show.web.webpages.edit', 'grp.org.shops.show.web.webpages.workshop', 'grp.org.shops.show.web.webpages.redirect.create', 'grp.org.shops.show.web.webpages.snapshot.show' => array_merge(
                 ShowWebsite::make()->getBreadcrumbs(
                     $website,
                     'grp.org.shops.show.web.websites.show',

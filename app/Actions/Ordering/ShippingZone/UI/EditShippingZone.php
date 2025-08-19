@@ -12,6 +12,7 @@ namespace App\Actions\Ordering\ShippingZone\UI;
 use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\UI\Catalogue\ShippingZoneSchemaTabsEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Ordering\ShippingZone;
 use App\Models\Ordering\ShippingZoneSchema;
@@ -38,6 +39,9 @@ class EditShippingZone extends OrgAction
 
     public function htmlResponse(ShippingZone $shippingZone, ActionRequest $request): Response
     {
+        // dd(array_merge(array_values($request->route()->originalParameters()), [
+        //                             'zone'
+        // ]));
         return Inertia::render(
             'EditModel',
             [
@@ -62,8 +66,14 @@ class EditShippingZone extends OrgAction
                             'type'  => 'button',
                             'style' => 'exitEdit',
                             'route' => [
-                                'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
+                                // 'name'       => preg_replace('/edit$/', 'index', $request->route()->getName()),
+                                'name'  => 'grp.org.shops.show.billables.shipping.show',
+                                'parameters' => [
+                                    'organisation' => $shippingZone->organisation->slug,
+                                    'shop' => $shippingZone->shop->slug,
+                                    'shippingZoneSchema' => $shippingZone->schema->slug,
+                                    'tab' => ShippingZoneSchemaTabsEnum::ZONES->value
+                                ]
                             ]
                         ]
                     ]

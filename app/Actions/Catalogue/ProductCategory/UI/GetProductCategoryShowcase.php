@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
+use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\Catalogue\DepartmentResource;
 use App\Http\Resources\Catalogue\FamilyResource;
@@ -27,6 +28,16 @@ class GetProductCategoryShowcase
 
             $data = [
                 'department' => DepartmentResource::make($productCategory)->toArray(request()),
+                'translation_box' => [
+                    'title' => __('Multi-language Translations'),
+                    'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($productCategory->shop->extra_languages),
+                    'save_route' => [
+                        'name' => 'grp.models.product_category.translations.update',
+                        'parameters' => [
+                            'tradeUnit' => "",
+                        ],
+                    ],
+                ],
             ];
             $data['routeList'] = [
                 'collectionRoute' => [

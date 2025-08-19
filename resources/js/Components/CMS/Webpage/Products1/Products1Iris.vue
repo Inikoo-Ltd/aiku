@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { faFilter } from "@fas";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getStyles } from "@/Composables/styles";
 import { ref, onMounted, watch, computed, toRaw, inject } from "vue";
 import axios from "axios";
@@ -23,6 +22,10 @@ import { trans } from "laravel-vue-i18n"
 import FontSize from "tiptap-extension-font-size";
 import ButtonAddCategoryToPortfolio from "@/Components/Iris/Products/ButtonAddCategoryToPortfolio.vue"
 
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faFileDownload } from "@fas"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faFileDownload)
 
 const props = defineProps<{
     fieldValue: {
@@ -46,6 +49,7 @@ const props = defineProps<{
         container?: any
         model_type: string
         model_id: number
+        model_slug: string
     }
     webpageData?: any
     blockData?: Object
@@ -444,15 +448,29 @@ const responsiveGridClass = computed(() => {
             </transition>
 
             <!-- Main Content -->
-            <main class="flex-1">
+            <main class="flex-1 mt-4">
+                <div class="px-4 xpt-4 mb-2 text-base font-normal">
+                    <div class="hidden">
+                        {{ fieldValue.model_type }}
+                    </div>
+                    <a
+                        :href="route().has('iris.catalogue.feeds.product_category.download') && fieldValue.model_slug ? route('iris.catalogue.feeds.product_category.download', { productCategory: fieldValue.model_slug }) : '#'"
+                        target="_blank"
+                        class="group hover:underline">
+                        <FontAwesomeIcon icon="fas fa-file-download" class="text-sm opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />
+                        <span class="text-sm font-normal opacity-70 group-hover:opacity-100">Download products (csv)</span>
+                    </a>
+                </div>
+
                 <!-- Search & Sort -->
-                <div class="px-4 pt-4 pb-2 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="px-4 xpt-4 mb-2 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div class="flex items-center w-full md:w-1/3 gap-2">
+                        
                         <Button v-if="isMobile" :icon="faFilter" @click="showFilters = true" class="!p-3 !w-auto"
                             aria-label="Open Filters" />
 
                         <!-- Sidebar Toggle for Desktop -->
-                        <div v-else class="py-4">
+                        <div v-else class="">
                             <Button :icon="faFilter" @click="showAside = !showAside" class="!p-3 !w-auto"
                                 aria-label="Open Filters" />
                         </div>
@@ -461,7 +479,7 @@ const responsiveGridClass = computed(() => {
                     </div>
 
                     <!-- Sort Tabs -->
-                    <div class="flex space-x-6 overflow-x-auto mt-2 md:mt-0 border-b border-gray-300">
+                    <div class="flex items-center space-x-6 overflow-x-auto mt-2 md:mt-0 border-b border-gray-300">
                         <!-- <button @click="toggleNewArrivals"
                             class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1" :class="[
                             isNewArrivals
@@ -482,6 +500,7 @@ const responsiveGridClass = computed(() => {
                         </button>
                     </div>
                 </div>
+
                 <div class="px-4 pb-2 flex justify-between items-center text-sm text-gray-600">
                     <div
                         class="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
