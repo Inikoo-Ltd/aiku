@@ -77,6 +77,15 @@ class ShowMarketingDashboard extends OrgAction
                             'parameters' => $request->route()->originalParameters()
                         ]
                     ],
+                    [
+                        'name' => __('Traffic Sources'),
+                        'value' => $this->shop->commsStats->number_traffic_sources ?? 0,
+                        'icon'  => ['fal', 'fa-traffic-light'],
+                        'route' => [
+                            'name'       => 'grp.org.shops.show.marketing.traffic_sources.index',
+                            'parameters' => $request->route()->originalParameters()
+                        ]
+                    ]
                 ]
 
 
@@ -87,9 +96,9 @@ class ShowMarketingDashboard extends OrgAction
     public function getBreadcrumbs(array $routeParameters): array
     {
         return
-           array_merge(
-               ShowShop::make()->getBreadcrumbs($routeParameters),
-               [
+            array_merge(
+                ShowShop::make()->getBreadcrumbs($routeParameters),
+                [
                     [
                         'type'   => 'simple',
                         'simple' => [
@@ -101,8 +110,6 @@ class ShowMarketingDashboard extends OrgAction
                         ]
                     ]
                 ]
-           );
+            );
     }
-
-
 }

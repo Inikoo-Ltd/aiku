@@ -119,6 +119,22 @@ function customerRoute(order: Order) {
       <Icon :data="order.state_icon" />
     </template>
 
+
+  <template #cell(pay_status)="{ item: order }">
+    <span v-if="order.pay_status == 'waiting'" class="text-blue-400">
+      {{ order["pay_status"] }}
+    </span>
+    <span v-else-if="order.pay_status == 'success'" class="text-green-500">
+      {{ order["pay_status"] }}
+    </span>
+    <span v-else-if="order.pay_status == 'fail'" class="text-red-500">
+      {{ order["pay_status"] }}
+    </span>
+    <span v-else>
+      {{ order["pay_status"] }}
+    </span>
+  </template>
+
     <template #cell(reference)="{ item: order }">
       <Link :href="orderRoute(order) as unknown as string" class="primaryLink">
         {{ order["reference"] }}

@@ -183,6 +183,7 @@ Route::get('master-shop/{masterShop}/scopes/{scope}/families', GetMasterFamilies
 Route::get('master-shop/{masterShop}/scope/{scope}/collections', [GetMasterCollections::class, 'inMasterCollection'])->name('master_shop.master_collections_not_attached_to_master_collection');
 Route::get('master-shop/{masterShop}/master-collection/{masterCollection}/products', GetMasterProductsNotAttachedToAMasterCollection::class)->name('master_shop.master_products_not_attached_to_master_collection');
 
+
 Route::get('webpage/{webpage:id}/web-block-histories', GetWebBlockHistories::class)->name('webpage.web_block_histories.index')->withoutScopedBindings();
 Route::get('webpage/{webpage:id}/web-block/{webBlock:id}/web-block-histories', [GetWebBlockHistories::class, 'inWebBlock'])->name('web-block.web_block_histories.index')->withoutScopedBindings();
 Route::get('webpage/{webpage:id}/web-block-type/{webBlockType:id}/web-block-histories', [GetWebBlockHistories::class, 'inWebBlockType'])->name('web-block-type.web_block_histories.index')->withoutScopedBindings();

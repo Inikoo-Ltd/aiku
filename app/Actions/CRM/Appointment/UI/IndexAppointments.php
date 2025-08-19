@@ -9,6 +9,7 @@
 namespace App\Actions\CRM\Appointment\UI;
 
 use App\Actions\InertiaAction;
+use App\Actions\OrgAction;
 use App\Http\Resources\CRM\AppointmentResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\CRM\Appointment;
@@ -25,19 +26,11 @@ use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
-class IndexAppointments extends InertiaAction
+class IndexAppointments extends OrgAction
 {
     private Employee|Customer|Shop|Guest $parent;
 
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit = $request->user()->authTo('crm.appointments.edit');
 
-        return
-            (
-                $request->user()->authTo('crm.appointments.view')
-            );
-    }
 
 
     public function handle(Shop|Customer|Employee|Guest $parent, $prefix = null): LengthAwarePaginator
@@ -67,7 +60,6 @@ class IndexAppointments extends InertiaAction
             );
         }
 
-        //         $queryBuilder->leftJoin('customers', 'appointments.customer_id', 'customers.id');
 
         return $queryBuilder
             ->defaultSort('-schedule_at')
@@ -120,7 +112,7 @@ class IndexAppointments extends InertiaAction
 
     public function inShop(Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisation($request);
+        $this->initialisationFromShop($shop,$request);
 
         return $this->handle($shop);
     }
@@ -129,7 +121,7 @@ class IndexAppointments extends InertiaAction
     {
         $scope     = $this->parent;
         $container = null;
-        if (class_basename($scope) == 'Shop' and organisation()->stats->number_shops > 1) {
+        if (class_basename($scope) == 'Shop' && $this->organisation->stats->number_shops > 1) {
             $container = [
                 'icon'    => ['fal', 'fa-store-alt'],
                 'tooltip' => __('Shop'),
@@ -174,18 +166,7 @@ class IndexAppointments extends InertiaAction
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
-        $headCrumb = function (array $routeParameters = []) {
-            return [
-                [
-                    'type'   => 'simple',
-                    'simple' => [
-                        'route' => $routeParameters,
-                        'label' => __('Appointments'),
-                        'icon'  => 'fal fa-bars'
-                    ],
-                ],
-            ];
-        };
+
 
         return [];
     }

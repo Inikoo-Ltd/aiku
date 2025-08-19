@@ -21,7 +21,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class GetMasterProductsNotAttachedToAMasterCollection extends GrpAction
 {
-
     private MasterShop $parent;
 
     public function handle(MasterShop $parent, MasterCollection $collection, $prefix = null): LengthAwarePaginator

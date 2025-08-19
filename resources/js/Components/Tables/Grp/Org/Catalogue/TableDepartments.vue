@@ -56,18 +56,6 @@ function departmentRoute(department: Department) {
     }
 }
 
-function shopRoute(department: Department) {
-    if (route().current() === "grp.org.shops.index") {
-        return route(
-            "grp.org.shops.show.catalogue.dashboard",
-            [
-                (route().params as RouteParams).organisation,
-                department.shop_slug]);
-    }
-    return '';
-}
-
-
 function subDepartmentsRoute(department: Department) {
     if (route().current() === "grp.org.shops.show.catalogue.departments.index") {
         return route(
@@ -170,7 +158,6 @@ const isLoadingDetach = ref<string[]>([]);
             </Icon>
         </template>
         <template #cell(code)="{ item: department }">
-
             <div class="whitespace-nowrap">
             <Link  :href="(masterDepartmentRoute(department) as string)"  v-tooltip="trans('Go to Master')" class="mr-1"  :class="[ department.master_product_category_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
                 <FontAwesomeIcon

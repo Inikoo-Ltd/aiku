@@ -11,12 +11,14 @@
 namespace App\Actions\Retina\Dropshipping\Product;
 
 use App\Actions\RetinaAction;
+use App\Exports\Marketing\SingleProductExport;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\ActionRequest;
+use Excel;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Illuminate\Support\Str;
@@ -44,7 +46,14 @@ class DownloadProduct extends RetinaAction
                 ProductZipExport::make()->handle($parent, $filename);
             }, $filename);
         } else {
-            return Storage::disk('data-feeds')->download($path);
+            if ($parent instanceof Product) {
+                return Excel::download(new SingleProductExport($parent), $filename, null, [
+                    'Content-Type' => 'text/csv',
+                    'Cache-Control' => 'max-age=0',
+                ]);
+            } else {
+                return Storage::disk('data-feeds')->download($path);
+            }
         }
     }
     /**

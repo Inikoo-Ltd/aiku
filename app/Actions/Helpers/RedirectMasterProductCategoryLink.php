@@ -21,11 +21,9 @@ class RedirectMasterProductCategoryLink extends OrgAction
     {
         if ($masterProductCategory->type === MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
             return Redirect::route(
-                'grp.org.shops.show.catalogue.departments.show.master_sub_departments.show',
+                'grp.masters.master_shops.show.master_sub_departments.show',
                 [
-                    $masterProductCategory->organisation->slug,
-                    $masterProductCategory->shop->slug,
-                    $masterProductCategory->department->slug,
+                    $masterProductCategory->masterShop->slug,
                     $masterProductCategory->slug,
                 ]
             );
@@ -39,10 +37,9 @@ class RedirectMasterProductCategoryLink extends OrgAction
             );
         } else {
             return Redirect::route(
-                'grp.org.shops.show.catalogue.families.show',
+                'grp.masters.master_shops.show.master_families.show',
                 [
-                    $masterProductCategory->organisation->slug,
-                    $masterProductCategory->shop->slug,
+                    $masterProductCategory->masterShop->slug,
                     $masterProductCategory->slug,
                 ]
             );
@@ -55,5 +52,4 @@ class RedirectMasterProductCategoryLink extends OrgAction
 
         return $this->handle($masterProductCategory);
     }
-
 }

@@ -116,7 +116,7 @@ console.log('aaa',props)
 
 
 <template>
-    <div class="editor-class">
+    <div class="editor-class" :class="route().params?.mode !== 'iris' ? 'is-not-mode-iris' : ''">
         <div v-if="isInWorkshop" class="bg-gray-200 shadow-xl px-8 py-4 flex justify-center items-center gap-x-2">
             <ButtonPreviewLogin v-model="isPreviewLoggedIn" />
         </div>
@@ -155,22 +155,24 @@ console.log('aaa',props)
 
 
 
-<style  lang="scss">
-:deep(.hover-dashed) {
-    @apply relative;
-
-    &::after {
-        content: "";
-        @apply absolute inset-0 hover:bg-gray-200/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
+<style lang="scss">
+.is-not-mode-iris {
+    .hover-dashed {
+        @apply relative;
+    
+        &::after {
+            content: "";
+            @apply absolute inset-0 hover:bg-gray-200/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
+        }
     }
-}
-
-:deep(.hover-text-input) {
-    @apply relative isolate;
-
-    &::after {
-        content: "";
-        @apply -z-10 absolute inset-0 hover:bg-yellow-500/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
+    
+    .hover-text-input {
+        @apply relative isolate;
+    
+        &::after {
+            content: "";
+            @apply -z-10 absolute inset-0 hover:bg-yellow-500/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
+        }
     }
 }
 

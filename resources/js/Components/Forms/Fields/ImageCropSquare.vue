@@ -83,6 +83,13 @@ const stencilProps = props.fieldData?.options?.minAspectRatio && props.fieldData
             : 1
     };
 
+
+const deleteImage = () => {
+    imgAfterCrop.value = null
+    props.form[props.fieldName] = null
+}
+
+
 watch(isOpenModalCrop, (val) => {
     if (val) _cropper.value?.refresh();
 });
@@ -93,17 +100,10 @@ watch(isOpenModalCrop, (val) => {
         <!-- PrimeVue Dialog -->
         <Dialog v-model:visible="isOpenModalCrop" modal header="Crop Image" :style="{ width: '600px' }">
             <div class="w-full h-[300px] relative bg-gray-700">
-                <Cropper
-                    :key="numbKey"
-                    ref="_cropper"
-                    class="w-full h-full"
-                    :src="tempImgToCrop"
-                    :stencil-props="stencilProps"
-                    imageClass="w-full h-full"
-                    :auto-zoom="true"
-                />
+                <Cropper :key="numbKey" ref="_cropper" class="w-full h-full" :src="tempImgToCrop"
+                    :stencil-props="stencilProps" imageClass="w-full h-full" :auto-zoom="true" />
                 <div @click="() => numbKey++"
-                     class="select-none px-2 py-1 cursor-pointer absolute top-2 right-2 text-white border border-gray-300 hover:bg-white/80 hover:text-gray-700 rounded">
+                    class="select-none px-2 py-1 cursor-pointer absolute top-2 right-2 text-white border border-gray-300 hover:bg-white/80 hover:text-gray-700 rounded">
                     <FontAwesomeIcon :icon="['fal', 'undo-alt']" fixed-width />
                     {{ trans("Refresh") }}
                 </div>
@@ -120,47 +120,37 @@ watch(isOpenModalCrop, (val) => {
         </Dialog>
 
         <!-- Image Preview -->
-        <div
-            class="relative overflow-hidden h-40 min-w-32 aspect-square rounded-lg ring-1 ring-gray-500 shadow bg-gray-100"
-            :class="form.errors[fieldName] ? 'errorShake' : ''"
-        >
-            <img
-                v-if="imgAfterCrop?.original"
-                :src="imgAfterCrop.original"
-                alt="Preview"
-                class="h-full w-full object-cover rounded"
-            />
+        <!-- Image Preview -->
+        <div class="relative overflow-hidden h-40 min-w-32 aspect-square rounded-lg ring-1 ring-gray-500 shadow bg-gray-100"
+            :class="form.errors[fieldName] ? 'errorShake' : ''">
+            <img v-if="imgAfterCrop?.original" :src="imgAfterCrop.original" alt="Preview"
+                class="h-full w-full object-cover rounded" />
             <div v-else class="h-full w-full flex items-center justify-center text-gray-400 text-sm">
                 {{ trans("No Image") }}
             </div>
 
-            <label
-                for="input-avatar-large"
-                class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-sm font-medium text-white opacity-0 hover:opacity-100 transition-opacity duration-200 cursor-pointer"
-            >
-                <span>{{ trans("Change") }}</span>
-                <input
-                    id="input-avatar-large"
-                    type="file"
-                    accept="image/*"
+            <!-- Hover Actions -->
+            <label v-if="!imgAfterCrop?.original" for="input-avatar-large"
+                class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-sm font-medium text-white opacity-0 hover:opacity-100 transition-opacity duration-200 cursor-pointer">
+                <span>{{ trans("Upload") }}</span>
+                <input id="input-avatar-large" type="file" accept="image/*"
                     class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    @change="onPickFile($event.target.files[0])"
-                />
+                    @change="onPickFile($event.target.files[0])" />
             </label>
+
+            <!-- Delete Button -->
+            <button v-if="imgAfterCrop?.original && fieldData.required == false" @click="deleteImage" type="button"
+                class="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full shadow transition">
+                <FontAwesomeIcon :icon="['fas', 'times']" class="h-3 w-3" />
+            </button>
         </div>
 
         <!-- Status Icon -->
         <div class="absolute top-2 right-0 pr-3 flex items-center pointer-events-none">
-            <FontAwesomeIcon
-                v-if="form.errors[fieldName]"
-                :icon="['fas', 'exclamation-circle']"
-                class="h-5 w-5 text-red-500"
-            />
-            <FontAwesomeIcon
-                v-else-if="form.recentlySuccessful"
-                :icon="['fas', 'check-circle']"
-                class="h-5 w-5 text-green-500"
-            />
+            <FontAwesomeIcon v-if="form.errors[fieldName]" :icon="['fas', 'exclamation-circle']"
+                class="h-5 w-5 text-red-500" />
+            <FontAwesomeIcon v-else-if="form.recentlySuccessful" :icon="['fas', 'check-circle']"
+                class="h-5 w-5 text-green-500" />
         </div>
 
         <!-- Error Text -->

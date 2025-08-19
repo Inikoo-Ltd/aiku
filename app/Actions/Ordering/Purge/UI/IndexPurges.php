@@ -72,6 +72,7 @@ class IndexPurges extends OrgAction
                 'purge_stats.estimated_number_orders',
                 'purge_stats.estimated_number_transactions',
                 'purge_stats.estimated_net_amount',
+                'shops.id as shop_id',
                 'shops.name as shop_name',
                 'shops.slug as shop_slug',
                 'organisations.name as organisation_name',
@@ -114,7 +115,7 @@ class IndexPurges extends OrgAction
             }
             $table->column(key: 'estimated_number_orders', label: __('orders'), sortable: true, canBeHidden: false, searchable: true);
             $table->column(key: 'estimated_number_transactions', label: __('transactions'), sortable: true, canBeHidden: false, searchable: true);
-            $table->column(key: 'estimated_net_amount', label: __('amount'), sortable: true, canBeHidden: false, searchable: true);
+            $table->column(key: 'estimated_net_amount', label: __('amount'), sortable: true, canBeHidden: false, searchable: true, align: 'right');
         };
     }
 
