@@ -453,7 +453,7 @@ const SyncAurora = () => {
 };
 
 
-const saveHistoryToLocalStorage = () => {
+/* const saveHistoryToLocalStorage = () => {
   localStorage.setItem('undoStack', JSON.stringify(undoStack.value));
   localStorage.setItem('redoStack', JSON.stringify(redoStack.value));
 };
@@ -475,9 +475,9 @@ const pushToHistory = () => {
   redoStack.value = [];
 
   saveHistoryToLocalStorage();
-};
+}; */
 
-// Undo
+/* // Undo
 const undo = async () => {
   if (undoStack.value.length === 0) return;
 
@@ -548,7 +548,7 @@ onUnmounted(() => {
 // Also clear when navigating away or closing tab
 window.addEventListener('beforeunload', () => {
   clearHistory();
-});
+}); */
 
 
 onMounted(() => {
@@ -632,12 +632,12 @@ console.log('props',props)
           <div v-tooltip="'Full screen'" @click="fullScreen = !fullScreen" class="cursor-pointer">
             <FontAwesomeIcon :icon="!fullScreen ? faExpandWide : faCompressWide" fixed-width />
           </div>
-           <div v-tooltip="'Undo'" class="cursor-pointer">
+           <!-- <div v-tooltip="'Undo'" class="cursor-pointer">
             <FontAwesomeIcon  @click="undo" :icon="faUndo" fixed-width />
-          </div>
-           <div v-tooltip="'Redo'" class="cursor-pointer">
+          </div> -->
+          <!--  <div v-tooltip="'Redo'" class="cursor-pointer">
             <FontAwesomeIcon  @click="redo" :icon="faRedo" fixed-width />
-          </div>
+          </div> -->
         </div>
 
         <div v-if="compUsersEditThisPage?.length > 1"
