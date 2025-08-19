@@ -76,7 +76,7 @@ import {
     faExternalLink,
     faTimesCircle,
 } from "@far"
-import { faTable, faPalette } from "@fal"
+import { faTable, faPalette, faUnlink } from "@fal"
 import { faEraser, faTint, faTable as fasTable, } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
@@ -700,17 +700,24 @@ const convertRemToPx = (remString) => {
                         </TiptapToolbarButton>
                     </TiptapToolbarGroup>
 
-                    <TiptapToolbarGroup>
-                        <TiptapToolbarButton v-if="toogle.includes('link')" label="Link" @click="openLinkDialog"
+                       <TiptapToolbarGroup>
+                         <TiptapToolbarButton v-if="toogle.includes('link')" label="Link" @click="openLinkDialog"
                             :is-active="editorInstance?.isActive('link')">
                             <FontAwesomeIcon :icon="faLink" class="h-5 w-5 sm:h-4 sm:w-4" />
                         </TiptapToolbarButton>
-
-                        <TiptapToolbarButton v-if="toogle.includes('customLink')" label="Link Internal & External"
+                         <TiptapToolbarButton v-if="toogle.includes('customLink')" label="Link Internal & External"
                             @click="openLinkDialogCustom" :is-active="editorInstance?.isActive('link')">
                             <FontAwesomeIcon :icon="faLink" class="h-5 w-5 sm:h-4 sm:w-4" />
                         </TiptapToolbarButton>
 
+                        <TiptapToolbarButton v-if="toogle.includes('customLink') || toogle.includes('link')" label="unlink"
+                            @click="editorInstance.chain().focus().unsetLink().run()" :disabled="!editorInstance?.isActive('link')">
+                            <FontAwesomeIcon :icon="faUnlink" class="h-5 w-5 sm:h-4 sm:w-4" />
+                        </TiptapToolbarButton>
+
+                       </TiptapToolbarGroup>
+
+                    <TiptapToolbarGroup>
                         <TiptapToolbarButton v-if="toogle.includes('image')" label="Image"
                             @click="() => { showAddImageDialog = true, showDialog = true }">
                             <FontAwesomeIcon :icon="faImage" class="h-5 w-5 sm:h-4 sm:w-4" />
@@ -1034,9 +1041,9 @@ const convertRemToPx = (remString) => {
     @apply italic border-l-4 border-gray-300 p-4 py-2 ml-6 mt-6 mb-2 bg-gray-50;
 }
 
-/* :deep(.editor-class a) {
+:deep(.editor-class a) {
     @apply hover:underline text-blue-600 cursor-pointer;
-} */
+}
 
 :deep(.editor-class hr) {
     @apply border-gray-400 my-4;
