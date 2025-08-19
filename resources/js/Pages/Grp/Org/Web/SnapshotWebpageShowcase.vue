@@ -55,7 +55,7 @@ const isIframeLoading = ref(true)
 const _iframe = ref<HTMLIFrameElement | null>(null)
 const visible = ref(false)
 
-console.log(route().params)
+console.log(props)
 const iframeSrc = route('grp.org.shops.show.web.webpages.snapshot.preview',
   {
     organisation: route().params['organisation'],
@@ -98,8 +98,8 @@ const confirm1 = () => {
       if (props.data.label) {
         router.post(
           route('grp.models.webpage.set-snapshot-as-live', {
-            webpage: route().params['webpage'],
-            snapshot: route().params['snapshot'],
+            webpage: props.data.parent_id,
+            snapshot: props.data.id,
           })
         )
       } else {
@@ -124,7 +124,7 @@ const updateSnapshot = () => {
         notify({
           title: trans("Success"),
           text: trans("Success edit snapshot"),
-          type: "Success",
+          type: "success",
         })
       },
       onError: (errors) => {
@@ -151,8 +151,9 @@ const updateSnapshot = () => {
 
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead">
-    <template #button-set-live>
-      <Button :label="'set live'" :icon="faAlbumCollection" @click="confirm1"></Button>
+    <template #other>
+      <Button v-if="props.data.label" :label="'set live'" :icon="faAlbumCollection" @click="confirm1"></Button>
+      <Button type="edit" label="Set Label" @click="visible = true"></Button>
     </template>
   </PageHeading>
   <div class="px-4 sm:px-6 lg:px-8 py-6 space-y-6">

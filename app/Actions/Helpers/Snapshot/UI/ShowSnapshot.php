@@ -54,23 +54,6 @@ class ShowSnapshot extends OrgAction
     {
         // $subNavigation = $this->getWebpageNavigation($snapshot->parent->website);
         $actions = [];
-
-        $actions[] = [
-            'type'    => 'button',
-            'style'   => 'create',
-            'tooltip' => __('Set Live'),
-            'label'   => __('Set Live'),
-            'icon'    => ["fal", "fa-album-collection"],
-            'route'   => [
-                'name'       => 'grp.models.webpage.set-snapshot-as-live',
-                'parameters' => [
-                    'webpage' => $this->webpage->id,
-                    'snapshot' => $snapshot->id
-                ],
-                'method' => 'post'
-            ]
-        ];
-
         return Inertia::render(
             'Org/Web/SnapshotWebpageShowcase',
             [
