@@ -32,6 +32,7 @@ class UpdateSnapshot extends OrgAction
         $rules = [
             'state'           => ['sometimes', Rule::enum(SnapshotStateEnum::class)],
             'published_until' => ['sometimes', 'date'],
+            'label'           => ['sometimes', 'nullable', 'string']
         ];
 
         if (!$this->strict) {

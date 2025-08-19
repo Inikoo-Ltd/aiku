@@ -57,7 +57,6 @@ class WebBlockProductResourceEcom extends JsonResource
                 $favourite = $customer->favourites()->where('product_id', $product->id)->first();
 
                 $basket = $customer->orderInBasket;
-
                 if ($basket) {
                     $transaction = DB::table('transactions')->where('order_id', $basket->id)
                         ->where('model_id', $product->id)->where('model_type', 'Product')

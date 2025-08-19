@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { faCube, faLink, faHeart } from "@fal"
-import { faCircle, faHeart as fasHeart, faDotCircle } from "@fas"
+import { faCircle, faHeart as fasHeart, faDotCircle, faFilePdf, faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ref, inject, onMounted} from "vue"
@@ -19,7 +19,7 @@ import { set } from "lodash-es"
 import { getStyles } from "@/Composables/styles"
 import axios from "axios"
 
-library.add(faCube, faLink)
+library.add(faCube, faLink, faFilePdf, faFileDownload)
 
 interface ProductResource {
     id: number
@@ -179,7 +179,7 @@ const toggleExpanded = () => {
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             marginLeft : 'auto', marginRight : 'auto'
 		}" class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block">
-        <div class="grid grid-cols-12 gap-x-10 mb-2">
+        <div class="grid grid-cols-12 gap-x-10 mb-2"> 
             <div class="col-span-7">
                 <div class="py-1 w-full">
                     <ImageProducts :images="fieldValue.product.images" />
@@ -203,8 +203,12 @@ const toggleExpanded = () => {
                         <div class="flex flex-wrap justify-between gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
                             <div>Product code: {{ fieldValue.product.code }}</div>
                             <div class="flex items-center gap-[1px]">
-                                <a :href="route('iris.catalogue.feeds.product.download', {product: fieldValue.product.slug})" target="_blank" class="hidden">
-                                    download
+                                <a
+                                    :href="route().has('iris.catalogue.feeds.product.download') ? route('iris.catalogue.feeds.product.download', { product: fieldValue.product.slug }) : '#'"
+                                    target="_blank"
+                                    class="group hover:underline">
+                                    <FontAwesomeIcon icon="fas fa-file-download" class="opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />
+                                    <span>Download (csv)</span>
                                 </a>
                             </div>
                         </div>

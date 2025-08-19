@@ -4,7 +4,10 @@ import BrowserView from '@/Components/Pure/BrowserView.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import InputSwitch from 'primevue/inputswitch'
 import SelectButton from 'primevue/selectbutton'
+import { Head } from "@inertiajs/vue3";
+import PageHeading from "@/Components/Headings/PageHeading.vue";
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { capitalize } from "@/Composables/capitalize";
 import {
   faUser,
   faUserSlash,
@@ -17,6 +20,8 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 library.add(faUser, faUserSlash, faDesktop, faTabletAlt, faMobileAlt)
 
 const props = defineProps<{
+  pageHead: PageHeadingTypes
+  title: string
   data: {
     slug: string
     state: string
@@ -38,15 +43,17 @@ const screenMode = ref<'desktop' | 'tablet' | 'mobile'>('desktop')
 const isIframeLoading = ref(true)
 const _iframe = ref<HTMLIFrameElement | null>(null)
 
-const iframeSrc = route('grp.websites.preview', [
-  route().params['website'],
-  route().params['webpage'],
+console.log( route().params)
+const iframeSrc = route('grp.org.shops.show.web.webpages.snapshot.preview', 
   {
     organisation: route().params['organisation'],
     shop: route().params['shop'],
-    fulfilment: route().params['fulfilment']
+    fulfilment: route().params['fulfilment'],
+    website : route().params['website'],
+    webpage: route().params['webpage'],
+    snapshot: route().params['snapshot'],
   }
-])
+)
 
 const sendToIframe = (data: any) => {
   _iframe.value?.contentWindow?.postMessage(data, '*')
@@ -62,12 +69,15 @@ const screenModeOptions = [
   { label: 'Mobile', value: 'mobile', icon: ['fal', 'mobile-alt'] }
 ]
 
-
+console.log(props)
 </script>
 
 <template>
+
+  <Head :title="capitalize(title)" />
+  <PageHeading :data="pageHead" />
   <div class="px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1  gap-6">
       <!-- Left: Controls + Preview -->
       <div class="space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-4">

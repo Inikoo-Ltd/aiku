@@ -287,7 +287,7 @@ console.log(props)
 					<div class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("Weight") }}</dt>
 						<dd class="font-medium">
-							{{ locale.number(data.product.data.specifications.gross_weight) }} gr
+							{{ locale.number(data.product.data?.specifications?.gross_weight) }} gr
 						</dd>
 					</div>
 					<div>

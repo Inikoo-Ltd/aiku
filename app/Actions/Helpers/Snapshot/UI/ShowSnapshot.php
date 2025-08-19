@@ -2,99 +2,96 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Fri, 06 Oct 2023 08:55:04 Malaysia Time, Office, Bali, Indonesia
+ * Created: Thu, 21 Sep 2023 11:35:41 Malaysia Time, Pantai Lembeng, Bali, Indonesia
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
 namespace App\Actions\Helpers\Snapshot\UI;
 
-use App\Actions\InertiaAction;
-use App\Actions\UI\Customer\Portfolio\ShowPortfolio;
-use App\Http\Resources\Portfolio\SnapshotResource;
+use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithWebAuthorisation;
+use App\Actions\UI\WithInertia;
+use App\Enums\UI\Web\WebpageTabsEnum;
+use App\Http\Resources\Helpers\SnapshotResource;
+use App\Models\Catalogue\Shop;
+use App\Models\Fulfilment\Fulfilment;
 use App\Models\Helpers\Snapshot;
-use App\Models\Portfolio\Banner;
-use App\Models\Portfolio\PortfolioWebsite;
+use App\Models\SysAdmin\Organisation;
+use App\Models\Web\Webpage;
+use App\Models\Web\Website;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use Lorisleiva\Actions\Concerns\AsAction;
+use PhpOffice\PhpSpreadsheet\Calculation\Web;
 
-class ShowSnapshot extends InertiaAction
+class ShowSnapshot extends OrgAction
 {
-    public function authorize(ActionRequest $request): bool
+    use AsAction;
+    use WithInertia;
+    use WithWebAuthorisation;
+    // use WithWebpageSubNavigation;
+    private Webpage $webpage;
+
+    public function asController(Organisation $organisation, Shop $shop, Website $website, Webpage $webpage, Snapshot $snapshot, ActionRequest $request): Snapshot
     {
-        return
-            (
-                $request->user()->tokenCan('root') or
-                $request->get('customerUser')->hasPermissionTo('portfolio.banners.view')
-            );
+        $this->webpage = $webpage;
+        $this->initialisationFromShop($shop, $request);
+
+        return $snapshot;
     }
 
-    public function inBanner(Banner $banner, Snapshot $snapshot): Snapshot
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, Webpage $webpage, Snapshot $snapshot, ActionRequest $request): Snapshot
     {
-        return $this->handle($banner, $snapshot);
-    }
+        $this->webpage = $webpage;
+        $this->initialisationFromFulfilment($fulfilment, $request)->withTab(WebpageTabsEnum::values());
 
-    public function inWebsite(PortfolioWebsite $portfolioWebsite, Snapshot $snapshot): Snapshot
-    {
-        return $this->handle($portfolioWebsite, $snapshot);
-    }
-
-    public function handle(PortfolioWebsite|Banner $parent, Snapshot $snapshot): Snapshot
-    {
         return $snapshot;
     }
 
     public function htmlResponse(Snapshot $snapshot, ActionRequest $request): Response
     {
-        return Inertia::render(
-            'Portfolio/StockImages',
-            [
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->getName(),
-                    $request->route()->originalParameters()
-                ),
-                'title'    => __('images'),
-                'pageHead' => [
-                    'title'     => __('images'),
-                    'iconRight' => [
-                        'title' => __('image'),
-                        'icon'  => 'fal fa-images'
-                    ],
+        // $subNavigation = $this->getWebpageNavigation($snapshot->parent->website);
+        $actions = [];
+
+        $actions[] = [
+            'type'    => 'button',
+            'style'   => 'create',
+            'tooltip' => __('Set Live'),
+            'icon'    => ["fal", "fa-album-collection"],
+            'route'   => [
+                'name'       => 'grp.models.webpage.set-snapshot-as-live',
+                'parameters' => [
+                    'webpage' => $this->webpage->id,
+                    'snapshot' => $snapshot->id
                 ],
-                'data' => new SnapshotResource($snapshot)
+                'method' => 'post'
+            ]
+        ];
+
+        return Inertia::render(
+            'Org/Web/SnapshotWebpageShowcase',
+            [
+                // 'breadcrumbs' => $this->getBreadcrumbs(
+                //     $request->route()->getName(),
+                //     $request->route()->originalParameters()
+                // ),
+                'title'       => __('snapshot'),
+                'pageHead'    => [
+                    'title'         => $snapshot->label ?? __('Snapshot ').$snapshot->parent->code,
+                    'afterTitle'    => [
+                        'label' => '../'.$snapshot->parent->url,
+                    ],
+                    'icon'          => [
+                        'title' => __('snapshot'),
+                        'icon'  => 'fal fa-browser'
+                    ],
+                    'actions'       => $actions,
+                    // 'subNavigation' => $subNavigation,
+                ],
+                'data' => SnapshotResource::make($snapshot)->resolve()
             ]
         );
-    }
-
-    /** @noinspection PhpUnusedParameterInspection */
-    public function getBreadcrumbs(string $routeName, array $routeParameters): array
-    {
-        $headCrumb = function (array $routeParameters = []) {
-            return [
-                [
-                    'type'   => 'simple',
-                    'simple' => [
-                        'route' => $routeParameters,
-                        'label' => __('images'),
-                        'icon'  => 'fal fa-bars'
-                    ],
-                ],
-            ];
-        };
-
-        return match ($routeName) {
-            'customer.portfolio.images.index' =>
-            array_merge(
-                ShowPortfolio::make()->getBreadcrumbs(),
-                $headCrumb(
-                    [
-                        'name' => 'portfolio.images.index',
-                        null
-                    ]
-                ),
-            ),
-
-            default => []
-        };
     }
 }
