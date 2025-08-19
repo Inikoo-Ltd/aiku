@@ -53,7 +53,7 @@
 }
 
 .editor-class a {
-    @apply hover:underline text-blue-600 cursor-pointer;
+    @apply hover:underline font-semibold cursor-pointer;
 }
 
 .editor-class hr {

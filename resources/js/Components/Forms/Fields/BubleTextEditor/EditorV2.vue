@@ -1042,7 +1042,7 @@ const convertRemToPx = (remString) => {
 }
 
 :deep(.editor-class a) {
-    @apply hover:underline text-blue-600 cursor-pointer;
+    @apply hover:underline font-semibold cursor-pointer;
 }
 
 :deep(.editor-class hr) {
