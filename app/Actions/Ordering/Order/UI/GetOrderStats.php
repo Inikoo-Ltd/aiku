@@ -9,19 +9,25 @@
 namespace App\Actions\Ordering\Order\UI;
 
 use App\Models\Catalogue\Shop;
+use App\Models\CRM\Customer;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetOrderStats
 {
     use AsObject;
 
-    public function handle(Shop $shop): array
+    public function handle(Shop|Customer $parent): array
     {
-        $total = \DB::table('orders')->where('shop_id', $shop->id)->sum('net_amount');
+        if($parent instanceof Shop) {
+            $total = DB::table('orders')->where('shop_id', $parent->id)->sum('net_amount');
+        } elseif($parent instanceof Customer) {
+            $total = DB::table('orders')->where('customer_id', $parent->id)->sum('net_amount');
+        }
         // dd('qwew', $orders);
         // $total  = $orders->sum('net_amount');
         return [
-            'number_orders' => $shop->orderingStats->number_orders,
+            'number_orders' => $parent instanceof Shop ? $parent->orderingStats->number_orders : $parent->stats->number_orders,
             'total'         => $total
         ];
     }
