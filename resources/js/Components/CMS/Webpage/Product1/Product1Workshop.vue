@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCube, faLink, faSeedling, faHeart } from "@fal"
 import { faBox, faPlus, faVial } from "@far"
-import { faCircle, faStar, faDotCircle } from "@fas"
+import { faCircle, faStar, faDotCircle, faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ref , inject, useAttrs, onMounted} from "vue"
@@ -17,7 +17,7 @@ import Image from "@/Components/Image.vue"
 import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
 import { getStyles } from "@/Composables/styles"
 
-library.add(faCube, faLink)
+library.add(faCube, faLink, faFileDownload)
 
 type TemplateType = 'webpage' | 'template'
 
@@ -132,16 +132,17 @@ const toggleExpanded = () => {
                     </div>
                 </div>
             </div>
+            
             <div class="col-span-5 self-start">
                 <div class="flex justify-between mb-4 items-start">
                     <div class="w-full">
                         <h1 class="text-2xl font-bold text-gray-900">{{ modelValue.product.name }}</h1>
-                        <div class="flex flex-wrap gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
+                        <div class="flex flex-wrap justify-between gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
                             <div>Product code: {{ modelValue.product.code }}</div>
-                            <div class="flex items-center gap-[1px]">
-                                <!--   <FontAwesomeIcon :icon="faStar" class="text-[10px] text-yellow-400" v-for="n in 5"
-                                    :key="n" />
-                                <span class="ml-1 text-xs text-gray-500">41</span> -->
+                            
+                            <div v-tooltip="trans('This is not work in workshop, try in website.')" class="flex items-center gap-[1px]">
+                                <FontAwesomeIcon icon="fas fa-file-download" class="opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />
+                                <span>Download (csv)</span>
                             </div>
                         </div>
                         <div class="flex items-center gap-2 text-sm text-gray-600 mb-4">
