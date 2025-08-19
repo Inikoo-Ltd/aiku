@@ -48,7 +48,7 @@ const displayDate = computed(() => {
 <template>
   <article class="max-w-3xl mx-auto px-4 py-8 text-gray-800">
     <!-- Title as textarea -->
-    <div class="mb-4" :style="getStyles(modelValue?.properties, screenType)">
+    <div  class="text-4xl font-bold tracking-tight mb-3 leading-snug text-gray-900" :style="getStyles(modelValue?.properties, screenType)">
         <Editor v-model="modelValue.title" @update:modelValue="() => emits('autoSave')" class="mb-6"
           placeholder="Blog Title" :uploadImageRoute="{
             name: webpageData.images_upload_route.name,

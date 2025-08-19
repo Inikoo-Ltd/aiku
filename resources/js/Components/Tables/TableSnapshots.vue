@@ -12,6 +12,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import {faBroadcastTower, faSeedling, faGhost, faRecycle, faPoo} from '@fal'
 import {useFormatTime} from "@/Composables/useFormatTime"
 import {useLocaleStore} from '@/Stores/locale'
+import { Link } from '@inertiajs/vue3'
 
 const locale = useLocaleStore()
 
@@ -21,6 +22,22 @@ const props = defineProps<{
     data: object,
     tab?: string
 }>()
+
+function snapshotRoute(data: {}) {
+
+    switch (route().current()) {
+      case 'grp.org.shops.show.web.webpages.show':
+        return route(
+            'grp.org.shops.show.web.webpages.snapshot.show',
+            [
+                route().params['organisation'],
+                route().params['shop'],
+                route().params['website'],
+                route().params['webpage'],
+                data.id
+            ]);
+    }
+}
 
 </script>
 
@@ -45,7 +62,11 @@ const props = defineProps<{
 
         <!-- Date Published -->
         <template #cell(published_at)="{ item: user }">
-            <div class="text-gray-500">{{ useFormatTime(user['published_at'], { localeCode: locale.language.code, formatTime: 'hm' }) }}</div>
+            <div class="text-gray-500">
+                <Link :href="snapshotRoute(user)" class="primaryLink">
+                  {{ useFormatTime(user['published_at'], { localeCode: locale.language.code, formatTime: 'hm' }) }}
+                </Link>
+            </div>
         </template>
 
         <!-- Published Until -->
