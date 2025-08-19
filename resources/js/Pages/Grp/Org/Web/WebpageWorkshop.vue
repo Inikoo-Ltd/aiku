@@ -114,7 +114,7 @@ const addNewBlock = async ({ block, type }) => {
     position =  addBlockParentIndex.value.parentIndex + 1;
   }
 
-  pushToHistory();
+  //pushToHistory();
   router.post(
     route(props.webpage.add_web_block_route.name, props.webpage.add_web_block_route.parameters),
     { web_block_type_id: block.id, position  : position },
@@ -142,7 +142,7 @@ const addNewBlock = async ({ block, type }) => {
 };
 
 const duplicateBlock = async (modelHasWebBlock = Number) => {
-  pushToHistory();
+  //pushToHistory();
   router.post(
     route('grp.models.webpage.web_block.duplicate', {
       webpage: data.value.id,
@@ -193,7 +193,7 @@ const debounceSaveWorkshop = (block) => {
 
     isLoadingBlock.value = block.id;
     isSavingBlock.value = true;
-    pushToHistory();
+    //pushToHistory();
     try {
     const response =  await axios.patch(
         url,
@@ -295,7 +295,7 @@ provide('onSaveWorkshop', onSaveWorkshop);
 
 const sendOrderBlock = async block => {
   if (orderBlockCancelToken.value) orderBlockCancelToken.value();
-  pushToHistory(); 
+  //pushToHistory(); 
   router.post(
     route(props.webpage.reorder_web_blocks_route.name, props.webpage.reorder_web_blocks_route.parameters),
     { positions: block },
@@ -320,7 +320,7 @@ const sendOrderBlock = async block => {
 
 const sendDeleteBlock = async (block: Daum) => {
   if (deleteBlockCancelToken.value) deleteBlockCancelToken.value();
-  pushToHistory(); 
+  //pushToHistory(); 
   router.delete(
     route(props.webpage.delete_model_has_web_blocks_route.name, { modelHasWebBlocks: block.id }),
     {
@@ -459,7 +459,7 @@ const SyncAurora = () => {
 };
 
 // Push current state to undoStack
-const pushToHistory = () => {
+const //pushToHistory = () => {
   // Clone current layout state
   const currentState = JSON.parse(JSON.stringify(data.value.layout));
 
