@@ -108,7 +108,7 @@ class CreateBlogWebpage extends OrgAction
                                     'label'     => __('URL'),
                                     'label_no_capitalize' => true,
                                     'leftAddOn' => [
-                                        'label' => 'https://'.($parent instanceof Webpage ? $parent->website->domain : $parent->domain).'/'
+                                        'label' => 'https://'.($parent instanceof Webpage ? $parent->website->domain : $parent->domain).'/blog'
                                     ],
                                     'value'     => '',
                                     'required'  => true,

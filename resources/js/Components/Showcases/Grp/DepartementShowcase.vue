@@ -158,9 +158,9 @@ const UnassignCollection = async ( id: number ) => {
 
                     <div class="border-t pt-4 space-y-4 text-sm text-gray-700">
                         <div class="font-medium">{{ data?.department?.name || "No label" }}</div>
-                        <div class="text-gray-400">
-                            {{ data?.department?.description || "No description" }}
-                        </div>
+                        <div class="text-gray-400" v-html="data?.department?.description_title"></div>
+                        <div class="text-gray-400" v-html="data?.department?.description"></div>
+                        <div class="text-gray-400" v-html="data?.department?.description_extra"></div>
                     </div>
                 </div>
             </div>

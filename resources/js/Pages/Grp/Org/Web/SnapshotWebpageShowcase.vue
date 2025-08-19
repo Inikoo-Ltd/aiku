@@ -4,19 +4,35 @@ import BrowserView from '@/Components/Pure/BrowserView.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import InputSwitch from 'primevue/inputswitch'
 import SelectButton from 'primevue/selectbutton'
+import { Head, router } from "@inertiajs/vue3";
+import PageHeading from "@/Components/Headings/PageHeading.vue";
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { capitalize } from "@/Composables/capitalize";
+import Button from '@/Components/Elements/Buttons/Button.vue'
+import ConfirmDialog from 'primevue/confirmdialog';
+import { useConfirm } from "primevue/useconfirm";
+import Dialog from 'primevue/dialog';
+import { trans } from 'laravel-vue-i18n'
+
 import {
   faUser,
   faUserSlash,
   faDesktop,
   faTabletAlt,
-  faMobileAlt
+  faMobileAlt,
+  faAlarmClock,
+  faAlbumCollection
 } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
+import { faExclamationCircle } from '@fas'
+import PureInput from '@/Components/Pure/PureInput.vue'
+import { notify } from '@kyvg/vue3-notification'
 
 library.add(faUser, faUserSlash, faDesktop, faTabletAlt, faMobileAlt)
 
 const props = defineProps<{
+  pageHead: PageHeadingTypes
+  title: string
   data: {
     slug: string
     state: string
@@ -32,21 +48,24 @@ const props = defineProps<{
     }
   }
 }>()
-
+const confirm = useConfirm()
 const filterBlock = ref<Boolean>(true)
 const screenMode = ref<'desktop' | 'tablet' | 'mobile'>('desktop')
 const isIframeLoading = ref(true)
 const _iframe = ref<HTMLIFrameElement | null>(null)
+const visible = ref(false)
 
-const iframeSrc = route('grp.websites.preview', [
-  route().params['website'],
-  route().params['webpage'],
+console.log(props)
+const iframeSrc = route('grp.org.shops.show.web.webpages.snapshot.preview',
   {
     organisation: route().params['organisation'],
     shop: route().params['shop'],
-    fulfilment: route().params['fulfilment']
+    fulfilment: route().params['fulfilment'],
+    website: route().params['website'],
+    webpage: route().params['webpage'],
+    snapshot: route().params['snapshot'],
   }
-])
+)
 
 const sendToIframe = (data: any) => {
   _iframe.value?.contentWindow?.postMessage(data, '*')
@@ -63,11 +82,82 @@ const screenModeOptions = [
 ]
 
 
+const confirm1 = () => {
+  confirm.require({
+    message: 'Are you sure you want to set Live ?',
+    header: 'Confirmation',
+    rejectProps: {
+      label: 'Cancel',
+      severity: 'secondary',
+      outlined: true,
+    },
+    acceptProps: {
+      label: 'Save',
+    },
+    accept: () => {
+      if (props.data.label) {
+        router.post(
+          route('grp.models.webpage.set-snapshot-as-live', {
+            webpage: props.data.parent_id,
+            snapshot: props.data.id,
+          })
+        )
+      } else {
+        visible.value = true
+      }
+    },
+  })
+}
+
+const updateSnapshot = () => {
+  router.patch(
+    route('grp.models.snapshot.update', {
+      snapshot: route().params['snapshot'],
+    }),
+    {
+      label: props.data.label,
+    },
+    {
+      onSuccess: () => {
+        console.log("✅ Snapshot updated successfully");
+        visible.value = false
+        notify({
+          title: trans("Success"),
+          text: trans("Success edit snapshot"),
+          type: "success",
+        })
+      },
+      onError: (errors) => {
+        console.error("❌ Failed to update snapshot:", errors);
+        notify({
+          title: trans("Something went wrong."),
+          text: trans("Failed to edit snapshot."),
+          type: "error",
+        })
+      },
+    }
+  );
+};
+
+
 </script>
 
 <template>
+  <ConfirmDialog>
+    <template #icon>
+      <FontAwesomeIcon :icon="faExclamationCircle" class="text-2xl text-yellow-500" />
+    </template>
+  </ConfirmDialog>
+
+  <Head :title="capitalize(title)" />
+  <PageHeading :data="pageHead">
+    <template #other>
+      <Button v-if="props.data.label" :label="'set live'" :icon="faAlbumCollection" @click="confirm1"></Button>
+      <Button type="edit" label="Set Label" @click="visible = true"></Button>
+    </template>
+  </PageHeading>
   <div class="px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1  gap-6">
       <!-- Left: Controls + Preview -->
       <div class="space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-4">
@@ -115,6 +205,13 @@ const screenModeOptions = [
       </div>
     </div>
   </div>
+
+
+  <Dialog v-model:visible="visible" modal header="Set up label" :style="{ width: '25rem' }">
+    <span class="text-surface-500 dark:text-surface-400 block mb-2">Label : </span>
+    <PureInput v-model="props.data.label" placeholder="Enter label" class="mb-4" />
+    <Button label="Save" full :type="'save'" @click="updateSnapshot" />
+  </Dialog>
 </template>
 
 <style scoped>
