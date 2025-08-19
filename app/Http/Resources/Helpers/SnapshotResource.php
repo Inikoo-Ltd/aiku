@@ -53,6 +53,7 @@ class SnapshotResource extends JsonResource
 
 
         return [
+            'id'               => $snapshot->id,
             'published_at'     => $snapshot->published_at,
             'published_until'  => $snapshot->published_until,
             'first_commit'     => $snapshot->first_commit,
@@ -78,6 +79,7 @@ class SnapshotResource extends JsonResource
                 ]
             },
             'comment'          => $comment,
+            'label'            => $snapshot->label
         ];
     }
 }
