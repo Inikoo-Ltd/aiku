@@ -646,7 +646,7 @@ const convertRemToPx = (remString) => {
                                 <!-- Icon -->
                                 <div class="flex items-center justify-center w-full h-full rounded"
                                     :style="{ color: editorInstance.getAttributes('textStyle').color || 'gray' }">
-                                    <FontAwesomeIcon :icon="faTint" />
+                                    <FontAwesomeIcon :icon="faTint" class="text-sm" />
                                 </div>
                             </div>
                         </TiptapToolbarButton>
@@ -660,7 +660,7 @@ const convertRemToPx = (remString) => {
                                 <!-- Icon -->
                                 <div class="flex items-center justify-center w-full h-full  rounded"
                                     :style="{ backgroundColor: editorInstance?.getAttributes('highlight').color }">
-                                    <FontAwesomeIcon :icon="faPaintBrushAlt" />
+                                    <FontAwesomeIcon :icon="faPaintBrushAlt" class="text-sm"  />
                                 </div>
                             </div>
                         </TiptapToolbarButton>
@@ -803,7 +803,7 @@ const convertRemToPx = (remString) => {
                                             :style="{
                                                 backgroundColor: editorInstance.getAttributes('table')?.backgroundColor || editorInstance.getAttributes('tableCell')?.backgroundColor
                                             }">
-                                            <FontAwesomeIcon :icon='faPalette' class='text-gray-500' fixed-width
+                                            <FontAwesomeIcon :icon='faPalette' class='text-gray-500' style="font-size: 16px;" fixed-width
                                                 aria-hidden='true' />
                                         </div>
                                     </template>
