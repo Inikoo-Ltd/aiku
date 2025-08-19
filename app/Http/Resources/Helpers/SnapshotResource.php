@@ -54,6 +54,7 @@ class SnapshotResource extends JsonResource
 
         return [
             'id'               => $snapshot->id,
+            'parent_id'        => $snapshot->parent_id,
             'published_at'     => $snapshot->published_at,
             'published_until'  => $snapshot->published_until,
             'first_commit'     => $snapshot->first_commit,
