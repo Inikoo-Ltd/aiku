@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Mon, 18 Aug 2025 02:50:16 Central Standard Time, Torremolinos, Spain
@@ -21,7 +22,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexInvoicesPerShop extends OrgAction
 {
-
     use AsAction;
 
     public function handle(Organisation $parent, $prefix = null)

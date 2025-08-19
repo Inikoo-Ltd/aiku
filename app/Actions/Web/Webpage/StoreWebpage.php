@@ -147,9 +147,9 @@ class StoreWebpage extends OrgAction
                         $this->createWebBlock($webpage, 'family-1');
                         $this->createWebBlock($webpage, 'products-1');
                     }
-                } 
+                }
 
-                if($webpage->type == WebpageTypeEnum::BLOG) {
+                if ($webpage->type == WebpageTypeEnum::BLOG) {
                     $this->createWebBlock($webpage, 'blog', $webpage);
                 }
             }

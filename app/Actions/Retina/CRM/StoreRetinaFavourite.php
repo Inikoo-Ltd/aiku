@@ -8,11 +8,7 @@
 
 namespace App\Actions\Retina\CRM;
 
-use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoFavouritedInCategories;
-use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoFavourited;
-use App\Actions\CRM\Customer\Hydrators\CustomerHydrateFavourites;
 use App\Actions\CRM\Favourite\StoreFavourite;
-use App\Actions\OrgAction;
 use App\Actions\RetinaAction;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
@@ -23,8 +19,7 @@ class StoreRetinaFavourite extends RetinaAction
 {
     public function handle(Customer $customer, Product $product): Favourite
     {
-        $favourite = StoreFavourite::make()->action($customer, $product, []);
-        return $favourite;
+        return StoreFavourite::make()->action($customer, $product, []);
     }
 
     public function asController(Product $product, ActionRequest $request): Favourite

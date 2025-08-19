@@ -69,8 +69,6 @@ class SnapshotResource extends JsonResource
             }
         }
 
-        // dd($webPageLayout);
-
         return [
                 'id'               => $snapshot->id,
                 'parent_id'        => $snapshot->parent_id,
@@ -102,8 +100,8 @@ class SnapshotResource extends JsonResource
                 },
                 'comment'          => $comment,
                 'label'            => $snapshot->label,
-                'web_blocks_parameters'   => $webpage ?  WebBlockParametersResource::collection($webpage->webBlocks) : null,
+                'web_blocks_parameters'   => $webpage ? WebBlockParametersResource::collection($webpage->webBlocks) : null,
             ];
-        
+
     }
 }

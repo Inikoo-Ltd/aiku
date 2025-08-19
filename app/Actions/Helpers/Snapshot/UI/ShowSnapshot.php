@@ -25,14 +25,12 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
-use PhpOffice\PhpSpreadsheet\Calculation\Web;
 
 class ShowSnapshot extends OrgAction
 {
     use AsAction;
     use WithInertia;
     use WithWebAuthorisation;
-    // use WithWebpageSubNavigation;
     private Webpage $webpage;
 
     public function asController(Organisation $organisation, Shop $shop, Website $website, Webpage $webpage, Snapshot $snapshot, ActionRequest $request): Snapshot
@@ -54,7 +52,6 @@ class ShowSnapshot extends OrgAction
 
     public function htmlResponse(Snapshot $snapshot, ActionRequest $request): Response
     {
-        // $subNavigation = $this->getWebpageNavigation($snapshot->parent->website);
         $actions = [];
         return Inertia::render(
             'Org/Web/SnapshotWebpageShowcase',
@@ -107,7 +104,6 @@ class ShowSnapshot extends OrgAction
 
         $snapshot = Snapshot::where('id', $routeParameters['snapshot'])->first();
         /** @var Website $website */
-        $website = request()->route()->parameter('website');
 
         return match ($routeName) {
             'grp.org.shops.show.web.webpages.snapshot.show' => array_merge(

@@ -9,24 +9,15 @@
 namespace App\Actions\Web\Webpage\Iris;
 
 use App\Actions\IrisAction;
-use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithWebAuthorisation;
-use App\Actions\Web\Website\UI\ShowWebsite;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Http\Resources\Web\BlogWebpagesResource;
-use App\Http\Resources\Web\WebpagesResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Catalogue\Shop;
-use App\Models\Fulfilment\Fulfilment;
-use App\Models\SysAdmin\Group;
-use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -58,7 +49,7 @@ class IndexIrisBlogWebpages extends IrisAction
         $queryBuilder->where('webpages.website_id', $website->id);
         $queryBuilder->where('webpages.type', WebpageTypeEnum::BLOG);
         $queryBuilder->where('webpages.state', WebpageStateEnum::LIVE);
-        
+
         return $queryBuilder
             ->defaultSort('id')
             ->allowedSorts(['code', 'title'])
@@ -79,11 +70,12 @@ class IndexIrisBlogWebpages extends IrisAction
             $table
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
-                ->withEmptyState([
+                ->withEmptyState(
+                    [
                             'title' => __("No webpages found"),
                             'count' => $parent->webStats->number_webpages,
                         ],
-                    );
+                );
             $table->column(key: 'title', label: __('title'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'url', label: __('url'), canBeHidden: false, sortable: true, searchable: true);
 

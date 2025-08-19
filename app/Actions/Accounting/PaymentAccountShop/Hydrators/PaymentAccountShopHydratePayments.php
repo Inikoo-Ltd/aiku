@@ -16,13 +16,11 @@ use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Models\Accounting\Payment;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Catalogue\Shop;
-use Checkout\Payments\PaymentType;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
-
 
 class PaymentAccountShopHydratePayments implements ShouldBeUnique
 {
@@ -124,7 +122,7 @@ class PaymentAccountShopHydratePayments implements ShouldBeUnique
     {
         if ($command->argument('shop')) {
             $shop = Shop::where('slug', $command->argument('shop'))->first();
-        
+
             $count = PaymentAccountShop::where('shop_id', $shop->id)->count();
             $bar = $command->getOutput()->createProgressBar($count);
             $bar->setFormat('debug');

@@ -67,7 +67,7 @@ class StoreInvoiceTransaction extends OrgAction
             $modelData['historic_asset_id'] = $historicAsset->id;
         }
 
-        if($historicAsset) {
+        if ($historicAsset) {
             if ($historicAsset->model_type == 'Product') {
                 /** @var Product $product */
                 $product = $historicAsset->model;
@@ -90,7 +90,7 @@ class StoreInvoiceTransaction extends OrgAction
 
         $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
 
-        if($invoiceTransaction->asset){
+        if ($invoiceTransaction->asset) {
             AssetHydrateSales::dispatch($invoiceTransaction->asset, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
             AssetHydrateInvoices::dispatch($invoiceTransaction->asset, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
             AssetHydrateInvoicedCustomers::dispatch($invoiceTransaction->asset, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);

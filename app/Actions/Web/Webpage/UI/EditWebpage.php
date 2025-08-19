@@ -71,7 +71,7 @@ class EditWebpage extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => $isBlog ? __("Blog's Settings") :  __("Webpage's settings"),
+                'title'       => $isBlog ? __("Blog's Settings") : __("Webpage's settings"),
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
 
                 'pageHead' => [
@@ -235,7 +235,7 @@ class EditWebpage extends OrgAction
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
-        if($routeName == 'grp.org.shops.show.web.blogs.edit') {
+        if ($routeName == 'grp.org.shops.show.web.blogs.edit') {
             return ShowBlogWebpage::make()->getBreadcrumbs(
                 $routeName,
                 $routeParameters,

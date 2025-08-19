@@ -9,9 +9,7 @@
 namespace App\Actions\Maintenance\Catalogue;
 
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Accounting\PaymentAccountShop;
-use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
@@ -35,7 +33,7 @@ class RepairPaymentAccountShopMissingStat
     {
         if ($command->argument('shop')) {
             $shop = Shop::where('slug', $command->argument('shop'))->first();
-        
+
             $count = PaymentAccountShop::where('shop_id', $shop->id)->count();
             $bar = $command->getOutput()->createProgressBar($count);
             $bar->setFormat('debug');
