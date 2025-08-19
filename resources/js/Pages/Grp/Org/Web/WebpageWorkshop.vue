@@ -548,7 +548,7 @@ onUnmounted(() => {
 // Also clear when navigating away or closing tab
 window.addEventListener('beforeunload', () => {
   clearHistory();
-}); */
+});
 
 
 onMounted(() => {
