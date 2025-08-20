@@ -32,8 +32,7 @@ class CustomerFavouritesResource extends JsonResource
         if ($this->image_id) {
             $media = Media::find($this->image_id);
         }
-        
-        // dd($this);
+
         return [
             'image'         => $this->image_id ? ImageResource::make($media)->getArray() : null,
             'id'                     => $this->id,

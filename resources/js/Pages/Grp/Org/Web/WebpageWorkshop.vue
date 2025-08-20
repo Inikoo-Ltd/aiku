@@ -549,7 +549,7 @@ onUnmounted(() => {
 window.addEventListener('beforeunload', () => {
   clearHistory();
 });
-
+*/
 
 onMounted(() => {
   window.addEventListener("message", (event) => {

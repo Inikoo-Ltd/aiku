@@ -52,8 +52,8 @@ class StoreModelHasWebBlock extends OrgAction
         $webBlockType = WebBlockType::find($modelData['web_block_type_id']);
 
         $webBlockData = $modelData;
-        if(Arr::exists($modelData, 'layout')) {
-           data_set($webBlockData, 'layout', Arr::pull($modelData, 'layout'));
+        if (Arr::exists($modelData, 'layout')) {
+            data_set($webBlockData, 'layout', Arr::pull($modelData, 'layout'));
         }
         $webBlock = StoreWebBlock::run($webBlockType, $webBlockData);
 

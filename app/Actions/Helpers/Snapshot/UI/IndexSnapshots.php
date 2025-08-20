@@ -72,7 +72,7 @@ class IndexSnapshots extends OrgAction
             }
         }
 
-        if($withLabel) {
+        if ($withLabel) {
             $queryBuilder->whereNotNull('label');
         }
 
@@ -166,7 +166,7 @@ class IndexSnapshots extends OrgAction
 
 
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
-            if($withLabel) {
+            if ($withLabel) {
                 $table->column(key: 'label', label: __('label'));
             }
             $table->column(key: 'publisher', label: __('publisher'), sortable: true)

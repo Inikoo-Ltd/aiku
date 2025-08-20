@@ -21,7 +21,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class AddDiscontinuingMasterProductCategories
+class AddMissingProductCategoriesToMaster
 {
     use asAction;
 
@@ -44,6 +44,8 @@ class AddDiscontinuingMasterProductCategories
     {
         $code = $family->code;
 
+
+
         $foundMasterFamilyData = DB::table('master_product_categories')
             ->where('master_shop_id', $masterShop->id)
             ->where('type', MasterProductCategoryTypeEnum::FAMILY->value)
@@ -55,6 +57,8 @@ class AddDiscontinuingMasterProductCategories
         if (!$foundMasterFamilyData) {
             $masterParent = $this->getMasterParent($masterShop, $family);
             if ($masterParent) {
+
+
                 $foundMasterFamily = StoreMasterProductCategory::make()->action(
                     $masterParent,
                     [
@@ -141,7 +145,7 @@ class AddDiscontinuingMasterProductCategories
 
     public function getCommandSignature(): string
     {
-        return 'repair:add_discontinuing_product_categories_to_master {from}  {to}';
+        return 'repair:add_missing_product_categories_to_master {from} {to}';
     }
 
     /**

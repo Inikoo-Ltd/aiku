@@ -41,11 +41,11 @@ class CreateBlogWebpage extends OrgAction
     public function htmlResponse(Webpage|Website $parent, ActionRequest $request): Response
     {
 
-            $route = [
-                'name'       => 'grp.models.shop.blog_webpage.store',
-                'parameters' => [$this->scope->id, $parent->id]
-            ];
-        
+        $route = [
+            'name'       => 'grp.models.shop.blog_webpage.store',
+            'parameters' => [$this->scope->id, $parent->id]
+        ];
+
         return Inertia::render(
             'CreateModel',
             [

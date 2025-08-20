@@ -114,6 +114,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Web\WebpageTimeSeries> $timeSeries
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Snapshot|null $unpublishedSnapshot
+ * @property-read Collection<int, \App\Models\Web\WebBlockHistory> $webBlockHistories
  * @property-read Collection<int, \App\Models\Web\WebBlock> $webBlocks
  * @property-read Collection<int, WebUserRequest> $webUserRequests
  * @property-read Collection<int, \App\Models\Web\WebpageHasProduct> $webpageHasProducts

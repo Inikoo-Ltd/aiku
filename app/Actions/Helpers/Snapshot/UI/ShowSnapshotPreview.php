@@ -11,7 +11,6 @@ namespace App\Actions\Helpers\Snapshot\UI;
 use App\Actions\OrgAction;
 use App\Actions\Web\Website\GetWebsiteWorkshopFooter;
 use App\Actions\Web\Website\GetWebsiteWorkshopHeader;
-use App\Http\Resources\Web\WebpageResource;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Inertia\Inertia;
@@ -26,7 +25,6 @@ use Illuminate\Support\Arr;
 
 class ShowSnapshotPreview extends OrgAction
 {
-
     public function asController(Organisation $organisation, Shop $shop, Website $website, Webpage $webpage, Snapshot $snapshot, ActionRequest $request): Snapshot
     {
         $this->initialisationFromShop($shop, $request);

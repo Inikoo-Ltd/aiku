@@ -9,10 +9,7 @@
 namespace App\Actions\Web\WebBlockHistory;
 
 use App\Models\Dropshipping\ModelHasWebBlocks;
-use App\Models\SysAdmin\Group;
-use App\Models\Web\WebBlock;
 use App\Models\Web\WebBlockHistory;
-use App\Models\Web\WebBlockType;
 use Exception;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -33,17 +30,15 @@ class StoreWebBlockHistory
         data_set($modelData, 'web_block_id', $modelHasWebBlocks->web_block_id);
         data_set($modelData, 'web_block_type_id', $modelHasWebBlocks->webBlock->web_block_type_id);
         data_set($modelData, 'checksum', md5(json_encode(Arr::get($modelData, 'layout', []))));
-        $webBlockHistory = $webpage->webBlockHistories()->create($modelData);
-        return $webBlockHistory;
+        return $webpage->webBlockHistories()->create($modelData);
     }
 
-   public function rules(): array
+    public function rules(): array
     {
-        $rules = [
+        return [
             'layout'     => ['sometimes', 'array'],
         ];
 
-        return $rules;
     }
 
     public function action(ModelHasWebBlocks $modelHasWebBlocks, array $modelData): WebBlockHistory

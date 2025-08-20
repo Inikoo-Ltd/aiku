@@ -45,15 +45,15 @@ class OrdersResource extends JsonResource
         /** @var Order $order */
         $order = $this;
         $payStatus = null;
-        if($this->state == OrderStateEnum::CANCELLED->value) {
+        if ($this->state == OrderStateEnum::CANCELLED->value) {
             $payStatus = 'fail';
         }
-        if($this->payment_amount == $this->total_amount) {
+        if ($this->payment_amount == $this->total_amount) {
             $payStatus = 'success';
         } else {
             $payStatus = 'waiting';
         }
-        
+
         return [
             'slug'                   => $this->slug,
             'reference'              => $this->reference,

@@ -11,7 +11,6 @@ namespace App\Actions\Web\Webpage\Iris;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Http\Resources\Web\BlogWebpagesResource;
-use App\Http\Resources\Web\WebpagesResource;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -33,7 +32,7 @@ class ShowIrisBlogDashboard
 
         $blogs = BlogWebpagesResource::collection($website->webpages()->where('type', WebpageTypeEnum::BLOG)->where('state', WebpageStateEnum::LIVE)->get())->resolve();
         return Inertia::render(
-            'BlogDashboard', 
+            'BlogDashboard',
             [
                 'blogs' => $blogs,
             ]

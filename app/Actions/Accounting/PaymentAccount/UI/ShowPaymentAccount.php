@@ -136,8 +136,8 @@ class ShowPaymentAccount extends OrgAction
                 ],
 
                 PaymentAccountTabsEnum::HISTORY->value => $this->tab == PaymentAccountTabsEnum::HISTORY->value ?
-                    fn() => HistoryResource::collection(IndexHistory::run($paymentAccount))
-                    : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run($paymentAccount)))
+                    fn () => HistoryResource::collection(IndexHistory::run($paymentAccount))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($paymentAccount)))
 
             ]
         )

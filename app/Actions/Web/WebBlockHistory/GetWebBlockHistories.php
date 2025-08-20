@@ -9,7 +9,6 @@
 namespace App\Actions\Web\WebBlockHistory;
 
 use App\Actions\OrgAction;
-use App\Http\Resources\Catalogue\CollectionsResource;
 use App\Http\Resources\Web\WebBlockHistoriesResource;
 use App\Models\Web\WebBlock;
 use App\Models\Web\WebBlockHistory;
@@ -22,7 +21,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class GetWebBlockHistories extends OrgAction
 {
-    public function handle(Webpage $parent, WebBlock|WebBlockType|null $scope,  $prefix = null): LengthAwarePaginator
+    public function handle(Webpage $parent, WebBlock|WebBlockType|null $scope, $prefix = null): LengthAwarePaginator
     {
         $queryBuilder = QueryBuilder::for(WebBlockHistory::class);
         if ($scope instanceof WebBlock) {
@@ -32,7 +31,7 @@ class GetWebBlockHistories extends OrgAction
             $queryBuilder->where('web_block_type_id', $scope->id)
                         ->where('webpage_id', $parent->id);
         } else {
-          $queryBuilder->where('webpage_id', $parent->id);
+            $queryBuilder->where('webpage_id', $parent->id);
         }
         $queryBuilder
             ->defaultSort('web_block_histories.id')
@@ -56,7 +55,7 @@ class GetWebBlockHistories extends OrgAction
     public function asController(Webpage $webpage, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisationFromShop($webpage->shop, $request);
-        return $this->handle(parent: $webpage, scope: null );
+        return $this->handle(parent: $webpage, scope: null);
     }
     public function inWebBlock(Webpage $webpage, WebBlock $webBlock, ActionRequest $request): LengthAwarePaginator
     {

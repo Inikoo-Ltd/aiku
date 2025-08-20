@@ -48,8 +48,8 @@ class StoreShipper extends OrgAction
     public function prepareForValidation(ActionRequest $request): void
     {
         if ($this->has('website') && $this->get('website') != null && !Str::startsWith($this->get('website'), 'http')) {
-                $this->fill(['website' => 'https://'.$this->get('website')]);
-            }
+            $this->fill(['website' => 'https://'.$this->get('website')]);
+        }
 
     }
 

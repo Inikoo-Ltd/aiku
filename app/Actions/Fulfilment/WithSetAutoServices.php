@@ -36,7 +36,7 @@ trait WithSetAutoServices
             $transaction = $model->transactions()->where('asset_id', $assetId)->first();
 
             if ($transaction && $quantity == 0) {
-                DeleteFulfilmentTransaction::make()->action($transaction );
+                DeleteFulfilmentTransaction::make()->action($transaction);
             } elseif ($quantity > 0 && $transaction) {
                 UpdateFulfilmentTransaction::make()->action($transaction, ['quantity' => $quantity]);
             } elseif ($quantity > 0) {
