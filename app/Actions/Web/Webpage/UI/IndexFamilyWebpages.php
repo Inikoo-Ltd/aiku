@@ -148,7 +148,7 @@ class IndexFamilyWebpages extends OrgAction
                 'websites.slug as website_slug',
                 'product_category_stats.number_current_products',
             ])
-            ->allowedSorts(['code', 'type', 'level', 'url'])
+            ->allowedSorts(['code', 'type', 'level', 'url', 'title'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();

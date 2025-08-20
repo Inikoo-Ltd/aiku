@@ -134,6 +134,7 @@ class IndexProductsInCatalogue extends OrgAction
             'department_slug',
             'family_slug',
             'price',
+            'rrp',
             'units',
             'available_quantity'
         ])

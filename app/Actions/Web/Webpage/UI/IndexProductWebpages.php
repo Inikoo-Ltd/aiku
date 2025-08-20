@@ -154,7 +154,7 @@ class IndexProductWebpages extends OrgAction
                 'websites.domain as website_url',
                 'websites.slug as website_slug'
             ])
-            ->allowedSorts(['code', 'type', 'level', 'url'])
+            ->allowedSorts(['code', 'type', 'level', 'url', 'title'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
