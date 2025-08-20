@@ -24,7 +24,7 @@ class SetCurrencyHistoricFields
             ];
 
         if ($date && !($currency->historic_data_since && $currency->historic_data_since < $date)) {
-                $toUpdate['historic_data_since'] = $date->toDate();
+            $toUpdate['historic_data_since'] = $date->toDate();
 
         }
 

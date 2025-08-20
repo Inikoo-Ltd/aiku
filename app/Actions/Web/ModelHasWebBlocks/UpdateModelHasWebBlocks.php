@@ -11,6 +11,7 @@ namespace App\Actions\Web\ModelHasWebBlocks;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\WebBlockHistory\StoreWebBlockHistory;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Http\Resources\Web\WebpageResource;
 use App\Models\Dropshipping\ModelHasWebBlocks;
@@ -28,6 +29,10 @@ class UpdateModelHasWebBlocks extends OrgAction
         $this->update($modelHasWebBlocks, Arr::only($modelData, ['show', 'show_logged_in', 'show_logged_out']));
         $this->update($modelHasWebBlocks->webBlock, Arr::only($modelData, ['layout']));
         $modelHasWebBlocks->refresh();
+        StoreWebBlockHistory::make()->action($modelHasWebBlocks, [
+            'layout' => Arr::get($modelData, 'layout'),
+        ]);
+
         UpdateWebpageContent::run($modelHasWebBlocks->webpage);
 
 

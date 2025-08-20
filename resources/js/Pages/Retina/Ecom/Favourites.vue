@@ -19,6 +19,8 @@ import { useTabChange } from "@/Composables/tab-change"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {faUsersSlash } from "@fal"
 import Table from "@/Components/Table/Table.vue"
+import Image from "@/Components/Image.vue"
+import CopyButton from "@/Components/Utils/CopyButton.vue"
 library.add(faUsersSlash)
 const props = defineProps<{
 	data: {}
@@ -55,7 +57,28 @@ const isModalUploadOpen = ref(false)
 	</PageHeading>
 	<!-- <TableCustomerClients :data="data" /> -->
  	<!-- <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" /> -->
+	<!-- <pre>{{ data }}</pre> -->
 	<Table :resource="data" xname="tab" class="mt-5">
+		<template #cell(code)="{ item }">
+			<div>
+				<a :href="item.url" class="primaryLink">
+					{{ item.code }}
+				</a>
+				
+				<CopyButton
+					:text="item.code"
+					class="ml-1"
+				/>
+			</div>
+		</template>
 		
+		<template #cell(actions)="{ item }">
+			<div class="w-10 h-10">
+				<Image
+					:src="item.image?.thumbnail"
+					imageCover
+				/>
+			</div>
+		</template>
 	</Table>
 </template>

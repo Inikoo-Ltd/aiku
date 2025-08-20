@@ -47,6 +47,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string|null $fetched_at
  * @property string|null $last_fetched_at
  * @property string|null $source_id
+ * @property string|null $label
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read Model|\Eloquent|null $parent
  * @property-read Model|\Eloquent|null $publisher

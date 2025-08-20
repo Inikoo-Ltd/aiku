@@ -126,7 +126,9 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
         </div>
         <div class="border-t pt-3 text-sm space-y-1 text-gray-700">
           <div class="text-base font-semibold">{{ data.name || trans('No label') }}</div>
-          <div class="text-gray-500">{{ data.description || trans('No description') }}</div>
+          <div class="text-gray-500" v-html="data.description_title"></div>
+          <div class="text-gray-500" v-html="data.description"></div>
+          <div class="text-gray-500" v-html="data.description_extra"></div>
         </div>
       </div>
 

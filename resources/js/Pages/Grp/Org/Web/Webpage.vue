@@ -44,6 +44,7 @@ const props = defineProps<{
     snapshots?: object,
     redirects?: {},
     external_links?: {}
+    labeled_snapshots?: {}
     analytics:any
     webpage_url?: string
 
@@ -62,7 +63,8 @@ const component = computed(() => {
         'webpages': TableWebpages,
         'snapshots': TableSnapshots,
         'redirects': TableRedirects,
-        'external_links': TableExternalLinks
+        'external_links': TableExternalLinks,
+        'labeled_snapshots': TableSnapshots
     }
 
     return components[currentTab.value]

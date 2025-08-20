@@ -89,6 +89,11 @@ class IndexSnapshots extends OrgAction
                 $queryBuilder->where('scope', $scope);
             }
         }
+
+        if ($withLabel) {
+            $queryBuilder->whereNotNull('label');
+        }
+
         return $queryBuilder
             ->defaultSort('-published_at')
             ->allowedSorts(['published_at', 'published_until'])
@@ -155,9 +160,9 @@ class IndexSnapshots extends OrgAction
         )->table($this->tableStructure($this->website));
     }
 
-    public function tableStructure(Website|Webpage|EmailTemplate|Banner $parent, ?array $modelOperations = null, $prefix = null, ?array $exportLinks = null): Closure
+    public function tableStructure(Website|Webpage|EmailTemplate|Banner $parent, $withLabel = false, ?array $modelOperations = null, $prefix = null, ?array $exportLinks = null): Closure
     {
-        return function (InertiaTable $table) use ($modelOperations, $prefix, $exportLinks) {
+        return function (InertiaTable $table) use ($modelOperations, $withLabel, $prefix, $exportLinks) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -178,8 +183,11 @@ class IndexSnapshots extends OrgAction
             }
 
 
-            $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
-                ->column(key: 'publisher', label: __('publisher'), sortable: true)
+            $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
+            if ($withLabel) {
+                $table->column(key: 'label', label: __('label'));
+            }
+            $table->column(key: 'publisher', label: __('publisher'), sortable: true)
                 ->column(key: 'published_at', label: __('date published'), sortable: true)
                 ->column(key: 'published_until', label: __('published until'))
                 ->column(key: 'comment', label: __('comment'))

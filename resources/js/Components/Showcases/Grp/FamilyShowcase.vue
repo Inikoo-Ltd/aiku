@@ -78,9 +78,9 @@ const links = ref([
                         <div class="font-bold">
                             {{ data.family.data?.name || "No label" }}
                         </div>
-                        <div class="text-sm h-64 overflow-y-auto pr-1 text-justify"
-                             v-html="data.family.data?.description">
-                        </div>
+                        <div class="text-sm" v-html="data.family.data?.description_title"></div>
+                        <div class="text-sm" v-html="data.family.data?.description"></div>
+                        <div class="text-sm" v-html="data.family.data?.description_extra"></div>
                     </div>
                 </div>
             </div>

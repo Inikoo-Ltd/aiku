@@ -146,7 +146,7 @@ watch(isPreviewLoggedIn, (value) => {
 
             <!-- Footer -->
             <component v-if="footer?.data?.data"
-                :is="isPreviewMode || route().current() == 'grp.websites.preview' ? getIrisComponent(footer.data.code) : getComponent(footer.data.code)"
+                :is="isPreviewMode || route().current() == 'grp.websites.preview' || route().current() == 'grp.org.shops.show.web.webpages.snapshot.preview' ? getIrisComponent(footer.data.code) : getComponent(footer.data.code)"
                 v-model="footer.data.data.fieldValue" @update:model-value="updateData(footer.data)" />
         </div>
     </div>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { faCube, faLink, faHeart } from "@fal"
-import { faCircle, faHeart as fasHeart, faDotCircle } from "@fas"
+import { faCircle, faHeart as fasHeart, faDotCircle, faFilePdf, faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ref, inject, onMounted} from "vue"
@@ -19,7 +19,7 @@ import { set } from "lodash-es"
 import { getStyles } from "@/Composables/styles"
 import axios from "axios"
 
-library.add(faCube, faLink)
+library.add(faCube, faLink, faFilePdf, faFileDownload)
 
 interface ProductResource {
     id: number
@@ -179,12 +179,12 @@ const toggleExpanded = () => {
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             marginLeft : 'auto', marginRight : 'auto'
 		}" class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block">
-        <div class="grid grid-cols-12 gap-x-10 mb-2">
+        <div class="grid grid-cols-12 gap-x-10 mb-2"> 
             <div class="col-span-7">
                 <div class="py-1 w-full">
-                    <ImageProducts :images="fieldValue.product.images" />
+                    <ImageProducts :images="fieldValue?.product?.images" />
                 </div>
-                <div class="flex gap-x-10 text-gray-400 mb-6 mt-4">
+                <div class="flex gap-x-10 text-gray-400 mb-6 mt-4" v-if="fieldValue?.product?.tags?.length">
                     <div class="flex items-center gap-1 text-xs" v-for="(tag, index) in fieldValue.product.tags"
                         :key="index">
                         <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" />
@@ -200,9 +200,16 @@ const toggleExpanded = () => {
                 <div class="flex justify-between mb-4 items-start">
                     <div class="w-full">
                         <h1 class="text-2xl font-bold text-gray-900">{{ fieldValue.product.name }}</h1>
-                        <div class="flex flex-wrap gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
+                        <div class="flex flex-wrap justify-between gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
                             <div>Product code: {{ fieldValue.product.code }}</div>
                             <div class="flex items-center gap-[1px]">
+                                <a
+                                    :href="route().has('iris.catalogue.feeds.product.download') ? route('iris.catalogue.feeds.product.download', { product: fieldValue.product.slug }) : '#'"
+                                    target="_blank"
+                                    class="group hover:underline">
+                                    <FontAwesomeIcon icon="fas fa-file-download" class="opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />
+                                    <span>Download (csv)</span>
+                                </a>
                             </div>
                         </div>
                         <div v-if="layout?.iris?.is_logged_in" class="flex items-center gap-2 text-sm text-gray-600 mb-4">
@@ -309,7 +316,7 @@ const toggleExpanded = () => {
     <!-- Mobile Layout -->
     <div class="block sm:hidden px-4 py-6 text-gray-800">
         <h2 class="text-xl font-bold mb-2">{{ fieldValue.product.name }}</h2>
-        <ImageProducts :images="fieldValue.product.images" />
+        <ImageProducts :images="fieldValue?.product?.images" />
         <div class="flex justify-between items-start gap-4 mt-4">
             <!-- Price + Unit Info -->
             <div v-if="layout?.iris?.is_logged_in">
@@ -333,7 +340,7 @@ const toggleExpanded = () => {
         </div>
 
 
-        <div class="flex flex-wrap gap-2 mt-4">
+        <div class="flex flex-wrap gap-2 mt-4" v-if="fieldValue?.product?.tags?.length">
             <div class="text-xs flex items-center gap-1 text-gray-500" v-for="(tag, index) in fieldValue.product.tags"
                 :key="index">
                 <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" />

@@ -178,6 +178,8 @@ use App\Actions\Helpers\Brand\UpdateBrand;
 use App\Actions\Helpers\GoogleDrive\AuthorizeClientGoogleDrive;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
+use App\Actions\Helpers\Snapshot\SetSnapshotAsLive;
+use App\Actions\Helpers\Snapshot\UpdateSnapshot;
 use App\Actions\Helpers\Tag\AttachTagsToModel;
 use App\Actions\Helpers\Tag\DeleteTag;
 use App\Actions\Helpers\Tag\DetachTagFromModel;
@@ -611,6 +613,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
     });
 
     Route::post('website/{website:id}/webpage', [StoreWebpage::class, 'inShop'])->name('webpage.store')->withoutScopedBindings();
+    Route::post('website/{website:id}/blog-webpage', [StoreWebpage::class, 'inBlog'])->name('blog_webpage.store')->withoutScopedBindings();
 
     Route::prefix('website/{website:id}/banner')->name('website.banner.')->group(function () {
         Route::prefix('{banner:id}')->group(function () {
@@ -713,6 +716,8 @@ Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
     Route::post('web-block/{modelHasWebBlock:id}/duplicate', DuplicateModelHasWebBlock::class)->name('web_block.duplicate')->withoutScopedBindings();
     Route::post('reorder-web-blocks', ReorderWebBlocks::class)->name('reorder_web_blocks');
     Route::post('redirect', [StoreRedirect::class, 'inWebpage'])->name('redirect.store');
+    Route::post('set-snapshot/{snapshot:id}', SetSnapshotAsLive::class)->name('set-snapshot-as-live')->withoutScopedBindings();
+
 });
 
 Route::name('redirect.')->prefix('redirect/{redirect:id}')->group(function () {
@@ -910,7 +915,7 @@ Route::post('website/{website:id}/reindex-luigi', ReindexWebsiteLuigi::class)->n
 
 
 Route::delete('/shipment/{shipment:id}', DeleteShipment::class)->name('shipment.delete');
-
+Route::patch('snapshot/{snapshot:id}/update', UpdateSnapshot::class)->name('snapshot.update');
 
 require __DIR__ . "/models/inventory/warehouse.php";
 require __DIR__ . "/models/inventory/location_org_stock.php";

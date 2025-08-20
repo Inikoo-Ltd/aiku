@@ -25,7 +25,14 @@ class DownloadIrisProduct extends IrisAction
         return DownloadProduct::run($parent, 'products_csv');
     }
 
-    public function asController(Shop $shop, ActionRequest $request): BinaryFileResponse|Response
+    public function asController(ActionRequest $request): BinaryFileResponse|Response
+    {
+        $this->initialisation($request);
+
+        return $this->handle($this->shop);
+    }
+
+    public function inShop(Shop $shop, ActionRequest $request): BinaryFileResponse|Response
     {
         $this->initialisation($request);
 

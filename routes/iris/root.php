@@ -7,7 +7,11 @@
  */
 
 use App\Actions\Accounting\Invoice\IrisPdfInvoice;
+use App\Actions\Iris\Catalogue\DownloadIrisProduct;
 use App\Actions\Iris\UpdateIrisLocale;
+use App\Actions\Web\Webpage\Iris\IndexIrisBlogWebpages;
+use App\Actions\Web\Webpage\Iris\ShowIrisBlogDashboard;
+use App\Actions\Web\Webpage\Iris\ShowIrisBlogWebpage;
 use App\Actions\Web\Webpage\Iris\ShowIrisSitemap;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use Illuminate\Support\Facades\Route;
@@ -34,14 +38,23 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
         ->name("models.")
         ->group(__DIR__."/models.php");
 
+
+    Route::get('data-feed.csv', DownloadIrisProduct::class)->name('shop.data_feed');
+    Route::get('{productCategory}/data-feed.csv', [DownloadIrisProduct::class, 'inProductCategory'])->name('product_category.data_feed');
+
     Route::prefix("catalogue")
         ->name("catalogue.")
         ->group(__DIR__."/catalogue.php");
+
 
     Route::prefix("")->group(function () {
         Route::group([], __DIR__.'/system.php');
         Route::get('/sitemap.xml', ShowIrisSitemap::class)->name('iris_sitemap');
         Route::get('/invoice/{invoice:ulid}', IrisPdfInvoice::class)->name('iris_invoice');
+        Route::get('/blog', ShowIrisBlogDashboard::class)->name('iris_blog');
+        Route::get('/blog/articles', IndexIrisBlogWebpages::class)->name('iris_blog.articles.index');
+        Route::get('/blog/articles/{webpage}', ShowIrisBlogWebpage::class)->name('iris_blog.articles.show');
+
         Route::get('/{path?}', ShowIrisWebpage::class)->name('iris_webpage');
         Route::get('/{parentPath1}/{path}', [ShowIrisWebpage::class, 'deep1'])->name('iris_webpage.deep1');
         Route::get('/{parentPath1}/{parentPath2}/{path}', [ShowIrisWebpage::class, 'deep2'])->name('iris_webpage.deep2');

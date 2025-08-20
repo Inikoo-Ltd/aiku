@@ -55,6 +55,7 @@ class StoreWebpageSnapshot extends OrgAction
     {
         $rules = [
             'layout' => ['required', 'array'],
+            'label'           => ['sometimes', 'nullable', 'string']
         ];
 
         if (!$this->strict) {

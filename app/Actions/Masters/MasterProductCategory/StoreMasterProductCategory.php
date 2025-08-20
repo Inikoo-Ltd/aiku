@@ -35,6 +35,9 @@ class StoreMasterProductCategory extends GrpAction
     use WithMastersEditAuthorisation;
     use WithImageCatalogue;
 
+
+    private MasterShop|MasterProductCategory $masterShop;
+
     public function handle(MasterProductCategory|MasterShop $parent, array $modelData): MasterProductCategory
     {
         $imageData = ['image' => Arr::pull($modelData, 'image')];
@@ -100,7 +103,7 @@ class StoreMasterProductCategory extends GrpAction
                 new IUnique(
                     table: 'master_product_categories',
                     extraConditions: [
-                        ['column' => 'group_id', 'value' => $this->group->id],
+                        ['column' => 'master_shop_id', 'value' => $this->masterShop->id],
                         ['column' => 'deleted_at', 'operator' => 'notNull'],
                     ]
                 ),
@@ -118,7 +121,7 @@ class StoreMasterProductCategory extends GrpAction
                 'required',
                 'boolean',
             ],
-            'description' => ['sometimes', 'nullable', 'max:1500'],
+            'description' => ['sometimes', 'nullable', 'max:65500'],
         ];
 
         if (!$this->strict) {
@@ -136,6 +139,14 @@ class StoreMasterProductCategory extends GrpAction
         $this->hydratorsDelay = $hydratorsDelay;
         $this->strict         = $strict;
         $group                = $parent->group;
+
+        if($parent instanceof MasterProductCategory) {
+            $this->masterShop=$parent->masterShop;
+
+        }else{
+            $this->masterShop=$parent;
+
+        }
 
         $this->initialisation($group, $modelData);
 
