@@ -25,6 +25,8 @@ import ButtonAddCategoryToPortfolio from "@/Components/Iris/Products/ButtonAddCa
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import InformationIcon from "@/Components/Utils/InformationIcon.vue"
+import CopyButton from "@/Components/Utils/CopyButton.vue"
 library.add(faFileDownload)
 
 const props = defineProps<{
@@ -449,17 +451,22 @@ const responsiveGridClass = computed(() => {
 
             <!-- Main Content -->
             <main class="flex-1 mt-4">
-                <div class="px-4 xpt-4 mb-2 text-base font-normal">
+                <div class="px-4 xpt-4 mb-2 text-base font-normal flex items-center gap-x-2">
                     <div class="hidden">
                         {{ fieldValue.model_type }}
                     </div>
                     <a
-                        :href="route().has('iris.catalogue.feeds.product_category.download') && fieldValue.model_slug ? route('iris.catalogue.feeds.product_category.download', { productCategory: fieldValue.model_slug }) : '#'"
+                        v-if="route().has('iris.product_category.data_feed') && fieldValue.model_slug"
+                        :href="route('iris.product_category.data_feed', { productCategory: fieldValue.model_slug })"
                         target="_blank"
-                        class="group hover:underline">
-                        <FontAwesomeIcon icon="fas fa-file-download" class="text-sm opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />
-                        <span class="text-sm font-normal opacity-70 group-hover:opacity-100">Download products (csv)</span>
+                        class="group hover:underline text-sm "
+                    >
+                        <FontAwesomeIcon v-tooltip="trans('Full products list without filtered')" icon="fas fa-file-download" class="opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />
+                        <span class="font-normal opacity-70 group-hover:opacity-100">Download products (csv)</span>
                     </a>
+                    <CopyButton
+                        :text="route('iris.product_category.data_feed', { productCategory: fieldValue.model_slug })"
+                    />
                 </div>
 
                 <!-- Search & Sort -->
