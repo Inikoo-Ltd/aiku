@@ -22,14 +22,17 @@ const onClickCopyButton = async (text: string | number) => {
 </script>
 
 <template>
-    <div class="inline-flex xleading-none group">
+    <div
+        @click="() => isRecentlyCopied ? '' : onClickCopyButton(text)"
+        class="text-xxs inline-flex xleading-none group"
+        :class="isRecentlyCopied ? '' : 'cursor-pointer'"
+    >
         <Transition name="spin-to-right">
-            <FontAwesomeIcon v-if="isRecentlyCopied" icon='fal fa-check' class='text-green-500 h-full text-xxs xleading-none ' fixed-width aria-hidden='true' />
+            <FontAwesomeIcon v-if="isRecentlyCopied" icon='fal fa-check' class='text-green-500 h-full xleading-none ' fixed-width aria-hidden='true' />
             <FontAwesomeIcon
                 v-else
-                @click="() => onClickCopyButton(text)"
                 icon="fal fa-copy"
-                class="h-full text-xxs xleading-none opacity-50 group-hover:opacity-100 group-active:opacity-100 cursor-pointer"
+                class="h-full xleading-none opacity-50 group-hover:opacity-100 group-active:opacity-100 cursor-pointer"
                 fixed-width
                 aria-hidden="true"
             />
