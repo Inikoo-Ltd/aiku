@@ -15,6 +15,9 @@ use Inertia\Inertia;
 use Inertia\Response;
 use App\Http\Resources\CRM\CustomersResource;
 use Lorisleiva\Actions\ActionRequest;
+use App\Models\CRM\WebUser;
+
+
 
 class ShowRetinaDropshippingSysAdminDashboard extends RetinaAction
 {
@@ -32,6 +35,9 @@ class ShowRetinaDropshippingSysAdminDashboard extends RetinaAction
     public function handle(ActionRequest $request): Response
     {
         $title = __('Manage Account');
+        $activeUsersCount = WebUser::where('status', true)->count();
+        $inactiveUsersCount = WebUser::where('status', false)->count();   // Untuk pengguna tidak aktif
+
 
         return Inertia::render(
             'SysAdmin/RetinaSysAdminDashboard',
@@ -55,17 +61,16 @@ class ShowRetinaDropshippingSysAdminDashboard extends RetinaAction
                             ]
                         ]
                     ]
-
                 ],
                 'users' => [
-                    'active' => 2,
-                    'inactive' => 4,
+                    'active' => $activeUsersCount,
+                    'inactive' => $inactiveUsersCount,
                 ],
                 'customer'     => CustomersResource::make($this->customer),
                 'status'              => $this->customer->status,
                 'additional_data'     => $this->customer->data,
                 'currency_code'  => $this->shop->currency->code,
-                'address_management' => GetRetinaCustomerAddressManagement::run(customer:$this->customer),
+                'address_management' => GetRetinaCustomerAddressManagement::run(customer: $this->customer),
             ]
         );
     }

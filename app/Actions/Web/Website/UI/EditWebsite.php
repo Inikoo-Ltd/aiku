@@ -345,10 +345,10 @@ class EditWebsite extends OrgAction
                     ],
 
                     'iconRight' =>
-                        [
-                            'icon'  => ['fal', 'sliders-h'],
-                            'title' => __("Website's settings")
-                        ],
+                    [
+                        'icon'  => ['fal', 'sliders-h'],
+                        'title' => __("Website's settings")
+                    ],
 
                     'actions' => [
                         [
@@ -377,7 +377,7 @@ class EditWebsite extends OrgAction
             $website,
             $routeName,
             $routeParameters,
-            suffix: '('.__('Editing').')'
+            suffix: '(' . __('Editing') . ')'
         );
     }
 

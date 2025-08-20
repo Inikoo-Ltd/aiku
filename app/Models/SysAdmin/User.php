@@ -130,8 +130,7 @@ class User extends Authenticatable implements HasMedia, Auditable
     use HasImage;
     use HasApiTokens;
 
-    protected $guarded = [
-    ];
+    protected $guarded = [];
 
     protected $hidden = [
         'password',
@@ -146,7 +145,6 @@ class User extends Authenticatable implements HasMedia, Auditable
         'auth_type' => UserAuthTypeEnum::class,
         'password'  => 'hashed',
     ];
-
 
     protected $attributes = [
         'data'     => '{}',
@@ -186,7 +184,6 @@ class User extends Authenticatable implements HasMedia, Auditable
             ->saveSlugsTo('slug')
             ->slugsShouldBeNoLongerThan(128);
     }
-
 
     public function sendPasswordResetNotification($token): void
     {
@@ -309,7 +306,6 @@ class User extends Authenticatable implements HasMedia, Auditable
         return $this->getOrganisations()->first();
     }
 
-
     public function timeSeries(): HasMany
     {
         return $this->hasMany(UserTimeSeries::class);
@@ -319,6 +315,4 @@ class User extends Authenticatable implements HasMedia, Auditable
     {
         return $this->hasMany(OutBoxHasSubscriber::class);
     }
-
-
 }

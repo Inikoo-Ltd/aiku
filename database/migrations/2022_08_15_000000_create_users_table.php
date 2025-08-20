@@ -12,7 +12,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class () extends Migration {
+return new class() extends Migration {
     use HasSoftDeletes;
     public function up(): void
     {
@@ -54,10 +54,8 @@ return new class () extends Migration {
             $table->jsonb('sources');
             $table->string('legacy_password')->nullable()->index()->comment('source password');
             $table->unique(['group_id', 'username']);
-
         });
         DB::statement('CREATE INDEX ON users USING gin (contact_name gin_trgm_ops) ');
-
     }
 
 
