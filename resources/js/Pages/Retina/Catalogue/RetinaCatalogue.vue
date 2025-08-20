@@ -88,7 +88,7 @@ const routeAPI = window.location.origin + '/data-feed.csv'
                 class="xhover:bg-gray-50 ring-1 ring-gray-300 rounded overflow-hidden flex text-xxs md:text-base text-gray-500">
                 <div v-tooltip="trans('Copy url')" class="flex items-center">
                     <CopyButton
-                        :text="'hehehe'"
+                        :text="routeAPI"
                         class="text-3xl px-3 py-1.5"
                     />
                 </div>

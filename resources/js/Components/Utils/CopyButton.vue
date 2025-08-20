@@ -24,7 +24,7 @@ const onClickCopyButton = async (text: string | number) => {
 <template>
     <div
         @click="() => isRecentlyCopied ? '' : onClickCopyButton(text)"
-        class="text-xxs inline-flex xleading-none group"
+        class="text-xxs inline-flex xleading-none group relative"
         :class="isRecentlyCopied ? '' : 'cursor-pointer'"
     >
         <Transition name="spin-to-right">
