@@ -33,9 +33,7 @@ class GetProductCategoryShowcase
                     'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($productCategory->shop->extra_languages),
                     'save_route' => [
                         'name' => 'grp.models.product_category.translations.update',
-                        'parameters' => [
-                            'tradeUnit' => "",
-                        ],
+                        'parameters' => [],
                     ],
                 ],
             ];
@@ -66,9 +64,7 @@ class GetProductCategoryShowcase
                     'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($productCategory->shop->extra_languages),
                     'save_route' => [
                         'name' => 'grp.models.product_category.translations.update',
-                        'parameters' => [
-                            'tradeUnit' => "",
-                        ],
+                        'parameters' => [],
                     ],
                 ],
             ];
@@ -107,9 +103,7 @@ class GetProductCategoryShowcase
                     'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($productCategory->shop->extra_languages),
                     'save_route' => [
                         'name' => 'grp.models.product_category.translations.update',
-                        'parameters' => [
-                            'tradeUnit' => "",
-                        ],
+                        'parameters' => [],
                     ],
                 ],
             ];
