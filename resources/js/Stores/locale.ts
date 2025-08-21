@@ -24,23 +24,21 @@ export const useLocaleStore = defineStore("locale", () => {
 		return new Intl.NumberFormat(language.value.code).format(number)
 	}
 
-	const currencyFormat = (currencyCode: string, amount: number):string => {
-		if (!currencyCode) {
-			if (currencyInertia.value?.code) {
-				return new Intl.NumberFormat(language.value.code, {
-					style: "currency",
-					currency: currencyInertia.value?.code,
-				}).format(amount || 0)
-			}
+	const currencyFormat = (currencyCode: string, amount: number): string => {
+    if (amount == null) return "";
 
-			return new Intl.NumberFormat(language.value.code).format(amount || 0)
-		}
+    // detect decimals from amount
+    const decimals = amount % 1 === 0 ? 2 : amount.toString().split(".")[1]?.length || 1;
 
-		return new Intl.NumberFormat(language.value.code, {
-			style: "currency",
-			currency: currencyInertia.value?.code || currencyCode,
-		}).format(amount || 0)
-	}
+    const formatter = new Intl.NumberFormat(language.value.code, {
+        style: currencyCode || currencyInertia.value?.code ? "currency" : "decimal",
+        currency: currencyInertia.value?.code || currencyCode || undefined,
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+    });
+
+    	return formatter.format(amount);
+	};
 
 	const currencySymbol = (currencyCode: string) => {
 		if(!currencyCode) return '-'
