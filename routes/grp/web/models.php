@@ -42,6 +42,7 @@ use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreSubDepartment;
 use App\Actions\Catalogue\ProductCategory\AttachFamiliesToDepartment;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
+use App\Actions\Catalogue\ProductCategory\UpdateProductCategoryTranslations;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Comms\Email\PublishEmail;
@@ -178,6 +179,8 @@ use App\Actions\Helpers\Brand\UpdateBrand;
 use App\Actions\Helpers\GoogleDrive\AuthorizeClientGoogleDrive;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
+use App\Actions\Helpers\Snapshot\SetSnapshotAsLive;
+use App\Actions\Helpers\Snapshot\UpdateSnapshot;
 use App\Actions\Helpers\Tag\AttachTagsToModel;
 use App\Actions\Helpers\Tag\DeleteTag;
 use App\Actions\Helpers\Tag\DetachTagFromModel;
@@ -214,6 +217,7 @@ use App\Actions\Masters\MasterProductCategory\UploadImageMasterProductCategory;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Purge\StorePurge;
 use App\Actions\Ordering\Purge\UpdatePurge;
+use App\Actions\Ordering\ShippingZone\UpdateShippingZone;
 use App\Actions\Procurement\PurchaseOrder\DeletePurchaseOrderTransaction;
 use App\Actions\Procurement\PurchaseOrder\StorePurchaseOrder;
 use App\Actions\Procurement\PurchaseOrder\UpdatePurchaseOrder;
@@ -321,6 +325,9 @@ Route::prefix('clocking-machine/{clockingMachine:id}')->name('clocking_machine..
     Route::delete('', DeleteClockingMachine::class)->name('delete');
 });
 
+Route::prefix('shipping-zone/{shippingZone:id}')->name('shipping_zone.')->group(function () {
+    Route::patch('', UpdateShippingZone::class)->name('update');
+});
 
 Route::patch('fulfilment/{fulfilment:id}', UpdateFulfilment::class)->name('fulfilment.update');
 Route::patch('customer/{customer:id}', UpdateCustomer::class)->name('customer.update')->withoutScopedBindings();
@@ -331,7 +338,7 @@ Route::patch('customer/delivery-address/{customer:id}', UpdateCustomerDeliveryAd
 Route::post('master-product-category', StoreMasterProductCategory::class)->name('master_product.store')->withoutScopedBindings();
 Route::patch('master-product/{masterProductCategory:id}', UpdateMasterProductCategory::class)->name('master_product.update')->withoutScopedBindings();
 Route::post('master-product/{masterProductCategory:id}/image', UploadImageMasterProductCategory::class)->name('master_product_image.upload')->withoutScopedBindings();
-Route::patch('master-product/{masterProductCategory:id}/translations', UpdateMasterProductCategoryTranslations::class)->name('master_product_category.translations.update');
+Route::patch('master-product/{masterProductCategory:id}/translations', UpdateMasterProductCategoryTranslations::class)->name('master_product_categories.translations.update');
 
 
 Route::prefix('stock-family')->name('stock-family.')->group(function () {
@@ -384,6 +391,7 @@ Route::prefix('master-sub-department/{masterSubDepartment:id}')->name('master-su
 Route::prefix('/product_category/{productCategory:id}')->name('product_category.')->group(function () {
     Route::patch('update', UpdateProductCategory::class)->name('update');
     Route::delete('delete', DeleteProductCategory::class)->name('delete');
+    Route::delete('translations', UpdateProductCategoryTranslations::class)->name('translations.update');
 });
 
 Route::prefix('sub-department/{productCategory:id}')->name('sub-department.')->group(function () {
@@ -537,7 +545,6 @@ Route::name('pallet-return.')->prefix('pallet-return/{palletReturn:id}')->group(
     Route::post('pallet-return-item-upload', [ImportPalletReturnItem::class, 'fromGrp'])->name('pallet-return-item.upload');
 
     Route::post('revert-to-in-process', RevertPalletReturnToInProcess::class)->name('revert-to-in-process');
-    // This is wrong ImportPalletsInPalletDelivery is used when creating a pallet delivery
     Route::post('pallet-upload', ImportPalletsInPalletDelivery::class)->name('pallet.upload');
     Route::patch('/', UpdatePalletReturn::class)->name('update');
     Route::get('stored-item-picking-pdf', PdfPickingStoredItemReturn::class)->name('stored_item_picking.pdf');
@@ -608,6 +615,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
     });
 
     Route::post('website/{website:id}/webpage', [StoreWebpage::class, 'inShop'])->name('webpage.store')->withoutScopedBindings();
+    Route::post('website/{website:id}/blog-webpage', [StoreWebpage::class, 'inBlog'])->name('blog_webpage.store')->withoutScopedBindings();
 
     Route::prefix('website/{website:id}/banner')->name('website.banner.')->group(function () {
         Route::prefix('{banner:id}')->group(function () {
@@ -710,6 +718,8 @@ Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
     Route::post('web-block/{modelHasWebBlock:id}/duplicate', DuplicateModelHasWebBlock::class)->name('web_block.duplicate')->withoutScopedBindings();
     Route::post('reorder-web-blocks', ReorderWebBlocks::class)->name('reorder_web_blocks');
     Route::post('redirect', [StoreRedirect::class, 'inWebpage'])->name('redirect.store');
+    Route::post('set-snapshot/{snapshot:id}', SetSnapshotAsLive::class)->name('set-snapshot-as-live')->withoutScopedBindings();
+
 });
 
 Route::name('redirect.')->prefix('redirect/{redirect:id}')->group(function () {
@@ -907,7 +917,7 @@ Route::post('website/{website:id}/reindex-luigi', ReindexWebsiteLuigi::class)->n
 
 
 Route::delete('/shipment/{shipment:id}', DeleteShipment::class)->name('shipment.delete');
-
+Route::patch('snapshot/{snapshot:id}/update', UpdateSnapshot::class)->name('snapshot.update');
 
 require __DIR__ . "/models/inventory/warehouse.php";
 require __DIR__ . "/models/inventory/location_org_stock.php";

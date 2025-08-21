@@ -26,6 +26,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property int $number_current_families
  * @property int $number_current_products
  * @property int $number_families
+ * @property mixed $number_products
+ * @property mixed $id
  */
 class MasterSubDepartmentsResource extends JsonResource
 {
@@ -40,13 +42,7 @@ class MasterSubDepartmentsResource extends JsonResource
             'created_at'      => $this->created_at,
             'updated_at'      => $this->updated_at,
             'number_families' => $this->number_families,
-            'translation_box' => [
-                'title'      => __('Multi-language Translations'),
-                'save_route' => [
-                    'name'       => 'grp.models.master_product_categories.translations.update',
-                    'parameters' => []
-                ],
-            ],
+            'number_products' => $this->number_products,
         ];
     }
 }

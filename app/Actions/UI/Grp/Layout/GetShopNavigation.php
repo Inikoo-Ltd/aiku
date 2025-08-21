@@ -268,6 +268,16 @@ class GetShopNavigation
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
+                        [
+                            "label"   => __("traffic sources"),
+                            "tooltip" => __("Traffic sources"),
+                            "icon"    => ["fal", "fa-chart-line"],
+                            'root'    => 'grp.org.shops.show.marketing.traffic_sources.',
+                            "route"   => [
+                                "name"       => "grp.org.shops.show.marketing.traffic_sources.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
 
 
                     ],
@@ -312,6 +322,17 @@ class GetShopNavigation
 
                                 "route" => [
                                     "name"       => "grp.org.shops.show.web.webpages.index",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug, $shop->website->slug],
+                                ],
+                            ],
+                            [
+                                "label"   => __("blogs"),
+                                "tooltip" => __("Blogs"),
+                                "icon"    => ["fal", "fa-newspaper"],
+                                "root"    => "grp.org.shops.show.web.blogs.",
+
+                                "route" => [
+                                    "name"       => "grp.org.shops.show.web.blogs.index",
                                     "parameters" => [$shop->organisation->slug, $shop->slug, $shop->website->slug],
                                 ],
                             ],
@@ -469,9 +490,7 @@ class GetShopNavigation
                     "parameters" => [$shop->organisation->slug, $shop->slug],
                 ],
                 "topMenu" => [
-                    "subSections" => [
-
-                    ],
+                    "subSections" => [],
                 ],
             ];
         }

@@ -16,6 +16,8 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheck } from "@fal";
 import { RouteParams } from "@/types/route-params";
+import { trans } from "laravel-vue-i18n"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 library.add(faCheck)
 
@@ -146,6 +148,16 @@ function subDepartmentRoute(family: Family) {
     }
 }
 
+function masterFamilyRoute(family: Family) {
+    if(!family.master_product_category_id){
+        return '';
+    }
+
+    return route(
+        "grp.helpers.redirect_master_product_category",
+        [family.master_product_category_id]);
+}
+
 const isLoadingDetach = ref<string[]>([])
 
 </script>
@@ -162,9 +174,18 @@ const isLoadingDetach = ref<string[]>([])
             <Icon :data="family.state" />
         </template>
         <template #cell(code)="{ item: family }">
-            <Link :href="familyRoute(family)" class="primaryLink">
-                {{ family["code"] }}
-            </Link>
+            <div class="whitespace-nowrap">
+                <Link  :href="(masterFamilyRoute(family) as string)"  v-tooltip="trans('Go to Master')" class="mr-1"  :class="[ family.master_product_category_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
+                    <FontAwesomeIcon
+                        icon="fab fa-octopus-deploy"
+                        color="#4B0082"
+                    />
+                </Link>
+            
+                <Link :href="familyRoute(family)" class="primaryLink">
+                    {{ family["code"] }}
+                </Link>
+            </div>
         </template>
         <template #cell(shop_code)="{ item: family }">
             <Link :href="shopRoute(family)" class="secondaryLink">

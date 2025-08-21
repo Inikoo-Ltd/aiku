@@ -10,7 +10,6 @@ namespace App\Actions\Masters\MasterCollection\UI;
 
 use App\Actions\GrpAction;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
-use App\Http\Resources\Masters\MasterDepartmentsResource;
 use App\Http\Resources\Masters\MasterFamiliesResource;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterProductCategory;

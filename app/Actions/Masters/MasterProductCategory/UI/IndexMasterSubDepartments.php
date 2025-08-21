@@ -84,9 +84,10 @@ class IndexMasterSubDepartments extends GrpAction
                 'master_product_categories.created_at',
                 'master_product_categories.updated_at',
                 'master_product_category_stats.number_current_master_product_categories_type_family as number_families',
+                'master_product_category_stats.number_current_master_assets_type_product as number_products',
             ])
             ->where('master_product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
-            ->allowedSorts(['code', 'name','number_families'])
+            ->allowedSorts(['code', 'name', 'number_families', 'number_products'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -98,7 +99,7 @@ class IndexMasterSubDepartments extends GrpAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
             $table
                 ->defaultSort('code')
@@ -110,10 +111,10 @@ class IndexMasterSubDepartments extends GrpAction
                     ],
                 );
 
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_families', label: __('M. Families'), canBeHidden: false, sortable: false, searchable: false);
-
+            $table->column(key: 'code', label: __('code'), sortable: true, searchable: true)
+                ->column(key: 'name', label: __('name'), sortable: true, searchable: true)
+                ->column(key: 'number_families', label: __('M. Families'), sortable: true)
+                ->column(key: 'number_products', label: __('M. Products'), sortable: true);
         };
     }
 

@@ -80,7 +80,7 @@ const urlLoginWithRedirect = () => {
     <div id="top_bar_1_iris" class="py-1 px-4 flex flex-col md:flex-row md:justify-between gap-x-4" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         margin: 0,
-        ...getStyles(model.container?.properties, screenType)
+        ...getStyles(model?.container?.properties, screenType)
     }">
         <div class="flex-shrink flex flex-col md:flex-row items-center justify-between w-full ">
             <!-- Section: Main title -->
@@ -114,12 +114,15 @@ const urlLoginWithRedirect = () => {
                 v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping'"
                 v-tooltip="trans('Favourites')" url="/app/favourites" icon="fal fa-heart">
                 <template #label>
-                    <span v-html="textReplaceVariables(model?.favourite?.text, layout.iris_variables)" />
+                    <span v-if="model?.favourite?.text === `{{ favourites_count }}`" v-html="textReplaceVariables(model?.favourite?.text, layout.iris_variables)" />
+                    <span v-else-if="model?.favourite?.text === `{{ favourites_count }} favourites`">
+                        {{ layout.iris_variables?.favourites_count }} {{ layout.iris_variables?.favourites_count > 1 ? trans("favourites") : trans("favourite") }}
+                    </span>
                 </template>
             </ButtonWithLink>
 
 
-            <!-- Section: Basket -->
+            <!-- Section: Basket (cart) -->
             <ButtonWithLink v-if="checkVisible(model?.cart?.visible || null, isLoggedIn) && layout.retina?.type == 'b2b'"
                             url="/app/basket" icon="fal fa-shopping-cart">
                 <template #label>
@@ -135,7 +138,10 @@ const urlLoginWithRedirect = () => {
                 </template>
 
                 <template #label>
-                    <span v-html="textReplaceVariables(model?.register.text, layout.iris_variables)" class="text-white" />
+                    <!-- <span v-html="textReplaceVariables(model?.register.text, layout.iris_variables)" class="text-white" /> -->
+                    <span class="text-white">
+                        {{ trans("Register") }}
+                    </span>
                 </template>
             </ButtonWithLink>
 
@@ -143,7 +149,10 @@ const urlLoginWithRedirect = () => {
             <ButtonWithLink v-if="checkVisible(model?.login?.visible || null, isLoggedIn)" :url="urlLoginWithRedirect()"
                             icon="fal fa-sign-in">
                 <template #label>
-                    <span v-html="textReplaceVariables(model?.login?.text, layout.iris_variables)" />
+                    <!-- <span xv-html="textReplaceVariables(model?.login?.text, layout.iris_variables)" /> -->
+                    <span>
+                        {{ trans("Login") }}
+                    </span>
                 </template>
             </ButtonWithLink>
 
@@ -151,7 +160,10 @@ const urlLoginWithRedirect = () => {
             <ButtonWithLink v-if="checkVisible(model?.logout?.visible || null, isLoggedIn)" url="/app/logout" method="post"
                             :data="{}" icon="fal fa-sign-out" type="negative">
                 <template #label>
-                    <span v-html="textReplaceVariables(model?.logout?.text, layout.iris_variables)" />
+                    <!-- <span v-html="textReplaceVariables(model?.logout?.text, layout.iris_variables)" /> -->
+                    <span xv-html="textReplaceVariables(model?.logout?.text, layout.iris_variables)">
+                        {{ trans("Logout") }}
+                    </span>
                 </template>
             </ButtonWithLink>
         </div>

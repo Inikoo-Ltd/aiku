@@ -80,7 +80,7 @@ const emits = defineEmits<{
             :style="getStyles(data.header?.data?.fieldValue?.container?.properties, screenType)">
             <MobileHeader 
                 :header-data="data.header?.data?.fieldValue" 
-                :menu-data="menu?.menu?.data.fieldValue" 
+                :menu-data="menu?.menu?.data?.fieldValue" 
                 :screenType="screenType" 
             />
         </div>

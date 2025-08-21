@@ -121,6 +121,7 @@ const autoSave = async (data: Object) => {
                 console.log('The saving progress canceled.')
             },
             onError: (error) => {
+                console.log('Error during saving:', error)
                 notify({
                     title: trans('Something went wrong.'),
                     text: error.message,

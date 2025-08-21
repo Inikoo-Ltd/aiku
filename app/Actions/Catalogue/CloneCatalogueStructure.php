@@ -58,16 +58,10 @@ class CloneCatalogueStructure
         foreach ($subDepartments as $subDepartment) {
             $fromSubDepartment = $this->getEquivalentProductCategory($fromShop, $subDepartment->code, 'sub_department');
             if ($fromSubDepartment) {
-                print "$subDepartment->slug $subDepartment->id | $fromSubDepartment->id  \n";
-
-
                 $fromFamilies = $this->getCategories($fromSubDepartment, 'family');
                 foreach ($fromFamilies as $fromFamily) {
-                    print "  >>> $fromFamily->code   \n";
                     $family = $this->getEquivalentProductCategory($shop, $fromFamily->code, 'family');
                     if ($family) {
-                        print "     ---->>> $fromFamily->code   \n";
-
                         $this->attachFamily($subDepartment, $family);
                     }
                 }
@@ -101,8 +95,10 @@ class CloneCatalogueStructure
                     ->where('type', $type)
                     ->where('parent_id', $parent->id)->get() as $familyData
             ) {
-                $family         = ProductCategory::find($familyData->id);
-                $fromFamilies[] = $family;
+                $family = ProductCategory::find($familyData->id);
+                if ($family) {
+                    $fromFamilies[] = $family;
+                }
             }
         } else {
             foreach (
@@ -110,8 +106,10 @@ class CloneCatalogueStructure
                     ->where('type', $type)
                     ->where('parent_id', $parent->id)->get() as $familyData
             ) {
-                $masterFamily   = MasterProductCategory::find($familyData->id);
-                $fromFamilies[] = $masterFamily;
+                $masterFamily = MasterProductCategory::find($familyData->id);
+                if ($masterFamily) {
+                    $fromFamilies[] = $masterFamily;
+                }
             }
         }
 

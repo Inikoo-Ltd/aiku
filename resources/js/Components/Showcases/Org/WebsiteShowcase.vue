@@ -80,8 +80,8 @@ const isAbleReindex = computed(() => {
 
     return lastReindexed30Minutes < new Date()
 })
-const lastReindexed30Minutes = new Date(props.luigi_data.last_reindexed)
-lastReindexed30Minutes.setMinutes(lastReindexed30Minutes.getMinutes() + 30) 
+const dateLastReindex = new Date(props.luigi_data.last_reindexed)
+const dateAdd30MinutesLastReindex = dateLastReindex.setMinutes(dateLastReindex.getMinutes() + 30) 
 
 </script>
 
@@ -153,8 +153,8 @@ lastReindexed30Minutes.setMinutes(lastReindexed30Minutes.getMinutes() + 30)
                         </ButtonWithLink>
 
                         <ButtonWithLink
-                            v-if="luigi_data?.luigisbox_tracker_id"
-                            v-tooltip="isAbleReindex ? '' : trans('You can reindex again at :date', { date: useFormatTime(lastReindexed30Minutes, { formatTime: 'hm' }) })"
+                            v-if="luigi_data?.luigisbox_tracker_id"s
+                            v-tooltip="isAbleReindex ? '' : trans('You can reindex again at :date', { date: useFormatTime(new Date(dateAdd30MinutesLastReindex), { formatTime: 'hm' }) })"
                             :disabled="!isAbleReindex"
                             :routeTarget="{
                                 name: 'grp.models.website_luigi.reindex',

@@ -13,6 +13,7 @@ use App\Actions\UI\Grp\Layout\GetLayout;
 use App\Http\Resources\Helpers\LanguageResource;
 use App\Models\Helpers\Language;
 use App\Models\SysAdmin\User;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -23,13 +24,15 @@ class GetFirstLoadProps
     public function handle(?User $user): array
     {
 
+        $group = group();
+
         if ($user) {
             $language = $user->language;
         } else {
             $language = Language::where('code', App::currentLocale())->first();
         }
         if (!$language) {
-            $language = Language::where('code', 'en')->first();
+            $language = Language::where('id', Arr::first($group->extra_languages ?? []))->first();
         }
 
         return
@@ -37,7 +40,7 @@ class GetFirstLoadProps
             'localeData' =>
                 [
                     'language'        => LanguageResource::make($language)->getArray(),
-                    'languageOptions' => GetLanguagesOptions::make()->translated(),
+                    'languageOptions' => GetLanguagesOptions::make()->getExtraGroupLanguages($group->extra_languages),
                     'languageAssetsOptions' => GetLanguagesOptions::make()->translated(),
                 ],
 

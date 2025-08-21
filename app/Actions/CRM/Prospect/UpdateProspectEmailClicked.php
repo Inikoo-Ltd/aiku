@@ -22,7 +22,7 @@ class UpdateProspectEmailClicked extends OrgAction
             'last_clicked_at' => $date
         ];
 
-        if ($prospect->state == ProspectStateEnum::NO_CONTACTED or $prospect->state == ProspectStateEnum::CONTACTED) {
+        if ($prospect->state == ProspectStateEnum::NO_CONTACTED || $prospect->state == ProspectStateEnum::CONTACTED) {
             $dataToUpdate['state']           = ProspectStateEnum::CONTACTED;
             $dataToUpdate['contacted_state'] = ProspectContactedStateEnum::CLICKED;
         }

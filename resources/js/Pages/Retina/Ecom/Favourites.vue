@@ -17,20 +17,23 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import { computed, ref } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import {faUsersSlash } from "@fal"
+import { faUsersSlash } from "@fal"
 import Table from "@/Components/Table/Table.vue"
+import Image from "@/Components/Image.vue"
+import CopyButton from "@/Components/Utils/CopyButton.vue"
+import GridProducts from "@/Components/Product/GridProducts.vue"
 library.add(faUsersSlash)
 const props = defineProps<{
 	data: {}
 	// tabs: {
-    //     current: string
-    //     navigation: {}
-    // },
+	//     current: string
+	//     navigation: {}
+	// },
 	title: string
 	pageHead: {}
 	// active?: {}
-    // inactive?: {}
-    // upload_spreadsheet : object
+	// inactive?: {}
+	// upload_spreadsheet : object
 }>()
 
 const isModalUploadOpen = ref(false)
@@ -49,13 +52,38 @@ const isModalUploadOpen = ref(false)
 </script>
 
 <template>
+
 	<Head :title="capitalize(title)" />
 	<PageHeading :data="pageHead">
-		
+
 	</PageHeading>
 	<!-- <TableCustomerClients :data="data" /> -->
- 	<!-- <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" /> -->
-	<Table :resource="data" xname="tab" class="mt-5">
-		
-	</Table>
+	<!-- <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" /> -->
+	<!-- <pre>{{ data }}</pre> -->
+	<!-- <Table :resource="data" xname="tab" class="mt-5">
+		<template #cell(code)="{ item }">
+			<div>
+				<a :href="item.url" class="primaryLink">
+					{{ item.code }}
+				</a>
+
+				<CopyButton :text="item.code" class="ml-1" />
+			</div>
+		</template>
+
+		<template #cell(actions)="{ item }">
+			<div class="w-10 h-10">
+				<Image :src="item.image?.thumbnail" imageCover />
+			</div>
+		</template>
+	</Table> -->
+	
+	<!-- Pass the data to GridProducts component -->
+	<GridProducts 
+		:resource="data" 
+		:name="'favourites'"
+		:preserve-scroll="true"
+		class="mt-5"
+	/>
+
 </template>

@@ -134,6 +134,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $invoice_footer
  * @property string|null $colour
  * @property bool $registration_needs_approval
+ * @property array<array-key, mixed>|null $extra_languages
  * @property-read \App\Models\Catalogue\ShopAccountingStats|null $accountingStats
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses
@@ -245,6 +246,7 @@ class Shop extends Model implements HasMedia, Auditable
         'data'            => 'array',
         'settings'        => 'array',
         'location'        => 'array',
+        'extra_languages' => 'array',
         'type'            => ShopTypeEnum::class,
         'state'           => ShopStateEnum::class,
         'fetched_at'      => 'datetime',
@@ -255,6 +257,7 @@ class Shop extends Model implements HasMedia, Auditable
         'data'     => '{}',
         'settings' => '{}',
         'location' => '{}',
+        'extra_languages' => '{}'
     ];
 
     protected $guarded = [];

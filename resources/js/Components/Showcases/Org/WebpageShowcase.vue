@@ -61,6 +61,8 @@ const screenModeOptions = [
   { label: 'Tablet', value: 'tablet', icon: ['fal', 'tablet-alt'] },
   { label: 'Mobile', value: 'mobile', icon: ['fal', 'mobile-alt'] }
 ]
+
+
 </script>
 
 <template>
@@ -71,26 +73,17 @@ const screenModeOptions = [
         <div class="flex flex-wrap items-center justify-between gap-4">
           <!-- Logged In / Logged Out Switch -->
           <div class="flex items-center gap-3">
-            <FontAwesomeIcon :icon="['fal', filterBlock  ? 'user' : 'user-slash']" />
-            <InputSwitch
-              v-model="filterBlock"
-              :true-value="true"
-              :false-value="false"
-            />
+            <FontAwesomeIcon :icon="['fal', filterBlock ? 'user' : 'user-slash']" />
+            <InputSwitch v-model="filterBlock" :true-value="true" :false-value="false" />
             <span class="text-sm font-medium text-gray-800">
-              {{ filterBlock  ? 'Logged In' : 'Logged Out' }}
+              {{ filterBlock ? 'Logged In' : 'Logged Out' }}
             </span>
           </div>
 
           <!-- Screen Mode SelectButton -->
           <div class="flex items-center">
-            <SelectButton
-              v-model="screenMode"
-              :options="screenModeOptions"
-              optionLabel="label"
-              optionValue="value"
-              class="p-button-outlined"
-            >
+            <SelectButton v-model="screenMode" :options="screenModeOptions" optionLabel="label" optionValue="value"
+              class="p-button-outlined">
               <template #option="slotProps">
                 <div class="flex items-center gap-2">
                   <FontAwesomeIcon :icon="slotProps.option.icon" />
@@ -102,26 +95,17 @@ const screenModeOptions = [
         </div>
 
         <!-- Browser View -->
-        <BrowserView
-          :screenMode="screenMode"
-          :tab="{ icon: data.typeIcon, label: data.code }"
-          :url="{ domain: data.domain, page: data.url }"
-        >
+        <BrowserView :screenMode="screenMode" :tab="{ icon: data.typeIcon, label: data.code }"
+          :url="{ domain: data.domain, page: data.url }">
           <template #page v-if="data.layout.web_blocks?.length">
-                    <div class="relative w-full h-full">
-                        <div v-if="isIframeLoading"
-                            class="absolute inset-0 flex items-center justify-center bg-white">
-                            <LoadingIcon class="w-24 h-24 text-6xl" />
-                        </div>
-                        <iframe
-                            ref="_iframe"
-                            :src="iframeSrc"
-                            :title="props.title"
-                            class="w-full h-full"
-                            @load="isIframeLoading = false"
-                        />
-                    </div>
-                </template>
+            <div class="relative w-full h-full">
+              <div v-if="isIframeLoading" class="absolute inset-0 flex items-center justify-center bg-white">
+                <LoadingIcon class="w-24 h-24 text-6xl" />
+              </div>
+              <iframe ref="_iframe" :src="iframeSrc" :title="props.title" class="w-full h-full"
+                @load="isIframeLoading = false" />
+            </div>
+          </template>
         </BrowserView>
       </div>
 

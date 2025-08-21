@@ -17,6 +17,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faShieldAlt, faPlus, faTrash, faAngleUp, faAngleDown, faTriangle } from "@fas"
 import { faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faWhatsapp } from "@fortawesome/free-brands-svg-icons";
 import { faBars } from '@fal'
+import { trans } from 'laravel-vue-i18n'
 
 library.add(faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faShieldAlt, faBars, faPlus, faTrash, faWhatsapp)
 
@@ -523,12 +524,12 @@ const layout = inject('layout', {})
                             autocomplete="email"
                             required
                             class="w-full min-w-0 rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 md:w-56 md:text-sm/6"
-                            :placeholder="modelValue?.subscribe?.placeholder ?? 'Enter your email'"
+                            :placeholder="modelValue?.subscribe?.placeholder ?? trans('Enter your email')"
                         />
                         <div class="mt-4 sm:ml-4 sm:mt-0 sm:shrink-0">
                             <button type="submit" class="flex w-full items-center justify-center rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500">
                                 <!-- <LoadingIcon v-if="isLoadingSubmit" class="mr-2" /> -->
-                                Subscribe
+                                {{ trans("Subscribe") }}
                             </button>
                         </div>
                     </form>

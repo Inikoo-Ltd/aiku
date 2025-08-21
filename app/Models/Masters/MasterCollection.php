@@ -58,6 +58,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \App\Models\Masters\MasterShop $masterShop
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\Masters\MasterCollectionOrderingStats|null $orderingStats
+ * @property-read Model|\Eloquent $parent
  * @property-read \App\Models\Masters\MasterCollectionSalesIntervals|null $salesIntervals
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Masters\MasterCollectionStats|null $stats

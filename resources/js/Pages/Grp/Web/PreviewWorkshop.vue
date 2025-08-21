@@ -118,7 +118,7 @@ watch(isPreviewLoggedIn, (value) => {
 
 
 <template>
-    <div class="editor-class">
+    <div class="editor-class" :class="route().params?.mode !== 'iris' ? 'is-not-mode-iris' : ''">
         <div v-if="isInWorkshop" class="bg-gray-200 shadow-xl px-8 py-4 flex justify-center items-center gap-x-2">
             <ButtonPreviewLogin v-model="isPreviewLoggedIn" />
         </div>
@@ -148,8 +148,9 @@ watch(isPreviewLoggedIn, (value) => {
 
             <!-- Footer -->
             <component v-if="footer?.data?.data"
-                :is="isPreviewMode || route().current() == 'grp.websites.preview' ? getIrisComponent(footer.data.code) : getComponent(footer.data.code)"
-                v-model="footer.data.data.fieldValue" @update:model-value="updateData(footer.data)" :language="active_language"/>
+
+                :is="isPreviewMode || route().current() == 'grp.websites.preview' || route().current() == 'grp.org.shops.show.web.webpages.snapshot.preview' ? getIrisComponent(footer.data.code) : getComponent(footer.data.code)"
+                v-model="footer.data.data.fieldValue" @update:model-value="updateData(footer.data)" />
         </div>
     </div>
 
@@ -157,22 +158,24 @@ watch(isPreviewLoggedIn, (value) => {
 
 
 
-<style  lang="scss">
-:deep(.hover-dashed) {
-    @apply relative;
-
-    &::after {
-        content: "";
-        @apply absolute inset-0 hover:bg-gray-200/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
+<style lang="scss">
+.is-not-mode-iris {
+    .hover-dashed {
+        @apply relative;
+    
+        &::after {
+            content: "";
+            @apply absolute inset-0 hover:bg-gray-200/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
+        }
     }
-}
-
-:deep(.hover-text-input) {
-    @apply relative isolate;
-
-    &::after {
-        content: "";
-        @apply -z-10 absolute inset-0 hover:bg-yellow-500/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
+    
+    .hover-text-input {
+        @apply relative isolate;
+    
+        &::after {
+            content: "";
+            @apply -z-10 absolute inset-0 hover:bg-yellow-500/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
+        }
     }
 }
 

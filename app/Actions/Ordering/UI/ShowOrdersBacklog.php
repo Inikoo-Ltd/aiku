@@ -12,6 +12,8 @@ use App\Actions\Dashboard\ShowOrganisationDashboard;
 use App\Actions\Ordering\Order\UI\IndexOrders;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
+use App\Enums\Ordering\Order\OrderPayStatusEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Ordering\OrdersBacklogTabsEnum;
 use App\Http\Resources\Ordering\OrdersResource;
 use App\Models\Catalogue\Shop;
@@ -62,7 +64,7 @@ class ShowOrdersBacklog extends OrgAction
                         'label'       => __('In basket'),
                         'value'       => $parent->orderHandlingStats->number_orders_state_creating,
                         'type'        => 'number',
-                        'icon'        => $icon,
+                        'icon'        => 'fal fa-shopping-basket',
                         'information' => [
                             'type'  => 'currency',
                             'label' => $parent->orderHandlingStats->{"orders_state_creating_amount$currency"},
@@ -79,7 +81,8 @@ class ShowOrdersBacklog extends OrgAction
                         'label'       => __('Submitted Paid'),
                         'value'       => $parent->orderHandlingStats->number_orders_state_submitted_paid,
                         'type'        => 'number',
-                        'icon'        => $icon,
+                        // 'icon'        => $icon,
+                        'icon_data'   => OrderPayStatusEnum::typeIcon()[OrderPayStatusEnum::PAID->value],
                         'information' => [
                             'label' => $parent->orderHandlingStats->{"orders_state_submitted_paid_amount$currency"},
                             'type'  => 'currency'
@@ -90,7 +93,8 @@ class ShowOrdersBacklog extends OrgAction
                         'label'       => __('Submitted Unpaid'),
                         'value'       => $parent->orderHandlingStats->number_orders_state_submitted_not_paid,
                         'type'        => 'number',
-                        'icon'        => $icon,
+                        // 'icon'        => $icon,
+                        'icon_data'   => OrderPayStatusEnum::typeIcon()[OrderPayStatusEnum::UNPAID->value],
                         'information' => [
                             'label' => $parent->orderHandlingStats->{"orders_state_submitted_not_paid_amount$currency"},
                             'type'  => 'currency'
@@ -107,7 +111,8 @@ class ShowOrdersBacklog extends OrgAction
                         'label'       => __('Picking'),
                         'value'       => $parent->orderHandlingStats->number_orders_state_handling,
                         'type'        => 'number',
-                        'icon'        => $icon,
+                        // 'icon'        => $icon,
+                        'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::HANDLING->value],
                         'information' => [
                             'label' => $parent->orderHandlingStats->{"orders_state_handling_amount$currency"},
                             'type'  => 'currency'
@@ -118,7 +123,8 @@ class ShowOrdersBacklog extends OrgAction
                         'label'       => __('Blocked'),
                         'value'       => $parent->orderHandlingStats->number_orders_state_handling_blocked,
                         'type'        => 'number',
-                        'icon'        => $icon,
+                        // 'icon'        => $icon,
+                        'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::HANDLING_BLOCKED->value],
                         'information' => [
                             'label' => $parent->orderHandlingStats->{"orders_state_handling_blocked_amount$currency"},
                             'type'  => 'currency',
@@ -163,6 +169,7 @@ class ShowOrdersBacklog extends OrgAction
                         'tab_slug'    => 'dispatched_today',
                         'label'       => __('Dispatched Today'),
                         'value'       => $parent->orderHandlingStats->number_orders_dispatched_today,
+                        'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::DISPATCHED->value],
                         'type'        => 'number',
                         'information' => [
                             'label' => $parent->orderHandlingStats->{"orders_dispatched_today_amount$currency"},

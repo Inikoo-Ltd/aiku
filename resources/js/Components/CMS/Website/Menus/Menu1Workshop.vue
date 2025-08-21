@@ -76,7 +76,7 @@ const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false));
         <div
             @mouseleave="() => (debSetCollapsedFalse(), debSetCollapsedTrue.cancel())"
             :style="getStyles(fieldValue?.navigation_container?.properties,screenType)"
-            class="relative container flex  justify-between items-center gap-x-2 px-4">
+            class="relative xcontainerx flex  justify-between items-center gap-x-2 px-4">
 
             <!-- All categories -->
             <div v-if="layout.retina?.type !== 'fulfilment'" class="relative">

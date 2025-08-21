@@ -231,6 +231,7 @@ class IndexOrders extends OrgAction
             'orders.slug',
             'orders.net_amount',
             'orders.total_amount',
+            'orders.payment_amount',
             'customers.name as customer_name',
             'customers.slug as customer_slug',
             'customer_clients.name as client_name',
@@ -306,7 +307,7 @@ class IndexOrders extends OrgAction
             if ($parent instanceof Shop) {
                 $table->column(key: 'customer_name', label: __('customer'), canBeHidden: false, searchable: true);
             }
-            $table->column(key: 'payment_status', label: __('payment'), canBeHidden: false, searchable: true);
+            $table->column(key: 'pay_status', label: __('payment'), canBeHidden: false, searchable: true);
             $table->column(key: 'net_amount', label: __('net'), canBeHidden: false, searchable: true, sortable:true, type: 'currency');
         };
     }
@@ -449,8 +450,8 @@ class IndexOrders extends OrgAction
                 ],
 
                 OrdersTabsEnum::STATS->value => $this->tab == OrdersTabsEnum::STATS->value ?
-                    fn () => GetOrderStats::run($shop)
-                    : Inertia::lazy(fn () => GetOrderStats::run($shop)),
+                    fn () => GetOrderStats::run($this->parent)
+                    : Inertia::lazy(fn () => GetOrderStats::run($this->parent)),
 
                 OrdersTabsEnum::ORDERS->value => $this->tab == OrdersTabsEnum::ORDERS->value ?
                     fn () => OrdersResource::collection($orders)

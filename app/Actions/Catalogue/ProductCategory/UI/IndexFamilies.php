@@ -161,6 +161,7 @@ class IndexFamilies extends OrgAction
                 'organisations.slug as organisation_slug',
                 'product_category_sales_intervals.sales_grp_currency_all as sales_all',
                 'product_category_ordering_intervals.invoices_all as invoices_all',
+                'product_categories.master_product_category_id',
                 DB::raw(
                     "(
                     SELECT json_agg(json_build_object(
@@ -223,7 +224,7 @@ class IndexFamilies extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
 
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {

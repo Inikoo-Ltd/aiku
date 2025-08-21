@@ -375,7 +375,8 @@ const getValueColumn4Transleted = (value: string) => {
                         <input v-model="inputEmail" @input="currentState = ''" type="email" name="email-address"
                             id="email-address" autocomplete="email" required
                             class="w-full min-w-0 rounded-md bg-white/5 px-3 py-1 text-base text-white outline outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 md:w-56 md:text-sm/6"
-                            :placeholder="modelValue?.subscribe?.placeholder ?? 'Enter your email'" :class="[
+                            :placeholder="modelValue?.subscribe?.placeholder ?? trans('Enter your email')"
+                            :class="[
                                 currentState === 'error' ? 'errorShake' : '',
                             ]" />
 
@@ -384,8 +385,15 @@ const getValueColumn4Transleted = (value: string) => {
                                 <LoadingIcon v-if="isLoadingSubmit" class="mr-2" />
                                 Subscribe
                             </button> -->
-                            <Button @click.prevent="onSubmitSubscribe" xtype="submit" label="Subscribe"
-                                :loading="isLoadingSubmit" full />
+
+                            <Button
+                                @click.prevent="onSubmitSubscribe"
+                                xtype="submit"
+                                :label="trans('Subscribe')"
+                                :loading="isLoadingSubmit"
+                                full
+                            />
+
                         </div>
                     </form>
 
