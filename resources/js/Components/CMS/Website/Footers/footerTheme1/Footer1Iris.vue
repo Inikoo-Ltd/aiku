@@ -9,13 +9,13 @@ import { faShieldAlt, faPlus, faTrash, faCheckCircle, faArrowSquareLeft, faTrian
 import { faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faFacebook, faWhatsapp } from "@fortawesome/free-brands-svg-icons"
 import { faBars } from '@fal'
 import Image from '@/Components/Image.vue'
-import { inject, ref} from 'vue'
+import { inject, ref } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import axios from 'axios'
 import { trans } from 'laravel-vue-i18n'
 import { notify } from '@kyvg/vue3-notification'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { unset } from 'lodash-es'
+import { isObject } from 'lodash-es'
 
 library.add(faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faShieldAlt, faBars, faPlus, faTrash, faCheckCircle, faArrowSquareLeft, faFacebook, faWhatsapp)
 
@@ -23,6 +23,7 @@ const props = defineProps<{
     fieldValue?: FieldValue,
     modelValue?: FieldValue,
     screenType?: string
+    language?: string
 }>();
 
 const layout = inject('layout', retinaLayoutStructure)
@@ -33,58 +34,74 @@ const inputEmail = ref("")
 const errorMessage = ref("")
 // const hiddenField = ref("")
 const onSubmitSubscribe = async () => {
-	isLoadingSubmit.value = true
-	errorMessage.value = ""
-	currentState.value = ""
+    isLoadingSubmit.value = true
+    errorMessage.value = ""
+    currentState.value = ""
     // if (hiddenField.value) {  // If hidden field is filled, do not submit (it's may be a bot autofill the field)
     //     isLoadingSubmit.value = false
     //     return
     // }
 
 
-	if (!layout?.iris?.website?.id) {  // If in Aiku workshop preview
+    if (!layout?.iris?.website?.id) {  // If in Aiku workshop preview
         console.log('--1')
-		setTimeout(() => {
-			inputEmail.value = ""
-			currentState.value = 'success'
-			isLoadingSubmit.value = false
-		}, 700)
-	} else {  // If in Iris or Retina
-		try {
-			await axios.post(
-				window.origin + '/app/webhooks/subscribe-newsletter',
-				{
-					email: inputEmail.value,
-				},
-			)
-			
-			inputEmail.value = ""
-			currentState.value = 'success'
-		} catch (error) {
+        setTimeout(() => {
+            inputEmail.value = ""
+            currentState.value = 'success'
+            isLoadingSubmit.value = false
+        }, 700)
+    } else {  // If in Iris or Retina
+        try {
+            await axios.post(
+                window.origin + '/app/webhooks/subscribe-newsletter',
+                {
+                    email: inputEmail.value,
+                },
+            )
+
+            inputEmail.value = ""
+            currentState.value = 'success'
+        } catch (error) {
             // console.log('www', error)
-			currentState.value = 'error'
-			errorMessage.value = error.response?.data?.message || trans('An error occurred while subscribing.')
+            currentState.value = 'error'
+            errorMessage.value = error.response?.data?.message || trans('An error occurred while subscribing.')
             notify({
                 title: trans("Something went wrong"),
                 text: error.response?.data?.message || trans('An error occurred while subscribing.'),
                 type: "error",
             })
-		}
-	
-		isLoadingSubmit.value = false
-	}
+        }
+
+        isLoadingSubmit.value = false
+    }
 }
 
+
+console.log('layout', props)
+
+const getValueTransleted = (value: string) => {
+    if (value.translate[props.language]) {
+        return value.translate[props.language]
+    }
+    return value.name
+}
+
+const getValueColumn4Transleted = (value: string) => {
+    if (value.translate[props.language]) {
+        return value.translate[props.language]
+    }
+    return value.text
+}
 </script>
 
 <template>
-    <div id="footer_1_iris" class="md:mx-0 pb-12 lg:pb-24 pt-4 md:pt-8 md:px-16 text-white"
-    :style="{
-			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-            margin : 0,
-			...getStyles(modelValue.container?.properties, screenType)
-            
-		}">
+    {{ language }}
+    <div id="footer_1_iris" class="md:mx-0 pb-12 lg:pb-24 pt-4 md:pt-8 md:px-16 text-white" :style="{
+        ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+        margin: 0,
+        ...getStyles(modelValue.container?.properties, screenType)
+
+    }">
         <div
             class="w-full flex flex-col md:flex-row gap-4 md:gap-8 pt-2 pb-4 md:pb-6 mb-4 md:mb-10 border-0 border-b border-solid border-gray-700">
             <!-- <div class="h-36 md:h-24 overflow-hidden xflex-1 flex items-center justify-center md:justify-start">
@@ -98,21 +115,14 @@ const onSubmitSubscribe = async () => {
                     :style="getStyles(unset(modelValue?.logo?.properties, 'dimension.height'))"
                 />
             </div> -->
-
             <div>
-					<component
-						v-if="modelValue?.logo?.source"
-						:is="'span'"
-						rel="noopener noreferrer"
-						class="block w-fit h-auto pt-3">
-						<Image
-							:style="getStyles(modelValue.logo.properties, screenType)"
-							:alt="modelValue?.logo?.alt"
-							:imageCover="true"
-							:src="modelValue?.logo?.source">
-						</Image>
-					</component>
-				</div>
+                <component v-if="modelValue?.logo?.source" :is="'span'" rel="noopener noreferrer"
+                    class="block w-fit h-auto pt-3">
+                    <Image :style="getStyles(modelValue.logo.properties, screenType)" :alt="modelValue?.logo?.alt"
+                        :imageCover="true" :src="modelValue?.logo?.source">
+                    </Image>
+                </component>
+            </div>
 
             <div v-if="modelValue?.email"
                 class="relative group flex-1 flex justify-center md:justify-start items-center">
@@ -123,8 +133,8 @@ const onSubmitSubscribe = async () => {
                 class="relative group flex-1 flex gap-x-1.5 justify-center md:justify-start items-center">
                 <a :href="`https://wa.me/${modelValue?.whatsapp?.number.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(modelValue?.whatsapp?.message || '')}`"
                     class="flex gap-x-2 items-center">
-<!--                  This icon cause an error-->
-                   <FontAwesomeIcon class="text-[#00EE52]" icon="fab fa-whatsapp" style="font-size: 22px" />
+                    <!--                  This icon cause an error-->
+                    <FontAwesomeIcon class="text-[#00EE52]" icon="fab fa-whatsapp" style="font-size: 22px" />
                     WA: <span style="font-size: 17px">{{ modelValue?.whatsapp?.number }}</span>
                 </a>
             </div>
@@ -149,14 +159,14 @@ const onSubmitSubscribe = async () => {
                             <div
                                 class="hidden md:block grid grid-cols-1 md:cursor-default space-y-1 border-b pb-2 md:border-none">
                                 <div class="flex text-xl font-semibold w-fit leading-6">
-                                    <div v-html="item.name" />
+                                    <div v-html="getValueTransleted(item)" />
                                 </div>
 
                                 <div>
                                     <ul class="hidden md:block space-y-3">
                                         <li v-for="link in item.data" class="flex w-full items-center gap-2">
                                             <div class="text-sm block">
-                                                <div v-html="link.name" />
+                                                <div v-html="getValueTransleted(link)" />
                                             </div>
                                         </li>
                                     </ul>
@@ -171,7 +181,7 @@ const onSubmitSubscribe = async () => {
                                             class="p-3 pb-0 md:p-0 transition-all flex justify-between cursor-default  w-full">
                                             <div class="flex justify-between w-full">
                                                 <span class="mb-0 pl-0 md:pl-[2.2rem] text-xl font-semibold leading-6">
-                                                    <div v-html="item.name"></div>
+                                                    <div v-html="getValueTransleted(item)"></div>
                                                 </span>
                                                 <div>
                                                     <FontAwesomeIcon :icon="faTriangle"
@@ -181,11 +191,10 @@ const onSubmitSubscribe = async () => {
                                         </DisclosureButton>
 
                                         <DisclosurePanel class="p-3 md:p-0 transition-all cursor-default w-full">
-                                            <ul class="mt-0 block space-y-4 pl-4 md:pl-[2.2rem]"
-                                                style="margin-top: 0">
+                                            <ul class="mt-0 block space-y-4 pl-4 md:pl-[2.2rem]" style="margin-top: 0">
                                                 <li v-for="menu of item.data" :key="menu.name"
                                                     class="flex items-center text-sm">
-                                                    <div v-html="menu.name"></div>
+                                                    <div v-html="getValueTransleted(menu)"></div>
                                                 </li>
                                             </ul>
                                         </DisclosurePanel>
@@ -195,7 +204,6 @@ const onSubmitSubscribe = async () => {
                         </section>
                     </div>
                 </div>
-
             </div>
 
             <!--    column 2 -->
@@ -239,8 +247,7 @@ const onSubmitSubscribe = async () => {
                                         </DisclosureButton>
 
                                         <DisclosurePanel class="p-3 md:p-0 transition-all cursor-default w-full">
-                                            <ul class="mt-0 block space-y-4 pl-4 md:pl-[2.2rem]"
-                                                style="margin-top: 0">
+                                            <ul class="mt-0 block space-y-4 pl-4 md:pl-[2.2rem]" style="margin-top: 0">
                                                 <li v-for="menu of item.data" :key="menu.name"
                                                     class="flex items-center text-sm">
                                                     <div v-html="menu.name"></div>
@@ -296,8 +303,7 @@ const onSubmitSubscribe = async () => {
                                         </DisclosureButton>
 
                                         <DisclosurePanel class="p-3 md:p-0 transition-all cursor-default w-full">
-                                            <ul class="mt-0 block space-y-4 pl-4 md:pl-[2.2rem]"
-                                                style="margin-top: 0">
+                                            <ul class="mt-0 block space-y-4 pl-4 md:pl-[2.2rem]" style="margin-top: 0">
                                                 <li v-for="menu of item.data" :key="menu.name"
                                                     class="flex items-center text-sm">
                                                     <div v-html="menu.name"></div>
@@ -319,11 +325,16 @@ const onSubmitSubscribe = async () => {
                 <div>
                     <address
                         class="mt-10 md:mt-0 not-italic mb-4 text-center md:text-left text-xs md:text-sm text-gray-300">
-                        <div v-html="modelValue?.columns.column_4.data.textBox1"></div>
+                        <div v-if="isObject(modelValue?.columns.column_4.data.textBox1)"
+                            v-html="getValueColumn4Transleted(modelValue?.columns.column_4.data.textBox1)"></div>
+                        <div v-else v-html="modelValue?.columns.column_4.data.textBox1"></div>
                     </address>
 
+
                     <div class="flex justify-center gap-x-8 text-gray-300 md:block">
-                        <div v-html="modelValue?.columns.column_4.data.textBox2"></div>
+                         <div v-if="isObject(modelValue?.columns.column_4.data.textBox2)"
+                            v-html="getValueColumn4Transleted(modelValue?.columns.column_4.data.textBox2)"></div>
+                        <div v-else v-html="modelValue?.columns.column_4.data.textBox2"></div>
                     </div>
 
                     <div class="w-full mt-8">
@@ -331,10 +342,11 @@ const onSubmitSubscribe = async () => {
                     </div>
 
                     <div class="flex flex-col items-center gap-y-6 mt-4">
-                            <div v-for="payment of modelValue.paymentData.data" :key="payment.key">
-                                <img :src="payment.image" :alt="payment.alt" class="h-auto max-h-6 md:max-h-8 max-w-full w-full object-contain">
-                            </div>
+                        <div v-for="payment of modelValue.paymentData.data" :key="payment.key">
+                            <img :src="payment.image" :alt="payment.alt"
+                                class="h-auto max-h-6 md:max-h-8 max-w-full w-full object-contain">
                         </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -343,39 +355,37 @@ const onSubmitSubscribe = async () => {
         <div v-if="modelValue?.subscribe?.is_show && !layout.iris?.is_logged_in"
             class="mt-16 border-t border-white/10 px-8 md:px-0 pt-8 md:mt-8 flex flex-col md:flex-row items-center md:justify-between">
             <div class="w-fit text-center md:text-left ">
-                <h3 class="text-sm/6 font-semibold text-white" v-html="modelValue.subscribe?.headline ?? 'Subscribe to our newsletter'"></h3>
-                <p class="mt-2 text-sm/6 text-gray-300"  v-html="modelValue.subscribe?.description ?? 'The latest news, articles, and resources, sent to your inbox weekly.'"></p>
+                <h3 class="text-sm/6 font-semibold text-white"
+                    v-html="modelValue.subscribe?.headline ?? 'Subscribe to our newsletter'"></h3>
+                <p class="mt-2 text-sm/6 text-gray-300"
+                    v-html="modelValue.subscribe?.description ?? 'The latest news, articles, and resources, sent to your inbox weekly.'">
+                </p>
             </div>
-            
+
             <Transition>
                 <div v-if="currentState != 'success'" class="relative flex flex-col items-start">
-                    <form @submit.prevent="() => onSubmitSubscribe()" class="w-full max-w-md md:w-fit mt-6 sm:flex items-center sm:max-w-md lg:mt-0 ">
+                    <form @submit.prevent="() => onSubmitSubscribe()"
+                        class="w-full max-w-md md:w-fit mt-6 sm:flex items-center sm:max-w-md lg:mt-0 ">
                         <label for="email-address" class="sr-only">Email address</label>
                         <!-- <input
                             v-model="hiddenField"
                             type="text"
                             class="sr-only"
                         /> -->
-                        <input
-                            v-model="inputEmail"
-                            @input="currentState = ''"
-                            type="email"
-                            name="email-address"
-                            id="email-address"
-                            autocomplete="email"
-                            required
+                        <input v-model="inputEmail" @input="currentState = ''" type="email" name="email-address"
+                            id="email-address" autocomplete="email" required
                             class="w-full min-w-0 rounded-md bg-white/5 px-3 py-1 text-base text-white outline outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 md:w-56 md:text-sm/6"
                             :placeholder="modelValue?.subscribe?.placeholder ?? trans('Enter your email')"
                             :class="[
                                 currentState === 'error' ? 'errorShake' : '',
-                            ]"
-                        />
+                            ]" />
 
                         <div class="mt-4 sm:ml-4 sm:mt-0 sm:shrink-0">
                             <!-- <button type="submit" class="flex w-full items-center justify-center rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500">
                                 <LoadingIcon v-if="isLoadingSubmit" class="mr-2" />
                                 Subscribe
                             </button> -->
+
                             <Button
                                 @click.prevent="onSubmitSubscribe"
                                 xtype="submit"
@@ -383,6 +393,7 @@ const onSubmitSubscribe = async () => {
                                 :loading="isLoadingSubmit"
                                 full
                             />
+
                         </div>
                     </form>
 
