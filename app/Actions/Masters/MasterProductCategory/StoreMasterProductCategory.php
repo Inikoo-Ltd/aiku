@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterProductCategory;
 
+use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\GrpAction;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterFamilies;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
@@ -18,6 +19,7 @@ use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageCatalogue;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -56,7 +58,7 @@ class StoreMasterProductCategory extends GrpAction
             data_set($modelData, 'master_shop_id', $parent->id);
         }
 
-        $masterProductCategory = DB::transaction(function () use ($modelData) {
+        $masterProductCategory = DB::transaction(function () use ($parent, $modelData) {
             /** @var MasterProductCategory $masterProductCategory */
             $masterProductCategory = MasterProductCategory::create($modelData);
 
@@ -69,6 +71,32 @@ class StoreMasterProductCategory extends GrpAction
             }
             $masterProductCategory->refresh();
 
+            $collection = null;
+            if ($parent instanceof MasterShop) {
+                $collection = $parent->shops;
+            } elseif ($parent instanceof MasterProductCategory) {
+                $collection = $parent->productCategories;
+            }
+
+            if ($collection && $collection->isNotEmpty()) {
+                $type = match (Arr::get($modelData, 'type')) {
+                    MasterProductCategoryTypeEnum::DEPARTMENT => ProductCategoryTypeEnum::DEPARTMENT,
+                    MasterProductCategoryTypeEnum::FAMILY => ProductCategoryTypeEnum::FAMILY,
+                    MasterProductCategoryTypeEnum::SUB_DEPARTMENT => ProductCategoryTypeEnum::SUB_DEPARTMENT,
+                };
+                $actionData = array_merge(
+                    Arr::except($modelData, ['status', 'type']),
+                    [   
+                        'type' => $type,
+                        'master_product_category_id' => $masterProductCategory->id
+                    ]
+                );
+                
+                foreach ($collection as $item) {
+                    StoreProductCategory::make()->action($item, $actionData);
+                }
+            }
+            
             return $masterProductCategory;
         });
 

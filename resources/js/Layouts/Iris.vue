@@ -85,6 +85,8 @@ onBeforeUnmount(() => {
     window.removeEventListener('resize', checkScreenType)
 })
 
+console.log('handle', usePage().props)
+
 </script>
 
 <template>

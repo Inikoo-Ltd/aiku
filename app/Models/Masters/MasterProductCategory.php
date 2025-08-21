@@ -10,6 +10,7 @@ namespace App\Models\Masters;
 
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
@@ -151,6 +152,11 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
     public function stats(): HasOne
     {
         return $this->hasOne(MasterProductCategoryStats::class);
+    }
+
+    public function productCategories(): HasMany
+    {
+        return $this->hasMany(ProductCategory::class, 'master_product_category_id');
     }
 
     public function orderingIntervals(): HasOne
