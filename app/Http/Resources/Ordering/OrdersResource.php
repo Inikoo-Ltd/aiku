@@ -62,6 +62,7 @@ class OrdersResource extends JsonResource
             'state'                  => $this->state,
             'state_icon'             => $order->state->stateIcon()[$order->state->value],
             'net_amount'             => $this->net_amount,
+            'payment_amount'           => $this->payment_amount,
             'total_amount'           => $this->total_amount,
             'customer_name'          => $this->customer_name,
             'customer_slug'          => $this->customer_slug,

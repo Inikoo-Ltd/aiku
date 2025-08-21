@@ -11,9 +11,11 @@ namespace App\Actions\Ordering\UI;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingAuthorisation;
+use App\Enums\UI\Ordering\OrdersTabsEnum;
 use App\Http\Resources\Catalogue\ShopResource;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -39,6 +41,10 @@ class ShowOrderingDashboard extends OrgAction
     public function htmlResponse(Shop $shop, ActionRequest $request): Response
     {
 
+        $excessOrderCount = DB::table('orders')
+            ->whereColumn('payment_amount', '>', 'total_amount')
+            ->where('shop_id', $shop->id)
+            ->count();
 
         return Inertia::render(
             'Org/Ordering/OrderingDashboard',
@@ -58,7 +64,23 @@ class ShowOrderingDashboard extends OrgAction
                         'title' => __('Ordering'),
                         'icon'  => 'fal fa-chart-network'
                     ],
-
+                ],
+                'stats'       => [
+                    [
+                        'label'           => __('Orders excesses payment'),
+                        'is_negative'     => true,
+                        'route'           => [
+                            'name'       => 'grp.org.shops.show.ordering.orders.index',
+                            'parameters' => [
+                                'organisation' => $shop->organisation->slug,
+                                'shop'         => $shop->slug,
+                                'tab'          => OrdersTabsEnum::EXCESS_ORDERS->value,
+                            ]
+                        ],
+                        'icon'            => 'fal fa-shopping-cart',
+                        "backgroundColor" => "#ff000011",
+                        'value'           => $excessOrderCount,
+                    ],
                 ],
 
 
