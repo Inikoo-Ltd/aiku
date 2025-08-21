@@ -37,6 +37,16 @@ const LBInitSearchResult = async () => {
                 'collection',
                 'tag',
             ],
+            QuicksearchTypes: [
+                'category',
+                'color',
+                'news',
+                'department',
+                'sub_department',
+                'brand',
+                'collection',
+                'tag',
+            ],
             Translations: {
                 "en": {
                     "facet": {
@@ -46,8 +56,20 @@ const LBInitSearchResult = async () => {
                             "sub_department": "Sub Departments",
                             "tag": "Tags",
                             "department": "Departments",
+                            "collection": "Collections"
                         }
-                    }
+                    },
+                    "quickSearch": {
+                        "title": {
+                            "category": "Categories",
+                            "department": "Departments",
+                            "sub_department": "Sub Departments",
+                            "tag": "Tags",
+                            "brand": "Brands",
+                            "collection": "Collections"
+
+                        }
+                    },
                 }
             },
             // DefaultFilters: {
