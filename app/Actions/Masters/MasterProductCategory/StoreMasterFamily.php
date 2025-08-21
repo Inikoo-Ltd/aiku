@@ -98,7 +98,7 @@ class StoreMasterFamily extends OrgAction
     public function htmlResponse(MasterProductCategory $masterProductCategory, ActionRequest $request): RedirectResponse
     {
         return Redirect::route('grp.masters.master_shops.show.master_families.show', [
-            'masterShop' => $this->parent->slug,
+            'masterShop' => $masterProductCategory->masterShop->slug,
             'masterFamily' => $masterProductCategory->slug,
         ]);
         
