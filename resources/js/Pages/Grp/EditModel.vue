@@ -143,7 +143,6 @@ const props = defineProps<{
 	}
 }>()
 
-console.log(props.formData.blueprint)
 
 // const layout = useLayoutStore()
 const layout: any = inject("layout")

@@ -190,6 +190,7 @@ class IndexFamilies extends OrgAction
                 'number_current_products',
                 'sub_department_name',
                 'department_name',
+                'sales_all',
                 AllowedSort::custom(
                     'collections',
                     new class () implements Sort {
@@ -272,7 +273,7 @@ class IndexFamilies extends OrgAction
 
             if ($sales) {
                 $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'sales', label: __('sales'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'sales_all', label: __('sales'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'invoices', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true);
             } else {
                 if ($parent instanceof Organisation) {
@@ -449,8 +450,8 @@ class IndexFamilies extends OrgAction
                     : Inertia::lazy(fn () => FamiliesResource::collection($families)),
 
                 ProductCategoryTabsEnum::SALES->value => $this->tab == ProductCategoryTabsEnum::SALES->value ?
-                    fn () => FamiliesResource::collection($families)
-                    : Inertia::lazy(fn () => FamiliesResource::collection($families)),
+                    fn () => FamiliesResource::collection(IndexFamilies::run($this->parent, prefix: ProductCategoryTabsEnum::SALES->value))
+                    : Inertia::lazy(fn () => FamiliesResource::collection(IndexFamilies::run($this->parent, prefix: ProductCategoryTabsEnum::SALES->value))),
             ]
         )->table($this->tableStructure(parent: $this->parent, modelOperations: null, canEdit: false, prefix: ProductCategoryTabsEnum::INDEX->value, sales: false))
             ->table($this->tableStructure(parent: $this->parent, modelOperations: null, canEdit: false, prefix: ProductCategoryTabsEnum::SALES->value, sales: $this->sales));
