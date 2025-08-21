@@ -18,6 +18,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 use App\Models\CRM\TrafficSource;
+use Illuminate\Support\Facades\DB;
 
 class IndexTrafficSources extends OrgAction
 {
@@ -50,16 +51,18 @@ class IndexTrafficSources extends OrgAction
             $queryBuilder->leftJoin('currencies', 'currencies.id', '=', 'shops.currency_id');
         }
 
+        // Join ke traffic_source_stats tetap dipertahankan
         $queryBuilder->leftJoin('traffic_source_stats', function ($join) {
             $join->on('traffic_sources.id', '=', 'traffic_source_stats.traffic_source_id');
         });
 
+        $queryBuilder->leftJoin('customers', 'customers.traffic_source_id', '=', 'traffic_sources.id');
 
         $selectFields = [
             'traffic_sources.id',
             'traffic_sources.slug',
             'traffic_sources.name',
-            'traffic_source_stats.number_customers',
+            DB::raw('(SELECT COUNT(*) FROM customers WHERE customers.traffic_source_id = traffic_sources.id) as number_customers'),
             'traffic_source_stats.number_customer_purchases',
             'traffic_source_stats.total_customer_revenue',
             'currencies.code as currency_code',
@@ -67,8 +70,13 @@ class IndexTrafficSources extends OrgAction
 
         $groupByFields = [
             'traffic_sources.id',
+            'traffic_sources.slug',
+            'traffic_sources.name',
+            'traffic_source_stats.number_customer_purchases',
+            'traffic_source_stats.total_customer_revenue',
+            'currencies.code',
             'traffic_source_stats.id',
-            'currencies.id'
+            'currencies.id',
         ];
 
         $queryBuilder
@@ -97,7 +105,7 @@ class IndexTrafficSources extends OrgAction
     ): Closure {
         return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
-                $table->name($prefix)->pageName($prefix.'Page');
+                $table->name($prefix)->pageName($prefix . 'Page');
             }
 
             $table
@@ -141,7 +149,6 @@ class IndexTrafficSources extends OrgAction
         }
 
         $action = [];
-
 
         return Inertia::render(
             'Org/Shop/CRM/TrafficSources',

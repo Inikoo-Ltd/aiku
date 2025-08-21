@@ -36,7 +36,6 @@ const props = defineProps<{
 	}
 }>()
 
-
 const initialPollReplies = props.polls.map((poll) => ({
 	...poll,
 	answer: poll.type === "option" ? null : "",
@@ -92,8 +91,6 @@ const submit = () => {
 		form.setError("password", "password not match")
 	}
 }
-
-
 
 // Autofocus first PureInput on mount
 onMounted(async () => {

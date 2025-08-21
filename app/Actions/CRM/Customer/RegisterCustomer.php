@@ -77,6 +77,4 @@ class RegisterCustomer extends OrgAction
 
         return $customer;
     }
-
-
 }

@@ -63,7 +63,7 @@ trait WithRetinaRegistration
 
             if (!$pollId || !$pollType) {
                 $validator->errors()->add(
-                    'poll_replies.'.$key,
+                    'poll_replies.' . $key,
                     "Poll reply not valid"
                 );
                 continue;
@@ -75,7 +75,7 @@ trait WithRetinaRegistration
 
             if (!$pollAnswer && $poll->in_registration_required) {
                 $validator->errors()->add(
-                    'poll_replies.'.$key,
+                    'poll_replies.' . $key,
                     "The answer is required for this poll!"
                 );
                 continue;
@@ -85,7 +85,7 @@ trait WithRetinaRegistration
 
             if (!$poll) {
                 $validator->errors()->add(
-                    'poll_replies.'.$key,
+                    'poll_replies.' . $key,
                     "The poll does not exist!"
                 );
                 continue;
@@ -99,13 +99,13 @@ trait WithRetinaRegistration
 
                 if (!in_array((int)$pollAnswer, $pollOptions, true)) {
                     $validator->errors()->add(
-                        'poll_replies.'.$key,
+                        'poll_replies.' . $key,
                         "The answer option does not exist!"
                     );
                 }
             } elseif ($pollType === PollTypeEnum::OPEN_QUESTION->value && !is_string($pollAnswer)) {
                 $validator->errors()->add(
-                    'poll_replies.'.$key,
+                    'poll_replies.' . $key,
                     "The answer must be a string!"
                 );
             }
@@ -115,6 +115,7 @@ trait WithRetinaRegistration
     public function prepareForValidation(ActionRequest $request): void
     {
         $this->set('traffic_sources', $request->cookie('aiku_tsd'));
+        $this->set('traffic_source_id', $request->cookie('aiku_lts'));
     }
 
 
@@ -145,16 +146,18 @@ trait WithRetinaRegistration
                     ]
                 ),
             ],
+            'traffic_source_id' => ['sometimes', 'string', 'max:255'],
+            'traffic_sources' => ['sometimes', 'string'],
             'phone'           => ['required', 'max:255'],
             'contact_address' => ['required', new ValidAddress()],
             'is_opt_in'       => ['required', 'boolean'],
             'poll_replies'    => ['sometimes', 'array'],
             'password'        =>
-                [
-                    'required',
-                    'required',
-                    app()->isLocal() || app()->environment('testing') ? null : Password::min(8)
-                ],
+            [
+                'required',
+                'required',
+                app()->isLocal() || app()->environment('testing') ? null : Password::min(8)
+            ],
         ];
 
         if ($this->shop->type == ShopTypeEnum::FULFILMENT) {
