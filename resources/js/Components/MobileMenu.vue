@@ -50,7 +50,7 @@ console.log('layout', layout)
 </script>
 
 <template>
-    <div class="mobile-menu">
+    <div class="mobile-menu editor-class">
         <button @click="isOpenMenuMobile = true">
             <FontAwesomeIcon :icon="props.header?.mobile?.menu?.icon || faBars"
                 :style="{ ...getStyles(header?.mobile?.menu?.container?.properties) }" />

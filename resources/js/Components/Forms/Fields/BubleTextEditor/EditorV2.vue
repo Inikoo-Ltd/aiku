@@ -373,6 +373,7 @@ const editorInstance = useEditor({
     },
 })
 
+
 function openLinkDialogCustom() {
     const attrs = editorInstance.value?.getAttributes("link")
     currentLinkInDialog.value = attrs
