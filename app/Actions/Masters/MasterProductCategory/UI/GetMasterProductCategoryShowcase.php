@@ -12,6 +12,8 @@ namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Http\Resources\Catalogue\MasterProductCategoryResource;
+use App\Http\Resources\Masters\MasterFamiliesResource;
+use App\Http\Resources\Masters\MasterSubDepartmentsResource;
 use App\Models\Masters\MasterProductCategory;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -22,21 +24,36 @@ class GetMasterProductCategoryShowcase
     public function handle(MasterProductCategory $productCategory): array
     {
 
-        $data = [];
-        switch ($productCategory->type) {
-            case MasterProductCategoryTypeEnum::DEPARTMENT :
-                $data = [
-                    'department' => MasterProductCategoryResource::make($productCategory),
-                    'families'   => MasterProductCategoryResource::collection($productCategory->masterFamilies()),
-                ];
-                break;
-
-            default:
-                $data = [
-                    'family' => MasterProductCategoryResource::make($productCategory),
-                ];
-        }
-
-        return $data;
+        return match ($productCategory->type) {
+            MasterProductCategoryTypeEnum::DEPARTMENT => [
+                'department' => MasterProductCategoryResource::make($productCategory)->resolve(),
+                'families' => MasterProductCategoryResource::collection($productCategory->masterFamilies()),
+                'translation_box' => [
+                'title' => __('Multi-language Translations'),
+                'save_route' => [
+                     'name'       => 'grp.models.master_product_categories.translations.update',
+                     'parameters' => []
+                ],
+            ],
+            ],
+            MasterProductCategoryTypeEnum::SUB_DEPARTMENT => [
+                'subDepartment' => MasterSubDepartmentsResource::make($productCategory)->resolve(),
+                'families' => MasterFamiliesResource::collection($productCategory->masterFamilies()),
+                'translation_box' => [
+                'title'      => __('Multi-language Translations'),
+                'save_route' => [
+                    'name'       => 'grp.models.master_product_categories.translations.update',
+                    'parameters' => []
+                ],
+            ],
+            ],
+            default => [
+                'family' => MasterProductCategoryResource::make($productCategory),
+                'save_route' => [
+                    'name'       => 'grp.models.master_product_categories.translations.update',
+                    'parameters' => []
+                ],
+            ],
+        };
     }
 }

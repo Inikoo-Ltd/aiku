@@ -47,7 +47,7 @@ class SetDeliveryNoteStateAsPacked extends OrgAction
 
         data_set($modelData, 'parcels', $defaultParcel);
 
-        UpdateOrderStateToPacked::make()->action($deliveryNote->orders->first());
+        UpdateOrderStateToPacked::make()->action($deliveryNote->orders->first(), true);
 
         $deliveryNote = $this->update($deliveryNote, $modelData);
 

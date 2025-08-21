@@ -134,6 +134,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $invoice_footer
  * @property string|null $colour
  * @property bool $registration_needs_approval
+ * @property array<array-key, mixed>|null $extra_languages
  * @property-read \App\Models\Catalogue\ShopAccountingStats|null $accountingStats
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses
@@ -189,6 +190,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, PaymentAccountShop> $paymentAccountShops
  * @property-read LaravelCollection<int, Payment> $payments
  * @property-read LaravelCollection<int, Picking> $pickings
+ * @property-read LaravelCollection<int, \App\Models\Catalogue\ShopPlatformStats> $platformStats
  * @property-read LaravelCollection<int, Poll> $polls
  * @property-read LaravelCollection<int, Portfolio> $portfolios
  * @property-read LaravelCollection<int, \App\Models\Catalogue\ProductCategory> $productCategories
@@ -244,6 +246,7 @@ class Shop extends Model implements HasMedia, Auditable
         'data'            => 'array',
         'settings'        => 'array',
         'location'        => 'array',
+        'extra_languages' => 'array',
         'type'            => ShopTypeEnum::class,
         'state'           => ShopStateEnum::class,
         'fetched_at'      => 'datetime',
@@ -254,6 +257,7 @@ class Shop extends Model implements HasMedia, Auditable
         'data'     => '{}',
         'settings' => '{}',
         'location' => '{}',
+        'extra_languages' => '{}'
     ];
 
     protected $guarded = [];
@@ -687,4 +691,10 @@ class Shop extends Model implements HasMedia, Auditable
     {
         return $this->hasMany(TrafficSource::class);
     }
+
+    public function platformStats(): HasMany
+    {
+        return $this->hasMany(ShopPlatformStats::class);
+    }
+
 }

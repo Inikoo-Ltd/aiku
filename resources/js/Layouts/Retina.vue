@@ -208,7 +208,7 @@ const getBgColorDependsOnStatus = (status: string) => {
 <template>
     <!-- Retina: Ds -->
     <RetinaLayoutDs
-        v-if="layout.retina?.type === 'dropshipping'"
+        v-if="layout.retina?.type === 'dropshipping' || layout.retina?.type === 'b2b'"
     >
         <template #default>
             <slot />
@@ -216,13 +216,13 @@ const getBgColorDependsOnStatus = (status: string) => {
     </RetinaLayoutDs>
 
     <!-- Retina: Ecom -->
-    <RetinaLayoutEcom
+    <!-- <RetinaLayoutEcom
         v-else-if="layout.retina?.type === 'b2b'"
     >
         <template #default>
             <slot />
         </template>
-    </RetinaLayoutEcom>
+    </RetinaLayoutEcom> -->
 
     <!-- Retina: Fulfilment -->
     <template v-else-if="layout.retina?.type === 'fulfilment'">

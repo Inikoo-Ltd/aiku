@@ -11,7 +11,7 @@ import TabsBox from "@/Components/Navigation/TabsBox.vue"
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt } from '@fal'
+import { faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt, faCircle, faCheckCircle, faHandsHelping } from '@fal'
 import { ref } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
 import TableOrders from '@/Components/Tables/Grp/Org/Ordering/TableOrders.vue'
@@ -33,7 +33,7 @@ const props = defineProps<{
 
 
 
-library.add(faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt)
+library.add(faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt, faCircle, faCheckCircle, faHandsHelping)
 
 
 const currentTab = ref(props.tabs.current)

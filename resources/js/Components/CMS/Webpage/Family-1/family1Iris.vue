@@ -37,9 +37,9 @@ const layout: any = inject("layout", {})
       aria-label="Family Description Section">
 
       <!-- Description Title (SEO: Heading) -->
-      <h2 v-if="fieldValue.family.description_title" class="text-[1.5rem] leading-[2rem] font-semibold text-gray-800">
+      <h1 v-if="fieldValue.family.description_title" class="text-[1.5rem] leading-[2rem] font-semibold text-gray-800">
         {{ fieldValue.family.description_title }}
-      </h2>
+      </h1>
 
       <!-- Main Description -->
       <div v-if="fieldValue.family.description" :style="{ marginTop: 0 }" v-html="fieldValue.family.description"></div>

@@ -159,15 +159,6 @@ class EditShop extends OrgAction
                                     'options'       => GetCurrenciesOptions::run(),
                                     'searchable'    => true
                                 ],
-                                'language_id' => [
-                                    'type'          => 'select',
-                                    'label'         => __('language'),
-                                    'placeholder'   => __('Select your language'),
-                                    'required'      => true,
-                                    'value'         => $shop->language_id,
-                                    'options'       => GetLanguagesOptions::make()->all(),
-                                    'searchable'    => true
-                                ]
                             ],
 
                         ],
@@ -210,6 +201,33 @@ class EditShop extends OrgAction
                                     'full'      => true,
                                     'value'       => $shop->invoice_footer
                                 ],
+                            ],
+                        ],
+                        [
+                            'label'  => __('Languages'),
+                            'icon'   => 'fa-light fa-language',
+                            'fields' => [
+                                'language_id' => [
+                                    'type'          => 'select',
+                                    'label'         => __('Main language'),
+                                    'placeholder'   => __('Select your language'),
+                                    'required'      => true,
+                                    'value'         => $shop->language_id,
+                                    'options'       => GetLanguagesOptions::make()->all(),
+                                    'searchable'    => true
+                                ],
+                                'extra_languages' => [
+                                    'type'          => 'select',
+                                    'label'         => __('Extra language'),
+                                    'placeholder'   => __('Select your language'),
+                                    'required'      => true,
+                                    'value'         => $shop->extra_languages,
+                                    'options'       => GetLanguagesOptions::make()->getExtraGroupLanguages($shop->group->extra_languages),
+                                    'searchable'    => true,
+                                    'mode'          => 'tags',
+                                    'labelProp'     => 'name',
+                                    'valueProp' => 'id',
+                                ]
                             ],
                         ],
                     ],

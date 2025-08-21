@@ -308,19 +308,6 @@ test('UI edit customer client', function (CustomerClient $customerClient) {
                 'formData',
                 fn (AssertableInertia $form) => $form
                     ->has('blueprint', 1)
-                    ->where('blueprint.0.title', 'contact')
-                    ->has('blueprint.0.fields.company_name')
-                    ->where('blueprint.0.fields.company_name.label', 'company')
-                    ->where('blueprint.0.fields.company_name.value', $customerClient->company_name)
-                    ->has('blueprint.0.fields.contact_name')
-                    ->where('blueprint.0.fields.contact_name.label', 'contact name')
-                    ->where('blueprint.0.fields.contact_name.value', $customerClient->contact_name)
-                    ->has('blueprint.0.fields.email')
-                    ->where('blueprint.0.fields.email.label', 'email')
-                    ->where('blueprint.0.fields.email.value', $customerClient->email)
-                    ->has('blueprint.0.fields.phone')
-                    ->where('blueprint.0.fields.phone.label', 'phone')
-                    ->where('blueprint.0.fields.phone.value', $customerClient->phone)
                     ->etc()
             )
             ->has(

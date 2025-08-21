@@ -141,6 +141,7 @@ class IndexProductWebpages extends OrgAction
             ->select([
                 'webpages.code',
                 'webpages.id',
+                'webpages.title',
                 'webpages.type',
                 'webpages.slug',
                 'webpages.level',
@@ -153,7 +154,7 @@ class IndexProductWebpages extends OrgAction
                 'websites.domain as website_url',
                 'websites.slug as website_slug'
             ])
-            ->allowedSorts(['code', 'type', 'level', 'url'])
+            ->allowedSorts(['code', 'type', 'level', 'url', 'title'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -191,6 +192,7 @@ class IndexProductWebpages extends OrgAction
                 ->column(key: 'level', label: '', icon: 'fal fa-sort-amount-down-alt', tooltip: __('Level'), canBeHidden: false, sortable: true, type: 'icon');
             $table->column(key: 'type', label: '', icon: 'fal fa-shapes', tooltip: __('Type'), canBeHidden: false, type: 'icon');
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'title', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'action', label: __('Action'), canBeHidden: false, sortable: true, searchable: true);
             $table->defaultSort('level');
         };
@@ -207,8 +209,6 @@ class IndexProductWebpages extends OrgAction
 
 
         $subNavigation = $this->getWebpageNavigation($this->website);
-
-        $routeCreate = '';
 
         return Inertia::render(
             'Org/Web/Webpages',
@@ -227,14 +227,26 @@ class IndexProductWebpages extends OrgAction
                     'subNavigation' => $subNavigation,
                     'actions'       => [
                         [
+                            'key'   => 'product_webpage_create',
                             'type'  => 'button',
-                            'style' => 'create',
-                            'label' => __('webpage'),
-                            'route' => [
-                                'name'       => $routeCreate,
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ],
+                            // 'style' => 'create',
+                            // 'label' => __('Product Webpage'),
+                            // 'route' => [
+                            //     'name'       => $routeCreate,
+                            //     'parameters' => array_values($request->route()->originalParameters())
+                            // ],
                         ]
+                    ]
+                ],
+                'routes_list' => [
+                    'fetch_products_without_webpage' => [
+                        'name'       => 'grp.json.shop.products.no-webpage',
+                        'parameters' => [
+                            'shop' => $this->shop->id,
+                        ]
+                    ],
+                    'submit_product_webpage' => [
+                        'name'       => 'grp.models.webpages.product.store',
                     ]
                 ],
                 'data'        => WebpagesResource::collection($webpages),

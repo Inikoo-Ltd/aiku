@@ -164,6 +164,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_collections_products_status_normal
  * @property int $number_collections_products_status_discontinuing
  * @property int $number_collections_products_status_discontinued
+ * @property int $number_master_families_no_master_department
+ * @property int $number_master_products_no_master_family
  * @property-read \App\Models\SysAdmin\Group $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupCatalogueStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupCatalogueStats newQuery()

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, IframeHTMLAttributes, onMounted, provide} from 'vue'
+import { ref, watch, IframeHTMLAttributes, onMounted, provide, inject } from 'vue'
 import { Head, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { capitalize } from "@/Composables/capitalize"
@@ -19,6 +19,9 @@ import { trans } from "laravel-vue-i18n"
 import { getBlueprint } from '@/Composables/getBlueprintWorkshop'
 import { setIframeView } from "@/Composables/Workshop"
 import ProgressSpinner from 'primevue/progressspinner';
+import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
+import Drawer from 'primevue/drawer';
+import { getTranslationComponent } from '@/Composables/getWorkshopComponents'
 
 import { routeType } from "@/types/route"
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
@@ -26,7 +29,7 @@ import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faIcons, faMoneyBill, faUpload, faThLarge } from '@fas';
 import { faLineColumns, faLowVision } from '@far';
-import { faExternalLink, faTimes } from '@fal';
+import { faExternalLink, faLanguage, faTimes } from '@fal';
 import { faEye } from '@fad';
 import { library } from '@fortawesome/fontawesome-svg-core'
 
@@ -39,7 +42,7 @@ const props = defineProps<{
     data: {
         data: Object
     }
-    status:boolean
+    status: boolean
     autosaveRoute: routeType
     webBlockTypes: Object
     uploadImageRoute: routeType
@@ -54,13 +57,16 @@ const comment = ref('')
 const iframeClass = ref('w-full h-full')
 const saveCancelToken = ref<Function | null>(null)
 const isIframeLoading = ref(true)
-const iframeSrc = 
+const locale = inject('locale', aikuLocaleStructure)
+const langOptions = Object.values(locale.languageOptions)
+const darwerRight = ref(false)
+const iframeSrc =
     route('grp.websites.footer.preview', [
         route().params['website'],
         {
             organisation: route().params["organisation"],
             shop: route().params["shop"],
-            fulfilment : route().params["fulfilment"]
+            fulfilment: route().params["fulfilment"]
         }
     ])
 
@@ -79,7 +85,7 @@ const onPublish = async (action: routeType, popover: Function) => {
         isLoading.value = true
         const response = await axios[action.method](route(action.name, action.parameters), {
             comment: comment.value,
-            layout: {... usedTemplates.value,  status : status.value}
+            layout: { ...usedTemplates.value, status: status.value }
         })
         popover.close()
     } catch (error) {
@@ -103,9 +109,9 @@ const autoSave = async (data: Object) => {
             onFinish: () => {
                 saveCancelToken.value = null
                 sendToIframe({ key: 'reload', value: {} })
-                if(isIframeLoading.value){
+                if (isIframeLoading.value) {
                     isIframeLoading.value = false
-                 /*    location.reload(); */
+                    /*    location.reload(); */
                 }
             },
             onCancelToken: (cancelToken) => {
@@ -115,6 +121,7 @@ const autoSave = async (data: Object) => {
                 console.log('The saving progress canceled.')
             },
             onError: (error) => {
+                console.log('Error during saving:', error)
                 notify({
                     title: trans('Something went wrong.'),
                     text: error.message,
@@ -150,7 +157,7 @@ const sendToIframe = (data: any) => {
 }
 
 const openWebsite = () => {
-  window.open('https://'+ props.domain, "_blank")
+    window.open('https://' + props.domain, "_blank")
 }
 
 const panelOpen = ref()
@@ -177,20 +184,34 @@ onMounted(() => {
     window.addEventListener('message', handleIframeMessage);
 });
 
+
+
+const selectedLang = ref<string | null>(null)
 const currentView = ref('desktop')
-provide('currentView',currentView )
+provide('currentView', currentView)
 watch(currentView, (newValue) => {
-	iframeClass.value = setIframeView(newValue)
+    iframeClass.value = setIframeView(newValue)
+})
+
+watch(selectedLang, (val) => {
+    if (val !== null) {
+        previewMode.value = true
+    } else {
+        previewMode.value = false
+    }
+
+    sendToIframe({ key: 'active_language', value: val })
 })
 
 </script>
 
 <template>
+
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #button-publish="{ action }">
             <Publish :isLoading="isLoading" :is_dirty="true" v-model="comment"
-                @onPublish="(popover) => onPublish(action.route, popover)" >
+                @onPublish="(popover) => onPublish(action.route, popover)">
                 <!-- Move this to Advanced Setting later -->
                 <!-- <template #form-extend>
                     <div class="flex items-center gap-2 mb-3">
@@ -217,7 +238,7 @@ watch(currentView, (newValue) => {
             </Publish>
         </template>
         <template #other>
-            <div class=" px-2 cursor-pointer" v-tooltip="'go to website'" @click="openWebsite" >
+            <div class=" px-2 cursor-pointer" v-tooltip="'go to website'" @click="openWebsite">
                 <FontAwesomeIcon :icon="faExternalLink" aria-hidden="true" size="xl" />
             </div>
         </template>
@@ -227,20 +248,18 @@ watch(currentView, (newValue) => {
         <div v-if="usedTemplates" class="col-span-1 bg-[#F9F9F9] flex flex-col h-full border-r border-gray-300">
             <div class="h-full">
                 <div class="w-full overflow-y-auto">
-                    <div class="px-3 py-0.5 sticky top-0 bg-gray-50 z-20 text-lg font-semibold flex items-center justify-end gap-3 border-b border-gray-300">
+                    <div
+                        class="px-3 py-0.5 sticky top-0 bg-gray-50 z-20 text-lg font-semibold flex items-center justify-end gap-3 border-b border-gray-300">
                         <div class="py-1 px-2 cursor-pointer" title="template" v-tooltip="'Template'"
-                                @click="isModalOpen = true">
-                                <FontAwesomeIcon :icon="faThLarge" aria-hidden='true' />
-                            </div>
+                            @click="isModalOpen = true">
+                            <FontAwesomeIcon :icon="faThLarge" aria-hidden='true' />
+                        </div>
                     </div>
                     <div class="">
-                    <SideEditor 
-                        v-model="usedTemplates.data.fieldValue" 
-                        :blueprint="getBlueprint(usedTemplates.code)" 
-                        :panel-open="panelOpen" 
-                        :uploadImageRoute="uploadImageRoute"
-                        @update:model-value="e => usedTemplates.data.fieldValue = e"
-                    />
+                        <SideEditor v-model="usedTemplates.data.fieldValue"
+                            :blueprint="getBlueprint(usedTemplates.code)" :panel-open="panelOpen"
+                            :uploadImageRoute="uploadImageRoute"
+                            @update:model-value="e => usedTemplates.data.fieldValue = e" />
                     </div>
                 </div>
             </div>
@@ -251,41 +270,53 @@ watch(currentView, (newValue) => {
                 <div v-if="usedTemplates?.data" class="w-full h-full">
                     <div class="flex justify-between bg-slate-200 border border-b-gray-300">
                         <div class="flex">
-                            <ScreenView @screenView="(e) => {currentView = e}" v-model="currentView" />
-                            <div class="py-1 px-2 cursor-pointer text-gray-500 hover:text-amber-600" v-tooltip="trans('Open preview in new tab')"
-                                @click="openFullScreenPreview">
-						        <FontAwesomeIcon :icon="faEye" fixed-width aria-hidden="true" />
+                            <ScreenView @screenView="(e) => { currentView = e }" v-model="currentView" />
+                            <div class="py-1 px-2 cursor-pointer text-gray-500 hover:text-amber-600"
+                                v-tooltip="trans('Open preview in new tab')" @click="openFullScreenPreview">
+                                <FontAwesomeIcon :icon="faEye" fixed-width aria-hidden="true" />
+                            </div>
+                            <div v-if="selectedLang" class="py-1 px-2 cursor-pointer text-gray-500 hover:text-amber-600"
+                                v-tooltip="trans('open translation')" @click="darwerRight = !darwerRight">
+                                <FontAwesomeIcon :icon="faLanguage" fixed-width aria-hidden="true" />
                             </div>
                         </div>
                         <div class="flex items-center gap-2">
-                            <div class="text-xs" :class="[
-                                previewMode ? 'text-slate-600' : 'text-slate-300'
-                            ]">Preview</div>
-                            <Switch @click="previewMode = !previewMode" :class="[
-                                previewMode ? 'bg-slate-600' : 'bg-slate-300'
-                            ]"
-                                class="pr-1 relative inline-flex h-3 w-6 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75">
-                                <span aria-hidden="true" :class="previewMode ? 'translate-x-3' : 'translate-x-0'"
-                                    class="pointer-events-none inline-block h-full w-1/2 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out">
-                                </span>
-                            </Switch>
+                            <div class="border-r border-gray-300 pr-2">
+                                <select v-model="selectedLang"
+                                    class="border border-gray-300 rounded px-2 py-1 text-xs focus:ring focus:ring-indigo-200 focus:border-indigo-400">
+                                    <!-- Null option -->
+                                    <option :value="null">{{ trans('Master') }}</option>
 
-                          
-                           
+                                    <!-- Language list -->
+                                    <option v-for="lang in langOptions" :key="lang.code" :value="lang.code">
+                                        {{ lang.name }}
+                                    </option>
+                                </select>
+
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="text-xs" :class="[
+                                    previewMode ? 'text-slate-600' : 'text-slate-300'
+                                ]">Preview</div>
+                                <Switch @click="previewMode = !previewMode"
+                                    :class="[previewMode ? 'bg-slate-600' : 'bg-slate-300']"
+                                    :disabled="selectedLang !== null"
+                                    class="pr-1 relative inline-flex h-3 w-6 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75">
+                                    <span aria-hidden="true" :class="previewMode ? 'translate-x-3' : 'translate-x-0'"
+                                        class="pointer-events-none inline-block h-full w-1/2 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out">
+                                    </span>
+                                </Switch>
+
+                            </div>
                         </div>
                     </div>
 
                     <div v-if="isIframeLoading" class="loading-overlay">
                         <ProgressSpinner />
                     </div>
-                    <iframe 
-                        :src="iframeSrc" 
-                        :title="props.title" 
-                        :class="[iframeClass, isIframeLoading ? 'hidden' : '']"
-                        @error="handleIframeError"
-                        @load="isIframeLoading = false" 
-                        ref="_iframe"
-                     />
+                    <iframe :src="iframeSrc" :title="props.title"
+                        :class="[iframeClass, isIframeLoading ? 'hidden' : '']" @error="handleIframeError"
+                        @load="isIframeLoading = false" ref="_iframe" />
                 </div>
                 <div v-else>
                     <EmptyState
@@ -316,6 +347,14 @@ watch(currentView, (newValue) => {
             </template>
         </HeaderListModal>
     </Modal>
+
+    <Drawer v-model:visible="darwerRight" :dismissable="false" :header="`Translation ${selectedLang}`" position="right"
+        :pt="{ root: { style: 'width: 80vw' } }">
+        <div>
+            <component :is="getTranslationComponent(usedTemplates?.code)" v-model="usedTemplates"
+                :translation="selectedLang" />
+        </div>
+    </Drawer>
 </template>
 
 

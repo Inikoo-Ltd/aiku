@@ -114,6 +114,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Web\WebpageTimeSeries> $timeSeries
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Snapshot|null $unpublishedSnapshot
+ * @property-read Collection<int, \App\Models\Web\WebBlockHistory> $webBlockHistories
  * @property-read Collection<int, \App\Models\Web\WebBlock> $webBlocks
  * @property-read Collection<int, WebUserRequest> $webUserRequests
  * @property-read Collection<int, \App\Models\Web\WebpageHasProduct> $webpageHasProducts
@@ -326,6 +327,11 @@ class Webpage extends Model implements Auditable, HasMedia
     public function webUserRequests(): HasMany
     {
         return $this->hasMany(WebUserRequest::class);
+    }
+
+    public function webBlockHistories(): HasMany
+    {
+        return $this->hasMany(WebBlockHistory::class);
     }
 
 }

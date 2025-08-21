@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
+use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\Catalogue\DepartmentResource;
 use App\Http\Resources\Catalogue\FamilyResource;
@@ -27,6 +28,14 @@ class GetProductCategoryShowcase
 
             $data = [
                 'department' => DepartmentResource::make($productCategory)->toArray(request()),
+                'translation_box' => [
+                    'title' => __('Multi-language Translations'),
+                    'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($productCategory->shop->extra_languages),
+                    'save_route' => [
+                        'name' => 'grp.models.product_category.translations.update',
+                        'parameters' => [],
+                    ],
+                ],
             ];
             $data['routeList'] = [
                 'collectionRoute' => [
@@ -50,6 +59,14 @@ class GetProductCategoryShowcase
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $data = [
                 'subDepartment' => SubDepartmentResource::make($productCategory)->toArray(request()),
+                'translation_box' => [
+                    'title' => __('Multi-language Translations'),
+                    'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($productCategory->shop->extra_languages),
+                    'save_route' => [
+                        'name' => 'grp.models.product_category.translations.update',
+                        'parameters' => [],
+                    ],
+                ],
             ];
             $data['routeList'] = [
                 'collectionRoute' => [
@@ -81,6 +98,14 @@ class GetProductCategoryShowcase
         } else {
             $data = [
                 'family' => FamilyResource::make($productCategory),
+                'translation_box' => [
+                    'title' => __('Multi-language Translations'),
+                    'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($productCategory->shop->extra_languages),
+                    'save_route' => [
+                        'name' => 'grp.models.product_category.translations.update',
+                        'parameters' => [],
+                    ],
+                ],
             ];
             if ($routeName == 'grp.org.shops.show.catalogue.families.show') {
                 $data['routeList'] = [

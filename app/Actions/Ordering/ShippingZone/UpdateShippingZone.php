@@ -24,7 +24,7 @@ class UpdateShippingZone extends OrgAction
 
     public function handle(ShippingZone $shippingZone, array $modelData): ShippingZone
     {
-        return $this->update($shippingZone, $modelData);
+        return $this->update($shippingZone, $modelData, ['territories', 'price']);
     }
 
     public function rules(): array
@@ -47,7 +47,7 @@ class UpdateShippingZone extends OrgAction
             'status'      => ['sometimes', 'required', 'boolean'],
             'price'       => ['sometimes', 'array'],
             'territories' => ['sometimes', 'array'],
-            'position'    => ['required', 'integer'],
+            'position'    => ['sometimes', 'integer'],
             'is_failover' => ['sometimes', 'boolean'],
 
         ];

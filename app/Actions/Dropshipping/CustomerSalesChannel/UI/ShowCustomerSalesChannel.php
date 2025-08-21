@@ -75,11 +75,11 @@ class ShowCustomerSalesChannel extends OrgAction
             'Org/Dropshipping/CustomerSalesChannel',
             [
                 'title'       => __('customer'),
-//                'breadcrumbs' => $this->getBreadcrumbs(
-//                    $customerSalesChannel,
-//                    $request->route()->getName(),
-//                    $request->route()->originalParameters()
-//                ),
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    $customerSalesChannel,
+                    $request->route()->getName(),
+                    $request->route()->originalParameters()
+                ),
                 'pageHead'    => [
                     ...$this->getCustomerSalesChannelSubNavigationHead($customerSalesChannel),
                     'actions' => $actions
@@ -131,6 +131,8 @@ class ShowCustomerSalesChannel extends OrgAction
                 ],
             ];
         };
+
+
 
 
         return array_merge(

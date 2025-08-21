@@ -37,7 +37,7 @@ const { mode } = route().params;
 const emits = defineEmits<{
     (e: 'update:modelValue', value: string | number): void
 }>()
-
+console.log('ssss',props)
 </script>
 
 <template>
@@ -80,7 +80,8 @@ const emits = defineEmits<{
             :style="getStyles(data.header?.data?.fieldValue?.container?.properties, screenType)">
             <MobileHeader 
                 :header-data="data.header?.data?.fieldValue" 
-                :menu-data="menu?.menu?.data.fieldValue" 
+                :menu-data="menu?.menu?.data?.fieldValue"
+                :productCategories="menu?.menu?.data.productCategory" 
                 :screenType="screenType" 
             />
         </div>

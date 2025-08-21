@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Ordering;
 
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -43,6 +44,15 @@ class OrdersResource extends JsonResource
     {
         /** @var Order $order */
         $order = $this;
+        $payStatus = null;
+
+        $payStatus = match (true) {
+            $this->state == OrderStateEnum::CREATING => 'waiting',
+            $this->payment_amount == $this->total_amount => 'success',
+            $this->state == OrderStateEnum::CANCELLED => 'fail', 
+            default => 'waiting'
+        };
+        
 
         return [
             'slug'                   => $this->slug,
@@ -57,7 +67,9 @@ class OrdersResource extends JsonResource
             'customer_name'          => $this->customer_name,
             'customer_slug'          => $this->customer_slug,
             'payment_state'          => $this->payment_state,
+            'payment_amount'         => $this->payment_amount,
             'payment_status'         => $this->payment_status,
+            'pay_status'             => $payStatus,
             'currency_code'          => $this->currency_code,
             'currency_id'            => $this->currency_id,
             'organisation_name'      => $this->organisation_name,

@@ -49,12 +49,14 @@ class IndexOrgStocksInLocation extends OrgAction
                 'org_stocks.name',
                 'org_stocks.slug',
                 'org_stocks.unit_value',
-                'number_locations',
-                'quantity_in_locations',
-                'org_stocks.discontinued_in_organisation_at'
+                'location_org_stocks.type',
+                'location_org_stocks.picking_priority',
+                'location_org_stocks.value',
+                'location_org_stocks.dropshipping_pipe',
+                'location_org_stocks.quantity',
+                'location_org_stocks.notes',
             ])
-
-            ->allowedSorts(['code', 'name', 'family_code', 'unit_value', 'discontinued_in_organisation_at'])
+            ->allowedSorts(['type', 'picking_priority', 'value', 'dropshipping_pipe', 'quantity', 'notes'])
             ->allowedFilters([$globalSearch, AllowedFilter::exact('state')])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -66,21 +68,20 @@ class IndexOrgStocksInLocation extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
-
 
             $table
                 ->defaultSort('code')
                 ->withGlobalSearch()
                 ->column(key: 'code', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
 
-
-            $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'unit_value', label: __('unit value'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'stock', label: __('stock'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'picking_priority', label: __('picking priority'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'value', label: __('value'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'dropshipping_pipe', label: __('dropshipping pipe'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'quantity', label: __('quantity'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'notes', label: __('notes'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
-
-
 }

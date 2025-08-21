@@ -39,6 +39,18 @@ trait WithSubDepartmentSubNavigation
                     'tooltip' => __('families')
                 ]
             ],
+            [
+                'label'    => __('Products'),
+                'number'   => $subDepartment->stats->number_products,
+                'route'     => [
+                    'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.product.index',
+                    'parameters' => [$this->organisation->slug, $this->shop->slug, $subDepartment->department->slug, $subDepartment->slug]
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-cube'],
+                    'tooltip' => __('products')
+                ]
+            ],
              [
                  'label'    => __('Collections'),
                  'number'   => $subDepartment->stats->number_collections,

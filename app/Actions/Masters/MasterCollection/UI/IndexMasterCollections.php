@@ -9,12 +9,13 @@
 namespace App\Actions\Masters\MasterCollection\UI;
 
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
-use App\Actions\Masters\UI\ShowMastersDashboard;
+use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Http\Resources\Masters\MasterCollectionsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Masters\MasterCollection;
+use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
@@ -52,7 +53,8 @@ class IndexMasterCollections extends OrgAction
                 'master_collections.code',
                 'master_collections.description',
                 'master_collections.slug',
-                'master_collections.status',
+                'master_collections.state',
+                'master_collections.products_status',
                 'master_collections.data',
             ]
         );
@@ -96,7 +98,7 @@ class IndexMasterCollections extends OrgAction
 
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'description', label: __('description'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'status', label: __('status'), canBeHidden: false)
+                ->column(key: 'state', label: __('state'), canBeHidden: false)
                 ->defaultSort('code');
         };
     }
@@ -130,10 +132,14 @@ class IndexMasterCollections extends OrgAction
             ];
         }
 
+
+        if ($this->parent instanceof MasterShop) {
+            $subNavigation = $this->getMasterShopNavigation($this->parent);
+        }
         return Inertia::render(
             'Masters/MasterCollections',
             [
-                'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName()),
+                'breadcrumbs' => $this->getBreadcrumbs($this->parent, $request->route()->getName(), $request->route()->originalParameters()),
                 'title'       => $title,
                 'pageHead'    => [
                     'title'         => $title,
@@ -142,6 +148,22 @@ class IndexMasterCollections extends OrgAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'subNavigation' => $subNavigation,
+                    'actions'       => [
+                        [
+                            'type'    => 'button',
+                            'style'   => 'create',
+                            'tooltip' => __('new master collection'),
+                            'label'   => __('master collection'),
+                            'route'   => match ($this->parent::class) {
+                                MasterProductCategory::class => [
+                                ],
+                                default => [
+                                    'name'       => 'grp.masters.master_shops.show.master_collections.create',
+                                    'parameters' => $request->route()->originalParameters()
+                                ]
+                            }
+                        ],
+                    ],
                 ],
                 'data'        => MasterCollectionsResource::collection($masterCollections),
 
@@ -149,7 +171,7 @@ class IndexMasterCollections extends OrgAction
         )->table($this->tableStructure());
     }
 
-    public function getBreadcrumbs(string $routeName, string $suffix = null): array
+    public function getBreadcrumbs(MasterShop|MasterProductCategory|Group $parent, string $routeName, array $routeParameters, string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
             return [
@@ -166,13 +188,13 @@ class IndexMasterCollections extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.masters.master_collections.index' =>
+            'grp.masters.master_shops.show.master_collections.index' =>
             array_merge(
-                ShowMastersDashboard::make()->getBreadcrumbs(),
+                ShowMasterShop::make()->getBreadcrumbs($parent, $routeName),
                 $headCrumb(
                     [
                         'name'       => $routeName,
-                        'parameters' => []
+                        'parameters' => $routeParameters
                     ],
                     $suffix
                 ),

@@ -8,6 +8,7 @@
 
 namespace App\Helpers;
 
+use App\Models\Helpers\Country;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class NaturalLanguage
@@ -117,6 +118,15 @@ class NaturalLanguage
     public function dimensions($dimensionsData): string
     {
         return DimensionsFormatter::make()->dimensions($dimensionsData) ?? '';
+    }
+
+    public function country($country): array
+    {
+        $country = Country::where('iso3', $country)->first();
+        return $country ? [
+            'name' => $country->name,
+            'code' => $country->code,
+        ] : [];
     }
 
 

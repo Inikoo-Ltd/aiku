@@ -55,70 +55,37 @@ const getHref = (image?: ImageData) => {
   return image?.link_data?.url || image?.link_data?.workshop_url || ''
 }
 
-const getColumnWidthClass = (layoutType: string, index: number) => {
-  const layout = props.modelValue?.value?.layout_type || {}
-  const hasMobile = !!layout.mobile
-  const hasTablet = !!layout.tablet
-
+const getGridTemplate = (layoutType: string) => {
   switch (layoutType) {
-    case "12":
-      return [
-        hasMobile ? "w-1/2" : "sm:w-1/2",
-        hasTablet ? "" : index === 0 ? "md:w-1/3" : "md:w-2/3"
-      ].filter(Boolean).join(" ")
-
-    case "21":
-      return [
-        hasMobile ? "w-1/2" : "sm:w-1/2",
-        hasTablet ? "" : index === 0 ? "md:w-2/3" : "md:w-1/3"
-      ].filter(Boolean).join(" ")
-
-    case "13":
-      return hasTablet ? "w-full" : index === 0 ? "md:w-1/4" : "md:w-3/4"
-
-    case "31":
-      return [
-        hasMobile ? "w-1/2" : "sm:w-1/2",
-        hasTablet ? "" : index === 0 ? "md:w-3/4" : "md:w-1/4"
-      ].filter(Boolean).join(" ")
-
-    case "211":
-      return hasTablet ? "w-full" : index === 0 ? "md:w-1/2" : "md:w-1/4"
-
-    case "2":
-      return hasMobile ? "w-1/2" : hasTablet ? "w-1/2" : "md:w-1/2"
-
-    case "3":
-      return hasTablet ? "w-full" : "md:w-1/3"
-
-    case "4":
-      return hasTablet ? "w-full" : "md:w-1/4"
-
-    case "6":
-      return hasTablet ? "w-full" : "md:w-1/6"
-
-    default:
-      return "w-full"
+    case "12": return { gridTemplateColumns: "repeat(2, 1fr)" }
+    case "21": return { gridTemplateColumns: "repeat(2, 1fr)" }
+    case "13": return { gridTemplateColumns: "1fr 3fr" }
+    case "31": return { gridTemplateColumns: "3fr 1fr" }
+    case "211": return { gridTemplateColumns: "2fr 1fr 1fr" }
+    case "2": return { gridTemplateColumns: "repeat(2, 1fr)" }
+    case "3": return { gridTemplateColumns: "repeat(3, 1fr)" }
+    case "4": return { gridTemplateColumns: "repeat(4, 1fr)" }
+    case "6": return { gridTemplateColumns: "repeat(6, 1fr)" }
+    default: return { gridTemplateColumns: "1fr" }
   }
 }
-
 
 const getVal = (base: any, path?: string[]) => {
   return resolveResponsiveValue(base, props.screenType, path)
 }
 
 const resolvedGap = computed(() => {
-  return ( props.modelValue?.value?.gap?.[props.screenType || 'desktop'] || 0 ) + 'px'
+  return (props.modelValue?.value?.gap?.[props.screenType || 'desktop'] || 0) + 'px'
 })
 </script>
 
 <template>
   <div id="image">
     <section :style="{
-        ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-        ...getStyles(modelValue.container?.properties, screenType),
-        width : 'auto'
-      }" aria-label="Image Gallery Section">
+      ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+      ...getStyles(modelValue.container?.properties, screenType),
+      width: 'auto'
+    }" aria-label="Image Gallery Section">
       <!-- MOBILE: Swiper -->
       <Swiper v-if="screenType === 'mobile' && modelValue?.mobile?.type === 'carousel'" :slides-per-view="1"
         :loop="true" :autoplay="false" :pagination="{ clickable: true }" :modules="[Autoplay, Pagination]"
@@ -127,21 +94,20 @@ const resolvedGap = computed(() => {
           <component :is="getHref(image) ? 'a' : 'div'" :href="getHref(image) || undefined" target="_blank"
             rel="noopener noreferrer" class="block w-full h-full">
             <Image :src="image.source" :alt="image.properties?.alt || `image ${index + 1}`" :imageCover="true" :style="{
-                ...getStyles(modelValue.value.layout?.properties, screenType),
-                ...getStyles(image.properties, screenType)
-              }" :imgAttributes="{ ...image.attributes, loading: 'lazy' }" />
+              ...getStyles(modelValue.value.layout?.properties, screenType),
+              ...getStyles(image.properties, screenType)
+            }" :imgAttributes="{ ...image.attributes, loading: 'lazy' }" />
           </component>
         </SwiperSlide>
       </Swiper>
 
       <!-- DESKTOP/TABLET GRID -->
-
-      <div v-else class="flex" :style="{
-        gap: resolvedGap
+      <div v-else class="grid w-full" :style="{
+        gap: resolvedGap,
+        ...getGridTemplate(getVal(modelValue.value.layout_type))
       }">
         <div v-for="(image, index) in modelValue?.value?.images || []" :key="index"
-          class="group relative hover:bg-white/40 flex flex-col h-full"
-          :class="getColumnWidthClass(getVal(modelValue.value.layout_type), index)">
+          class="group relative hover:bg-white/40 flex flex-col h-full">
           <component :is="getHref(image) ? 'a' : 'div'" :href="getHref(image) || undefined" target="_blank"
             rel="noopener noreferrer" class="block w-full h-full">
             <Image v-if="image?.source" :src="image.source" :alt="image.properties?.alt || `image ${index + 1}`"
@@ -165,6 +131,7 @@ const resolvedGap = computed(() => {
           </div>
         </div>
       </div>
+
     </section>
   </div>
 </template>

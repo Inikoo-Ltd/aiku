@@ -24,6 +24,7 @@ import { get } from 'lodash'
 import ConfirmDialog from 'primevue/confirmdialog';
 import { faExclamationCircle } from '@fal'
 import { useConfirm } from "primevue/useconfirm";
+import { twBreakPoint } from '@/Composables/useWindowSize'
 
 const props = defineProps<{
     shipments: {
@@ -381,14 +382,19 @@ function handleShipmentClick(shipment: number) {
                             </template>
 </ModalConfirmationDelete> -->
 
-                        <div v-else class="cursor-pointer px-1 absolute top-0 right-0 text-red-400 hover:text-red-700" v-tooltip="trans('Remove shipment')" @click="(e) => confirmdelete(e, shipment)">
+                        <div v-else class="cursor-pointer px-2 py-1 lg:py-0 lg:px-1 absolute top-0 right-0 text-red-400 hover:text-red-700" v-tooltip="trans('Remove shipment')" @click="(e) => confirmdelete(e, shipment)">
                             <FontAwesomeIcon icon="fal fa-times" class=" " fixed-width
                                 aria-hidden="true" />
                         </div>
                     </div>
 
-                    <Button v-if="shipment.is_printable" @click="(e) => onPrintShipment(shipment)" size="xs"
-                        icon="fal fa-print" label="Print label" type="tertiary" :loading="isLoadingPrint" />
+                    <Button v-if="shipment.is_printable" @click="(e) => onPrintShipment(shipment)"
+                        :size="twBreakPoint().includes('lg') ? 'xs' : undefined"
+                        icon="fal fa-print"
+                        :label="trans('Print label')"
+                        type="tertiary"
+                        :loading="isLoadingPrint"
+                    />
                 </li>
             </ul>
 
@@ -400,7 +406,9 @@ function handleShipmentClick(shipment: number) {
                     :disabled="props.shipments_routes?.submit_route?.name ? false : true"
                     @click="() => (isModalShipment = true, onOpenModalTrackingNumber())"
                     xv-tooltip="box_stats.parcels?.length ? '' : trans('Please add at least one parcel')"
-                    :label="trans('Shipment')" icon="fas fa-plus" type="dashed" size="xs" />
+                    :label="trans('Shipment')" icon="fas fa-plus" type="dashed"
+                    :size="twBreakPoint().includes('lg') ? 'xs' : undefined"
+                />
                 <div v-else-if="!shipments.length" class="italic text-gray-400 text-xs">
                     {{ trans("No shipment yet. Waiting for warehouse team to add shipment..") }}
                 </div>

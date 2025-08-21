@@ -199,6 +199,7 @@ class UpdateShop extends OrgAction
             'vat_number'               => ['sometimes', 'string'],
             'required_approval'        => ['sometimes', 'boolean'],
             'invoice_footer'           => ['sometimes', 'string', 'max:10000'],
+            'extra_languages'          => ['sometimes', 'array', 'nullable'],
             'image'                    => [
                 'sometimes',
                 'nullable',

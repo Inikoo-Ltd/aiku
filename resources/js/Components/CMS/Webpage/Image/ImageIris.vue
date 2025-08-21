@@ -11,6 +11,8 @@ import 'swiper/css/autoplay'
 import { resolveResponsiveValue } from "@/Composables/Workshop"
 import { inject } from "vue"
 import { computed } from "vue"
+import { Link } from "@inertiajs/vue3"
+import { trans } from "laravel-vue-i18n"
 
 
 library.add(faCube, faStar, faImage, faPencil)
@@ -55,55 +57,28 @@ const getHref = (index: number) => {
   return image?.link_data?.url || image?.link_data?.workshop_url || ''
 }
 
+const getHrefFromImageData = (image: {}) => {
+  return image?.link_data?.url || ''
+}
+
 const getTarget = (index: number) => {
   const image = props.fieldValue?.value?.images?.[index]
   return image?.link_data?.target || '_blank'
 }
 
-const getColumnWidthClass = (layoutType: string, index: number) => {
-  const layout = props.fieldValue?.value?.layout_type || {}
-  const hasMobile = !!layout.mobile
-  const hasTablet = !!layout.tablet
 
+const getGridTemplate = (layoutType: string) => {
   switch (layoutType) {
-    case "12":
-      return [
-        hasMobile ? "w-1/2" : "sm:w-1/2",
-        hasTablet ? "" : index === 0 ? "md:w-1/3" : "md:w-2/3"
-      ].filter(Boolean).join(" ")
-
-    case "21":
-      return [
-        hasMobile ? "w-1/2" : "sm:w-1/2",
-        hasTablet ? "" : index === 0 ? "md:w-2/3" : "md:w-1/3"
-      ].filter(Boolean).join(" ")
-
-    case "13":
-      return hasTablet ? "w-full" : index === 0 ? "md:w-1/4" : "md:w-3/4"
-
-    case "31":
-      return [
-        hasMobile ? "w-1/2" : "sm:w-1/2",
-        hasTablet ? "" : index === 0 ? "md:w-3/4" : "md:w-1/4"
-      ].filter(Boolean).join(" ")
-
-    case "211":
-      return hasTablet ? "w-full" : index === 0 ? "md:w-1/2" : "md:w-1/4"
-
-    case "2":
-      return hasMobile ? "w-1/2" : hasTablet ? "w-1/2" : "md:w-1/2"
-
-    case "3":
-      return hasTablet ? "w-full" : "md:w-1/3"
-
-    case "4":
-      return hasTablet ? "w-full" : "md:w-1/4"
-
-    case "6":
-      return hasTablet ? "w-full" : "md:w-1/6"
-
-    default:
-      return "w-full"
+    case "12": return { gridTemplateColumns: "repeat(2, 1fr)" }
+    case "21": return { gridTemplateColumns: "repeat(2, 1fr)" }
+    case "13": return { gridTemplateColumns: "1fr 3fr" }
+    case "31": return { gridTemplateColumns: "3fr 1fr" }
+    case "211": return { gridTemplateColumns: "2fr 1fr 1fr" }
+    case "2": return { gridTemplateColumns: "repeat(2, 1fr)" }
+    case "3": return { gridTemplateColumns: "repeat(3, 1fr)" }
+    case "4": return { gridTemplateColumns: "repeat(4, 1fr)" }
+    case "6": return { gridTemplateColumns: "repeat(6, 1fr)" }
+    default: return { gridTemplateColumns: "1fr" }
   }
 }
 
@@ -119,7 +94,7 @@ const resolvedGap = computed(() => {
 </script>
 
 <template>
-  <div id="Image">
+  <div id="image_iris">
     <section :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(fieldValue.container?.properties, screenType),
@@ -130,13 +105,28 @@ const resolvedGap = computed(() => {
         :loop="true" :autoplay="false" :pagination="{ clickable: true }" :modules="[Autoplay, Pagination]"
         class="w-full" :style="getStyles(fieldValue?.value?.layout?.properties, screenType)">
         <SwiperSlide v-for="(image, index) in fieldValue?.value?.images" :key="index" class="w-full">
-          <a v-if="getHref(index)" :href="getHref(index)" target="_blank" rel="noopener noreferrer"
-            class="block w-full h-full">
-            <Image :src="image?.source" :alt="image?.properties?.alt || `image ${index + 1}`" :imageCover="true" :style="{
-              ...getStyles(fieldValue?.value?.layout?.properties, screenType),
-              ...getStyles(image?.properties, screenType)
-            }" :imgAttributes="{ ...image?.attributes, loading: 'lazy' }" />
-          </a>
+            <component
+                v-if="getHref(index)"
+                :is="getHrefFromImageData(image)
+                    ? image.link_data?.target === '_self' && image.link_data?.type === 'internal'
+                        ? Link : 'a'
+                    : 'div'"
+                :href="getHrefFromImageData(image) || undefined"
+                :target="image.link_data?.target"
+                rel="noopener noreferrer"
+                class="block w-full h-full"
+            >
+                <Image
+                    :src="image?.source"
+                    :alt="image?.properties?.alt || `image ${index + 1}`"
+                    :imageCover="true"
+                    :style="{
+                        ...getStyles(fieldValue?.value?.layout?.properties, screenType),
+                        ...getStyles(image?.properties, screenType)
+                    }"
+                    :imgAttributes="{ ...image?.attributes, loading: 'lazy' }"
+                />
+            </component>
           <div v-else class="block w-full h-full">
             <Image :src="image?.source" :alt="image?.properties?.alt || `image ${index + 1}`" :imageCover="true" :style="{
               ...getStyles(fieldValue?.value?.layout?.properties, screenType),
@@ -147,7 +137,7 @@ const resolvedGap = computed(() => {
       </Swiper>
 
       <!-- Desktop/Tablet Grid -->
-      <div v-else class="flex" :style="{
+     <!--  <div v-else class="flex  flex-wrap" :style="{
         gap: resolvedGap
       }">
         <div v-for="index in fieldValue?.value?.images?.length"
@@ -184,6 +174,43 @@ const resolvedGap = computed(() => {
 
             </div>
           </template>
+        </div>
+      </div> -->
+    
+    
+    
+      <div v-else class="grid w-full" :style="{
+        gap: resolvedGap,
+        ...getGridTemplate(getVal(fieldValue.value.layout_type))
+      }">
+        <div v-for="(image, index) in fieldValue?.value?.images || []" :key="index"
+          class="group relative hover:bg-white/40 flex flex-col h-full">
+          <component
+            :is="getHrefFromImageData(image) ? image.link_data?.target === '_self' && image.link_data.type === 'internal' ? Link : 'a' : 'div'"
+            :href="getHrefFromImageData(image) || undefined"
+            :target="image.link_data?.target"
+            rel="noopener noreferrer"
+            class="block w-full h-full"
+          >
+            <Image v-if="image?.source" :src="image.source" :alt="image.properties?.alt || `image ${index + 1}`"
+              :imageCover="true" class="w-full h-full aspect-square object-cover rounded-lg" :style="{
+                ...getStyles(fieldValue.value.layout?.properties, screenType),
+                ...getStyles(image.properties, screenType)
+              }" :imgAttributes="{ ...image.attributes, loading: 'lazy' }" />
+            <div v-else
+              class="flex items-center justify-center w-full h-32 bg-gray-200 rounded-lg aspect-square transition-all duration-300 hover:bg-gray-300 hover:shadow-lg hover:scale-105 cursor-pointer">
+              <font-awesome-icon :icon="['fas', 'image']" class="text-gray-500 text-4xl group-hover:text-gray-700" />
+            </div>
+          </component>
+
+          <div class="flex justify-center mt-2">
+            <div v-if="fieldValue.value.caption?.use_caption">
+              <span v-if="image.caption" :style="getStyles(fieldValue.value.caption?.properties, screenType)">
+                {{ image.caption }}
+              </span>
+              <span v-else class="text-gray-300 font-semibold">{{ trans("No caption") }}</span>
+            </div>
+          </div>
         </div>
       </div>
     </section>
