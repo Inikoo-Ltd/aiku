@@ -9,11 +9,14 @@
 
 use App\Actions\Iris\Basket\StoreEcomBasketTransaction;
 use App\Actions\Iris\Basket\UpdateEcomBasketTransaction;
+use App\Actions\Iris\Portfolio\DeleteIrisBackInStockReminder;
 use App\Actions\Iris\Portfolio\DeleteIrisPortfolioFavourites;
 use App\Actions\Iris\Portfolio\DeleteIrisPortfolioFromMultiChannels;
+use App\Actions\Iris\Portfolio\StoreIrisBackInStockReminder;
 use App\Actions\Iris\Portfolio\StoreIrisPortfolioFavourites;
 use App\Actions\Iris\Portfolio\StoreIrisPortfolioToAllChannels;
 use App\Actions\Iris\Portfolio\StoreIrisPortfolioToMultiChannels;
+use App\Actions\Iris\Portfolio\UpdateIrisBackInStockReminder;
 use Illuminate\Support\Facades\Route;
 
 Route::post('portfolio-all-channels', StoreIrisPortfolioToAllChannels::class)->name('all_channels.portfolio.store');
@@ -27,3 +30,7 @@ Route::delete('un-favourites/{product:id}', DeleteIrisPortfolioFavourites::class
 
 Route::post('{product:id}/store-transaction', StoreEcomBasketTransaction::class)->name('transaction.store')->withoutScopedBindings();
 Route::post('{transaction:id}/update-transaction', UpdateEcomBasketTransaction::class)->name('transaction.update')->withoutScopedBindings();
+
+Route::post('product/{product:id}/remind-back-in-stock', StoreIrisBackInStockReminder::class)->name('remind_back_in_stock.store')->withoutScopedBindings();
+Route::patch('remind-back-in-stock/{backInStockReminder:id}', UpdateIrisBackInStockReminder::class)->name('remind_back_in_stock.update')->withoutScopedBindings();
+Route::delete('remind-back-in-stock/{backInStockReminder:id}', DeleteIrisBackInStockReminder::class)->name('remind_back_in_stock.delete')->withoutScopedBindings();
