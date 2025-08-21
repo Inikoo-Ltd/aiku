@@ -64,7 +64,7 @@ class IndexSnapshots extends OrgAction
             ->withQueryString();
     }
 
-    public function handle(Website|Webpage|EmailTemplate|Banner $parent, $prefix = null, $scope = null)
+    public function handle(Website|Webpage|EmailTemplate|Banner $parent, $prefix = null, $scope = null, $withLabel = false)
     {
         $queryBuilder = QueryBuilder::for(Snapshot::class);
         $queryBuilder->where('state', '!=', SnapshotStateEnum::UNPUBLISHED->value);
