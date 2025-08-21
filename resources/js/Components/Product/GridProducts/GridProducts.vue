@@ -36,7 +36,7 @@
                 <!-- Product Cards -->
                 <ProductCard
                     v-for="(product, index) in compResourceData" 
-                    :key="product.id || `product-${index}`"
+                    :key="`product-${index}`"
                     :product="product"
                     @toggle-favorite="toggleFavorite"
                 />
@@ -73,7 +73,7 @@
 // ============================================================================
 // IMPORTS
 // ============================================================================
-import { ref, computed, inject, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { router, usePage } from "@inertiajs/vue3"
 import { debounce, forEach, findKey } from 'lodash-es'
 import qs from 'qs'
@@ -94,12 +94,6 @@ import EmptyState from './EmptyState.vue'
 // Types
 import type { Product, QueryBuilderData } from './types'
 
-// ============================================================================
-// EMITS
-// ============================================================================
-const emit = defineEmits<{
-    (e: 'toggleFavorite', product: Product): void
-}>()
 
 // ============================================================================
 // PROPS
@@ -153,6 +147,7 @@ const props = defineProps({
 const updates = ref(0)
 const isVisiting = ref(false)
 const visitCancelToken = ref<{ cancel: Function } | null>(null)
+const isLoading = ref(false)
 
 // ============================================================================
 // QUERY BUILDER SETUP
@@ -427,11 +422,12 @@ const visit = (url?: string): void => {
             },
             onSuccess() {
                 if ('queryBuilderProps' in usePage().props) {
+                    // Only update cursor and page like Table.vue does
                     queryBuilderData.value.cursor = queryBuilderProps.value.cursor
                     queryBuilderData.value.page = queryBuilderProps.value.page
                 }
                 updates.value++
-            },
+            }
         },
     )
 }
@@ -459,14 +455,47 @@ watch(queryBuilderData, async () => {
  * Toggle favorite status for a product
  */
 const toggleFavorite = (product: Product): void => {
-    product.is_favourite = !product.is_favourite
-    emit('toggleFavorite', product)
+    // Default to true if undefined (all products are favorited by default)
+    const originalState = product.is_favourite !== undefined ? product.is_favourite : true
     
-    notify({
-        title: product.is_favourite ? trans('Added to favorites') : trans('Removed from favorites'),
-        text: `${product.name || 'Product'} ${trans('has been')} ${product.is_favourite ? trans('added to') : trans('removed from')} ${trans('your favorites')}`,
-        type: product.is_favourite ? 'success' : 'info',
-        duration: 3000
-    })
+    // Optimistically update the UI
+    product.is_favourite = !originalState
+    
+    // Section: Submit - Handle favorite/unfavorite API calls
+    if (originalState) {
+        // Product was favorited, now unfavorite it
+        router.delete(
+            route('retina.models.product.unfavourite', { product: product.id }),
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onStart: () => { 
+                    isLoading.value = true
+                },
+                onSuccess: () => {
+                    notify({
+                        title: trans("Removed from favorites"),
+                        text: `${product.name || 'Product'} ${trans('has been removed from your favorites')}`,
+                        type: "info",
+                        duration: 3000
+                    })
+                },
+                onError: (errors) => {
+                    // Revert on error
+                    product.is_favourite = originalState
+                    notify({
+                        title: trans("Something went wrong"),
+                        text: trans("Failed to remove from favorites"),
+                        type: "error",
+                        duration: 3000
+                    })
+                    console.error('Failed to unfavorite:', errors)
+                },
+                onFinish: () => {
+                    isLoading.value = false
+                },
+            }
+        )
+    } 
 }
 </script>

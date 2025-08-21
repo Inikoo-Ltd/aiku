@@ -10,7 +10,7 @@
             class="absolute top-3 right-3 z-10 p-2 backdrop-blur-sm rounded-full shadow-md hover:shadow-lg transition-all hover:scale-110 flex items-center justify-center"
             :class="favoriteButtonClass"
             :aria-label="favoriteButtonLabel"
-            :aria-pressed="product.is_favourite"
+            :aria-pressed="isFavorite"
             type="button"
         >
             <FontAwesomeIcon 
@@ -137,10 +137,8 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    
+  
 })
-
-console.log(props.product)
 
 // Emits
 const emit = defineEmits<{
@@ -230,20 +228,25 @@ const formattedPrice = computed(() => {
     return locale.currencyFormat(currency, price)
 })
 
+// Default is_favourite to true if undefined
+const isFavorite = computed(() => {
+    return props.product.is_favourite !== undefined ? props.product.is_favourite : true
+})
+
 const favoriteIcon = computed<IconProp>(() => {
-    return props.product.is_favourite 
+    return isFavorite.value 
         ? 'fas fa-heart' as IconProp
         : 'fal fa-heart' as IconProp
 })
 
 const favoriteButtonClass = computed(() => {
-    return props.product.is_favourite 
+    return isFavorite.value 
         ? 'bg-white text-red-500' 
         : 'bg-white/90 text-gray-400 hover:text-red-500'
 })
 
 const favoriteButtonLabel = computed(() => {
-    return props.product.is_favourite 
+    return isFavorite.value 
         ? trans('Remove from favorites') 
         : trans('Add to favorites')
 })
