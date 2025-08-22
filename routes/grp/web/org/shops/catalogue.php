@@ -210,10 +210,8 @@ Route::name("collections.")->prefix('collections')
 
 Route::name("sub_departments.")->prefix('sub-departments')
     ->group(function () {
-        Route::get('', IndexDepartments::class)->name('index');
-        Route::get('/blueprints', IndexBlueprintDepartment::class)->name('index.blueprints');
-        Route::get('create', CreateDepartment::class)->name('create');
-
+        Route::get('', [IndexSubDepartments::class,'inShop'])->name('index');
+        Route::get('edit/{subDepartment}', [EditSubDepartment::class,'inShop'])->name('edit');
 
         Route::get('{department}/edit', [EditDepartment::class, 'inShop'])->name('edit');
         Route::prefix('{department}')->name('show')->group(function () {
