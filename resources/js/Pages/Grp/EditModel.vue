@@ -238,7 +238,7 @@ function connectToPlatform(routeName, parameters) {
 											'background-color': `color-mix(in srgb, ${layout?.app?.theme[2]} 20%, white)`,
 											color: `color-mix(in srgb, ${layout?.app?.theme[3]} 50%, black)`,
 									  }
-									: {},
+									: { 'border-left': `4px solid transparent` },
 							]">
                             <FontAwesomeIcon v-if="sectionData.icon" aria-hidden="true"
                                 class="flex-shrink-0 -ml-1 mr-2 h-4 w-4" :class="[

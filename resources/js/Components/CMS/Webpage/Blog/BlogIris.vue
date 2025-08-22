@@ -91,7 +91,7 @@ console.log(props.fieldValue)
 </script>
 
 <template>
-  <div class="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-12 max-w-7xl mx-auto px-4 py-10 text-gray-800">
+  <div class="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-12 max-w-7xl mx-auto px-4 py-10 text-gray-800"   :style="{fontFamily: 'Raleway, sans-serif'}">
     <!-- Sidebar -->
     <aside class="lg:sticky lg:top-10 max-h-[80vh] overflow-y-auto hidden lg:block border-r border-gray-100 pr-6">
       <div class="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">
@@ -141,7 +141,7 @@ console.log(props.fieldValue)
         {{ fieldValue.title }}
       </h1> -->
 
-      <div v-html="fieldValue.title" :style="getStyles(fieldValue.properties, screenType)" class="text-4xl font-bold tracking-tight mb-3 leading-snug text-gray-900"/>
+      <div v-html="fieldValue.title" :style="{fontFamily: 'Raleway, sans-serif', ...getStyles(fieldValue.properties, screenType)}" class="text-4xl font-bold tracking-tight mb-3 leading-snug text-gray-900"/>
 
       <div class="text-sm text-gray-500 mb-6">
         {{ useFormatTime(displayDate) }}
@@ -155,7 +155,7 @@ console.log(props.fieldValue)
       </div>
 
       <!-- Article Content -->
-      <div :style="getStyles(fieldValue.properties, screenType)">
+      <div :style="{fontFamily: 'Raleway, sans-serif', fontSize: '1.1250rem', ...getStyles(fieldValue.properties, screenType)}">
         <div class="prose prose-blue max-w-none scroll-smooth mb-10" ref="contentRef" v-html="fieldValue.content" />
       </div>
 

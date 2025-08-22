@@ -267,7 +267,9 @@ class IndexDepartments extends OrgAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'actions'       => [
-                        $this->canEdit && $request->route()->getName() == 'grp.org.shops.show.catalogue.departments.index' ? [
+                        $this->canEdit 
+                        && $request->route()->getName() == 'grp.org.shops.show.catalogue.departments.index' 
+                        && is_null($this->shop->masterShop) ? [
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('new department'),

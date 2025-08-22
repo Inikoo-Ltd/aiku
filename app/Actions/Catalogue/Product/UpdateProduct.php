@@ -49,6 +49,13 @@ class UpdateProduct extends OrgAction
 
         if (Arr::has($modelData, 'org_stocks')) {
             $orgStocksRaw = Arr::pull($modelData, 'org_stocks', []);
+            $orgStocksRaw = array_column($orgStocksRaw, null, 'org_stock_id');
+            $orgStocksRaw = array_map(function($item) {
+                $filtered = Arr::only($item, ['org_stock_id', 'quantity', 'notes']);
+                $filtered['quantity'] = (float) $filtered['quantity']; // or (int) if you want integers
+                return $filtered;
+            }, $orgStocksRaw);
+            
             $this->syncOrgStocks($product, $orgStocksRaw);
             //todo  after updating orgStock need a new method to update Trade Units
         }

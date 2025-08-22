@@ -373,6 +373,7 @@ const editorInstance = useEditor({
     },
 })
 
+
 function openLinkDialogCustom() {
     const attrs = editorInstance.value?.getAttributes("link")
     currentLinkInDialog.value = attrs
@@ -499,11 +500,16 @@ const convertRemToPx = (remString) => {
     return isNaN(remValue) ? '' : Math.round(remValue * 16).toString()
 }
 
+const shouldShow = ({ editor, view, state, from, to }) => {
+  // tampil hanya jika ada teks yang diseleksi
+  return true
+}
+
 </script>
 
 <template>
     <div id="tiptap" class="divide-y divide-gray-400">
-        <BubbleMenu ref="_bubbleMenu" :editor="editorInstance" :tippy-options="{ duration: 100 }"
+        <BubbleMenu  :should-show="shouldShow" ref="_bubbleMenu" :editor="editorInstance" :tippy-options="{ duration: 100 }"
             v-if="editorInstance && !showDialog"
             class="w-full max-w-[56vw] sm:max-w-[640px] md:max-w-[768px] lg:max-w-[900px]">
 

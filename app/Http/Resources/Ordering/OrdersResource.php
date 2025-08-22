@@ -45,14 +45,14 @@ class OrdersResource extends JsonResource
         /** @var Order $order */
         $order = $this;
         $payStatus = null;
-        if ($this->state == OrderStateEnum::CANCELLED->value) {
-            $payStatus = 'fail';
-        }
-        if ($this->payment_amount == $this->total_amount) {
-            $payStatus = 'success';
-        } else {
-            $payStatus = 'waiting';
-        }
+
+        $payStatus = match (true) {
+            $this->state == OrderStateEnum::CREATING => 'waiting',
+            $this->payment_amount == $this->total_amount => 'success',
+            $this->state == OrderStateEnum::CANCELLED => 'fail', 
+            default => 'waiting'
+        };
+        
 
         return [
             'slug'                   => $this->slug,
@@ -62,6 +62,7 @@ class OrdersResource extends JsonResource
             'state'                  => $this->state,
             'state_icon'             => $order->state->stateIcon()[$order->state->value],
             'net_amount'             => $this->net_amount,
+            'payment_amount'           => $this->payment_amount,
             'total_amount'           => $this->total_amount,
             'customer_name'          => $this->customer_name,
             'customer_slug'          => $this->customer_slug,
