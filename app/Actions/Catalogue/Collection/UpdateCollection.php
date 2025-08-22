@@ -34,11 +34,18 @@ class UpdateCollection extends OrgAction
 
     public function handle(Collection $collection, array $modelData): Collection
     {
+        $originalImageId = $collection->image_id;
+
         $imageData = ['image' => Arr::pull($modelData, 'image')];
-        if ($imageData['image']) {
+        if ($imageData && $imageData['image']) {
             $this->processCatalogueImage($imageData, $collection);
         }
         $collection = $this->update($collection, $modelData, ['data']);
+
+        if (!$collection->image_id && $originalImageId) {
+            $collection->images()->detach($originalImageId);
+        }
+
         CollectionRecordSearch::dispatch($collection);
 
         return $collection;
@@ -78,6 +85,8 @@ class UpdateCollection extends OrgAction
             'webpage_id'                => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
             'url'                       => ['sometimes', 'nullable', 'string', 'max:250'],
             'images'                    => ['sometimes', 'array'],
+            'image_id'          => ['sometimes', 'nullable', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
+
         ];
         if (!$this->strict) {
             $rules = $this->noStrictUpdateRules($rules);
