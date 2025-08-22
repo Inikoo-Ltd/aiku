@@ -169,39 +169,16 @@ class EditWebsite extends OrgAction
                 'label'  => __('Registrations'),
                 'icon'   => 'fa-light fa-id-card',
                 'fields' => [
+
                     'approval'           => [
+                        'hidden'   => true,
                         'type'     => 'toggle',
                         'label'    => __('Registrations Approval'),
                         'value'    => false,
-                        'required' => true,
                     ],
-                    'registrations_type' => [
-                        'type'     => 'radio',
-                        'mode'     => 'card',
-                        'label'    => __('Registration Type'),
-                        'value'    => [
-                            'title'       => "type B",
-                            'description' => 'This user able to create and delete',
-                            'label'       => '17 users left',
-                            'value'       => "typeB",
-                        ],
-                        'required' => true,
-                        'options'  => [
-                            [
-                                'title'       => "type A",
-                                'description' => 'This user able to edit',
-                                'label'       => '425 users left',
-                                'value'       => "typeA",
-                            ],
-                            [
-                                'title'       => "type B",
-                                'description' => 'This user able to create and delete',
-                                'label'       => '17 users left',
-                                'value'       => "typeB",
-                            ],
-                        ]
-                    ],
+
                     'web_registrations'  => [
+                        'hidden'   => true,
                         'type'     => 'webRegistrations',
                         'label'    => __('Web Registration'),
                         'value'    => [

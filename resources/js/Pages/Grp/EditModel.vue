@@ -51,10 +51,12 @@ import {
 	faTransporter,
 	faCode,
 	faExchange,
+	faBoxes
 } from "@fal"
 import { faBan } from "@far"
 import { Head, usePage } from "@inertiajs/vue3"
 import axios from "axios"
+import { router } from "@inertiajs/vue3"
 
 library.add(
 	faTag,
@@ -92,7 +94,8 @@ library.add(
 	faFileInvoice,
 	faTransporter,
 	faCode,
-	faDoorClosed
+	faDoorClosed,
+	faBoxes
 )
 
 const props = defineProps<{
@@ -164,6 +167,22 @@ const handleIntersection = (element: Element, index: number) => (entries) => {
 	tabActive.value[`${index}`] = entry.isIntersecting
 }
 
+const switchTab = (key: string) => {
+	currentTab.value = key
+
+	// Update URL with query parameter
+	router.visit('' , {
+		data: {
+			// ...route().params, // Keep existing route parameters
+			// section: props.formData.blueprint[key].label.toLowerCase()      // Add section query parameter
+			section: key
+		},
+		preserveState: true,
+		replace: true,
+		only: [] // Don't reload any data, just update URL
+	})
+}
+
 onMounted(() => {
 	updateViewportWidth()
 	window.addEventListener("resize", updateViewportWidth)
@@ -228,7 +247,7 @@ function connectToPlatform(routeName, parameters) {
                     <template v-for="(sectionData, key) in formData.blueprint">
                         <!-- If Section: all fields is not hidden -->
                         <div v-if="!(Object.values(sectionData.fields).every((field: any) => field.hidden))"
-                            @click="currentTab = key" :class="[
+                            @click="switchTab(key)" :class="[
 								key == currentTab ? `navigationSecondActive` : `navigationSecond`,
 								'cursor-pointer group px-3 py-2 flex items-center text-sm font-medium',
 							]" :style="[
