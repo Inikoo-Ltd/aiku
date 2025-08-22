@@ -119,4 +119,4 @@ Route::prefix('statements')->as('invoices')->group(function () {
 
 Route::prefix("comms")
     ->name("comms.")
-    ->group(__DIR__."/comms.php");
+    ->group(__DIR__ . "/comms.php");
