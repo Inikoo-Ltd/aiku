@@ -4,15 +4,13 @@ import 'swiper/css'
 import 'swiper/css/pagination'
 import 'swiper/css/navigation'
 
-import { ref, watch, inject } from 'vue'
-import { Pagination } from 'swiper/modules'
-import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
+import { Pagination, Autoplay } from 'swiper/modules'
 import { getStyles } from '@/Composables/styles'
 import { faImage } from '@fas'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import Image from '@/Components/Image.vue'
 import { ulid } from 'ulid'
-import { sendMessageToParent } from "@/Composables/Workshop"
+import { inject, ref, watch } from 'vue'
 import Blueprint from './Blueprint'
 
 const props = defineProps<{
@@ -42,53 +40,87 @@ watch(
 
 const layout: any = inject("layout", {})
 const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
+const getHref = (item: any) => !!item?.link?.href
 </script>
 
 <template>
-    <div id="carousel">
-        <div :style="{
-            ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-            ...getStyles(modelValue.container?.properties, screenType)
-        }">
-            <Swiper :key="keySwiper" :slides-per-view="modelValue.carousel_data.carousel_setting.slidesPerView.desktop"
-                :loop="false" :autoplay="false" :simulate-touch="true" :touch-ratio="1"
-                :pagination="{ clickable: true }" :modules="[Pagination]"
-                :spaceBetween="modelValue.carousel_data.carousel_setting.spaceBetween" class="touch-pan-x" :breakpoints="{
-                    0: { slidesPerView: modelValue.carousel_data.carousel_setting.slidesPerView.mobile },
-                    640: { slidesPerView: modelValue.carousel_data.carousel_setting.slidesPerView.mobile },
-                    768: { slidesPerView: modelValue.carousel_data.carousel_setting.slidesPerView.tablet },
-                    1024: { slidesPerView: modelValue.carousel_data.carousel_setting.slidesPerView.desktop }
-                }">
-                <SwiperSlide v-for="(card, index) in modelValue.carousel_data.cards" :key="index" :style="{
-                    ...getStyles(modelValue.carousel_data.card_container.properties, screenType),
-                    zIndex: activeEditorIndex === index ? 50 : 10
-                }" class="flex flex-col overflow-visible relative overflow-hidden">
-                    <!-- Image area -->
-                    <div class="flex justify-center overflow-visible"
-                        :style="getStyles(modelValue?.carousel_data?.card_container?.container_image, screenType)">
-                        <div :style="getStyles(modelValue?.carousel_data?.card_container?.image_properties, screenType)"
-                            class="bg-gray-100 w-full flex items-center justify-center overflow-visible">
-                            <Image v-if="card.image?.source" :src="card.image.source"
-                                :alt="card.image.alt || `image ${index}`" :imageCover="true"
-                                :style="getStyles(card.image.properties, screenType)" />
-                            <font-awesome-icon v-else :icon="faImage" class="text-gray-400 text-4xl" />
-                        </div>
-                    </div>
+  <div id="carousel">
+    <div
+      :style="{
+        ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+        ...getStyles(modelValue?.container?.properties, screenType)
+      }"
+    >
+      <Swiper
+        :key="keySwiper"
+        class="touch-pan-x touch-pan-y"
+        direction="horizontal"
+        :passiveListeners="true"
+        :simulateTouch="false"
+        :touchStartPreventDefault="false"
+        :touchRatio="1"
+        :touchAngle="30"
+        :loop="modelValue?.carousel_data?.carousel_setting?.loop"
+        :autoplay="modelValue?.carousel_data?.carousel_setting?.autoplay"
+        :pagination="{ clickable: true }"
+        :spaceBetween="modelValue?.carousel_data?.carousel_setting?.spaceBetween || 0"
+        :slidesPerView="modelValue?.carousel_data?.carousel_setting?.slidesPerView?.desktop"
+        :breakpoints="{
+          0:    { slidesPerView: modelValue?.carousel_data?.carousel_setting?.slidesPerView?.mobile },
+          640:  { slidesPerView: modelValue?.carousel_data?.carousel_setting?.slidesPerView?.mobile },
+          768:  { slidesPerView: modelValue?.carousel_data?.carousel_setting?.slidesPerView?.tablet },
+          1024: { slidesPerView: modelValue?.carousel_data?.carousel_setting?.slidesPerView?.desktop }
+        }"
+        :modules="[Pagination, Autoplay]"
+      >
+        <SwiperSlide
+          v-for="(card, index) in modelValue.carousel_data.cards"
+          :key="index"
+          class="flex flex-col"
+          :style="{ ...getStyles(modelValue?.carousel_data?.card_container?.properties, screenType), height: '100%' }"
+        >
+          <component
+            :is="getHref(card) ? 'a' : 'div'"
+            :href="card?.link?.href"
+            :target="card?.link?.target"
+            class="flex-1 flex flex-col"
+          >
+            <div
+              class="flex justify-center overflow-visible"
+              :style="getStyles(modelValue?.carousel_data?.card_container?.container_image, screenType)"
+            >
+              <div
+                :class="[
+                  !card?.image?.source && 'w-full  flex items-center justify-center overflow-auto',
+                  'overflow-hidden'
+                ]"
+                :style="getStyles(modelValue?.carousel_data?.card_container?.image_properties, screenType)"
+              >
+                <Image
+                  v-if="card?.image?.source"
+                  :src="card.image.source"
+                  :alt="card.image.alt || `image-${index}`"
+                  :style="getStyles(card?.image?.properties, screenType)"
+                />
+                <FontAwesomeIcon
+                  v-else
+                  :icon="faImage"
+                  class="text-gray-400 text-4xl"
+                />
+              </div>
+            </div>
 
-                    <!-- Editor -->
-                    <div v-if="modelValue?.carousel_data?.carousel_setting?.use_text"
-                        class="p-4 flex-1 flex flex-col justify-between pb-12 overflow-visible relative">
-                        <EditorV2 v-model="card.text" @onEditClick="activeEditorIndex = index"
-                            @blur="activeEditorIndex = null" @update:modelValue="() => emits('autoSave')"
-                            :uploadImageRoute="{
-                                name: webpageData.images_upload_route.name,
-                                parameters: { modelHasWebBlocks: blockData.id }
-                            }" />
-                    </div>
-                </SwiperSlide>
-            </Swiper>
-        </div>
+            <div
+              v-if="modelValue?.carousel_data?.carousel_setting?.use_text"
+              class="p-4 flex-1 flex flex-col justify-between"
+            >
+              <div v-html="card.text" />
+            </div>
+          </component>
+        </SwiperSlide>
+      </Swiper>
     </div>
+  </div>
 </template>
 
 

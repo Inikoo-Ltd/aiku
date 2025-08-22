@@ -119,7 +119,7 @@ class IndexWarehouseAreas extends OrgAction
                     $query->where('warehouse_areas.organisation_id', $parent->id);
                 }
             })
-            ->allowedSorts(['code', 'name', 'number_locations','picking_position'])
+            ->allowedSorts(['code', 'name', 'number_locations','picking_position', 'stock_value', 'number_empty_locations'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();

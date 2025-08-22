@@ -13,13 +13,9 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class CreateNewBulkPortfoliosToShopify extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
 
     /**

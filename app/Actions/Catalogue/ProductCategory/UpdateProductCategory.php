@@ -38,6 +38,9 @@ class UpdateProductCategory extends OrgAction
 
     public function handle(ProductCategory $productCategory, array $modelData): ProductCategory
     {
+        $originalImageId = $productCategory->image_id;
+
+
         if (Arr::has($modelData, 'department_id')) {
             $departmentId = Arr::pull($modelData, 'department_id');
             if ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
@@ -60,19 +63,30 @@ class UpdateProductCategory extends OrgAction
             }
         }
 
+        if(Arr::has($modelData, 'image')) {
+            $imageData = ['image' => Arr::pull($modelData, 'image')];
+            if ($imageData['image']) {
+                $this->processCatalogueImage($imageData, $productCategory);
+            }else{
+                data_set($modelData, 'image_id', null, false);
+            }
 
-        $imageData = ['image' => Arr::pull($modelData, 'image')];
-        if ($imageData['image']) {
-            $this->processCatalogueImage($imageData, $productCategory);
         }
+
         $originalMasterProductCategory = null;
         if (Arr::has($modelData, 'master_product_category_id')) {
             $originalMasterProductCategory = $productCategory->masterProductCategory;
         }
 
-
         $productCategory = $this->update($productCategory, $modelData, ['data']);
-        $changes         = $productCategory->getChanges();
+        $productCategory->refresh();
+
+
+        if (!$productCategory->image_id && $originalImageId) {
+            $productCategory->images()->detach($originalImageId);
+        }
+
+        $changes = Arr::except($productCategory->getChanges(), ['updated_at']);
 
         if (Arr::hasAny($changes, ['code', 'name', 'type'])) {
             ProductCategoryRecordSearch::dispatch($productCategory);
@@ -138,7 +152,7 @@ class UpdateProductCategory extends OrgAction
                 ),
             ],
             'name'              => ['sometimes', 'max:250', 'string'],
-            'image_id'          => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
+            'image_id'          => ['sometimes', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
             'state'             => ['sometimes', 'required', Rule::enum(ProductCategoryStateEnum::class)],
             'description'       => ['sometimes', 'required', 'max:65500'],
             'description_title' => ['sometimes', 'nullable', 'max:255'],
@@ -156,16 +170,17 @@ class UpdateProductCategory extends OrgAction
                     ->where('shop_id', $this->shop->id)
             ],
 
-            'follow_master' => ['sometimes', 'boolean'],
-            'image'         => [
+            'follow_master'              => ['sometimes', 'boolean'],
+            'image'                      => [
                 'sometimes',
                 'nullable',
                 File::image()
                     ->max(12 * 1024)
             ],
-            'webpage_id'    => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
-            'url'           => ['sometimes', 'nullable', 'string', 'max:250'],
-            'images'        => ['sometimes', 'array'],
+            'webpage_id'                 => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
+            'url'                        => ['sometimes', 'nullable', 'string', 'max:250'],
+            'images'                     => ['sometimes', 'array'],
+            'master_product_category_id' => ['sometimes', 'integer', 'nullable', Rule::exists('master_product_categories', 'id')->where('master_shop_id', $this->shop->master_shop_id)],
 
         ];
 

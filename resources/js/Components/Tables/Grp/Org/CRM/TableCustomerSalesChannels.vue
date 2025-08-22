@@ -51,6 +51,27 @@ function customerSalesChannelRoute(customerSalesChannel: CustomerSalesChannel) {
     }
 }
 
+function customerRoute(customerSalesChannel: CustomerSalesChannel) {
+
+    switch (route().current()) {
+        case "grp.org.shops.show.crm.platforms.show":
+            return route("grp.org.shops.show.crm.customers.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    customerSalesChannel.customer_slug]
+            )
+            break
+        default:
+            return route("grp.org.shops.show.crm.customers.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    customerSalesChannel.customer_slug]
+            )
+    }
+}
+
 function portfoliosRoute(customerSalesChannel: CustomerSalesChannel) {
     switch (route().current()) {
         case "grp.org.shops.show.crm.platforms.show":
@@ -150,6 +171,13 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
                 </Link>
             </div>
         </template>
+        <template #cell(customer_company_name)="{ item: customerSalesChannel }">
+            <div class="flex items-center gap-2">
+                <Link :href="(customerRoute(customerSalesChannel) as string)" class="primaryLink">
+                    {{ customerSalesChannel.customer_company_name }}
+                </Link>
+            </div>
+        </template>
 
         <template #cell(platform_status)="{ item }">
 
@@ -174,9 +202,17 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
 
         <template #cell(number_portfolios)="{ item: customerSalesChannel }">
             <Link :href="(portfoliosRoute(customerSalesChannel) as string)" class="secondaryLink">
-                <span class="text-red-500">{{
-                        customerSalesChannel.number_portfolio_broken
-                    }}</span>/{{ customerSalesChannel.number_portfolios }}
+                <span v-if="customerSalesChannel.number_portfolio_broken === 0 && customerSalesChannel.number_portfolios === 0" 
+                    >
+                    {{ customerSalesChannel.number_portfolios }}
+                </span>
+                <span v-else-if="customerSalesChannel.number_portfolio_broken === customerSalesChannel.number_portfolios" 
+                    class="text-red-500">
+                    {{ customerSalesChannel.number_portfolio_broken }}
+                </span>
+                <span v-else>
+                    <span class="text-red-500">{{ customerSalesChannel.number_portfolio_broken }}</span>/{{ customerSalesChannel.number_portfolios }}
+                </span>
             </Link>
         </template>
 

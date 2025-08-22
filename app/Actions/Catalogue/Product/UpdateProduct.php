@@ -8,7 +8,7 @@
 
 namespace App\Actions\Catalogue\Product;
 
-use App\Actions\Catalogue\Asset\UpdateAsset;
+use App\Actions\Catalogue\Asset\UpdateAssetFromModel;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Search\ProductRecordSearch;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
@@ -25,7 +25,6 @@ use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Product;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
-use Cache;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -50,6 +49,13 @@ class UpdateProduct extends OrgAction
 
         if (Arr::has($modelData, 'org_stocks')) {
             $orgStocksRaw = Arr::pull($modelData, 'org_stocks', []);
+            $orgStocksRaw = array_column($orgStocksRaw, null, 'org_stock_id');
+            $orgStocksRaw = array_map(function($item) {
+                $filtered = Arr::only($item, ['org_stock_id', 'quantity', 'notes']);
+                $filtered['quantity'] = (float) $filtered['quantity']; // or (int) if you want integers
+                return $filtered;
+            }, $orgStocksRaw);
+            
             $this->syncOrgStocks($product, $orgStocksRaw);
             //todo  after updating orgStock need a new method to update Trade Units
         }
@@ -75,7 +81,7 @@ class UpdateProduct extends OrgAction
             );
         }
 
-        UpdateAsset::run($product->asset, $assetData, $this->hydratorsDelay);
+        UpdateAssetFromModel::run($product->asset, $assetData, $this->hydratorsDelay);
 
         if (Arr::hasAny($changed, ['state', 'status', 'exclusive_for_customer_id'])) {
             $this->productHydrators($product);
@@ -99,39 +105,36 @@ class UpdateProduct extends OrgAction
             ProductRecordSearch::dispatch($product);
         }
 
-        if (
-            Arr::hasAny(
+        if ($product->webpage
+            && Arr::hasAny(
                 $changed,
                 [
                     'code',
                     'name',
                     'description',
                     'state',
+                    'status',
                     'price',
                     'available_quantity'
                 ]
             )
-            && $product->webpage
         ) {
-            $key = config('iris.cache.webpage.prefix').'_'.$product->webpage->website_id.'_in_'.$product->webpage->id;
-            Cache::forget($key);
-            $key = config('iris.cache.webpage.prefix').'_'.$product->webpage->website_id.'_out_'.$product->webpage->id;
-            Cache::forget($key);
-            ReindexWebpageLuigiData::dispatch($product->webpage)->delay($this->hydratorsDelay);
+            BreakProductInWebpagesCache::dispatch($product)->delay(2);
+            ReindexWebpageLuigiData::dispatch($product->webpage)->delay(60 * 10);
         }
 
-        if (Arr::hasAny(
-            $changed,
-            [
-                'code',
-                'name',
-                'state',
-                'price',
-            ]
-        )) {
-            BreakProductInWebpagesCache::dispatch($product);
+
+        if (Arr::has($changed, 'available_quantity')) {
+            $product->updateQuietly([
+                'available_quantity_updated_at' => now()
+            ]);
         }
 
+        if (Arr::has($changed, 'price')) {
+            $product->updateQuietly([
+                'price_updated_at' => now()
+            ]);
+        }
 
         return $product;
     }

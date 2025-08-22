@@ -1,9 +1,9 @@
 <?php
 
 /*
- *  Author: Jonathan lopez <raul@inikoo.com>
- *  Created: Sat, 22 Oct 2022 18:53:15 British Summer Time, Sheffield, UK
- *  Copyright (c) 2022, inikoo
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 19 Jul 2024 16:42:55 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
 namespace App\Http\Resources\Catalogue;
@@ -33,6 +33,18 @@ class FamiliesResource extends JsonResource
 {
     public function toArray($request): array
     {
+        /** @var \App\Models\Catalogue\ProductCategory $department */
+        $department = $this->resource;
+
+        $urlMaster                              = null;
+        if ($department->master_product_category_id) {
+            $urlMaster = [
+                'name'       => 'grp.masters.master_departments.show',
+                'parameters' => [
+                    $department->masterProductCategory->slug
+                ]
+            ];
+        }
 
         $imageSources = null;
         $media        = Media::find($this->image_id);
@@ -63,17 +75,18 @@ class FamiliesResource extends JsonResource
                 'icon'    => $this->state->stateIcon()[$this->state->value]['icon'],
                 'class'   => $this->state->stateIcon()[$this->state->value]['class']
             ],
-            'code'                     => $this->code,
+            'code' => $this->code,
             'name'                     => $this->name,
             'description'              => $this->description,
             'created_at'               => $this->created_at,
             'updated_at'               => $this->updated_at,
             'number_current_products'  => $this->number_current_products,
             'collections'       => $collections,
-            'sales'                    => $this->sales_all,
+            'sales_all'                    => $this->sales_all,
             'invoices'                 => $this->invoices_all,
             'organisation_name' => $this->organisation_name,
             'organisation_slug' => $this->organisation_slug,
+            'master_product_category_id'     => $this->master_product_category_id
         ];
     }
 }

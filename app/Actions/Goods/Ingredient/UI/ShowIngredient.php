@@ -24,7 +24,6 @@ class ShowIngredient extends GrpAction
 
     public function handle(Ingredient $ingredient): Ingredient
     {
-
         return $ingredient;
     }
 
@@ -33,57 +32,39 @@ class ShowIngredient extends GrpAction
     {
         $group = group();
         $this->initialisation($group, $request)->withTab(IngredientTabsEnum::values());
+
         return $this->handle($ingredient);
     }
 
     public function htmlResponse(Ingredient $ingredient, ActionRequest $request): Response
     {
-
         return Inertia::render(
             'Goods/Ingredient',
             [
-                 'title'       => __('ingredient'),
-                 'breadcrumbs' => $this->getBreadcrumbs(
-                     $ingredient,
-                     $request->route()->getName(),
-                     $request->route()->originalParameters()
-                 ),
-                 'navigation'  => [
-                     'previous' => $this->getPrevious($ingredient, $request),
-                     'next'     => $this->getNext($ingredient, $request),
-                 ],
-                 'pageHead'    => [
-                     'icon'    => [
-                         'title' => __('skus'),
-                         'icon'  => 'fal fa-box'
-                     ],
-                     'title'   => $ingredient->name,
-                    //  'actions' => [
-                    //      $this->canEdit ? [
-                    //          'type'  => 'button',
-                    //          'style' => 'edit',
-                    //          'route' => [
-                    //              'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                    //              'parameters' => array_values($request->route()->originalParameters())
-                    //          ]
-                    //      ] : false,
-                    //      $this->canDelete ? [
-                    //          'type'  => 'button',
-                    //          'style' => 'delete',
-                    //          'route' => [
-                    //              'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show.stocks.remove',
-                    //              'parameters' => array_values($request->route()->originalParameters())
-                    //          ]
+                'title'       => __('ingredient'),
+                'breadcrumbs' => $this->getBreadcrumbs(
+                    $ingredient,
+                    $request->route()->getName(),
+                    $request->route()->originalParameters()
+                ),
+                'navigation'  => [
+                    'previous' => $this->getPrevious($ingredient, $request),
+                    'next'     => $this->getNext($ingredient, $request),
+                ],
+                'pageHead'    => [
+                    'icon'  => [
+                        'title' => __('skus'),
+                        'icon'  => 'fal fa-apple-crate'
+                    ],
+                    'title' => $ingredient->name,
 
-                    //      ] : false
-                    //  ]
-                 ],
-                 'tabs' => [
-                     'current'    => $this->tab,
-                     'navigation' => IngredientTabsEnum::navigation()
+                ],
+                'tabs'        => [
+                    'current'    => $this->tab,
+                    'navigation' => IngredientTabsEnum::navigation()
 
-                 ],
-             ]
+                ],
+            ]
         );
     }
 
@@ -103,7 +84,7 @@ class ShowIngredient extends GrpAction
                             'label' => $ingredient->slug,
                         ],
                     ],
-                    'suffix' => $suffix,
+                    'suffix'         => $suffix,
 
                 ],
             ];
@@ -135,6 +116,7 @@ class ShowIngredient extends GrpAction
     public function getPrevious(Ingredient $ingredient, ActionRequest $request): ?array
     {
         $previous = Ingredient::where('slug', '<', $ingredient->slug)->orderBy('slug', 'desc')->first();
+
         return $this->getNavigation($previous, $request->route()->getName());
     }
 

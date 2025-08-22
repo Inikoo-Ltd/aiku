@@ -53,19 +53,20 @@ const props = defineProps<{
         }
     },
     menuData: Object
+    productCategories : Array<any>
     screenType?: 'mobile' | 'tablet' | 'desktop'
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)
 const isLoggedIn = inject('isPreviewLoggedIn', false)
-
+console.log('menu',props)
 </script>
 
 <template>
     <div class="block md:hidden p-3">
         <div class="flex justify-between items-center">
             <!-- Section: Hamburger mobile -->
-            <MobileMenu :header="headerData" :menu="menuData" />
+            <MobileMenu :header="headerData" :menu="menuData" :productCategories="productCategories" />
 
             <!-- Section: Logo  -->
             <component :is="true ? Link : 'div'" :href="'/'" class="block w-full h-[65px] mb-1 rounded">
@@ -84,7 +85,7 @@ const isLoggedIn = inject('isPreviewLoggedIn', false)
 
         <!-- Search Bar -->
         <div v-if="layout.iris?.luigisbox_tracker_id" class="relative justify-self-center w-full">
-            <LuigiSearch></LuigiSearch>
+            <LuigiSearch id="luigi_mobile" />
         </div>
     </div>
 </template>

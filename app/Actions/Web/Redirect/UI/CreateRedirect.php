@@ -11,7 +11,6 @@ namespace App\Actions\Web\Redirect\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Web\Webpage\UI\ShowWebpage;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Web\Redirect\RedirectTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;

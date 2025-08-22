@@ -215,12 +215,12 @@ class IndexRetinaCustomerClients extends RetinaAction
                 ],
 
                 RetinaCustomerClientsTabsEnum::ACTIVE->value => $this->tab == RetinaCustomerClientsTabsEnum::ACTIVE->value ?
-                    fn() => CustomerClientResource::collection($customerClients)
-                    : Inertia::lazy(fn() => CustomerClientResource::collection($customerClients)),
+                    fn () => CustomerClientResource::collection($customerClients)
+                    : Inertia::lazy(fn () => CustomerClientResource::collection($customerClients)),
 
                 RetinaCustomerClientsTabsEnum::INACTIVE->value => $this->tab == RetinaCustomerClientsTabsEnum::INACTIVE->value ?
-                    fn() => CustomerClientResource::collection($this->handle($this->customerSalesChannel, false, RetinaCustomerClientsTabsEnum::INACTIVE->value))
-                    : Inertia::lazy(fn() => CustomerClientResource::collection($this->handle($this->customerSalesChannel, false, RetinaCustomerClientsTabsEnum::INACTIVE->value))),
+                    fn () => CustomerClientResource::collection($this->handle($this->customerSalesChannel, false, RetinaCustomerClientsTabsEnum::INACTIVE->value))
+                    : Inertia::lazy(fn () => CustomerClientResource::collection($this->handle($this->customerSalesChannel, false, RetinaCustomerClientsTabsEnum::INACTIVE->value))),
 
             ]
         )->table($this->tableStructure(prefix: RetinaCustomerClientsTabsEnum::ACTIVE->value))

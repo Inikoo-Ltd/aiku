@@ -18,6 +18,7 @@ import HasPickTableDeliveryNote from '@/Components/Tables/Grp/Org/Dispatching/Ha
 import { ref, inject } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure";
 import { routeType } from '@/types/route'
+import { trans } from 'laravel-vue-i18n'
 
 library.add(faTags, faTasksAlt, faChartPie, faPaperPlane, faHourglassHalf, faUserCheck, faHandPaper, faBoxCheck, faBoxOpen, faCheckDouble, faTasks)
 
@@ -33,18 +34,27 @@ const selectedDeliveryNotes = ref<number[]>([])
 const layoutStore = inject("layout", layoutStructure);
 const loading=ref(false)
 
-const pickingSessionRoute = {
-  name: props.picking_session_route.name,
-  parameters: props.picking_session_route.parameters,
-}
+// const pickingSessionRoute = {
+//   name: props.picking_session_route.name,
+//   parameters: props.picking_session_route.parameters,
+// }
 
 function createPickingSession() {
   if (selectedDeliveryNotes.value.length === 0) return
 
+  if (!props.picking_session_route) {
+    notify({
+      title: trans('Something went wrong'),
+      text: trans('Please try again or contact support.'),
+      type: 'error',
+    })
+    return
+  }
+
   loading.value = true
 
   router.post(
-    route(pickingSessionRoute.name, pickingSessionRoute.parameters),
+    route(props.picking_session_route.name, props.picking_session_route.parameters),
     { delivery_notes: selectedDeliveryNotes.value },
     {
       onFinish: () => {

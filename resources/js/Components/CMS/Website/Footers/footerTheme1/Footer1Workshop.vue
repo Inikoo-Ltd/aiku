@@ -9,7 +9,7 @@ import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue'
 import { getStyles } from '@/Composables/styles';
 import Image from '@/Components/Image.vue';
 import { sendMessageToParent } from '@/Composables/Workshop';
-
+import { isObject } from 'lodash-es';
 import { FieldValue } from '@/types/Website/Website/footer1'
 
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -17,6 +17,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faShieldAlt, faPlus, faTrash, faAngleUp, faAngleDown, faTriangle } from "@fas"
 import { faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faWhatsapp } from "@fortawesome/free-brands-svg-icons";
 import { faBars } from '@fal'
+import { trans } from 'laravel-vue-i18n'
 
 library.add(faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faShieldAlt, faBars, faPlus, faTrash, faWhatsapp)
 
@@ -469,15 +470,21 @@ const layout = inject('layout', {})
                 <div class="flex flex-col flex-col-reverse gap-y-6 md:block">
                     <div>
                         <address class="mt-10 md:mt-0 mb-4">
-                            <Editor :key="editorKey" v-model="modelValue.columns.column_4.data.textBox1"
+                            <Editor v-if="!isObject(modelValue?.columns.column_4.data.textBox1)" :key="editorKey" v-model="modelValue.columns.column_4.data.textBox1"
                                 :editable="editable"     @onEditClick="selectAllEditor"
                                 @update:model-value="(e) => { modelValue.columns.column_4.data.textBox1 = e, emits('update:modelValue', modelValue) }" />
+                            <Editor v-else :key="editorKey" v-model="modelValue.columns.column_4.data.textBox1.text"
+                                :editable="editable"     @onEditClick="selectAllEditor"
+                                @update:model-value="(e) => { modelValue.columns.column_4.data.textBox1.text = e, emits('update:modelValue', modelValue) }" />
                         </address>
 
                         <div class="mt-10 md:mt-0 mb-4 w-full">
-                            <Editor :key="editorKey" v-model="modelValue.columns.column_4.data.textBox2"
+                            <Editor v-if="!isObject(modelValue?.columns.column_4.data.textBox2)" :key="editorKey" v-model="modelValue.columns.column_4.data.textBox2"
                                 :editable="editable"     @onEditClick="selectAllEditor"
                                 @update:model-value="(e) => { modelValue.columns.column_4.data.textBox2 = e, emits('update:modelValue', modelValue) }" />
+                            <Editor v-else :key="editorKey" v-model="modelValue.columns.column_4.data.textBox2.text"
+                                :editable="editable"     @onEditClick="selectAllEditor"
+                                @update:model-value="(e) => { modelValue.columns.column_4.data.textBox2.text = e, emits('update:modelValue', modelValue) }" />
                         </div>
 
                         <div class="w-full">
@@ -517,12 +524,12 @@ const layout = inject('layout', {})
                             autocomplete="email"
                             required
                             class="w-full min-w-0 rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 md:w-56 md:text-sm/6"
-                            :placeholder="modelValue?.subscribe?.placeholder ?? 'Enter your email'"
+                            :placeholder="modelValue?.subscribe?.placeholder ?? trans('Enter your email')"
                         />
                         <div class="mt-4 sm:ml-4 sm:mt-0 sm:shrink-0">
                             <button type="submit" class="flex w-full items-center justify-center rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500">
                                 <!-- <LoadingIcon v-if="isLoadingSubmit" class="mr-2" /> -->
-                                Subscribe
+                                {{ trans("Subscribe") }}
                             </button>
                         </div>
                     </form>

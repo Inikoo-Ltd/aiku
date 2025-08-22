@@ -35,6 +35,7 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use Spatie\Translatable\HasTranslations;
 
 /**
  * App\Models\Goods\TradeUnit
@@ -100,6 +101,12 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $duty_rate
  * @property string|null $hts_us
  * @property string|null $marketing_ingredients
+ * @property array<array-key, mixed>|null $name_i8n
+ * @property array<array-key, mixed>|null $description_i8n
+ * @property array<array-key, mixed>|null $description_title_i8n
+ * @property array<array-key, mixed>|null $description_extra_i8n
+ * @property string|null $description_title
+ * @property string|null $description_extra
  * @property-read MediaCollection<int, Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Media|null $backImage
@@ -124,11 +131,16 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Tag> $tags
  * @property-read Media|null $threeQuarterImage
  * @property-read Media|null $topImage
+ * @property-read mixed $translations
  * @method static \Database\Factories\Goods\TradeUnitFactory factory($count = null, $state = [])
  * @method static Builder<static>|TradeUnit newModelQuery()
  * @method static Builder<static>|TradeUnit newQuery()
  * @method static Builder<static>|TradeUnit onlyTrashed()
  * @method static Builder<static>|TradeUnit query()
+ * @method static Builder<static>|TradeUnit whereJsonContainsLocale(string $column, string $locale, ?mixed $value, string $operand = '=')
+ * @method static Builder<static>|TradeUnit whereJsonContainsLocales(string $column, array $locales, ?mixed $value, string $operand = '=')
+ * @method static Builder<static>|TradeUnit whereLocale(string $column, string $locale)
+ * @method static Builder<static>|TradeUnit whereLocales(string $column, array $locales)
  * @method static Builder<static>|TradeUnit withTrashed()
  * @method static Builder<static>|TradeUnit withoutTrashed()
  * @mixin Eloquent
@@ -141,7 +153,10 @@ class TradeUnit extends Model implements HasMedia, Auditable
     use HasFactory;
     use HasHistory;
     use HasAttachments;
+    use HasTranslations;
 
+
+    public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
 
     protected $casts = [
         'status'               => TradeUnitStatusEnum::class,

@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Tue, 29 Jul 2025 09:59:27 Central European Summer Time, Trnava, Slovakia
@@ -14,18 +15,17 @@ use Lorisleiva\Actions\Concerns\AsAction;
 
 class ResetOrderTaxCategory
 {
-
     use asAction;
 
 
-    public function handle(Order $order,Command $command): Order
+    public function handle(Order $order, Command $command): Order
     {
         $customer = $order->customer;
         if ($customer) {
             $taxNumber = $customer->taxNumber;
 
             $command->info("Resetting tax category for order $order->slug");
-            $command->info("New tax number $taxNumber->number");
+            //   $command->info("New tax number $taxNumber->number");
 
             $tacCategory = GetTaxCategory::run(
                 country: $order->organisation->country,
@@ -56,7 +56,7 @@ class ResetOrderTaxCategory
     public function asCommand(Command $command): int
     {
         $order = Order::where('slug', $command->argument('order'))->firstOrFail();
-        $this->handle($order,$command);
+        $this->handle($order, $command);
 
         return 0;
     }

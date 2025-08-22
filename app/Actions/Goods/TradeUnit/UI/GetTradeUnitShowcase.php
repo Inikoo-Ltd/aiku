@@ -112,6 +112,15 @@ class GetTradeUnitShowcase
             'tag_routes' => $tagRoute,
             'tags_selected_id' => $tradeUnit->tags->pluck('id')->toArray(),
             'tags' =>  TagsResource::collection($tradeUnit->tags)->toArray(request()),
+            'translation_box' => [
+                'title' => __('Multi-language Translations'),
+                'save_route' => [
+                    'name' => 'grp.models.trade-unit.translations.update',
+                    'parameters' => [
+                        'tradeUnit' => $tradeUnit->id,
+                    ],
+                ],
+            ],
         ];
     }
 }

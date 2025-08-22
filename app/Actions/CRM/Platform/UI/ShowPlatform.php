@@ -49,6 +49,7 @@ class ShowPlatform extends OrgAction
 
 
         $shop = $this->parent;
+
         return Inertia::render(
             'Org/Shop/CRM/Platform',
             [
@@ -72,8 +73,8 @@ class ShowPlatform extends OrgAction
                 ],
 
                 PlatformTabsEnum::CHANNELS->value => $this->tab == PlatformTabsEnum::CHANNELS->value ?
-                    fn () => CustomerSalesChannelsResource::collection(IndexCustomerSalesChannels::run($platform, prefix: PlatformTabsEnum::CHANNELS->value))
-                    : Inertia::lazy(fn () => CustomerSalesChannelsResource::collection(IndexCustomerSalesChannels::run($platform, prefix: PlatformTabsEnum::CHANNELS->value))),
+                    fn () => CustomerSalesChannelsResource::collection(IndexCustomerSalesChannels::run(parent: $platform, shop: $shop, prefix: PlatformTabsEnum::CHANNELS->value))
+                    : Inertia::lazy(fn () => CustomerSalesChannelsResource::collection(IndexCustomerSalesChannels::run(parent: $platform, shop: $shop, prefix: PlatformTabsEnum::CHANNELS->value))),
 
                 PlatformTabsEnum::PRODUCTS->value => $this->tab == PlatformTabsEnum::PRODUCTS->value ?
                     fn () => PortfoliosResource::collection(IndexPortfoliosInPlatform::run($shop, $platform, prefix: PlatformTabsEnum::PRODUCTS->value))

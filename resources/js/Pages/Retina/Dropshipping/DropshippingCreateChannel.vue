@@ -472,15 +472,15 @@ const isModalEbayDuplicate = ref(false)
     </div>
 
     <!-- Modal: Shopify -->
-    <Modal :isOpen="!!isModalOpen" @onClose="isModalOpen = false" width="w-[500px]">
+    <Modal :isOpen="!!isModalOpen" @onClose="isModalOpen = false" width="w-[600px]">
         <div class="h-fit">
-            <div class="mb-4">
+            <div class="mb-6">
                 <div class="text-center font-semibold text-xl">
-                    {{ trans("Enter your Shopify store name") }}
+                    {{ trans("Please enter your Shopify unique domain name") }}
                 </div>
 
                 <div class="text-center text-xs text-gray-500 w-9/12 mx-auto">
-                    {{ trans("This is the store name that you already have in Shopify. You can it in Shopify Settings") }}
+                    {{ trans("You will be able to find it in your Shopify settings under domains section.") }}
                 </div>
             </div>
 
@@ -495,6 +495,10 @@ const isModalEbayDuplicate = ref(false)
                 }"
                 @keydown.enter="() => onCreateStoreShopify()"
             />
+            
+            <div class="mt-1 text-xs text-gray-500">
+                {{ trans("Not sure which is your Shopify store name?") }} <a href="https://drive.google.com/file/d/1bdq3cQUvc3bussJfIMen5b4P4X-qw0W-/view" target="_blank" class="underline hover:text-gray-700">Click here</a>
+            </div>
 
             <Transition name="slide-to-right">
                 <div v-if="errorShopify" class="text-red-500 italic text-sm mt-2">

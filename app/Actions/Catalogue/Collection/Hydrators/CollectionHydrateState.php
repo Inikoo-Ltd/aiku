@@ -32,29 +32,32 @@ class CollectionHydrateState implements ShouldBeUnique
             return;
         }
 
-        $state = $this->getCollectionStateFromChildren($collection->stats);
+        $data = $this->getCollectionStateFromChildren($collection->stats);
 
-        $collection->update([
-            'state' => $state,
-        ]);
+        $collection->update($data);
     }
 
 
-    public function getCollectionStateFromChildren(CollectionStats $stats): CollectionStateEnum
+    public function getCollectionStateFromChildren(CollectionStats $stats): array
     {
-        if ($stats->number_products_state_active > 0 || $stats->number_families_state_active > 0) {
-            return CollectionStateEnum::ACTIVE;
+        if ($stats->number_products_state_active > 0 || $stats->number_families_state_active > 0 || $stats->number_products_state_discontinuing > 0 || $stats->number_families_state_discontinuing > 0
+
+        ) {
+            return [
+                'state' => CollectionStateEnum::ACTIVE
+            ];
         }
 
-        if ($stats->number_products_state_discontinuing > 0 || $stats->number_families_state_discontinuing > 0) {
-            return CollectionStateEnum::DISCONTINUING;
-        }
 
         if ($stats->number_products_state_discontinued == 0 && $stats->number_families_state_discontinued == 0 && $stats->number_families_state_inactive == 0) {
-            return CollectionStateEnum::IN_PROCESS;
+            return [
+                'state' => CollectionStateEnum::IN_PROCESS
+            ];
         }
 
-        return CollectionStateEnum::DISCONTINUED;
+        return [
+            'state' => CollectionStateEnum::ACTIVE
+        ];
     }
 
 

@@ -9,7 +9,6 @@
 namespace App\Actions\Dispatching\DeliveryNoteItem\UI;
 
 use App\Actions\OrgAction;
-use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
@@ -52,6 +51,7 @@ class IndexDeliveryNoteItems extends OrgAction
                 'org_stocks.id as org_stock_id',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
+                'org_stocks.slug as org_stock_slug',
                 'org_stocks.packed_in as packed_in'
             ])
             ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required', 'quantity_picked', 'quantity_packed', 'state'])
@@ -80,9 +80,9 @@ class IndexDeliveryNoteItems extends OrgAction
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'quantity_required', label: __('Required'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'quantity_picked', label: __('Picked'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'quantity_packed', label: __('Packed'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'quantity_required', label: __('Required'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            $table->column(key: 'quantity_picked', label: __('Picked'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            $table->column(key: 'quantity_packed', label: __('Packed'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             $table->column(key: 'action', label: __('action'), canBeHidden: false, sortable: false, searchable: false);
         };
     }

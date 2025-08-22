@@ -25,26 +25,7 @@ class EditFamily extends OrgAction
         return $family;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->parent instanceof Organisation) {
-            $this->canEdit = $request->user()->authTo(
-                [
-                    'org-supervisor.' . $this->organisation->id,
-                ]
-            );
 
-            return $request->user()->authTo(
-                [
-                    'org-supervisor.' . $this->organisation->id,
-                    'shops-view' . $this->organisation->id,
-                ]
-            );
-        } else {
-            $this->canEdit = $request->user()->authTo("products.{$this->shop->id}.edit");
-            return $request->user()->authTo("products.{$this->shop->id}.view");
-        }
-    }
 
     public function inOrganisation(Organisation $organisation, ProductCategory $family, ActionRequest $request): ProductCategory
     {
@@ -61,6 +42,7 @@ class EditFamily extends OrgAction
         return $this->handle($family);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $family, ActionRequest $request): ProductCategory
     {
         $this->initialisationFromShop($shop, $request)->withTab(DepartmentTabsEnum::values());
@@ -68,9 +50,9 @@ class EditFamily extends OrgAction
         return $this->handle($family);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inSubDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ProductCategory $family, ActionRequest $request): ProductCategory
     {
-        $this->parent = $subDepartment;
 
         $this->initialisationFromShop($shop, $request)->withTab(DepartmentTabsEnum::values());
 
@@ -81,10 +63,10 @@ class EditFamily extends OrgAction
     {
         $departmentIdFormData = [];
 
-        if ($family?->parent?->type == ProductCategoryTypeEnum::DEPARTMENT) {
+        if ($family->parent?->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $departmentIdFormData['department_id'] = [
                 'type'     => 'select',
-                'label'    => __('Departement'),
+                'label'    => __('Department'),
                 'required' => true,
                 'options'  => $family->shop->productCategories()
                     ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
@@ -155,14 +137,17 @@ class EditFamily extends OrgAction
                             ]
                         ],
                         [
-                            'label'  => __('Properties'),
-                            'icon'   => 'fa-light fa-fingerprint',
-                            'title'  => __('id'),
+                            'label'  => __('Image'),
+                            'icon'   => 'fa-light fa-image',
+                            'title'  => __('Media'),
                             'fields' => [
                                 "image"         => [
-                                    "type"    => "image_crop_square",
+                                    "type"    => "crop-image-full",
                                     "label"   => __("Image"),
                                     "value"   => $family->imageSources(720, 480),
+                                    "required" => false,
+                                    'noSaveButton' => true,
+                                    "full"         => true
                                 ],
                                 ...$departmentIdFormData
                             ]

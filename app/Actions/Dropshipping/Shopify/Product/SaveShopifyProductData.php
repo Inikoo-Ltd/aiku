@@ -34,7 +34,7 @@ class SaveShopifyProductData extends RetinaAction
         /** @var \App\Models\Dropshipping\ShopifyUser $shopifyUser */
         $shopifyUser = $customerSalesChannel->user;
 
-        if(!$shopifyUser) {
+        if (!$shopifyUser) {
             Sentry::captureMessage("No Shopify user found for this customer sales channel");
             return null;
         }
@@ -165,21 +165,21 @@ class SaveShopifyProductData extends RetinaAction
             }
 
 
-            $sku=Arr::get($productData, 'variants.edges.0.node.sku');
+            $sku = Arr::get($productData, 'variants.edges.0.node.sku');
 
 
 
             $data = $portfolio->data;
             data_set($data, 'shopify_product', $productData);
 
-            $dataToUpdate=[
+            $dataToUpdate = [
                 'data' => $data
             ];
-            if($sku){
+            if ($sku) {
                 data_set($dataToUpdate, 'sku', $sku);
             }
 
-            UpdatePortfolio::run($portfolio,  $dataToUpdate);
+            UpdatePortfolio::run($portfolio, $dataToUpdate);
 
 
             // Format the response to match the expected structure

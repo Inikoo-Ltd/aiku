@@ -23,6 +23,8 @@ import Dialog from 'primevue/dialog'
 import { faImage } from "@far"
 import EditTradeUnit from "@/Components/Goods/EditTradeUnit.vue"
 import { Fieldset, Select } from "primevue"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import TranslationBox from '@/Components/TranslationBox.vue';
 
 
 library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus)
@@ -35,6 +37,11 @@ const props = defineProps<{
 		attachImageRoute: routeType
 		deleteImageRoute: routeType
 		imagesUploadedRoutes: routeType
+		translation_box: {
+			title: string
+			languages: Record<string, string>
+			save_route: routeType
+		}
 		product: {
 			data: {
 				id: number
@@ -138,13 +145,13 @@ const onSubmitUpload = async (files: File[], refData = null) => {
 		formData.append(`images[${index}]`, file)
 	})
 
-	
+
 	router.post(
 		route(props.data.uploadImageRoute.name, props.data.uploadImageRoute.parameters),
 		formData,
 		{
 			preserveScroll: true,
-			
+
 			onSuccess: () => {
 				notify({
 					title: trans('Success'),
@@ -152,20 +159,20 @@ const onSubmitUpload = async (files: File[], refData = null) => {
 					type: 'success',
 				})
 
-				
+
 				isModalGallery.value = false
 
-		
+
 			},
 			onError: () => {
-				
+
 				notify({
 					title: trans('Upload failed'),
 					text: trans('Failed to add new image'),
 					type: 'error',
 				})
 			},
-		
+
 		}
 	)
 }
@@ -174,191 +181,192 @@ const selectedTradeUnit = ref(props.data.trade_units.length > 0 ? props.data.tra
 const compSelectedTradeUnit = computed(() => {
 	return props.data.trade_units.find((unit) => unit.tradeUnit.code === selectedTradeUnit.value)
 })
+
+console.log(props)
 </script>
 
 <template>
-	<div class="grid md:grid-cols-4 gap-x-1 gap-y-4">
+	<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
 		<!-- Sidebar -->
-		<div class="p-5 space-y-5 grid grid-cols-1 max-w-[500px]">
+		<div class="space-y-4 lg:space-y-6">
 			<!-- Image Preview & Thumbnails -->
-			<div class="relative">
-				<!-- Image Gallery -->
-				<ImageProducts v-if="data.product.data.images?.length" :images="data.product.data.images">
+			<div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
+				<ImageProducts
+					v-if="data.product.data.images?.length"
+					:images="data.product.data.images"
+					:breakpoints="{
+						0: { slidesPerView: 3 },
+						480: { slidesPerView: 4 },
+						640: { slidesPerView: 5 },
+						1024: { slidesPerView: 6 }
+					}"
+					class="overflow-x-auto"
+				>
 					<template #image-thumbnail="{ image, index }">
-						<div class="aspect-square w-full overflow-hidden group relative">
-							<Image :src="image.thumbnail" :alt="`Thumbnail ${index + 1}`"
-								class="block w-full h-full object-cover rounded-md border" />
-							<!-- Delete Button on Hover -->
-							<button @click.prevent="deleteImage(image, index)"
-								class="absolute top-1 right-1 bg-white border border-gray-300 text-gray-700 p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-md hover:bg-red-500 hover:text-white">
-								<FontAwesomeIcon :icon="faTrash" class="text-sm" />
-							</button>
+						<div class="aspect-square w-full overflow-hidden group relative rounded-lg border border-gray-200">
+							<Image
+								:src="image.thumbnail"
+								:alt="`Thumbnail ${index + 1}`"
+								class="block w-full h-full object-cover"
+							/>
+							<!-- Delete Icon -->
+							<ModalConfirmationDelete
+								:routeDelete="{
+									name: props.data.deleteImageRoute.name,
+									parameters: {
+										...props.data.deleteImageRoute.parameters,
+										media: image.id,
+									}
+								}"
+								:title="trans('Are you sure you want to delete the image?')"
+								:description="trans('This action cannot be undone.')"
+								isFullLoading
+								noLabel="Delete"
+								noIcon="fal fa-times"
+							>
+								<template #default="{ changeModel }">
+									<div
+										@click="changeModel"
+										class="absolute top-2 right-2 bg-white shadow-md rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition cursor-pointer hover:bg-red-500 hover:text-white text-red-500"
+									>
+										<FontAwesomeIcon icon="fal fa-times" fixed-width />
+									</div>
+								</template>
+							</ModalConfirmationDelete>
 						</div>
 					</template>
 				</ImageProducts>
 
 				<!-- Empty State -->
-				<div v-else
-					class="flex flex-col items-center justify-center text-gray-500 gap-2 py-8 border border-dashed border-gray-300 rounded-md">
-					<FontAwesomeIcon :icon="faImage" class="text-4xl" />
-					<p class="text-sm">No images uploaded yet</p>
+				<div
+					v-else
+					class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg"
+				>
+					<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
+					<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
 				</div>
 
 				<!-- Add Image Button -->
-				<div class="mt-3">
-					<Button type="dashed" full @click="isModalGallery = true" label="Add Images" :icon="faPlus" />
+				<div class="mt-4">
+					<Button type="primary" full @click="isModalGallery = true" label="Add Images" :icon="faPlus" />
 				</div>
 			</div>
-
 
 			<!-- Product Summary -->
-			<section class="border border-gray-200 rounded-lg px-4 py-6">
-				<h2 class="text-lg font-medium">{{ trans("Product summary") }}</h2>
-				<dl class="mt-6 space-y-4 text-sm">
-					<div class="flex justify-between">
-						<dt>{{ trans("Added date") }}</dt>
+			<div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
+				<h2 class="text-base lg:text-lg font-semibold border-b pb-3">{{ trans("Product summary") }}</h2>
+				<dl class="mt-4 space-y-3 text-sm">
+					<div class="flex justify-between flex-wrap gap-1">
+						<dt class="text-gray-500">{{ trans("Added date") }}</dt>
 						<dd class="font-medium">{{ useFormatTime(data.product.data.created_at) }}</dd>
 					</div>
-					<div class="flex justify-between">
-						<dt>{{ trans("Stock") }}</dt>
-						<dd class="font-medium">-- pcs</dd>
-					</div>
-					<div class="flex justify-between">
-						<dt>{{ trans("Cost") }}</dt>
-						<dd class="font-medium">--</dd>
-					</div>
-					<div class="flex justify-between">
-						<dt>{{ trans("Price") }}</dt>
-						<dd class="font-medium text-right">
-							{{ locale.currencyFormat(data.product.data.currency_code || "usd", data.product.data.price)
-							}}
-							<span class="font-light">margin (--)</span>
+					<div class="flex justify-between flex-wrap gap-1">
+						<dt class="text-gray-500">{{ trans("Stock") }}</dt>
+						<dd class="font-medium">
+							{{ data.product.data.stock }} {{ data.product.data.unit }}
 						</dd>
 					</div>
-					<div class="flex justify-between">
-						<dt>RRP</dt>
-						<dd class="font-medium text-right">--- <span class="font-light">margin (--)</span></dd>
+					<div class="flex justify-between flex-wrap gap-1">
+						<dt class="text-gray-500">{{ trans("Price") }}</dt>
+						<dd class="font-semibold text-green-600">
+							{{ locale.currencyFormat(data.product.data.currency_code, data.product.data.price) }}
+						</dd>
+					</div>
+					<div class="flex justify-between flex-wrap gap-1">
+						<dt class="text-gray-500">RRP</dt>
+						<dd class="font-semibold">
+							{{ locale.currencyFormat(data.product.data.currency_code, data.product.data.rrp) }}
+							<span class="ml-1 text-xs text-gray-500">
+								({{
+									((data.product.data.rrp - data.product.data.price) /
+										data.product.data.price * 100).toFixed(2)
+								}}%)
+							</span>
+						</dd>
+					</div>
+					<div class="flex justify-between flex-wrap gap-1">
+						<dt class="text-gray-500">{{ trans("Weight") }}</dt>
+						<dd class="font-medium">
+							{{ locale.number(data.product.data?.specifications?.gross_weight) }} gr
+						</dd>
+					</div>
+					<div>
+						<dt class="text-gray-500">{{ trans("Ingredients") }}</dt>
+						<ul class="list-disc list-inside text-gray-700 mt-1 space-y-1">
+							<li v-for="ingredient in data.product.data.specifications?.ingredients" :key="ingredient.id">
+								{{ ingredient }}
+							</li>
+						</ul>
 					</div>
 				</dl>
-			</section>
-		</div>
-		
-		<div>
-
+			</div>
 		</div>
 
-		<div class="md:col-span-2 pr-6">
-			<Fieldset
-				class="p-5 space-y-5 h-fit w-full max-w-lg"
-				legend="Trade units"
-				xtoggleable
-				xcollapsed
-			>
-				<template #legend>
-					<div class="flex items-center gap-2 font-bold">
-						<FontAwesomeIcon icon="fal fa-atom" class="text-gray-400 text-lg" fixed-width aria-hidden="true" />
-						Trade units
-					</div>
-				</template>
+		<!-- Right Section -->
+		<div class="space-y-4 lg:space-y-6 lg:col-span-2">
+			<div class="flex flex-col md:flex-row md:items-center md:justify-end p-4 lg:p-8 gap-4">
+				<Fieldset class="bg-white rounded-xl shadow-sm w-full md:w-auto" legend="Trade units">
+					<template #legend>
+						<div class="flex items-center gap-2 font-bold">
+							<FontAwesomeIcon icon="fal fa-atom" class="text-gray-400" fixed-width />
+							Trade units
+						</div>
+					</template>
 
-				<template #default>
-					<div class="px-4">
-						<div class="flex items-center gap-x-2 mb-4">
+					<template #default>
+						<div>
 							<template v-if="props.data.trade_units.length">
-								<Select
-									v-model="selectedTradeUnit"
-									:options="props.data.trade_units"
-									optionLabel="tradeUnit.name"
-									optionValue="tradeUnit.code"
-									placeholder="Select a City"
-									class="w-full md:w-80"
-								/>
-								<Link
-									v-if="compSelectedTradeUnit?.tradeUnit?.slug"
-									:href="route('grp.goods.trade-units.show', compSelectedTradeUnit?.tradeUnit.slug)"
-									v-tooltip="trans('Open trade unit')"
-									class="text-gray-400 hover:text-gray-600 cursor-pointer"
-								>
-									<FontAwesomeIcon icon="fal fa-external-link" class="" fixed-width aria-hidden="true" />
-								</Link>
+								<div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-4">
+									<Select
+										v-model="selectedTradeUnit"
+										:options="props.data.trade_units"
+										optionLabel="tradeUnit.name"
+										optionValue="tradeUnit.code"
+										placeholder="Select a City"
+										class="w-full sm:w-80"
+									/>
+									<Link
+										v-if="compSelectedTradeUnit?.tradeUnit?.slug"
+										:href="route('grp.goods.trade-units.show', compSelectedTradeUnit?.tradeUnit.slug)"
+										v-tooltip="trans('Open trade unit')"
+										class="text-gray-400 hover:text-gray-600 text-center sm:text-left"
+									>
+										<FontAwesomeIcon icon="fal fa-external-link" fixed-width />
+									</Link>
+								</div>
+								<EditTradeUnit v-if="compSelectedTradeUnit" v-bind="compSelectedTradeUnit" />
 							</template>
-							<div v-else class="text-gray-500 text-center mx-auto">
-								No trade units for this product
+							<div v-else class="text-gray-500 text-center py-4">
+								{{ trans("No trade units for this product") }}
 							</div>
 						</div>
-
-						<div v-if="compSelectedTradeUnit" class="">
-							<EditTradeUnit
-								:tags_selected_id="compSelectedTradeUnit.tags_selected_id"
-								:brand="compSelectedTradeUnit.brand"
-								:brand_routes="compSelectedTradeUnit.brand_routes"
-								:tags="compSelectedTradeUnit.tags"
-								:tag_routes="compSelectedTradeUnit.tag_routes"
-							/>
-						</div>
-					</div>
-				</template>
-			</Fieldset>
-		</div>
-
-		<!-- Revenue Stats -->
-		<div v-if="false && data.stats" class="pt-8 p-4 md:col-span-3">
-			<h3 class="text-lg font-semibold">
-				{{ trans("All Sales") }}:
-				{{ useLocaleStore().currencyFormat(data.product.data.currency_code || "usd", data?.stats?.[0]?.amount ??
-					0) }}
-			</h3>
-
-			<dl class="mt-5 grid grid-cols-1 md:grid-cols-3 gap-4 bg-white">
-				<div v-for="item in displayedStats" :key="item.name"
-					class="px-4 py-5 border border-gray-200 rounded-md">
-					<dt class="text-base font-normal">{{ item.name }}</dt>
-					<dd class="mt-1 flex flex-col sm:flex-row items-baseline justify-between min-h-[48px]">
-						<div class="flex items-baseline text-2xl font-semibold text-indigo-600">
-							<span v-if="item.amount !== null && item.amount !== undefined">
-								{{ useLocaleStore().currencyFormat(data.product.data.currency_code || 'usd',
-									item.amount) }}
-							</span>
-							<span v-else>-</span>
-							<span class="ml-2 text-sm font-medium text-gray-500">
-								from
-								<span v-if="item.amount_ly !== null && item.amount_ly !== undefined">
-									{{ useLocaleStore().currencyFormat(data.product.data.currency_code || 'usd',
-										item.amount_ly)
-									}}
-								</span>
-								<span v-else>-</span>
-							</span>
-						</div>
-						<div class="flex items-center mt-2 md:mt-0">
-							<span class="text-sm font-mono pr-1">
-								<span v-if="item.percentage !== null && item.percentage !== undefined">
-									{{ item.percentage > 0 ? '+' : '' }}{{ item.percentage.toFixed(2) }}%
-								</span>
-								<span v-else>0.00%</span>
-							</span>
-							<FontAwesomeIcon v-if="item.percentage !== null && item.percentage !== undefined"
-								icon="fas fa-play"
-								:class="item.percentage < 0 ? 'text-red-500 rotate-90' : 'text-green-500 rotate-[-90deg]'"
-								class="text-xs opacity-60" />
-						</div>
-					</dd>
-				</div>
-			</dl>
-
-			<!-- Show more stats -->
-			<div v-if="props.data?.stats?.length > 6 && !showAllStats" @click="showAllStats = true"
-				class="cursor-pointer border border-dashed border-gray-300 rounded-md mt-3 flex justify-center items-center p-4 w-full sm:w-40 mx-auto">
-				<span class="text-sm font-medium">{{ trans("Show more") }}</span>
+					</template>
+				</Fieldset>
 			</div>
+
+			<TranslationBox v-bind="data.translation_box" :master="data.product.data" :needTranslation="data.product.data" />
 		</div>
 	</div>
 
-	<!-- Gallery Dialog (PrimeVue) -->
-	<Dialog v-model:visible="isModalGallery" modal closable dismissableMask header="Gallery Management"
-		:style="{ width: '75vw' }" :pt="{ root: { class: 'rounded-xl shadow-xl' } }">
-		<GalleryManagement :multiple="true" :uploadRoute="data.uploadImageRoute" :submitUpload="(file,refDAta)=>onSubmitUpload(file,refDAta)"
-			:imagesUploadedRoutes="data.imagesUploadedRoutes" :attachImageRoute="data.attachImageRoute"
-			:stockImagesRoute="data.stockImagesRoute" @selectImage="(image) => console.log('Selected:', image)" />
+	<!-- Gallery Dialog -->
+	<Dialog
+		v-model:visible="isModalGallery"
+		modal
+		closable
+		dismissableMask
+		header="Gallery Management"
+		:style="{ width: '95vw', maxWidth: '900px' }"
+		:pt="{ root: { class: 'rounded-xl shadow-xl' } }"
+	>
+		<GalleryManagement
+			:multiple="true"
+			:uploadRoute="data.uploadImageRoute"
+			:submitUpload="(file, refDAta) => onSubmitUpload(file, refDAta)"
+			:imagesUploadedRoutes="data.imagesUploadedRoutes"
+			:attachImageRoute="data.attachImageRoute"
+			:stockImagesRoute="data.stockImagesRoute"
+			@selectImage="(image) => console.log('Selected:', image)"
+		/>
 	</Dialog>
 </template>
+

@@ -85,6 +85,8 @@ onBeforeUnmount(() => {
     window.removeEventListener('resize', checkScreenType)
 })
 
+console.log('handle', usePage().props)
+
 </script>
 
 <template>
@@ -118,7 +120,7 @@ onBeforeUnmount(() => {
 
         <div :class="[(theme.layout === 'blog' || !theme.layout) ? 'container max-w-7xl mx-auto shadow-xl' : '']">
 
-            <IrisHeader v-if="header.header" :data="header" :colorThemed="theme" :menu="navigation"
+            <IrisHeader v-if="header?.header" :data="header" :colorThemed="theme" :menu="navigation"
                 :screen-type="screenType" />
 
             <Breadcrumbs v-if="usePage().props.breadcrumbs?.length" id="iris_breadcrumbs"

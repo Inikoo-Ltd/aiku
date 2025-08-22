@@ -49,8 +49,6 @@ class FetchAuroraStock extends FetchAurora
         );
 
         $code = $this->cleanTradeUnitReference($this->auroraModelData->{'Part Reference'});
-
-
         $sourceSlug = Str::kebab(strtolower($code));
 
         $name = $this->auroraModelData->{'Part Recommended Product Unit Name'};
@@ -62,7 +60,6 @@ class FetchAuroraStock extends FetchAurora
         }
 
         $name = preg_replace('/\s+/', ' ', $name);
-
 
         $state = match ($this->auroraModelData->{'Part Status'}) {
             'In Use' => StockStateEnum::ACTIVE,
@@ -110,10 +107,7 @@ class FetchAuroraStock extends FetchAurora
 
         $this->parsedData['supplier_products']     = $supplierProducts;
         $this->parsedData['org_supplier_products'] = $orgSupplierProducts;
-
-
         $this->parsedData['stock_family'] = $this->parseStockFamily($this->auroraModelData->{'Part SKU'});
-
 
         $createdAt = $this->parseDateTime($this->auroraModelData->{'Part Valid From'});
 

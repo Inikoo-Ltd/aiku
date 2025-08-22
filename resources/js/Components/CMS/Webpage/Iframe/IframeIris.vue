@@ -43,7 +43,10 @@ const iframeStyles = computed(() => {
 <template>
 	<div id="iframe" :style="iframeStyles">
 		<iframe
-			:style="getStyles(props.fieldValue.container?.properties, props.screenType)"
+		:style="{
+			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+			...getStyles(fieldValue.container?.properties, screenType)
+		}"
 			:title="props.fieldValue?.title || `iframe-${uuidv4()}`"
 			:src="props.fieldValue?.link"
 			class="w-full max-w-full h-auto block border-0"

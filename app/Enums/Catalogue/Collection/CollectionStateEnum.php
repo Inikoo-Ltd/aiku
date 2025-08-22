@@ -17,17 +17,13 @@ enum CollectionStateEnum: string
     case IN_PROCESS = 'in_process';
     case ACTIVE = 'active';
     case INACTIVE = 'inactive';
-    case DISCONTINUING = 'discontinuing';
-    case DISCONTINUED = 'discontinued';
 
     public static function labels(): array
     {
         return [
-            'in_process'    => __('In Process'),
-            'active'        => __('Active'),
-            'inactive'      => __('Inactive'),
-            'discontinuing' => __('Discontinuing'),
-            'discontinued'  => __('Discontinued'),
+            'in_process' => __('In Process'),
+            'active'     => __('Active'),
+            'inactive'   => __('Inactive'),
         ];
     }
 
@@ -39,25 +35,15 @@ enum CollectionStateEnum: string
                 'icon'    => 'fal fa-seedling',
                 'class'   => 'text-gray-400'
             ],
-            'active' => [
+            'active'     => [
                 'tooltip' => __('active'),
                 'icon'    => 'fas fa-play',
                 'class'   => 'text-green-700'
             ],
-            'inactive' => [
+            'inactive'   => [
                 'tooltip' => __('inactive'),
                 'icon'    => 'fal fa-pause-circle',
                 'class'   => 'text-gray-500'
-            ],
-            'discontinuing' => [
-                'tooltip' => __('discontinuing'),
-                'icon'    => 'fal fa-sunset',
-                'class'   => 'text-amber-500'
-            ],
-            'discontinued' => [
-                'tooltip' => __('discontinued'),
-                'icon'    => 'fal fa-skull',
-                'class'   => 'text-red-700'
             ],
         ];
     }

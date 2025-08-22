@@ -84,3 +84,7 @@ Broadcast::channel("header-footer.{website}.preview", function (User $user) {
 Broadcast::channel("app.general", function () {
     return true;
 });
+
+Broadcast::channel("grp.dn.{deliveryNoteId}", function () {
+    return true;
+});

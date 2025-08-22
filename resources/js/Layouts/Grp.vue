@@ -8,26 +8,23 @@
 
 
 <script setup lang="ts">
-import { onMounted, ref, provide, defineAsyncComponent, watch } from "vue";
-import { initialiseApp } from "@/Composables/initialiseApp";
-import { usePage } from "@inertiajs/vue3";
-import Footer from "@/Components/Footer/Footer.vue";
-
-import { useLayoutStore } from "@/Stores/layout";
-import { useLocaleStore } from "@/Stores/locale";
-
-import "@/Composables/Icon/NavigationImportIcon";
-
-
-import TopBar from "@/Layouts/Grp/TopBar.vue";
-import LeftSideBar from "@/Layouts/Grp/LeftSideBar.vue";
-import RightSideBar from "@/Layouts/Grp/RightSideBar.vue";
-import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue";
-import Notification from "@/Components/Utils/Notification.vue";
+import { onMounted, ref, provide, defineAsyncComponent, watch } from "vue"
+import { initialiseApp } from "@/Composables/initialiseApp"
+import { usePage } from "@inertiajs/vue3"
+import Footer from "@/Components/Footer/Footer.vue"
+import { useLayoutStore } from "@/Stores/layout"
+import { useLocaleStore } from "@/Stores/locale"
+import "@/Composables/Icon/NavigationImportIcon"
+import TopBar from "@/Layouts/Grp/TopBar.vue"
+import LeftSideBar from "@/Layouts/Grp/LeftSideBar.vue"
+import RightSideBar from "@/Layouts/Grp/RightSideBar.vue"
+import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
+import Notification from "@/Components/Utils/Notification.vue"
+import { faStackOverflow, faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import {
-    faPoll, faSadTear,
+    faPoll, faAllergies, faSpellCheck, faHandPaper, faHourglassStart, faSadTear,
     faParking, faBoxCheck,
-    faUsers,
+    faUsers, faShoppingBasket, faLayerGroup, faInboxOut,
     faTachometerAltFast,
     faGlobe,
     faParachuteBox, faStore,
@@ -38,45 +35,48 @@ import {
     faAtom,
     faFileInvoice,
     faPaperPlane,
-    faDraftingCompass,
+    faDraftingCompass, faExternalLinkAlt,
     faCheck,
-    faTimes,
-    faAsterisk,faPauseCircle, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble
-} from "@fal";
-import { faSearch, faBell } from "@far";
-import { faAsterisk as fasAsterisk, faExclamation, faInfo, faPlay, faGlobe as fasGlobe } from "@fas";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { notify } from "@kyvg/vue3-notification";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { trans } from "laravel-vue-i18n";
-import Button from "@/Components/Elements/Buttons/Button.vue";
-import Modal from "@/Components/Utils/Modal.vue";
+    faTimes, faTrashAlt,
+    faAsterisk, faPauseCircle, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble,
+    faSmile
+} from "@fal"
+import { faSearch, faBell } from "@far"
+import { faAsterisk as fasAsterisk, faExclamation, faInfo, faPlay, faGlobe as fasGlobe } from "@fas"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { notify } from "@kyvg/vue3-notification"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { trans } from "laravel-vue-i18n"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import Modal from "@/Components/Utils/Modal.vue"
 
-library.add(faPoll, faSadTear, faPauseCircle, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faUsers, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faStore, faClock, faTransporter, faParking, faBoxCheck, faRulerTriangle, faRulerCombined, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faTimes, faCheck, faAsterisk);
+library.add(faOctopusDeploy, faPoll, faAllergies, faSpellCheck, faHandPaper, faHourglassStart, faSadTear, faPauseCircle, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faUsers, faShoppingBasket, faLayerGroup, faInboxOut, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faStore, faClock, faTransporter, faParking, faBoxCheck, faStackOverflow, faRulerTriangle, faRulerCombined, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faExternalLinkAlt, faTimes, faTrashAlt, faCheck, faAsterisk)
 
-provide("layout", useLayoutStore());
-provide("locale", useLocaleStore());
-provide("isMovePallet", true);
+provide("layout", useLayoutStore())
+provide("locale", useLocaleStore())
+provide("isMovePallet", true)
 
-initialiseApp();
+initialiseApp()
 
-const StackedComponents = defineAsyncComponent(() => import("@/Layouts/Grp/StackedComponents.vue"));
+const StackedComponents = defineAsyncComponent(() => import("@/Layouts/Grp/StackedComponents.vue"))
 
 
-const layout = useLayoutStore();
-const sidebarOpen = ref(false);
+const layout = useLayoutStore()
+const sidebarOpen = ref(false)
 
 // Section: Notification
 watch(() => usePage().props?.flash?.notification, (notif) => {
-    console.log("notif ret", notif);
-    if (!notif) return;
+    console.log("notif ret", notif)
+    if (!notif) return
 
     notify({
         title: notif.title,
         text: notif.description,
         type: notif.status
     });
-});
+}, {
+    immediate: true
+})
 
 // Section: Modal
 interface Modal {
@@ -85,48 +85,34 @@ interface Modal {
     type: "success" | "error" | "info" | "warning";
 }
 
-const selectedModal = ref<Modal | null>(null);
-const isModalOpen = ref(false);
+const selectedModal = ref<Modal | null>(null)
+const isModalOpen = ref(false)
 watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
-    console.log("modal ret", modal);
-    if (!modal) return;
+    console.log("modal ret", modal)
+    if (!modal) return
 
     selectedModal.value = modal;
     isModalOpen.value = true;
-});
+}, {
+    immediate: true
+})
 
 // Method: listen if app recently deployed
 const isModalNeedToRefresh = ref(false)
 const onCheckAppVersion = () => {
-    const xxx = window.Echo.private('app.general').listen(
-        '.post-deployed',
+    const xxx = window.Echo.private("app.general").listen(
+        ".post-deployed",
         (eventData) => {
-            if (route().current()?.includes('dashboard.show')) {
+            if (route().current()?.includes("dashboard.show")) {
                 onRefreshPage()
             } else {
                 isModalNeedToRefresh.value = true
             }
-            console.log('---------- App version check:', eventData)
+            console.log("---------- App version check:", eventData)
         }
     )
 
-    console.log('Websocket:', xxx)
-    
-
-    // setInterval(async () => {
-    //     try {
-    //         const response = await fetch('/verdonk.json', {
-    //             cache: 'no-store' // Hindari cache
-    //         });
-    //         const data = await response.json();
-
-    //         console.log('Current version:', data?.version == window?.appDeployed);
-
-    //     } catch (error) {
-    //         console.error('Gagal memeriksa versi aplikasi:', error);
-    //     }
-    // }, 2000); // Cek setiap 30 detik (atur sesuai kebutuhan)
-        
+    // console.log('Websocket subscription:', xxx.subscription.subscribed)
 }
 const onRefreshPage = () => {
     window.location.reload()
@@ -147,7 +133,7 @@ onMounted(() => {
         <Breadcrumbs
             class="bg-white fixed z-[19] transition-all duration-200 ease-in-out"
             :class="[
-                layout.leftSidebar.show ? 'left-0 md:left-48 w-[calc(100%-192px)]' : 'left-0 md:left-12 w-[calc(100%-48px)]',
+                layout.leftSidebar.show ? 'left-0 md:left-48 w-screen sm:w-full md:w-[calc(100%-144px)] lg:w-[calc(100%-192px)]' : 'left-0 md:left-12 w-screen sm:w-full md:w-[calc(100%-36px)] lg:w-[calc(100%-48px)]',
                 layout.app.environment === 'staging' ? 'top-11 lg:top-16' : 'top-11 lg:top-10'
             ]"
             :breadcrumbs="usePage().props.breadcrumbs ?? []" :navigation="usePage().props.navigation ?? []"
@@ -165,7 +151,7 @@ onMounted(() => {
 
         <!-- Main Content -->
         <main
-            class="h-full relative flex flex-col pt-[76px] md:pt-[70px] lg:pt-20 xl:pt-16 pb-6 text-gray-700 transition-all duration-200 ease-in-out"
+            class="h-full relative flex flex-col pt-[76px] md:pt-[63px] lg:pt-20 xl:pt-16 pb-6 md:pb-24 text-gray-700 transition-all duration-200 ease-in-out"
             :class="[
                 layout.leftSidebar.show ? 'ml-0 md:ml-48' : 'ml-0 md:ml-12',
                 layout.app.environment === 'staging' ? 'mt-6' : ''
@@ -178,9 +164,14 @@ onMounted(() => {
                       :class="[Object.values(layout.rightSidebar).some(value => value.show) ? 'right-0' : '-right-44']" />
 
         <Teleport to="body">
-            <Transition name="stacked-component">
-                <StackedComponents v-if="layout.stackedComponents?.length" />
-            </Transition>
+            <div>
+                <Transition>
+                    <div v-if="layout.stackedComponents?.length" @click="layout.stackedComponents.pop()" class="fixed top-0 left-0 h-screen w-screen bg-black/40 z-[99] cursor-pointer" />
+                </Transition>
+                <Transition name="stacked-component">
+                    <StackedComponents v-if="layout.stackedComponents?.length" />
+                </Transition>
+            </div>
         </Teleport>
 
     </div>
@@ -223,13 +214,13 @@ onMounted(() => {
         <div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
             <div class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
                 <div>
-                    <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-gray-100">
-                        <FontAwesomeIcon icon="fal fa-sad-tear" class="text-amber-500 text-2xl" fixed-width aria-hidden="true" />
+                    <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-green-100">
+                        <FontAwesomeIcon :icon="faSmile" class="text-green-500 text-2xl" fixed-width aria-hidden="true" />
                     </div>
 
                     <div class="mt-3 text-center sm:mt-5">
                         <div as="h3" class="font-semibold text-2xl">
-                            {{ trans('Hey, sorry for your incovenience.') }}
+                            {{ trans("Hey, sorry for your inconvenience.") }}
                         </div>
                         <div class="mt-2 text-sm text-gray-500">
                             {{ trans("Our app has new version. Please refresh the page to get the latest updates and avoid any issues happen.") }}
@@ -325,7 +316,7 @@ onMounted(() => {
     [background-size:100%_0.2em]
     motion-safe:transition-all motion-safe:duration-200
     hover:[background-size:100%_100%]
-    focus:[background-size:100%_100%] px-1 py-0.5
+    focus:[background-size:100%_100%] px-1 py-1 lg:py-0.5
 }
 
 .secondaryLink {

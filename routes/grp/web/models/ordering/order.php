@@ -12,15 +12,18 @@ use App\Actions\Dispatching\Picking\DeletePicking;
 use App\Actions\Dispatching\Picking\UpdatePicking;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
+use App\Actions\Ordering\Order\AddBalanceFromExcessPaymentOrder;
 use App\Actions\Ordering\Order\CancelOrder;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Actions\Ordering\Order\ImportTransactionInOrder;
 use App\Actions\Ordering\Order\PayOrder;
+use App\Actions\Ordering\Order\RollbackDispatchedOrder;
 use App\Actions\Ordering\Order\SendOrderToWarehouse;
 use App\Actions\Ordering\Order\SwitchOrderDeliveryAddress;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\SubmitOrder;
 use App\Actions\Ordering\Order\SendOrderBackToBasket;
+use App\Actions\Ordering\Order\UpdateOrderDeliveryAddress;
 use App\Actions\Ordering\Order\UpdateOrderStateToDispatched;
 use App\Actions\Ordering\Order\UpdateOrderStateToHandling;
 use App\Actions\Ordering\Order\UpdateOrderStateToPacked;
@@ -37,6 +40,8 @@ Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(funct
 
 Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::patch('update', UpdateOrder::class)->name('update');
+    Route::patch('rollback-dispatch', RollbackDispatchedOrder::class)->name('rollback_dispatch');
+    Route::patch('delivery-address-update', UpdateOrderDeliveryAddress::class)->name('delivery_address_update');
     Route::patch('generate-invoice', GenerateInvoiceFromOrder::class)->name('generate_invoice');
     Route::post('payment-account/{paymentAccount:id}/payment', PayOrder::class)->name('payment.store')->withoutScopedBindings();
     Route::patch('address/switch', SwitchOrderDeliveryAddress::class)->name('address.switch');
@@ -47,11 +52,12 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     });
 
     Route::name('transaction.')->prefix('transaction')->group(function () {
-        Route::post('upload', ImportTransactionInOrder::class, )->name('upload');
+        Route::post('upload', ImportTransactionInOrder::class)->name('upload');
         Route::post('{historicAsset:id}', StoreTransaction::class)->name('store')->withoutScopedBindings();
     });
 
     Route::patch('send-back-to-Basket', SendOrderBackToBasket::class)->name('send_back_to_basket');
+    Route::post('return-excess', AddBalanceFromExcessPaymentOrder::class)->name('return_excess_payment');
 
     Route::name('state.')->prefix('state')->group(function () {
         Route::patch('creating', SendOrderBackToBasket::class)->name('creating');

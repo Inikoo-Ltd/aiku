@@ -33,7 +33,7 @@ class StoreFavourite extends OrgAction
         /** @var Favourite $favourite */
         $favourite = $customer->favourites()->create($modelData);
 
-        CustomerHydrateFavourites::dispatch($customer);
+        CustomerHydrateFavourites::run($customer);
         ProductHydrateCustomersWhoFavourited::dispatch($product);
         ProductHydrateCustomersWhoFavouritedInCategories::dispatch($product);
 

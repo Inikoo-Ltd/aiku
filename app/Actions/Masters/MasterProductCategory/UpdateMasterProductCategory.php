@@ -8,9 +8,12 @@
 
 namespace App\Actions\Masters\MasterProductCategory;
 
+use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterSubDepartments;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamilies;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterSubDepartments;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterProductCategories;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Masters\MasterProductCategory;
 use App\Rules\AlphaDashDot;
@@ -30,7 +33,12 @@ class UpdateMasterProductCategory extends OrgAction
                 MasterShopHydrateMasterDepartments::dispatch($masterProductCategory->masterShop)->delay($this->hydratorsDelay);
             } elseif ($masterProductCategory->type == MasterProductCategoryTypeEnum::FAMILY) {
                 MasterShopHydrateMasterFamilies::dispatch($masterProductCategory->masterShop)->delay($this->hydratorsDelay);
+            } elseif ($masterProductCategory->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                MasterDepartmentHydrateMasterSubDepartments::dispatch($masterProductCategory->masterDepartment)->delay($this->hydratorsDelay);
+                MasterShopHydrateMasterSubDepartments::dispatch($masterProductCategory->masterShop)->delay($this->hydratorsDelay);
             }
+
+            GroupHydrateMasterProductCategories::dispatch($masterProductCategory->group)->delay($this->hydratorsDelay);
         }
 
         return $masterProductCategory;
@@ -58,7 +66,7 @@ class UpdateMasterProductCategory extends OrgAction
             'name'                     => ['sometimes', 'max:250', 'string'],
             'image_id'                 => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->group->id)],
             'status'                   => ['sometimes', 'required', 'boolean'],
-            'description'              => ['sometimes', 'required', 'max:1500'],
+            'description'              => ['sometimes', 'required', 'max:65500'],
             'master_department_id'     => ['sometimes', 'nullable', 'exists:product_categories,id'],
             'master_sub_department_id' => ['sometimes', 'nullable', 'exists:product_categories,id'],
             'show_in_website'          => ['sometimes', 'boolean'],

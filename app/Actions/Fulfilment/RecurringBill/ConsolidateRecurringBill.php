@@ -53,7 +53,7 @@ class ConsolidateRecurringBill extends OrgAction
 
             $invoice = StoreInvoice::make()->action($recurringBill, $invoiceData);
 
-            if ($recurringBill->stats->number_transactions < 50 or $this->asAction) {
+            if ($recurringBill->stats->number_transactions < 50 || $this->asAction) {
                 InvoiceRecurringBillTransactions::run($invoice, $recurringBill);
             } else {
                 InvoiceRecurringBillTransactions::dispatch($invoice, $recurringBill);

@@ -3,7 +3,7 @@ import { ref, inject, computed } from 'vue'
 import { trans } from 'laravel-vue-i18n'
 import ScreenView from '@/Components/ScreenView.vue'
 
-import { get, isPlainObject } from 'lodash-es'
+import { get, isPlainObject, cloneDeep} from 'lodash-es'
 import { routeType } from '@/types/route'
 import { getComponent } from '@/Composables/SideEditorHelper'
 
@@ -60,12 +60,12 @@ const onPropertyUpdate = (newVal: any, path?: any) => {
     return
   }
 
-  const current = isPlainObject(prevVal) ? { ...prevVal } : {}
+  const current = isPlainObject(prevVal) ? cloneDeep(prevVal) : {}
   const updatedValue = {
     ...current,
     [currentView.value]: newVal
   }
-
+  
   emits('update:modelValue', rawKey, updatedValue)
 }
 
@@ -100,8 +100,9 @@ const keyRender = ref(1)
     </div>
   </div>
 
+
   <component
-    :key="keyRender"
+    :key="keyRender + currentView"
     :is="getComponent(blueprint.type)"
     :uploadRoutes="uploadImageRoute"
     v-bind="blueprint?.props_data"

@@ -72,13 +72,14 @@ function closeDialog() {
 
 // Function to update the form and emit events
 function update() {
+    console.log('sssss',form.data())
     emit("update", form.data());
     emit("close");
 }
 
 // Function to handle link changes
 const onChangeLink = (value) => {
-    form.href = value.url;
+    form.href = value.href;
     form.id = value.id;
     form.workshop = value.workshop;
 };

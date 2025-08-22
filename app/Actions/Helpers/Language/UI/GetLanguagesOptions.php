@@ -36,6 +36,24 @@ class GetLanguagesOptions
         return $this->handle(Language::all());
     }
 
+    public function getExtraGroupLanguages(?array $languages): array
+    {
+        if (!$languages) {
+            return [];
+        }
+
+        return $this->handle(Language::whereIn('id', $languages)->get());
+    }
+
+    public function getExtraShopLanguages(?array $languages): array
+    {
+        if (!$languages) {
+            return [];
+        }
+
+        return $this->handle(Language::whereIn('id', $languages)->get());
+    }
+
     public function translated(): array
     {
         return $this->handle(Language::where('status', true)->get());

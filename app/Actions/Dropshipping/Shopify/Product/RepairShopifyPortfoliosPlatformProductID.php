@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Sun, 27 Jul 2025 13:37:25 Central European Summer Time, Trnava, Slovakia
@@ -9,14 +10,9 @@ namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Product;
-use App\Models\Catalogue\Shop;
-use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
-use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Console\Command;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class RepairShopifyPortfoliosPlatformProductID

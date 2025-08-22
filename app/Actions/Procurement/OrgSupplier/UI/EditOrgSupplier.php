@@ -15,6 +15,7 @@ use App\Actions\OrgAction;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
+use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -35,10 +36,18 @@ class EditOrgSupplier extends OrgAction
 
     public function asController(Supplier $supplier, ActionRequest $request): Supplier
     {
-        $this->initialisation($request);
+        $organisationParameter = $request->route('organisation');
+
+        $organisation = Organisation::where('slug', $organisationParameter)->first();
+
+        if ($organisation) {
+            $this->initialisation($organisation, $request);
+        } else {
+            abort(404, 'Organisation not found.');
+        }
+
         return $this->handle($supplier);
     }
-
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inAgent(Agent $agent, Supplier $supplier, ActionRequest $request): Supplier
@@ -278,7 +287,7 @@ class EditOrgSupplier extends OrgAction
         return ShowSupplier::make()->getBreadcrumbs(
             routeName: preg_replace('/edit$/', 'show', $routeName),
             routeParameters: $routeParameters,
-            suffix: '('.__('Editing').')'
+            suffix: '(' . __('Editing') . ')'
         );
     }
 
@@ -291,7 +300,6 @@ class EditOrgSupplier extends OrgAction
         })->orderBy('code', 'desc')->first();
 
         return $this->getNavigation($previous, $request->route()->getName());
-
     }
 
     public function getNext(Supplier $supplier, ActionRequest $request): ?array

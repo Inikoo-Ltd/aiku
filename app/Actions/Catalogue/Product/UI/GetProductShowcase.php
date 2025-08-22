@@ -13,6 +13,9 @@ use App\Http\Resources\Catalogue\ProductResource;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
 use Lorisleiva\Actions\Concerns\AsObject;
+use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
+use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
+use App\Http\Resources\Inventory\OrgStocksResource;
 
 class GetProductShowcase
 {
@@ -58,8 +61,19 @@ class GetProductShowcase
                 ]
             ],
             'product' => ProductResource::make($product),
+            'parts' => OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
             'stats'   => $product->stats,
             'trade_units' => $dataTradeUnits,
+            'translation_box' => [
+                'title' => __('Multi-language Translations'),
+                'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($product->shop->extra_languages),
+                'save_route' => [
+                    'name' => 'grp.models.trade-unit.translations.update',
+                    'parameters' => [
+                        'tradeUnit' => "",
+                    ],
+                ],
+            ],
         ];
     }
 

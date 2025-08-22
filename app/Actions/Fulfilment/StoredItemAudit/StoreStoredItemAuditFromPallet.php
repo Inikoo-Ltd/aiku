@@ -74,7 +74,9 @@ class StoreStoredItemAuditFromPallet extends OrgAction
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        if ($this->fulfilment->warehouses()->count() == 1) {
+        $warehouseCount = $this->fulfilment->warehouses()->count();
+
+        if ($warehouseCount === 1) {
             /** @var Warehouse $warehouse */
             $warehouse = $this->fulfilment->warehouses()->first();
             $this->fill(['warehouse_id' => $warehouse->id]);
@@ -148,6 +150,4 @@ class StoreStoredItemAuditFromPallet extends OrgAction
             'storedItemAudit'    => $storedItemAudit->slug
         ]);
     }
-
-
 }

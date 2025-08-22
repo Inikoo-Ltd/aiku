@@ -24,35 +24,39 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $shop_name
  * @property mixed $department_code
  * @property mixed $department_name
- * @property int   $number_current_families
+ * @property int $number_current_families
+ * @property mixed $number_families
+ * @property mixed $number_products
+ * @property mixed $id
  */
 class SubDepartmentsResource extends JsonResource
 {
     public function toArray($request): array
     {
-
         return [
-            'id'                 => $this->id,
-            'name'               => $this->name,
-            'slug'               => $this->slug,
-            'shop_slug'          => $this->shop_slug,
-            'shop_code'          => $this->shop_code,
-            'shop_name'          => $this->shop_name,
-            'department_slug'    => $this->department_slug,
-            'department_code'    => $this->department_code,
-            'department_name'    => $this->department_name,
-            'image'              => $this->imageSources(720, 480),
-            'state'              => [
+            'id'              => $this->id,
+            'name'            => $this->name,
+            'slug'            => $this->slug,
+            'shop_slug'       => $this->shop_slug,
+            'shop_code'       => $this->shop_code,
+            'shop_name'       => $this->shop_name,
+            'department_slug' => $this->department_slug,
+            'master_product_category_id' => $this->master_product_category_id,
+            'department_code' => $this->department_code,
+            'department_name' => $this->department_name,
+            'image'           => $this->imageSources(720, 480),
+            'state'           => [
                 'label' => $this->state->labels()[$this->state->value],
                 'icon'  => $this->state->stateIcon()[$this->state->value]['icon'],
                 'class' => $this->state->stateIcon()[$this->state->value]['class']
             ],
-            'code'              => $this->code,
-            'name'              => $this->name,
-            'description'       => $this->description,
-            'created_at'        => $this->created_at,
-            'updated_at'        => $this->updated_at,
+            'code'            => $this->code,
+            'description'     => $this->description,
+            'created_at'      => $this->created_at,
+            'updated_at'      => $this->updated_at,
             'number_families' => $this->number_families,
+            'number_products' => $this->number_products,
+
         ];
     }
 }

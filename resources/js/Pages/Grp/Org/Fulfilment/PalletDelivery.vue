@@ -90,12 +90,6 @@ const props = defineProps<{
         dropshipping: boolean
     }
 
-    // uploadRoutes: {
-    //     upload: routeType
-    //     download: routeType
-    //     history: routeType
-    // }
-
     upload_spreadsheet: UploadPallet
 
     locationRoute: routeType
@@ -209,23 +203,7 @@ const handleFormSubmitAddMultiplePallet = (data: {}, closedPopover: Function) =>
     })
 }
 
-// Tabs: Services
-// const onOpenModalAddService = async () => {
-//     isLoadingData.value = 'addService'
-//     try {
-//         const xxx = await axios.get(
-//             route(props.service_list_route.name, props.service_list_route.parameters)
-//         )
-//         dataServiceList.value = xxx?.data?.data || []
-//     } catch (error) {
-//         notify({
-//             title: 'Something went wrong.',
-//             text: 'Failed to fetch Services list',
-//             type: 'error',
-//         })
-//     }
-//     isLoadingData.value = false
-// }
+
 const dataServiceList = ref([])
 const onSubmitAddService = (data: Action, closedPopover: Function) => {
     const selectedHistoricAssetId = dataServiceList.value.filter(service => service.id == formAddService.service_id)[0]?.historic_asset_id
@@ -316,21 +294,11 @@ const changePalletType=(form,fieldName,value)=>{
     form[fieldName] = value
 }
 
-// watch(() => props.data, (newValue) => {
-//     timeline.value = newValue.data
-// }, { deep: true })
-
-
-// console.log(currentTab.value)
-
-
 const isModalUploadFileOpen = ref(false)
 
 </script>
 
 <template>
-    <!-- <pre>{{ data.data }}</pre> -->
-<!-- {{ props.service_list_route.name }} -->
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         
@@ -574,26 +542,6 @@ const isModalUploadFileOpen = ref(false)
                         <div class="w-[350px]">
                             <span class="text-xs px-1 my-2">{{ trans('Services') }}: </span>
                             <div class="">
-                                <!-- <PureMultiselect
-                                    v-model="formAddService.service_id"
-                                    autofocus
-                                    caret
-                                    required
-                                    searchable
-                                    placeholder="Select service"
-                                    :options="dataServiceList"
-                                    label="name"
-                                    valueProp="id"
-                                >
-                                    <template #label="{ value }">
-                                        <div class="w-full text-left pl-4">{{ value.name }} <span class="text-sm text-gray-400">({{ value.code }})</span></div>
-                                    </template>
-
-                                    <template #option="{ option, isSelected, isPointed }">
-                                        <div class="">{{ option.name }} <span class="text-sm" :class="isSelected ? 'text-indigo-200' : 'text-gray-400'">({{ option.code }})</span></div>
-                                    </template>
-                                </PureMultiselect> -->
-
                                 <PureMultiselectInfiniteScroll
                                     v-model="formAddService.service_id"
                                     :fetchRoute="props.service_list_route"
@@ -665,26 +613,6 @@ const isModalUploadFileOpen = ref(false)
                         <div class="w-[350px]">
                             <span class="text-xs px-1 my-2">{{ trans('Physical Goods') }}: </span>
                             <div>
-                                <!-- <PureMultiselect
-                                    v-model="formAddPhysicalGood.outer_id"
-                                    autofocus
-                                    caret
-                                    required
-                                    searchable
-                                    placeholder="Physical Goods"
-                                    :options="dataPGoodList"
-                                    label="name"
-                                    valueProp="id"
-                                >
-                                    <template #label="{ value }">
-                                        <div class="w-full text-left pl-4">{{ value.name }} <span class="text-sm text-gray-400">({{ value.code }})</span></div>
-                                    </template>
-
-                                    <template #option="{ option, isSelected, isPointed }">
-                                        <div class="">{{ option.name }} <span class="text-sm" :class="isSelected ? 'text-indigo-200' : 'text-gray-400'">({{ option.code }})</span></div>
-                                    </template>
-                                </PureMultiselect> -->
-
                                 <PureMultiselectInfiniteScroll
                                     v-model="formAddPhysicalGood.outer_id"
                                     :fetchRoute="physical_good_list_route"
@@ -745,15 +673,6 @@ const isModalUploadFileOpen = ref(false)
                 />
             </a>
         </template>
-        <!-- <template #other>
-            <Button
-                v-if="currentTab === 'attachments'"
-                @click="() => isModalUploadFileOpen = true"
-                :label="trans('Attach file')"
-                icon="fal fa-upload"
-                type="secondary"
-            />
-        </template> -->
     </PageHeading> 
 
     <!-- Section: Pallet Warning -->
@@ -871,6 +790,4 @@ const isModalUploadFileOpen = ref(false)
         :articles="help_articles"
     />
 
-    <!--     <pre>{{ props.services.data?.[0]?.reference }}</pre>
-    <pre>{{ $inertia.page.props.queryBuilderProps.services.columns }}</pre>-->
 </template>

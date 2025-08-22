@@ -60,8 +60,8 @@ class ShowWebsite extends OrgAction
 
     public function htmlResponse(Website $website, ActionRequest $request): Response
     {
-        $shop  = $website->shop;
-        $stats = [
+        $shop               = $website->shop;
+        $stats              = [
             [
                 'label' => __('Departments'),
                 'route' => [
@@ -137,7 +137,7 @@ class ShowWebsite extends OrgAction
             [
                 'label' => __('Blogs'),
                 'route' => [
-                    'name'       => 'grp.org.shops.show.web.webpages.index.type.blog',
+                    'name'       => 'grp.org.shops.show.web.blogs.index',
                     'parameters' => [
                         'organisation' => $shop->organisation->slug,
                         'shop'         => $shop->slug,
@@ -156,7 +156,7 @@ class ShowWebsite extends OrgAction
                 'organisation' => $shop->organisation->slug,
                 'shop'         => $shop->slug,
                 'website'      => $website->slug,
-                'webpage'      => 'storefront-' . $shop->slug,
+                'webpage'      => 'storefront-'.$shop->slug,
             ]
         ];
 
@@ -167,7 +167,7 @@ class ShowWebsite extends OrgAction
                     'organisation' => $shop->organisation->slug,
                     'fulfilment'   => $shop->slug,
                     'website'      => $website->slug,
-                    'webpage'      => 'storefront-' . $shop->slug,
+                    'webpage'      => 'storefront-'.$shop->slug,
                 ]
             ];
         }
@@ -195,22 +195,22 @@ class ShowWebsite extends OrgAction
                     'iconRight' => $website->state->stateIcon()[$website->state->value],
                     'actions'   =>
 
-                    array_merge(
-                        $this->workshopActions($request),
-                        [
-                            $this->isSupervisor && $website->state == WebsiteStateEnum::IN_PROCESS ? [
-                                'type'  => 'button',
-                                'style' => 'edit',
-                                'label' => __('launch'),
-                                'icon'  => ["fal", "fa-rocket"],
-                                'route' => [
-                                    'method'     => 'post',
-                                    'name'       => 'grp.models.website.launch',
-                                    'parameters' => $website->id
-                                ]
-                            ] : [],
-                        ]
-                    ),
+                        array_merge(
+                            $this->workshopActions($request),
+                            [
+                                $this->isSupervisor && $website->state == WebsiteStateEnum::IN_PROCESS ? [
+                                    'type'  => 'button',
+                                    'style' => 'edit',
+                                    'label' => __('launch'),
+                                    'icon'  => ["fal", "fa-rocket"],
+                                    'route' => [
+                                        'method'     => 'post',
+                                        'name'       => 'grp.models.website.launch',
+                                        'parameters' => $website->id
+                                    ]
+                                ] : [],
+                            ]
+                        ),
 
 
                 ],
@@ -222,7 +222,7 @@ class ShowWebsite extends OrgAction
                 'route_storefront' => $route_storefront,
 
                 'route_redirects' => [
-                    'submit' => [
+                    'submit'              => [
                         'name'       => 'grp.models.website.redirect.store',
                         'parameters' => [
                             'organisation' => $shop->organisation->slug,
@@ -233,12 +233,23 @@ class ShowWebsite extends OrgAction
                     'fetch_live_webpages' => [
                         'name'       => 'grp.json.active_webpages.index',
                         'parameters' => [
-                            'shop'         => $shop->slug,
+                            'shop' => $shop->slug,
                         ]
                     ],
                 ],
+                'migrated' => $website->migrated,
+                'luigi_data' => [
+                    'last_reindexed'        => Arr::get($website->settings, "luigisbox.last_reindex_at"),
+                    'luigisbox_tracker_id'  => Arr::get($website->settings, "luigisbox.tracker_id"),
+                    'luigisbox_private_key' => Arr::get($website->settings, "luigisbox.private_key"),
+                    'luigisbox_lbx_code'    => Arr::get($website->settings, "luigisbox.lbx_code"),
+                ],
 
-                WebsiteTabsEnum::SHOWCASE->value => $this->tab == WebsiteTabsEnum::SHOWCASE->value ? array_merge(WebsiteResource::make($website)->getArray(), ['layout' => GetWebsiteWorkshopLayout::run($this->parent, $website)['routeList']], ['stats' => $stats, 'content_blog_stats' => $content_blog_stats])
+                WebsiteTabsEnum::SHOWCASE->value => $this->tab == WebsiteTabsEnum::SHOWCASE->value ? array_merge(
+                    WebsiteResource::make($website)->getArray(),
+                    ['layout' => GetWebsiteWorkshopLayout::run($this->parent, $website)['routeList']],
+                    ['stats' => $stats, 'content_blog_stats' => $content_blog_stats]
+                )
                     : Inertia::lazy(fn () => WebsiteResource::make($website)->getArray()),
 
 

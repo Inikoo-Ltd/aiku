@@ -135,9 +135,12 @@ class EditDepartment extends OrgAction
                                     'value' => $department->follow_master
                                 ],
                                 "image"         => [
-                                    "type"    => "image_crop_square",
+                                    "type"    => "crop-image-full",
                                     "label"   => __("Image"),
                                     "value"   => $department->imageSources(720, 480),
+                                    "required" => false,
+                                    'noSaveButton' => true,
+                                    "full"         => true
                                 ],
                             ]
                         ]

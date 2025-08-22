@@ -109,13 +109,13 @@ class EditProduct extends OrgAction
                         ]
                     ]
                 ],
-                'off_product_route' => [
-                    'name'       => 'grp.models.product.offline',
-                    'parameters' => [
-                        'product' => $product->id
-                    ],
-                    'method'    => 'patch'
-                ],
+                // 'off_product_route' => [
+                //     'name'       => 'grp.models.product.offline',
+                //     'parameters' => [
+                //         'product' => $product->id
+                //     ],
+                //     'method'    => 'patch'
+                // ],
                 'formData'    => [
                     'blueprint' => $this->getBlueprint($product),
                     'args'      => [
@@ -180,14 +180,14 @@ class EditProduct extends OrgAction
                         'label' => __('code'),
                         'value' => $product->code
                     ],
-                    /* 'name' => [
+                    'name' => [
                         'type'  => 'input',
                         'label' => __('name'),
                         'value' => $product->name
-                    ], */
+                    ],
 
                     //translation input raul request 7/24/25
-                    'name' => [
+                  /*   'name' => [
                         'type'  => 'input_translation',
                         'label' => __('name'),
                         'value' => [
@@ -202,7 +202,7 @@ class EditProduct extends OrgAction
                                 'value' => '',
                             ]
                         ]
-                    ],
+                    ], */
                     'description_title' => [
                         'type'  => 'input',
                         'label' => __('description title'),
@@ -275,26 +275,27 @@ class EditProduct extends OrgAction
                         'value'    => $product->state,
                         'options'  => Options::forEnum(AssetStateEnum::class)
                     ],
-                     'button'       => [
-                        'type'     => 'button',
-                        'label'    => __('off product'),
-                         'noSaveButton'          => true,
-                        'value'    => null,
-                        'icon'    => ['far', 'fa-power-off'],
-                        'type_button'   => 'negative',
-                        'label_button'    => __('off product'),
-                        'route'    => [
-                            'name'       => 'grp.models.product.offline',
-                            'parameters' => [
-                                'product' => $product->id
-                            ],
-                            'method'    => 'patch'
-                        ]
-                    ],
+                    //  'button'       => [
+                    //     'type'     => 'button',
+                    //     'label'    => __('off product'),
+                    //      'noSaveButton'          => true,
+                    //     'value'    => null,
+                    //     'icon'    => ['far', 'fa-power-off'],
+                    //     'type_button'   => 'negative',
+                    //     'label_button'    => __('off product'),
+                    //     'route'    => [
+                    //         'name'       => 'grp.models.product.offline',
+                    //         'parameters' => [
+                    //             'product' => $product->id
+                    //         ],
+                    //         'method'    => 'patch'
+                    //     ]
+                    // ],
                 ]
             ],
             [
                 'label'  => __('Parts'),
+                'icon' => 'fal fa-boxes',
                 'fields' => [
                     'org_stocks' => [
                         'type'         => 'product_parts',

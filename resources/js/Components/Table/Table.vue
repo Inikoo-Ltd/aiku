@@ -707,7 +707,8 @@ watch(selectRow, () => {
 defineExpose({
     data : props.resource.data,
     queryBuilderData : queryBuilderData,
-    selectRow : selectRow
+    selectRow : selectRow,
+    compResourceData : compResourceData.value
 })
 
 const isLoading = ref<string | boolean>(false)
@@ -745,6 +746,14 @@ const isLoading = ref<string | boolean>(false)
             :class="{ 'opacity-75': isVisiting || isParentLoading }">
             <div class="py-2 sm:py-0 my-0">
                 <!-- Wrapper -->
+                 
+                <!-- Filter: Checkbox element -->
+                <div v-if="Object.keys(queryBuilderProps?.elementGroups || [])?.length" class="w-full border-b border-gray-300">
+                    <TableElements :elements="queryBuilderProps.elementGroups"
+                        @checkboxChanged="(data) => queryBuilderData.elementFilter = data"
+                        :tableName="props.name" />
+                </div>
+
                 <div class="grid grid-flow-col justify-between items-center flex-nowrap px-3 sm:px-4">
 
                     <!-- Left Section: Records, Model Operations, MO Bulk, Search -->
@@ -832,6 +841,9 @@ const isLoading = ref<string | boolean>(false)
                             </slot>
                         </div> -->
 
+                        <slot name="add-on-button-in-before">
+                        </slot>
+
                         <!-- Filter: date between -->
                         <div v-if="queryBuilderProps?.betweenDates?.length" class="w-fit flex gap-x-2">
                             <TableBetweenFilter :optionsList="queryBuilderProps?.betweenDates"
@@ -850,12 +862,6 @@ const isLoading = ref<string | boolean>(false)
                                 :tableName="props.name" />
                         </div>
 
-                        <!-- Filter: Checkbox element -->
-                        <div v-if="Object.keys(queryBuilderProps?.elementGroups || [])?.length" class="w-fit">
-                            <TableElements :elements="queryBuilderProps.elementGroups"
-                                @checkboxChanged="(data) => queryBuilderData.elementFilter = data"
-                                :tableName="props.name" />
-                        </div>
 
                         <!-- Filter: Radio element -->
                         <div v-if="queryBuilderProps.radioFilter?.radio" class="w-fit">
@@ -975,6 +981,7 @@ const isLoading = ref<string | boolean>(false)
 
 
                                                 <template v-else>
+                                                      <slot :name="`checkbox`" :checked="{props : props.isChecked(item), item :item.is_checked, row : selectRow[item[checkboxKey]]}" :data="item">
                                                     <FontAwesomeIcon
                                                         v-show="props.isChecked(item) || item.is_checked || selectRow[item[checkboxKey]]"
                                                         @click="async () => (setLodash(selectRow, [item.id], false), setLodash(item, ['is_checked'], false), emits('onUnchecked', item))"
@@ -987,6 +994,8 @@ const isLoading = ref<string | boolean>(false)
                                                         icon='fal fa-square'
                                                         class='text-gray-500 hover:text-gray-700 p-2 cursor-pointer text-lg mx-auto block'
                                                         fixed-width aria-hidden='true' />
+                                                      </slot>
+                                                   
                                                 </template>
                                             </td>
 

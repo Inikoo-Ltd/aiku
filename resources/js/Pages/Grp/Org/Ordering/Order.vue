@@ -57,11 +57,12 @@ import { faSpinnerThird } from "@far"
 import DeliveryAddressManagementModal from "@/Components/Utils/DeliveryAddressManagementModal.vue"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.vue"
-import { useTruncate } from "@/Composables/useTruncate"
-import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
-import ShipmentSection from "@/Components/Warehouse/DeliveryNotes/ShipmentSection.vue"
+import { useConfirm } from "primevue/useconfirm";
+import ConfirmDialog from 'primevue/confirmdialog';
+
 import Icon from "@/Components/Icon.vue"
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird)
 
@@ -112,7 +113,7 @@ const props = defineProps<{
     }
 
     upload_spreadsheet?: UploadPallet
-    address_management: {
+    delivery_address_management: {
         can_open_address_management: boolean
         updateRoute: routeType
         addresses: AddressManagement
@@ -151,6 +152,10 @@ const props = defineProps<{
                 total_amount: number
                 paid_amount: number
                 pay_amount: number
+            }
+            excesses_payment?: {
+                amount: number
+                route_to_add_balance?: routeType
             }
             estimated_weight: number
         }
@@ -193,7 +198,7 @@ const props = defineProps<{
 const isModalUploadOpen = ref(false)
 const isModalProductListOpen = ref(false)
 const locale = inject("locale", aikuLocaleStructure)
-
+const confirm = useConfirm();
 const currentTab = ref(props.tabs?.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
@@ -376,10 +381,58 @@ const generateRouteDeliveryNote = (slug: string) => {
         deliveryNote: slug
     })
 }
+
+const cancelLoading = ref(false)
+const confirm2 = (action) => {
+    confirm.require({
+        message: 'Do you want to cancel this order ?',
+        header: 'Cancel Order',
+        rejectLabel: 'Cancel',
+        rejectProps: {
+            label: 'No',
+            severity: 'secondary',
+            outlined: true
+        },
+        acceptProps: {
+            label: 'Yes',
+            severity: 'danger'
+        },
+        accept: () => {
+        router[action.route.method](
+            route(action.route.name, action.route.parameters),
+            {},
+            {
+                onStart : () => { cancelLoading.value = true },
+                onFinish : () => { cancelLoading.value = true },
+                onSuccess: () => {
+                    notify({
+                        title: trans("Success"),
+                        text: trans("Successfully cancel order"),
+                        type: "success",
+                    })
+                },
+                onError: () => {
+                    notify({
+                        title: trans("Error"),
+                        text: trans("Failed to cancel order"),
+                        type: "error",
+                    })
+                }
+            }
+        )
+},
+
+    });
+};
 </script>
 
 <template>
     <Head :title="capitalize(title)" />
+    <ConfirmDialog>
+        <template #icon>
+            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-orange-500" />
+        </template>
+    </ConfirmDialog>
     <PageHeading :data="pageHead">
         <template #button-add-products="{ action }">
             <div class="relative">
@@ -389,7 +442,49 @@ const generateRouteDeliveryNote = (slug: string) => {
                     :icon="action.icon"
                     @click="() => openModal(action)"
                     :key="`ActionButton${action.label}${action.style}`"
-                    :tooltip="action.tooltip" />
+                    :tooltip="action.tooltip"
+                />
+            </div>
+        </template>
+
+        <template #button-cancel="{ action }">
+            <div class="relative">
+                <Button
+                    :style="action.style"
+                    :label="action.label"
+                    :icon="action.icon"
+                    :loading="cancelLoading"
+                    @click="() => confirm2(action)"
+                    :key="`ActionButton${action.label}${action.style}`"
+                    :tooltip="action.tooltip"
+                />
+            </div>
+        </template>
+
+        <!-- Button: rollback -->
+        <template #button-rollback="{ action }">
+            <div class="relative">
+
+                <ModalConfirmationDelete
+                    :routeDelete="action.route"
+                    :title="trans('Are you sure you want to rollback the Order??')"
+                    :description="trans('The state of the Order will go back to finalised state.')"
+                    isFullLoading
+                    :noLabel="trans('Yes, rollback')"
+                    noIcon="far fa-undo-alt"
+                >
+                    <template #default="{ changeModel }">
+                        <Button
+                            @click="changeModel"
+                            type="negative"
+                            :label="trans('Undispatch')"
+                            icon="far fa-undo-alt"
+                            :tooltip="trans('Rollback the dispatch')"
+                        />
+                    </template>
+                </ModalConfirmationDelete>
+
+
             </div>
         </template>
 
@@ -603,9 +698,7 @@ const generateRouteDeliveryNote = (slug: string) => {
         <!-- Box: Payment/Invoices/Delivery Notes  -->
         <BoxStatPallet class="py-4 px-3" icon="fal fa-user">
             <div class="text-xs md:text-sm">
-				<div class="font-semibold xmb-2 text-base">
-					{{ trans("Delivery Note") }}
-				</div>
+
 				
 				<div class="xspace-y-0.5 pl-1">
                     <!-- Field: Billing -->
@@ -616,14 +709,30 @@ const generateRouteDeliveryNote = (slug: string) => {
         
                         <div>
                             <NeedToPay
-                                @click="onPayClick"
+                                @click="() => box_stats.products.payment.pay_amount ? onPayClick : ''"
                                 :totalAmount="box_stats.products.payment.total_amount"
                                 :paidAmount="box_stats.products.payment.paid_amount"
                                 :payAmount="box_stats.products.payment.pay_amount"
                                 :class="[box_stats.products.payment.pay_amount ? 'hover:bg-gray-100 cursor-pointer' : '']"
                                 :currencyCode="currency.code"
                             >
-                                <template #default>
+                                <template v-if="box_stats.products.excesses_payment?.amount" #default>
+                                    <div class="pt-1 border-t border-green-300 text-xxs">
+                                        <p class="text-gray-500">
+                                            {{ trans("You have some excesses balance") }}:
+                                            <span class="text-gray-700">
+                                                {{ locale.currencyFormat(currency.code, Number(box_stats.products.excesses_payment?.amount)) }}
+                                            </span>
+                                        </p>
+
+                                        <ButtonWithLink
+                                            v-if="box_stats.products.excesses_payment?.route_to_add_balance?.name"
+                                            :routeTarget="box_stats.products.excesses_payment?.route_to_add_balance"
+                                            icon="far fa-plus"
+                                            label="Add to customer balance"
+                                            size="xxs"
+                                        />
+                                    </div>
                                 </template>
                             </NeedToPay>
         
@@ -667,29 +776,7 @@ const generateRouteDeliveryNote = (slug: string) => {
                         </a>
                     </div>
         
-                   <!--  <div v-for="delivery_note in  box_stats.delivery_notes" >
-        
-                        <dl class="flex">
-                            <dt class="flex-none">
-                                <FontAwesomeIcon icon="fal fa-truck" fixed-width aria-hidden="true" class="text-gray-500" />
-                            </dt>
-                            <dd class="text-gray-500 w-full" >
-                                <Link
-                                    :href="route('grp.helpers.redirect_delivery_notes', delivery_note.id)"
-                                    class="primaryLink cursor-pointer">
-                                    {{ delivery_note.reference }}
-                                </Link>
-        
-                                <div class="">
-                                    <ShipmentSection
-                                        :shipments="delivery_note.shipments"
-                                    />
-                                </div>
-                            </dd>
-                        </dl>
-        
-        
-                    </div> -->
+
                     
                     <div v-if="box_stats?.delivery_notes?.length" class="mt-4 border rounded-lg p-4 pt-3 bg-white shadow-sm">
                         <!-- Section Title -->
@@ -758,8 +845,6 @@ const generateRouteDeliveryNote = (slug: string) => {
                 <section aria-labelledby="summary-heading" class="rounded-lg px-4 py-4 sm:px-6 lg:mt-0">
                     <OrderSummary :order_summary="box_stats.order_summary" :currency_code="currency.code" />
                 </section>
-				<!-- <div class="xspace-y-0.5 pl-1">
-                </div> -->
             </div>
         </BoxStatPallet>
     </div>
@@ -780,9 +865,9 @@ const generateRouteDeliveryNote = (slug: string) => {
 
     <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)" width="w-full max-w-5xl">
         <DeliveryAddressManagementModal
-            :address_modal_title="address_management.address_modal_title"
-            :addresses="address_management.addresses"
-            :updateRoute="address_management.address_update_route"
+            :address_modal_title="delivery_address_management.address_modal_title"
+            :addresses="delivery_address_management.addresses"
+            :updateRoute="delivery_address_management.address_update_route"
             keyPayloadEdit="address"
             @onDone="() => (isModalAddress = false)"
         />
@@ -792,7 +877,7 @@ const generateRouteDeliveryNote = (slug: string) => {
     <Modal :isOpen="isOpenModalPayment" @onClose="isOpenModalPayment = false" width="w-[600px]">
         <div class="isolate bg-white px-6 lg:px-8">
             <div class="mx-auto max-w-2xl text-center">
-                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans("Invoice Payment") }}</h2>
+                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans("Order Payment") }}</h2>
                 <p class="text-xs leading-5 text-gray-400">
                     {{ trans("Information about payment from customer") }}
                 </p>

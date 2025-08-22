@@ -33,7 +33,27 @@ class GetIrisProductsInProductCategory extends IrisAction
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $queryBuilder->where('sub_department_id', $productCategory->id);
         }
-        $queryBuilder->selectRaw('\''.request()->path().'\' as parent_url');
+        $baseUrl = $productCategory?->url ?? '';
+        $queryBuilder->selectRaw('\'' . $baseUrl . '\' as parent_url');
+
+        // Section: Sort
+        $orderBy = request()->query('order_by');
+        if ($orderBy) {
+            // Check if "-" prefix is used for DESC
+            if (str_starts_with($orderBy, '-')) {
+                $column = ltrim($orderBy, '-');
+                $direction = 'desc';
+            } else {
+                $column = $orderBy;
+                $direction = 'asc';
+            }
+
+            $allowedColumnsToOrder = ['name', 'rrp', 'price', 'code'];
+            if (in_array($column, $allowedColumnsToOrder)) {
+                $queryBuilder->orderBy($column, $direction);
+            }
+        }
+
         return $this->getData($queryBuilder, $perPage);
     }
 
@@ -41,8 +61,6 @@ class GetIrisProductsInProductCategory extends IrisAction
     public function asController(ProductCategory $productCategory, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($request);
-
         return $this->handle(productCategory: $productCategory);
     }
-
 }

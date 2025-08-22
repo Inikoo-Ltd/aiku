@@ -46,6 +46,13 @@ class StoreTransaction extends OrgAction
         }
 
 
+        if (!is_numeric($net)) {
+            $net = 0;
+        }
+        if (!is_numeric($gross)) {
+            $gross = 0;
+        }
+
 
         data_set($modelData, 'shop_id', $order->shop_id);
         data_set($modelData, 'customer_id', $order->customer_id);

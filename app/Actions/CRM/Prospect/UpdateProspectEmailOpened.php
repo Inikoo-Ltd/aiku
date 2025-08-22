@@ -22,7 +22,7 @@ class UpdateProspectEmailOpened extends OrgAction
             'last_opened_at' => $date
         ];
 
-        if ($prospect->state == ProspectStateEnum::NO_CONTACTED or $prospect->state == ProspectStateEnum::CONTACTED) {
+        if ($prospect->state == ProspectStateEnum::NO_CONTACTED || $prospect->state == ProspectStateEnum::CONTACTED) {
             $dataToUpdate['state'] = ProspectStateEnum::CONTACTED;
             if (in_array(
                 $prospect->contacted_state,

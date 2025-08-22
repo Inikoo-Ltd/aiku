@@ -39,7 +39,6 @@ class StoreOrgStockMovement extends OrgAction
         if (!Arr::has($modelData, 'org_amount')) {
             $orgAmount = $modelData['quantity'] * $orgStock->value_in_locations;
             data_set($modelData, 'org_amount', $orgAmount);
-
         }
 
         data_set($modelData, 'grp_amount', Arr::get($modelData, 'org_amount') * GetCurrencyExchange::run($orgStock->organisation->currency, $orgStock->group->currency), overwrite: false);
@@ -51,12 +50,19 @@ class StoreOrgStockMovement extends OrgAction
 
         data_set($modelData, 'class', $class);
 
-        $flow = OrgStockMovementFlowEnum::NO_CHANGE;
-        if ($modelData['quantity'] > 0) {
-            $flow = OrgStockMovementFlowEnum::IN;
+        if (in_array($modelData['type'], [
+            OrgStockMovementTypeEnum::AUDIT,
+            OrgStockMovementTypeEnum::ASSOCIATE,
+            OrgStockMovementTypeEnum::DISASSOCIATE,
+
+        ])) {
+            $flow = OrgStockMovementFlowEnum::AUDIT;
         } elseif ($modelData['quantity'] < 0) {
             $flow = OrgStockMovementFlowEnum::OUT;
+        } else {
+            $flow = OrgStockMovementFlowEnum::IN;
         }
+
 
         data_set($modelData, 'flow', $flow);
 

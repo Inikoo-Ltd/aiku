@@ -55,7 +55,7 @@ class GetRetinaDropshippingCustomerSalesChannelNavigation
 
         ];
 
-        if($isManual) {
+        if ($isManual) {
             $platformNavigation['client'] = [
                         'label' => __('Clients'),
                         'icon'  => ['fal', 'fa-user-friends'],

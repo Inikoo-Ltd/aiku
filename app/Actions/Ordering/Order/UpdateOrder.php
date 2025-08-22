@@ -9,6 +9,7 @@
 namespace App\Actions\Ordering\Order;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdateIntervals;
+use App\Actions\Dispatching\DeliveryNote\CopyOrderNotesToDeliveryNote;
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateOrders;
 use App\Actions\Ordering\Order\Search\OrderRecordSearch;
 use App\Actions\OrgAction;
@@ -58,6 +59,28 @@ class UpdateOrder extends OrgAction
                 ShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->shop, $intervalsExceptHistorical, []);
             }
 
+            if ($order->deliveryNotes->first()) {
+                $deliveryNote = $order->deliveryNotes->first();
+
+                if (Arr::has($changes, 'customer_notes')) {
+                    $deliveryNote = CopyOrderNotesToDeliveryNote::make()->action($deliveryNote, [
+                            'customer_notes' => true,
+                    ], true);
+                } elseif (Arr::has($changes, 'public_notes')) {
+                    $deliveryNote = CopyOrderNotesToDeliveryNote::make()->action($deliveryNote, [
+                            'public_notes' => true,
+                    ], true);
+                } elseif (Arr::has($changes, 'internal_notes')) {
+                    $deliveryNote = CopyOrderNotesToDeliveryNote::make()->action($deliveryNote, [
+                            'internal_notes' => true,
+                    ], true);
+                } elseif (Arr::has($changes, 'shipping_notes')) {
+                    $deliveryNote = CopyOrderNotesToDeliveryNote::make()->action($deliveryNote, [
+                            'shipping_notes' => true,
+                    ], true);
+                }
+            }
+
 
             if (array_key_exists('state', $changedFields)) {
                 $this->orderHydrators($order);
@@ -95,6 +118,7 @@ class UpdateOrder extends OrgAction
             ],
 
             'in_warehouse_at'     => ['sometimes', 'date'],
+            'dispatched_at'       => ['sometimes', 'nullable', 'date'],
             'delivery_address_id' => ['sometimes', Rule::exists('addresses', 'id')],
             'shipping_notes'      => ['sometimes', 'nullable', 'string', 'max:4000'],
             'customer_notes'      => ['sometimes', 'nullable', 'string', 'max:4000'],

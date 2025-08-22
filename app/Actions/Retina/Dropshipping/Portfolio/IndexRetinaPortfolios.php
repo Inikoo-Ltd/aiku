@@ -79,7 +79,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
 
         return $query->defaultSort('-portfolios.id')
-            ->allowedFilters([$unUploadedFilter, $globalSearch, $this->getStateFilter()])
+            ->allowedFilters([$unUploadedFilter, $globalSearch, $this->getStateFilter(), $this->getPlatformStatusFilter()])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -91,6 +91,13 @@ class IndexRetinaPortfolios extends RetinaAction
                 $subQuery->where('item_type', 'Product')
                     ->whereIn('status', (array)$value);
             });
+        });
+    }
+
+    public function getPlatformStatusFilter(): AllowedFilter
+    {
+        return AllowedFilter::callback('platform_status', function ($query, $value) {
+            $query->where('platform_status', $value);
         });
     }
 
@@ -176,7 +183,10 @@ class IndexRetinaPortfolios extends RetinaAction
 
         $actions = [];
 
-        if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
+
+        if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
+            $countProductsNotSync = $this->customerSalesChannel->portfolios()->where('portfolios.status', true)->where('platform_status', false)->count();
+        } elseif ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
             $countProductsNotSync = 0;
         } else {
             $countProductsNotSync = $this->customerSalesChannel->portfolios()->where('portfolios.status', true)
@@ -375,6 +385,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
             $table->column(key: 'image', label: __(''), canBeHidden: false, searchable: true);
             $table->column(key: 'name', label: __('Product'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'actions', label: '', canBeHidden: false, sortable: false, searchable: false);
 
 
             if ($this->customerSalesChannel->platform->type !== PlatformTypeEnum::MANUAL) {
