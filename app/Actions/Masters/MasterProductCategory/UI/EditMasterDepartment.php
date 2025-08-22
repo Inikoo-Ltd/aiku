@@ -15,33 +15,25 @@ use App\Actions\OrgAction;
 use App\Enums\UI\SupplyChain\MasterSubDepartmentTabsEnum;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
+use App\Models\SysAdmin\Group;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class EditMasterSubDepartment extends OrgAction
+class EditMasterDepartment extends OrgAction
 {
     /**
-     * @var \App\Models\Masters\MasterProductCategory|\App\Models\Masters\MasterShop
+     * @var \App\Models\Masters\MasterShop
      */
-    private MasterProductCategory|MasterShop $parent;
+    private MasterShop|Group $parent;
 
-    public function inMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, ActionRequest $request): Response
+    public function asController(MasterShop $masterShop, MasterProductCategory $masterDepartment, ActionRequest $request): Response
     {
-        $this->parent = $masterDepartment;
+        $this->parent = $masterShop;
         $group        = group();
-        $this->initialisationFromGroup($group, $request)->withTab(MasterSubDepartmentTabsEnum::values());
+        $this->initialisationFromGroup($group, $request);
 
-        return $this->handle($masterSubDepartment, $request);
-    }
-
-    public function asController(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, ActionRequest $request): Response
-    {
-        $this->parent = $masterSubDepartment;
-        $group        = group();
-        $this->initialisationFromGroup($group, $request)->withTab(MasterSubDepartmentTabsEnum::values());
-
-        return $this->handle($masterSubDepartment, $request);
+        return $this->handle($masterDepartment, $request);
     }
 
     public function handle(MasterProductCategory $masterProductCategory, ActionRequest $request): Response
@@ -50,13 +42,14 @@ class EditMasterSubDepartment extends OrgAction
             'EditModel',
             [
                  'breadcrumbs' => $this->getBreadcrumbs(
+                     $this->parent,
                      $masterProductCategory,
                      $request->route()->getName(),
                      $request->route()->originalParameters()
                  ),
-                'title'       => __('Edit Master Sub-department'),
+                'title'       => __('Edit Master Department'),
                 'pageHead'    => [
-                    'title'   => __('edit master Sub-department'),
+                    'title'   => __('edit master department'),
                     'actions' => [
                         [
                             'type'  => 'button',
@@ -74,7 +67,6 @@ class EditMasterSubDepartment extends OrgAction
                         [
                             'label'  => __('Name/Description'),
                             'icon'   => 'fa-light fa-tag',
-                            'title'  => __('id'),
                             'fields' => [
                                 'code' => [
                                     'type'  => 'input',
@@ -116,35 +108,7 @@ class EditMasterSubDepartment extends OrgAction
                                     "full"         => true
                                 ],
                             ]
-                        ],
-                        [
-                            'label'  => __('Master Department'),
-                            'icon'   => 'fa-light fa-box',
-                            'fields' => [
-                                'master_department_id'  =>  [
-                                    'type'    => 'select_infinite',
-                                    'label'   => __('Master Department'),
-                                    'options'   => [
-                                        [
-                                            'id' => $masterProductCategory->masterDepartment?->id,
-                                            'code' => $masterProductCategory->masterDepartment?->code
-                                        ]
-                                    ],
-                                    'fetchRoute'    => [
-                                        'name'       => 'grp.masters.master_shops.show.master_departments.index',
-                                        'parameters' => [
-                                            'masterShop' => $masterProductCategory->masterShop->slug,
-                                        ]
-                                    ],
-                                    'valueProp' => 'id',
-                                    'labelProp' => 'code',
-                                    'required' => false,
-                                    'value'   => $masterProductCategory->masterDepartment->id ?? null,
-                                ]
-                            ],
-
-                        ],
-
+                        ]
 
                     ],
                     'args'      => [
@@ -161,25 +125,14 @@ class EditMasterSubDepartment extends OrgAction
     }
 
 
-    public function getBreadcrumbs(MasterProductCategory $masterSubDepartment, string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(MasterShop|Group $parent, MasterProductCategory $masterDepartment,  string $routeName, array $routeParameters): array
     {
-        return array_merge(
-            match ($this->parent::class) {
-                MasterShop::class => IndexMasterShops::make()->getBreadcrumbs(),
-                MasterProductCategory::class => ShowMasterSubDepartment::make()->getBreadcrumbs(
-                    masterSubDepartment: $masterSubDepartment,
-                    routeName: $routeName,
-                    routeParameters: $routeParameters,
-                )
-            },
-            [
-                [
-                    'type' => 'creatingModel',
-                    'creatingModel' => [
-                        'label' => __('Editing sub-department'),
-                    ]
-                ]
-            ]
+        return ShowMasterDepartment::make()->getBreadcrumbs(
+            parent: $parent,
+            masterDepartment: $masterDepartment,
+            routeName: preg_replace('/edit$/', 'show', $routeName),
+            routeParameters: $routeParameters,
+            suffix: '('.__('Editing').')'
         );
     }
 }
