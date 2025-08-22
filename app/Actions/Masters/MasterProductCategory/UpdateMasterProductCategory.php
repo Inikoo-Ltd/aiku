@@ -14,20 +14,62 @@ use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamilies;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterSubDepartments;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterProductCategories;
+use App\Actions\Traits\UI\WithImageCatalogue;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Masters\MasterProductCategory;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\File;
 
 class UpdateMasterProductCategory extends OrgAction
 {
     use WithMasterProductCategoryAction;
+    use WithImageCatalogue;
 
 
     public function handle(MasterProductCategory $masterProductCategory, array $modelData): MasterProductCategory
     {
+        $originalImageId = $masterProductCategory->image_id;
+        if (Arr::has($modelData, 'master_department_id')) {
+            $departmentId = Arr::pull($modelData, 'master_department_id');
+            if ($masterProductCategory->type == MasterProductCategoryTypeEnum::FAMILY) {
+                $masterProductCategory = UpdateMasterFamilyMasterDepartment::make()->action($masterProductCategory, [
+                    'master_department_id' => $departmentId,
+                ]);
+            } elseif ($masterProductCategory->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                $masterProductCategory = UpdateMasterSubDepartmentMasterDepartment::make()->action($masterProductCategory, [
+                    'master_department_id' => $departmentId,
+                ]);
+            }
+        }
+
+        if (Arr::has($modelData, 'master_sub_department_id')) {
+            $subDepartmentId = Arr::pull($modelData, 'master_sub_department_id');
+            if ($masterProductCategory->type == MasterProductCategoryTypeEnum::FAMILY) {
+                $masterProductCategory = UpdateMasterFamilyMasterSubDepartment::make()->action($masterProductCategory, [
+                    'master_sub_department_id' => $subDepartmentId,
+                ]);
+            }
+        }
+
+        if(Arr::has($modelData, 'image')) {
+            $imageData = ['image' => Arr::pull($modelData, 'image')];
+            if ($imageData['image']) {
+                $this->processCatalogueImage($imageData, $masterProductCategory);
+            }else{
+                data_set($modelData, 'image_id', null, false);
+            }
+        }
+
         $masterProductCategory = $this->update($masterProductCategory, $modelData, ['data']);
+        $masterProductCategory->refresh();
+
+        if (!$masterProductCategory->image_id && $originalImageId) {
+            $masterProductCategory->images()->detach($originalImageId);
+        }
+
         if ($masterProductCategory->wasChanged('status')) {
             if ($masterProductCategory->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
                 MasterShopHydrateMasterDepartments::dispatch($masterProductCategory->masterShop)->delay($this->hydratorsDelay);
@@ -70,6 +112,12 @@ class UpdateMasterProductCategory extends OrgAction
             'master_department_id'     => ['sometimes', 'nullable', 'exists:product_categories,id'],
             'master_sub_department_id' => ['sometimes', 'nullable', 'exists:product_categories,id'],
             'show_in_website'          => ['sometimes', 'boolean'],
+            'image'                      => [
+                'sometimes',
+                'nullable',
+                File::image()
+                    ->max(12 * 1024)
+            ],
         ];
 
         if (!$this->strict) {
