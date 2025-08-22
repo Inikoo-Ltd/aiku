@@ -209,7 +209,7 @@ class IndexSubDepartments extends OrgAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'actions'       => [
-                        $this->canEdit ? [
+                        $this->canEdit && is_null($this->parent->masterProductCategory) ? [
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('new Sub-department'),

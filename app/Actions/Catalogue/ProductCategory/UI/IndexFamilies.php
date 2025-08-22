@@ -38,6 +38,8 @@ use Spatie\QueryBuilder\AllowedSort;
 use Spatie\QueryBuilder\Sorts\Sort;
 use Illuminate\Database\Eloquent\Builder;
 
+use function PHPUnit\Framework\isNan;
+
 class IndexFamilies extends OrgAction
 {
     use WithCatalogueAuthorisation;
@@ -322,16 +324,18 @@ class IndexFamilies extends OrgAction
                 $createRoute = "grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.create";
             }
 
-            $actions[] = [
-                'type'    => 'button',
-                'style'   => 'create',
-                'tooltip' => __('new family'),
-                'label'   => __('family'),
-                'route'   => [
-                    'name'       => $createRoute,
-                    'parameters' => $request->route()->originalParameters()
-                ]
-            ];
+            if(is_null($this->parent->masterProductCategory)) {
+                $actions[] = [
+                    'type'    => 'button',
+                    'style'   => 'create',
+                    'tooltip' => __('new family'),
+                    'label'   => __('family'),
+                    'route'   => [
+                        'name'       => $createRoute,
+                        'parameters' => $request->route()->originalParameters()
+                    ]
+                ];
+            }
         }
 
 
