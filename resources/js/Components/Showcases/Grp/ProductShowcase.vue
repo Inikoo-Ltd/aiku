@@ -88,6 +88,7 @@ const props = defineProps<{
 	}
 }>()
 console.log('qqq', props.data.trade_units)
+console.log(props.data)
 
 const locale = inject("locale", aikuLocaleStructure)
 const selectedImage = ref(0)
@@ -186,49 +187,35 @@ console.log(props)
 </script>
 
 <template>
-	<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+	<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mx-3 lg:mx-4 mt-4">
 		<!-- Sidebar -->
 		<div class="space-y-4 lg:space-y-6">
 			<!-- Image Preview & Thumbnails -->
-			<div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
-				<ImageProducts
-					v-if="data.product.data.images?.length"
-					:images="data.product.data.images"
-					:breakpoints="{
+			<div class="bg-white rounded-xl shadow-sm border p-4 lg:p-5">
+				<ImageProducts v-if="data.product.data.images?.length" :images="data.product.data.images" :breakpoints="{
 						0: { slidesPerView: 3 },
 						480: { slidesPerView: 4 },
 						640: { slidesPerView: 5 },
 						1024: { slidesPerView: 6 }
-					}"
-					class="overflow-x-auto"
-				>
+					}" class="overflow-x-auto">
 					<template #image-thumbnail="{ image, index }">
-						<div class="aspect-square w-full overflow-hidden group relative rounded-lg border border-gray-200">
-							<Image
-								:src="image.thumbnail"
-								:alt="`Thumbnail ${index + 1}`"
-								class="block w-full h-full object-cover"
-							/>
+						<div
+							class="aspect-square w-full overflow-hidden group relative rounded-lg border border-gray-200">
+							<Image :src="image.thumbnail" :alt="`Thumbnail ${index + 1}`"
+								class="block w-full h-full object-cover" />
 							<!-- Delete Icon -->
-							<ModalConfirmationDelete
-								:routeDelete="{
+							<ModalConfirmationDelete :routeDelete="{
 									name: props.data.deleteImageRoute.name,
 									parameters: {
 										...props.data.deleteImageRoute.parameters,
 										media: image.id,
 									}
-								}"
-								:title="trans('Are you sure you want to delete the image?')"
-								:description="trans('This action cannot be undone.')"
-								isFullLoading
-								noLabel="Delete"
-								noIcon="fal fa-times"
-							>
+								}" :title="trans('Are you sure you want to delete the image?')"
+								:description="trans('This action cannot be undone.')" isFullLoading noLabel="Delete"
+								noIcon="fal fa-times">
 								<template #default="{ changeModel }">
-									<div
-										@click="changeModel"
-										class="absolute top-2 right-2 bg-white shadow-md rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition cursor-pointer hover:bg-red-500 hover:text-white text-red-500"
-									>
+									<div @click="changeModel"
+										class="absolute top-2 right-2 bg-white shadow-md rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition cursor-pointer hover:bg-red-500 hover:text-white text-red-500">
 										<FontAwesomeIcon icon="fal fa-times" fixed-width />
 									</div>
 								</template>
@@ -238,10 +225,8 @@ console.log(props)
 				</ImageProducts>
 
 				<!-- Empty State -->
-				<div
-					v-else
-					class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg"
-				>
+				<div v-else
+					class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg">
 					<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
 					<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
 				</div>
@@ -252,121 +237,101 @@ console.log(props)
 				</div>
 			</div>
 
-			<!-- Product Summary -->
-			<div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
-				<h2 class="text-base lg:text-lg font-semibold border-b pb-3">{{ trans("Product summary") }}</h2>
-				<dl class="mt-4 space-y-3 text-sm">
-					<div class="flex justify-between flex-wrap gap-1">
-						<dt class="text-gray-500">{{ trans("Added date") }}</dt>
-						<dd class="font-medium">{{ useFormatTime(data.product.data.created_at) }}</dd>
-					</div>
-					<div class="flex justify-between flex-wrap gap-1">
-						<dt class="text-gray-500">{{ trans("Stock") }}</dt>
-						<dd class="font-medium">
-							{{ data.product.data.stock }} {{ data.product.data.unit }}
-						</dd>
-					</div>
-					<div class="flex justify-between flex-wrap gap-1">
-						<dt class="text-gray-500">{{ trans("Price") }}</dt>
-						<dd class="font-semibold text-green-600">
-							{{ locale.currencyFormat(data.product.data.currency_code, data.product.data.price) }}
-						</dd>
-					</div>
-					<div class="flex justify-between flex-wrap gap-1">
-						<dt class="text-gray-500">RRP</dt>
-						<dd class="font-semibold">
-							{{ locale.currencyFormat(data.product.data.currency_code, data.product.data.rrp) }}
-							<span class="ml-1 text-xs text-gray-500">
-								({{
-									((data.product.data.rrp - data.product.data.price) /
-										data.product.data.price * 100).toFixed(2)
-								}}%)
-							</span>
-						</dd>
-					</div>
-					<div class="flex justify-between flex-wrap gap-1">
-						<dt class="text-gray-500">{{ trans("Weight") }}</dt>
-						<dd class="font-medium">
-							{{ locale.number(data.product.data?.specifications?.gross_weight) }} gr
-						</dd>
-					</div>
-					<div>
-						<dt class="text-gray-500">{{ trans("Ingredients") }}</dt>
-						<ul class="list-disc list-inside text-gray-700 mt-1 space-y-1">
-							<li v-for="ingredient in data.product.data.specifications?.ingredients" :key="ingredient.id">
-								{{ ingredient }}
-							</li>
-						</ul>
-					</div>
-				</dl>
-			</div>
+
 		</div>
 
+
+
 		<!-- Right Section -->
-		<div class="space-y-4 lg:space-y-6 lg:col-span-2">
-			<div class="flex flex-col md:flex-row md:items-center md:justify-end p-4 lg:p-8 gap-4">
-				<Fieldset class="bg-white rounded-xl shadow-sm w-full md:w-auto" legend="Trade units">
-					<template #legend>
-						<div class="flex items-center gap-2 font-bold">
-							<FontAwesomeIcon icon="fal fa-atom" class="text-gray-400" fixed-width />
-							Trade units
-						</div>
-					</template>
+		<Fieldset class="bg-white rounded-xl shadow-sm w-full md:w-auto" legend="Trade units">
+			<template #legend>
+				<div class="flex items-center gap-2 font-bold">
+					<FontAwesomeIcon icon="fal fa-atom" class="text-gray-400" fixed-width />
+					Trade units
+				</div>
+			</template>
 
-					<template #default>
-						<div>
-							<template v-if="props.data.trade_units.length">
-								<div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-4">
-									<Select
-										v-model="selectedTradeUnit"
-										:options="props.data.trade_units"
-										optionLabel="tradeUnit.name"
-										optionValue="tradeUnit.code"
-										placeholder="Select a City"
-										class="w-full sm:w-80"
-									/>
-									<Link
-										v-if="compSelectedTradeUnit?.tradeUnit?.slug"
-										:href="route('grp.goods.trade-units.show', compSelectedTradeUnit?.tradeUnit.slug)"
-										v-tooltip="trans('Open trade unit')"
-										class="text-gray-400 hover:text-gray-600 text-center sm:text-left"
-									>
-										<FontAwesomeIcon icon="fal fa-external-link" fixed-width />
-									</Link>
-								</div>
-								<EditTradeUnit v-if="compSelectedTradeUnit" v-bind="compSelectedTradeUnit" />
-							</template>
-							<div v-else class="text-gray-500 text-center py-4">
-								{{ trans("No trade units for this product") }}
-							</div>
+			<template #default>
+				<div>
+					<template v-if="props.data.trade_units.length">
+						<div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-4">
+							<Select v-model="selectedTradeUnit" :options="props.data.trade_units"
+								optionLabel="tradeUnit.name" optionValue="tradeUnit.code" placeholder="Select a City"
+								class="w-full sm:w-80" />
+							<Link v-if="compSelectedTradeUnit?.tradeUnit?.slug"
+								:href="route('grp.goods.trade-units.show', compSelectedTradeUnit?.tradeUnit.slug)"
+								v-tooltip="trans('Open trade unit')"
+								class="text-gray-400 hover:text-gray-600 text-center sm:text-left">
+							<FontAwesomeIcon icon="fal fa-external-link" fixed-width />
+							</Link>
 						</div>
+						<EditTradeUnit v-if="compSelectedTradeUnit" v-bind="compSelectedTradeUnit" />
 					</template>
-				</Fieldset>
-			</div>
+					<div v-else class="text-gray-500 text-center py-4">
+						{{ trans("No trade units for this product") }}
+					</div>
+				</div>
+			</template>
+		</Fieldset>
+		
 
-			<TranslationBox v-bind="data.translation_box" :master="data.product.data" :needTranslation="data.product.data" />
+		<!-- Product Summary -->
+		<div class="bg-white rounded-xl shadow-sm border p-4 lg:p-5">
+			<h2 class="text-base lg:text-lg font-semibold border-b pb-3">{{ trans("Product summary") }}</h2>
+			<dl class="mt-4 space-y-3 text-sm">
+				<div class="flex justify-between flex-wrap gap-1">
+					<dt class="text-gray-500">{{ trans("Added date") }}</dt>
+					<dd class="font-medium">{{ useFormatTime(data.product.data.created_at) }}</dd>
+				</div>
+				<div class="flex justify-between flex-wrap gap-1">
+					<dt class="text-gray-500">{{ trans("Stock") }}</dt>
+					<dd class="font-medium">
+						{{ data.product.data.stock }} {{ data.product.data.unit }}
+					</dd>
+				</div>
+				<div class="flex justify-between flex-wrap gap-1">
+					<dt class="text-gray-500">{{ trans("Price") }}</dt>
+					<dd class="font-semibold text-green-600">
+						{{ locale.currencyFormat(data.product.data.currency_code, data.product.data.price) }}
+					</dd>
+				</div>
+				<div class="flex justify-between flex-wrap gap-1">
+					<dt class="text-gray-500">RRP</dt>
+					<dd class="font-semibold">
+						{{ locale.currencyFormat(data.product.data.currency_code, data.product.data.rrp) }}
+						<span class="ml-1 text-xs text-gray-500">
+							({{
+							((data.product.data.rrp - data.product.data.price) /
+							data.product.data.price * 100).toFixed(2)
+							}}%)
+						</span>
+					</dd>
+				</div>
+				<div class="flex justify-between flex-wrap gap-1">
+					<dt class="text-gray-500">{{ trans("Weight") }}</dt>
+					<dd class="font-medium">
+						{{ locale.number(data.product.data?.specifications?.gross_weight) }} gr
+					</dd>
+				</div>
+				<div>
+					<dt class="text-gray-500">{{ trans("Ingredients") }}</dt>
+					<ul class="list-disc list-inside text-gray-700 mt-1 space-y-1">
+						<li v-for="ingredient in data.product.data.specifications?.ingredients" :key="ingredient.id">
+							{{ ingredient }}
+						</li>
+					</ul>
+				</div>
+			</dl>
 		</div>
 	</div>
 
 	<!-- Gallery Dialog -->
-	<Dialog
-		v-model:visible="isModalGallery"
-		modal
-		closable
-		dismissableMask
-		header="Gallery Management"
-		:style="{ width: '95vw', maxWidth: '900px' }"
-		:pt="{ root: { class: 'rounded-xl shadow-xl' } }"
-	>
-		<GalleryManagement
-			:multiple="true"
-			:uploadRoute="data.uploadImageRoute"
+	<Dialog v-model:visible="isModalGallery" modal closable dismissableMask header="Gallery Management"
+		:style="{ width: '95vw', maxWidth: '900px' }" :pt="{ root: { class: 'rounded-xl shadow-xl' } }">
+		<GalleryManagement :multiple="true" :uploadRoute="data.uploadImageRoute"
 			:submitUpload="(file, refDAta) => onSubmitUpload(file, refDAta)"
-			:imagesUploadedRoutes="data.imagesUploadedRoutes"
-			:attachImageRoute="data.attachImageRoute"
-			:stockImagesRoute="data.stockImagesRoute"
-			@selectImage="(image) => console.log('Selected:', image)"
-		/>
+			:imagesUploadedRoutes="data.imagesUploadedRoutes" :attachImageRoute="data.attachImageRoute"
+			:stockImagesRoute="data.stockImagesRoute" @selectImage="(image) => console.log('Selected:', image)" />
 	</Dialog>
 </template>
 

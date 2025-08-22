@@ -161,7 +161,7 @@ const breadcrumbItems = computed(() => {
     </Message>
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-
+<!-- {{pageHead}} -->
     <div class="bg-white shadow-sm rounded px-4 py-2 mx-4 mt-2 w-fit border border-gray-200 overflow-x-auto">
         <Breadcrumb :model="breadcrumbItems">
             <template #item="{ item, index }">
