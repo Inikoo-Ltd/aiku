@@ -37,12 +37,12 @@ class UpdateCollection extends OrgAction
         $originalImageId = $collection->image_id;
 
         $imageData = ['image' => Arr::pull($modelData, 'image')];
-        if ($imageData['image']) {
+        if ($imageData && $imageData['image']) {
             $this->processCatalogueImage($imageData, $collection);
         }
         $collection = $this->update($collection, $modelData, ['data']);
 
-        if (Arr::has($modelData, 'image_id') && !Arr::get($modelData, 'image_id') && $originalImageId) {
+        if (!$collection->image_id && $originalImageId) {
             $collection->images()->detach($originalImageId);
         }
 

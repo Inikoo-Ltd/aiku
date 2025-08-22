@@ -137,9 +137,9 @@ class EditFamily extends OrgAction
                             ]
                         ],
                         [
-                            'label'  => __('Properties'),
-                            'icon'   => 'fa-light fa-fingerprint',
-                            'title'  => __('id'),
+                            'label'  => __('Image'),
+                            'icon'   => 'fa-light fa-image',
+                            'title'  => __('Media'),
                             'fields' => [
                                 "image"         => [
                                     "type"    => "image_crop_square",

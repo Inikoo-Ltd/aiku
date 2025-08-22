@@ -65,7 +65,7 @@ class UpdateProductCategory extends OrgAction
 
 
         $imageData = ['image' => Arr::pull($modelData, 'image')];
-        if ($imageData['image']) {
+        if ($imageData && $imageData['image']) {
             $this->processCatalogueImage($imageData, $productCategory);
         }
 
@@ -78,7 +78,7 @@ class UpdateProductCategory extends OrgAction
         $productCategory->refresh();
 
 
-        if (Arr::has($modelData, 'image_id') && !Arr::get($modelData, 'image_id') && $originalImageId) {
+        if (!$productCategory->image_id && $originalImageId) {
             $productCategory->images()->detach($originalImageId);
         }
 
@@ -148,7 +148,7 @@ class UpdateProductCategory extends OrgAction
                 ),
             ],
             'name'              => ['sometimes', 'max:250', 'string'],
-            'image_id'          => ['sometimes', 'nullable', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
+            'image_id'          => ['sometimes', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
             'state'             => ['sometimes', 'required', Rule::enum(ProductCategoryStateEnum::class)],
             'description'       => ['sometimes', 'required', 'max:65500'],
             'description_title' => ['sometimes', 'nullable', 'max:255'],

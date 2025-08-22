@@ -424,7 +424,7 @@ function handleUrlChange(e: string | null) {
             Please confirm where it should redirect to.
         </div>
 
-        
+
         <SelectQuery
             :urlRoute="route(routes?.indexWebpage?.name, routes?.indexWebpage?.parameters)"
             :value="reroute"
