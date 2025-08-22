@@ -27,6 +27,7 @@ class CheckIfProductExistInWoo extends RetinaAction
     {
         try {
             $searchFields = [
+                'id' => $portfolio->platform_product_id,
                 'sku' => $portfolio->sku,
                 'slug' => $portfolio->platform_handle,
                 'search' => $portfolio->item_name
