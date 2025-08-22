@@ -57,6 +57,8 @@ import { faSpinnerThird } from "@far"
 import DeliveryAddressManagementModal from "@/Components/Utils/DeliveryAddressManagementModal.vue"
 import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.vue"
+import { useConfirm } from "primevue/useconfirm";
+import ConfirmDialog from 'primevue/confirmdialog';
 
 import Icon from "@/Components/Icon.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
@@ -196,7 +198,7 @@ const props = defineProps<{
 const isModalUploadOpen = ref(false)
 const isModalProductListOpen = ref(false)
 const locale = inject("locale", aikuLocaleStructure)
-
+const confirm = useConfirm();
 const currentTab = ref(props.tabs?.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
@@ -379,10 +381,58 @@ const generateRouteDeliveryNote = (slug: string) => {
         deliveryNote: slug
     })
 }
+
+const cancelLoading = ref(false)
+const confirm2 = (action) => {
+    confirm.require({
+        message: 'Do you want to cancel this order ?',
+        header: 'Cancel Order',
+        rejectLabel: 'Cancel',
+        rejectProps: {
+            label: 'No',
+            severity: 'secondary',
+            outlined: true
+        },
+        acceptProps: {
+            label: 'Yes',
+            severity: 'danger'
+        },
+        accept: () => {
+        router[action.route.method](
+            route(action.route.name, action.route.parameters),
+            {},
+            {
+                onStart : () => { cancelLoading.value = true },
+                onFinish : () => { cancelLoading.value = true },
+                onSuccess: () => {
+                    notify({
+                        title: trans("Success"),
+                        text: trans("Successfully cancel order"),
+                        type: "success",
+                    })
+                },
+                onError: () => {
+                    notify({
+                        title: trans("Error"),
+                        text: trans("Failed to cancel order"),
+                        type: "error",
+                    })
+                }
+            }
+        )
+},
+
+    });
+};
 </script>
 
 <template>
     <Head :title="capitalize(title)" />
+    <ConfirmDialog>
+        <template #icon>
+            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-orange-500" />
+        </template>
+    </ConfirmDialog>
     <PageHeading :data="pageHead">
         <template #button-add-products="{ action }">
             <div class="relative">
@@ -391,6 +441,20 @@ const generateRouteDeliveryNote = (slug: string) => {
                     :label="action.label"
                     :icon="action.icon"
                     @click="() => openModal(action)"
+                    :key="`ActionButton${action.label}${action.style}`"
+                    :tooltip="action.tooltip"
+                />
+            </div>
+        </template>
+
+        <template #button-cancel="{ action }">
+            <div class="relative">
+                <Button
+                    :style="action.style"
+                    :label="action.label"
+                    :icon="action.icon"
+                    :loading="cancelLoading"
+                    @click="() => confirm2(action)"
                     :key="`ActionButton${action.label}${action.style}`"
                     :tooltip="action.tooltip"
                 />
