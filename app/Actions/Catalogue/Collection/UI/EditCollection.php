@@ -124,6 +124,7 @@ class EditCollection extends OrgAction
                                     "type"  => "image_crop_square",
                                     "label" => __("Image"),
                                     "value" => $collection->imageSources(720, 480),
+                                    "required" => false,
                                 ],
                             ]
                         ]
