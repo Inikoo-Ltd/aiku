@@ -176,6 +176,7 @@ class IndexMasterProducts extends GrpAction
         $afterTitle    = null;
         $iconRight     = null;
         $subNavigation = null;
+        $familyId = null;
 
         if ($this->parent instanceof Group) {
             $model      = '';
@@ -208,6 +209,7 @@ class IndexMasterProducts extends GrpAction
                 $subNavigation = $this->getMasterDepartmentSubNavigation($this->parent);
             }
             if ($this->parent->type == MasterProductCategoryTypeEnum::FAMILY) {
+                $familyId = $this->parent->id;
                 $subNavigation = $this->getMasterFamilySubNavigation($this->parent);
                 $title         = $this->parent->name;
                 $model         = '';
@@ -224,7 +226,6 @@ class IndexMasterProducts extends GrpAction
             }
         }
 
-
         return Inertia::render(
             'Masters/MasterProducts',
             [
@@ -234,6 +235,7 @@ class IndexMasterProducts extends GrpAction
                     $request->route()->originalParameters()
                 ),
                 'title'       => $title,
+                'familyId'      => $familyId,
                 'pageHead'    => [
                     'title'         => $title,
                     'icon'          => $icon,
