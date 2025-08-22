@@ -145,6 +145,7 @@ class EditFamily extends OrgAction
                                     "type"    => "image_crop_square",
                                     "label"   => __("Image"),
                                     "value"   => $family->imageSources(720, 480),
+                                    "required" => false,
                                 ],
                                 ...$departmentIdFormData
                             ]

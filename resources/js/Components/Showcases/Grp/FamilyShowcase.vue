@@ -29,6 +29,7 @@ const props = defineProps<{
     }
 }>()
 
+console.log(props)
 </script>
 
 <template>
@@ -47,7 +48,7 @@ const props = defineProps<{
 
 
         <div class="px-5 grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-6 mt-4 mb-4 ">
-            <ProductCategoryCard :data="data.family" />
+            <ProductCategoryCard :data="data.family.data" />
         </div>
 
 
