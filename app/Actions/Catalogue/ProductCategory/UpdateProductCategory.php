@@ -38,6 +38,9 @@ class UpdateProductCategory extends OrgAction
 
     public function handle(ProductCategory $productCategory, array $modelData): ProductCategory
     {
+        $originalImageId = $productCategory->image_id;
+
+
         if (Arr::has($modelData, 'department_id')) {
             $departmentId = Arr::pull($modelData, 'department_id');
             if ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
@@ -73,7 +76,13 @@ class UpdateProductCategory extends OrgAction
 
         $productCategory = $this->update($productCategory, $modelData, ['data']);
         $productCategory->refresh();
-        $changes         = Arr::except($productCategory->getChanges(), ['updated_at']);
+
+
+        if (Arr::has($modelData, 'image_id') && !Arr::get($modelData, 'image_id') && $originalImageId) {
+            $productCategory->images()->detach($originalImageId);
+        }
+
+        $changes = Arr::except($productCategory->getChanges(), ['updated_at']);
 
         if (Arr::hasAny($changes, ['code', 'name', 'type'])) {
             ProductCategoryRecordSearch::dispatch($productCategory);
@@ -139,7 +148,7 @@ class UpdateProductCategory extends OrgAction
                 ),
             ],
             'name'              => ['sometimes', 'max:250', 'string'],
-            'image_id'          => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
+            'image_id'          => ['sometimes', 'nullable', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
             'state'             => ['sometimes', 'required', Rule::enum(ProductCategoryStateEnum::class)],
             'description'       => ['sometimes', 'required', 'max:65500'],
             'description_title' => ['sometimes', 'nullable', 'max:255'],
