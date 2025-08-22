@@ -63,10 +63,14 @@ class UpdateProductCategory extends OrgAction
             }
         }
 
+        if(Arr::has($modelData, 'image')) {
+            $imageData = ['image' => Arr::pull($modelData, 'image')];
+            if ($imageData['image']) {
+                $this->processCatalogueImage($imageData, $productCategory);
+            }else{
+                data_set($modelData, 'image_id', null, false);
+            }
 
-        $imageData = ['image' => Arr::pull($modelData, 'image')];
-        if ($imageData && $imageData['image']) {
-            $this->processCatalogueImage($imageData, $productCategory);
         }
 
         $originalMasterProductCategory = null;
