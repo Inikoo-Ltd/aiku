@@ -121,10 +121,10 @@ Route::name("master_shops")->prefix('master-shops')
                         Route::prefix('/{masterSubDepartment}/families')->as('master_families.')->group(function () {
                             Route::get('', [IndexMasterFamilies::class, 'inMasterSubDepartmentInMasterDepartment'])->name('index');
                             Route::get('create', [CreateMasterFamily::class, 'inMasterSubDepartment'])->name('create');
-                            Route::get('{masterFamily}', [ShowMasterFamily::class, 'inMasterSubDepartment'])->name('show');
+                            Route::get('{masterFamily}', [ShowMasterFamily::class, 'inMasterSubDepartmentInMasterDepartment'])->name('show');
                             Route::get('{masterFamily}/edit', [EditMasterFamily::class, 'inMasterSubDepartmentInMasterDepartment'])->name('edit');
                             Route::prefix('{masterFamily}/master-products')->as('master_products.')->group(function () {
-                                Route::get('', [IndexMasterProducts::class, 'inMasterFamilyInMasterSubDepartment'])->name('index');
+                                Route::get('', [IndexMasterProducts::class, 'inMasterFamilyInMasterSubDepartmentInMasterDepartment'])->name('index');
                                 Route::get('{masterProduct}', [ShowMasterProducts::class, 'inMasterFamilyInMasterDepartment'])->name('show');
                             });
                         });
@@ -173,6 +173,7 @@ Route::name("master_shops")->prefix('master-shops')
                     Route::get('create', [CreateMasterFamily::class, 'inMasterSubDepartment'])->name('create');
                     Route::get('{masterFamily}', [ShowMasterFamily::class, 'inMasterSubDepartment'])->name('show');
                     Route::get('{masterFamily}/edit', [EditMasterFamily::class, 'inMasterSubDepartment'])->name('edit');
+                    Route::get('{masterFamily}/master-products', [IndexMasterProducts::class, 'inMasterFamilyInMasterSubDepartment'])->name('master_products.index');
                 });
 
                 Route::prefix('{masterSubDepartment}/master-collections')->as('master_collections.')->group(function () {

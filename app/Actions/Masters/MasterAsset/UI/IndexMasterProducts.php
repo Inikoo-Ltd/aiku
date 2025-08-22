@@ -289,7 +289,8 @@ class IndexMasterProducts extends GrpAction
             ),
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index',
             'grp.masters.master_shops.show.master_families.master_products.index',
-            'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index'=>
+            'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index',
+            'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.index' =>
             array_merge(
                 ShowMasterFamily::make()->getBreadcrumbs($this->parent, $routeName, $routeParameters),
                 $headCrumb(
@@ -350,7 +351,17 @@ class IndexMasterProducts extends GrpAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inMasterFamilyInMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): LengthAwarePaginator
+    public function inMasterFamilyInMasterSubDepartmentInMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): LengthAwarePaginator
+    {
+        $group        = group();
+
+        $this->parent = $masterFamily;
+        $this->initialisation($group, $request);
+        return $this->handle($masterFamily, $request);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inMasterFamilyInMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): LengthAwarePaginator
     {
         $group        = group();
 
