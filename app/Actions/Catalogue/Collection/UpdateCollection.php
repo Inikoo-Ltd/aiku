@@ -34,16 +34,17 @@ class UpdateCollection extends OrgAction
 
     public function handle(Collection $collection, array $modelData): Collection
     {
+
         $originalImageId = $collection->image_id;
 
         if(Arr::has($modelData, 'image')) {
             $imageData = ['image' => Arr::pull($modelData, 'image')];
             if ( $imageData['image']) {
                 $this->processCatalogueImage($imageData, $collection);
-            }
-            if(!$imageData){
+            }else{
                 data_set($modelData, 'image_id', null, false);
             }
+
 
         }
         $collection = $this->update($collection, $modelData, ['data']);

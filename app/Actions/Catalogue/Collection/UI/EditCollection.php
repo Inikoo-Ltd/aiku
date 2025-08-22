@@ -117,12 +117,12 @@ class EditCollection extends OrgAction
                             ]
                         ],
                         [
-                            'label'  => __('Properties'),
-                            'icon'   => 'fa-light fa-fingerprint',
+                            'label'  => __('Image'),
+                            'icon'   => 'fa-light fa-image',
                             'fields' => [
                                 "image"       => [
                                     "type"    => "crop-image-full",
-                                    "label" => __("Image"),
+                                    "label" => __("Main image"),
                                     "value" => $collection->imageSources(720, 480),
                                     "required" => false,
                                     'noSaveButton' => true,

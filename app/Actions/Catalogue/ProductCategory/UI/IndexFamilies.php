@@ -373,7 +373,6 @@ class IndexFamilies extends OrgAction
         if ($this->parent instanceof ProductCategory) {
             if ($this->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
                 $title      = $this->parent->name;
-                $model      = '';
                 $icon       = [
                     'icon'  => ['fal', 'fa-folder-tree'],
                     'title' => __('department')
@@ -385,7 +384,6 @@ class IndexFamilies extends OrgAction
                 ];
             } elseif ($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
                 $title      = $this->parent->name;
-                $model      = '';
                 $icon       = [
                     'icon'  => ['fal', 'fa-dot-circle'],
                     'title' => __('sub department')
@@ -457,8 +455,8 @@ class IndexFamilies extends OrgAction
                     fn () => FamiliesResource::collection(IndexFamilies::run($this->parent, prefix: ProductCategoryTabsEnum::SALES->value))
                     : Inertia::lazy(fn () => FamiliesResource::collection(IndexFamilies::run($this->parent, prefix: ProductCategoryTabsEnum::SALES->value))),
             ]
-        )->table($this->tableStructure(parent: $this->parent, modelOperations: null, canEdit: false, prefix: ProductCategoryTabsEnum::INDEX->value, sales: false))
-            ->table($this->tableStructure(parent: $this->parent, modelOperations: null, canEdit: false, prefix: ProductCategoryTabsEnum::SALES->value, sales: $this->sales));
+        )->table($this->tableStructure(parent: $this->parent,  prefix: ProductCategoryTabsEnum::INDEX->value, sales: false))
+            ->table($this->tableStructure(parent: $this->parent,prefix: ProductCategoryTabsEnum::SALES->value, sales: $this->sales));
     }
 
     public function getBreadcrumbs(Group|Shop|ProductCategory|Organisation|Collection $parent, string $routeName, array $routeParameters, string $suffix = null): array
