@@ -159,7 +159,7 @@ const isLoadingDetach = ref<string[]>([]);
         </template>
         <template #cell(code)="{ item: department }">
             <div class="whitespace-nowrap">
-            <Link  :href="(masterDepartmentRoute(department) as string)"  v-tooltip="trans('Go to Master')" class="mr-1"  :class="[ department.master_product_category_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
+            <Link  :href="(masterDepartmentRoute(department) as string)"  v-tooltip="'Go to Master'" class="mr-1"  :class="[ department.master_product_category_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
                 <FontAwesomeIcon
                     icon="fab fa-octopus-deploy"
                     color="#4B0082"
