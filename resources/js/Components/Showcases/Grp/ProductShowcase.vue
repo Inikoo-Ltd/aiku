@@ -187,11 +187,11 @@ console.log(props)
 </script>
 
 <template>
-	<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mx-3 lg:mx-4 mt-4">
+	<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mx-3 lg:mx-0 mt-2">
 		<!-- Sidebar -->
 		<div class="space-y-4 lg:space-y-6">
 			<!-- Image Preview & Thumbnails -->
-			<div class="bg-white rounded-xl shadow-sm border p-4 lg:p-5">
+			<div class="bg-white rounded-xl shadow-sm  p-4 lg:p-5">
 				<ImageProducts v-if="data.product.data.images?.length" :images="data.product.data.images" :breakpoints="{
 						0: { slidesPerView: 3 },
 						480: { slidesPerView: 4 },
@@ -236,92 +236,96 @@ console.log(props)
 					<Button type="primary" full @click="isModalGallery = true" label="Add Images" :icon="faPlus" />
 				</div>
 			</div>
-
-
 		</div>
 
-
-
 		<!-- Right Section -->
-		<Fieldset class="bg-white rounded-xl shadow-sm w-full md:w-auto" legend="Trade units">
-			<template #legend>
-				<div class="flex items-center gap-2 font-bold">
-					<FontAwesomeIcon icon="fal fa-atom" class="text-gray-400" fixed-width />
-					Trade units
-				</div>
-			</template>
-
-			<template #default>
-				<div>
-					<template v-if="props.data.trade_units.length">
-						<div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-4">
-							<Select v-model="selectedTradeUnit" :options="props.data.trade_units"
-								optionLabel="tradeUnit.name" optionValue="tradeUnit.code" placeholder="Select a City"
-								class="w-full sm:w-80" />
-							<Link v-if="compSelectedTradeUnit?.tradeUnit?.slug"
-								:href="route('grp.goods.trade-units.show', compSelectedTradeUnit?.tradeUnit.slug)"
-								v-tooltip="trans('Open trade unit')"
-								class="text-gray-400 hover:text-gray-600 text-center sm:text-left">
-							<FontAwesomeIcon icon="fal fa-external-link" fixed-width />
-							</Link>
+		<div class="space-y-4 lg:space-y-6">
+			<div>
+				<Fieldset class="bg-white rounded-xl shadow-sm w-full md:w-auto" legend="Trade units">
+					<template #legend>
+						<div class="flex items-center gap-2 font-bold">
+							<FontAwesomeIcon icon="fal fa-atom" class="text-gray-400" fixed-width />
+							Trade units
 						</div>
-						<EditTradeUnit v-if="compSelectedTradeUnit" v-bind="compSelectedTradeUnit" />
 					</template>
-					<div v-else class="text-gray-500 text-center py-4">
-						{{ trans("No trade units for this product") }}
-					</div>
-				</div>
-			</template>
-		</Fieldset>
-		
+
+					<template #default>
+						<div>
+							<template v-if="props.data.trade_units.length">
+								<div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-4">
+									<Select v-model="selectedTradeUnit" :options="props.data.trade_units"
+										optionLabel="tradeUnit.name" optionValue="tradeUnit.code"
+										placeholder="Select a City" class="w-full sm:w-80" />
+									<Link v-if="compSelectedTradeUnit?.tradeUnit?.slug"
+										:href="route('grp.goods.trade-units.show', compSelectedTradeUnit?.tradeUnit.slug)"
+										v-tooltip="trans('Open trade unit')"
+										class="text-gray-400 hover:text-gray-600 text-center sm:text-left">
+									<FontAwesomeIcon icon="fal fa-external-link" fixed-width />
+									</Link>
+								</div>
+								<EditTradeUnit v-if="compSelectedTradeUnit" v-bind="compSelectedTradeUnit" />
+							</template>
+							<div v-else class="text-gray-500 text-center py-4">
+								{{ trans("No trade units for this product") }}
+							</div>
+						</div>
+					</template>
+				</Fieldset>
+			</div>
+
+			<!-- <TranslationBox v-bind="data.translation_box" :master="data.product.data" :needTranslation="data.product.data" /> -->
+		</div>
 
 		<!-- Product Summary -->
-		<div class="bg-white rounded-xl shadow-sm border p-4 lg:p-5">
-			<h2 class="text-base lg:text-lg font-semibold border-b pb-3">{{ trans("Product summary") }}</h2>
-			<dl class="mt-4 space-y-3 text-sm">
-				<div class="flex justify-between flex-wrap gap-1">
-					<dt class="text-gray-500">{{ trans("Added date") }}</dt>
-					<dd class="font-medium">{{ useFormatTime(data.product.data.created_at) }}</dd>
-				</div>
-				<div class="flex justify-between flex-wrap gap-1">
-					<dt class="text-gray-500">{{ trans("Stock") }}</dt>
-					<dd class="font-medium">
-						{{ data.product.data.stock }} {{ data.product.data.unit }}
-					</dd>
-				</div>
-				<div class="flex justify-between flex-wrap gap-1">
-					<dt class="text-gray-500">{{ trans("Price") }}</dt>
-					<dd class="font-semibold text-green-600">
-						{{ locale.currencyFormat(data.product.data.currency_code, data.product.data.price) }}
-					</dd>
-				</div>
-				<div class="flex justify-between flex-wrap gap-1">
-					<dt class="text-gray-500">RRP</dt>
-					<dd class="font-semibold">
-						{{ locale.currencyFormat(data.product.data.currency_code, data.product.data.rrp) }}
-						<span class="ml-1 text-xs text-gray-500">
-							({{
-							((data.product.data.rrp - data.product.data.price) /
-							data.product.data.price * 100).toFixed(2)
-							}}%)
-						</span>
-					</dd>
-				</div>
-				<div class="flex justify-between flex-wrap gap-1">
-					<dt class="text-gray-500">{{ trans("Weight") }}</dt>
-					<dd class="font-medium">
-						{{ locale.number(data.product.data?.specifications?.gross_weight) }} gr
-					</dd>
-				</div>
-				<div>
-					<dt class="text-gray-500">{{ trans("Ingredients") }}</dt>
-					<ul class="list-disc list-inside text-gray-700 mt-1 space-y-1">
-						<li v-for="ingredient in data.product.data.specifications?.ingredients" :key="ingredient.id">
-							{{ ingredient }}
-						</li>
-					</ul>
-				</div>
-			</dl>
+		<div>
+			<div class="bg-white rounded-xl p-4 lg:p-5">
+				<h2 class="text-base lg:text-lg font-semibold border-b pb-3">{{ trans("Product summary") }}</h2>
+				<dl class="mt-4 space-y-3 text-sm">
+					<div class="flex justify-between flex-wrap gap-1">
+						<dt class="text-gray-500">{{ trans("Added date") }}</dt>
+						<dd class="font-medium">{{ useFormatTime(data.product.data.created_at) }}</dd>
+					</div>
+					<div class="flex justify-between flex-wrap gap-1">
+						<dt class="text-gray-500">{{ trans("Stock") }}</dt>
+						<dd class="font-medium">
+							{{ data.product.data.stock }} {{ data.product.data.unit }}
+						</dd>
+					</div>
+					<div class="flex justify-between flex-wrap gap-1">
+						<dt class="text-gray-500">{{ trans("Price") }}</dt>
+						<dd class="font-semibold text-green-600">
+							{{ locale.currencyFormat(data.product.data.currency_code, data.product.data.price) }}
+						</dd>
+					</div>
+					<div class="flex justify-between flex-wrap gap-1">
+						<dt class="text-gray-500">RRP</dt>
+						<dd class="font-semibold">
+							{{ locale.currencyFormat(data.product.data.currency_code, data.product.data.rrp) }}
+							<span class="ml-1 text-xs text-gray-500">
+								({{
+									((data.product.data.rrp - data.product.data.price) /
+										data.product.data.price * 100).toFixed(2)
+								}}%)
+							</span>
+						</dd>
+					</div>
+					<div class="flex justify-between flex-wrap gap-1">
+						<dt class="text-gray-500">{{ trans("Weight") }}</dt>
+						<dd class="font-medium">
+							{{ locale.number(data.product.data?.specifications?.gross_weight) }} gr
+						</dd>
+					</div>
+					<div>
+						<dt class="text-gray-500">{{ trans("Ingredients") }}</dt>
+						<ul class="list-disc list-inside text-gray-700 mt-1 space-y-1">
+							<li v-for="ingredient in data.product.data.specifications?.ingredients"
+								:key="ingredient.id">
+								{{ ingredient }}
+							</li>
+						</ul>
+					</div>
+				</dl>
+			</div>
 		</div>
 	</div>
 
