@@ -31,7 +31,7 @@ class EditMasterDepartment extends OrgAction
     {
         $this->parent = $masterShop;
         $group        = group();
-        $this->initialisationFromGroup($group, $request)->withTab(MasterSubDepartmentTabsEnum::values());
+        $this->initialisationFromGroup($group, $request);
 
         return $this->handle($masterDepartment, $request);
     }
@@ -47,9 +47,9 @@ class EditMasterDepartment extends OrgAction
                      $request->route()->getName(),
                      $request->route()->originalParameters()
                  ),
-                'title'       => __('New Master Department'),
+                'title'       => __('Edit Master Department'),
                 'pageHead'    => [
-                    'title'   => __('new master department'),
+                    'title'   => __('edit master department'),
                     'actions' => [
                         [
                             'type'  => 'button',

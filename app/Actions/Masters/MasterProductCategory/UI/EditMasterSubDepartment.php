@@ -54,9 +54,9 @@ class EditMasterSubDepartment extends OrgAction
                      $request->route()->getName(),
                      $request->route()->originalParameters()
                  ),
-                'title'       => __('New Master Sub-department'),
+                'title'       => __('Edit Master Sub-department'),
                 'pageHead'    => [
-                    'title'   => __('new master Sub-department'),
+                    'title'   => __('edit master Sub-department'),
                     'actions' => [
                         [
                             'type'  => 'button',
