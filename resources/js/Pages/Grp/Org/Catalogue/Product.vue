@@ -5,7 +5,7 @@ import {
     faBox, faBullhorn, faCameraRetro, faCube, faFolder,
     faMoneyBillWave, faProjectDiagram, faRoad, faShoppingCart,
     faStream, faUsers, faHeart, faMinus,
-    faFolderTree
+    faFolderTree, faLanguage
 } from '@fal'
 import { ref, computed } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
@@ -29,6 +29,7 @@ import TableTradeUnits from '@/Components/Tables/Grp/Goods/TableTradeUnits.vue'
 import TableOrgStocks from '@/Components/Tables/Grp/Org/Inventory/TableOrgStocks.vue'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 import TableImages from "@/Components/Tables/Grp/Helpers/TableImages.vue"
+import ProductTranslation from '@/Components/Showcases/Grp/ProductTranslation.vue'
 
 
 library.add(
@@ -44,7 +45,8 @@ library.add(
     faCameraRetro,
     faRoad,
     faHeart,
-    faMinus
+    faMinus,
+    faLanguage
 )
 
 const props = defineProps<{
@@ -54,6 +56,7 @@ const props = defineProps<{
         current: string
         navigation: {}
     }
+    translation?: {}
     orders?: {}
     customers?: {}
     mailshots?: {}
@@ -101,10 +104,14 @@ const component = computed(() => {
         reminders: TableProductBackInStockReminders,
         trade_units: TableTradeUnits,
         stocks: TableOrgStocks,
-        images: TableImages
+        images: TableImages,
+        translation: ProductTranslation,
     }
+    console.log(currentTab.value)
     return components[currentTab.value]
 })
+
+
 
 // Warning flag
 const showMissingTaxonomyMessage = computed(() => {

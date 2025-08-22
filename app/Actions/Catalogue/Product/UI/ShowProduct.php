@@ -276,6 +276,9 @@ class ShowProduct extends OrgAction
                 ProductTabsEnum::SHOWCASE->value => $this->tab == ProductTabsEnum::SHOWCASE->value ?
                     fn () => GetProductShowcase::run($product)
                     : Inertia::lazy(fn () => GetProductShowcase::run($product)),
+                ProductTabsEnum::TRANSLATION->value => $this->tab == ProductTabsEnum::TRANSLATION->value ?
+                    fn () => GetProductShowcase::run($product)
+                    : Inertia::lazy(fn () => GetProductShowcase::run($product)),
 
 
                 ProductTabsEnum::FAVOURITES->value => $this->tab == ProductTabsEnum::FAVOURITES->value ?

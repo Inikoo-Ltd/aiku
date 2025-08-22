@@ -9,7 +9,7 @@ import { inject, ref, computed, watch } from "vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { faTrash as falTrash, faEdit, faExternalLink } from "@fal"
-import { faCircle, faPlay, faTrash, faPlus } from "@fas"
+import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { trans } from "laravel-vue-i18n"
@@ -24,10 +24,10 @@ import { faImage } from "@far"
 import EditTradeUnit from "@/Components/Goods/EditTradeUnit.vue"
 import { Fieldset, Select } from "primevue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
-import TranslationBox from '@/Components/TranslationBox.vue';
+// import TranslationBox from '@/Components/TranslationBox.vue';
 
 
-library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus)
+library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus, faBarcode)
 
 const props = defineProps<{
 	taxonomy: any
@@ -88,7 +88,6 @@ const props = defineProps<{
 	}
 }>()
 console.log('qqq', props.data.trade_units)
-console.log(props.data)
 
 const locale = inject("locale", aikuLocaleStructure)
 const selectedImage = ref(0)
@@ -279,7 +278,14 @@ console.log(props)
 		<!-- Product Summary -->
 		<div>
 			<div class="bg-white rounded-xl p-4 lg:p-5">
-				<h2 class="text-base lg:text-lg font-semibold border-b pb-3">{{ trans("Product summary") }}</h2>
+				<div class="flex justify-between items-center border-b pb-3">
+					<h2 class="text-base lg:text-lg font-semibold ">{{ trans("Product summary") }}</h2>
+					<!-- the barcode label need provide from BE -->
+					<span v-tooltip="'barcode label'" class="text-xs cursor-pointer">{{
+						data.product.data.specifications.barcode }}
+						<FontAwesomeIcon :icon="faBarcode" />
+					</span>
+				</div>
 				<dl class="mt-4 space-y-3 text-sm">
 					<div class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("Added date") }}</dt>
@@ -303,8 +309,8 @@ console.log(props)
 							{{ locale.currencyFormat(data.product.data.currency_code, data.product.data.rrp) }}
 							<span class="ml-1 text-xs text-gray-500">
 								({{
-									((data.product.data.rrp - data.product.data.price) /
-										data.product.data.price * 100).toFixed(2)
+								((data.product.data.rrp - data.product.data.price) /
+								data.product.data.price * 100).toFixed(2)
 								}}%)
 							</span>
 						</dd>
@@ -315,12 +321,26 @@ console.log(props)
 							{{ locale.number(data.product.data?.specifications?.gross_weight) }} gr
 						</dd>
 					</div>
+					<div class="flex justify-between flex-wrap gap-1">
+						<dt class="text-gray-500">{{ trans("Dimension") }}</dt>
+						<dd class="font-medium">
+							{{ data.product?.data?.spesifications?.dimenison[0] ?? '-' }}
+						</dd>
+					</div>
 					<div>
 						<dt class="text-gray-500">{{ trans("Ingredients") }}</dt>
 						<ul class="list-disc list-inside text-gray-700 mt-1 space-y-1">
 							<li v-for="ingredient in data.product.data.specifications?.ingredients"
 								:key="ingredient.id">
 								{{ ingredient }}
+							</li>
+						</ul>
+					</div>
+					<div>
+						<dt class="text-gray-500">{{ trans("Parts") }}</dt>
+						<ul class="list-disc list-inside text-gray-700 mt-1 space-y-1">
+							<li v-for="part in data.parts" :key="part.id">
+								{{ part.name }}
 							</li>
 						</ul>
 					</div>
