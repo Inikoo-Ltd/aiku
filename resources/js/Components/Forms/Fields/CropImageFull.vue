@@ -118,7 +118,7 @@ watch(isOpenModalCrop, (val) => {
     </div>
 
     <!-- Image & Status -->
-    <div class="relative">
+    <div class="relative ml-0 md:ml-7">
       <!-- Image Preview -->
       <div
         class="overflow-hidden h-40 min-w-32 aspect-square rounded-lg ring-1 ring-gray-500 shadow bg-gray-100"
@@ -179,7 +179,7 @@ watch(isOpenModalCrop, (val) => {
 
     <div></div>
 
-    <div class="flex justify-end mr-0 md:mr-4">
+    <div class="flex justify-end md:justify-start  ml-0 md:ml-8">
         <div  class="h-9 align-bottom text-center cursor-pointer" :disabled="form.processing || !form.isDirty">
           <template v-if="form.isDirty">
             <FontAwesomeIcon v-if="form.processing" icon="fad fa-spinner-third" class="text-2xl animate-spin" fixed-width aria-hidden="true" />
