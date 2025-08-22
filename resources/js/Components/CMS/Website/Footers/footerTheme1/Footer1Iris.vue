@@ -80,7 +80,7 @@ const onSubmitSubscribe = async () => {
 console.log('layout', props)
 
 const getValueTransleted = (value: Translatable) => {
-  console.log(value)
+//   console.log(value)
 
   if (value.translate && value.translate[props.language]) {
     return value.translate[props.language]

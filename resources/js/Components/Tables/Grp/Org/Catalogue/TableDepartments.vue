@@ -52,7 +52,7 @@ function departmentRoute(department: Department) {
 
 
         default:
-            return null;
+            return '';
     }
 }
 
