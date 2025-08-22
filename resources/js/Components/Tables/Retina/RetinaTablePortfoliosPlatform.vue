@@ -319,7 +319,8 @@ const onDisableCheckbox = (item) => {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5" isCheckBox @onChecked="(item) => onChangeCheked(true, item)"
+    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="false"
+           @onChecked="(item) => onChangeCheked(true, item)"
            @onUnchecked="(item) => onChangeCheked(false, item)" @onCheckedAll="(data) => onCheckedAll(data)"
            checkboxKey='id' :isChecked="(item) => selectedProducts.includes(item.id)"
            :disabledCheckbox="(item)=>onDisableCheckbox(item)" :rowColorFunction="(item) => {

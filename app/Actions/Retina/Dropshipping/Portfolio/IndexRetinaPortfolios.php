@@ -147,9 +147,9 @@ class IndexRetinaPortfolios extends RetinaAction
                     ]
                 ],
                 PlatformTypeEnum::WOOCOMMERCE => [
-                    'name'       => 'retina.models.dropshipping.woo.batch_brave',
+                    'name'       => 'retina.models.dropshipping.woo.batch_upload',
                     'parameters' => [
-                        'wooCommerceUser' => $platformUser->id
+                        'customerSalesChannel' => $this->customerSalesChannel->id
                     ]
                 ],
                 PlatformTypeEnum::EBAY => [
