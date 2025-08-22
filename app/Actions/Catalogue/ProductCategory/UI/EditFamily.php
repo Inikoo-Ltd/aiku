@@ -142,10 +142,12 @@ class EditFamily extends OrgAction
                             'title'  => __('Media'),
                             'fields' => [
                                 "image"         => [
-                                    "type"    => "image_crop_square",
+                                    "type"    => "crop-image-full",
                                     "label"   => __("Image"),
                                     "value"   => $family->imageSources(720, 480),
                                     "required" => false,
+                                    'noSaveButton' => true,
+                                    "full"         => true
                                 ],
                                 ...$departmentIdFormData
                             ]

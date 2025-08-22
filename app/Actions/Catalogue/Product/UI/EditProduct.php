@@ -295,6 +295,7 @@ class EditProduct extends OrgAction
             ],
             [
                 'label'  => __('Parts'),
+                'icon' => 'fal fa-boxes',
                 'fields' => [
                     'org_stocks' => [
                         'type'         => 'product_parts',
