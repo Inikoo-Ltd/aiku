@@ -88,6 +88,14 @@ class ShowMasterDepartment extends GrpAction
                         'title' => $tittle
                     ],
                     'actions'       => [
+                         $this->canEdit ? [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'route' => [
+                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                                'parameters' => $request->route()->originalParameters()
+                            ]
+                        ] : false,
                         [
                             'type'  => 'button',
                             'style' => 'edit',

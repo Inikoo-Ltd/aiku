@@ -16,6 +16,7 @@ use App\Actions\Masters\MasterCollection\UI\ShowMasterCollection;
 use App\Actions\Masters\MasterProductCategory\UI\CreateMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\CreateMasterFamily;
 use App\Actions\Masters\MasterProductCategory\UI\CreateMasterSubDepartment;
+use App\Actions\Masters\MasterProductCategory\UI\EditMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\EditMasterFamily;
 use App\Actions\Masters\MasterProductCategory\UI\EditMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterDepartments;
@@ -93,10 +94,11 @@ Route::name("master_shops")->prefix('master-shops')
                 Route::get('create', CreateMasterDepartment::class)->name('create');
 
                 Route::get('{masterDepartment}/blueprint', ShowMasterDepartmentWorkshop::class)->name('blueprint');
-
+                Route::get('{masterDepartment}/edit', EditMasterDepartment::class)->name('edit');
 
                 Route::prefix('{masterDepartment}')->name('show')->group(function () {
                     Route::get('', ShowMasterDepartment::class);
+
 
                     Route::prefix('master-families')->as('.master_families.')->group(function () {
                         Route::get('', [IndexMasterFamilies::class, 'inMasterDepartmentInMasterShop'])->name('index');
