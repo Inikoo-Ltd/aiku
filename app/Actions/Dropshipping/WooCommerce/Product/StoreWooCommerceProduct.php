@@ -12,7 +12,6 @@ use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
-use App\Events\UploadProductToWooCommerceProgressEvent;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
@@ -63,8 +62,11 @@ class StoreWooCommerceProduct extends RetinaAction
             $result = $wooCommerceUser->createWooCommerceProduct($wooCommerceProduct);
 
             UpdatePortfolio::run($portfolio, [
-                'platform_product_id' => Arr::get($result, 'id')
+                'platform_product_id' => Arr::get($result, 'id'),
+                'platform_product_variant_id' => Arr::get($result, 'id'),
             ]);
+
+            CheckWooPortfolio::run($portfolio, []);
 
             return $result;
         } catch (\Exception $e) {

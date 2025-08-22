@@ -8,7 +8,6 @@
 
 namespace App\Actions\Dropshipping\WooCommerce\Product;
 
-use App\Actions\Dropshipping\Shopify\Product\CheckIfProductExistsInShopify;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Support\Arr;
@@ -35,17 +34,16 @@ class CheckWooPortfolio
         $productExistsInWoo = false;
         $hasVariantAtLocation   = false;
         if ($hasValidProductId) {
-            $productExistsInWoo = CheckIfProductExistsInShopify::run($WooUser, $portfolio->platform_product_id);
+            $productExistsInWoo = CheckIfProductExistInWoo::run($WooUser, $portfolio);
             $hasVariantAtLocation   = $productExistsInWoo;
         }
-
 
         $numberMatches = 0;
         $matchesLabels = [];
         $matches       = [];
 
         if (!$hasValidProductId || !$productExistsInWoo || !$hasVariantAtLocation) {
-            $result = CheckIfProductExistInWoo::run($portfolio->customerSalesChannel, $portfolio);
+            $result = CheckIfProductExistInWoo::run($WooUser, $portfolio);
 
             $matches       = Arr::get($result, 'products', []);
             $numberMatches = count($matches);
@@ -59,7 +57,6 @@ class CheckWooPortfolio
             'raw_data'       => $matches
 
         ];
-
 
         $portfolio->update([
             'has_valid_platform_product_id'    => $hasValidProductId,

@@ -11,7 +11,6 @@ namespace App\Actions\Dropshipping\WooCommerce\Product;
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
@@ -24,7 +23,7 @@ class CheckIfProductExistInWoo extends RetinaAction
     /**
      * @throws \Exception
      */
-    public function handle(WooCommerceUser $wooCommerceUser, Portfolio $portfolio): ?array
+    public function handle(WooCommerceUser $wooCommerceUser, Portfolio $portfolio): bool
     {
         try {
             $searchFields = [
@@ -46,11 +45,11 @@ class CheckIfProductExistInWoo extends RetinaAction
                 }
             }
 
-            return $result;
+            return ! blank($result);
         } catch (\Exception $e) {
             Sentry::captureMessage("Failed to upload product due to: " . $e->getMessage());
 
-            return null;
+            return false;
         }
     }
 }

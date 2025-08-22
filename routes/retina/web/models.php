@@ -113,6 +113,8 @@ use App\Actions\Retina\SysAdmin\StoreRetinaWebUser;
 use App\Actions\Retina\SysAdmin\UpdateRetinaCustomer;
 use App\Actions\Retina\SysAdmin\UpdateRetinaWebUser;
 use App\Actions\Retina\UI\Profile\UpdateRetinaProfile;
+use App\Actions\Retina\Woo\MatchRetinaPortfolioToCurrentWooProduct;
+use App\Actions\Retina\Woo\StoreRetinaNewProductToCurrentWoo;
 use Illuminate\Support\Facades\Route;
 
 Route::post('place-order-pay-by-bank', PlaceOrderPayByBank::class)->name('place-order-pay-by-bank');
@@ -305,6 +307,9 @@ Route::patch('portfolio/{portfolio:id}', UpdateRetinaPortfolio::class)->name('po
 
 Route::post('portfolio/{portfolio:id}/match-to-existing-shopify-product', MatchRetinaPortfolioToCurrentShopifyProduct::class)->name('portfolio.match_to_existing_shopify_product');
 Route::post('portfolio/{portfolio:id}/store-new-shopify-product', StoreRetinaNewProductToCurrentShopify::class)->name('portfolio.store_new_shopify_product');
+
+Route::post('portfolio/{portfolio:id}/match-to-existing-woo-product', MatchRetinaPortfolioToCurrentWooProduct::class)->name('portfolio.match_to_existing_woo_product');
+Route::post('portfolio/{portfolio:id}/store-new-woo-product', StoreRetinaNewProductToCurrentWoo::class)->name('portfolio.store_new_woo_product');
 
 Route::post('portfolio/product-category/{productCategory:id}/store', StoreRetinaPortfoliosFromProductCategoryToAllChannels::class)->name('portfolio.store_from_product_category')->withoutScopedBindings();
 Route::post('portfolio/all-channels/store', StoreRetinaPortfolioToAllChannels::class)->name('portfolio.store_to_all_channels');

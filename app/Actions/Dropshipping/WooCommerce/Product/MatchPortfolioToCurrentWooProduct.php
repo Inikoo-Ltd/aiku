@@ -8,7 +8,6 @@
 
 namespace App\Actions\Dropshipping\WooCommerce\Product;
 
-use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolio;
 use App\Actions\OrgAction;
 use App\Events\UploadProductToWooCommerceProgressEvent;
 use App\Models\Dropshipping\Portfolio;
@@ -22,18 +21,16 @@ class MatchPortfolioToCurrentWooProduct extends OrgAction
 
     public function handle(Portfolio $portfolio, array $modelData)
     {
-        $wooProductId = Arr::get($modelData, 'woo_product_id');
+        $wooProductId = Arr::get($modelData, 'platform_product_id');
         $portfolio->update([
             'platform_product_id' => $wooProductId,
         ]);
 
         $portfolio->refresh();
-        StoreWooCommerceProduct::run($portfolio);
-        $portfolio = CheckShopifyPortfolio::run($portfolio);
+        $portfolio = CheckWooPortfolio::run($portfolio);
 
         UploadProductToWooCommerceProgressEvent::dispatch($portfolio->customerSalesChannel->user, $portfolio);
     }
-
 
     public function rules(): array
     {

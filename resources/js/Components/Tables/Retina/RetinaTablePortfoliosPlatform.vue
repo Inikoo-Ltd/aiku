@@ -53,10 +53,10 @@ interface PlatformData {
     type: string
 }
 
-interface ShopifyProduct {
+interface PlatformProduct {
     id: string // "gid://shopify/Product/12148498727252"
-    title: string // "Aarhus Atomiser - Classic Pod - USB - Colour Change - Timer"
-    handle: string // "aarhus-atomiser-classic-pod-usb-colour-change-timer"
+    name: string // "Aarhus Atomiser - Classic Pod - USB - Colour Change - Timer"
+    slug: string // "aarhus-atomiser-classic-pod-usb-colour-change-timer"
     vendor: string // "AW-Dropship"
     images: {
         src: string
@@ -72,12 +72,15 @@ const props = defineProps<{
     routes: {
         batch_upload: routeType
         batch_match: routeType
+        fetch_products: routeType
+        single_create_new: routeType
+        single_match: routeType
     }
     platform_data: PlatformData
     platform_user_id: number
     is_platform_connected: boolean
-    route_match: object
-    route_create_new: object
+    route_match: routeType
+    route_create_new: routeType
     progressToUploadToShopify: {}
     isPlatformManual?: boolean
     customerSalesChannel: {}
@@ -219,7 +222,7 @@ const onSubmitVariant = () => {
 
     /* Section: Submit */
     router.post(
-        route(props.routes.batch_match.name, {
+        route(props.routes.single_match.name, {
             portfolio: selectedPortfolio.value?.id,
             platform_product_id: selectedVariant.value?.id
         }),
@@ -260,23 +263,24 @@ const onSubmitVariant = () => {
     )
 }
 
-const resultOfFetchShopifyProduct = ref<ShopifyProduct[]>([])
-const isLoadingFetchShopifyProduct = ref(false)
+const resultOfFetchPlatformProduct = ref<PlatformProduct[]>([])
+const isLoadingFetchPlatformProduct = ref(false)
 const fetchRoute = async () => {
-    isLoadingFetchShopifyProduct.value = true
+    isLoadingFetchPlatformProduct.value = true
 
 
     try {
-        const www = await axios.get(route('retina.json.dropshipping.customer_sales_channel.shopify_products', {
+        const www = await axios.get(route(props.routes.fetch_products.name, {
             customerSalesChannel: props.customerSalesChannel?.id,
             query: querySearchPortfolios.value
         }))
-        resultOfFetchShopifyProduct.value = www.data.products
+
+        resultOfFetchPlatformProduct.value = www.data
         // console.log('qweqw', www)
     } catch (e) {
         console.error("Error processing products", e)
     }
-    isLoadingFetchShopifyProduct.value = false
+    isLoadingFetchPlatformProduct.value = false
 
 }
 const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
@@ -461,18 +465,18 @@ const onDisableCheckbox = (item) => {
                             size="xxs"
                             type="tertiary"/>
                 </template>
+
                 <template v-else>
 
-                    <template v-if="item.shopify_product_data?.title">
+                    <template v-if="item.platform_product_data?.name">
                         <div class="flex gap-x-2 items-center">
-
-                            <div v-if="item.shopify_product_data?.images?.edges?.[0]?.node?.src"
+                            <div v-if="item.platform_product_data?.images?.[0]?.src"
                                  class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow border border-gray-300 rounded">
-                                <img :src="item.shopify_product_data?.images?.edges?.[0]?.node?.src"/>
+                                <img :src="item.platform_product_data?.images?.[0]?.src"/>
                             </div>
 
                             <div>
-                                <span class="mr-1">{{ item.shopify_product_data?.title }}</span>
+                                <span class="mr-1">{{ item.platform_product_data?.name }}</span>
                             </div>
                         </div>
                     </template>
@@ -552,12 +556,13 @@ const onDisableCheckbox = (item) => {
 
         <!-- Column: Actions 2 (Modal shopify) -->
         <template #cell(create_new)="{ item }">
-                <div v-if="item.customer_sales_channel_platform_status  && !item.platform_status "  class="flex gap-x-2 items-center">
+            <div v-if="item.customer_sales_channel_platform_status  && !item.platform_status "
+                 class="flex gap-x-2 items-center">
                 <ButtonWithLink
                     v-tooltip="trans('Will create new product in Shopify')"
                     :routeTarget="{
                     method: 'post',
-                        name: 'retina.models.portfolio.store_new_shopify_product',
+                        name: props.routes.single_create_new.name,
                         parameters: {
                             portfolio: item.id
                         },
@@ -613,8 +618,8 @@ const onDisableCheckbox = (item) => {
                     <div class="h-full md:h-[400px] overflow-auto py-2 relative">
                         <!-- Products list -->
                         <div class="grid grid-cols-2 gap-3 pb-2">
-                            <template v-if="selectedPortfolio?.platform_possible_matches?.length > 0">
-                                <div v-for="(item, index) in filteredPortfolios" :key="index"
+                            <template v-if="resultOfFetchPlatformProduct?.length > 0">
+                                <div v-for="(item, index) in resultOfFetchPlatformProduct" :key="index"
                                      @click="() => selectedVariant = item"
                                      class="relative h-fit rounded cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
                                      :class="[
@@ -627,7 +632,7 @@ const onDisableCheckbox = (item) => {
                                                          fixed-width aria-hidden="true"/>
                                     </Transition>
                                     <slot name="product" :item="item">
-                                        <Image v-if="item.image" :src="item.image"
+                                        <Image v-if="item.images?.src" :src="item.images?.src"
                                                class="w-16 h-16 overflow-hidden mx-auto md:mx-0 mb-4 md:mb-0" imageCover
                                                :alt="item.name"/>
                                         <div class="flex flex-col justify-between">

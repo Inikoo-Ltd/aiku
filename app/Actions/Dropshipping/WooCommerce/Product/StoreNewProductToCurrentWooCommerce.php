@@ -25,7 +25,7 @@ class StoreNewProductToCurrentWooCommerce extends RetinaAction
      */
     public function handle(WooCommerceUser $wooCommerceUser, Portfolio $portfolio): void
     {
-        StoreWooCommerceProduct::dispatch($wooCommerceUser, $portfolio);
+        StoreWooCommerceProduct::run($wooCommerceUser, $portfolio);
     }
 
     public function asController(WooCommerceUser $wooCommerceUser, Portfolio $portfolio, ActionRequest $request): void
