@@ -104,8 +104,10 @@ Route::name("master_shops")->prefix('master-shops')
                         Route::prefix('{masterFamily}')->group(function () {
                             Route::get('//blueprint', ShowMasterFamilyWorkshop::class)->name('blueprint');
                             Route::get('', [ShowMasterFamily::class, 'inMasterDepartmentInMasterShop'])->name('show');
+                            Route::get('master-products', [IndexMasterProducts::class, 'inMasterFamilyInMasterDepartmentInMasterShop'])->name('show.master_products.index');
+                            Route::get('master-products/{masterProduct}', [ShowMasterProducts::class, 'inMasterFamilyInMasterDepartmentInMasterShop'])->name('show.master_products.show');
                         });
-                    });
+                    }); 
 
                     Route::prefix('sub-departments')->as('.master_sub_departments.')->group(function () {
                         Route::get('', [IndexMasterSubDepartments::class, 'inMasterDepartment'])->name('index');
