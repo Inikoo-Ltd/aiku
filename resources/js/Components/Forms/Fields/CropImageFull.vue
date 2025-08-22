@@ -96,6 +96,11 @@ const deleteImage = () => {
     props.form[props.fieldName] = null
 }
 
+const submit = () => {
+    // PreserveScroll affect error in EpmloyeePosition (can't access layout)
+     props.form.post(route(props.updateRoute.name, props.updateRoute.parameters), { preserveScroll: true, onSuccess : ()=> props.form.reset() })
+}
+
 
 watch(isOpenModalCrop, (val) => {
     if (val) _cropper.value?.refresh();
@@ -180,10 +185,11 @@ watch(isOpenModalCrop, (val) => {
     <div></div>
 
     <div class="flex justify-end md:justify-start  ml-0 md:ml-8">
+      
         <div  class="h-9 align-bottom text-center cursor-pointer" :disabled="form.processing || !form.isDirty">
           <template v-if="form.isDirty">
             <FontAwesomeIcon v-if="form.processing" icon="fad fa-spinner-third" class="text-2xl animate-spin" fixed-width aria-hidden="true" />
-            <FontAwesomeIcon v-else icon="fad fa-save" class="h-8" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" @click="emits('submit')" />
+            <FontAwesomeIcon v-else icon="fad fa-save" class="h-8" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" @click="submit" />
           </template>
           <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
         </div>
