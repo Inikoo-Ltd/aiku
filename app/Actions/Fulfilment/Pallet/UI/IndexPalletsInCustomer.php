@@ -271,25 +271,25 @@ class IndexPalletsInCustomer extends OrgAction
                 ],
 
                 FulfilmentCustomerPalletsTabsEnum::STORING->value => $this->tab == FulfilmentCustomerPalletsTabsEnum::STORING->value ?
-                    fn() => PalletsResource::collection($pallets)
-                    : Inertia::lazy(fn() => PalletsResource::collection($pallets)),
+                    fn () => PalletsResource::collection($pallets)
+                    : Inertia::lazy(fn () => PalletsResource::collection($pallets)),
 
                 FulfilmentCustomerPalletsTabsEnum::INCOMING->value => $this->tab == FulfilmentCustomerPalletsTabsEnum::INCOMING->value ?
-                    fn() => PalletsResource::collection($pallets)
-                    : Inertia::lazy(fn() => PalletsResource::collection($pallets)),
+                    fn () => PalletsResource::collection($pallets)
+                    : Inertia::lazy(fn () => PalletsResource::collection($pallets)),
 
 
                 FulfilmentCustomerPalletsTabsEnum::RETURNED->value => $this->tab == FulfilmentCustomerPalletsTabsEnum::RETURNED->value ?
-                    fn() => PalletsResource::collection($pallets)
-                    : Inertia::lazy(fn() => PalletsResource::collection($pallets)),
+                    fn () => PalletsResource::collection($pallets)
+                    : Inertia::lazy(fn () => PalletsResource::collection($pallets)),
 
                 FulfilmentCustomerPalletsTabsEnum::INCIDENT->value => $this->tab == FulfilmentCustomerPalletsTabsEnum::INCIDENT->value ?
-                    fn() => PalletsResource::collection($pallets)
-                    : Inertia::lazy(fn() => PalletsResource::collection($pallets)),
+                    fn () => PalletsResource::collection($pallets)
+                    : Inertia::lazy(fn () => PalletsResource::collection($pallets)),
 
                 FulfilmentCustomerPalletsTabsEnum::ALL->value => $this->tab == FulfilmentCustomerPalletsTabsEnum::ALL->value ?
-                    fn() => PalletsResource::collection($pallets)
-                    : Inertia::lazy(fn() => PalletsResource::collection($pallets)),
+                    fn () => PalletsResource::collection($pallets)
+                    : Inertia::lazy(fn () => PalletsResource::collection($pallets)),
 
 
             ]

@@ -249,12 +249,12 @@ class IndexMasterProducts extends GrpAction
                             'style'   => 'create',
                             'tooltip' => __('create product'),
                             'label'   => __('create product'),
-                            'route'   =>  
+                            'route'   =>
                                 [
                                     'name'       => 'grp.masters.master_shops.show.master_departments.create',
                                     'parameters' => $request->route()->originalParameters()
                                 ]
-                            
+
                         ],
                     ],
                 ],

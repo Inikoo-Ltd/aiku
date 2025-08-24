@@ -49,10 +49,10 @@ class OrdersResource extends JsonResource
         $payStatus = match (true) {
             $this->state == OrderStateEnum::CREATING => 'waiting',
             $this->payment_amount == $this->total_amount => 'success',
-            $this->state == OrderStateEnum::CANCELLED => 'fail', 
+            $this->state == OrderStateEnum::CANCELLED => 'fail',
             default => 'waiting'
         };
-        
+
 
         return [
             'slug'                   => $this->slug,

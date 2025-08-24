@@ -9,6 +9,7 @@
 namespace App\Actions\Masters\MasterShop;
 
 use App\Actions\HydrateModel;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateInvoiceIntervals;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamilies;
@@ -35,7 +36,7 @@ class HydrateMasterShop extends HydrateModel
         MasterShopHydrateMasterFamilies::run($masterShop);
         MasterShopHydrateMasterAssets::run($masterShop);
         MasterShopHydrateMasterFamiliesWithNoDepartment::run($masterShop);
-
+        MasterShopHydrateInvoiceIntervals::run($masterShop->id);
     }
 
 

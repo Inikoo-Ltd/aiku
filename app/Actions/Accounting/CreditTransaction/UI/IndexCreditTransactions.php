@@ -23,6 +23,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexCreditTransactions extends OrgAction
 {
+    use WithCRMAuthorisation;
+
     public function handle(Customer $customer, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {

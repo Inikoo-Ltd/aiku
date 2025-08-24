@@ -78,6 +78,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \App\Models\Masters\MasterProductCategoryOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Masters\MasterProductCategoryOrderingStats|null $orderingStats
  * @property-read MasterProductCategory|null $parent
+ * @property-read LaravelCollection<int, ProductCategory> $productCategories
  * @property-read \App\Models\Masters\MasterProductCategorySalesIntervals|null $salesIntervals
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Masters\MasterProductCategoryStats|null $stats

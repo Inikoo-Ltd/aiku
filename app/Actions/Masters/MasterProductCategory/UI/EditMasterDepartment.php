@@ -10,9 +10,7 @@
 
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
-use App\Actions\Masters\MasterShop\UI\IndexMasterShops;
 use App\Actions\OrgAction;
-use App\Enums\UI\SupplyChain\MasterSubDepartmentTabsEnum;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
@@ -125,7 +123,7 @@ class EditMasterDepartment extends OrgAction
     }
 
 
-    public function getBreadcrumbs(MasterShop|Group $parent, MasterProductCategory $masterDepartment,  string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(MasterShop|Group $parent, MasterProductCategory $masterDepartment, string $routeName, array $routeParameters): array
     {
         return ShowMasterDepartment::make()->getBreadcrumbs(
             parent: $parent,

@@ -38,8 +38,6 @@ use Spatie\QueryBuilder\AllowedSort;
 use Spatie\QueryBuilder\Sorts\Sort;
 use Illuminate\Database\Eloquent\Builder;
 
-use function PHPUnit\Framework\isNan;
-
 class IndexFamilies extends OrgAction
 {
     use WithCatalogueAuthorisation;
@@ -324,7 +322,7 @@ class IndexFamilies extends OrgAction
                 $createRoute = "grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.create";
             }
 
-            if(is_null($this->parent->masterProductCategory)) {
+            if (is_null($this->parent->masterProductCategory)) {
                 $actions[] = [
                     'type'    => 'button',
                     'style'   => 'create',
@@ -455,8 +453,8 @@ class IndexFamilies extends OrgAction
                     fn () => FamiliesResource::collection(IndexFamilies::run($this->parent, prefix: ProductCategoryTabsEnum::SALES->value))
                     : Inertia::lazy(fn () => FamiliesResource::collection(IndexFamilies::run($this->parent, prefix: ProductCategoryTabsEnum::SALES->value))),
             ]
-        )->table($this->tableStructure(parent: $this->parent,  prefix: ProductCategoryTabsEnum::INDEX->value, sales: false))
-            ->table($this->tableStructure(parent: $this->parent,prefix: ProductCategoryTabsEnum::SALES->value, sales: $this->sales));
+        )->table($this->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::INDEX->value, sales: false))
+            ->table($this->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::SALES->value, sales: $this->sales));
     }
 
     public function getBreadcrumbs(Group|Shop|ProductCategory|Organisation|Collection $parent, string $routeName, array $routeParameters, string $suffix = null): array
