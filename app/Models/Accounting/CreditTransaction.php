@@ -8,6 +8,8 @@
 
 namespace App\Models\Accounting;
 
+use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
+use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Models\Helpers\Currency;
 use App\Models\Traits\InCustomer;
 use Illuminate\Database\Eloquent\Model;
@@ -57,16 +59,18 @@ class CreditTransaction extends Model
     use InCustomer;
 
     protected $casts = [
-        'data'                        => 'array',
-        'date'                        => 'datetime',
-        'amount'                      => 'decimal:2',
-        'running_amount'              => 'decimal:2',
-        'grp_exchange'                => 'decimal:4',
-        'org_exchange'                => 'decimal:4',
-        'grp_amount'                  => 'decimal:2',
-        'org_amount'                  => 'decimal:2',
-        'fetched_at'                  => 'datetime',
-        'last_fetched_at'             => 'datetime',
+        'data'            => 'array',
+        'date'            => 'datetime',
+        'amount'          => 'decimal:2',
+        'running_amount'  => 'decimal:2',
+        'grp_exchange'    => 'decimal:4',
+        'org_exchange'    => 'decimal:4',
+        'grp_amount'      => 'decimal:2',
+        'org_amount'      => 'decimal:2',
+        'fetched_at'      => 'datetime',
+        'last_fetched_at' => 'datetime',
+        'type'            => CreditTransactionTypeEnum::class,
+        'reason'          => CreditTransactionReasonEnum::class,
     ];
 
     protected $attributes = [

@@ -37,34 +37,27 @@ class ShowPayment extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inCustomer(Organisation $organisation, Shop $shop, Customer $customer, Payment $payment, ActionRequest $request): Payment
     {
-        if ($this->parent instanceof Group) {
-            return $request->user()->authTo("group-overview");
-        }
-        $this->canEdit = $request->user()->authTo("accounting.{$this->organisation->id}.edit");
-
-        return $request->user()->authTo("accounting.{$this->organisation->id}.view");
+        $this->initialisationFromShop($shop, $request)->withTab(PaymentTabsEnum::values());
+        return $this->handle($payment);
     }
 
     public function inOrganisation(Organisation $organisation, Payment $payment, ActionRequest $request): Payment
     {
-        $this->parent = $organisation;
         $this->initialisation($organisation, $request)->withTab(PaymentTabsEnum::values());
         return $this->handle($payment);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inPaymentAccount(Organisation $organisation, PaymentAccount $paymentAccount, Payment $payment, ActionRequest $request): Payment
     {
-        $this->parent = $paymentAccount;
         $this->initialisation($organisation, $request)->withTab(PaymentTabsEnum::values());
         return $this->handle($payment);
     }
-
 
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inPaymentAccountInPaymentServiceProvider(Organisation $organisation, PaymentServiceProvider $paymentServiceProvider, PaymentAccount $paymentAccount, Payment $payment, ActionRequest $request): Payment
     {
-        $this->parent = $paymentAccount;
         $this->initialisation($organisation, $request)->withTab(PaymentTabsEnum::values());
         return $this->handle($payment);
     }
@@ -73,7 +66,6 @@ class ShowPayment extends OrgAction
     public function inPaymentServiceProvider(Organisation $organisation, PaymentServiceProvider $paymentServiceProvider, Payment $payment, ActionRequest $request): Payment
     {
         $this->initialisation($organisation, $request)->withTab(PaymentTabsEnum::values());
-        $this->parent = $paymentServiceProvider;
         return $this->handle($payment);
     }
 
