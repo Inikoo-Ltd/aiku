@@ -234,7 +234,7 @@ watch(() => props.idxSubmitSuccess, (newVal, oldVal) => {
                                                     <div v-if="item.reference" v-tooltip="trans('Reference')" class="w-fit text-xs text-gray-400 italic">{{ item.reference || 'no reference' }}</div>
                                                     <div v-if="item.gross_weight" v-tooltip="trans('Weight')" class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}</div>
                                                 </div>
-                                                <div v-if="!item.no_price" xclick="() => selectProduct(item)" v-tooltip="trans('Price')" class="w-fit text-xs text-gray-x500">
+                                                <div v-if="!item.no_price && item.price" xclick="() => selectProduct(item)" v-tooltip="trans('Price')" class="w-fit text-xs text-gray-x500">
                                                     {{ locale?.currencyFormat(item.currency_code || 'usd', item.price || 0) }}
                                                 </div>
                                                 <NumberWithButtonSave

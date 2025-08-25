@@ -52,7 +52,7 @@ class GetRecommendedTradeUnits extends GrpAction
                 'trade_units.marketing_dimensions',
                 'trade_units.volume',
                 'trade_units.type',
-
+                'trade_units.id',
             ])
             ->allowedSorts(['code', 'name', 'net_weight', 'gross_weight'])
             ->allowedFilters([$globalSearch])
