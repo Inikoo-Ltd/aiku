@@ -114,7 +114,7 @@ const addNewBlock = async ({ block, type }) => {
     position =  addBlockParentIndex.value.parentIndex + 1;
   }
 
-  //pushToHistory();
+  pushToHistory();
   router.post(
     route(props.webpage.add_web_block_route.name, props.webpage.add_web_block_route.parameters),
     { web_block_type_id: block.id, position  : position },
@@ -142,7 +142,7 @@ const addNewBlock = async ({ block, type }) => {
 };
 
 const duplicateBlock = async (modelHasWebBlock = Number) => {
-  //pushToHistory();
+  pushToHistory();
   router.post(
     route('grp.models.webpage.web_block.duplicate', {
       webpage: data.value.id,
@@ -171,7 +171,6 @@ const duplicateBlock = async (modelHasWebBlock = Number) => {
 };
 
 const debounceSaveWorkshop = (block) => {
-  console.log('debounceSaveWorkshop', block);
   // Clear any pending debounce timers for this block
   if (debounceTimers.value[block.id]) {
     clearTimeout(debounceTimers.value[block.id]);
@@ -193,7 +192,7 @@ const debounceSaveWorkshop = (block) => {
 
     isLoadingBlock.value = block.id;
     isSavingBlock.value = true;
-    //pushToHistory();
+    pushToHistory();
     try {
     const response =  await axios.patch(
         url,
@@ -295,7 +294,7 @@ provide('onSaveWorkshop', onSaveWorkshop);
 
 const sendOrderBlock = async block => {
   if (orderBlockCancelToken.value) orderBlockCancelToken.value();
-  //pushToHistory(); 
+  pushToHistory(); 
   router.post(
     route(props.webpage.reorder_web_blocks_route.name, props.webpage.reorder_web_blocks_route.parameters),
     { positions: block },
@@ -320,7 +319,7 @@ const sendOrderBlock = async block => {
 
 const sendDeleteBlock = async (block: Daum) => {
   if (deleteBlockCancelToken.value) deleteBlockCancelToken.value();
-  //pushToHistory(); 
+  pushToHistory(); 
   router.delete(
     route(props.webpage.delete_model_has_web_blocks_route.name, { modelHasWebBlocks: block.id }),
     {
@@ -453,13 +452,13 @@ const SyncAurora = () => {
 };
 
 
-/* const saveHistoryToLocalStorage = () => {
+const saveHistoryToLocalStorage = () => {
   localStorage.setItem('undoStack', JSON.stringify(undoStack.value));
   localStorage.setItem('redoStack', JSON.stringify(redoStack.value));
 };
 
 // Push current state to undoStack
-const //pushToHistory = () => {
+const pushToHistory = () => {
   // Clone current layout state
   const currentState = JSON.parse(JSON.stringify(data.value.layout));
 
@@ -475,9 +474,9 @@ const //pushToHistory = () => {
   redoStack.value = [];
 
   saveHistoryToLocalStorage();
-}; */
+};
 
-/* // Undo
+ // Undo
 const undo = async () => {
   if (undoStack.value.length === 0) return;
 
@@ -494,14 +493,29 @@ const undo = async () => {
 
   saveHistoryToLocalStorage();
   console.log('Redo stack:', redoStack.value);
-  try {
-		const response = await axios.get(
-			route('grp.json.web-block.web_block_histories.index', {webBlock : 554988, webpage : props.webpage.id }),
-		)
-		console.log('Undo stack:', response);
-	} catch (error: any) {
-		console.log(error)
-	}
+ try {
+  const payload = {
+    layout: JSON.parse(JSON.stringify(prevState)), // deep clone
+  }
+
+  const response = await axios.patch(
+    route('grp.models.webpage.web_block_check', {
+      webpage: props.webpage.id,
+    }),
+    payload
+  )
+
+  // ✅ kalau butuh response
+  console.log("Update success:", response.data)
+
+} catch (error: any) {
+  if (axios.isAxiosError(error)) {
+    console.error("Axios error:", error.response?.data || error.message)
+  } else {
+    console.error("Unexpected error:", error)
+  }
+}
+
 };
 
 // Redo
@@ -632,12 +646,12 @@ console.log('props',props)
           <div v-tooltip="'Full screen'" @click="fullScreen = !fullScreen" class="cursor-pointer">
             <FontAwesomeIcon :icon="!fullScreen ? faExpandWide : faCompressWide" fixed-width />
           </div>
-           <!-- <div v-tooltip="'Undo'" class="cursor-pointer">
+           <div v-tooltip="'Undo'" class="cursor-pointer">
             <FontAwesomeIcon  @click="undo" :icon="faUndo" fixed-width />
-          </div> -->
-          <!--  <div v-tooltip="'Redo'" class="cursor-pointer">
+          </div>
+           <div v-tooltip="'Redo'" class="cursor-pointer">
             <FontAwesomeIcon  @click="redo" :icon="faRedo" fixed-width />
-          </div> -->
+          </div>
         </div>
 
         <div v-if="compUsersEditThisPage?.length > 1"
