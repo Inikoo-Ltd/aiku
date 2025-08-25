@@ -6,8 +6,6 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-
-
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Catalogue\Shop\UpdateShop;
@@ -40,6 +38,11 @@ use App\Models\Masters\MasterShopOrderingStats;
 use App\Models\Masters\MasterShopSalesIntervals;
 use App\Models\Masters\MasterShopStats;
 use Inertia\Testing\AssertableInertia;
+use App\Models\Sysadmin\User;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\ParallelTesting;
+use Illuminate\Support\Facades\DB;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
@@ -61,8 +64,6 @@ beforeEach(function () {
     actingAs($this->adminGuest->getUser());
 });
 
-
-
 test("UI Index Master Shops", function () {
     $response = get(
         route("grp.masters.master_shops.index")
@@ -75,7 +76,6 @@ test("UI Index Master Shops", function () {
             ->has("data");
     });
 });
-
 
 test('create master shop', function () {
     $masterShop = StoreMasterShop::make()->action(
@@ -120,10 +120,10 @@ test("UI Show master shop", function (MasterShop $masterShop) {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) =>
+                fn(AssertableInertia $page) =>
                 $page->where("title", $masterShop->name)
-                        ->has('subNavigation')
-                        ->etc()
+                    ->has('subNavigation')
+                    ->etc()
             )
             ->has("tabs");
     });
@@ -198,8 +198,8 @@ test("UI Index Master Departments", function (MasterShop $masterShop) {
             ->has("data")
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) =>
-                    $page->has('subNavigation')->etc()
+                fn(AssertableInertia $page) =>
+                $page->has('subNavigation')->etc()
             );
     });
 })->depends('create master shop');
@@ -215,8 +215,8 @@ test("UI Master Dashboard", function () {
             ->has("breadcrumbs", 2)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) =>
-                    $page->has('title')->etc()
+                fn(AssertableInertia $page) =>
+                $page->has('title')->etc()
             );
     });
 });
@@ -233,8 +233,8 @@ test("UI Index Master Families", function (MasterShop $masterShop) {
             ->has("data")
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) =>
-                    $page->has('subNavigation')->etc()
+                fn(AssertableInertia $page) =>
+                $page->has('subNavigation')->etc()
             );
     });
 })->depends('create master shop');
@@ -251,8 +251,8 @@ test("UI Index Master SubDepartments", function (MasterShop $masterShop) {
             ->has("data")
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) =>
-                    $page->has('subNavigation')->etc()
+                fn(AssertableInertia $page) =>
+                $page->has('subNavigation')->etc()
             );
     });
 })->depends('create master shop')->todo();
@@ -404,8 +404,8 @@ test("UI Index Master SubDepartments in Department", function (MasterProductCate
             ->has("data")
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) =>
-                    $page->has('subNavigation')->etc()
+                fn(AssertableInertia $page) =>
+                $page->has('subNavigation')->etc()
             );
     });
 })->depends('create master product category');
@@ -425,8 +425,8 @@ test("UI Show Master SubDepartment", function (MasterProductCategory $masterSubD
             ->has("title")
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) =>
-                    $page->has('subNavigation')->etc()
+                fn(AssertableInertia $page) =>
+                $page->has('subNavigation')->etc()
             )
             ->has("tabs");
     });
@@ -449,5 +449,398 @@ test('Hydrate master assets', function (MasterAsset $masterAsset) {
     HydrateMasterAssets::run($masterAsset);
     $masterAsset->refresh();
     expect($masterAsset)->toBeInstanceOf(MasterAsset::class);
-
 })->depends('update master asset');
+
+test('it throws a validation exception when creating a master shop without a code', function () {
+    $this->expectException(ValidationException::class);
+
+    StoreMasterShop::make()->action(
+        $this->group,
+        [
+            'name' => "Incomplete Shop",
+            'type' => ShopTypeEnum::DROPSHIPPING
+        ]
+    );
+});
+
+test('it throws a validation exception when updating a master shop with an empty name', function (MasterShop $masterShop) {
+    $this->expectException(ValidationException::class);
+
+    UpdateMasterShop::make()->action(
+        $masterShop,
+        [
+            'name' => '',
+        ]
+    );
+})->depends('create master shop');
+
+test('it fails to assign a non-existent master shop to a shop', function () {
+    $this->expectException(ValidationException::class);
+    UpdateShop::make()->action(
+        $this->shop,
+        [
+            'master_shop_id' => 99999
+        ]
+    );
+});
+
+test('it fails to create master product category without a code', function (MasterShop $masterShop) {
+    $this->expectException(ValidationException::class);
+
+    StoreMasterProductCategory::make()->action(
+        $masterShop,
+        [
+            'name' => 'product category 1',
+            'type' => MasterProductCategoryTypeEnum::DEPARTMENT
+        ]
+    );
+})->depends("create master shop");
+
+test('it fails to update master product category with a duplicate code', function (MasterProductCategory $categoryToUpdate) {
+    StoreMasterProductCategory::make()->action($categoryToUpdate->masterShop, [
+        'code' => 'DUPLICATE_CAT_CODE',
+        'name' => 'Existing Category',
+        'type' => MasterProductCategoryTypeEnum::DEPARTMENT
+    ]);
+
+    $this->expectException(ValidationException::class);
+
+    UpdateMasterProductCategory::make()->action($categoryToUpdate, [
+        'code' => 'DUPLICATE_CAT_CODE',
+    ]);
+})->depends('create master product category');
+
+test('it throws a validation exception when updating a master product category with an empty name', function (MasterProductCategory $masterProductCategory) {
+    $this->expectException(ValidationException::class);
+
+    UpdateMasterProductCategory::make()->action(
+        $masterProductCategory,
+        [
+            'name' => '',
+        ]
+    );
+})->depends('create master product category');
+
+test('it fails to create master asset with an invalid price', function (MasterShop $masterShop) {
+    $this->expectException(ValidationException::class);
+
+    StoreMasterAsset::make()->action(
+        $masterShop,
+        [
+            'code' => 'MASTER_ASSET_INVALID',
+            'name' => 'master asset invalid',
+            'is_main' => true,
+            'type' => MasterAssetTypeEnum::RENTAL,
+            'price' => 'bukan-angka',
+            'stocks' => [],
+        ]
+    );
+})->depends("create master shop");
+
+test('it fails to update master asset with an empty name', function (MasterAsset $masterAsset) {
+    $this->expectException(ValidationException::class);
+
+    UpdateMasterAsset::make()->action(
+        $masterAsset,
+        [
+            'name' => '',
+        ]
+    );
+})->depends('create master asset');
+
+test('it fails to create master sub department without a name', function (MasterProductCategory $masterDepartment) {
+    $this->expectException(ValidationException::class);
+
+    StoreMasterSubDepartment::make()->action(
+        $masterDepartment,
+        [
+            'code' => 'SUB_DEPT_INVALID',
+        ]
+    );
+})->depends('create master product category');
+
+test('it fails to update master shop with a duplicate code', function (MasterShop $shopToUpdate) {
+    StoreMasterShop::make()->action($this->group, [
+        'code' => "EXISTING_CODE",
+        'name' => "Existing Shop",
+        'type' => ShopTypeEnum::DROPSHIPPING
+    ]);
+
+    $this->expectException(ValidationException::class);
+
+    UpdateMasterShop::make()->action($shopToUpdate, [
+        'code' => 'EXISTING_CODE'
+    ]);
+})->depends('create master shop');
+
+test('it fails to create master shop from command if required arguments are missing', function () {
+    $this->artisan('master_shop:create', [
+        'group' => $this->group->slug,
+        'type'  => ShopTypeEnum::DROPSHIPPING,
+    ])
+        ->expectsOutputToContain('Not enough arguments (missing: "code, name")')
+        ->assertFailed();
+});
+
+test('it fails to create master shop from command if required arguments are missing', function () {
+    $this->artisan('master_shop:create', [
+        'group' => $this->group->slug,
+        'type'  => ShopTypeEnum::DROPSHIPPING,
+    ])
+        ->expectsOutputToContain('Not enough arguments (missing: "code, name")')
+        ->assertFailed();
+});
+
+test('deactivating a master shop also deactivates its product categories', function (MasterProductCategory $masterProductCategory) {
+    expect($masterProductCategory->status)->toBeTrue();
+
+    UpdateMasterShop::make()->action($masterProductCategory->masterShop, [
+        'status' => false
+    ]);
+
+    $masterProductCategory->refresh();
+
+    expect($masterProductCategory->status)->toBeFalse();
+})->depends('create master product category');
+
+test('creating a sub-department updates parent category stats', function (MasterProductCategory $masterDepartment) {
+    expect($masterDepartment->stats->number_sub_departments)->toBe(0);
+
+    StoreMasterSubDepartment::make()->action($masterDepartment, [
+        'code' => 'SUB1',
+        'name' => 'Sub Department One',
+    ]);
+
+    $masterDepartment->refresh();
+
+    expect($masterDepartment->stats->number_sub_departments)->toBe(1);
+})->depends('create master product category');
+
+test('it correctly updates master asset price to zero', function (MasterAsset $masterAsset) {
+    UpdateMasterAsset::make()->action($masterAsset, [
+        'price' => 0,
+    ]);
+
+    $masterAsset->refresh();
+
+    expect((int) $masterAsset->price)->toBe(0);
+})->depends('create master asset');
+
+test('a non-admin user cannot create a master shop', function () {
+    $regularUser = User::factory()->create();
+    actingAs($regularUser);
+
+    $this->expectException(AuthorizationException::class);
+
+    StoreMasterShop::make()->action(
+        $this->group,
+        [
+            'code' => "SHOP_FAIL",
+            'name' => "Failed Shop",
+            'type' => ShopTypeEnum::DROPSHIPPING
+        ]
+    );
+});
+
+test('it correctly updates master asset price to zero', function (MasterAsset $masterAsset) {
+    UpdateMasterAsset::make()->action($masterAsset, [
+        'price' => 0,
+    ]);
+
+    $masterAsset->refresh();
+
+    expect((int) $masterAsset->price)->toBe(0);
+})->depends('create master asset');
+
+test('updating a sub-department name does not affect the parent category stats', function (MasterProductCategory $masterSubDepartment) {
+    $masterDepartment = $masterSubDepartment->parent;
+    $initialCount = $masterDepartment->stats->number_sub_departments;
+
+    UpdateMasterProductCategory::make()->action($masterSubDepartment, [
+        'name' => 'Updated Sub Department Name',
+    ]);
+
+    expect($masterDepartment->refresh()->stats->number_sub_departments)->toBe($initialCount);
+})->depends('create master sub department');
+
+test('it correctly handles updating master asset price to zero', function (MasterAsset $masterAsset) {
+    UpdateMasterAsset::make()->action($masterAsset, ['price' => 0]);
+    expect((int) $masterAsset->refresh()->price)->toBe(0);
+})->depends('create master asset');
+
+test('creating a product category with special characters in name is handled correctly', function (MasterShop $masterShop) {
+    $specialName = 'Category /w "Special" Chars & Symbols!';
+    $category = StoreMasterProductCategory::make()->action($masterShop, [
+        'code' => 'SPECIAL_CHARS',
+        'name' => $specialName,
+        'type' => MasterProductCategoryTypeEnum::DEPARTMENT
+    ]);
+
+    expect($category->name)->toBe($specialName)
+        ->and($category->slug)->toBe('category-w-special-chars-symbols');
+})->depends('create master shop');
+
+test('a non-admin user cannot perform master actions', function ($action, $data) {
+    $regularUser = User::factory()->create();
+    actingAs($regularUser);
+
+    $this->expectException(AuthorizationException::class);
+
+    $action::make()->action(...$data);
+})->with([
+    'create master shop' => [
+        fn() => StoreMasterShop::class,
+        fn() => [$this->group, ['code' => 'FAIL', 'name' => 'Fail', 'type' => ShopTypeEnum::DROPSHIPPING]]
+    ],
+    'create master product category' => [
+        fn() => StoreMasterProductCategory::class,
+        fn() => [MasterShop::first(), ['code' => 'FAIL', 'name' => 'Fail', 'type' => MasterProductCategoryTypeEnum::DEPARTMENT]]
+    ],
+    'create master asset' => [
+        fn() => StoreMasterAsset::class,
+        fn() => [MasterShop::first(), ['code' => 'FAIL', 'name' => 'Fail', 'type' => MasterAssetTypeEnum::RENTAL, 'price' => 10]]
+    ],
+]);
+
+test('it prevents creating duplicate master shop codes under race conditions', function () {
+    $results = ParallelTesting::concurrently([
+        fn() => StoreMasterShop::make()->action($this->group, [
+            'code' => 'RACE_CODE',
+            'name' => 'Shop A',
+            'type' => ShopTypeEnum::DROPSHIPPING
+        ]),
+        fn() => StoreMasterShop::make()->action($this->group, [
+            'code' => 'RACE_CODE',
+            'name' => 'Shop B',
+            'type' => ShopTypeEnum::DROPSHIPPING
+        ]),
+    ]);
+
+    $this->assertCount(1, array_filter($results, fn($result) => $result instanceof \Illuminate\Validation\ValidationException));
+    $this->assertDatabaseCount('master_shops', 1, ['code' => 'RACE_CODE']);
+});
+
+test('hydrating master departments is idempotent', function (MasterProductCategory $masterDepartment) {
+    StoreMasterSubDepartment::make()->action($masterDepartment, ['code' => 'SUB1', 'name' => 'Sub']);
+    $masterDepartment->refresh();
+    expect($masterDepartment->stats->number_sub_departments)->toBe(1);
+
+    MasterShopHydrateMasterDepartments::run($masterDepartment->masterShop);
+    expect($masterDepartment->refresh()->stats->number_sub_departments)->toBe(1);
+
+    MasterShopHydrateMasterDepartments::run($masterDepartment->masterShop);
+    expect($masterDepartment->refresh()->stats->number_sub_departments)->toBe(1);
+})->depends('create master product category');
+
+test('it handles creating a sub-department with a very long name', function (MasterProductCategory $masterDepartment) {
+    $longName = str_repeat('a', 255);
+
+    $subDepartment = StoreMasterSubDepartment::make()->action($masterDepartment, [
+        'code' => 'LONG_NAME',
+        'name' => $longName,
+    ]);
+
+    $this->assertDatabaseHas('master_product_categories', [
+        'id' => $subDepartment->id,
+        'name' => $longName
+    ]);
+
+    expect($subDepartment->name)->toBe($longName);
+})->depends('create master product category');
+
+test('it prevents N+1 query problems when fetching master shops with categories', function () {
+    MasterShop::factory(10)
+        ->has(MasterProductCategory::factory()->count(3), 'productCategories')
+        ->create(['group_id' => $this->group->id]);
+
+    DB::enableQueryLog();
+
+    get(route("grp.masters.master_shops.index"));
+
+    $queries = DB::getQueryLog();
+    DB::disableQueryLog();
+
+    expect(count($queries))->toBeLessThan(5, 'Terdeteksi adanya N+1 Query Problem!');
+});
+
+test('it prevents mass assignment vulnerability on master asset update', function (MasterAsset $masterAsset) {
+    $originalPrice = $masterAsset->price;
+
+    UpdateMasterAsset::make()->action($masterAsset, [
+        'name' => 'Updated Name via Test',
+        'is_approved' => true,
+    ]);
+
+    $masterAsset->refresh();
+
+    expect($masterAsset->name)->toBe('Updated Name via Test');
+    expect((int)$masterAsset->price)->toBe((int)$originalPrice);
+    $this->assertArrayNotHasKey('is_approved', $masterAsset->getAttributes());
+})->depends('create master asset');
+
+test('it shows a success notification after creating a master shop', function () {
+    $shopData = [
+        'code' => "UI_TEST_SHOP",
+        'name' => "UI Test Shop",
+        'type' => ShopTypeEnum::DROPSHIPPING->value
+    ];
+
+    $response = $this->post(route('grp.masters.master_shops.store'), $shopData);
+
+    $response->assertRedirect();
+
+    $redirectResponse = $this->get($response->headers->get('Location'));
+
+    $redirectResponse->assertInertia(
+        fn($page) =>
+        $page->has('flash.success')
+            ->where('flash.success', 'Master Shop berhasil dibuat.')
+    );
+});
+
+test('a master asset status can only be changed from active to inactive after being used', function (MasterAsset $masterAsset) {
+    expect($masterAsset->status)->toBeTrue()
+        ->and($masterAsset->stats->times_used)->toBe(0);
+
+    $action = UpdateMasterAsset::make()->action($masterAsset, ['status' => false]);
+    expect($action)->toBeFalse();
+    expect($masterAsset->refresh()->status)->toBeTrue();
+
+    $masterAsset->stats->increment('times_used');
+
+    $action = UpdateMasterAsset::make()->action($masterAsset, ['status' => false]);
+    expect($action)->toBeInstanceOf(MasterAsset::class);
+    expect($masterAsset->refresh()->status)->toBeFalse();
+})->depends('create master asset');
+
+test('[REGRESSION] hydrator correctly counts categories with numeric names', function (MasterShop $masterShop) {
+    StoreMasterProductCategory::make()->action($masterShop, ['code' => 'CAT1', 'name' => 'Category 1']);
+    StoreMasterProductCategory::make()->action($masterShop, ['code' => 'CAT2', 'name' => 'Category 2']);
+
+    HydrateMasterShop::run($masterShop);
+
+    expect($masterShop->refresh()->stats->number_master_product_categories)->toBe(2);
+})->depends('create master shop');
+
+test('hydrator correctly syncs after a master product category is deleted', function (MasterProductCategory $category1, MasterProductCategory $category2) {
+    $masterShop = $category1->masterShop;
+    $category2->update(['master_shop_id' => $masterShop->id]);
+
+    HydrateMasterShop::run($masterShop);
+    expect($masterShop->refresh()->stats->number_master_product_categories)->toBe(2);
+
+    $category1->delete();
+
+    HydrateMasterShop::run($masterShop);
+
+    expect($masterShop->refresh()->stats->number_master_product_categories)->toBe(1);
+})->depends('create master product category', 'create master product category');
+
+
+test('it prevents a category from being its own parent', function (MasterProductCategory $category) {
+    $this->expectException(\Illuminate\Validation\ValidationException::class);
+
+    UpdateMasterProductCategory::make()->action($category, [
+        'parent_id' => $category->id,
+    ]);
+})->depends('create master product category');
