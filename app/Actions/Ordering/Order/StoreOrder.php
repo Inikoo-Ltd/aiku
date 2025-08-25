@@ -224,13 +224,18 @@ class StoreOrder extends OrgAction
         GroupHydrateOrderInBasketAtCreatedIntervals::dispatch($order->group, $intervalsExceptHistorical, []);
         OrganisationHydrateOrderInBasketAtCreatedIntervals::dispatch($order->organisation, $intervalsExceptHistorical, []);
         ShopHydrateOrderInBasketAtCreatedIntervals::dispatch($order->shop, $intervalsExceptHistorical, []);
-        MasterShopHydrateOrderInBasketAtCreatedIntervals::dispatch($order->master_shop_id, $intervalsExceptHistorical, []);
+
+        if ($order->master_shop_id) {
+            MasterShopHydrateOrderInBasketAtCreatedIntervals::dispatch($order->master_shop_id, $intervalsExceptHistorical, []);
+        }
 
         if ($order->updated_by_customer_at) {
             GroupHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->group, $intervalsExceptHistorical, []);
             OrganisationHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->organisation, $intervalsExceptHistorical, []);
             ShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->shop, $intervalsExceptHistorical, []);
-            MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->master_shop_id, $intervalsExceptHistorical, []);
+            if ($order->master_shop_id) {
+                MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->master_shop_id, $intervalsExceptHistorical, []);
+            }
         }
 
         if ($order->customer_client_id) {
