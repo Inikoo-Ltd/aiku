@@ -199,6 +199,7 @@ class IndexFamilies extends OrgAction
                 'sub_department_name',
                 'department_name',
                 'sales_all',
+                'invoices_all',
                 AllowedSort::custom(
                     'collections',
                     new class () implements Sort {
@@ -282,7 +283,7 @@ class IndexFamilies extends OrgAction
             if ($sales) {
                 $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'sales_all', label: __('sales'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'invoices', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true);
+                    ->column(key: 'invoices_all', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true);
             } else {
                 if ($parent instanceof Organisation) {
                     $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);

@@ -252,7 +252,8 @@ class ShowSubDepartment extends OrgAction
             'grp.org.shops.show.catalogue.sub_departments.show.products.index',
             'grp.org.shops.show.catalogue.sub_departments.show.products.show',
             'grp.org.shops.show.catalogue.sub_departments.show.families.show.products.index',
-            'grp.org.shops.show.catalogue.sub_departments.show.collection.index' => 
+            'grp.org.shops.show.catalogue.sub_departments.show.collection.index',
+            'grp.org.shops.show.catalogue.sub_departments.show.collection.show' => 
             array_merge(
                 ShowShop::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
