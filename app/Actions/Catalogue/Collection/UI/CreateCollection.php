@@ -167,6 +167,21 @@ class CreateCollection extends OrgAction
                     ]
                 ]
             ),
+            'grp.org.shops.show.catalogue.sub_departments.show.collection.create' => array_merge(
+                IndexCollectionsInProductCategory::make()->getBreadcrumbs(
+                    $parent,
+                    'grp.org.shops.show.catalogue.sub_departments.show.collection.index',
+                    $routeParameters,
+                ),
+                [
+                    [
+                        'type'          => 'creatingModel',
+                        'creatingModel' => [
+                            'label' => $label,
+                        ]
+                    ]
+                ]
+            ),
             'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.create' => array_merge(
                 IndexCollectionsInProductCategory::make()->getBreadcrumbs(
                     $parent,

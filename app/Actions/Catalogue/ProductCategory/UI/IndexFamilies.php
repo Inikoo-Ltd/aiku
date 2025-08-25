@@ -84,6 +84,14 @@ class IndexFamilies extends OrgAction
         return $this->handle(parent: $subDepartment, prefix: ProductCategoryTabsEnum::INDEX->value);
     }
 
+    public function inSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $subDepartment;
+        $this->initialisationFromShop($shop, $request)->withTab(ProductCategoryTabsEnum::values());
+
+        return $this->handle(parent: $subDepartment, prefix: ProductCategoryTabsEnum::INDEX->value);
+    }
+
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $shop;
@@ -191,6 +199,7 @@ class IndexFamilies extends OrgAction
                 'sub_department_name',
                 'department_name',
                 'sales_all',
+                'invoices_all',
                 AllowedSort::custom(
                     'collections',
                     new class () implements Sort {
@@ -274,7 +283,7 @@ class IndexFamilies extends OrgAction
             if ($sales) {
                 $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'sales_all', label: __('sales'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'invoices', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true);
+                    ->column(key: 'invoices_all', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true);
             } else {
                 if ($parent instanceof Organisation) {
                     $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
@@ -498,17 +507,13 @@ class IndexFamilies extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index' => array_merge(
-                ShowSubDepartment::make()->getBreadcrumbs($parent, $routeParameters),
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index',
+            'grp.org.shops.show.catalogue.sub_departments.show.families.index' => array_merge(
+                ShowSubDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
                 $headCrumb(
                     [
-                        'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index',
-                        'parameters' => [
-                            $routeParameters['organisation'],
-                            $routeParameters['shop'],
-                            $routeParameters['department'],
-                            $routeParameters['subDepartment']
-                        ]
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
                     ],
                     $suffix
                 )

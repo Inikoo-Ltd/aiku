@@ -223,20 +223,20 @@ Route::name("sub_departments.")->prefix('sub-departments')
                 });
             });
             Route::prefix('families')->name('.families.')->group(function () {
-                Route::get('', [IndexFamilies::class, 'inDepartment'])->name('index');
-                Route::get('create', [CreateFamily::class, 'inDepartment'])->name('create');
+                Route::get('', [IndexFamilies::class, 'inSubDepartmentInShop'])->name('index');
+                Route::get('create', [CreateFamily::class, 'inSubDepartmentInShop'])->name('create');
 
                 Route::prefix('{family}')->group(function () {
-                    Route::get('edit', [EditFamily::class, 'inDepartment'])->name('edit');
-                    Route::get('', ShowFamily::class)->name('show');
+                    Route::get('edit', [EditFamily::class, 'inSubDepartmentInShop'])->name('edit');
+                    Route::get('', [ShowFamily::class, 'inSubDepartmentInShop'])->name('show');
                     Route::name("show.products.")->prefix('products')
                         ->group(function () {
-                            Route::get('', [IndexProductsInProductCategory::class, 'inFamilyInDepartment'])->name('index');
-                            Route::get('create', [CreateProduct::class, 'inFamilyInDepartment'])->name('create');
+                            Route::get('', [IndexProductsInProductCategory::class, 'inFamilyInSubDepartmentInShop'])->name('index');
+                            Route::get('create', [CreateProduct::class, 'inFamilyInSubDepartmentInShop'])->name('create');
 
                             Route::prefix('{product}')->group(function () {
-                                Route::get('', [ShowProduct::class, 'inFamilyInDepartment'])->name('show');
-                                Route::get('edit', [EditProduct::class, 'inFamilyInDepartment'])->name('edit');
+                                Route::get('', [ShowProduct::class, 'inFamilyInSubDepartmentInShop'])->name('show');
+                                Route::get('edit', [EditProduct::class, 'inFamilyInSubDepartmentInShop'])->name('edit');
                             });
                         });
                 });

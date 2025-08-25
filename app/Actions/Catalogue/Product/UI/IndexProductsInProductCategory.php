@@ -312,6 +312,15 @@ class IndexProductsInProductCategory extends OrgAction
 
         return $this->handle(productCategory: $family, prefix: ProductsTabsEnum::INDEX->value);
     }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inFamilyInSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, ProductCategory $family, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->grandParent = $subDepartment;
+        $this->parent      = $family;
+        $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::values());
+
+        return $this->handle(productCategory: $family, prefix: ProductsTabsEnum::INDEX->value);
+    }
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ActionRequest $request): LengthAwarePaginator
@@ -450,10 +459,12 @@ class IndexProductsInProductCategory extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.product.index' =>
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.product.index',
+            'grp.org.shops.show.catalogue.sub_departments.show.products.index' =>
             array_merge(
                 ShowSubDepartment::make()->getBreadcrumbs(
                     $productCategory,
+                    $routeName,
                     $routeParameters
                 ),
                 $headCrumb(
@@ -469,6 +480,21 @@ class IndexProductsInProductCategory extends OrgAction
                 ShowFamily::make()->getBreadcrumbs(
                     $productCategory,
                     'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show',
+                    $routeParameters
+                ),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.shops.show.catalogue.sub_departments.show.families.show.products.index' =>
+            array_merge(
+                ShowFamily::make()->getBreadcrumbs(
+                    $productCategory,
+                    $routeName,
                     $routeParameters
                 ),
                 $headCrumb(

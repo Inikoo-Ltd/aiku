@@ -49,10 +49,7 @@ onMounted(() => {
       })
     })
   )
-
   key.value = ulid()
-  console.log('Visible columns after initialization:', visibleColumns)
-  console.log('Column 4 after initialization:', column4)
 })
 
 const handle = (type: 'save' | 'cancel') => {
@@ -61,6 +58,8 @@ const handle = (type: 'save' | 'cancel') => {
   }
   emit(type)
 }
+
+console.log('visibleColumns',visibleColumns)
 </script>
 
 <template>
@@ -82,7 +81,7 @@ const handle = (type: 'save' | 'cancel') => {
             <div class="text-xs uppercase text-gray-400 mb-1">Master</div>
             <div class="font-medium text-gray-700 bg-gray-50 rounded-md p-2" v-html="menu.name"></div>
           </div>
-          <SideEditorInputHTML v-model="menu.translate[translation]" :rows="1" :key="key" />
+          <SideEditorInputHTML   v-if="menu?.translate && menu.translate[translation]" v-model="menu.translate[translation]" :rows="1" :key="key" />
           <ul class="space-y-4 mt-4">
             <li
               v-for="(item, iIdx) in menu.data"
@@ -91,7 +90,7 @@ const handle = (type: 'save' | 'cancel') => {
             >
               <div class="text-xs uppercase text-gray-400 mb-1">Master</div>
               <div class="font-medium text-gray-700 mb-2" v-html="item.name"></div>
-              <SideEditorInputHTML v-model="item.translate[translation]" :rows="1" :key="key" />
+              <SideEditorInputHTML v-if="menu?.translate && menu.translate[translation]"  v-model="item.translate[translation]" :rows="1" :key="key" />
             </li>
           </ul>
         </div>
@@ -113,7 +112,7 @@ const handle = (type: 'save' | 'cancel') => {
           <div class="text-xs uppercase text-gray-400 mb-1 text-gray-700">{{ keyName }}</div>
           <!-- ✅ Optional chaining to avoid undefined -->
           <SideEditorInputHTML
-            v-if="val?.translate"
+           v-if="val?.translate && val.translate[translation]" 
             v-model="val.translate[translation]"
             :key="key"
           />
