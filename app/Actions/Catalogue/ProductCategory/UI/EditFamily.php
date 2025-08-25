@@ -59,6 +59,15 @@ class EditFamily extends OrgAction
         return $this->handle($family);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, ProductCategory $family, ActionRequest $request): ProductCategory
+    {
+
+        $this->initialisationFromShop($shop, $request)->withTab(DepartmentTabsEnum::values());
+
+        return $this->handle($family);
+    }
+
     public function htmlResponse(ProductCategory $family, ActionRequest $request): Response
     {
         $departmentIdFormData = [];
