@@ -130,6 +130,25 @@ function productRoute(product: Product) {
                     (route().params as RouteParams).family,
                     product.slug
                 ]);
+        case "grp.org.shops.show.catalogue.sub_departments.show.products.index":
+            return route(
+                "grp.org.shops.show.catalogue.sub_departments.show.products.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    (route().params as RouteParams).subDepartment,
+                    product.slug
+                ]);
+        case "grp.org.shops.show.catalogue.sub_departments.show.families.show.products.index":
+            return route(
+                "grp.org.shops.show.catalogue.sub_departments.show.families.show.products.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    (route().params as RouteParams).subDepartment,
+                    (route().params as RouteParams).family,
+                    product.slug
+                ]);
         case "grp.masters.master_shops.show.master_collections.show":
             return route(
                 "grp.masters.master_shops.show.master_products.show",

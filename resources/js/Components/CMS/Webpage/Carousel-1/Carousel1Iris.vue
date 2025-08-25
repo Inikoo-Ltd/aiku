@@ -91,7 +91,7 @@ const getHref = (item: any) => !!item?.link?.href
             >
               <div
                 :class="[
-                  !card?.image?.source && 'bg-gray-100 w-full  flex items-center justify-center overflow-auto',
+                  !card?.image?.source && 'w-full  flex items-center justify-center overflow-auto',
                   'overflow-hidden'
                 ]"
                 :style="getStyles(fieldValue?.carousel_data?.card_container?.image_properties, screenType)"

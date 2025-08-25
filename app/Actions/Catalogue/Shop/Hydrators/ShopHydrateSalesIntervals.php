@@ -17,7 +17,7 @@ use App\Models\Ordering\Order;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShopHydrateSales implements ShouldBeUnique
+class ShopHydrateSalesIntervals implements ShouldBeUnique
 {
     use AsAction;
     use WithIntervalsAggregators;

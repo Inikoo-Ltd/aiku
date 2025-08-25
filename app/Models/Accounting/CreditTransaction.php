@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $customer_id
  * @property int|null $top_up_id
  * @property int|null $payment_id
- * @property string $type
+ * @property CreditTransactionTypeEnum $type
  * @property \Illuminate\Support\Carbon $date
  * @property numeric $amount
  * @property numeric|null $running_amount
@@ -39,7 +39,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string|null $source_id
- * @property string|null $reason
+ * @property CreditTransactionReasonEnum|null $reason
  * @property-read Currency $currency
  * @property-read \App\Models\CRM\Customer $customer
  * @property-read \App\Models\SysAdmin\Group $group

@@ -119,6 +119,7 @@ class IndexTradeUnits extends GrpAction
                 'trade_units.type',
                 'trade_unit_stats.number_current_stocks',
                 'trade_unit_stats.number_current_products',
+                'trade_units.id'
             ]);
 
 

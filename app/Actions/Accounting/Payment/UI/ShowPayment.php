@@ -10,6 +10,7 @@ namespace App\Actions\Accounting\Payment\UI;
 
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithAccountingAuthorisation;
 use App\Enums\UI\Accounting\PaymentTabsEnum;
 use App\Enums\UI\Catalogue\DepartmentTabsEnum;
 use App\Http\Resources\Accounting\PaymentsResource;
@@ -17,8 +18,7 @@ use App\Models\Accounting\Payment;
 use App\Models\Accounting\PaymentAccount;
 use App\Models\Accounting\PaymentServiceProvider;
 use App\Models\Catalogue\Shop;
-use App\Models\Ordering\Order;
-use App\Models\SysAdmin\Group;
+use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Organisation;
 use Arr;
 use Inertia\Inertia;
@@ -27,15 +27,15 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowPayment extends OrgAction
 {
-    private Organisation|PaymentAccount|PaymentServiceProvider|Order|Group $parent;
-
+    use WithAccountingAuthorisation;
 
     public function handle(Payment $payment): Payment
     {
         return $payment;
     }
 
-    public function authorize(ActionRequest $request): bool
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inCustomer(Organisation $organisation, Shop $shop, Customer $customer, Payment $payment, ActionRequest $request): Payment
     {
         if ($this->parent instanceof Group) {
             return $request->user()->authTo("group-overview");

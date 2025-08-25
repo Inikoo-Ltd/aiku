@@ -71,6 +71,16 @@ class ShowFamily extends OrgAction
         return $this->handle($family);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, ProductCategory $family, ActionRequest $request): ProductCategory
+    {
+        $this->parent = $subDepartment;
+
+        $this->initialisationFromShop($shop, $request)->withTab(FamilyTabsEnum::values());
+
+        return $this->handle($family);
+    }
+
     public function getActions(ProductCategory $family, ActionRequest $request): array
     {
         $actions = [];
@@ -117,11 +127,16 @@ class ShowFamily extends OrgAction
                         ]
                         ];
             } elseif ($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                if(request()->route()->getName() == 'grp.org.shops.show.catalogue.sub_departments.show.families.show') {
+                    $route = 'grp.org.shops.show.catalogue.sub_departments.show';
+                } else {
+                    $route = 'grp.org.shops.show.catalogue.departments.show.sub_departments.show';
+                }
                 $parentTag = [
                     [
                         'label' => $family->subDepartment->name,
                         'route' => [
-                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
+                            'name'       => $route,
                             'parameters' => $request->route()->originalParameters()
                         ],
                         'icon'  => 'fal fa-folder-tree'
@@ -255,6 +270,7 @@ class ShowFamily extends OrgAction
             array_merge(
                 (new ShowSubDepartment())->getBreadcrumbs(
                     $family->parent,
+                    $routeName,
                     $routeParameters
                 ),
                 $headCrumb(
@@ -266,6 +282,31 @@ class ShowFamily extends OrgAction
                         ],
                         'model' => [
                             'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show',
+                            'parameters' => $routeParameters
+
+
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.shops.show.catalogue.sub_departments.show.families.show',
+            'grp.org.shops.show.catalogue.sub_departments.show.families.show.products.index' =>
+            array_merge(
+                (new ShowSubDepartment())->getBreadcrumbs(
+                    $family->parent,
+                    $routeName,
+                    $routeParameters
+                ),
+                $headCrumb(
+                    $family,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.sub_departments.show.families.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.sub_departments.show.families.show',
                             'parameters' => $routeParameters
 
 

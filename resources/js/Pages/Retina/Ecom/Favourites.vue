@@ -8,21 +8,22 @@
 <script setup lang="ts">
 import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import TableCustomerClients from "@/Components/Tables/Grp/Org/CRM/TableCustomerClients.vue"
+// import TableCustomerClients from "@/Components/Tables/Grp/Org/CRM/TableCustomerClients.vue"
 import { capitalize } from "@/Composables/capitalize"
-import Button from "@/Components/Elements/Buttons/Button.vue"
-import UploadExcel from "@/Components/Upload/UploadExcel.vue"
-import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
-import Tabs from "@/Components/Navigation/Tabs.vue"
+// import Button from "@/Components/Elements/Buttons/Button.vue"
+// import UploadExcel from "@/Components/Upload/UploadExcel.vue"
+// import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+// import Tabs from "@/Components/Navigation/Tabs.vue"
 import { computed, ref } from "vue"
-import { useTabChange } from "@/Composables/tab-change"
+// import { useTabChange } from "@/Composables/tab-change"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faUsersSlash } from "@fal"
-import Table from "@/Components/Table/Table.vue"
-import Image from "@/Components/Image.vue"
-import CopyButton from "@/Components/Utils/CopyButton.vue"
-import GridProducts from "@/Components/Product/GridProducts.vue"
-library.add(faUsersSlash)
+import { faHeart } from "@fas"
+import { faBoxOpen, faImage } from "@fal"
+// import Table from "@/Components/Table/Table.vue"
+// import Image from "@/Components/Image.vue"
+// import CopyButton from "@/Components/Utils/CopyButton.vue"
+import { GridProducts } from "@/Components/Product"
+library.add(faHeart, faBoxOpen, faImage)
 const props = defineProps<{
 	data: {}
 	// tabs: {
@@ -81,7 +82,6 @@ const isModalUploadOpen = ref(false)
 	<!-- Pass the data to GridProducts component -->
 	<GridProducts 
 		:resource="data" 
-		:name="'favourites'"
 		:preserve-scroll="true"
 		class="mt-5"
 	/>

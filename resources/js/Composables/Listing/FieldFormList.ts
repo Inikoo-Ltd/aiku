@@ -33,6 +33,7 @@ import EditorHtml from '@/Components/Forms/Fields/EditorHtml.vue'
 import StructureDataWebsite from '@/Components/Forms/Fields/StructureDataWebsite.vue'
 import SelectInfiniteScroll from '@/Components/Forms/Fields/SelectInfiniteScroll.vue'
 import ButtonForm from '@/Components/Forms/Fields/ButtonForm.vue'
+import cropImageFull from '@/Components/Forms/Fields/CropImageFull.vue'
 
 
 const GoogleSearch = defineAsyncComponent(() => import('@/Components/Forms/Fields/GoogleSearch.vue'))
@@ -110,7 +111,8 @@ export const componentsList: {[key: string]: Component} = {
     'select_infinite': SelectInfiniteScroll,
     'textEditor_translation' : TextEditorTranslation,
     'pricing_zone': Pricing_zone,
-    'teritory_zone': Teritory_zone
+    'teritory_zone': Teritory_zone,
+    'crop-image-full' : cropImageFull
 }
 
 export const getComponent = (componentName: string) => {

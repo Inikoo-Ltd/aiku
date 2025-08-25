@@ -17,7 +17,7 @@ use App\Models\Accounting\InvoiceCategory;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class InvoiceCategoryHydrateSales implements ShouldBeUnique
+class InvoiceCategoryHydrateSalesIntervals implements ShouldBeUnique
 {
     use AsAction;
     use WithIntervalsAggregators;

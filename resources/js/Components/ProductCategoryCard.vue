@@ -31,11 +31,16 @@ const showExtra = ref(false);
 <template>
     <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200">
         <div class="bg-white rounded-lg shadow mb-4 overflow-hidden">
-            <Image v-if="data?.image" :src="data?.image" imageCover class="w-full h-40 object-cover rounded-t-lg" />
-            <div v-else class="flex justify-center items-center bg-gray-100 w-full h-48">
-                <FontAwesomeIcon :icon="faImage" class="w-8 h-8 text-gray-400" />
+            <div class="w-full aspect-square">
+                <Image v-if="data?.image" :src="data?.image"
+                    class="w-full h-full object-cover object-center rounded-t-lg" />
+                <div v-else class="flex justify-center items-center bg-gray-100 w-full h-full">
+                    <FontAwesomeIcon :icon="faImage" class="w-8 h-8 text-gray-400" />
+                </div>
             </div>
         </div>
+
+
 
         <div class="border-t pt-4 space-y-1 text-sm text-gray-700">
             <div class="font-medium">{{ data?.name || "No label" }}</div>
@@ -46,11 +51,8 @@ const showExtra = ref(false);
             <div v-if="showExtra" class="text-gray-400" v-html="data?.description_extra"></div>
 
             <!-- Toggle button -->
-            <button
-                v-if="data?.description_extra"
-                @click="showExtra = !showExtra"
-                class="text-blue-500 text-xs font-medium hover:underline focus:outline-none"
-            >
+            <button v-if="data?.description_extra" @click="showExtra = !showExtra"
+                class="text-blue-500 text-xs font-medium hover:underline focus:outline-none">
                 {{ showExtra ? "Read less" : "Read more" }}
             </button>
         </div>

@@ -198,6 +198,7 @@ use App\Actions\HumanResources\JobPosition\UpdateJobPosition;
 use App\Actions\HumanResources\Workplace\DeleteWorkplace;
 use App\Actions\HumanResources\Workplace\StoreWorkplace;
 use App\Actions\HumanResources\Workplace\UpdateWorkplace;
+use App\Actions\Masters\MasterAsset\StoreMasterAssets;
 use App\Actions\Masters\MasterCollection\AttachMasterCollectionToModel;
 use App\Actions\Masters\MasterCollection\AttachModelsToMasterCollection;
 use App\Actions\Masters\MasterCollection\AttachMultipleParentsToAMasterCollection;
@@ -371,6 +372,10 @@ Route::prefix('master-collection/{masterCollection:id}')->name('master_collectio
     Route::delete('detach-models', DetachModelFromMasterCollection::class)->name('detach-models');
     Route::delete('delete', DeleteMasterCollection::class)->name('delete');
     Route::post('attach-parents', AttachMultipleParentsToAMasterCollection::class)->name('attach_parents');
+});
+
+Route::prefix('master-family/{masterFamily:id}')->name('master_family.')->group(function () {
+    Route::post('store-assets', StoreMasterAssets::class)->name('store-assets');
 });
 
 Route::prefix('department/{productCategory:id}')->name('department.')->group(function () {

@@ -10,6 +10,7 @@ namespace App\Models\Masters;
 
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
@@ -77,6 +78,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \App\Models\Masters\MasterProductCategoryOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Masters\MasterProductCategoryOrderingStats|null $orderingStats
  * @property-read MasterProductCategory|null $parent
+ * @property-read LaravelCollection<int, ProductCategory> $productCategories
  * @property-read \App\Models\Masters\MasterProductCategorySalesIntervals|null $salesIntervals
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Masters\MasterProductCategoryStats|null $stats
@@ -151,6 +153,11 @@ class MasterProductCategory extends Model implements Auditable, HasMedia
     public function stats(): HasOne
     {
         return $this->hasOne(MasterProductCategoryStats::class);
+    }
+
+    public function productCategories(): HasMany
+    {
+        return $this->hasMany(ProductCategory::class, 'master_product_category_id');
     }
 
     public function orderingIntervals(): HasOne
