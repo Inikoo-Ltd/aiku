@@ -67,6 +67,15 @@ class SubmitOrder extends OrgAction
 
         $this->update($order, $modelData);
 
+        if ($order->shop->masterShop) {
+            $order->shop->masterShop->orderingStats->update(
+                [
+                    'last_order_submitted_at' => now()
+                ]
+            );
+        }
+
+
         if ($order->customer_client_id) {
             CustomerClientHydrateBasket::run($order->customerClient);
         } else {

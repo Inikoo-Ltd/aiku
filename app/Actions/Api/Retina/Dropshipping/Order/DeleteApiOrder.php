@@ -13,6 +13,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrders;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateOrders;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateOrders;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateOrders;
 use App\Actions\RetinaApiAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrders;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrders;
@@ -39,6 +40,7 @@ class DeleteApiOrder extends RetinaApiAction
             $order->transactions()->delete();
             $order->delete();
 
+            MasterShopHydrateOrders::dispatch($order->master_shop_id);
             ShopHydrateOrders::dispatch($this->shop);
             OrganisationHydrateOrders::dispatch($this->organisation);
             GroupHydrateOrders::dispatch($this->group);

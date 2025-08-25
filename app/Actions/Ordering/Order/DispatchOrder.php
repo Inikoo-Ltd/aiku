@@ -24,7 +24,7 @@ use App\Models\Ordering\Transaction;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateOrderStateToDispatched extends OrgAction
+class DispatchOrder extends OrgAction
 {
     use WithActionUpdate;
     use HasOrderHydrators;
@@ -43,22 +43,30 @@ class UpdateOrderStateToDispatched extends OrgAction
             /** @var Transaction $transaction */
             foreach ($order->transactions()->where('model_type', 'Product')->get() as $transaction) {
                 $transaction->update([
-                    'state' => TransactionStateEnum::DISPATCHED,
+                    'state'               => TransactionStateEnum::DISPATCHED,
                     'quantity_dispatched' => $transaction->quantity_picked,
                 ]);
             }
 
             $this->update($order, $data);
+
+            if ($order->shop->masterShop) {
+                $order->shop->masterShop->orderingStats->update(
+                    [
+                        'last_order_dispatched_at' => now()
+                    ]
+                );
+            }
+
             $this->orderHydrators($order);
             $order->refresh();
-
 
 
             if ($order->customerSalesChannel) {
                 match ($order->customerSalesChannel->platform->type) {
                     PlatformTypeEnum::WOOCOMMERCE => FulfillOrderToWooCommerce::run($order),
-                    PlatformTypeEnum::EBAY        => FulfillOrderToEbay::run($order),
-                    PlatformTypeEnum::MAGENTO        => FulfillOrderToMagento::run($order),
+                    PlatformTypeEnum::EBAY => FulfillOrderToEbay::run($order),
+                    PlatformTypeEnum::MAGENTO => FulfillOrderToMagento::run($order),
                     //                PlatformTypeEnum::AMAZON => FulfillOrderToAmazon::run($order),
                     PlatformTypeEnum::SHOPIFY => FulfillOrderToShopify::run($order),
                     default => null,
@@ -86,6 +94,7 @@ class UpdateOrderStateToDispatched extends OrgAction
     public function asController(Order $order, ActionRequest $request): Order
     {
         $this->initialisationFromShop($order->shop, $request);
+
         return $this->handle($order);
     }
 }

@@ -19,26 +19,29 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Illuminate\Validation\Validator;
 
-class SubmitApiOrder extends RetinaApiAction
+class SubmitApiPalletReturn extends RetinaApiAction
 {
     use AsAction;
     use WithAttributes;
 
+    /**
+     * @var \App\Models\Fulfilment\PalletReturn
+     */
+    private PalletReturn $palletReturn;
+
     public function handle(PalletReturn $palletReturn): PalletReturn
     {
-        $palletReturn = SubmitPalletReturn::run($palletReturn, [], true);
-
-        return $palletReturn;
+        return SubmitPalletReturn::run($palletReturn, [], true);
     }
 
-    public function afterValidator(Validator $validator)
+    public function afterValidator(Validator $validator): void
     {
         if ($this->palletReturn->state != PalletReturnStateEnum::IN_PROCESS) {
             $validator->errors()->add('message', 'This Order is already in the "' . $this->palletReturn->state->value . '" state and cannot be updated.');
         }
     }
 
-    public function jsonResponse(PalletReturn $palletReturn)
+    public function jsonResponse(PalletReturn $palletReturn): PalletReturnApiResource|\Illuminate\Http\Resources\Json\JsonResource
     {
         return PalletReturnApiResource::make($palletReturn)
             ->additional([
