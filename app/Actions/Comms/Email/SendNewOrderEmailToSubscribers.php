@@ -33,8 +33,14 @@ class SendNewOrderEmailToSubscribers extends OrgAction
 
     private Email $email;
 
-    public function handle(Order $order): void
+    public function handle(int $orderID): void
     {
+
+        $order = Order::find($orderID);
+        if(!$order){
+            return;
+        }
+
         /** @var Outbox $outbox */
         $outbox = $order->shop->outboxes()->where('code', OutboxCodeEnum::NEW_ORDER->value)->first();
 
@@ -121,7 +127,7 @@ class SendNewOrderEmailToSubscribers extends OrgAction
     {
         $order = Order::where('slug', 'awd151817')->first();
 
-        $this->handle($order);
+        $this->handle($order->id);
     }
 
     private function generateOrderTransactionsHtml($transactions, Currency $currency): string

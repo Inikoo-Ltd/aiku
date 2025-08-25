@@ -29,8 +29,14 @@ class SendNewOrderEmailToCustomer extends OrgAction
 
     private Email $email;
 
-    public function handle(Order $order): ?DispatchedEmail
+    public function handle(int $orderID): ?DispatchedEmail
     {
+
+        $order = Order::find($orderID);
+        if(!$order){
+            return null;
+        }
+
         list($emailHtmlBody, $dispatchedEmail) = $this->getEmailBody(
             $order->customer,
             OutboxCodeEnum::ORDER_CONFIRMATION
@@ -69,7 +75,7 @@ class SendNewOrderEmailToCustomer extends OrgAction
     {
         $order = Order::where('slug', 'awd151455')->first();
 
-        $this->handle($order);
+        $this->handle($order->id);
     }
 
     public function generateOrderDetailsHtml(Order $order): string
