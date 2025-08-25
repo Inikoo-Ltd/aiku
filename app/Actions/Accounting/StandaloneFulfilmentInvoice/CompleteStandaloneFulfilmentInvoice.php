@@ -73,14 +73,18 @@ class CompleteStandaloneFulfilmentInvoice extends OrgAction
         }
 
         ShopHydrateSalesIntervals::dispatch($invoice->shop);
-        MasterShopHydrateSalesIntervals::dispatch($invoice->master_shop_id)->delay($this->hydratorsDelay);
         OrganisationHydrateSalesIntervals::dispatch($invoice->organisation);
         GroupHydrateSalesIntervals::dispatch($invoice->group);
 
         ShopHydrateInvoiceIntervals::dispatch($invoice->shop);
-        MasterShopHydrateInvoiceIntervals::dispatch($invoice->master_shop_id)->delay($this->hydratorsDelay);
         OrganisationHydrateInvoiceIntervals::dispatch($invoice->organisation);
         GroupHydrateInvoiceIntervals::dispatch($invoice->group);
+
+        if($invoice->master_shop_id){
+            MasterShopHydrateSalesIntervals::dispatch($invoice->master_shop_id)->delay($this->hydratorsDelay);
+            MasterShopHydrateInvoiceIntervals::dispatch($invoice->master_shop_id)->delay($this->hydratorsDelay);
+        }
+
 
         InvoiceRecordSearch::dispatch($invoice);
 
