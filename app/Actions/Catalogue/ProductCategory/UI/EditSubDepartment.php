@@ -20,7 +20,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditSubDepartment extends OrgAction
 {
-
     use WithCatalogueEditAuthorisation;
 
     public function handle(ProductCategory $subDepartment): ProductCategory

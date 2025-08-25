@@ -159,9 +159,7 @@ class IndexCollectionsInProductCategory extends OrgAction
 
 
         $title      = $productCategory->name;
-        // $iconRight  = [
-        //     'icon' => 'fal fa-album-collection',
-        // ];
+
         $iconRight  = $productCategory->state->stateIcon()[$productCategory->state->value];
 
         $afterTitle = [
@@ -295,6 +293,15 @@ class IndexCollectionsInProductCategory extends OrgAction
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inSubDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $subDepartment;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle(parent: $subDepartment);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $subDepartment;
         $this->initialisationFromShop($shop, $request);

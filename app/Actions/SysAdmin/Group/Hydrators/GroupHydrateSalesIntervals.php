@@ -15,7 +15,7 @@ use App\Models\SysAdmin\Group;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GroupHydrateSales implements ShouldBeUnique
+class GroupHydrateSalesIntervals implements ShouldBeUnique
 {
     use AsAction;
     use WithIntervalsAggregators;

@@ -86,17 +86,17 @@ class StoreMasterProductCategory extends GrpAction
                 };
                 $actionData = array_merge(
                     Arr::except($modelData, ['status', 'type']),
-                    [   
+                    [
                         'type' => $type,
                         'master_product_category_id' => $masterProductCategory->id
                     ]
                 );
-                
+
                 foreach ($collection as $item) {
                     StoreProductCategory::make()->action($item, $actionData);
                 }
             }
-            
+
             return $masterProductCategory;
         });
 
@@ -168,11 +168,11 @@ class StoreMasterProductCategory extends GrpAction
         $this->strict         = $strict;
         $group                = $parent->group;
 
-        if($parent instanceof MasterProductCategory) {
-            $this->masterShop=$parent->masterShop;
+        if ($parent instanceof MasterProductCategory) {
+            $this->masterShop = $parent->masterShop;
 
-        }else{
-            $this->masterShop=$parent;
+        } else {
+            $this->masterShop = $parent;
 
         }
 

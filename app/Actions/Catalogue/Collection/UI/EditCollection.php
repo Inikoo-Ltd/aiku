@@ -56,6 +56,15 @@ class EditCollection extends OrgAction
         return $this->handle($collection);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inSubDepartmentInShop(Organisation $organisation, Shop $shop,ProductCategory $subDepartment, Collection $collection, ActionRequest $request): Collection
+    {
+        $this->parent = $subDepartment;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($collection);
+    }
+
     public function htmlResponse(Collection $collection, ActionRequest $request): Response
     {
         return Inertia::render(
