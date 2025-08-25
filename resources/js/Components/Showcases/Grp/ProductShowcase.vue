@@ -4,19 +4,19 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { notify } from "@kyvg/vue3-notification"
 import Image from "@/Components/Image.vue"
-import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/vue"
+// import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/vue"
 import { inject, ref, computed, watch } from "vue"
-import EmptyState from "@/Components/Utils/EmptyState.vue"
+// import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { faTrash as falTrash, faEdit, faExternalLink } from "@fal"
-import { faCircle, faPlay, faTrash, faPlus } from "@fas"
-import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import { faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece } from "@fal"
+import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
+// import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { Images } from "@/types/Images"
 import { Link, router } from "@inertiajs/vue3"
-import { useLocaleStore } from "@/Stores/locale"
+// import { useLocaleStore } from "@/Stores/locale"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Dialog from 'primevue/dialog'
@@ -24,10 +24,10 @@ import { faImage } from "@far"
 import EditTradeUnit from "@/Components/Goods/EditTradeUnit.vue"
 import { Fieldset, Select } from "primevue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
-import TranslationBox from '@/Components/TranslationBox.vue';
+// import TranslationBox from '@/Components/TranslationBox.vue';
 
 
-library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus)
+library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus, faBarcode, faPuzzlePiece)
 
 const props = defineProps<{
 	taxonomy: any
@@ -182,53 +182,55 @@ const compSelectedTradeUnit = computed(() => {
 	return props.data.trade_units.find((unit) => unit.tradeUnit.code === selectedTradeUnit.value)
 })
 
-console.log(props)
+const hazardDefinitions = ref([
+	{ key: 'acuteToxicity', name: 'Acute Toxicity', icon: 'toxic-icon.png' },
+	{ key: 'corrosive', name: 'Corrosive', icon: 'corrosive-icon.png' },
+	{ key: 'explosive', name: 'Explosive', icon: 'explosive.jpg' },
+	{ key: 'flammable', name: 'Flammable', icon: 'flammable.png' },
+	{ key: 'gasUnderPressure', name: 'Gas under pressure', icon: 'gas.png' },
+	{ key: 'environmentHazard', name: 'Hazards to the environment', icon: 'hazard-env.png' },
+	{ key: 'healthHazard', name: 'Health hazard', icon: 'health-hazard.png' },
+	{ key: 'oxidising', name: 'Oxidising', icon: 'oxidising.png' },
+	{ key: 'seriousHealthHazard', name: 'Serious Health hazard', icon: 'serious-health-hazard.png' }
+])
+
+const getHazardIconPath = (iconName) => {
+	return `/hazardIcon/${iconName}`
+}
+
+// console.log(props)
 </script>
 
 <template>
-	<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+	<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mx-3 lg:mx-0 mt-2">
 		<!-- Sidebar -->
 		<div class="space-y-4 lg:space-y-6">
 			<!-- Image Preview & Thumbnails -->
-			<div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
-				<ImageProducts
-					v-if="data.product.data.images?.length"
-					:images="data.product.data.images"
-					:breakpoints="{
+			<div class="bg-white rounded-xl shadow-sm  p-4 lg:p-5">
+				<ImageProducts v-if="data.product.data.images?.length" :images="data.product.data.images" :breakpoints="{
 						0: { slidesPerView: 3 },
 						480: { slidesPerView: 4 },
 						640: { slidesPerView: 5 },
 						1024: { slidesPerView: 6 }
-					}"
-					class="overflow-x-auto"
-				>
+					}" class="overflow-x-auto">
 					<template #image-thumbnail="{ image, index }">
-						<div class="aspect-square w-full overflow-hidden group relative rounded-lg border border-gray-200">
-							<Image
-								:src="image.thumbnail"
-								:alt="`Thumbnail ${index + 1}`"
-								class="block w-full h-full object-cover"
-							/>
+						<div
+							class="aspect-square w-full overflow-hidden group relative rounded-lg border border-gray-200">
+							<Image :src="image.thumbnail" :alt="`Thumbnail ${index + 1}`"
+								class="block w-full h-full object-cover" />
 							<!-- Delete Icon -->
-							<ModalConfirmationDelete
-								:routeDelete="{
+							<ModalConfirmationDelete :routeDelete="{
 									name: props.data.deleteImageRoute.name,
 									parameters: {
 										...props.data.deleteImageRoute.parameters,
 										media: image.id,
 									}
-								}"
-								:title="trans('Are you sure you want to delete the image?')"
-								:description="trans('This action cannot be undone.')"
-								isFullLoading
-								noLabel="Delete"
-								noIcon="fal fa-times"
-							>
+								}" :title="trans('Are you sure you want to delete the image?')"
+								:description="trans('This action cannot be undone.')" isFullLoading noLabel="Delete"
+								noIcon="fal fa-times">
 								<template #default="{ changeModel }">
-									<div
-										@click="changeModel"
-										class="absolute top-2 right-2 bg-white shadow-md rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition cursor-pointer hover:bg-red-500 hover:text-white text-red-500"
-									>
+									<div @click="changeModel"
+										class="absolute top-2 right-2 bg-white shadow-md rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition cursor-pointer hover:bg-red-500 hover:text-white text-red-500">
 										<FontAwesomeIcon icon="fal fa-times" fixed-width />
 									</div>
 								</template>
@@ -238,10 +240,8 @@ console.log(props)
 				</ImageProducts>
 
 				<!-- Empty State -->
-				<div
-					v-else
-					class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg"
-				>
+				<div v-else
+					class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg">
 					<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
 					<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
 				</div>
@@ -251,60 +251,11 @@ console.log(props)
 					<Button type="primary" full @click="isModalGallery = true" label="Add Images" :icon="faPlus" />
 				</div>
 			</div>
-
-			<!-- Product Summary -->
-			<div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
-				<h2 class="text-base lg:text-lg font-semibold border-b pb-3">{{ trans("Product summary") }}</h2>
-				<dl class="mt-4 space-y-3 text-sm">
-					<div class="flex justify-between flex-wrap gap-1">
-						<dt class="text-gray-500">{{ trans("Added date") }}</dt>
-						<dd class="font-medium">{{ useFormatTime(data.product.data.created_at) }}</dd>
-					</div>
-					<div class="flex justify-between flex-wrap gap-1">
-						<dt class="text-gray-500">{{ trans("Stock") }}</dt>
-						<dd class="font-medium">
-							{{ data.product.data.stock }} {{ data.product.data.unit }}
-						</dd>
-					</div>
-					<div class="flex justify-between flex-wrap gap-1">
-						<dt class="text-gray-500">{{ trans("Price") }}</dt>
-						<dd class="font-semibold text-green-600">
-							{{ locale.currencyFormat(data.product.data.currency_code, data.product.data.price) }}
-						</dd>
-					</div>
-					<div class="flex justify-between flex-wrap gap-1">
-						<dt class="text-gray-500">RRP</dt>
-						<dd class="font-semibold">
-							{{ locale.currencyFormat(data.product.data.currency_code, data.product.data.rrp) }}
-							<span class="ml-1 text-xs text-gray-500">
-								({{
-									((data.product.data.rrp - data.product.data.price) /
-										data.product.data.price * 100).toFixed(2)
-								}}%)
-							</span>
-						</dd>
-					</div>
-					<div class="flex justify-between flex-wrap gap-1">
-						<dt class="text-gray-500">{{ trans("Weight") }}</dt>
-						<dd class="font-medium">
-							{{ locale.number(data.product.data?.specifications?.gross_weight) }} gr
-						</dd>
-					</div>
-					<div>
-						<dt class="text-gray-500">{{ trans("Ingredients") }}</dt>
-						<ul class="list-disc list-inside text-gray-700 mt-1 space-y-1">
-							<li v-for="ingredient in data.product.data.specifications?.ingredients" :key="ingredient.id">
-								{{ ingredient }}
-							</li>
-						</ul>
-					</div>
-				</dl>
-			</div>
 		</div>
 
 		<!-- Right Section -->
-		<div class="space-y-4 lg:space-y-6 lg:col-span-2">
-			<div class="flex flex-col md:flex-row md:items-center md:justify-end p-4 lg:p-8 gap-4">
+		<div class="space-y-4 lg:space-y-6">
+			<div>
 				<Fieldset class="bg-white rounded-xl shadow-sm w-full md:w-auto" legend="Trade units">
 					<template #legend>
 						<div class="flex items-center gap-2 font-bold">
@@ -317,21 +268,14 @@ console.log(props)
 						<div>
 							<template v-if="props.data.trade_units.length">
 								<div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-4">
-									<Select
-										v-model="selectedTradeUnit"
-										:options="props.data.trade_units"
-										optionLabel="tradeUnit.name"
-										optionValue="tradeUnit.code"
-										placeholder="Select a City"
-										class="w-full sm:w-80"
-									/>
-									<Link
-										v-if="compSelectedTradeUnit?.tradeUnit?.slug"
+									<Select v-model="selectedTradeUnit" :options="props.data.trade_units"
+										optionLabel="tradeUnit.name" optionValue="tradeUnit.code"
+										placeholder="Select a City" class="w-full sm:w-80" />
+									<Link v-if="compSelectedTradeUnit?.tradeUnit?.slug"
 										:href="route('grp.goods.trade-units.show', compSelectedTradeUnit?.tradeUnit.slug)"
 										v-tooltip="trans('Open trade unit')"
-										class="text-gray-400 hover:text-gray-600 text-center sm:text-left"
-									>
-										<FontAwesomeIcon icon="fal fa-external-link" fixed-width />
+										class="text-gray-400 hover:text-gray-600 text-center sm:text-left">
+									<FontAwesomeIcon icon="fal fa-external-link" fixed-width />
 									</Link>
 								</div>
 								<EditTradeUnit v-if="compSelectedTradeUnit" v-bind="compSelectedTradeUnit" />
@@ -344,29 +288,258 @@ console.log(props)
 				</Fieldset>
 			</div>
 
-			<TranslationBox v-bind="data.translation_box" :master="data.product.data" :needTranslation="data.product.data" />
+			<!-- <TranslationBox v-bind="data.translation_box" :master="data.product.data" :needTranslation="data.product.data" /> -->
+		</div>
+
+		<!-- Product Summary -->
+		<div>
+			<div class="bg-white rounded-xl p-4 lg:p-5">
+				<div class="flex justify-between items-center border-b pb-3">
+					<h2 class="text-base lg:text-lg font-semibold ">{{ trans("Product summary") }}</h2>
+					<!-- the barcode label need provide from BE -->
+					<span v-tooltip="'barcode label'" class="text-xs cursor-pointer">{{
+						data.product.data.specifications.barcode }}
+						<FontAwesomeIcon :icon="faBarcode" />
+					</span>
+				</div>
+				<dl class="mt-4 space-y-6 text-sm">
+					<div class="space-y-3">
+						<div class="flex justify-between flex-wrap gap-1">
+							<dt class="text-gray-500">{{ trans("Code") }}</dt>
+							<dd class="font-medium">{{ data.product.data.code }}</dd>
+						</div>
+						<div class="flex justify-between flex-wrap gap-1">
+							<dt class="text-gray-500">{{ trans("CPNP Number") }}</dt>
+							<dd class="font-medium">-</dd>
+						</div>
+						<div class="flex justify-between flex-wrap gap-1">
+							<dt class="text-gray-500">{{ trans("UFI (Poison Centres)") }}</dt>
+							<dd class="font-medium">-</dd>
+						</div>
+						<div class="flex justify-between flex-wrap gap-1">
+							<dt class="text-gray-500">{{ trans("Added date") }}</dt>
+							<dd class="font-medium">{{ useFormatTime(data.product.data.created_at) }}</dd>
+						</div>
+						<div class="flex justify-between flex-wrap gap-1">
+							<dt class="text-gray-500">{{ trans("Stock") }}</dt>
+							<dd class="font-medium">
+								{{ data.product.data.stock }} {{ data.product.data.unit }}
+							</dd>
+						</div>
+						<div class="flex justify-between flex-wrap gap-1">
+							<dt class="text-gray-500">{{ trans("Price") }}</dt>
+							<dd class="font-semibold text-green-600">
+								{{ locale.currencyFormat(data.product.data.currency_code, data.product.data.price) }}
+							</dd>
+						</div>
+						<div class="flex justify-between flex-wrap gap-1">
+							<dt class="text-gray-500">RRP</dt>
+							<dd class="font-semibold">
+								{{ locale.currencyFormat(data.product.data.currency_code, data.product.data.rrp) }}
+								<span class="ml-1 text-xs text-gray-500">
+									({{
+									((data.product.data.rrp - data.product.data.price) /
+									data.product.data.price * 100).toFixed(2)
+									}}%)
+								</span>
+							</dd>
+						</div>
+						<div class="flex justify-between flex-wrap gap-1">
+							<dt class="text-gray-500">{{ trans("Weight") }}</dt>
+							<dd class="font-medium">
+								{{ locale.number(data.product.data?.specifications?.gross_weight) }} gr
+							</dd>
+						</div>
+						<div class="flex justify-between flex-wrap gap-1">
+							<dt class="text-gray-500">{{ trans("Dimension") }}</dt>
+							<dd class="font-medium">
+								{{ data.product?.data?.spesifications?.dimenison[0] ?? '-' }}
+							</dd>
+						</div>
+					</div>
+					<div>
+						<h4 class="font-medium text-base border-b pb-2 mb-2">{{ trans("Video (vimeo)") }}</h4>
+						<!-- <dt class="text-gray-500">{{ trans("Vimeo video link") }}</dt> -->
+						<!-- <iframe src="https://player.vimeo.com/video/1112228622?autoplay=1"
+							class="w-full h-auto aspect-video rounded-lg" frameborder="0" allow="autoplay;">
+						</iframe> -->
+						<div class="w-full h-auto aspect-video rounded-lg bg-gray-200 flex items-center justify-center">
+							<span>No Video to Show</span>
+						</div>
+					</div>
+					<div>
+						<h4 class="font-medium text-base border-b pb-2 mb-2">{{ trans("Parts") }}</h4>
+						<dt class="text-gray-500">{{ trans("Parts") }}</dt>
+						<ul class="list-disc list-inside text-gray-700 mt-1 space-y-1">
+							<li v-for="part in data.parts" :key="part.id">
+								{{ part.name }}
+							</li>
+						</ul>
+					</div>
+					<div class="space-y-3">
+						<h4 class="font-medium text-base border-b pb-2 mb-2">{{ trans("Outer") }}</h4>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("Unit per outer") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("Pricing policy") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("Outer price") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+					</div>
+					<div class="space-y-3">
+						<div class="flex justify-between items-center border-b pb-2 mb-2">
+							<h4 class="font-medium text-base">{{ trans("Properties") }}</h4>
+							<span v-tooltip="'Material/ingredients label'" class="text-xs cursor-pointer">
+								<FontAwesomeIcon :icon="faPuzzlePiece" />
+							</span>
+						</div>
+						<div>
+							<dt class="text-gray-500">{{ trans("Materials/Ingredients") }}</dt>
+							<ul class="list-disc list-inside text-gray-700 mt-1 space-y-1">
+								<li v-for="ingredient in data.product.data.specifications?.ingredients"
+									:key="ingredient.id">
+									{{ ingredient }}
+								</li>
+							</ul>
+						</div>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("Country of origin") }}</dt>
+							<dd class="font-medium">
+								<div v-if="data?.properties?.country_of_origin.code">
+									<img class="inline-block h-[14px] w-[20px] object-cover rounded-sm"
+										:src="'/flags/' + data?.properties?.country_of_origin.code.toLowerCase() + '.png'"
+										:alt="`Bendera ${'us'}`" loading="lazy" />
+									<span class="ml-2">{{ data.properties.country_of_origin.name }}</span>
+								</div>
+								<span v-else>-</span>
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("Tariff code") }}</dt>
+							<dd class="font-medium">
+								{{ data.properties.tariff_code || '-' }}
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("Duty rate") }}</dt>
+							<dd class="font-medium">
+								{{ data.properties.duty_rate }}
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt v-tooltip="'Harmonized Tariff Schedule of the United States Code'"
+								class="text-gray-500">{{ trans("HTS US") }}
+								<img class="inline-block h-[14px] w-[20px] object-cover rounded-sm"
+									:src="'/flags/' + 'us' + '.png'" :alt="`Bendera ${'us'}`" loading="lazy" />
+							</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+					</div>
+					<div class="space-y-3">
+						<h4 class="font-medium text-base border-b pb-2 mb-2">{{ trans("Health & Safety") }}</h4>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("UN number") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("UN class") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("Packing group") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("Proper shipping name") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("Hazard identification number") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+					</div>
+					<div class="space-y-3">
+						<h4 class="font-medium text-base border-b pb-2 mb-2">{{ trans("GPSR (if empty will use Part GPSR)") }}</h4>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("Manufacturer") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("EU responsible") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("Warnings") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("How to use") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("Class & category of danger") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("Product GPSR Languages") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+						<div class="flex gap-2 overflow-x-auto">
+							<div v-for="hazard in hazardDefinitions" :key="hazard.key"
+								class="flex-shrink-0 w-8 h-8 bg-white rounded border border-red-200 p-1"
+								v-tooltip="hazard.name">
+								<img :src="getHazardIconPath(hazard.icon)" :alt="hazard.name"
+									class="w-full h-full object-contain">
+							</div>
+						</div>
+					</div>
+				</dl>
+			</div>
 		</div>
 	</div>
 
 	<!-- Gallery Dialog -->
-	<Dialog
-		v-model:visible="isModalGallery"
-		modal
-		closable
-		dismissableMask
-		header="Gallery Management"
-		:style="{ width: '95vw', maxWidth: '900px' }"
-		:pt="{ root: { class: 'rounded-xl shadow-xl' } }"
-	>
-		<GalleryManagement
-			:multiple="true"
-			:uploadRoute="data.uploadImageRoute"
+	<Dialog v-model:visible="isModalGallery" modal closable dismissableMask header="Gallery Management"
+		:style="{ width: '95vw', maxWidth: '900px' }" :pt="{ root: { class: 'rounded-xl shadow-xl' } }">
+		<GalleryManagement :multiple="true" :uploadRoute="data.uploadImageRoute"
 			:submitUpload="(file, refDAta) => onSubmitUpload(file, refDAta)"
-			:imagesUploadedRoutes="data.imagesUploadedRoutes"
-			:attachImageRoute="data.attachImageRoute"
-			:stockImagesRoute="data.stockImagesRoute"
-			@selectImage="(image) => console.log('Selected:', image)"
-		/>
+			:imagesUploadedRoutes="data.imagesUploadedRoutes" :attachImageRoute="data.attachImageRoute"
+			:stockImagesRoute="data.stockImagesRoute" @selectImage="(image) => console.log('Selected:', image)" />
 	</Dialog>
 </template>
 
