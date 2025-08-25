@@ -312,6 +312,15 @@ class IndexProductsInProductCategory extends OrgAction
 
         return $this->handle(productCategory: $family, prefix: ProductsTabsEnum::INDEX->value);
     }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inFamilyInSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, ProductCategory $family, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->grandParent = $subDepartment;
+        $this->parent      = $family;
+        $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::values());
+
+        return $this->handle(productCategory: $family, prefix: ProductsTabsEnum::INDEX->value);
+    }
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ActionRequest $request): LengthAwarePaginator
