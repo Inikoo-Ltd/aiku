@@ -63,6 +63,7 @@ const props = defineProps<{
     products: TableTS
     routes: {
         batch_upload: routeType
+        batch_all: routeType
         match_match: routeType
         syncAllRoute: routeType
         batch_sync: routeType
@@ -280,7 +281,7 @@ const onSuccessEditCheckmark = (key) => {
     else modalAddproductBluk.value = true
     selectedProducts.value = []
 
-  progessbar.value = {...progessbar.value , done : false, total : selectedProducts.value.length}
+    progessbar.value = {...progessbar.value, done: false, total: selectedProducts.value.length}
 }
 
 const onFailedEditCheckmark = (error: any) => {
@@ -292,25 +293,25 @@ const onFailedEditCheckmark = (error: any) => {
 }
 
 const submitPortfolioAction = async (action: any) => {
-  loadingAction.value.push(action.label)
-  try {
-    const method = action?.method?.toLowerCase() || "get"
-    const url = route(action.name, action?.parameters)
-    const data = { portfolios: selectedProducts.value }
+    loadingAction.value.push(action.label)
+    try {
+        const method = action?.method?.toLowerCase() || "get"
+        const url = route(action.name, action?.parameters)
+        const data = {portfolios: selectedProducts.value}
 
-    const response = await axios({
-      method,
-      url,
-      data: method === "get" ? undefined : data,
-      params: method === "get" ? data : undefined
-    })
+        const response = await axios({
+            method,
+            url,
+            data: method === "get" ? undefined : data,
+            params: method === "get" ? data : undefined
+        })
 
-    onSuccessEditCheckmark(action.label)
-  } catch (error: any) {
-    onFailedEditCheckmark(error)
-  } finally {
-    loadingAction.value = []
-  }
+        onSuccessEditCheckmark(action.label)
+    } catch (error: any) {
+        onFailedEditCheckmark(error)
+    } finally {
+        loadingAction.value = []
+    }
 }
 
 const key = ulid()
@@ -335,7 +336,7 @@ const key = ulid()
                 </a>
 
                 <a :href="downloadUrl('images') as string" target="_blank" rel="noopener">
-                    <Button :icon="faImage" label="Images" type="tertiary" class="border-l-0  rounded-l-none" />
+                    <Button :icon="faImage" label="Images" type="tertiary" class="border-l-0  rounded-l-none"/>
                 </a>
 
             </div>
@@ -409,16 +410,15 @@ const key = ulid()
                                 icon="fas fa-sync-alt" :label="trans('Use existing')" type="tertiary"/>
 
 
-
                 <div v-if="selectedProducts.length > 0" class="space-x-2 border-r border-gray-400 pr-2">
-                  <!--   <Button v-if="selectedProducts.length > 0" type="green" icon="fas fa-hand-pointer"
-                        :label="trans('Match With Existing Product (:count)', { count: selectedProducts?.length })"
-                        :loading="loadingAction.includes('bulk-match')" @click="() => submitPortfolioAction({
-                            label : 'bulk-match',
-                            name : 'retina.models.dropshipping.shopify.batch_match',
-                            parameters: { customerSalesChannel: customer_sales_channel.id },
-                            method: 'post',
-                        })" size="xs" /> -->
+                    <!--   <Button v-if="selectedProducts.length > 0" type="green" icon="fas fa-hand-pointer"
+                          :label="trans('Match With Existing Product (:count)', { count: selectedProducts?.length })"
+                          :loading="loadingAction.includes('bulk-match')" @click="() => submitPortfolioAction({
+                              label : 'bulk-match',
+                              name : 'retina.models.dropshipping.shopify.batch_match',
+                              parameters: { customerSalesChannel: customer_sales_channel.id },
+                              method: 'post',
+                          })" size="xs" /> -->
 
                     <Button
                         v-if="selectedProducts.length > 0"
@@ -428,7 +428,7 @@ const key = ulid()
                         :loading="loadingAction.includes('bulk-create')"
                         @click="() => submitPortfolioAction({
                             label : 'bulk-create',
-                            name : 'retina.models.dropshipping.shopify.batch_upload',
+                            name : props.routes.batch_upload.name,
                             parameters: { customerSalesChannel: customer_sales_channel.id },
                             method: 'post',
                         })"
@@ -441,7 +441,7 @@ const key = ulid()
                         label="Upload all as new product"
                         size="xs"
                         :routeTarget="{
-                            name: 'retina.models.dropshipping.shopify.batch_all',
+                            name: props.routes.batch_all.name,
                             parameters: { customerSalesChannel: customer_sales_channel.id },
                             method: 'post'
                         }"
@@ -482,9 +482,12 @@ const key = ulid()
                                      :useCheckBox="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual"/>
 
         <RetinaTablePortfoliosShopify v-else-if="platform_data.type === 'shopify'" :data="props.products"
-            :tab="'products'" :selectedData :platform_data :platform_user_id :is_platform_connected
-            :progressToUploadToShopifyAll="progessbar" :progressToUploadToShopify :customerSalesChannel="customer_sales_channel"
-            v-model:selectedProducts="selectedProducts" :key="key" :count_product_not_synced="count_product_not_synced"/>
+                                      :tab="'products'" :selectedData :platform_data :platform_user_id
+                                      :is_platform_connected
+                                      :progressToUploadToShopifyAll="progessbar" :progressToUploadToShopify
+                                      :customerSalesChannel="customer_sales_channel"
+                                      v-model:selectedProducts="selectedProducts" :key="key"
+                                      :count_product_not_synced="count_product_not_synced"/>
 
 
         <RetinaTablePortfoliosPlatform v-else :data="props.products" :tab="'products'" :selectedData :platform_data
@@ -501,7 +504,8 @@ const key = ulid()
 
         <AddPortfoliosWithUpload v-else :step="step" :routes="props.routes" :platform_data
 
-            @onDone="()=>{isOpenModalPortfolios = false, key = ulid()}" :platform_user_id :is_platform_connected
-            :customerSalesChannel="customer_sales_channel" :onClickReconnect />
+                                 @onDone="()=>{isOpenModalPortfolios = false, key = ulid()}" :platform_user_id
+                                 :is_platform_connected
+                                 :customerSalesChannel="customer_sales_channel" :onClickReconnect/>
     </Modal>
 </template>

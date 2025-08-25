@@ -26,8 +26,6 @@ use App\Actions\Dropshipping\Tiktok\User\DeleteTiktokUser;
 use App\Actions\Dropshipping\WooCommerce\Orders\FetchWooUserOrders;
 use App\Actions\Dropshipping\WooCommerce\Product\CreateNewBulkPortfolioToWooCommerce;
 use App\Actions\Dropshipping\WooCommerce\Product\StoreNewProductToCurrentWooCommerce;
-use App\Actions\Dropshipping\WooCommerce\Product\SyncronisePortfoliosToWooCommerce;
-use App\Actions\Dropshipping\WooCommerce\Product\SynchronisePortfolioToWooCommerce;
 use App\Actions\Iris\UpdateIrisLocale;
 use App\Actions\Retina\Accounting\MitSavedCard\DeleteMitSavedCard;
 use App\Actions\Retina\Accounting\MitSavedCard\SetAsDefaultRetinaMitSavedCard;
@@ -119,6 +117,7 @@ use App\Actions\Retina\SysAdmin\StoreRetinaWebUser;
 use App\Actions\Retina\SysAdmin\UpdateRetinaCustomer;
 use App\Actions\Retina\SysAdmin\UpdateRetinaWebUser;
 use App\Actions\Retina\UI\Profile\UpdateRetinaProfile;
+use App\Actions\Retina\Woo\CreateRetinaNewAllPortfoliosToWoo;
 use App\Actions\Retina\Woo\CreateRetinaNewBulkPortfoliosToWoo;
 use App\Actions\Retina\Woo\MatchRetinaBulkNewProductToCurrentWooCommerce;
 use App\Actions\Retina\Woo\MatchRetinaPortfolioToCurrentWooProduct;
@@ -267,6 +266,7 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
 
     Route::post('{customerSalesChannel:id}/woo-batch-upload', CreateRetinaNewBulkPortfoliosToWoo::class)->name('woo.batch_upload')->withoutScopedBindings();
     Route::post('{customerSalesChannel:id}/woo-batch-match', MatchRetinaBulkNewProductToCurrentWooCommerce::class)->name('woo.batch_match')->withoutScopedBindings();
+    Route::post('{customerSalesChannel:id}/woo-batch-all', CreateRetinaNewAllPortfoliosToWoo::class)->name('woo.batch_all')->withoutScopedBindings();
 
     Route::post('{wooCommerceUser:id}/woo-batch-upload', CreateNewBulkPortfolioToWooCommerce::class)->name('woo.batch_upload')->withoutScopedBindings();
     Route::post('{wooCommerceUser:id}/woo-batch-sync', [CreateNewBulkPortfolioToWooCommerce::class, 'asBatchSync'])->name('woo.batch_sync')->withoutScopedBindings();

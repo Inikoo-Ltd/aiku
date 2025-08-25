@@ -145,12 +145,13 @@ class IndexRetinaPortfolios extends RetinaAction
 
         // Button: Brave mode
         $bulkUploadRoute = false;
+        $bulkAllRoute = false;
         if ($platformUser) {
             $bulkUploadRoute = match ($this->customerSalesChannel->platform->type) {
                 PlatformTypeEnum::SHOPIFY => [
                     'name'       => 'retina.models.dropshipping.shopify.batch_upload',
                     'parameters' => [
-                        'shopifyUser' => $platformUser->id
+                        'customerSalesChannel' => $this->customerSalesChannel->id
                     ]
                 ],
                 PlatformTypeEnum::WOOCOMMERCE => [
@@ -175,6 +176,22 @@ class IndexRetinaPortfolios extends RetinaAction
                     'name'       => 'retina.models.dropshipping.magento.batch_upload',
                     'parameters' => [
                         'magentoUser' => $platformUser->id
+                    ]
+                ],
+                default => false
+            };
+
+            $bulkAllRoute = match ($this->customerSalesChannel->platform->type) {
+                PlatformTypeEnum::SHOPIFY => [
+                    'name'       => 'retina.models.dropshipping.shopify.batch_all',
+                    'parameters' => [
+                        'customerSalesChannel' => $this->customerSalesChannel->id
+                    ]
+                ],
+                PlatformTypeEnum::WOOCOMMERCE => [
+                    'name'       => 'retina.models.dropshipping.woo.batch_all',
+                    'parameters' => [
+                        'customerSalesChannel' => $this->customerSalesChannel->id
                     ]
                 ],
                 default => false
@@ -239,6 +256,7 @@ class IndexRetinaPortfolios extends RetinaAction
                 ],
                 'routes'         => [
                     'bulk_upload'               => $bulkUploadRoute,
+                    'batch_all'                 => $bulkAllRoute,
                     'fetch_products'            => match ($this->customerSalesChannel->platform->type) {
                         PlatformTypeEnum::WOOCOMMERCE => [
                             'name' => 'retina.json.dropshipping.customer_sales_channel.woo_products'

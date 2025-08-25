@@ -31,7 +31,7 @@ class StoreBulkNewProductToCurrentWooCommerce extends RetinaAction
             ->get();
 
         foreach ($portfolios as $portfolio) {
-            StoreNewProductToCurrentWooCommerce::dispatch($portfolio, []);
+            StoreNewProductToCurrentWooCommerce::dispatch($customerSalesChannel->user, $portfolio);
         }
     }
 }
