@@ -62,7 +62,7 @@ const save = (products) => {
 
   <!-- PrimeVue Dialog -->
   <Dialog v-model:visible="showModal" modal :show-header="false" header="Create" :dismissableMask="true"
-    :style="{ width: '50rem', padding: '10px' }" :content-style="{ overflow: 'unset' }">
+    :style="{ width: '70rem', padding: '10px' }" :content-style="{ overflow: 'unset' }">
     <div class="pt-4">
       <ProductsSelector :headLabel="trans('Add Trade Units')" :route-fetch="{
         name: 'grp.json.master-product-category.recommended-trade-units',

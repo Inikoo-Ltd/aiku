@@ -251,7 +251,7 @@ watch(() => props.idxSubmitSuccess, (newVal, oldVal) => {
                                     </div>
                                 </template>
                                 <div v-else class="text-center text-gray-500 col-span-3">
-                                    {{ trans("No products found") }}
+                                    {{ trans("No Results found") }}
                                 </div>
                             </template>
                             <div
