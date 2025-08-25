@@ -428,7 +428,7 @@ const key = ulid()
                         :loading="loadingAction.includes('bulk-create')"
                         @click="() => submitPortfolioAction({
                             label : 'bulk-create',
-                            name : props.routes.batch_upload.name,
+                            name : props.routes.bulk_upload.name,
                             parameters: { customerSalesChannel: customer_sales_channel.id },
                             method: 'post',
                         })"
