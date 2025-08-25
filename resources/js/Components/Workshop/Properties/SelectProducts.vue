@@ -178,89 +178,92 @@ function removeProduct(index: number) {
   updated.splice(index, 1)
   localProducts.value = updated
 }
+
 </script>
 
 <template>
   <div class="space-y-6">
     <!-- Type Selection -->
     <div>
-      <label class="block mb-2 font-semibold text-gray-700">Show Type</label>
-      <select
-        v-model="localType"
-        class="border border-gray-300 px-4 py-2 rounded w-full focus:ring-2 focus:ring-primary focus:outline-none"
-      >
-        <option value="">Select type</option>
-        <option value="custom">Custom</option>
-        <option value="best-seller">Best Seller</option>
-        <option value="other-family">Other Family</option>
-        <option value="current-family">
-          <div>
-            Current Family
-            <FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
-          </div>
-        </option>
-      </select>
+        <label class="block text-sm text-gray-700">Select view type:</label>
+        <select
+            v-model="localType"
+            class="border border-gray-300 px-4 py-2 rounded w-full focus:ring-2 focus:ring-primary focus:outline-none"
+        >
+            <option value="">Select type</option>
+            <option value="custom">Custom</option>
+            <option value="best-seller">Best Seller</option>
+            <option value="other-family">Other Family</option>
+            <option value="current-family">
+                <div>
+                    Current Family
+                    <FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
+                </div>
+            </option>
+            <option value="luigi-top-trending">Luigi: Top Trending</option>
+            <option value="luigi-last-ordered">Luigi: Last Ordered</option>
+            <option value="luigi-recently-viewed">Luigi: Recently Viewed</option>
+            <option value="luigi-you-might-also-like">Luigi: You might also like</option>
+        </select>
     </div>
 
     <!-- Draggable Custom Products -->
-    <draggable
-      v-if="localType === 'custom'"
-      v-model="localProducts"
-      item-key="id"
-      handle=".drag-handle"
-      class="space-y-4"
-      :animation="200"
-    >
-      <template #item="{ element: product, index }">
-        <div class="border border-gray-300 rounded p-4 bg-white shadow-sm relative group">
-          <!-- Remove Product -->
-          <button
-            type="button"
-            class="absolute top-2 right-2 text-gray-400 hover:text-red-600"
-            @click="removeProduct(index)"
-            title="Remove product"
-          >
-            <FontAwesomeIcon :icon="faTimes" />
-          </button>
-
-          <!-- Drag Handle -->
-          <div class="cursor-move drag-handle text-gray-400 hover:text-gray-600 text-sm mb-2 flex items-center gap-1">
-            <FontAwesomeIcon :icon="faGripVertical" />
-            <span>Drag to reorder</span>
-          </div>
-
-          <!-- Product Selector -->
-          <PureMultiselectInfiniteScroll
-            :modelValue="product"
-            :object="true"
-            @update:modelValue="(val) => updateProductAt(index, val)"
-            :fetchRoute="{
-              name: 'grp.json.shop.products',
-              parameters: {
-                shop: (route().params as any).shop
-              }
-            }"
-            placeholder="Select product"
-            valueProp="slug"
-            :required="true"
-          >
-            <template #singlelabel="{ value }">
-              <div v-if="value">{{ value.code }} - {{ value.name }}</div>
-              <div v-else class="text-gray-400 italic">Select product</div>
-            </template>
-
-            <template #option="{ option }">
-              <div>{{ option.code }} - {{ option.name }}</div>
-            </template>
-          </PureMultiselectInfiniteScroll>
+    <template v-if="localType === 'custom'">
+        <draggable
+          v-model="localProducts"
+          item-key="id"
+          handle=".drag-handle"
+          class="space-y-4"
+          :animation="200"
+        >
+          <template #item="{ element: product, index }">
+            <div class="border border-gray-300 rounded p-4 bg-white shadow-sm relative group">
+              <!-- Remove Product -->
+              <button
+                type="button"
+                class="absolute top-2 right-2 text-gray-400 hover:text-red-600"
+                @click="removeProduct(index)"
+                title="Remove product"
+              >
+                <FontAwesomeIcon :icon="faTimes" />
+              </button>
+              <!-- Drag Handle -->
+              <div class="cursor-move drag-handle text-gray-400 hover:text-gray-600 text-sm mb-2 flex items-center gap-1">
+                <FontAwesomeIcon :icon="faGripVertical" />
+                <span>Drag to reorder</span>
+              </div>
+              <!-- Product Selector -->
+              <PureMultiselectInfiniteScroll
+                :modelValue="product"
+                :object="true"
+                @update:modelValue="(val) => updateProductAt(index, val)"
+                :fetchRoute="{
+                  name: 'grp.json.shop.products',
+                  parameters: {
+                    shop: (route().params as any).shop
+                  }
+                }"
+                placeholder="Select product"
+                valueProp="slug"
+                :required="true"
+              >
+                <template #singlelabel="{ value }">
+                  <div v-if="value">{{ value.code }} - {{ value.name }}</div>
+                  <div v-else class="text-gray-400 italic">Select product</div>
+                </template>
+                <template #option="{ option }">
+                  <div>{{ option.code }} - {{ option.name }}</div>
+                </template>
+              </PureMultiselectInfiniteScroll>
+            </div>
+          </template>
+        </draggable>
+        
+        <!-- Add Product Button -->
+        <div class="xpt-2">
+            <Button type="dashed" icon="fas fa-plus" label="Add Product" full @click="addEmptyProduct" />
         </div>
-      </template>
-    </draggable>
-
-    <!-- Add Product Button -->
-    <div v-if="localType === 'custom'" class="xpt-2">
-        <Button type="dashed" icon="fas fa-plus" label="Add Product" full @click="addEmptyProduct" />
-    </div>
+    </template>
 
     <!-- Section: Best Seller Read-Only List -->
     <div v-else-if="localType === 'best-seller'" class="space-y-4">
@@ -416,6 +419,13 @@ function removeProduct(index: number) {
 
         <div v-else-if="!isLoadingOtherFamily" class="text-gray-500 text-sm text-center py-2 bg-gray-200">
             {{ trans("No products found in this family.") }}
+        </div>
+    </div>
+
+    <div v-else-if="localType === 'luigi-top-trending'" class="space-y-4">
+        <div class="bg-gray-100 p-4 rounded">
+            <div class="font-semibold">Products Top Trending will automatically appear</div>
+            <div class="text-sm text-gray-400 italic">Preview not available</div>
         </div>
     </div>
   </div>

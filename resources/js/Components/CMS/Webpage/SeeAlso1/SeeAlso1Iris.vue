@@ -17,6 +17,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
+import RecommendersLuigi1Iris from "./RecommendersLuigi1Iris.vue"
 library.add(faChevronLeft, faChevronRight)
 
 
@@ -63,7 +64,7 @@ const compSwiperOptions = computed(() => {
 </script>
 
 <template>
- <div id="see-also-carousel" class="w-full pb-6" :style="{
+ <div id="see-also-1-iris" class="w-full pb-6" :style="{
     ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
     ...getStyles(fieldValue.container?.properties, screenType),
     width: 'auto'
@@ -75,9 +76,12 @@ const compSwiperOptions = computed(() => {
       </div>
     </div>
 
+    <div v-if="fieldValue.settings.products_data.type === 'luigi-top-trending'">
+      <RecommendersLuigi1Iris xrecommendation_type="trends" />
+    </div>
 
     <!-- Carousel with custom navigation -->
-    <div v-if="compSwiperOptions?.length" class="relative px-4 py-6" @click="() => {
+    <div v-else-if="compSwiperOptions?.length" class="relative px-4 py-6" @click="() => {
       `sendMessageToParent('activeBlock', indexBlock)`
       sendMessageToParent('activeChildBlock', bKeys[0])
     }">
