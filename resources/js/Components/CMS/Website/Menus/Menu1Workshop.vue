@@ -186,4 +186,8 @@ const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false));
     -ms-overflow-style: none;
     scrollbar-width: none;
 }
+
+.editor-class a  {
+   font-weight: 400;
+}
 </style>
