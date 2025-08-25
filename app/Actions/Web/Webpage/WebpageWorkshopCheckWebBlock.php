@@ -1,0 +1,78 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 30 Jun 2025 11:11:38 British Summer Time, Sheffield, UK
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\Web\Webpage;
+
+use App\Actions\OrgAction;
+use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
+use App\Actions\Web\Webpage\UpdateWebpageContent;
+use App\Models\Web\WebBlock;
+use App\Models\Web\WebBlockType;
+use App\Models\Web\Webpage;
+use Illuminate\Support\Arr;
+use Lorisleiva\Actions\ActionRequest;
+
+class WebpageWorkshopCheckWebBlock extends OrgAction
+{
+    use WithActionUpdate;
+
+
+    public function handle(Webpage $webpage, array $modelData): array
+    {
+        $webBlocksAdded = false;
+        
+        if (Arr::exists($modelData, 'layout.web_blocks')) {
+            $webBlocks = $modelData['layout']['web_blocks'];
+            
+            foreach ($webBlocks as $index => $webBlockData) {
+                $frontendId = $webBlockData['id'];
+                
+                if (!WebBlock::where('id', $frontendId)->exists()) {
+                    $webBlockType = WebBlockType::where('code', $webBlockData['type'])->first();
+                    
+                    if ($webBlockType) {
+                        StoreModelHasWebBlock::make()->action($webpage, [
+                            'web_block_type_id' => $webBlockType->id,
+                            'layout' => Arr::get($webBlockData, 'web_block.layout', []),
+                            'position' => $index
+                        ]);
+                        $webBlocksAdded = true;
+                    }
+                }
+            }
+        }
+        
+        if ($webBlocksAdded) {
+            UpdateWebpageContent::run($webpage);
+        }
+        
+        return $webpage->unpublishedSnapshot->layout;
+    }
+
+
+    public function rules()
+    {
+        return [
+            'layout' => ['sometimes', 'array'],
+        ];
+    }
+
+    public function action(Webpage $webpage, array $modelData): array
+    {
+        return $this->handle($webpage, $modelData);
+    }
+
+    public function asController(Webpage $webpage, ActionRequest $request): array
+    {
+        $this->initialisation($webpage->organisation, $request);
+
+        return $this->handle($webpage, $this->validatedData);
+    }
+
+}

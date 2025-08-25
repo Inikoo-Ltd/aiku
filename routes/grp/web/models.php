@@ -279,6 +279,7 @@ use App\Actions\Web\Webpage\SetWebpageAsOffline;
 use App\Actions\Web\Webpage\SetWebpageAsOnline;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
+use App\Actions\Web\Webpage\WebpageWorkshopCheckWebBlock;
 use App\Actions\Web\Website\AutosaveWebsiteMarginal;
 use App\Actions\Web\Website\BreakWebsiteCache;
 use App\Actions\Web\Website\LaunchWebsite;
@@ -708,6 +709,7 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
 
 Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
     Route::patch('', UpdateWebpage::class)->name('update')->withoutScopedBindings();
+    Route::patch('web-block-check', WebpageWorkshopCheckWebBlock::class)->name('web_block_check');
     Route::patch('delete', DeleteWebpage::class)->name('delete');
     Route::patch('set-online', SetWebpageAsOnline::class)->name('set_online');
     Route::patch('set-offline', SetWebpageAsOffline::class)->name('set_offline');
