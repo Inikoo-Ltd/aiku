@@ -4,19 +4,19 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { notify } from "@kyvg/vue3-notification"
 import Image from "@/Components/Image.vue"
-import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/vue"
+// import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/vue"
 import { inject, ref, computed, watch } from "vue"
-import EmptyState from "@/Components/Utils/EmptyState.vue"
+// import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { faTrash as falTrash, faEdit, faExternalLink } from "@fal"
+import { faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
-import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+// import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { Images } from "@/types/Images"
 import { Link, router } from "@inertiajs/vue3"
-import { useLocaleStore } from "@/Stores/locale"
+// import { useLocaleStore } from "@/Stores/locale"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Dialog from 'primevue/dialog'
@@ -27,7 +27,7 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 // import TranslationBox from '@/Components/TranslationBox.vue';
 
 
-library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus, faBarcode)
+library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus, faBarcode, faPuzzlePiece)
 
 const props = defineProps<{
 	taxonomy: any
@@ -182,6 +182,22 @@ const compSelectedTradeUnit = computed(() => {
 	return props.data.trade_units.find((unit) => unit.tradeUnit.code === selectedTradeUnit.value)
 })
 
+const hazardDefinitions = ref([
+	{ key: 'acuteToxicity', name: 'Acute Toxicity', icon: 'toxic-icon.png' },
+	{ key: 'corrosive', name: 'Corrosive', icon: 'corrosive-icon.png' },
+	{ key: 'explosive', name: 'Explosive', icon: 'explosive.jpg' },
+	{ key: 'flammable', name: 'Flammable', icon: 'flammable.png' },
+	{ key: 'gasUnderPressure', name: 'Gas under pressure', icon: 'gas.png' },
+	{ key: 'environmentHazard', name: 'Hazards to the environment', icon: 'hazard-env.png' },
+	{ key: 'healthHazard', name: 'Health hazard', icon: 'health-hazard.png' },
+	{ key: 'oxidising', name: 'Oxidising', icon: 'oxidising.png' },
+	{ key: 'seriousHealthHazard', name: 'Serious Health hazard', icon: 'serious-health-hazard.png' }
+])
+
+const getHazardIconPath = (iconName) => {
+	return `/hazardIcon/${iconName}`
+}
+
 console.log(props)
 </script>
 
@@ -286,63 +302,228 @@ console.log(props)
 						<FontAwesomeIcon :icon="faBarcode" />
 					</span>
 				</div>
-				<dl class="mt-4 space-y-3 text-sm">
-					<div class="flex justify-between flex-wrap gap-1">
-						<dt class="text-gray-500">{{ trans("Added date") }}</dt>
-						<dd class="font-medium">{{ useFormatTime(data.product.data.created_at) }}</dd>
-					</div>
-					<div class="flex justify-between flex-wrap gap-1">
-						<dt class="text-gray-500">{{ trans("Stock") }}</dt>
-						<dd class="font-medium">
-							{{ data.product.data.stock }} {{ data.product.data.unit }}
-						</dd>
-					</div>
-					<div class="flex justify-between flex-wrap gap-1">
-						<dt class="text-gray-500">{{ trans("Price") }}</dt>
-						<dd class="font-semibold text-green-600">
-							{{ locale.currencyFormat(data.product.data.currency_code, data.product.data.price) }}
-						</dd>
-					</div>
-					<div class="flex justify-between flex-wrap gap-1">
-						<dt class="text-gray-500">RRP</dt>
-						<dd class="font-semibold">
-							{{ locale.currencyFormat(data.product.data.currency_code, data.product.data.rrp) }}
-							<span class="ml-1 text-xs text-gray-500">
-								({{
-								((data.product.data.rrp - data.product.data.price) /
-								data.product.data.price * 100).toFixed(2)
-								}}%)
-							</span>
-						</dd>
-					</div>
-					<div class="flex justify-between flex-wrap gap-1">
-						<dt class="text-gray-500">{{ trans("Weight") }}</dt>
-						<dd class="font-medium">
-							{{ locale.number(data.product.data?.specifications?.gross_weight) }} gr
-						</dd>
-					</div>
-					<div class="flex justify-between flex-wrap gap-1">
-						<dt class="text-gray-500">{{ trans("Dimension") }}</dt>
-						<dd class="font-medium">
-							{{ data.product?.data?.spesifications?.dimenison[0] ?? '-' }}
-						</dd>
+				<dl class="mt-4 space-y-6 text-sm">
+					<div class="space-y-3">
+						<div class="flex justify-between flex-wrap gap-1">
+							<dt class="text-gray-500">{{ trans("Code") }}</dt>
+							<dd class="font-medium">{{ data.product.data.code }}</dd>
+						</div>
+						<div class="flex justify-between flex-wrap gap-1">
+							<dt class="text-gray-500">{{ trans("CPNP Number") }}</dt>
+							<dd class="font-medium">-</dd>
+						</div>
+						<div class="flex justify-between flex-wrap gap-1">
+							<dt class="text-gray-500">{{ trans("UFI (Poison Centres)") }}</dt>
+							<dd class="font-medium">-</dd>
+						</div>
+						<div class="flex justify-between flex-wrap gap-1">
+							<dt class="text-gray-500">{{ trans("Added date") }}</dt>
+							<dd class="font-medium">{{ useFormatTime(data.product.data.created_at) }}</dd>
+						</div>
+						<div class="flex justify-between flex-wrap gap-1">
+							<dt class="text-gray-500">{{ trans("Stock") }}</dt>
+							<dd class="font-medium">
+								{{ data.product.data.stock }} {{ data.product.data.unit }}
+							</dd>
+						</div>
+						<div class="flex justify-between flex-wrap gap-1">
+							<dt class="text-gray-500">{{ trans("Price") }}</dt>
+							<dd class="font-semibold text-green-600">
+								{{ locale.currencyFormat(data.product.data.currency_code, data.product.data.price) }}
+							</dd>
+						</div>
+						<div class="flex justify-between flex-wrap gap-1">
+							<dt class="text-gray-500">RRP</dt>
+							<dd class="font-semibold">
+								{{ locale.currencyFormat(data.product.data.currency_code, data.product.data.rrp) }}
+								<span class="ml-1 text-xs text-gray-500">
+									({{
+									((data.product.data.rrp - data.product.data.price) /
+									data.product.data.price * 100).toFixed(2)
+									}}%)
+								</span>
+							</dd>
+						</div>
+						<div class="flex justify-between flex-wrap gap-1">
+							<dt class="text-gray-500">{{ trans("Weight") }}</dt>
+							<dd class="font-medium">
+								{{ locale.number(data.product.data?.specifications?.gross_weight) }} gr
+							</dd>
+						</div>
+						<div class="flex justify-between flex-wrap gap-1">
+							<dt class="text-gray-500">{{ trans("Dimension") }}</dt>
+							<dd class="font-medium">
+								{{ data.product?.data?.spesifications?.dimenison[0] ?? '-' }}
+							</dd>
+						</div>
 					</div>
 					<div>
-						<dt class="text-gray-500">{{ trans("Ingredients") }}</dt>
-						<ul class="list-disc list-inside text-gray-700 mt-1 space-y-1">
-							<li v-for="ingredient in data.product.data.specifications?.ingredients"
-								:key="ingredient.id">
-								{{ ingredient }}
-							</li>
-						</ul>
+						<h4 class="font-medium text-base border-b pb-2 mb-2">{{ trans("Video (vimeo)") }}</h4>
+						<!-- <dt class="text-gray-500">{{ trans("Vimeo video link") }}</dt> -->
+						<!-- <iframe src="https://player.vimeo.com/video/1112228622?autoplay=1"
+							class="w-full h-auto aspect-video rounded-lg" frameborder="0" allow="autoplay;">
+						</iframe> -->
+						<div class="w-full h-auto aspect-video rounded-lg bg-gray-200 flex items-center justify-center">
+							<span>No Video to Show</span>
+						</div>
 					</div>
 					<div>
+						<h4 class="font-medium text-base border-b pb-2 mb-2">{{ trans("Parts") }}</h4>
 						<dt class="text-gray-500">{{ trans("Parts") }}</dt>
 						<ul class="list-disc list-inside text-gray-700 mt-1 space-y-1">
 							<li v-for="part in data.parts" :key="part.id">
 								{{ part.name }}
 							</li>
 						</ul>
+					</div>
+					<div class="space-y-3">
+						<h4 class="font-medium text-base border-b pb-2 mb-2">{{ trans("Outer") }}</h4>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("Unit per outer") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("Pricing policy") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("Outer price") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+					</div>
+					<div class="space-y-3">
+						<div class="flex justify-between items-center border-b pb-2 mb-2">
+							<h4 class="font-medium text-base">{{ trans("Properties") }}</h4>
+							<span v-tooltip="'Material/ingredients label'" class="text-xs cursor-pointer">
+								<FontAwesomeIcon :icon="faPuzzlePiece" />
+							</span>
+						</div>
+						<div>
+							<dt class="text-gray-500">{{ trans("Materials/Ingredients") }}</dt>
+							<ul class="list-disc list-inside text-gray-700 mt-1 space-y-1">
+								<li v-for="ingredient in data.product.data.specifications?.ingredients"
+									:key="ingredient.id">
+									{{ ingredient }}
+								</li>
+							</ul>
+						</div>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("Country of origin") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("Tariff code") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("Duty rate") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt v-tooltip="'Harmonized Tariff Schedule of the United States Code'" class="text-gray-500">{{ trans("HTS US") }}
+								<img class="inline-block h-[14px] w-[20px] object-cover rounded-sm"
+									:src="'/flags/' + 'us' + '.png'"
+									:alt="`Bendera ${'us'}`" loading="lazy" />
+							</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+					</div>
+					<div class="space-y-3">
+						<h4 class="font-medium text-base border-b pb-2 mb-2">{{ trans("Health & Safety") }}</h4>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("UN number") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("UN class") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("Packing group") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("Proper shipping name") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("Hazard identification number") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+					</div>
+					<div class="space-y-3">
+						<h4 class="font-medium text-base border-b pb-2 mb-2">{{ trans("GPSR (if empty will use Part GPSR)") }}</h4>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("Manufacturer") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("EU responsible") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("Warnings") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("How to use") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("Class & category of danger") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+						<div class="flex justify-between">
+							<dt class="text-gray-500">{{ trans("Product GPSR Languages") }}</dt>
+							<dd class="font-medium">
+								-
+							</dd>
+						</div>
+						<div class="flex gap-2 overflow-x-auto">
+							 <div 
+								v-for="hazard in hazardDefinitions" 
+								:key="hazard.key"
+								class="flex-shrink-0 w-8 h-8 bg-white rounded border border-red-200 p-1" 
+								v-tooltip="hazard.name">
+								<img :src="getHazardIconPath(hazard.icon)" 
+									:alt="hazard.name" 
+									class="w-full h-full object-contain">
+							</div>
+						</div>
 					</div>
 				</dl>
 			</div>
