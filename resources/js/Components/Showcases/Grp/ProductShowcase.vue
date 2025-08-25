@@ -198,7 +198,7 @@ const getHazardIconPath = (iconName) => {
 	return `/hazardIcon/${iconName}`
 }
 
-console.log(props)
+// console.log(props)
 </script>
 
 <template>
@@ -416,26 +416,32 @@ console.log(props)
 						<div class="flex justify-between">
 							<dt class="text-gray-500">{{ trans("Country of origin") }}</dt>
 							<dd class="font-medium">
-								-
+								<div v-if="data?.properties?.country_of_origin.code">
+									<img class="inline-block h-[14px] w-[20px] object-cover rounded-sm"
+										:src="'/flags/' + data?.properties?.country_of_origin.code.toLowerCase() + '.png'"
+										:alt="`Bendera ${'us'}`" loading="lazy" />
+									<span class="ml-2">{{ data.properties.country_of_origin.name }}</span>
+								</div>
+								<span v-else>-</span>
 							</dd>
 						</div>
 						<div class="flex justify-between">
 							<dt class="text-gray-500">{{ trans("Tariff code") }}</dt>
 							<dd class="font-medium">
-								-
+								{{ data.properties.tariff_code || '-' }}
 							</dd>
 						</div>
 						<div class="flex justify-between">
 							<dt class="text-gray-500">{{ trans("Duty rate") }}</dt>
 							<dd class="font-medium">
-								-
+								{{ data.properties.duty_rate }}
 							</dd>
 						</div>
 						<div class="flex justify-between">
-							<dt v-tooltip="'Harmonized Tariff Schedule of the United States Code'" class="text-gray-500">{{ trans("HTS US") }}
+							<dt v-tooltip="'Harmonized Tariff Schedule of the United States Code'"
+								class="text-gray-500">{{ trans("HTS US") }}
 								<img class="inline-block h-[14px] w-[20px] object-cover rounded-sm"
-									:src="'/flags/' + 'us' + '.png'"
-									:alt="`Bendera ${'us'}`" loading="lazy" />
+									:src="'/flags/' + 'us' + '.png'" :alt="`Bendera ${'us'}`" loading="lazy" />
 							</dt>
 							<dd class="font-medium">
 								-
@@ -514,13 +520,10 @@ console.log(props)
 							</dd>
 						</div>
 						<div class="flex gap-2 overflow-x-auto">
-							 <div 
-								v-for="hazard in hazardDefinitions" 
-								:key="hazard.key"
-								class="flex-shrink-0 w-8 h-8 bg-white rounded border border-red-200 p-1" 
+							<div v-for="hazard in hazardDefinitions" :key="hazard.key"
+								class="flex-shrink-0 w-8 h-8 bg-white rounded border border-red-200 p-1"
 								v-tooltip="hazard.name">
-								<img :src="getHazardIconPath(hazard.icon)" 
-									:alt="hazard.name" 
+								<img :src="getHazardIconPath(hazard.icon)" :alt="hazard.name"
 									class="w-full h-full object-contain">
 							</div>
 						</div>
