@@ -65,6 +65,8 @@ const LBInitSearchResult = async () => {
                             "department": "Departments",
                             "sub_department": "Sub Departments",
                             "tag": "Tags",
+                            "color": "Color",
+                            "news": "News",
                             "brand": "Brands",
                             "collection": "Collections"
 
@@ -187,11 +189,16 @@ console.log("layout", layout)
     @apply mt-0 !important;
 }
 .lb-quick-searches__headings {
-    @apply gap-x-8 !important;
+    @apply gap-x-3 gap-y-2 mb-2.5 pb-3 !important;
 }
 
 .lb-quick-searches__heading {
-    @apply m-0 !important;
+    @apply m-0 flex-grow text-center max-w-64 px-2 py-1 text-base rounded !important;
+    border: 1px solid color-mix(in srgb, var(--iris-color-0) 40%, transparent) !important;
+}
+
+.lb-quick-searches__heading--active {
+    background-color: color-mix(in srgb, var(--iris-color-0) 10%, transparent) !important;
 }
 
 .lb-quick-search-default__item-image-wrapper {
@@ -206,6 +213,7 @@ console.log("layout", layout)
 .lb-quick-search-default__item {
     @apply w-full  !important;
 }
+// End: Quick Search Type //
 
 .lb-checkbox label.lb-facet__label {
     position: static !important;

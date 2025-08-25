@@ -192,6 +192,7 @@ class IndexCollectionsInProductCategory extends OrgAction
                 $routes = [
                     'grp.org.shops.show.catalogue.departments.show.collection.index'                                  => 'grp.org.shops.show.catalogue.departments.show.collection.create',
                     'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index'             => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.create',
+                    'grp.org.shops.show.catalogue.sub_departments.show.collection.index'                              => 'grp.org.shops.show.catalogue.sub_departments.show.collection.create',
                 ];
 
                 $currentRoute = $request->route()->getName();
@@ -344,7 +345,7 @@ class IndexCollectionsInProductCategory extends OrgAction
             ),
 
             'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index' => array_merge(
-                ShowSubDepartment::make()->getBreadcrumbs($parent, $routeParameters),
+                ShowSubDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
                 $headCrumb(
                     [
                         'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index',
@@ -352,6 +353,21 @@ class IndexCollectionsInProductCategory extends OrgAction
                             $routeParameters['organisation'],
                             $routeParameters['shop'],
                             $routeParameters['department'],
+                            $routeParameters['subDepartment']
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+
+            'grp.org.shops.show.catalogue.sub_departments.show.collection.index' => array_merge(
+                ShowSubDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.shops.show.catalogue.sub_departments.show.collection.index',
+                        'parameters' => [
+                            $routeParameters['organisation'],
+                            $routeParameters['shop'],
                             $routeParameters['subDepartment']
                         ]
                     ],

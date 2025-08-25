@@ -434,7 +434,7 @@ class ShowCollection extends OrgAction
             ),
             'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.show' =>
             array_merge(
-                ShowSubDepartment::make()->getBreadcrumbs($parent, $routeParameters),
+                ShowSubDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
                 $headCrumb(
                     $collection,
                     [
