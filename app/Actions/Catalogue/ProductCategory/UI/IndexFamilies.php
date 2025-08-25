@@ -38,8 +38,6 @@ use Spatie\QueryBuilder\AllowedSort;
 use Spatie\QueryBuilder\Sorts\Sort;
 use Illuminate\Database\Eloquent\Builder;
 
-use function PHPUnit\Framework\isNan;
-
 class IndexFamilies extends OrgAction
 {
     use WithCatalogueAuthorisation;
@@ -79,6 +77,14 @@ class IndexFamilies extends OrgAction
     }
 
     public function inSubDepartmentInDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $subDepartment;
+        $this->initialisationFromShop($shop, $request)->withTab(ProductCategoryTabsEnum::values());
+
+        return $this->handle(parent: $subDepartment, prefix: ProductCategoryTabsEnum::INDEX->value);
+    }
+
+    public function inSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $subDepartment;
         $this->initialisationFromShop($shop, $request)->withTab(ProductCategoryTabsEnum::values());
@@ -324,7 +330,7 @@ class IndexFamilies extends OrgAction
                 $createRoute = "grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.create";
             }
 
-            if(is_null($this->parent->masterProductCategory)) {
+            if (is_null($this->parent->masterProductCategory)) {
                 $actions[] = [
                     'type'    => 'button',
                     'style'   => 'create',
@@ -455,8 +461,8 @@ class IndexFamilies extends OrgAction
                     fn () => FamiliesResource::collection(IndexFamilies::run($this->parent, prefix: ProductCategoryTabsEnum::SALES->value))
                     : Inertia::lazy(fn () => FamiliesResource::collection(IndexFamilies::run($this->parent, prefix: ProductCategoryTabsEnum::SALES->value))),
             ]
-        )->table($this->tableStructure(parent: $this->parent,  prefix: ProductCategoryTabsEnum::INDEX->value, sales: false))
-            ->table($this->tableStructure(parent: $this->parent,prefix: ProductCategoryTabsEnum::SALES->value, sales: $this->sales));
+        )->table($this->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::INDEX->value, sales: false))
+            ->table($this->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::SALES->value, sales: $this->sales));
     }
 
     public function getBreadcrumbs(Group|Shop|ProductCategory|Organisation|Collection $parent, string $routeName, array $routeParameters, string $suffix = null): array
@@ -500,17 +506,13 @@ class IndexFamilies extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index' => array_merge(
-                ShowSubDepartment::make()->getBreadcrumbs($parent, $routeParameters),
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index',
+            'grp.org.shops.show.catalogue.sub_departments.show.families.index' => array_merge(
+                ShowSubDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
                 $headCrumb(
                     [
-                        'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index',
-                        'parameters' => [
-                            $routeParameters['organisation'],
-                            $routeParameters['shop'],
-                            $routeParameters['department'],
-                            $routeParameters['subDepartment']
-                        ]
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
                     ],
                     $suffix
                 )

@@ -32,12 +32,12 @@ class GroupHydrateOrderInBasketAtCustomerUpdateIntervals implements ShouldBeUniq
     public function handle(Group $group, ?array $intervals = null, ?array $doPreviousPeriods = null): void
     {
         $group->orderingIntervals()->update(
-            $this->getBasketCountStats('created_at', $group, $intervals, $doPreviousPeriods),
+            $this->getBasketCountStats('updated_by_customer_at', $group, $intervals, $doPreviousPeriods),
         );
 
 
         $group->salesIntervals()->update(
-            $this->getBasketNetAmountStats('created_at', 'grp', $group, $intervals, $doPreviousPeriods),
+            $this->getBasketNetAmountStats('updated_by_customer_at', 'grp', $group, $intervals, $doPreviousPeriods),
         );
     }
 

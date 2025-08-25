@@ -77,7 +77,7 @@ class ShowMasterFamily extends GrpAction
         return $this->handle($masterFamily);
     }
 
-    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
+    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
     {
         $group        = group();
         $this->parent = $masterSubDepartment;
@@ -86,7 +86,7 @@ class ShowMasterFamily extends GrpAction
         return $this->handle($masterFamily);
     }
 
-    public function inMasterSubDepartmentInMasterDepartment(MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
+    public function inMasterSubDepartmentInMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
     {
         $group        = group();
         $this->parent = $masterSubDepartment;
@@ -118,6 +118,14 @@ class ShowMasterFamily extends GrpAction
                         'title' => __('department')
                     ],
                     'actions' => [
+                         $this->canEdit ? [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'route' => [
+                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                                'parameters' => $request->route()->originalParameters()
+                            ]
+                        ] : false,
                         [
                             'type'  => 'button',
                             'style' => 'edit',
@@ -257,7 +265,8 @@ class ShowMasterFamily extends GrpAction
                     $suffix
                 )
             ),
-            'grp.masters.master_shops.show.master_departments.show.master_families.show' =>
+            'grp.masters.master_shops.show.master_departments.show.master_families.show',
+            'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index' =>
             array_merge(
                 ShowMasterDepartment::make()->getBreadcrumbs($masterFamily->masterShop, $masterFamily->masterDepartment, $routeName, $routeParameters, $suffix),
                 $headCrumb(
@@ -269,6 +278,25 @@ class ShowMasterFamily extends GrpAction
                         ],
                         'model' => [
                             'name'       => 'grp.masters.master_shops.show.master_departments.show.master_families.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.masters.master_shops.show.master_sub_departments.master_families.show',
+            'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.index' =>
+            array_merge(
+                ShowMasterSubDepartment::make()->getBreadcrumbs($masterFamily->masterSubDepartment, $routeName, $routeParameters, $suffix),
+                $headCrumb(
+                    $masterFamily,
+                    [
+                        'index' => [
+                            'name'       => 'grp.masters.master_shops.show.master_sub_departments.master_families.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.masters.master_shops.show.master_sub_departments.master_families.show',
                             'parameters' => $routeParameters
                         ]
                     ],

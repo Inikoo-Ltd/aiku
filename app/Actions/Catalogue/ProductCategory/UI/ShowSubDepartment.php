@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
+use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Catalogue\WithSubDepartmentSubNavigation;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\Helpers\History\UI\IndexHistory;
@@ -41,6 +42,15 @@ class ShowSubDepartment extends OrgAction
     }
 
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inShop(Organisation $organisation, Shop $shop,  ProductCategory $subDepartment, ActionRequest $request): ProductCategory
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request)->withTab(DepartmentTabsEnum::values());
+
+        return $this->handle($subDepartment);
+    }
+
     public function asController(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ActionRequest $request): ProductCategory
     {
         $this->parent = $department;
@@ -57,7 +67,11 @@ class ShowSubDepartment extends OrgAction
                         'label' => $subDepartment->department->name,
                         'route' => [
                             'name'       => 'grp.org.shops.show.catalogue.departments.show',
-                            'parameters' => $request->route()->originalParameters()
+                            'parameters' => [
+                                'organisation' => $subDepartment->organisation->slug,
+                                'shop'  => $subDepartment->shop->slug,
+                                'department' => $subDepartment->department->slug
+                            ]
                         ],
                         'icon'  => 'fal fa-folder-tree'
                     ]
@@ -68,6 +82,7 @@ class ShowSubDepartment extends OrgAction
                 'title'       => __('Sub-department'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $subDepartment,
+                    $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
                 'navigation'  => [
@@ -188,9 +203,33 @@ class ShowSubDepartment extends OrgAction
     }
 
 
-    public function getBreadcrumbs(ProductCategory $subDepartment, array $routeParameters, ?string $suffix = null): array
+    public function getBreadcrumbs(ProductCategory $subDepartment, string $routeName, array $routeParameters, ?string $suffix = null): array
     {
-        return
+
+         $headCrumb = function (ProductCategory $subDepartment, array $routeParameters, $suffix) {
+            return [
+
+                [
+                    'type'           => 'modelWithIndex',
+                    'modelWithIndex' => [
+                        'index' => [
+                            'route' => $routeParameters['index'],
+                            'label' => __('Sub Departments')
+                        ],
+                        'model' => [
+                            'route' => $routeParameters['model'],
+                            'label' => $subDepartment->code,
+                        ],
+                    ],
+                    'suffix'         => $suffix,
+
+                ],
+
+            ];
+        };
+
+        return match ($routeName) {
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.show' =>
             array_merge(
                 ShowDepartment::make()->getBreadcrumbs('grp.org.shops.show.catalogue.departments.show', Arr::only($routeParameters, ['organisation', 'shop', 'department'])),
                 [
@@ -206,7 +245,34 @@ class ShowSubDepartment extends OrgAction
                         ]
                     ]
                 ]
-            );
+            ),
+            'grp.org.shops.show.catalogue.sub_departments.show',
+            'grp.org.shops.show.catalogue.sub_departments.show.families.index',
+            'grp.org.shops.show.catalogue.sub_departments.show.families.show',
+            'grp.org.shops.show.catalogue.sub_departments.show.products.index',
+            'grp.org.shops.show.catalogue.sub_departments.show.products.show',
+            'grp.org.shops.show.catalogue.sub_departments.show.families.show.products.index',
+            'grp.org.shops.show.catalogue.sub_departments.show.collection.index' => 
+            array_merge(
+                ShowShop::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    $subDepartment,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.sub_departments.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.sub_departments.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            default => []
+        };
+        
     }
 
     public function getPrevious(ProductCategory $subDepartment, ActionRequest $request): ?array

@@ -11,6 +11,7 @@ namespace App\Actions\Traits\Hydrators;
 use App\Actions\Traits\WithIntervalsAggregators;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\Masters\MasterShop;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -19,16 +20,17 @@ trait WithHydrateBasket
 {
     use WithIntervalsAggregators;
 
-    private function getModelField(Group|Organisation|Shop $model): string
+    private function getModelField(Group|Organisation|Shop|MasterShop $model): string
     {
         return match (class_basename($model)) {
             'Group' => 'group_id',
             'Organisation' => 'organisation_id',
             'Shop' => 'shop_id',
+            'MasterShop' => 'master_shop_id',
         };
     }
 
-    protected function getBasketCountStats(string $dateField, Group|Organisation|Shop $model, ?array $intervals = null, ?array $doPreviousPeriods = null): array
+    protected function getBasketCountStats(string $dateField, Group|Organisation|Shop|MasterShop $model, ?array $intervals = null, ?array $doPreviousPeriods = null): array
     {
         $stats = [];
 
@@ -46,7 +48,7 @@ trait WithHydrateBasket
         );
     }
 
-    protected function getBasketNetAmountStats(string $dateField, string $currencyType, Group|Organisation|Shop $model, ?array $intervals = null, ?array $doPreviousPeriods = null): array
+    protected function getBasketNetAmountStats(string $dateField, string $currencyType, Group|Organisation|Shop|MasterShop $model, ?array $intervals = null, ?array $doPreviousPeriods = null): array
     {
         $stats = [];
 

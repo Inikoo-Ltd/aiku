@@ -15,6 +15,7 @@ use App\Models\Goods\TradeUnit;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
+use App\Helpers\NaturalLanguage;
 use App\Http\Resources\Inventory\OrgStocksResource;
 
 class GetProductShowcase
@@ -23,6 +24,23 @@ class GetProductShowcase
 
     public function handle(Product $product): array
     {
+        $tradeUnits = $product->tradeUnits;
+
+
+        $tradeUnits->loadMissing(['ingredients']);
+
+        $ingredients = $tradeUnits->flatMap(function ($tradeUnit) {
+            return $tradeUnit->ingredients->pluck('name');
+        })->unique()->values()->all();
+
+        $properties = [
+            'country_of_origin' => NaturalLanguage::make()->country($product->country_of_origin),
+            'ingredients'       => $ingredients,
+            'tariff_code'       => $product->tariff_code,
+            'duty_rate'         => $product->duty_rate,
+            
+        ];
+
         $dataTradeUnits = [];
         if ($product->tradeUnits) {
             $dataTradeUnits = $this->getDataTradeUnit($product->tradeUnits);
@@ -61,6 +79,7 @@ class GetProductShowcase
                 ]
             ],
             'product' => ProductResource::make($product),
+            'properties' => $properties,
             'parts' => OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
             'stats'   => $product->stats,
             'trade_units' => $dataTradeUnits,

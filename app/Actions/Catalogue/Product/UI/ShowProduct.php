@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\Product\UI;
 
 use App\Actions\Catalogue\ProductCategory\UI\ShowDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
+use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\CRM\BackInStockReminder\UI\IndexProductBackInStockReminders;
 use App\Actions\CRM\Favourite\UI\IndexProductFavourites;
@@ -41,33 +42,6 @@ class ShowProduct extends OrgAction
 {
     private Group|Organisation|Shop|Fulfilment|ProductCategory $parent;
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        if ($this->parent instanceof Organisation) {
-            $this->canEdit = $request->user()->authTo(
-                [
-                    'org-supervisor.'.$this->organisation->id,
-                ]
-            );
-
-            return $request->user()->authTo(
-                [
-                    'org-supervisor.'.$this->organisation->id,
-                    'shops-view'.$this->organisation->id,
-                ]
-            );
-        } elseif ($this->parent instanceof Group) {
-            return $request->user()->authTo("group-overview");
-        } else {
-            $this->canEdit = $request->user()->authTo("products.{$this->shop->id}.edit");
-
-            return $request->user()->authTo("products.{$this->shop->id}.view");
-        }
-    }
 
     public function handle(Product $product): Product
     {
@@ -108,6 +82,15 @@ class ShowProduct extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
+    public function inSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, Product $product, ActionRequest $request): Product
+    {
+        $this->parent = $subDepartment;
+        $this->initialisationFromShop($shop, $request)->withTab(ProductTabsEnum::values());
+
+        return $this->handle($product);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
     public function inFamily(Organisation $organisation, Shop $shop, ProductCategory $family, Product $product, ActionRequest $request): Product
     {
         $this->parent = $family;
@@ -119,6 +102,15 @@ class ShowProduct extends OrgAction
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inFamilyInDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $family, Product $product, ActionRequest $request): Product
+    {
+        $this->parent = $family;
+        $this->initialisationFromShop($shop, $request)->withTab(ProductTabsEnum::values());
+
+        return $this->handle($product);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inFamilyInSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, ProductCategory $family, Product $product, ActionRequest $request): Product
     {
         $this->parent = $family;
         $this->initialisationFromShop($shop, $request)->withTab(ProductTabsEnum::values());
@@ -481,6 +473,28 @@ class ShowProduct extends OrgAction
                     $suffix
                 )
             ),
+            'grp.org.shops.show.catalogue.sub_departments.show.products.show', =>
+            array_merge(
+                ShowSubDepartment::make()->getBreadcrumbs(
+                    subDepartment: $product->subDepartment,
+                    routeName: $routeName,
+                    routeParameters: $routeParameters
+                ),
+                $headCrumb(
+                    $product,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.sub_departments.show.products.index',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'subDepartment'])
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.sub_departments.show.products.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
             'grp.org.shops.show.catalogue.departments.show.families.show.products.show' =>
             array_merge(
                 ShowFamily::make()->getBreadcrumbs(
@@ -497,6 +511,28 @@ class ShowProduct extends OrgAction
                         ],
                         'model' => [
                             'name'       => 'grp.org.shops.show.catalogue.departments.show.families.show.products.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.shops.show.catalogue.sub_departments.show.families.show.products.show' =>
+            array_merge(
+                ShowFamily::make()->getBreadcrumbs(
+                    family: $parent,
+                    routeName: 'grp.org.shops.show.catalogue.sub_departments.show.families.show',
+                    routeParameters: Arr::only($routeParameters, ['organisation', 'shop', 'subDepartment', 'family'])
+                ),
+                $headCrumb(
+                    $product,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.sub_departments.show.families.show.products.index',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'subDepartment', 'family'])
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.sub_departments.show.families.show.products.show',
                             'parameters' => $routeParameters
                         ]
                     ],

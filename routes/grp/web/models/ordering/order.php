@@ -24,7 +24,7 @@ use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\SubmitOrder;
 use App\Actions\Ordering\Order\SendOrderBackToBasket;
 use App\Actions\Ordering\Order\UpdateOrderDeliveryAddress;
-use App\Actions\Ordering\Order\UpdateOrderStateToDispatched;
+use App\Actions\Ordering\Order\DispatchOrder;
 use App\Actions\Ordering\Order\UpdateOrderStateToHandling;
 use App\Actions\Ordering\Order\UpdateOrderStateToPacked;
 use App\Actions\Ordering\Transaction\DeleteTransaction;
@@ -66,7 +66,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
         Route::patch('in-warehouse', SendOrderToWarehouse::class)->name('in-warehouse');
         Route::patch('handling', UpdateOrderStateToHandling::class)->name('handling');
         Route::patch('packed', UpdateOrderStateToPacked::class)->name('packed');
-        Route::patch('dispatched', UpdateOrderStateToDispatched::class)->name('dispatched');
+        Route::patch('dispatched', DispatchOrder::class)->name('dispatched');
     });
 });
 

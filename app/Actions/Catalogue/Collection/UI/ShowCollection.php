@@ -81,6 +81,15 @@ class ShowCollection extends OrgAction
         return $this->handle($collection);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inSubDepartmentInShop(Organisation $organisation, Shop $shop,ProductCategory $subDepartment, Collection $collection, ActionRequest $request): Collection
+    {
+        $this->parent = $subDepartment;
+        $this->initialisationFromShop($shop, $request)->withTab(CollectionTabsEnum::values());
+
+        return $this->handle($collection);
+    }
+
     public function htmlResponse(Collection $collection, ActionRequest $request): Response
     {
         $title      = $collection->code;
@@ -425,7 +434,7 @@ class ShowCollection extends OrgAction
             ),
             'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.show' =>
             array_merge(
-                ShowSubDepartment::make()->getBreadcrumbs($parent, $routeParameters),
+                ShowSubDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
                 $headCrumb(
                     $collection,
                     [

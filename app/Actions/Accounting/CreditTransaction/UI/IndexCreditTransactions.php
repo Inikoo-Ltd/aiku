@@ -10,6 +10,7 @@
 namespace App\Actions\Accounting\CreditTransaction\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Http\Resources\Accounting\CreditTransactionsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\CreditTransaction;
@@ -23,6 +24,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexCreditTransactions extends OrgAction
 {
+    use WithCRMAuthorisation;
+
     public function handle(Customer $customer, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {

@@ -203,6 +203,7 @@ watch(selectedLang, (val) => {
     sendToIframe({ key: 'active_language', value: val })
 })
 
+console.log(props)
 </script>
 
 <template>
@@ -334,7 +335,7 @@ watch(selectedLang, (val) => {
     </div>
 
     <Modal :isOpen="isModalOpen" @onClose="isModalOpen = false">
-        <HeaderListModal :onSelectBlock="onPickTemplate"
+        <HeaderListModal :onSelectBlock="onPickTemplate" 
             :webBlockTypes="webBlockTypes.data.filter((item) => item.component == 'footer')"
             :currentTopbar="usedTemplates">
             <template #image="{ block }">
