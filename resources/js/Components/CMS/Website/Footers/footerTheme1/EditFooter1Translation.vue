@@ -79,9 +79,9 @@ console.log('visibleColumns',visibleColumns)
         >
           <div class="mb-3">
             <div class="text-xs uppercase text-gray-400 mb-1">Master</div>
-            <div class="font-medium text-gray-700 bg-gray-50 rounded-md p-2" v-html="menu.name"></div>
+            <div class="font-medium !text-gray-700 bg-gray-50 rounded-md p-2"  v-html="menu.name"></div>
           </div>
-          <SideEditorInputHTML   v-if="menu?.translate && menu.translate[translation]" v-model="menu.translate[translation]" :rows="1" :key="key" />
+          <SideEditorInputHTML  v-if="menu?.translate && menu.translate[translation]" v-model="menu.translate[translation]" :rows="1" :key="key" />
           <ul class="space-y-4 mt-4">
             <li
               v-for="(item, iIdx) in menu.data"
@@ -89,7 +89,7 @@ console.log('visibleColumns',visibleColumns)
               class="bg-gray-50 p-3 rounded-lg"
             >
               <div class="text-xs uppercase text-gray-400 mb-1">Master</div>
-              <div class="font-medium text-gray-700 mb-2" v-html="item.name"></div>
+              <div class="font-medium !text-gray-700 mb-2" v-html="item.name"></div>
               <SideEditorInputHTML v-if="menu?.translate && menu.translate[translation]"  v-model="item.translate[translation]" :rows="1" :key="key" />
             </li>
           </ul>
@@ -109,7 +109,7 @@ console.log('visibleColumns',visibleColumns)
           :key="keyName"
           class="mb-6"
         >
-          <div class="text-xs uppercase text-gray-400 mb-1 text-gray-700">{{ keyName }}</div>
+          <div class="text-xs uppercase text-gray-800 mb-1 text-gray-700">{{ keyName }}</div>
           <!-- ✅ Optional chaining to avoid undefined -->
           <SideEditorInputHTML
            v-if="val?.translate && val.translate[translation]" 

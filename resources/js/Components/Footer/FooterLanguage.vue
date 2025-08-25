@@ -62,7 +62,7 @@ const onSelectLanguage = (language: Language) => {
             <!-- Label: Language -->
             <template v-else>
                 <FontAwesomeIcon icon='fal fa-language' class='text-xs' fixed-width aria-hidden='true' />
-                <div class="ml-1 h-full font-extralight text-xs flex items-center gap-x-1 leading-none">
+                <div class="ml-1 h-full font-extralight text-xs flex items-center gap-x-1 leading-none text-gray-500">
                     {{ locale.language.name }}
                 </div>
             </template>
