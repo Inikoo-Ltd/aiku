@@ -43,7 +43,7 @@ class IndexOrdersExcessPayment extends OrgAction
         ];
     }
 
-    public function handle(Shop|Customer|CustomerClient $parent, $prefix = null, ): LengthAwarePaginator
+    public function handle(Shop|Customer|CustomerClient $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -81,7 +81,7 @@ class IndexOrdersExcessPayment extends OrgAction
         //         prefix: $prefix
         //     );
         // }
-        
+
 
 
         return $query->defaultSort('-orders.date')
@@ -156,14 +156,14 @@ class IndexOrdersExcessPayment extends OrgAction
                     ]
                 );
 
-                // foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
-                //     $table->elementGroup(
-                //         key: $key,
-                //         label: $elementGroup['label'],
-                //         elements: $elementGroup['elements']
-                //     );
-                // }
-            
+            // foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+            //     $table->elementGroup(
+            //         key: $key,
+            //         label: $elementGroup['label'],
+            //         elements: $elementGroup['elements']
+            //     );
+            // }
+
 
             $table->column(key: 'state', label: '', canBeHidden: false, searchable: true, type: 'icon');
             $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);

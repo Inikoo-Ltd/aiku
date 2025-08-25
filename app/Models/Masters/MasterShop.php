@@ -47,6 +47,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Masters\MasterShopOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Masters\MasterShopOrderingStats|null $orderingStats
  * @property-read \App\Models\Masters\MasterShopSalesIntervals|null $salesIntervals
+ * @property-read LaravelCollection<int, Shop> $shops
  * @property-read \App\Models\Masters\MasterShopStats|null $stats
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterShopTimeSeries> $timeSeries
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShop newModelQuery()

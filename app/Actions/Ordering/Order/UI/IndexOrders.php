@@ -465,7 +465,8 @@ class IndexOrders extends OrgAction
                     fn () => OrdersResource::collection(IndexOrdersExcessPayment::run($shop, OrdersTabsEnum::EXCESS_ORDERS->value))
                     : Inertia::lazy(fn () => OrdersResource::collection(IndexOrdersExcessPayment::run($shop, OrdersTabsEnum::EXCESS_ORDERS->value))),
             ]
-        )->table($this->tableStructure($this->parent, OrdersTabsEnum::ORDERS->value, $this->bucket)
+        )->table(
+            $this->tableStructure($this->parent, OrdersTabsEnum::ORDERS->value, $this->bucket)
         )->table(IndexOrdersExcessPayment::make()->tableStructure($this->parent, OrdersTabsEnum::EXCESS_ORDERS->value));
     }
 

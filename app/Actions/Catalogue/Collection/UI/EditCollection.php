@@ -56,6 +56,15 @@ class EditCollection extends OrgAction
         return $this->handle($collection);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inSubDepartmentInShop(Organisation $organisation, Shop $shop,ProductCategory $subDepartment, Collection $collection, ActionRequest $request): Collection
+    {
+        $this->parent = $subDepartment;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($collection);
+    }
+
     public function htmlResponse(Collection $collection, ActionRequest $request): Response
     {
         return Inertia::render(
@@ -117,12 +126,12 @@ class EditCollection extends OrgAction
                             ]
                         ],
                         [
-                            'label'  => __('Properties'),
-                            'icon'   => 'fa-light fa-fingerprint',
+                            'label'  => __('Image'),
+                            'icon'   => 'fa-light fa-image',
                             'fields' => [
                                 "image"       => [
                                     "type"    => "crop-image-full",
-                                    "label" => __("Image"),
+                                    "label" => __("Main image"),
                                     "value" => $collection->imageSources(720, 480),
                                     "required" => false,
                                     'noSaveButton' => true,

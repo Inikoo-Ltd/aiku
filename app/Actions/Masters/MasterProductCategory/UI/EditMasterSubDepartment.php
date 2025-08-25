@@ -54,42 +54,99 @@ class EditMasterSubDepartment extends OrgAction
                      $request->route()->getName(),
                      $request->route()->originalParameters()
                  ),
-                'title'       => __('New Master Sub-department'),
+                'title'       => __('Edit Master Sub-department'),
                 'pageHead'    => [
-                    'title'   => __('new master Sub-department'),
+                    'title'   => __('edit master Sub-department'),
                     'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
                             'label' => __('cancel'),
                             'route' => [
-                                'name'       => 'grp.masters.master_departments.show.master_sub_departments.show',
+                                'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())
-                            ],
+                            ]
                         ]
                     ]
                 ],
                 'formData'    => [
-                    'blueprint' =>
+                    'blueprint' => [
                         [
-                            [
-                                'title'  => __('Master Sub-department'),
-                                'fields' => [
-                                    'code' => [
-                                        'type'     => 'input',
-                                        'label'    => __('code'),
-                                        'value'    => $masterProductCategory->code,
-                                        'required' => true
-                                    ],
-                                    'name' => [
-                                        'type'     => 'input',
-                                        'label'    => __('name'),
-                                        'value'    => $masterProductCategory->name,
-                                        'required' => true
-                                    ],
-                                ]
+                            'label'  => __('Name/Description'),
+                            'icon'   => 'fa-light fa-tag',
+                            'title'  => __('id'),
+                            'fields' => [
+                                'code' => [
+                                    'type'  => 'input',
+                                    'label' => __('code'),
+                                    'value' => $masterProductCategory->code
+                                ],
+                                'name' => [
+                                    'type'  => 'input',
+                                    'label' => __('name'),
+                                    'value' => $masterProductCategory->name
+                                ],
+                                'description_title' => [
+                                    'type'  => 'input',
+                                    'label' => __('description title'),
+                                    'value' => $masterProductCategory->description_title
+                                ],
+                                'description' => [
+                                    'type'  => 'textEditor',
+                                    'label' => __('description'),
+                                    'value' => $masterProductCategory->description
+                                ],
+                                'description_extra' => [
+                                    'type'  => 'textEditor',
+                                    'label' => __('description extra'),
+                                    'value' => $masterProductCategory->description_extra
+                                ],
                             ]
                         ],
+                        [
+                            'label'  => __('Properties'),
+                            'icon'   => 'fa-light fa-fingerprint',
+                            'fields' => [
+                                "image"         => [
+                                    "type"    => "crop-image-full",
+                                    "label"   => __("Image"),
+                                    "value"   => $masterProductCategory->imageSources(720, 480),
+                                    "required" => false,
+                                    'noSaveButton' => true,
+                                    "full"         => true
+                                ],
+                            ]
+                        ],
+                        [
+                            'label'  => __('Master Department'),
+                            'icon'   => 'fa-light fa-box',
+                            'fields' => [
+                                'master_department_id'  =>  [
+                                    'type'    => 'select_infinite',
+                                    'label'   => __('Master Department'),
+                                    'options'   => [
+                                        [
+                                            'id' => $masterProductCategory->masterDepartment?->id,
+                                            'code' => $masterProductCategory->masterDepartment?->code
+                                        ]
+                                    ],
+                                    'fetchRoute'    => [
+                                        'name'       => 'grp.masters.master_shops.show.master_departments.index',
+                                        'parameters' => [
+                                            'masterShop' => $masterProductCategory->masterShop->slug,
+                                        ]
+                                    ],
+                                    'valueProp' => 'id',
+                                    'labelProp' => 'code',
+                                    'required' => false,
+                                    'value'   => $masterProductCategory->masterDepartment->id ?? null,
+                                ]
+                            ],
+
+                        ],
+
+
+                    ],
                     'args'      => [
                         'updateRoute' => [
                             'name' => 'grp.models.master_product.update',

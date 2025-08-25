@@ -36,16 +36,25 @@ class IndexSubDepartments extends OrgAction
     private Shop|ProductCategory|Organisation $parent;
 
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle(parent: $shop);
+    }
+
     public function asController(Organisation $organisation, Shop $shop, ProductCategory $department, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $department;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle(department: $department);
+        return $this->handle(parent: $department);
     }
 
 
-    public function handle(ProductCategory $department, $prefix = null): LengthAwarePaginator
+    public function handle(Shop|ProductCategory $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -59,7 +68,7 @@ class IndexSubDepartments extends OrgAction
 
         $queryBuilder = QueryBuilder::for(ProductCategory::class);
 
-        foreach ($this->getElementGroups($department) as $key => $elementGroup) {
+        foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
             $queryBuilder->whereElementGroup(
                 key: $key,
                 allowedElements: array_keys($elementGroup['elements']),
@@ -68,7 +77,14 @@ class IndexSubDepartments extends OrgAction
             );
         }
 
-        $queryBuilder->where('product_categories.department_id', $department->id);
+        if ($parent instanceof  Shop) {
+            $queryBuilder->where('product_categories.shop_id', $parent->id);
+        } else {
+            $queryBuilder->where('product_categories.department_id', $parent->id);
+
+        }
+
+
         $queryBuilder->where('product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT);
 
         return $queryBuilder
@@ -209,7 +225,7 @@ class IndexSubDepartments extends OrgAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'actions'       => [
-                        $this->canEdit && is_null($this->parent->masterProductCategory) ? [
+                        $this->canEdit && is_null($this->shop->master_shop_id) && $request->route()->getName() == 'grp.org.shops.show.catalogue.departments.show.sub_departments.index' ? [
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('new Sub-department'),
@@ -246,7 +262,7 @@ class IndexSubDepartments extends OrgAction
         };
 
         return match ($routeName) {
-            'grp.org.shops.show.catalogue.families.index' => array_merge(
+            'grp.org.shops.show.catalogue.sub_departments.index' => array_merge(
                 ShowShop::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
                     [

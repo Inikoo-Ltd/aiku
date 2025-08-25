@@ -12,17 +12,19 @@ namespace App\Actions\Accounting\StandaloneFulfilmentInvoice;
 use App\Actions\Accounting\Invoice\Search\InvoiceRecordSearch;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateOrderingIntervals;
-use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSales;
+use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSalesIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSales;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSalesIntervals;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateInvoiceIntervals;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateSalesIntervals;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSales;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSalesIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSales;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSalesIntervals;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
@@ -66,17 +68,23 @@ class CompleteStandaloneFulfilmentInvoice extends OrgAction
 
         if ($invoice->invoiceCategory) {
             InvoiceCategoryHydrateInvoices::dispatch($invoice->invoiceCategory);
-            InvoiceCategoryHydrateSales::dispatch($invoice->invoiceCategory);
+            InvoiceCategoryHydrateSalesIntervals::dispatch($invoice->invoiceCategory);
             InvoiceCategoryHydrateOrderingIntervals::dispatch($invoice->invoiceCategory);
         }
 
-        ShopHydrateSales::dispatch($invoice->shop);
-        OrganisationHydrateSales::dispatch($invoice->organisation);
-        GroupHydrateSales::dispatch($invoice->group);
+        ShopHydrateSalesIntervals::dispatch($invoice->shop);
+        OrganisationHydrateSalesIntervals::dispatch($invoice->organisation);
+        GroupHydrateSalesIntervals::dispatch($invoice->group);
 
         ShopHydrateInvoiceIntervals::dispatch($invoice->shop);
         OrganisationHydrateInvoiceIntervals::dispatch($invoice->organisation);
         GroupHydrateInvoiceIntervals::dispatch($invoice->group);
+
+        if($invoice->master_shop_id){
+            MasterShopHydrateSalesIntervals::dispatch($invoice->master_shop_id)->delay($this->hydratorsDelay);
+            MasterShopHydrateInvoiceIntervals::dispatch($invoice->master_shop_id)->delay($this->hydratorsDelay);
+        }
+
 
         InvoiceRecordSearch::dispatch($invoice);
 

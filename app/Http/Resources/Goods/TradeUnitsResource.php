@@ -18,6 +18,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $name
  * @property mixed $number_current_stocks
  * @property mixed $number_current_products
+ * @property mixed $id
  */
 class TradeUnitsResource extends JsonResource
 {
@@ -30,7 +31,8 @@ class TradeUnitsResource extends JsonResource
             'weight'                  => $this->net_weight !== null ? ($this->net_weight / 1000).' kg' : null,
             'type'                    => $this->type,
             'number_current_stocks'   => $this->number_current_stocks,
-            'number_current_products' => $this->number_current_products
+            'number_current_products' => $this->number_current_products,
+            'id'                      => $this->id,
         ];
     }
 }

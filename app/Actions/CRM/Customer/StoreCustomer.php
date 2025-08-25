@@ -18,6 +18,7 @@ use App\Actions\Fulfilment\FulfilmentCustomer\StoreFulfilmentCustomerFromCustome
 use App\Actions\Helpers\Address\ParseCountryID;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxNumber\StoreTaxNumber;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateRegistrationIntervals;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCustomers;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRegistrationIntervals;
@@ -154,17 +155,17 @@ class StoreCustomer extends OrgAction
 
         ShopHydrateCrmStats::dispatch($customer->shop)->delay($this->hydratorsDelay);
         ShopHydrateCustomers::dispatch($customer->shop)->delay($this->hydratorsDelay);
-        ShopHydrateRegistrationIntervals::dispatch($customer->shop)->delay($this->hydratorsDelay);
         ShopHydrateCustomerInvoices::dispatch($customer->shop)->delay($this->hydratorsDelay);
         GroupHydrateCustomers::dispatch($customer->group)->delay($this->hydratorsDelay);
-        GroupHydrateRegistrationIntervals::dispatch($customer->group)->delay($this->hydratorsDelay);
         OrganisationHydrateCustomers::dispatch($customer->organisation)->delay($this->hydratorsDelay);
-        OrganisationHydrateRegistrationIntervals::dispatch($customer->organisation)->delay($this->hydratorsDelay);
 
         $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
         ShopHydrateRegistrationIntervals::dispatch($customer->shop, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
         OrganisationHydrateRegistrationIntervals::dispatch($customer->organisation, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
         GroupHydrateRegistrationIntervals::dispatch($customer->group, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+        if($customer->master_shop_id){
+            MasterShopHydrateRegistrationIntervals::dispatch($customer->master_shop_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+        }
 
         CustomerRecordSearch::dispatch($customer);
         if ($customer?->trafficSource) {

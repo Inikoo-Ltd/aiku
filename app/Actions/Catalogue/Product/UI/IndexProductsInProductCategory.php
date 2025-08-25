@@ -325,11 +325,22 @@ class IndexProductsInProductCategory extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inSubDepartmentInDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ActionRequest $request): LengthAwarePaginator
     {
-        $this->parent = $department;
+        $this->parent = $subDepartment;
         $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::values());
 
         return $this->handle(productCategory: $subDepartment, prefix: ProductsTabsEnum::INDEX->value);
     }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inSubDepartmentInShop(Organisation $organisation, Shop $shop,ProductCategory $subDepartment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $subDepartment;
+        $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::values());
+
+        return $this->handle(productCategory: $subDepartment, prefix: ProductsTabsEnum::INDEX->value);
+    }
+
+
 
 
     public function getBreadcrumbs(ProductCategory $productCategory, string $routeName, array $routeParameters, string $suffix = null): array
