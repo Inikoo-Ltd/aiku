@@ -29,8 +29,6 @@ trait WithRunInvoiceHydrators
 {
     public function runInvoiceHydrators(Invoice $invoice): void
     {
-
-
         ShopHydrateInvoices::dispatch($invoice->shop)->delay($this->hydratorsDelay);
         OrganisationHydrateInvoices::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
         GroupHydrateInvoices::dispatch($invoice->group)->delay($this->hydratorsDelay);
@@ -43,17 +41,18 @@ trait WithRunInvoiceHydrators
         }
 
         ShopHydrateSalesIntervals::dispatch($invoice->shop)->delay($this->hydratorsDelay);
-        MasterShopHydrateSalesIntervals::dispatch($invoice->master_shop_id)->delay($this->hydratorsDelay);
         OrganisationHydrateSalesIntervals::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
         GroupHydrateSalesIntervals::dispatch($invoice->group)->delay($this->hydratorsDelay);
 
+        if ($invoice->master_shop_id) {
+            MasterShopHydrateSalesIntervals::dispatch($invoice->master_shop_id)->delay($this->hydratorsDelay);
+            MasterShopHydrateInvoiceIntervals::dispatch($invoice->master_shop_id)->delay($this->hydratorsDelay);
+        }
+
         ShopHydrateInvoiceIntervals::dispatch($invoice->shop)->delay($this->hydratorsDelay);
-        MasterShopHydrateInvoiceIntervals::dispatch($invoice->master_shop_id)->delay($this->hydratorsDelay);
         OrganisationHydrateInvoiceIntervals::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
         GroupHydrateInvoiceIntervals::dispatch($invoice->group)->delay($this->hydratorsDelay);
 
         InvoiceRecordSearch::dispatch($invoice);
-
-
     }
 }
