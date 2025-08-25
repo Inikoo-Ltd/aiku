@@ -27,14 +27,13 @@ class WebpageWorkshopCheckWebBlock extends OrgAction
     {
         $webBlocksChanged = false;
         
-        if (Arr::exists($modelData, 'layout.web_blocks')) {
-            $webBlocks = $modelData['layout']['web_blocks'];
-            
+        $webBlocks = Arr::get($modelData, 'layout.web_blocks');
+        if ($webBlocks) {
             foreach ($webBlocks as $index => $webBlockData) {
                 $frontendId = $webBlockData['id'];
                 
                 $existingWebBlock = WebBlock::where('id', $frontendId)->first();
-                
+
                 if (!$existingWebBlock) {
                     $webBlockType = WebBlockType::where('code', $webBlockData['type'])->first();
                     
@@ -52,15 +51,16 @@ class WebpageWorkshopCheckWebBlock extends OrgAction
                     if ($existingWebBlock->layout !== $newLayout) {
                         $existingWebBlock->update(['layout' => $newLayout]);
                         $webBlocksChanged = true;
-                    }
+                    }   
                 }
             }
         }
-        
+        $webpage->refresh();
+
         if ($webBlocksChanged) {
             UpdateWebpageContent::run($webpage);
         }
-        
+        $webpage->refresh();
         return $webpage->unpublishedSnapshot->layout;
     }
 
