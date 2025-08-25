@@ -34,7 +34,8 @@ class CheckWooPortfolio
         $productExistsInWoo = false;
         $hasVariantAtLocation   = false;
         if ($hasValidProductId) {
-            $productExistsInWoo = CheckIfProductExistInWoo::run($WooUser, $portfolio);
+            $result = CheckIfProductExistInWoo::run($WooUser, $portfolio);
+            $productExistsInWoo = ! blank($result);
             $hasVariantAtLocation   = $productExistsInWoo;
         }
 
@@ -45,9 +46,9 @@ class CheckWooPortfolio
         if (!$hasValidProductId || !$productExistsInWoo || !$hasVariantAtLocation) {
             $result = CheckIfProductExistInWoo::run($WooUser, $portfolio);
 
-            $matches       = Arr::get($result, 'products', []);
+            $matches       = $result;
             $numberMatches = count($matches);
-            $matchesLabels = Arr::pluck($matches, 'title');
+            $matchesLabels = Arr::pluck($matches, 'name');
         }
 
 

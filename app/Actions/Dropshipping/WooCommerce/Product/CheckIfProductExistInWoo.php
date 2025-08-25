@@ -23,15 +23,20 @@ class CheckIfProductExistInWoo extends RetinaAction
     /**
      * @throws \Exception
      */
-    public function handle(WooCommerceUser $wooCommerceUser, Portfolio $portfolio): bool
+    public function handle(WooCommerceUser $wooCommerceUser, Portfolio $portfolio): array
     {
         try {
-            $searchFields = [
-                'id' => $portfolio->platform_product_id,
-                'sku' => $portfolio->sku,
-                'slug' => $portfolio->platform_handle,
-                'search' => $portfolio->item_name
-            ];
+            if ($portfolio->platform_product_id) {
+                $searchFields = [
+                    'id' => $portfolio->platform_product_id
+                ];
+            } else {
+                $searchFields = [
+                    'sku' => $portfolio->sku,
+                    'slug' => $portfolio->platform_handle,
+                    'search' => $portfolio->item_name
+                ];
+            }
 
             $result = [];
 
@@ -46,11 +51,11 @@ class CheckIfProductExistInWoo extends RetinaAction
                 }
             }
 
-            return ! blank($result);
+            return $result;
         } catch (\Exception $e) {
             Sentry::captureMessage("Failed to upload product due to: " . $e->getMessage());
 
-            return false;
+            return [];
         }
     }
 }

@@ -151,13 +151,7 @@ trait WithWooCommerceApiRequest
      */
     public function getWooCommerceProducts(array $params = [], bool $useCache = false): ?array
     {
-        return $this->makeWooCommerceRequest('GET', 'products', [...$params, ...[
-            'per_page' => 100,  // Number of products per page (max 100)
-            'page' => 1,        // Page number
-            'status' => 'publish', // Product status (publish, draft, pending, private)
-            'orderby' => 'date', // Sort by: date, id, include, title, slug (default is 'date')
-            'order' => 'desc'    // Sort order: asc or desc (default is 'desc')
-        ]], $useCache);
+        return $this->makeWooCommerceRequest('GET', 'products', [...$params, ...[]], $useCache);
     }
 
     /**

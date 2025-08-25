@@ -445,10 +445,10 @@ const onDisableCheckbox = (item) => {
                         <ButtonWithLink v-if="item.platform_possible_matches?.number_matches"
                                         v-tooltip="trans('Match to existing Shopify product')" :routeTarget="{
                                 method: 'post',
-                                name: 'retina.models.portfolio.match_to_existing_shopify_product',
+                                name: props.routes.single_match.name,
                                 parameters: {
                                     portfolio: item.id,
-                                    shopify_product_id: item.platform_possible_matches.raw_data?.[0]?.id
+                                    platform_product_id: item.platform_possible_matches.raw_data?.[0]?.id
                                 }
                             }" :bindToLink="{
                                 preserveScroll: true,
