@@ -10,6 +10,7 @@ namespace App\Actions\Accounting\Payment\UI;
 
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithAccountingAuthorisation;
 use App\Enums\UI\Accounting\PaymentTabsEnum;
 use App\Enums\UI\Catalogue\DepartmentTabsEnum;
 use App\Http\Resources\Accounting\PaymentsResource;
