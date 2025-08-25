@@ -122,6 +122,17 @@ class CreateCollection extends OrgAction
         return $this->handle($subDepartment, $request);
     }
 
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, ActionRequest $request): Response
+    {
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($subDepartment, $request);
+    }
+
+
+
     public function getBreadcrumbs(Shop|ProductCategory $parent, string $routeName, array $routeParameters): array
     {
         $label = __('Creating collection');

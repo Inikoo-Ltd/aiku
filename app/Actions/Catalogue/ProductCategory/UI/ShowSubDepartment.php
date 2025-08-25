@@ -41,6 +41,15 @@ class ShowSubDepartment extends OrgAction
     }
 
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inShop(Organisation $organisation, Shop $shop,  ProductCategory $subDepartment, ActionRequest $request): ProductCategory
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request)->withTab(DepartmentTabsEnum::values());
+
+        return $this->handle($subDepartment);
+    }
+
     public function asController(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ActionRequest $request): ProductCategory
     {
         $this->parent = $department;

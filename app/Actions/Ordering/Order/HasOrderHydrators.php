@@ -32,8 +32,9 @@ trait HasOrderHydrators
         ShopHydrateOrders::dispatch($order->shop)->delay($this->hydratorsDelay);
         ShopHydrateOrderHandling::dispatch($order->shop)->delay($this->hydratorsDelay);
 
-        MasterShopHydrateOrders::dispatch($order->master_shop_id)->delay($this->hydratorsDelay);
-
+        if ($order->master_shop_id) {
+            MasterShopHydrateOrders::dispatch($order->master_shop_id)->delay($this->hydratorsDelay);
+        }
         if ($order->customer_id) {
             CustomerHydrateOrders::dispatch($order->customer)->delay($this->hydratorsDelay);
         }
