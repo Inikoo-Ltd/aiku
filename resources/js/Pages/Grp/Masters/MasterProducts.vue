@@ -61,18 +61,16 @@ const save = (products) => {
   <TableMasterProducts :data="data" />
 
   <!-- PrimeVue Dialog -->
-  <Dialog v-model:visible="showModal" modal :show-header="false" header="Create"
+  <Dialog v-model:visible="showModal" modal :show-header="false" header="Create" :dismissableMask="true"
     :style="{ width: '50rem', padding: '10px' }" :content-style="{ overflow: 'unset' }">
     <div class="pt-4">
-      <ProductsSelector :headLabel="trans('Add Trade Units')"  :route-fetch="{
-      name: 'grp.json.master-product-category.recommended-trade-units',
-      parameters: {
-        masterProductCategory: route().params['masterFamily']
-      }
-    }" :isLoadingSubmit @submit="(products: {}[]) => save(products)" class="px-4" />
-
+      <ProductsSelector :headLabel="trans('Add Trade Units')" :route-fetch="{
+        name: 'grp.json.master-product-category.recommended-trade-units',
+        parameters: {
+          masterProductCategory: route().params['masterFamily']
+        }
+      }" :isLoadingSubmit @submit="(products: {}[]) => save(products)" class="px-4" />
     </div>
-    
   </Dialog>
 </template>
 
