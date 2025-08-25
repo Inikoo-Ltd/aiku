@@ -7,7 +7,6 @@
 */
 
 import { Language } from '@/types/Locale'
-import language from "@/Components/Forms/Fields/Language.vue";
 
 export const aikuLocaleStructure = {
     language: {
@@ -35,10 +34,10 @@ export const aikuLocaleStructure = {
 		}).formatToParts(123).find(part => part.type === 'currency')?.value ?? '';
 	},
     currencyFormat: (currencyCode: string | null, amount: number):string => {
-      return new Intl.NumberFormat(language.value.code, {
-        style: "currency",
-        // currency: currencyCode || "usd",
-        currency: currencyCode || '',
-      }).format(amount || 0)
+        return new Intl.NumberFormat(aikuLocaleStructure.language.code, {
+            style: "currency",
+            // currency: currencyCode || "usd",
+            currency: currencyCode || '',
+        }).format(amount || 0)
     }
 }
