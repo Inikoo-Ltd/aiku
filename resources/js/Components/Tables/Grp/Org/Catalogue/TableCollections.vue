@@ -142,6 +142,14 @@ function collectionRoute(collection: Collection) {
                 (route().params as RouteParams).shop,
                 (route().params as RouteParams).department,
                 collection.slug])
+    } else if (currentRoute === "grp.org.shops.show.catalogue.sub_departments.show.collection.index") {
+        return route(
+            "grp.org.shops.show.catalogue.sub_departments.show.collection.show",
+            [
+                (route().params as RouteParams).organisation,
+                (route().params as RouteParams).shop,
+                (route().params as RouteParams).subDepartment,
+                collection.slug])
     } else if (currentRoute === "grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index") {
         return route(
             "grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.show",
