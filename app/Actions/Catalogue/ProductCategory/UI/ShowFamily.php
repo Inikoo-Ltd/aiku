@@ -290,7 +290,8 @@ class ShowFamily extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.catalogue.sub_departments.show.families.show' =>
+            'grp.org.shops.show.catalogue.sub_departments.show.families.show',
+            'grp.org.shops.show.catalogue.sub_departments.show.families.show.products.index' =>
             array_merge(
                 (new ShowSubDepartment())->getBreadcrumbs(
                     $family->parent,

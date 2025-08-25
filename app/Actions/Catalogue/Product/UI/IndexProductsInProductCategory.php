@@ -459,10 +459,12 @@ class IndexProductsInProductCategory extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.product.index' =>
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.product.index',
+            'grp.org.shops.show.catalogue.sub_departments.show.products.index' =>
             array_merge(
                 ShowSubDepartment::make()->getBreadcrumbs(
                     $productCategory,
+                    $routeName,
                     $routeParameters
                 ),
                 $headCrumb(
@@ -478,6 +480,21 @@ class IndexProductsInProductCategory extends OrgAction
                 ShowFamily::make()->getBreadcrumbs(
                     $productCategory,
                     'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show',
+                    $routeParameters
+                ),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.shops.show.catalogue.sub_departments.show.families.show.products.index' =>
+            array_merge(
+                ShowFamily::make()->getBreadcrumbs(
+                    $productCategory,
+                    $routeName,
                     $routeParameters
                 ),
                 $headCrumb(
