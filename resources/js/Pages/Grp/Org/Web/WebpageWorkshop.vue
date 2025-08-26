@@ -457,54 +457,63 @@ const SyncAurora = () => {
 
 
 const saveState = () => {
-    history.value.push(JSON.parse(JSON.stringify(data.value.layout)));
+  history.value.push(JSON.parse(JSON.stringify(data.value.layout)));
+  localStorage.setItem(data.value.code, JSON.stringify(data.value.layout));
+  future.value = [];
+};
+
+const undo = async () => {
+  if (history.value.length > 1) {
+    const prevState = history.value[history.value.length - 2]; // the one before last
+    const current = history.value.pop()!; // remove current
+    future.value.unshift(current);
+
+    await afterUndoRedo(JSON.parse(JSON.stringify(prevState)));
+
+    // update localStorage AFTER server confirms
     localStorage.setItem(data.value.code, JSON.stringify(data.value.layout));
-    future.value = []; 
-  };
+  }
+};
 
-  const undo = () => {
-    if (history.value.length > 1) {
-      future.value.unshift(history.value.pop()!);
-      localStorage.setItem(data.value.code, JSON.stringify(data.value.layout));
-	    afterUndoRedo(JSON.parse(JSON.stringify(history.value[history.value.length - 1])))
-    }
-  }; 
+const redo = async () => {
+  if (future.value.length > 0) {
+    const nextState = future.value.shift()!;
+    history.value.push(nextState);
 
-const redo = () => {
-    if (future.value.length > 0) {
-      const nextState = future.value.shift()!;
-      history.value.push(nextState);
-      localStorage.setItem(data.value.code, JSON.stringify(data.value.layout));
-	    afterUndoRedo(JSON.parse(JSON.stringify(nextState)))
-    }
-  };
+    await afterUndoRedo(JSON.parse(JSON.stringify(nextState)));
+
+    // update localStorage AFTER server confirms
+    localStorage.setItem(data.value.code, JSON.stringify(data.value.layout));
+  }
+};
 
 const afterUndoRedo = async (value) => {
   try {
-    const payload = {
-      layout: value, // deep clone
-    }
+    const payload = { layout: value };
 
     const response = await axios.patch(
       route('grp.models.webpage.web_block_check', {
         webpage: props.webpage.id,
       }),
       payload
-    )
-    console.log('sss',response.data)
-    data.value = {...data.value ,layout : response.data};
+    );
+
+    data.value = { ...data.value, layout: response.data };
+    console.log('sss',response.data )
+
     sendToIframe({
-      key: 'setWebpage',
-      value: JSON.parse(JSON.stringify(data.value))
+      key: "setWebpage",
+      value: JSON.parse(JSON.stringify(data.value)),
     });
   } catch (error: any) {
     if (axios.isAxiosError(error)) {
-      console.error("Axios error:", error.response?.data || error.message)
+      console.error("Axios error:", error.response?.data || error.message);
     } else {
-      console.error("Unexpected error:", error)
+      console.error("Unexpected error:", error);
     }
   }
-}
+};
+
 
 
 // Clear all history
