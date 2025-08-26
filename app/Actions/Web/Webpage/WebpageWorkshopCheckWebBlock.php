@@ -26,65 +26,103 @@ class WebpageWorkshopCheckWebBlock extends OrgAction
 
     public function handle(Webpage $webpage, array $modelData): array
     {
-        $webBlocksChanged = false;
-        
         $webBlocks = Arr::get($modelData, 'layout.web_blocks');
+        $webBlocksChanged = false;
 
         if (empty($webBlocks)) {
             $webpage->modelHasWebBlocks()->delete();
             $webBlocksChanged = true;
-        } elseif ($webBlocks) {
-            $frontendModelHasWebBlockIds = [];
-            foreach ($webBlocks as $webBlockData) {
-                $modelHasWebBlockId = Arr::get($webBlockData, 'id');
-                if ($modelHasWebBlockId) {
-                    $frontendModelHasWebBlockIds[] = $modelHasWebBlockId;
-                }
-            }
-            if (!empty($frontendModelHasWebBlockIds)) {
-                $deletedCount = $webpage->modelHasWebBlocks()
-                    ->whereNotIn('id', $frontendModelHasWebBlockIds)
-                    ->delete();
-                
-                if ($deletedCount > 0) {
-                    $webBlocksChanged = true;
-                }
-            }
+        } else {
+            $frontendIds = $this->collectFrontendIds($webBlocks);
+            $webBlocksChanged |= $this->removeObsoleteBlocks($webpage, $frontendIds);
+            
             foreach ($webBlocks as $index => $webBlockData) {
-                $modelHasWebBlockId = Arr::get($webBlockData, 'id');
-                $webBlockId = Arr::get($webBlockData, 'web_block.id');
-                
-                $existingWebBlock = WebBlock::where('id', $webBlockId)->first();
-                $existingModelHasWebBlock = ModelHasWebBlocks::where('id', $modelHasWebBlockId)->first();
-
-                if (!$existingWebBlock && !$existingModelHasWebBlock) {
-                    $webBlockType = WebBlockType::where('code', $webBlockData['type'])->first();
-                    
-                    if ($webBlockType) {
-                        StoreModelHasWebBlock::make()->action($webpage, [
-                            'web_block_type_id' => $webBlockType->id,
-                            'layout' => Arr::get($webBlockData, 'web_block.layout', []),
-                            'position' => $index
-                        ]);
-                        $webBlocksChanged = true;
-                    }
-                } else {
-                    $newLayout = Arr::get($webBlockData, 'web_block.layout', []);
-                    
-                    if ($existingWebBlock->layout !== $newLayout) {
-                        $existingWebBlock->update(['layout' => $newLayout]);
-                        $webBlocksChanged = true;
-                    }   
-                }
+                $webBlocksChanged |= $this->processWebBlock($webpage, $webBlockData, $index);
             }
         }
-        $webpage->refresh();
 
+        $webpage->refresh();
         if ($webBlocksChanged) {
             UpdateWebpageContent::run($webpage);
         }
         $webpage->refresh();
+        
         return $webpage->unpublishedSnapshot->layout;
+    }
+
+    private function collectFrontendIds(array $webBlocks): array
+    {
+        $ids = [];
+        foreach ($webBlocks as $webBlockData) {
+            $modelHasWebBlockId = Arr::get($webBlockData, 'id');
+            if ($modelHasWebBlockId) {
+                $ids[] = $modelHasWebBlockId;
+            }
+        }
+        return $ids;
+    }
+
+    private function removeObsoleteBlocks(Webpage $webpage, array $frontendIds): bool
+    {
+        if (empty($frontendIds)) {
+            return false;
+        }
+        
+        $deletedCount = $webpage->modelHasWebBlocks()
+            ->whereNotIn('id', $frontendIds)
+            ->delete();
+            
+        return $deletedCount > 0;
+    }
+
+    private function processWebBlock(Webpage $webpage, array $webBlockData, int $index): bool
+    {
+        $modelHasWebBlockId = Arr::get($webBlockData, 'id');
+        $webBlockId = Arr::get($webBlockData, 'web_block.id');
+        
+        $existingWebBlock = WebBlock::where('id', $webBlockId)->first();
+        $existingModelHasWebBlock = ModelHasWebBlocks::where('id', $modelHasWebBlockId)->first();
+
+        // Create new block if neither exists
+        if (!$existingWebBlock && !$existingModelHasWebBlock) {
+            return $this->createNewWebBlock($webpage, $webBlockData, $index);
+        }
+        
+        // Update existing block layout if needed
+        return $this->updateWebBlockLayout($existingWebBlock, $webBlockData);
+    }
+
+    private function createNewWebBlock(Webpage $webpage, array $webBlockData, int $index): bool
+    {
+        $webBlockType = WebBlockType::where('code', $webBlockData['type'])->first();
+        
+        if (!$webBlockType) {
+            return false;
+        }
+        
+        StoreModelHasWebBlock::make()->action($webpage, [
+            'web_block_type_id' => $webBlockType->id,
+            'layout' => Arr::get($webBlockData, 'web_block.layout', []),
+            'position' => $index
+        ]);
+        
+        return true;
+    }
+
+    private function updateWebBlockLayout(?WebBlock $existingWebBlock, array $webBlockData): bool
+    {
+        if (!$existingWebBlock) {
+            return false;
+        }
+        
+        $newLayout = Arr::get($webBlockData, 'web_block.layout', []);
+        
+        if ($existingWebBlock->layout !== $newLayout) {
+            $existingWebBlock->update(['layout' => $newLayout]);
+            return true;
+        }
+        
+        return false;
     }
 
 
