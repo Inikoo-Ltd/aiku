@@ -47,7 +47,6 @@ const getNestedValue = (obj: Object, keys: Array) => {
 const value = ref(setFormValue(props.form, props.fieldName));
 
 watch(value, (newValue) => {
-    // Update the form field value when the value ref changes
     updateFormValue(newValue);
     props.form.errors[props.fieldName] = ''
 });
@@ -68,6 +67,7 @@ const updateFormValue = (newValue) => {
         <div class="relative">
             <ListSelector 
                 :modelValue="value" 
+                @update:modelValue="(e)=>updateFormValue(e)"
                 :key_quantity="fieldData.key_quantity"
                 :withQuantity="fieldData.withQuantity || false" :route-fetch="fieldData.routeFetch" 
                 class="mt-4" 
