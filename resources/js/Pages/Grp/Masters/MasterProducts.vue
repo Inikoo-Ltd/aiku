@@ -5,7 +5,7 @@
 -->
 
 <script setup lang="ts">
-import { Head, router } from "@inertiajs/vue3";
+import { Head, router, useForm } from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import TableMasterProducts from "@/Components/Tables/Grp/Goods/TableMasterProducts.vue";
 import { capitalize } from "@/Composables/capitalize";
@@ -16,10 +16,10 @@ import Button from "@/Components/Elements/Buttons/Button.vue";
 import { ref } from "vue";
 import Dialog from "primevue/dialog";
 import { trans } from "laravel-vue-i18n";
-import ProductsSelector from "@/Components/Dropshipping/ProductsSelector.vue";
-import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
+import ListSelector from "@/Components/ListSelector.vue";
 import { notify } from "@kyvg/vue3-notification";
-import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
+import PureInput from "@/Components/Pure/PureInput.vue";
+import PureInputNumber from "@/Components/Pure/PureInputNumber.vue";
 
 library.add(faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome);
 
@@ -40,7 +40,12 @@ const closeModal = () => {
   showModal.value = false;
 };
 
-
+const form = useForm({
+  name: "",
+  code: "",
+  units: "",
+  items: []
+})
 const loading = ref(false)
 const isLoadingSubmit = ref(false)
 const save = (products) => {
@@ -53,7 +58,7 @@ const save = (products) => {
     route('grp.models.master_family.store-assets', { masterFamily: props.familyId }),
     { items: payload },
     {
-      onStart : () => loading.value = true,
+      onStart: () => loading.value = true,
       onSuccess: () => {
         closeModal()
         console.log("✅ Saved successfully")
@@ -71,7 +76,7 @@ const save = (products) => {
           type: "error",
         })
       },
-      onFinish : () => loading.value = false
+      onFinish: () => loading.value = false
     }
   )
 }
@@ -82,26 +87,34 @@ const save = (products) => {
 
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead">
-    <template #button-create-product="{ action }">
-      <Button :style="action.style" :label="action.label" :icon="action.icon" @click="openModal"
-        :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" :loading="loading"/>
-    </template>
+    <!-- <template #other="{ action }">
+      <Button  @click="openModal" type="create" :loading="loading" />
+    </template> -->
   </PageHeading>
 
   <TableMasterProducts :data="data" />
 
   <!-- PrimeVue Dialog -->
-  <Dialog v-model:visible="showModal" modal :show-header="false" header="Create" :dismissableMask="true"
-    :style="{ width: '70rem', padding: '10px' }" :content-style="{ overflow: 'unset' }">
-    <div class="pt-4">
-      <ProductsSelector :headLabel="trans('Add Trade Units')" :withQuantity="true" :isLoadingSubmit="loading" :route-fetch="{
-        name: 'grp.json.master-product-category.recommended-trade-units', 
-        parameters: {
-          masterProductCategory: route().params['masterFamily']
-        }
-      }"  @submit="(products: {}[]) => save(products)" class="px-4" />
+  <Dialog v-model:visible="showModal" modal header="Create Master Family" :dismissableMask="true"
+    :style="{ width: '60rem' }" class="rounded-2xl shadow-lg">
+    <div class="p-6 space-y-6">
+   
+      <div>
+        <ListSelector :modelValue="form.items" :withQuantity="true"
+          :isLoadingSubmit="loading" :route-fetch="{
+            name: 'grp.json.master-product-category.recommended-trade-units',
+            parameters: { masterProductCategory: route().params['masterFamily'] }
+          }" @submit="(products: {}[]) => save(products)" class="mt-4" />
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex justify-end space-x-3 pt-6 border-t">
+        <Button label="Cancel" severity="secondary" @click="showModal = false" />
+        <Button label="Save" :loading="loading" @click="save(form)" />
+      </div>
     </div>
   </Dialog>
+
 </template>
 
 <style scoped></style>
