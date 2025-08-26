@@ -251,7 +251,7 @@ class IndexMasterProducts extends GrpAction
                             'label'   => __('create product'),
                             'route'   =>
                                 [
-                                    'name'       => 'grp.masters.master_shops.show.master_departments.create',
+                                    'name'       => preg_replace('/index$/', 'create', $request->route()->getName()),
                                     'parameters' => $request->route()->originalParameters()
                                 ]
 
@@ -308,7 +308,7 @@ class IndexMasterProducts extends GrpAction
             'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index',
             'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.index' =>
             array_merge(
-                ShowMasterFamily::make()->getBreadcrumbs($this->parent, $routeName, $routeParameters),
+                ShowMasterFamily::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
                 $headCrumb(
                     [
                         'name'       => $routeName,

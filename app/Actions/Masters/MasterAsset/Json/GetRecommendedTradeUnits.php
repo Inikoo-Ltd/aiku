@@ -37,11 +37,11 @@ class GetRecommendedTradeUnits extends GrpAction
         });
 
         $queryBuilder = QueryBuilder::for(TradeUnit::class);
-        $queryBuilder->where('trade_units.group_id', $parent->group_id)
-            ->where('trade_units.code', 'like', $parent->code . '%');
+        $queryBuilder->where('trade_units.group_id', $parent->group_id);
 
         return $queryBuilder
-            ->defaultSort('trade_units.code')
+            ->orderByRaw("CASE WHEN trade_units.code LIKE '{$parent->code}%' THEN 0 ELSE 1 END")
+            ->orderBy('trade_units.code')
             ->select([
                 'trade_units.code',
                 'trade_units.slug',
@@ -52,8 +52,10 @@ class GetRecommendedTradeUnits extends GrpAction
                 'trade_units.marketing_dimensions',
                 'trade_units.volume',
                 'trade_units.type',
+                'trade_units.image_id',
                 'trade_units.id',
             ])
+            ->selectRaw("CASE WHEN trade_units.code LIKE '{$parent->code}%' THEN true ELSE false END as is_recommended")
             ->allowedSorts(['code', 'name', 'net_weight', 'gross_weight'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix)
