@@ -93,7 +93,7 @@ class CreateMasterProduct extends GrpAction
                                         'fetch_route'  => [
                                             'name'       => 'grp.json.master-product-category.recommended-trade-units',
                                             'parameters' => [
-                                                'organisation' => $parent->organisation_id,
+                                                'masterProductCategory' => $parent->slug,
                                             ]
                                         ],
                                         // 'init_options' => OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
