@@ -73,7 +73,9 @@ watch(() => usePage().props?.flash?.notification, (notif) => {
         title: notif.title,
         text: notif.description,
         type: notif.status
-    })
+    });
+}, {
+    immediate: true
 })
 
 // Section: Modal
@@ -89,8 +91,10 @@ watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
     console.log("modal ret", modal)
     if (!modal) return
 
-    selectedModal.value = modal
-    isModalOpen.value = true
+    selectedModal.value = modal;
+    isModalOpen.value = true;
+}, {
+    immediate: true
 })
 
 // Method: listen if app recently deployed

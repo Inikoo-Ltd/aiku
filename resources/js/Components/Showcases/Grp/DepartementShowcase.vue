@@ -1,35 +1,28 @@
 <script setup lang="ts">
-import { ref,provide } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faImage } from "@far";
 import { faInfoCircle } from "@fas";
 import { faAlbumCollection } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { router, Link } from "@inertiajs/vue3";
+import { Link } from "@inertiajs/vue3";
 import { trans } from "laravel-vue-i18n";
-import { notify } from "@kyvg/vue3-notification";
 import TranslationBox from '@/Components/TranslationBox.vue';
-
-import Image from "@/Components/Image.vue";
+import ProductCategoryCard from "@/Components/ProductCategoryCard.vue";
 import Message from "primevue/message";
-import CollectionList from "@/Components/Departement&Family/CollectionList.vue";
 
 library.add(faAlbumCollection);
 
 const props = defineProps<{
     data: {
-        translation_box : {
-            title: string
-            save_route: routeType
-        }
-        has_webpage ?: boolean;
+        has_webpage?: boolean;
         department: {
-            data: {
-                name: string;
-                description: string;
-                image: Array<string>;
-                url_master: any;
-            };
+            name: string;
+            description: string;
+            image: Array<string>;
+            url_master: any;
+            translation_box: {
+                title: string
+                save_route: routeType
+            }
         };
         routeList: {
             collectionRoute: any;
@@ -50,82 +43,7 @@ const props = defineProps<{
     };
 }>();
 
-const isLoadingSubmit = ref(false);
-const unassignLoadingIds = ref<number[]>([]);
-const isModalOpen = ref(false);
-provide('isModalOpen', isModalOpen); // 🔁 Key harus sama persis dengan yang di-inject
-
-const assignCollection = async (collections: any[]) => {
-    const method = props.data.routes.attach_collections_route.method;
-    const url = route(
-        props.data.routes.attach_collections_route.name,
-        props.data.routes.attach_collections_route.parameters
-    );
-    const collectionIds = collections.map((c) => c.id);
-
-    router[method](
-        url,
-        { collections: collectionIds },
-        {
-            onBefore: () => (isLoadingSubmit.value = true),
-            onError: (error) => {
-                notify({
-                    title: trans("Something went wrong."),
-                    text: error?.products || trans("Failed to add collection."),
-                    type: "error",
-                });
-            },
-            onSuccess: () => {
-                notify({
-                    title: trans("Success!"),
-                    text: trans("Successfully added portfolios"),
-                    type: "success",
-                });
-                isModalOpen.value = false;
-            },
-            onFinish: () => {
-                isLoadingSubmit.value = false;
-            },
-        }
-    );
-};
-console.log('DepartementShowcase', props.data);
-const UnassignCollection = async ( id: number ) => {
-    unassignLoadingIds.value.push(id);
-    const method = props.data.routes.detach_collections_route.method;
-    const url = route(
-        props.data.routes.detach_collections_route.name,
-        {
-            ...props.data.routes.detach_collections_route.parameters,
-            collection: id,
-        }
-    );
-
-    router[method](
-        url,
-        {
-            onError: (error) => {
-                notify({
-                    title: trans("Something went wrong."),
-                    text: error?.products || trans("Failed to remove collection."),
-                    type: "error",
-                });
-            },
-            onSuccess: () => {
-                notify({
-                    title: trans("Success!"),
-                    text: trans("Collection has been removed."),
-                    type: "success",
-                });
-            },
-            onFinish: () => {
-                unassignLoadingIds.value = unassignLoadingIds.value.filter(
-                    (id) => id !== id
-                );
-            },
-        }
-    );
-};
+console.log(props)
 </script>
 
 <template>
@@ -138,52 +56,19 @@ const UnassignCollection = async ( id: number ) => {
             <span class="ml-2">
                 {{ trans("Right now you follow") }}
                 <Link :href="route(data.department.url_master.name, data.department.url_master.parameters)"
-                      class="underline font-bold">
-                    {{ trans("the master data") }}
+                    class="underline font-bold">
+                {{ trans("the master data") }}
                 </Link>
             </span>
         </Message>
-
         <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 gap-4 mt-4">
             <!-- Sidebar -->
             <div class="col-span-1 md:col-span-1 lg:col-span-2">
-                <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200">
-                    <div class="bg-white rounded-lg shadow mb-4 overflow-hidden">
-                        <Image v-if="data?.department?.image" :src="data?.department?.image" imageCover
-                               class="w-full h-40 object-cover rounded-t-lg" />
-                        <div v-else class="flex justify-center items-center bg-gray-100 w-full h-48">
-                            <FontAwesomeIcon :icon="faImage" class="w-8 h-8 text-gray-400" />
-                        </div>
-                    </div>
-
-                    <div class="border-t pt-4 space-y-4 text-sm text-gray-700">
-                        <div class="font-medium">{{ data?.department?.name || "No label" }}</div>
-                        <div class="text-gray-400" v-html="data?.department?.description_title"></div>
-                        <div class="text-gray-400" v-html="data?.department?.description"></div>
-                        <div class="text-gray-400" v-html="data?.department?.description_extra"></div>
-                    </div>
-                </div>
+                <ProductCategoryCard :data="data.department" />
             </div>
-            <!-- Collection List -->
-<!--            <div v-if="data.has_webpage" class="col-span-1 md:col-span-2 lg:col-span-2">-->
-<!--                <CollectionList-->
-<!--                    :collections="props.data.collections.data"-->
-<!--                    :routeFetch="props.data.routeList.collections_route"-->
-<!--                    :canAdd="true"-->
-<!--                    :loadingUnassignIds="unassignLoadingIds"-->
-<!--                    :isSubmitting="isLoadingSubmit"-->
-<!--                    @assign="assignCollection"-->
-<!--                    @unassign="UnassignCollection"-->
-<!--                />-->
-<!--            </div>-->
-
-
         </div>
     </div>
 
-    <TranslationBox 
-        :master="data.department" 
-        :needTranslation="data.department" 
-        v-bind="data.department.translation_box"
-    />
+    <TranslationBox :master="data.department" :needTranslation="data.department"
+        v-bind="data.translation_box" />
 </template>

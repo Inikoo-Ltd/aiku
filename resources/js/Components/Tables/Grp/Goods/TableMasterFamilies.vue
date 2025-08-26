@@ -36,6 +36,10 @@ function familyRoute(masterFamily: MasterFamily) {
         return route(
             "grp.masters.master_shops.show.master_families.show",
             {...route().params, masterFamily: masterFamily.slug});
+    } else if (route().current() == "grp.masters.master_shops.show.master_sub_departments.master_families.index") {
+        return route(
+            "grp.masters.master_shops.show.master_sub_departments.master_families.show",
+            {...route().params, masterFamily: masterFamily.slug});
     } else {
         return route(
             "grp.masters.master_families.show",

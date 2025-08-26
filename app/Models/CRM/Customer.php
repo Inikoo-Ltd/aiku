@@ -127,6 +127,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $number_exclusive_products
  * @property array<array-key, mixed>|null $contact_name_components
  * @property string|null $traffic_sources
+ * @property int|null $master_shop_id
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, AmazonUser> $amazonUsers

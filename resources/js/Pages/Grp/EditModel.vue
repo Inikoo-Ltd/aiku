@@ -51,10 +51,12 @@ import {
 	faTransporter,
 	faCode,
 	faExchange,
+	faBoxes
 } from "@fal"
 import { faBan } from "@far"
 import { Head, usePage } from "@inertiajs/vue3"
 import axios from "axios"
+import { router } from "@inertiajs/vue3"
 
 library.add(
 	faTag,
@@ -92,7 +94,8 @@ library.add(
 	faFileInvoice,
 	faTransporter,
 	faCode,
-	faDoorClosed
+	faDoorClosed,
+	faBoxes
 )
 
 const props = defineProps<{
@@ -143,7 +146,6 @@ const props = defineProps<{
 	}
 }>()
 
-console.log(props.formData.blueprint)
 
 // const layout = useLayoutStore()
 const layout: any = inject("layout")
@@ -163,6 +165,22 @@ const updateViewportWidth = () => {
 const handleIntersection = (element: Element, index: number) => (entries) => {
 	const [entry] = entries
 	tabActive.value[`${index}`] = entry.isIntersecting
+}
+
+const switchTab = (key: string) => {
+	currentTab.value = key
+
+	// Update URL with query parameter
+	router.visit('' , {
+		data: {
+			// ...route().params, // Keep existing route parameters
+			// section: props.formData.blueprint[key].label.toLowerCase()      // Add section query parameter
+			section: key
+		},
+		preserveState: true,
+		replace: true,
+		only: [] // Don't reload any data, just update URL
+	})
 }
 
 onMounted(() => {
@@ -229,7 +247,7 @@ function connectToPlatform(routeName, parameters) {
                     <template v-for="(sectionData, key) in formData.blueprint">
                         <!-- If Section: all fields is not hidden -->
                         <div v-if="!(Object.values(sectionData.fields).every((field: any) => field.hidden))"
-                            @click="currentTab = key" :class="[
+                            @click="switchTab(key)" :class="[
 								key == currentTab ? `navigationSecondActive` : `navigationSecond`,
 								'cursor-pointer group px-3 py-2 flex items-center text-sm font-medium',
 							]" :style="[
@@ -239,7 +257,7 @@ function connectToPlatform(routeName, parameters) {
 											'background-color': `color-mix(in srgb, ${layout?.app?.theme[2]} 20%, white)`,
 											color: `color-mix(in srgb, ${layout?.app?.theme[3]} 50%, black)`,
 									  }
-									: {},
+									: { 'border-left': `4px solid transparent` },
 							]">
                             <FontAwesomeIcon v-if="sectionData.icon" aria-hidden="true"
                                 class="flex-shrink-0 -ml-1 mr-2 h-4 w-4" :class="[

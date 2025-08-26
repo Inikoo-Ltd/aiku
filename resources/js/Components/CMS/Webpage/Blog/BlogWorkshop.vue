@@ -46,9 +46,9 @@ const displayDate = computed(() => {
 
 
 <template>
-  <article class="max-w-3xl mx-auto px-4 py-8 text-gray-800">
+  <article class="max-w-3xl mx-auto px-4 py-8 text-gray-800" :style="{fontFamily: 'Raleway, sans-serif'}">
     <!-- Title as textarea -->
-    <div  class="text-4xl font-bold tracking-tight mb-3 leading-snug text-gray-900" :style="getStyles(modelValue?.properties, screenType)">
+    <div  class="text-4xl font-bold tracking-tight mb-3 leading-snug text-gray-900" :style="{fontFamily: 'Raleway, sans-serif', ...getStyles(modelValue?.properties, screenType)}">
         <Editor v-model="modelValue.title" @update:modelValue="() => emits('autoSave')" class="mb-6"
           placeholder="Blog Title" :uploadImageRoute="{
             name: webpageData.images_upload_route.name,
@@ -73,7 +73,7 @@ const displayDate = computed(() => {
     </div>
 
     <!-- Content Editor -->
-    <div :style="getStyles(modelValue?.properties, screenType)">
+    <div :style="{fontFamily: 'Raleway, sans-serif', fontSize: '1.1250rem', ...getStyles(modelValue?.properties, screenType)}" >
       <Editor v-model="modelValue.content" @update:modelValue="() => emits('autoSave')" class="mb-6"
         placeholder="Blog content" :uploadImageRoute="{
           name: webpageData.images_upload_route.name,

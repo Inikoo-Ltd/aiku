@@ -8,6 +8,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Actions\Catalogue\ProductCategory\Json\GetIrisProductCategoryNavigation;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Helpers\LanguageResource;
@@ -62,6 +63,7 @@ trait WithIrisInertia
             ),
             'menu'                 => array_merge(
                 $isMenuActive == 'active' ? Arr::get($website->published_layout, 'menu') : [],
+                ['product_categories' => GetIrisProductCategoryNavigation::run($website)]
             ),
             'shop'                 => [
                 'type' => $shop->type->value,

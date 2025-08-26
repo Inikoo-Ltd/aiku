@@ -9,30 +9,35 @@
 namespace App\Actions\Helpers\Intervals;
 
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateOrderingIntervals;
-use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSales;
+use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSalesIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCreatedIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRegistrationIntervals;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSales;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSalesIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateVisitorsIntervals;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateSalesIntervals;
 use App\Actions\Goods\StockFamily\Hydrators\StockFamilyHydrateSalesIntervals;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateSalesIntervals;
 use App\Actions\Inventory\OrgStockFamily\Hydrators\OrgStockFamilyHydrateSalesIntervals;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateInvoiceIntervals;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateOrderInBasketAtCreatedIntervals;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateRegistrationIntervals;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateSalesIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderInBasketAtCreatedIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRegistrationIntervals;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSales;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSalesIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderInBasketAtCreatedIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRegistrationIntervals;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSales;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSalesIntervals;
 use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryStateEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Goods\Stock\StockStateEnum;
@@ -46,6 +51,7 @@ use App\Models\Goods\Stock;
 use App\Models\Goods\StockFamily;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockFamily;
+use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -60,7 +66,7 @@ trait WithResetIntervals
     protected function resetGroups(): void
     {
         foreach (Group::all() as $group) {
-            GroupHydrateSales::dispatch(
+            GroupHydrateSalesIntervals::dispatch(
                 group: $group,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods,
@@ -98,7 +104,7 @@ trait WithResetIntervals
     protected function resetOrganisations(): void
     {
         foreach (Organisation::whereNot('type', OrganisationTypeEnum::AGENT)->get() as $organisation) {
-            OrganisationHydrateSales::dispatch(
+            OrganisationHydrateSalesIntervals::dispatch(
                 organisation: $organisation,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
@@ -136,6 +142,41 @@ trait WithResetIntervals
         }
     }
 
+    protected function resetMasterShops(): void
+    {
+        foreach (MasterShop::all() as $masterShop) {
+            MasterShopHydrateSalesIntervals::dispatch(
+                masterShopID: $masterShop->id,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
+
+            MasterShopHydrateInvoiceIntervals::dispatch(
+                masterShopID: $masterShop->id,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
+
+            MasterShopHydrateRegistrationIntervals::dispatch(
+                masterShopID: $masterShop->id,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
+
+            MasterShopHydrateOrderInBasketAtCreatedIntervals::dispatch(
+                masterShopID: $masterShop->id,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
+
+            MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch(
+                masterShopID: $masterShop->id,
+                intervals: $this->intervals,
+                doPreviousPeriods: $this->doPreviousPeriods
+            );
+        }
+    }
+
     protected function resetShops(): void
     {
         foreach (
@@ -144,7 +185,7 @@ trait WithResetIntervals
                 ShopStateEnum::CLOSING_DOWN
             ])->get() as $shop
         ) {
-            ShopHydrateSales::dispatch(
+            ShopHydrateSalesIntervals::dispatch(
                 shop: $shop,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
@@ -193,7 +234,7 @@ trait WithResetIntervals
                 ShopStateEnum::CLOSING_DOWN
             ])->get() as $shop
         ) {
-            ShopHydrateSales::dispatch(
+            ShopHydrateSalesIntervals::dispatch(
                 shop: $shop,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
@@ -234,7 +275,6 @@ trait WithResetIntervals
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
             )->delay(now()->addMinute())->onQueue('low-priority');
-
         }
     }
 
@@ -246,7 +286,7 @@ trait WithResetIntervals
                 InvoiceCategoryStateEnum::COOLDOWN
             ])->get() as $invoiceCategory
         ) {
-            InvoiceCategoryHydrateSales::dispatch(
+            InvoiceCategoryHydrateSalesIntervals::dispatch(
                 invoiceCategory: $invoiceCategory,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
@@ -265,7 +305,7 @@ trait WithResetIntervals
                 InvoiceCategoryStateEnum::COOLDOWN
             ])->get() as $invoiceCategory
         ) {
-            InvoiceCategoryHydrateSales::run(
+            InvoiceCategoryHydrateSalesIntervals::run(
                 invoiceCategory: $invoiceCategory,
                 intervals: $this->intervals,
                 doPreviousPeriods: $this->doPreviousPeriods
@@ -411,6 +451,7 @@ trait WithResetIntervals
     {
         $this->resetGroups();
         $this->resetOrganisations();
+        $this->resetMasterShops();
         $this->resetShops();
         $this->resetInvoiceCategories();
         $this->resetStocks();

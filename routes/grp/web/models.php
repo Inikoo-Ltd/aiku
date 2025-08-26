@@ -11,6 +11,7 @@ use App\Actions\Accounting\InvoiceCategory\StoreInvoiceCategory;
 use App\Actions\Accounting\InvoiceCategory\UpdateInvoiceCategory;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProvider;
 use App\Actions\Accounting\OrgPaymentServiceProvider\StoreOrgPaymentServiceProviderAccount;
+use App\Actions\Accounting\Payment\RefundPayment;
 use App\Actions\Accounting\PaymentAccount\StorePaymentAccount;
 use App\Actions\Accounting\PaymentAccount\UpdatePaymentAccount;
 use App\Actions\Billables\Rental\StoreRental;
@@ -42,6 +43,7 @@ use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreSubDepartment;
 use App\Actions\Catalogue\ProductCategory\AttachFamiliesToDepartment;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
+use App\Actions\Catalogue\ProductCategory\UpdateProductCategoryTranslations;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Comms\Email\PublishEmail;
@@ -197,6 +199,7 @@ use App\Actions\HumanResources\JobPosition\UpdateJobPosition;
 use App\Actions\HumanResources\Workplace\DeleteWorkplace;
 use App\Actions\HumanResources\Workplace\StoreWorkplace;
 use App\Actions\HumanResources\Workplace\UpdateWorkplace;
+use App\Actions\Masters\MasterAsset\StoreMasterAssets;
 use App\Actions\Masters\MasterCollection\AttachMasterCollectionToModel;
 use App\Actions\Masters\MasterCollection\AttachModelsToMasterCollection;
 use App\Actions\Masters\MasterCollection\AttachMultipleParentsToAMasterCollection;
@@ -337,7 +340,7 @@ Route::patch('customer/delivery-address/{customer:id}', UpdateCustomerDeliveryAd
 Route::post('master-product-category', StoreMasterProductCategory::class)->name('master_product.store')->withoutScopedBindings();
 Route::patch('master-product/{masterProductCategory:id}', UpdateMasterProductCategory::class)->name('master_product.update')->withoutScopedBindings();
 Route::post('master-product/{masterProductCategory:id}/image', UploadImageMasterProductCategory::class)->name('master_product_image.upload')->withoutScopedBindings();
-Route::patch('master-product/{masterProductCategory:id}/translations', UpdateMasterProductCategoryTranslations::class)->name('master_product_category.translations.update');
+Route::patch('master-product/{masterProductCategory:id}/translations', UpdateMasterProductCategoryTranslations::class)->name('master_product_categories.translations.update');
 
 
 Route::prefix('stock-family')->name('stock-family.')->group(function () {
@@ -372,6 +375,10 @@ Route::prefix('master-collection/{masterCollection:id}')->name('master_collectio
     Route::post('attach-parents', AttachMultipleParentsToAMasterCollection::class)->name('attach_parents');
 });
 
+Route::prefix('master-family/{masterFamily:id}')->name('master_family.')->group(function () {
+    Route::post('store-assets', StoreMasterAssets::class)->name('store-assets');
+});
+
 Route::prefix('department/{productCategory:id}')->name('department.')->group(function () {
     Route::post('sub-department', StoreSubDepartment::class)->name('sub_department.store');
 });
@@ -390,6 +397,7 @@ Route::prefix('master-sub-department/{masterSubDepartment:id}')->name('master-su
 Route::prefix('/product_category/{productCategory:id}')->name('product_category.')->group(function () {
     Route::patch('update', UpdateProductCategory::class)->name('update');
     Route::delete('delete', DeleteProductCategory::class)->name('delete');
+    Route::delete('translations', UpdateProductCategoryTranslations::class)->name('translations.update');
 });
 
 Route::prefix('sub-department/{productCategory:id}')->name('sub-department.')->group(function () {
@@ -468,6 +476,8 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::post('/payment-service-provider/{paymentServiceProvider:id}', StoreOrgPaymentServiceProvider::class)->name('payment-service-provider.store')->withoutScopedBindings();
 
     Route::post('/payment-service-provider/{paymentServiceProvider:id}/account', StoreOrgPaymentServiceProviderAccount::class)->name('payment-service-provider-account.store')->withoutScopedBindings();
+
+    Route::post('/payment/{payment:id}/refund', RefundPayment::class)->name('payment_refund.store')->withoutScopedBindings();
 });
 
 Route::name('fulfilment-transaction.')->prefix('fulfilment_transaction/{fulfilmentTransaction:id}')->group(function () {

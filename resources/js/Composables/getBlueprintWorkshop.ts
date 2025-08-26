@@ -39,7 +39,7 @@ import VideoBlueprint from '@/Components/CMS/Webpage/Video/Blueprint'
 import CTAVideo1Blueprint from '@/Components/CMS/Webpage/CtaVideo1/Blueprint'
 import CollectionBluprint from '@/Components/CMS/Webpage/Collections1/Blueprint'
 import UserSubscribe from "@/Components/CMS/Webpage/UserSubscribe/Blueprint"
-import Product1Workshop from "@/Components/CMS/Webpage/Product1/Blueprint"
+import Families1Blueprint from '@/Components/CMS/Webpage/Families1/Blueprint'
 
 import Cta4Blueprint from "@/Components/CMS/Webpage/Cta4/Blueprint"
 import { blueprint as SeeAlso1Blueprint  } from "@/Components/CMS/Webpage/SeeAlso1/Blueprint"
@@ -73,7 +73,7 @@ export const getBlueprint = (componentName: string, data?: object) => {
 		"family-1": FamilyBluprint.blueprint,
 
 		// families list
-		"families-1": FamilyBluprint.blueprint,
+		"families-1": Families1Blueprint.blueprint,
 
 		// products list
 		"products-1": ProductsList1Blueprint.blueprint,

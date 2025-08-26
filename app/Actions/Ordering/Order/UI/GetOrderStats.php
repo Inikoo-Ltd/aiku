@@ -21,7 +21,7 @@ class GetOrderStats
     {
         if ($parent instanceof Shop) {
             $total = DB::table('orders')->where('shop_id', $parent->id)->sum('net_amount');
-        } else{
+        } else {
             $total = DB::table('orders')->where('customer_id', $parent->id)->sum('net_amount');
         }
 

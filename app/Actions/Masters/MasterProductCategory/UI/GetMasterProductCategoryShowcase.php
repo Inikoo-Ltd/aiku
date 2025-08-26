@@ -28,13 +28,31 @@ class GetMasterProductCategoryShowcase
             MasterProductCategoryTypeEnum::DEPARTMENT => [
                 'department' => MasterProductCategoryResource::make($productCategory)->resolve(),
                 'families' => MasterProductCategoryResource::collection($productCategory->masterFamilies()),
+                'translation_box' => [
+                'title' => __('Multi-language Translations'),
+                'save_route' => [
+                     'name'       => 'grp.models.master_product_categories.translations.update',
+                     'parameters' => []
+                ],
+            ],
             ],
             MasterProductCategoryTypeEnum::SUB_DEPARTMENT => [
                 'subDepartment' => MasterSubDepartmentsResource::make($productCategory)->resolve(),
                 'families' => MasterFamiliesResource::collection($productCategory->masterFamilies()),
+                'translation_box' => [
+                'title'      => __('Multi-language Translations'),
+                'save_route' => [
+                    'name'       => 'grp.models.master_product_categories.translations.update',
+                    'parameters' => []
+                ],
+            ],
             ],
             default => [
                 'family' => MasterProductCategoryResource::make($productCategory),
+                'save_route' => [
+                    'name'       => 'grp.models.master_product_categories.translations.update',
+                    'parameters' => []
+                ],
             ],
         };
     }

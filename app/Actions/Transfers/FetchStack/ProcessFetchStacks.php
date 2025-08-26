@@ -25,7 +25,9 @@ class ProcessFetchStacks
 
         StoreFetchStacks::run();
 
-        foreach (FetchStack::where('state', FetchStackStateEnum::IN_PROCESS)->orderBy('submitted_at')->get() as $fetchStack) {
+        foreach (FetchStack::where('state', FetchStackStateEnum::IN_PROCESS)
+            ->orderBy('submitted_at')->limit(1000)
+            ->get() as $fetchStack) {
             $fetchStack->update([
                 'state'            => FetchStackStateEnum::SEND_TO_QUEUE,
                 'send_to_queue_at' => now()
