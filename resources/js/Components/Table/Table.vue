@@ -32,6 +32,7 @@ import { layoutStructure } from '@/Composables/useLayoutStructure'
 import TableBetweenFilter from '@/Components/Table/TableBetweenFilter.vue'
 import TableRadioFilter from './TableRadioFilter.vue'
 import TableDateInterval from './TableDateInterval.vue'
+import Icon from '../Icon.vue'
 library.add(faCheckSquare, faCheck, faSquare, faMinusSquare, fasCheckSquare, faWatchCalculator,faYinYang)
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -1038,6 +1039,13 @@ const isLoading = ref<string | boolean>(false)
                                                         <span class="whitespace-nowrap">{{
                                                             useFormatTime(item[column.key], { formatTime: 'hms' })
                                                             }}</span>
+                                                    </template>
+                                                    <template v-else-if="column.type === 'icon'">
+                                                        <Icon
+                                                            v-if="item[column.key]?.icon"
+                                                            :data="item[column.key]"
+                                                        />
+                                                        <FontAwesomeIcon v-else :icon="item[column.key]" class="" fixed-width aria-hidden="true" />
                                                     </template>
                                                     <template v-else>
                                                         {{ item[column.key] }}

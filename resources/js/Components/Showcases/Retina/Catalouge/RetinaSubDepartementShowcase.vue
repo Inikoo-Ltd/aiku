@@ -48,9 +48,9 @@ const routeAPI = window.location.origin + `/${props.data?.subDepartment?.slug}/d
     <div class="px-4 pb-8 m-5">
         <div class="py-2 w-fit">
             <div>
-                API Url (download all products in this Sub Departmetn)
+                API Url (no need password)
                 <InformationIcon
-                    :information="trans('Can be use to integrate with 3rd party app')"
+                    :information="trans('Download all products in this Sub Department. Can be use to integrate with 3rd party app')"
                 />
                 :
             </div>

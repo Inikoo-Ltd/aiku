@@ -35,9 +35,9 @@ const routeAPI = window.location.origin + `/${props.data?.family?.data?.slug}/da
     
         <div class="py-2 w-fit">
             <div>
-                API Url (download all products in this Department)
+                API Url (no need password)
                 <InformationIcon
-                    :information="trans('Can be use to integrate with 3rd party app')"
+                    :information="trans('Download all products in this Department. Can be used to integrate with 3rd party app')"
                 />
                 :
             </div>
