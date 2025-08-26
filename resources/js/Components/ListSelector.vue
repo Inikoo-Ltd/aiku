@@ -258,8 +258,7 @@ const resetAfterSubmit = () => {
                                                     imageCover :alt="item.name" />
                                                 <div class="flex flex-col justify-between">
                                                     <div class="w-fit">
-                                                        <div class="font-semibold leading-none mb-1">{{ item.name || 'no
-                                                            name' }}</div>
+                                                        <div class="font-semibold leading-none mb-1">{{ item.name || 'no  name' }}</div>
                                                         <div v-if="!item.no_code" class="text-xs text-gray-400 italic">
                                                             {{ item.code || 'no code' }}</div>
                                                         <div v-if="item.reference" class="text-xs text-gray-400 italic">
