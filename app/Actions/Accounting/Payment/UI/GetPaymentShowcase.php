@@ -35,6 +35,11 @@ class GetPaymentShowcase
             $paymentServiceProvider = PaymentServiceProviderResource::make($serviceProvider);
         }
 
+        $creditTransaction = null;
+        if ($payment->creditTransaction) {
+            $creditTransaction = CreditTransactionsResource::make($payment->creditTransaction);
+        }
+
         return [
             'parent_type'    => $parent ? class_basename($parent) : null,
             'amount'         => $payment->amount,
@@ -44,7 +49,7 @@ class GetPaymentShowcase
             'currency'       => CurrencyResource::make($payment->currency),
             'paymentAccount' => PaymentAccountResource::make($payment->paymentAccount),
             'paymentServiceProvider' => $paymentServiceProvider,
-            'credit_transaction' => CreditTransactionsResource::make($payment->creditTransaction)
+            'credit_transaction' => $creditTransaction
         ];
     }
 }
