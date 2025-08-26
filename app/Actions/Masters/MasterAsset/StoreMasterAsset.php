@@ -40,15 +40,14 @@ class StoreMasterAsset extends OrgAction
     {
         $stocks = Arr::pull($modelData, 'stocks', []);
 
-        if(!Arr::exists($modelData, 'units')) {
-            if (count($stocks) == 1) {
-                $units = $stocks[array_key_first($stocks)]['quantity'];
-            } else {
-                $units = 1;
-            }
-    
-            data_set($modelData, 'units', $units);
+        if (count($stocks) == 1) {
+            $units = $stocks[array_key_first($stocks)]['quantity'];
+        } else {
+            $units = 1;
         }
+
+        data_set($modelData, 'units', $units);
+
 
         data_set($modelData, 'group_id', $parent->group_id);
 
@@ -128,7 +127,6 @@ class StoreMasterAsset extends OrgAction
             'image_id'                 => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->group->id)],
             'price'                    => ['required', 'numeric', 'min:0'],
             'unit'                     => ['sometimes', 'required', 'string'],
-            'units'                    => ['sometimes', 'numeric'],
             'rrp'                      => ['sometimes', 'required', 'numeric', 'min:0'],
             'description'              => ['sometimes', 'required', 'max:1500'],
             'data'                     => ['sometimes', 'array'],
