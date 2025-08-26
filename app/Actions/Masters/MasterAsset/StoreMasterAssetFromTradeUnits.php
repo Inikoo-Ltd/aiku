@@ -19,7 +19,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
-class StoreMasterAssets extends GrpAction
+class StoreMasterAssetFromTradeUnits extends GrpAction
 {
     use WithNoStrictRules;
     use WithMastersEditAuthorisation;
@@ -29,21 +29,22 @@ class StoreMasterAssets extends GrpAction
      */
     public function handle(MasterProductCategory $parent, array $modelData)
     {
+        dd($modelData);
         DB::transaction(function () use ($parent, $modelData) {
+            $data = [
+                'code' => Arr::get($modelData,'code'),
+                'name' => Arr::get($modelData, 'name'),
+                'price' => Arr::get($modelData, 'price'),
+                'unit' => Arr::get($modelData, 'unit'),
+                'is_main' => Arr::get($modelData, 'is_main'),
+            ];
+            $masterAsset = StoreMasterAsset::run($parent, $data);
+
             foreach (Arr::get($modelData, 'items', []) as $item) {
-                $tradeUnit = TradeUnit::find(Arr::get($item, 'trade_unit_id'));
-                // dd(Arr::get($item, 'units', 0));
-                // dd($tradeUnit->unit);
-                $data = [
-                    'code' => $tradeUnit->code,
-                    'name' => $tradeUnit->name,
-                    'unit' => $tradeUnit->unit,
-                    'units' => Arr::get($item, 'units', 0),
-                    'description' => $tradeUnit->description,
-                    'type' => MasterAssetTypeEnum::PRODUCT
-                ];
-                $masterAsset = StoreMasterAsset::run($parent, $data);
-                $masterAsset->tradeUnits()->attach($tradeUnit->id);
+                $tradeUnit = TradeUnit::find(Arr::get($item, 'id'));
+                $masterAsset->tradeUnits()->attach($tradeUnit->id, [
+                    'quantity' => Arr::get($item, 'quantity')
+                ]);
                 $masterAsset->refresh();
             }
         });
@@ -52,16 +53,21 @@ class StoreMasterAssets extends GrpAction
     public function rules(): array
     {
         $rules = [
-            'items'                     => [
+            'code'  => ['required', 'string'],
+            'name'  => ['required', 'string'],
+            'unit'  => ['required', 'string'],
+            'price'  =>  ['required', 'numeric', 'min:0'],
+            'is_main'  => ['required', 'boolean'],
+            'trade_units'                     => [
                 'required',
                 'array'
             ],
-            'items.*.trade_unit_id'     => [
+            'trade_units.*.id'     => [
                 'required',
                 'integer',
                 'exists:trade_units,id'
             ],
-            'items.*.units'             => [
+            'trade_units.*.quantity'             => [
                 'required',
                 'numeric',
                 'min:1'
@@ -91,6 +97,7 @@ class StoreMasterAssets extends GrpAction
 
     public function asController(MasterProductCategory $masterFamily, ActionRequest $request)
     {
+        // dd($request->all());
         $this->initialisation($masterFamily->group, $request);
 
         return $this->handle($masterFamily, $this->validatedData);
