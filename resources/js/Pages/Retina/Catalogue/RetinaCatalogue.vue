@@ -77,9 +77,9 @@ const routeAPI = window.location.origin + '/data-feed.csv'
     <div class="p-6">
         <div class="py-2 w-fit">
             <div>
-                API Url (download all products)
+                API Url (no need password)
                 <InformationIcon
-                    :information="trans('Can be use to integrate with 3rd party app')"
+                    :information="trans('Download all products, can be used to integrate with 3rd party app')"
                 />
                 :
             </div>
