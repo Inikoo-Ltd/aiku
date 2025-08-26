@@ -18,6 +18,8 @@ import Dialog from "primevue/dialog";
 import { trans } from "laravel-vue-i18n";
 import ProductsSelector from "@/Components/Dropshipping/ProductsSelector.vue";
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
+import { notify } from "@kyvg/vue3-notification";
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
 
 library.add(faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome);
 
@@ -39,6 +41,7 @@ const closeModal = () => {
 };
 
 
+const loading = ref(false)
 const isLoadingSubmit = ref(false)
 const save = (products) => {
   const payload = products.map((item) => ({
@@ -48,7 +51,28 @@ const save = (products) => {
 
   router.post(
     route('grp.models.master_family.store-assets', { masterFamily: props.familyId }),
-    { items: payload }
+    { items: payload },
+    {
+      onStart : () => loading.value = true,
+      onSuccess: () => {
+        closeModal()
+        console.log("✅ Saved successfully")
+        notify({
+          title: trans("Success"),
+          text: 'Success create product',
+          type: "error",
+        })
+      },
+      onError: (error) => {
+        console.error("❌ Error while saving:", errors)
+        notify({
+          title: trans("Something went wrong"),
+          text: error?.response?.data?.message || error?.response?.data,
+          type: "error",
+        })
+      },
+      onFinish : () => loading.value = false
+    }
   )
 }
 
@@ -60,7 +84,7 @@ const save = (products) => {
   <PageHeading :data="pageHead">
     <template #button-create-product="{ action }">
       <Button :style="action.style" :label="action.label" :icon="action.icon" @click="openModal"
-        :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />
+        :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" loading/>
     </template>
   </PageHeading>
 
@@ -70,8 +94,8 @@ const save = (products) => {
   <Dialog v-model:visible="showModal" modal :show-header="false" header="Create" :dismissableMask="true"
     :style="{ width: '70rem', padding: '10px' }" :content-style="{ overflow: 'unset' }">
     <div class="pt-4">
-      <ProductsSelector :headLabel="trans('Add Trade Units')" :withQuantity="true" :route-fetch="{
-        name: 'grp.json.master-product-category.recommended-trade-units',
+      <ProductsSelector :headLabel="trans('Add Trade Units')" :withQuantity="true" :isLoadingSubmit="laoding" :route-fetch="{
+        name: 'grp.json.master-product-category.recommended-trade-units', 
         parameters: {
           masterProductCategory: route().params['masterFamily']
         }
