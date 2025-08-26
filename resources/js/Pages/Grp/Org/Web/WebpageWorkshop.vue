@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import {
   ref, onMounted, provide, watch, computed, inject,
-  IframeHTMLAttributes ,onUnmounted, toRaw 
+  IframeHTMLAttributes, onUnmounted, toRaw
 } from "vue";
 import { Head, router } from "@inertiajs/vue3";
 import * as Sentry from "@sentry/vue"
@@ -57,7 +57,7 @@ const props = defineProps<{
   pageHead: PageHeadingTypes,
   webpage: RootWebpage,
   webBlockTypes: Root
-  url : string
+  url: string
 }>();
 console.log('ss', props.webpage)
 provide('isInWorkshop', true);
@@ -81,7 +81,7 @@ const debounceTimers = ref({});
 const addBlockCancelToken = ref<Function | null>(null);
 const orderBlockCancelToken = ref<Function | null>(null);
 const deleteBlockCancelToken = ref<Function | null>(null);
-const addBlockParentIndex = ref({ parentIndex: data.value.layout.web_blocks.length ,type: "current" });
+const addBlockParentIndex = ref({ parentIndex: data.value.layout.web_blocks.length, type: "current" });
 const isLoadingDeleteBlock = ref<number | null>(null);
 const comment = ref("");
 const isLoadingPublish = ref(false);
@@ -106,23 +106,23 @@ const sendToIframe = (data: any) => {
 // Block Handlers
 const addNewBlock = async ({ block, type }) => {
   if (addBlockCancelToken.value) addBlockCancelToken.value();
-  let position  = data.value.layout.web_blocks.length
-  if(type == 'before' ) {
-    position =  addBlockParentIndex.value.parentIndex
-  }else if(type == 'after'){
-    position =  addBlockParentIndex.value.parentIndex + 1;
+  let position = data.value.layout.web_blocks.length
+  if (type == 'before') {
+    position = addBlockParentIndex.value.parentIndex
+  } else if (type == 'after') {
+    position = addBlockParentIndex.value.parentIndex + 1;
   }
 
- 
+
   router.post(
     route(props.webpage.add_web_block_route.name, props.webpage.add_web_block_route.parameters),
-    { web_block_type_id: block.id, position  : position },
+    { web_block_type_id: block.id, position: position },
     {
       onStart: () => isAddBlockLoading.value = "addBlock" + block.id,
       onFinish: () => {
         addBlockCancelToken.value = null;
         isAddBlockLoading.value = null;
-        addBlockParentIndex.value = { parentIndex: data.value.layout.web_blocks.length ,type: "current" };
+        addBlockParentIndex.value = { parentIndex: data.value.layout.web_blocks.length, type: "current" };
       },
       onCancelToken: token => addBlockCancelToken.value = token.cancel,
       onSuccess: e => {
@@ -131,12 +131,13 @@ const addNewBlock = async ({ block, type }) => {
         sendToIframe({ key: 'reload', value: {} });
       },
       onError: error => {
-        console.log('sss',error)
+        console.log('sss', error)
         notify({
-        title: trans("Something went wrong"),
-        text: error.message,
-        type: "error"
-      })}
+          title: trans("Something went wrong"),
+          text: error.message,
+          type: "error"
+        })
+      }
     }
   );
 };
@@ -153,7 +154,7 @@ const duplicateBlock = async (modelHasWebBlock = Number) => {
       onFinish: () => {
         addBlockCancelToken.value = null;
         isAddBlockLoading.value = null;
-        addBlockParentIndex.value = { parentIndex: data.value.layout.web_blocks.length ,type: "current" }
+        addBlockParentIndex.value = { parentIndex: data.value.layout.web_blocks.length, type: "current" }
       },
       onCancelToken: token => addBlockCancelToken.value = token.cancel,
       onSuccess: e => {
@@ -192,9 +193,9 @@ const debounceSaveWorkshop = (block) => {
 
     isLoadingBlock.value = block.id;
     isSavingBlock.value = true;
-    
+
     try {
-    const response =  await axios.patch(
+      const response = await axios.patch(
         url,
         {
           layout: block.web_block.layout,
@@ -289,14 +290,14 @@ const onSaveWorkshopFromId = (blockId, from) => {
     key: 'setWebpage',
     value: JSON.parse(JSON.stringify(data.value))
   });
-    if (block) debounceSaveWorkshop(block);
+  if (block) debounceSaveWorkshop(block);
 };
 
 provide('onSaveWorkshopFromId', onSaveWorkshopFromId);
 provide('onSaveWorkshop', onSaveWorkshop);
 
 const sendOrderBlock = async block => {
-  if (orderBlockCancelToken.value) orderBlockCancelToken.value(); 
+  if (orderBlockCancelToken.value) orderBlockCancelToken.value();
   router.post(
     route(props.webpage.reorder_web_blocks_route.name, props.webpage.reorder_web_blocks_route.parameters),
     { positions: block },
@@ -382,14 +383,14 @@ const onPublish = async (action: routeType, popover) => {
 
 const beforePublish = (route, popover) => {
   const validation = JSON.stringify(data.value.layout);
-  if(props.webpage.type == "catalogue") onPublish(route, popover)
+  if (props.webpage.type == "catalogue") onPublish(route, popover)
   else {
     console.log('validation', validation)
-     validation.includes('<h1') || validation.includes('<H1')
-    ? onPublish(route, popover)
-    : confirmPublish(route, popover);
+    validation.includes('<h1') || validation.includes('<H1')
+      ? onPublish(route, popover)
+      : confirmPublish(route, popover);
   }
- 
+
 };
 
 const confirmPublish = (route, popover) => {
@@ -499,7 +500,7 @@ const afterUndoRedo = async (value) => {
     );
 
     data.value = { ...data.value, layout: response.data };
-    console.log('sss',response.data )
+    console.log('sss', response.data)
 
     sendToIframe({
       key: "setWebpage",
@@ -539,7 +540,7 @@ onMounted(() => {
     if (event.origin !== window.location.origin) return;
     const { key, value } = event.data;
     switch (key) {
-      case 'autosave': return onSaveWorkshop(value,false);
+      case 'autosave': return onSaveWorkshop(value, false);
       case 'activeBlock': return openedBlockSideEditor.value = value;
       case 'activeChildBlock': return openedChildSideEditor.value = value;
       case 'addBlock':
@@ -553,11 +554,11 @@ onMounted(() => {
     }
   })
   const savedData = localStorage.getItem(data.value.code);
-    if (savedData) {
-    } else {
-      localStorage.setItem(data.value.code, JSON.stringify(data.value.layout));
-    }
-    history.value = [JSON.parse(JSON.stringify(data.value.layout))];
+  if (savedData) {
+  } else {
+    localStorage.setItem(data.value.code, JSON.stringify(data.value.layout));
+  }
+  history.value = [JSON.parse(JSON.stringify(data.value.layout))];
 });
 
 watch(openedBlockSideEditor, (newValue) => sendToIframe({ key: 'activeBlock', value: newValue }));
@@ -566,13 +567,14 @@ watch(filterBlock, (newValue) => sendToIframe({ key: 'isPreviewLoggedIn', value:
 
 const compUsersEditThisPage = computed(() => {
 
-	return useLiveUsers().liveUsersArray.filter(user => (user.current_page?.route_name === layout.currentRoute && user.current_page?.route_params?.webpage === layout.currentParams?.webpage)).map(user => user.name ?? user.username)
+  return useLiveUsers().liveUsersArray.filter(user => (user.current_page?.route_name === layout.currentRoute && user.current_page?.route_params?.webpage === layout.currentParams?.webpage)).map(user => user.name ?? user.username)
 })
 
 const openWebsite = () => {
   window.open(props.url, '_blank')
 }
-console.log('props',props)
+const canUndo = computed(() => history.value.length > 1);
+const canRedo = computed(() => future.value.length > 0);
 </script>
 
 <template>
@@ -623,12 +625,19 @@ console.log('props',props)
             <FontAwesomeIcon :icon="!fullScreen ? faExpandWide : faCompressWide" fixed-width />
           </div>
           <!-- Undo -->
-          <div class="py-1 px-2 cursor-pointer" v-tooltip="'undo'" @click="undo">
-						<FontAwesomeIcon :icon="faUndo" fixed-width aria-hidden="true" />
-					</div>
-					<div class="py-1 px-2 cursor-pointer" v-tooltip="'redo'" @click="redo">
-						<FontAwesomeIcon :icon="faRedo" fixed-width aria-hidden="true" />
-					</div>
+          <!-- Undo -->
+          <div class="py-1 px-2" v-tooltip="'undo'"
+            :class="canUndo ? 'cursor-pointer hover:text-amber-600' : 'opacity-40 cursor-not-allowed'"
+            @click="() => canUndo && undo()">
+            <FontAwesomeIcon :icon="faUndo" fixed-width aria-hidden="true" />
+          </div>
+
+          <!-- Redo -->
+          <div class="py-1 px-2" v-tooltip="'redo'"
+            :class="canRedo ? 'cursor-pointer hover:text-amber-600' : 'opacity-40 cursor-not-allowed'"
+            @click="() => canRedo && redo()">
+            <FontAwesomeIcon :icon="faRedo" fixed-width aria-hidden="true" />
+          </div>
         </div>
 
         <div v-if="compUsersEditThisPage?.length > 1"
