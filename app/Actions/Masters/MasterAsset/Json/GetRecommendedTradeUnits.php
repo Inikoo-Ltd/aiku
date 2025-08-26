@@ -37,11 +37,11 @@ class GetRecommendedTradeUnits extends GrpAction
         });
 
         $queryBuilder = QueryBuilder::for(TradeUnit::class);
-        $queryBuilder->where('trade_units.group_id', $parent->group_id)
-            ->where('trade_units.code', 'like', $parent->code . '%');
+        $queryBuilder->where('trade_units.group_id', $parent->group_id);
 
         return $queryBuilder
-            ->defaultSort('trade_units.code')
+            ->orderByRaw("CASE WHEN trade_units.code LIKE '{$parent->code}%' THEN 0 ELSE 1 END")
+            ->orderBy('trade_units.code')
             ->select([
                 'trade_units.code',
                 'trade_units.slug',

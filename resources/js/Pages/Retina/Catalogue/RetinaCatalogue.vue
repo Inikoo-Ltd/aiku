@@ -19,6 +19,7 @@ import { trans } from 'laravel-vue-i18n'
 import CopyButton from '@/Components/Utils/CopyButton.vue'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import BoxApiUrl from '@/Components/Showcases/Retina/Catalouge/BoxApiUrl.vue'
 
 
 library.add(faCheckCircle, faTimesCircle, faCubes, faLink, faSeedling, faFireAlt, faBooks, faFolderTree, faAlbumCollection)
@@ -77,30 +78,11 @@ const routeAPI = window.location.origin + '/data-feed.csv'
     <PageHeading :data="pageHead" />
     <div class="p-6">
         <!-- Box: API URL -->
-        <div class="w-fit border border-gray-300 rounded overflow-hidden">
-            <div class="py-2 px-3 text-lg font-bold bg-gray-100 ">
-                <FontAwesomeIcon icon="fal fa-link" class="" fixed-width aria-hidden="true" />
-                API Url (no need password)
-                <InformationIcon
-                    :information="trans('Download all products, can be used to integrate with 3rd party app')"
-                />
-                :
-            </div>
-            
-            <div class="px-3 border-t border-gray-300 overflow-hidden flex items-center text-sm md:text-base text-gray-500">
-                <div class="py-2 px-2 w-full italic">
-                    {{ routeAPI }}
-                </div>
-                <div v-tooltip="trans('Copy url')" class="flex items-center relative">
-                    <CopyButton
-                        :text="routeAPI"
-                        class="text-3xl px-2 py-1.5"
-                    />
-                </div>
-            </div>
-        </div>
+        <BoxApiUrl
+            :routeApi="routeAPI"
+        />
 
-        <dl class="mt-4 grid grid-cols-1 gap-2 lg:gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <dl class="grid grid-cols-1 gap-2 lg:gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <StatsBox v-for="stat in stats" :stat="stat">
             </StatsBox>
         </dl>

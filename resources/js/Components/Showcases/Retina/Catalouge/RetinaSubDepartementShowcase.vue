@@ -8,6 +8,7 @@ import Image from "@/Components/Image.vue";
 import { trans } from "laravel-vue-i18n"
 import CopyButton from "@/Components/Utils/CopyButton.vue"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
+import BoxApiUrl from "./BoxApiUrl.vue"
 
 library.add(faAlbumCollection);
 
@@ -45,30 +46,11 @@ const routeAPI = window.location.origin + `/${props.data?.subDepartment?.slug}/d
 </script>
 
 <template>
-    <div class="px-4 pb-8 m-5">
+    <div class="p-6">
         <!-- Box: API URL -->
-        <div class="w-fit border border-gray-300 rounded overflow-hidden">
-            <div class="py-2 px-3 text-lg font-bold bg-gray-100 ">
-                <FontAwesomeIcon icon="fal fa-link" class="" fixed-width aria-hidden="true" />
-                API Url (no need password)
-                <InformationIcon
-                    :information="trans('Download all products in this Sub Department. Can be use to integrate with 3rd party app')"
-                />
-                :
-            </div>
-            
-            <div class="px-3 border-t border-gray-300 overflow-hidden flex items-center text-sm md:text-base text-gray-500">
-                <div class="py-2 px-2 w-full italic">
-                    {{ routeAPI }}
-                </div>
-                <div v-tooltip="trans('Copy url')" class="flex items-center relative">
-                    <CopyButton
-                        :text="routeAPI"
-                        class="text-3xl px-2 py-1.5"
-                    />
-                </div>
-            </div>
-        </div>
+        <BoxApiUrl
+            :routeApi="routeAPI"
+        />
 
 
         <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-8 gap-4 mt-4">
