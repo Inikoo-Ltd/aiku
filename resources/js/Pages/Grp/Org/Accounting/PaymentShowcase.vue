@@ -185,7 +185,7 @@ const getStateTheme = (state: string) => {
 	}
 }
 
-// console.log(props.data)
+console.log(props.data)
 </script>
 
 <template>
@@ -568,7 +568,8 @@ const getStateTheme = (state: string) => {
 					<div class="flex items-center justify-between py-2 border-t border-gray-200 pt-4">
 						<dt class="text-sm font-medium text-gray-600">{{ trans('Total Payments') }}</dt>
 						<dd class="text-2xl font-bold text-purple-700">
-							{{ normalizedShowcase.paymentAccount.number_payments.toLocaleString() }}
+							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code,
+									normalizedShowcase.paymentAccount.number_payments) }}
 						</dd>
 					</div>
 				</dl>
