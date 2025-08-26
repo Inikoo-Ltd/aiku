@@ -167,4 +167,9 @@ class Payment extends Model implements Auditable
     {
         return $this->morphedByMany(Order::class, 'model', 'model_has_payments');
     }
+
+    public function creditTransaction(): HasOne
+    {
+        return $this->hasOne(CreditTransaction::class);
+    }
 }
