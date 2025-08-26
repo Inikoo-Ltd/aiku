@@ -203,7 +203,7 @@ const resetAfterSubmit = () => {
 
         <!-- Dialog -->
         <Dialog v-model:visible="showDialog" modal header="Select Portfolios"
-            :style="{ width: '80vw', maxWidth: '1200px' }" :content-style="{ overflow: 'hidden', padding : '20px'}"
+            :style="{ width: '80vw', maxWidth: '1200px' }" :content-style="{ overflow: 'hidden', padding: '20px' }"
             @hide="$emit('close')">
 
             <div class="relative isolate">
@@ -253,6 +253,7 @@ const resetAfterSubmit = () => {
                                                 ? 'bg-indigo-100 border-indigo-300'
                                                 : 'bg-white hover:bg-gray-200 border-gray-300'">
 
+                                            <!-- check icon -->
                                             <Transition name="slide-to-right">
                                                 <FontAwesomeIcon v-if="compSelectedProduct.includes(item.id)"
                                                     icon="fas fa-check-circle"
@@ -264,22 +265,35 @@ const resetAfterSubmit = () => {
                                                 <Image v-if="item.image" :src="item.image"
                                                     class="w-16 h-16 overflow-hidden mx-auto md:mx-0 mb-4 md:mb-0"
                                                     imageCover :alt="item.name" />
-                                                <div class="flex flex-col justify-between">
-                                                    <div class="w-fit">
+                                                <div class="flex flex-col justify-between w-full">
+
+                                                    <div class="flex items-center gap-2">
                                                         <div class="font-semibold leading-none mb-1">{{ item.name || 'no name' }}</div>
-                                                        <div v-if="!item.no_code" class="text-xs text-gray-400 italic">
-                                                            {{ item.code || 'no code' }}</div>
-                                                        <div v-if="item.reference" class="text-xs text-gray-400 italic">
-                                                            {{ item.reference }}</div>
-                                                        <div v-if="item.gross_weight"
-                                                            class="text-xs text-gray-400 italic">{{ item.gross_weight }}
-                                                        </div>
+
+                                                        <!-- 🔹 Badge for recommended -->
+
+                                                        <span v-if="item.is_recommended"
+                                                            class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                                                            {{ trans("Recommended") }}
+                                                        </span>
                                                     </div>
+
+                                                    <div v-if="!item.no_code" class="text-xs text-gray-400 italic">
+                                                        {{ item.code || 'no code' }}
+                                                    </div>
+                                                    <div v-if="item.reference" class="text-xs text-gray-400 italic">
+                                                        {{ item.reference }}
+                                                    </div>
+                                                    <div v-if="item.gross_weight" class="text-xs text-gray-400 italic">
+                                                        {{ item.gross_weight }}
+                                                    </div>
+
                                                     <div v-if="!item.no_price && item.price"
                                                         class="text-xs text-gray-x500">
                                                         {{ locale?.currencyFormat(item.currency_code || 'usd',
-                                                            item.price || 0) }}
+                                                        item.price || 0) }}
                                                     </div>
+
                                                     <NumberWithButtonSave v-if="withQuantity"
                                                         :modelValue="get(item, props.key_quantity, 1)"
                                                         :bindToTarget="{ min: 1 }"
@@ -288,6 +302,7 @@ const resetAfterSubmit = () => {
                                                 </div>
                                             </slot>
                                         </div>
+
                                     </template>
                                     <div v-else class="text-center text-gray-500 col-span-3">
                                         {{ trans("No Results found") }}
