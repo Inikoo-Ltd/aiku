@@ -41,11 +41,17 @@ const closeModal = () => {
 
 const isLoadingSubmit = ref(false)
 const save = (products) => {
+  const payload = products.map((item) => ({
+    trade_unit_id: item.id,
+    units: item.quantity_selected,
+  }))
+
   router.post(
     route('grp.models.master_family.store-assets', { masterFamily: props.familyId }),
-    { trade_units: products }
+    { trade_units: payload }
   )
 }
+
 </script>
 
 <template>
@@ -64,7 +70,7 @@ const save = (products) => {
   <Dialog v-model:visible="showModal" modal :show-header="false" header="Create" :dismissableMask="true"
     :style="{ width: '70rem', padding: '10px' }" :content-style="{ overflow: 'unset' }">
     <div class="pt-4">
-      <ProductsSelector :headLabel="trans('Add Trade Units')" :route-fetch="{
+      <ProductsSelector :headLabel="trans('Add Trade Units')" :withQuantity="true" :route-fetch="{
         name: 'grp.json.master-product-category.recommended-trade-units',
         parameters: {
           masterProductCategory: route().params['masterFamily']
