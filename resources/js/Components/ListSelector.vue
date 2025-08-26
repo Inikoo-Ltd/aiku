@@ -13,7 +13,7 @@ import Image from '@/Components/Image.vue'
 import { routeType } from '@/types/route'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheckCircle } from "@fas"
-import { faTimes } from "@fal"
+import { faSearch, faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
@@ -102,10 +102,18 @@ const selectProduct = (item: Portfolio) => {
     if (exists) {
         selectedProduct.value = selectedProduct.value.filter(p => p.id !== item.id)
     } else {
-        selectedProduct.value = [...selectedProduct.value, item]
+        // clone to avoid mutating original reference
+        const newItem: any = { ...item }
+
+        if (props.withQuantity && !newItem[props.key_quantity]) {
+            newItem[props.key_quantity] = 1
+        }
+
+        selectedProduct.value = [...selectedProduct.value, newItem]
     }
     done()
 }
+
 
 const deleteProduct = (id: number) => {
     selectedProduct.value = selectedProduct.value.filter(p => p.id !== id)
@@ -178,8 +186,9 @@ const resetAfterSubmit = () => {
 
                     <!-- Quantity + Delete -->
                     <div class="flex items-center gap-2">
-                        <NumberWithButtonSave :modelValue="get(item, props.key_quantity, 1)" :bindToTarget="{ min: 1 }"
-                            @update:modelValue="(val: number) => { set(item, props.key_quantity, val); done() }"
+                        <NumberWithButtonSave :key="item.id + '-' + (item[props.key_quantity] || 1)"
+                            :modelValue="item[props.key_quantity] || 1" :bindToTarget="{ min: 1 }"
+                            @update:modelValue="(val: number) => { item[props.key_quantity] = val; done() }"
                             noUndoButton noSaveButton parentClass="w-min" />
                         <button class="text-red-500 hover:text-red-700 px-4" @click="deleteProduct(item.id)">
                             <FontAwesomeIcon :icon="faTrashAlt" />
@@ -194,7 +203,7 @@ const resetAfterSubmit = () => {
 
         <!-- Dialog -->
         <Dialog v-model:visible="showDialog" modal header="Select Portfolios"
-            :style="{ width: '80vw', maxWidth: '1200px' }" :content-style="{ overflow: 'hidden' }"
+            :style="{ width: '80vw', maxWidth: '1200px' }" :content-style="{ overflow: 'hidden', padding : '20px'}"
             @hide="$emit('close')">
 
             <div class="relative isolate">
@@ -207,7 +216,6 @@ const resetAfterSubmit = () => {
                 <div class="mb-2">
                     <PureInput v-model="queryPortfolio" @update:modelValue="() => debounceGetPortfoliosList()"
                         :placeholder="trans('Input to search portfolios')" />
-                    <slot name="afterInput"></slot>
                 </div>
 
                 <!-- list + pagination -->
@@ -258,7 +266,7 @@ const resetAfterSubmit = () => {
                                                     imageCover :alt="item.name" />
                                                 <div class="flex flex-col justify-between">
                                                     <div class="w-fit">
-                                                        <div class="font-semibold leading-none mb-1">{{ item.name || 'no  name' }}</div>
+                                                        <div class="font-semibold leading-none mb-1">{{ item.name || 'no name' }}</div>
                                                         <div v-if="!item.no_code" class="text-xs text-gray-400 italic">
                                                             {{ item.code || 'no code' }}</div>
                                                         <div v-if="item.reference" class="text-xs text-gray-400 italic">
