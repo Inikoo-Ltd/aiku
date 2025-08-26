@@ -53,7 +53,7 @@ const save = (products) => {
     route('grp.models.master_family.store-assets', { masterFamily: props.familyId }),
     { trade_units: payload },
     {
-      onStart : () => loading.value = true
+      onStart : () => loading.value = true,
       onSuccess: () => {
         closeModal()
         console.log("✅ Saved successfully")
