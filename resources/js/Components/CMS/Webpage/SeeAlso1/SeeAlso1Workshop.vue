@@ -17,6 +17,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
+import RecommendersLuigi1Workshop from "./RecommendersLuigi1Workshop.vue"
 library.add(faChevronLeft, faChevronRight)
 
 const dummyProductImage = '/product/product_dummy.jpeg'
@@ -82,9 +83,24 @@ const compSwiperOptions = computed(() => {
       </div>
     </div>
 
+    <div v-if="modelValue.settings.products_data.type === 'luigi-trends'">
+        <RecommendersLuigi1Workshop recommendation_type="trends" :slidesPerView />
+    </div>
+
+    <div v-else-if="modelValue.settings.products_data.type === 'luigi-recently_ordered'">
+        <RecommendersLuigi1Workshop recommendation_type="recently_ordered" :slidesPerView />
+    </div>
+
+    <div v-else-if="modelValue.settings.products_data.type === 'luigi-last_seen'">
+        <RecommendersLuigi1Workshop recommendation_type="last_seen" :slidesPerView />
+    </div>
+
+    <div v-else-if="modelValue.settings.products_data.type === 'luigi-item_detail_alternatives'">
+        <RecommendersLuigi1Workshop recommendation_type="item_detail_alternatives" :slidesPerView />
+    </div>
 
     <!-- Carousel with custom navigation -->
-    <div v-if="compSwiperOptions?.length" class="relative px-4 py-6" @click="() => {
+    <div v-else-if="compSwiperOptions?.length" class="relative px-4 py-6" @click="() => {
       `sendMessageToParent('activeBlock', indexBlock)`
       sendMessageToParent('activeChildBlock', bKeys[0])
     }">
