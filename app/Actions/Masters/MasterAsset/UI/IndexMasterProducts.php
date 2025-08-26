@@ -243,20 +243,20 @@ class IndexMasterProducts extends GrpAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'subNavigation' => $subNavigation,
-                    // 'actions'       => [
-                    //     [
-                    //         'type'    => 'button',
-                    //         'style'   => 'create',
-                    //         'tooltip' => __('create product'),
-                    //         'label'   => __('create product'),
-                    //         'route'   =>
-                    //             [
-                    //                 'name'       => 'grp.masters.master_shops.show.master_departments.create',
-                    //                 'parameters' => $request->route()->originalParameters()
-                    //             ]
+                    'actions'       => [
+                        [
+                            'type'    => 'button',
+                            'style'   => 'create',
+                            'tooltip' => __('create product'),
+                            'label'   => __('create product'),
+                            'route'   =>
+                                [
+                                    'name'       => preg_replace('/index$/', 'create', $request->route()->getName()),
+                                    'parameters' => $request->route()->originalParameters()
+                                ]
 
-                    //     ],
-                    // ],
+                        ],
+                    ],
                 ],
                 'data'        => MasterProductsResource::collection($masterAssets),
 
