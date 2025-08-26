@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -147,6 +148,10 @@ class Payment extends Model implements Auditable
         return $this->belongsTo(PaymentAccount::class);
     }
 
+    public function paymentAccountShop(): BelongsTo
+    {
+        return $this->belongsTo(PaymentAccountShop::class);
+    }
 
     public function currency(): BelongsTo
     {
@@ -171,5 +176,10 @@ class Payment extends Model implements Auditable
     public function creditTransaction(): HasOne
     {
         return $this->hasOne(CreditTransaction::class);
+    }
+
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(Payment::class, 'original_payment_id');
     }
 }

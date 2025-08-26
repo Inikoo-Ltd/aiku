@@ -76,6 +76,27 @@ trait WithCheckoutCom
 
     }
 
+    private function refundPayment(PaymentAccountShop $paymentAccountShop, string $paymentID): array
+    {
+        list($publicKey, $secretKey) = $paymentAccountShop->getCredentials();
+
+        $checkoutApi = $this->getCheckoutApi($publicKey, $secretKey);
+
+        try {
+            return $checkoutApi->getPaymentsClient()->refundPayment($paymentID);
+        } catch (CheckoutApiException $e) {
+            \Sentry\captureException($e);
+            $error_details    = $e->error_details;
+            $http_status_code = isset($e->http_metadata) ? $e->http_metadata->getStatusCode() : null;
+
+            return [
+                'error' => true,
+                'message' => $error_details,
+                'http_status_code' => $http_status_code
+            ];
+        }
+    }
+
     protected function getFailureTitle($status): string
     {
         $title = __('Error');
