@@ -86,17 +86,16 @@ class CreateMasterProduct extends GrpAction
                                         'required' => true,
                                     ],
                                     'trade_units' => [
-                                        'type'         => 'product_parts',
-                                        'label'        => __('Parts'),
-                                        // 'readonly' => true,
-                                        'full'         => true,
-                                        'fetch_route'  => [
+                                        'type'         => 'list-selector',
+                                        'label'        => __('Trade units'),
+                                        'withQuantity' => true,
+                                        'key_quantity' => 'unit',     
+                                        'routeFetch'  => [
                                             'name'       => 'grp.json.master-product-category.recommended-trade-units',
                                             'parameters' => [
-                                                'organisation' => $parent->organisation_id,
+                                                'masterProductCategory' => $parent->slug
                                             ]
                                         ],
-                                        // 'init_options' => OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
                                         'value'        => []
                                     ],
                                 ]

@@ -5,8 +5,6 @@
   -->
 
 <script setup lang="ts">
-import PureInput from "@/Components/Pure/PureInput.vue"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExclamationCircle, faCheckCircle } from '@fas'
 import { faCopy } from '@fal'
 import { faSpinnerThird } from '@fad'
@@ -14,6 +12,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { set, get } from 'lodash-es'
 import ListSelector from "@/Components/ListSelector.vue"
 import { routeType } from "@/types/route"
+import { watch, ref } from "vue"
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 
 const props = defineProps<{
@@ -22,26 +21,58 @@ const props = defineProps<{
     options?: any
     fieldData?: {
         type: string
-        placeholder: string
-        readonly?: boolean
-        copyButton: boolean
-        maxLength?: number
         withQuantity?: boolean
         routeFetch: routeType
+        key_quantity? : string
     }
 }>()
 
+const emits = defineEmits()
+
+const setFormValue = (data: Object, fieldName: String) => {
+    if (Array.isArray(fieldName)) {
+        return getNestedValue(data, fieldName)
+    } else {
+        return data[fieldName]
+    }
+}
+
+const getNestedValue = (obj: Object, keys: Array) => {
+    return keys.reduce((acc, key) => {
+        if (acc && typeof acc === "object" && key in acc) return acc[key]
+        return null
+    }, obj)
+};
+
+const value = ref(setFormValue(props.form, props.fieldName));
+
+watch(value, (newValue) => {
+    // Update the form field value when the value ref changes
+    updateFormValue(newValue);
+    props.form.errors[props.fieldName] = ''
+});
+
+const updateFormValue = (newValue) => {
+    let target = props.form;
+    if (Array.isArray(props.fieldName)) {
+        set(target, props.fieldName, newValue);
+    } else {
+        target[props.fieldName] = newValue;
+    }
+    emits("update:form", target);
+};
 
 </script>
 <template>
     <div class="relative">
         <div class="relative">
-            <ListSelector :modelValue="form[fieldName]" :withQuantity="fieldData.withQuantity || false" :route-fetch="{
-                name: 'grp.json.master-product-category.recommended-trade-units',
-                parameters: { masterProductCategory: route().params['masterFamily'] }
-            }" class="mt-4" />
+            <ListSelector 
+                :modelValue="value" 
+                :key_quantity="fieldData.key_quantity"
+                :withQuantity="fieldData.withQuantity || false" :route-fetch="fieldData.routeFetch" 
+                class="mt-4" 
+            />
         </div>
-
     </div>
     <p v-if="get(form, ['errors', `${fieldName}`])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">
         {{ form.errors[fieldName] }}

@@ -57,6 +57,7 @@ import TextEditorTranslation from '@/Components/Forms/Fields/TextEditorTranslati
 import Pricing_zone from '@/Components/Forms/Fields/Pricing_zone.vue'
 import Teritory_zone from '@/Components/Forms/Fields/Teritory_zone.vue'
 import SelectPrinter from '@/Components/Forms/Fields/SelectPrinter.vue'
+import ListSelectorFrom from '@/Components/Forms/Fields/ListSelectorFrom.vue'
 
 
 export const componentsList: {[key: string]: Component} = {
@@ -112,7 +113,8 @@ export const componentsList: {[key: string]: Component} = {
     'textEditor_translation' : TextEditorTranslation,
     'pricing_zone': Pricing_zone,
     'teritory_zone': Teritory_zone,
-    'crop-image-full' : cropImageFull
+    'crop-image-full' : cropImageFull,
+    'list-selector' : ListSelectorFrom
 }
 
 export const getComponent = (componentName: string) => {
