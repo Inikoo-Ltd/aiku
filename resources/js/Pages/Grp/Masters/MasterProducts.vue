@@ -94,12 +94,12 @@ const save = (products) => {
   <Dialog v-model:visible="showModal" modal :show-header="false" header="Create" :dismissableMask="true"
     :style="{ width: '70rem', padding: '10px' }" :content-style="{ overflow: 'unset' }">
     <div class="pt-4">
-      <ProductsSelector :headLabel="trans('Add Trade Units')" :withQuantity="true" :isLoadingSubmit="laoding" :route-fetch="{
+      <ProductsSelector :headLabel="trans('Add Trade Units')" :withQuantity="true" :isLoadingSubmit="loading" :route-fetch="{
         name: 'grp.json.master-product-category.recommended-trade-units', 
         parameters: {
           masterProductCategory: route().params['masterFamily']
         }
-      }" :isLoadingSubmit @submit="(products: {}[]) => save(products)" class="px-4" />
+      }"  @submit="(products: {}[]) => save(products)" class="px-4" />
     </div>
   </Dialog>
 </template>
