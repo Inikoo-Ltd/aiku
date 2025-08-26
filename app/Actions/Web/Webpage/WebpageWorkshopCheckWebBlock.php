@@ -28,12 +28,13 @@ class WebpageWorkshopCheckWebBlock extends OrgAction
         $webBlocksChanged = false;
         
         $webBlocks = Arr::get($modelData, 'layout.web_blocks');
+
         if ($webBlocks) {
             foreach ($webBlocks as $index => $webBlockData) {
-                $frontendId = $webBlockData['id'];
+                $frontendId = Arr::get($webBlockData, 'web_block.id');
                 
                 $existingWebBlock = WebBlock::where('id', $frontendId)->first();
-
+                
                 if (!$existingWebBlock) {
                     $webBlockType = WebBlockType::where('code', $webBlockData['type'])->first();
                     
