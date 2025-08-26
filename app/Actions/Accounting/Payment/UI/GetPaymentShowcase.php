@@ -2,7 +2,7 @@
 
 namespace App\Actions\Accounting\Payment\UI;
 
-use App\Http\Resources\Accounting\CreditTransactionsResource;
+use App\Http\Resources\Accounting\CreditTransactionResource;
 use App\Http\Resources\Accounting\InvoiceResource;
 use App\Http\Resources\Accounting\PaymentAccountResource;
 use App\Http\Resources\Accounting\PaymentServiceProviderResource;
@@ -37,7 +37,7 @@ class GetPaymentShowcase
 
         $creditTransaction = null;
         if ($payment->creditTransaction) {
-            $creditTransaction = CreditTransactionsResource::make($payment->creditTransaction);
+            $creditTransaction = CreditTransactionResource::make($payment->creditTransaction);
         }
 
         return [
