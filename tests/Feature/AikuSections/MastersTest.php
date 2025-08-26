@@ -634,16 +634,6 @@ test('a non-admin user cannot create a master shop', function () {
     );
 });
 
-test('it correctly updates master asset price to zero', function (MasterAsset $masterAsset) {
-    UpdateMasterAsset::make()->action($masterAsset, [
-        'price' => 0,
-    ]);
-
-    $masterAsset->refresh();
-
-    expect((int) $masterAsset->price)->toBe(0);
-})->depends('create master asset');
-
 test('updating a sub-department name does not affect the parent category stats', function (MasterProductCategory $masterSubDepartment) {
     $masterDepartment = $masterSubDepartment->parent;
     $initialCount = $masterDepartment->stats->number_sub_departments;

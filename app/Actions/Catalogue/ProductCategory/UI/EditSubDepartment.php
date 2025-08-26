@@ -59,6 +59,7 @@ class EditSubDepartment extends OrgAction
                 'title'       => __('Sub-department'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $subDepartment,
+                    $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
                 'navigation'  => [
@@ -172,10 +173,11 @@ class EditSubDepartment extends OrgAction
     }
 
 
-    public function getBreadcrumbs(ProductCategory $subDepartment, array $routeParameters): array
+    public function getBreadcrumbs(ProductCategory $subDepartment, string $routeName,array $routeParameters): array
     {
         return ShowSubDepartment::make()->getBreadcrumbs(
             subDepartment: $subDepartment,
+            routeName: preg_replace('/edit$/', 'show', $routeName),
             routeParameters: $routeParameters,
             suffix: '('.__('Editing').')'
         );
