@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3'
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCubes, faSeedling, faBooks, faFolderTree, faAlbumCollection } from "@fal"
+import { faCubes, faLink, faSeedling, faBooks, faFolderTree, faAlbumCollection } from "@fal"
 import { faFireAlt } from "@fad"
 import { faCheckCircle, faTimesCircle } from "@fas"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -18,9 +18,10 @@ import StatsBox from '@/Components/Stats/StatsBox.vue'
 import { trans } from 'laravel-vue-i18n'
 import CopyButton from '@/Components/Utils/CopyButton.vue'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
 
-library.add(faCheckCircle, faTimesCircle, faCubes, faSeedling, faFireAlt, faBooks, faFolderTree, faAlbumCollection)
+library.add(faCheckCircle, faTimesCircle, faCubes, faLink, faSeedling, faFireAlt, faBooks, faFolderTree, faAlbumCollection)
 
 const props = defineProps<{
     pageHead: PageHeadingTS
@@ -75,31 +76,31 @@ const routeAPI = window.location.origin + '/data-feed.csv'
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <div class="p-6">
-        <div class="py-2 w-fit">
-            <div>
-                API Url (download all products)
+        <!-- Box: API URL -->
+        <div class="w-fit border border-gray-300 rounded overflow-hidden">
+            <div class="py-2 px-3 text-lg font-bold bg-gray-100 ">
+                <FontAwesomeIcon icon="fal fa-link" class="" fixed-width aria-hidden="true" />
+                API Url (no need password)
                 <InformationIcon
-                    :information="trans('Can be use to integrate with 3rd party app')"
+                    :information="trans('Download all products, can be used to integrate with 3rd party app')"
                 />
                 :
             </div>
             
-            <div xhref="props.data.url" target="_blank" xv-tooltip="trans('Go To Website')"
-                class="xhover:bg-gray-50 ring-1 ring-gray-300 rounded overflow-hidden flex text-xxs md:text-base text-gray-500">
-                <div v-tooltip="trans('Copy url')" class="flex items-center">
+            <div class="px-3 border-t border-gray-300 overflow-hidden flex items-center text-sm md:text-base text-gray-500">
+                <div class="py-2 px-2 w-full italic">
+                    {{ routeAPI }}
+                </div>
+                <div v-tooltip="trans('Copy url')" class="flex items-center relative">
                     <CopyButton
                         :text="routeAPI"
-                        class="text-3xl px-3 py-1.5"
+                        class="text-3xl px-2 py-1.5"
                     />
-                </div>
-
-                <div class="bg-gray-200 py-2 px-2 w-full">
-                    {{routeAPI}}
                 </div>
             </div>
         </div>
 
-        <dl class="grid grid-cols-1 gap-2 lg:gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <dl class="mt-4 grid grid-cols-1 gap-2 lg:gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <StatsBox v-for="stat in stats" :stat="stat">
             </StatsBox>
         </dl>
