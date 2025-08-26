@@ -11,12 +11,11 @@ namespace App\Actions\Dropshipping\WooCommerce\Product;
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
 
-class CheckAvailabilityPortfolioWooCommerce extends RetinaAction
+class CheckIfProductExistInWoo extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
@@ -24,16 +23,20 @@ class CheckAvailabilityPortfolioWooCommerce extends RetinaAction
     /**
      * @throws \Exception
      */
-    public function handle(WooCommerceUser $wooCommerceUser, Portfolio $portfolio): ?array
+    public function handle(WooCommerceUser $wooCommerceUser, Portfolio $portfolio): array
     {
-        $customerSalesChannel = $wooCommerceUser->customerSalesChannel;
-
         try {
-            $searchFields = [
-                'sku' => $portfolio->item_code,
-                'slug' => $portfolio->platform_handle,
-                'search' => $portfolio->item_name
-            ];
+            if ($portfolio->platform_product_id) {
+                $searchFields = [
+                    'id' => $portfolio->platform_product_id
+                ];
+            } else {
+                $searchFields = [
+                    'sku' => $portfolio->sku,
+                    'slug' => $portfolio->platform_handle,
+                    'search' => $portfolio->item_name
+                ];
+            }
 
             $result = [];
 
@@ -48,15 +51,11 @@ class CheckAvailabilityPortfolioWooCommerce extends RetinaAction
                 }
             }
 
-            $customerSalesChannel->update([
-
-            ]);
-
-            return Arr::get($result, '0');
+            return $result;
         } catch (\Exception $e) {
             Sentry::captureMessage("Failed to upload product due to: " . $e->getMessage());
 
-            return null;
+            return [];
         }
     }
 }
