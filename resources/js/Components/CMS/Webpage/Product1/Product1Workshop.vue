@@ -28,6 +28,10 @@ const props = withDefaults(defineProps<{
   templateEdit?: TemplateType
   indexBlock : number
   screenType: "mobile" | "tablet" | "desktop"
+  currency: {
+    code: string
+    name: string
+  }
 }>(), {
   templateEdit: 'webpage'
 })
