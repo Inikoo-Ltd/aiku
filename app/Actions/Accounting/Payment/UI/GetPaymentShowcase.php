@@ -2,8 +2,10 @@
 
 namespace App\Actions\Accounting\Payment\UI;
 
+use App\Http\Resources\Accounting\CreditTransactionsResource;
 use App\Http\Resources\Accounting\InvoiceResource;
 use App\Http\Resources\Accounting\PaymentAccountResource;
+use App\Http\Resources\Accounting\PaymentServiceProviderResource;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Sales\OrderResource;
@@ -28,6 +30,16 @@ class GetPaymentShowcase
             $parentResource = null;
         }
 
+        $paymentServiceProvider = null;
+        if ($serviceProvider = $payment->orgPaymentServiceProvider?->paymentServiceProvider) {
+            $paymentServiceProvider = PaymentServiceProviderResource::make($serviceProvider);
+        }
+
+        $creditTransaction = null;
+        if ($payment->creditTransaction) {
+            $creditTransaction = CreditTransactionsResource::make($payment->creditTransaction);
+        }
+
         return [
             'parent_type'    => $parent ? class_basename($parent) : null,
             'amount'         => $payment->amount,
@@ -36,6 +48,8 @@ class GetPaymentShowcase
             'parent_data'    => $parentResource,
             'currency'       => CurrencyResource::make($payment->currency),
             'paymentAccount' => PaymentAccountResource::make($payment->paymentAccount),
+            'paymentServiceProvider' => $paymentServiceProvider,
+            'credit_transaction' => $creditTransaction
         ];
     }
 }
