@@ -89,7 +89,7 @@ class CreateMasterProduct extends GrpAction
                                         'type'         => 'list-selector',
                                         'label'        => __('Trade units'),
                                         'withQuantity' => true,
-                                        'key_quantity' => 'unit',     
+                                        'key_quantity' => 'quantity',     
                                         'routeFetch'  => [
                                             'name'       => 'grp.json.master-product-category.recommended-trade-units',
                                             'parameters' => [

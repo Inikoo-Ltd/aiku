@@ -17,6 +17,7 @@ use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreMasterAssetFromTradeUnits extends GrpAction
@@ -27,27 +28,31 @@ class StoreMasterAssetFromTradeUnits extends GrpAction
     /**
      * @throws \Throwable
      */
-    public function handle(MasterProductCategory $parent, array $modelData)
+    public function handle(MasterProductCategory $parent, array $modelData): MasterAsset
     {
-        dd($modelData);
-        DB::transaction(function () use ($parent, $modelData) {
+        $masterAsset = DB::transaction(function () use ($parent, $modelData) {
             $data = [
                 'code' => Arr::get($modelData,'code'),
                 'name' => Arr::get($modelData, 'name'),
                 'price' => Arr::get($modelData, 'price'),
                 'unit' => Arr::get($modelData, 'unit'),
                 'is_main' => Arr::get($modelData, 'is_main'),
+                'type' => MasterAssetTypeEnum::PRODUCT
             ];
             $masterAsset = StoreMasterAsset::run($parent, $data);
-
-            foreach (Arr::get($modelData, 'items', []) as $item) {
+            $masterAsset->refresh();
+            foreach (Arr::get($modelData, 'trade_units', []) as $item) {
                 $tradeUnit = TradeUnit::find(Arr::get($item, 'id'));
                 $masterAsset->tradeUnits()->attach($tradeUnit->id, [
                     'quantity' => Arr::get($item, 'quantity')
                 ]);
                 $masterAsset->refresh();
             }
+
+            return $masterAsset;
         });
+
+        return $masterAsset;
     }
 
     public function rules(): array
@@ -95,7 +100,7 @@ class StoreMasterAssetFromTradeUnits extends GrpAction
         return $this->handle($parent, $this->validatedData);
     }
 
-    public function asController(MasterProductCategory $masterFamily, ActionRequest $request)
+    public function asController(MasterProductCategory $masterFamily, ActionRequest $request): MasterAsset
     {
         // dd($request->all());
         $this->initialisation($masterFamily->group, $request);
@@ -103,4 +108,11 @@ class StoreMasterAssetFromTradeUnits extends GrpAction
         return $this->handle($masterFamily, $this->validatedData);
     }
 
+    public function htmlResponse(MasterAsset $masterAsset)
+    {
+        return Redirect::route('grp.masters.master_shops.show.master_products.show', [
+            'masterShop' => $masterAsset->masterShop->slug,
+            'masterProduct' => $masterAsset->slug
+        ]);
+    }
 }
