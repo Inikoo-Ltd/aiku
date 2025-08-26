@@ -170,10 +170,8 @@ class StoreMasterProductCategory extends GrpAction
 
         if ($parent instanceof MasterProductCategory) {
             $this->masterShop = $parent->masterShop;
-
         } else {
             $this->masterShop = $parent;
-
         }
 
         $this->initialisation($group, $modelData);
@@ -187,6 +185,4 @@ class StoreMasterProductCategory extends GrpAction
 
         return $this->handle(parent: $masterProductCategory, modelData: $this->validatedData);
     }
-
-
 }
