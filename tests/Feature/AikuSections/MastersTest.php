@@ -582,14 +582,6 @@ test('it fails to create master shop from command if required arguments are miss
         ->assertFailed();
 });
 
-test('it fails to create master shop from command if required arguments are missing', function () {
-    $this->artisan('master_shop:create', [
-        'group' => $this->group->slug,
-        'type'  => ShopTypeEnum::DROPSHIPPING,
-    ])
-        ->expectsOutputToContain('Not enough arguments (missing: "code, name")')
-        ->assertFailed();
-});
 
 test('deactivating a master shop also deactivates its product categories', function (MasterProductCategory $masterProductCategory) {
     expect($masterProductCategory->status)->toBeTrue();
