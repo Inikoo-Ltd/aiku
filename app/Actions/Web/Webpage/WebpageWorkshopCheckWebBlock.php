@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
 use App\Actions\Web\Webpage\UpdateWebpageContent;
+use App\Models\Dropshipping\ModelHasWebBlocks;
 use App\Models\Web\WebBlock;
 use App\Models\Web\WebBlockType;
 use App\Models\Web\Webpage;
@@ -29,13 +30,34 @@ class WebpageWorkshopCheckWebBlock extends OrgAction
         
         $webBlocks = Arr::get($modelData, 'layout.web_blocks');
 
-        if ($webBlocks) {
+        if (empty($webBlocks)) {
+            $webpage->modelHasWebBlocks()->delete();
+            $webBlocksChanged = true;
+        } elseif ($webBlocks) {
+            $frontendModelHasWebBlockIds = [];
+            foreach ($webBlocks as $webBlockData) {
+                $modelHasWebBlockId = Arr::get($webBlockData, 'id');
+                if ($modelHasWebBlockId) {
+                    $frontendModelHasWebBlockIds[] = $modelHasWebBlockId;
+                }
+            }
+            if (!empty($frontendModelHasWebBlockIds)) {
+                $deletedCount = $webpage->modelHasWebBlocks()
+                    ->whereNotIn('id', $frontendModelHasWebBlockIds)
+                    ->delete();
+                
+                if ($deletedCount > 0) {
+                    $webBlocksChanged = true;
+                }
+            }
             foreach ($webBlocks as $index => $webBlockData) {
-                $frontendId = Arr::get($webBlockData, 'web_block.id');
+                $modelHasWebBlockId = Arr::get($webBlockData, 'id');
+                $webBlockId = Arr::get($webBlockData, 'web_block.id');
                 
-                $existingWebBlock = WebBlock::where('id', $frontendId)->first();
-                
-                if (!$existingWebBlock) {
+                $existingWebBlock = WebBlock::where('id', $webBlockId)->first();
+                $existingModelHasWebBlock = ModelHasWebBlocks::where('id', $modelHasWebBlockId)->first();
+
+                if (!$existingWebBlock && !$existingModelHasWebBlock) {
                     $webBlockType = WebBlockType::where('code', $webBlockData['type'])->first();
                     
                     if ($webBlockType) {
