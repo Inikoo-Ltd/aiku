@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import {
   ref, onMounted, provide, watch, computed, inject,
-  IframeHTMLAttributes ,onUnmounted, onBeforeUnmount 
+  IframeHTMLAttributes ,onUnmounted, toRaw 
 } from "vue";
 import { Head, router } from "@inertiajs/vue3";
 import * as Sentry from "@sentry/vue"
@@ -87,9 +87,8 @@ const comment = ref("");
 const isLoadingPublish = ref(false);
 const fullScreen = ref(false);
 const filterBlock = ref('all');
-const MAX_HISTORY = 5;
-const undoStack = ref<any[]>(JSON.parse(localStorage.getItem('undoStack') || '[]'));
-const redoStack = ref<any[]>(JSON.parse(localStorage.getItem('redoStack') || '[]'));
+const history = ref<any[]>([]);
+const future = ref<any[]>([]);
 
 provide('currentView', currentView);
 provide('openedBlockSideEditor', openedBlockSideEditor);
@@ -114,7 +113,7 @@ const addNewBlock = async ({ block, type }) => {
     position =  addBlockParentIndex.value.parentIndex + 1;
   }
 
-  pushToHistory();
+ 
   router.post(
     route(props.webpage.add_web_block_route.name, props.webpage.add_web_block_route.parameters),
     { web_block_type_id: block.id, position  : position },
@@ -127,7 +126,8 @@ const addNewBlock = async ({ block, type }) => {
       },
       onCancelToken: token => addBlockCancelToken.value = token.cancel,
       onSuccess: e => {
-        data.value = e.props.webpage;
+        data.value = e.props.webpage
+        saveState()
         sendToIframe({ key: 'reload', value: {} });
       },
       onError: error => {
@@ -142,7 +142,6 @@ const addNewBlock = async ({ block, type }) => {
 };
 
 const duplicateBlock = async (modelHasWebBlock = Number) => {
-  pushToHistory();
   router.post(
     route('grp.models.webpage.web_block.duplicate', {
       webpage: data.value.id,
@@ -159,6 +158,7 @@ const duplicateBlock = async (modelHasWebBlock = Number) => {
       onCancelToken: token => addBlockCancelToken.value = token.cancel,
       onSuccess: e => {
         data.value = e.props.webpage;
+        saveState()
         sendToIframe({ key: 'reload', value: {} });
       },
       onError: error => notify({
@@ -192,7 +192,7 @@ const debounceSaveWorkshop = (block) => {
 
     isLoadingBlock.value = block.id;
     isSavingBlock.value = true;
-    pushToHistory();
+    
     try {
     const response =  await axios.patch(
         url,
@@ -212,6 +212,7 @@ const debounceSaveWorkshop = (block) => {
 
       // Reload the preview
       data.value.layout = response.data.data.layout;
+      saveState()
       sendToIframe({ key: "reload", value: {} });
     } catch (error) {
       if (axios.isCancel?.(error) || error?.code === "ERR_CANCELED") {
@@ -251,7 +252,9 @@ const debouncedSaveSiteSettings = debounce(block => {
       preserveScroll: true,
       onStart: () => isSavingBlock.value = true,
       onFinish: () => isSavingBlock.value = false,
-      onSuccess: () => {
+      onSuccess: (e) => {
+        data.value = e.props.webpage;
+        saveState()
         sendToIframe({ key: 'reload', value: {} })
       },
       onError: error => notify({
@@ -293,8 +296,7 @@ provide('onSaveWorkshopFromId', onSaveWorkshopFromId);
 provide('onSaveWorkshop', onSaveWorkshop);
 
 const sendOrderBlock = async block => {
-  if (orderBlockCancelToken.value) orderBlockCancelToken.value();
-  pushToHistory(); 
+  if (orderBlockCancelToken.value) orderBlockCancelToken.value(); 
   router.post(
     route(props.webpage.reorder_web_blocks_route.name, props.webpage.reorder_web_blocks_route.parameters),
     { positions: block },
@@ -306,6 +308,7 @@ const sendOrderBlock = async block => {
       onCancelToken: token => orderBlockCancelToken.value = token.cancel,
       onSuccess: e => {
         data.value = e.props.webpage;
+        saveState()
         sendToIframe({ key: 'reload', value: {} });
       },
       onError: error => notify({
@@ -319,7 +322,6 @@ const sendOrderBlock = async block => {
 
 const sendDeleteBlock = async (block: Daum) => {
   if (deleteBlockCancelToken.value) deleteBlockCancelToken.value();
-  pushToHistory(); 
   router.delete(
     route(props.webpage.delete_model_has_web_blocks_route.name, { modelHasWebBlocks: block.id }),
     {
@@ -331,6 +333,7 @@ const sendDeleteBlock = async (block: Daum) => {
       onCancelToken: token => deleteBlockCancelToken.value = token.cancel,
       onSuccess: e => {
         data.value = e.props.webpage;
+        saveState()
         sendToIframe({ key: 'reload', value: {} });
       },
       onError: error => notify({
@@ -452,106 +455,63 @@ const SyncAurora = () => {
 };
 
 
-const saveHistoryToLocalStorage = () => {
-  localStorage.setItem('undoStack', JSON.stringify(undoStack.value));
-  localStorage.setItem('redoStack', JSON.stringify(redoStack.value));
-};
 
-// Push current state to undoStack
-const pushToHistory = () => {
-  // Clone current layout state
-  const currentState = JSON.parse(JSON.stringify(data.value.layout));
+const saveState = () => {
+    history.value.push(JSON.parse(JSON.stringify(data.value.layout)));
+    localStorage.setItem(data.value.code, JSON.stringify(data.value.layout));
+    future.value = []; 
+  };
 
-  // Push to undo stack
-  undoStack.value.push(currentState);
+  const undo = () => {
+    if (history.value.length > 1) {
+      future.value.unshift(history.value.pop()!);
+      localStorage.setItem(data.value.code, JSON.stringify(data.value.layout));
+	    afterUndoRedo(JSON.parse(JSON.stringify(history.value[history.value.length - 1])))
+    }
+  }; 
 
-  // Keep only last MAX_HISTORY
-  if (undoStack.value.length > MAX_HISTORY) {
-    undoStack.value.shift();
-  }
+const redo = () => {
+    if (future.value.length > 0) {
+      const nextState = future.value.shift()!;
+      history.value.push(nextState);
+      localStorage.setItem(data.value.code, JSON.stringify(data.value.layout));
+	    afterUndoRedo(JSON.parse(JSON.stringify(nextState)))
+    }
+  };
 
-  // Clear redo stack because new change
-  redoStack.value = [];
+const afterUndoRedo = async (value) => {
+  try {
+    const payload = {
+      layout: value, // deep clone
+    }
 
-  saveHistoryToLocalStorage();
-};
-
- // Undo
-const undo = async () => {
-  if (undoStack.value.length === 0) return;
-
-  // Move current state to redo
-  redoStack.value.push(JSON.parse(JSON.stringify(data.value.layout)));
-  if (redoStack.value.length > MAX_HISTORY) redoStack.value.shift();
-
-  // Get last undo state
-  const prevState = undoStack.value.pop();
-  if (prevState) {
-    data.value.layout = JSON.parse(JSON.stringify(prevState));
-    sendToIframe({ key: 'setWebpage', value: JSON.parse(JSON.stringify(data.value)) });
-  }
-
-  saveHistoryToLocalStorage();
-  console.log('Redo stack:', redoStack.value);
- try {
-  const payload = {
-    layout: JSON.parse(JSON.stringify(prevState)), // deep clone
-  }
-
-  const response = await axios.patch(
-    route('grp.models.webpage.web_block_check', {
-      webpage: props.webpage.id,
-    }),
-    payload
-  )
-
-  // ✅ kalau butuh response
-  console.log("Update success:", response.data)
-
-} catch (error: any) {
-  if (axios.isAxiosError(error)) {
-    console.error("Axios error:", error.response?.data || error.message)
-  } else {
-    console.error("Unexpected error:", error)
+    const response = await axios.patch(
+      route('grp.models.webpage.web_block_check', {
+        webpage: props.webpage.id,
+      }),
+      payload
+    )
+    console.log('sss',response.data)
+    data.value = {...data.value ,layout : response.data};
+    sendToIframe({
+      key: 'setWebpage',
+      value: JSON.parse(JSON.stringify(data.value))
+    });
+  } catch (error: any) {
+    if (axios.isAxiosError(error)) {
+      console.error("Axios error:", error.response?.data || error.message)
+    } else {
+      console.error("Unexpected error:", error)
+    }
   }
 }
 
-};
-
-// Redo
-const redo = async () => {
-  if (redoStack.value.length === 0) return;
-
-  // Move current state to undo
-  undoStack.value.push(JSON.parse(JSON.stringify(data.value.layout)));
-  if (undoStack.value.length > MAX_HISTORY) undoStack.value.shift();
-
-  // Get next redo state
-  const nextState = redoStack.value.pop();
-  if (nextState) {
-    data.value.layout = JSON.parse(JSON.stringify(nextState));
-    sendToIframe({ key: 'setWebpage', value: JSON.parse(JSON.stringify(data.value)) });
-  }
-
-  saveHistoryToLocalStorage();
-
-  console.log('Redo stack:', undoStack.value);
-  try {
-		const response = await axios.get(
-			route('grp.json.web-block.web_block_histories.index', {webBlock : 554988, webpage : props.webpage.id }),
-		)
-		console.log('Undo stack:', response);
-	} catch (error: any) {
-		console.log(error)
-	}
-};
 
 // Clear all history
 const clearHistory = () => {
-  undoStack.value = [];
-  redoStack.value = [];
-  localStorage.removeItem('undoStack');
-  localStorage.removeItem('redoStack');
+  history.value = [];
+  future.value = [];
+  localStorage.removeItem(data.value.code);
 };
 
 // When component is unmounted
@@ -582,7 +542,13 @@ onMounted(() => {
         break;
       case 'deleteBlock': return sendDeleteBlock(value);
     }
-  });
+  })
+  const savedData = localStorage.getItem(data.value.code);
+    if (savedData) {
+    } else {
+      localStorage.setItem(data.value.code, JSON.stringify(data.value.layout));
+    }
+    history.value = [JSON.parse(JSON.stringify(data.value.layout))];
 });
 
 watch(openedBlockSideEditor, (newValue) => sendToIframe({ key: 'activeBlock', value: newValue }));
@@ -601,6 +567,7 @@ console.log('props',props)
 </script>
 
 <template>
+
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead">
     <template #button-publish="{ action }">
@@ -613,16 +580,16 @@ console.log('props',props)
     </template>
 
     <template #other>
-      <div class="px-2 cursor-pointer"  v-tooltip="trans('Go to website')" @click="openWebsite">
+      <div class="px-2 cursor-pointer" v-tooltip="trans('Go to website')" @click="openWebsite">
         <FontAwesomeIcon :icon="faExternalLink" size="xl" aria-hidden="true" />
       </div>
     </template>
   </PageHeading>
 
 
-  <ConfirmDialog group="alert-publish" >
+  <ConfirmDialog group="alert-publish">
     <template #icon>
-      <FontAwesomeIcon :icon="faExclamationTriangle"  class="text-orange-500"/>
+      <FontAwesomeIcon :icon="faExclamationTriangle" class="text-orange-500" />
     </template>
   </ConfirmDialog>
 
@@ -646,12 +613,13 @@ console.log('props',props)
           <div v-tooltip="'Full screen'" @click="fullScreen = !fullScreen" class="cursor-pointer">
             <FontAwesomeIcon :icon="!fullScreen ? faExpandWide : faCompressWide" fixed-width />
           </div>
-           <div v-tooltip="'Undo'" class="cursor-pointer">
-            <FontAwesomeIcon  @click="undo" :icon="faUndo" fixed-width />
-          </div>
-           <div v-tooltip="'Redo'" class="cursor-pointer">
-            <FontAwesomeIcon  @click="redo" :icon="faRedo" fixed-width />
-          </div>
+          <!-- Undo -->
+          <div class="py-1 px-2 cursor-pointer" v-tooltip="'undo'" @click="undo">
+						<FontAwesomeIcon :icon="faUndo" fixed-width aria-hidden="true" />
+					</div>
+					<div class="py-1 px-2 cursor-pointer" v-tooltip="'redo'" @click="redo">
+						<FontAwesomeIcon :icon="faRedo" fixed-width aria-hidden="true" />
+					</div>
         </div>
 
         <div v-if="compUsersEditThisPage?.length > 1"
@@ -665,7 +633,7 @@ console.log('props',props)
 
         <div class="flex items-center gap-2 text-sm text-gray-700">
           <label v-if="props.webpage.allow_fetch" for="sync-toggle">Connected with aurora</label>
-            <label v-else for="sync-toggle">Disconnected from aurora</label>
+          <label v-else for="sync-toggle">Disconnected from aurora</label>
           <ToggleSwitch id="sync-toggle" v-model="props.webpage.allow_fetch"
             @update:modelValue="(e) => SyncAurora(e)" />
         </div>

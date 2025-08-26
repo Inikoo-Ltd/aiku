@@ -14,6 +14,7 @@ import { getStyles } from "@/Composables/styles"
 
 import { Root as RootWebpage } from "@/types/webpageTypes"
 import "@/../css/Iris/editor.css"
+import { ulid } from "ulid"
 
 defineOptions({ layout: WebPreview })
 
@@ -26,7 +27,6 @@ const props = defineProps<{
 
 const layout: any = inject("layout", {});
 const data = shallowRef<RootWebpage | undefined>(toRaw(props.webpage))
-
 const filterBlock = ref<'all' | 'logged-in' | 'logged-out'>('all')
 const isPreviewMode = ref(false)
 const activeBlock = ref<number | null>(null)
@@ -86,11 +86,13 @@ const handleMessage = (event: MessageEvent) => {
   // ✅ Accept new webpage from iframe message
   if (key === "setWebpage") {
     data.value = value
+    reloadPage()
   }
 }
 
 const reloadPage = () => {
   router.reload({ only: ["webpage"] })
+  console.log(props.webpage)
 }
 
 provide("reloadPage", reloadPage)
