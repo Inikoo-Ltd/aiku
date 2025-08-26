@@ -68,6 +68,7 @@ const updateFormValue = (newValue) => {
         <div class="relative">
             <ListSelector 
                 :modelValue="value" 
+                @update:modelValue="(e)=>updateFormValue(e)"
                 :key_quantity="fieldData.key_quantity"
                 :withQuantity="fieldData.withQuantity || false" :route-fetch="fieldData.routeFetch" 
                 class="mt-4" 
