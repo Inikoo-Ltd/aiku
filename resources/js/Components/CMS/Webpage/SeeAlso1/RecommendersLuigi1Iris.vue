@@ -69,17 +69,10 @@ const fetchRecommenders = async () => {
         }
         console.log('Response axios:', response.data)
         listProducts.value = response.data[0].hits
-        console.log('cvvcxvcx', listProducts.value)
     } catch (error: any) {
-        console.log('eeeeeeeeee', error)
-        notify({
-            title: trans("Something went wrong"),
-            text: error.message || trans("Please try again or contact administrator"),
-            type: 'error'
-        })
+        console.error('Error on fetching recommendations:', error)
     }
     isLoadingFetch.value = false
-
 }
 
 onMounted(()=> {

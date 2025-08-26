@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, inject, onMounted, ref, watch } from 'vue'
 import draggable from 'vuedraggable'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -10,12 +10,28 @@ import { set } from 'lodash-es'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { trans } from 'laravel-vue-i18n'
 import Image from '@/Components/Image.vue'
+import { notify } from '@kyvg/vue3-notification'
 
 interface Product {
     id: number
     code: string
     name: string
     slug: string
+}
+
+interface LuigiProductHits {
+    attributes: {
+        image_link: string
+        price: string
+        formatted_price: string
+        department: string[]
+        category: string[]
+        product_code: string[]
+        stock_qty: string[]
+        title: string
+        web_url: string[]
+    }
+    url: string
 }
 
 // Props
@@ -49,6 +65,7 @@ const props = defineProps<{
     }
 }>()
 
+const webpage_luigi_tracker_id = inject('webpage_luigi_tracker_id', null)
 
 const emits = defineEmits<{
     (e: 'update:modelValue', value: keyof typeof props.modelValue): void
@@ -124,7 +141,11 @@ const localType = computed({
     if (newType === 'other-family') {
         fetchProductFromFamily(normalizedModelValue.value.other_family?.id)
     }
-    
+
+    if (is_luigi_value(newType)) {
+        fetchRecommenders(newType)
+    }
+
     emits('update:modelValue', {
         type: newType,
         products: normalizedModelValue.value.products ?? [],
@@ -179,6 +200,55 @@ function removeProduct(index: number) {
   localProducts.value = updated
 }
 
+// Section: Luigi fetch
+const listProducts = ref<LuigiProductHits[] | null>()
+const isLoadingFetchLuigi = ref(false)
+const isLuigiHaveError = ref(false)
+const fetchRecommenders = async (recommendation_type: string) => {
+    isLuigiHaveError.value = false
+    try {
+        isLoadingFetchLuigi.value = true
+        const response = await axios.post(
+            `https://live.luigisbox.com/v1/recommend?tracker_id=${webpage_luigi_tracker_id}`,
+            [
+                {
+                    "blacklisted_item_ids":  [],
+                    "item_ids": [],
+                    "recommendation_type": recommendation_type || "test_reco",
+                    "recommender_client_identifier": recommendation_type || "test_reco",
+                    "size": 4,
+                    // "user_id": "1234",
+                    "recommendation_context":  {},
+                    // "hit_fields": ["url", "title"]
+                }
+            ],
+            {
+                headers: {
+                    'Content-Type': 'application/json;charset=utf-8'
+                }
+            }
+        )
+        if (response.status !== 200) {
+            console.error('Error fetching recommenders:', response.statusText)
+        }
+        console.log('Response axios:', response.data)
+        listProducts.value = response.data[0].hits
+        console.log('list products xxxxx:', listProducts.value)
+    } catch (error: any) {
+        isLuigiHaveError.value = true
+        console.error('Error on fetching recommendations:', error)
+        notify({
+            title: trans("Something went wrong"),
+            text: trans("Recommendations might not be active yet. Please contact the support team."),
+            type: 'error'
+        })
+    }
+    isLoadingFetchLuigi.value = false
+}
+const is_luigi_value = (value: string) => {
+    return ['luigi-trends', 'luigi-recently_ordered', 'luigi-last_seen', 'luigi-item_detail_alternatives'].includes(value)
+}
+
 </script>
 
 <template>
@@ -200,10 +270,10 @@ function removeProduct(index: number) {
                     <FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
                 </div>
             </option>
-            <option value="luigi-top-trending">Luigi: Top Trending</option>
-            <option value="luigi-last-ordered">Luigi: Last Ordered</option>
-            <option value="luigi-recently-viewed">Luigi: Recently Viewed</option>
-            <option value="luigi-you-might-also-like">Luigi: You might also like</option>
+            <option value="luigi-trends">Luigi: Top Trending</option>
+            <option value="luigi-recently_ordered">Luigi: Customer Recently Ordered</option>
+            <option value="luigi-last_seen">Luigi: Recently Viewed</option>
+            <option value="luigi-item_detail_alternatives">Luigi: You might also like</option>
         </select>
     </div>
 
@@ -267,31 +337,46 @@ function removeProduct(index: number) {
 
     <!-- Section: Best Seller Read-Only List -->
     <div v-else-if="localType === 'best-seller'" class="space-y-4">
-        <div
-            v-for="(product, index) in normalizedModelValue.top_sellers"
-            :key="product.id || index"
-            class="border border-gray-300 rounded px-2 py-4 bg-gray-50 shadow-sm relative grid grid-cols-5 gap-x-2"
-        >
-            <div class=" h-fit shadow">
-                <Image
-                    :src="product.web_images?.main?.thumbnail"
-                    xclass=" object-cover rounded"
-                    imageCover
-                    :alt="product.name"
-                />
+        <div class="relative">
+            <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                <div class="w-full border-t border-gray-300" />
             </div>
-            <div class="col-span-4">
-                <!-- Static Icon -->
-                <div class="text-gray-400 text-sm xmb-2 flex items-center gap-1">
-                    <!-- <FontAwesomeIcon :icon="faGripVertical" /> -->
-                    <span>Best seller product {{ index + 1 }} </span>
+            <div class="relative flex justify-center">
+                <span class="bg-white px-2 text-sm text-gray-500">{{ trans("Products example") }}</span>
+            </div>
+        </div>
+
+        <template v-if="normalizedModelValue.top_sellers?.length">
+            <div
+                v-for="(product, index) in normalizedModelValue.top_sellers"
+                :key="product.id || index"
+                class="border border-gray-300 rounded px-2 py-4 bg-gray-50 shadow-sm relative grid grid-cols-5 gap-x-2"
+            >
+                <div class=" h-fit shadow">
+                    <Image
+                        :src="product.web_images?.main?.thumbnail"
+                        xclass=" object-cover rounded"
+                        imageCover
+                        :alt="product.name"
+                    />
                 </div>
-                <!-- Read-only Product Info -->
-                <div class="text-gray-700">
-                    <div class="font-semibold text-base">{{ product.name }}</div>
-                    <div class="text-xs text-gray-500">Code: {{ product.code }}</div>
+                <div class="col-span-4">
+                    <!-- Static Icon -->
+                    <div class="text-gray-400 text-sm xmb-2 flex items-center gap-1">
+                        <!-- <FontAwesomeIcon :icon="faGripVertical" /> -->
+                        <span>Best seller product {{ index + 1 }} </span>
+                    </div>
+                    <!-- Read-only Product Info -->
+                    <div class="text-gray-700">
+                        <div class="font-semibold text-base">{{ product.name }}</div>
+                        <div class="text-xs text-gray-500">Code: {{ product.code }}</div>
+                    </div>
                 </div>
             </div>
+        </template>
+
+        <div v-else class="text-gray-500 text-sm text-center py-2 bg-gray-200">
+            {{ trans("No products found for best seller.") }}
         </div>
     </div>
 
@@ -422,10 +507,61 @@ function removeProduct(index: number) {
         </div>
     </div>
 
-    <div v-else-if="localType === 'luigi-top-trending'" class="space-y-4">
-        <div class="bg-gray-100 p-4 rounded">
-            <div class="font-semibold">Products Top Trending will automatically appear</div>
-            <div class="text-sm text-gray-400 italic">Preview not available</div>
+    <div v-else-if="is_luigi_value(localType)" class="space-y-4">
+        <div class="relative space-y-2 min-h-12">
+            <div v-if="isLoadingFetchLuigi" class="flex items-center justify-center absolute bg-black/40 text-white text-3xl top-0 inset-0">
+                <LoadingIcon />
+            </div>
+            
+            <!-- <div v-else-if="isLuigiHaveError" class="flex items-center justify-center text-red-500 xtext-3xl">
+                There is an issue retrieve products list from Luigi. Make sure Recommendations was setup in Luigi
+            </div> -->
+
+            <template v-else>
+                <div class="relative">
+                    <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                        <div class="w-full border-t border-gray-300" />
+                    </div>
+                    <div class="relative flex justify-center">
+                        <span class="bg-white px-2 text-sm text-gray-500">{{ trans("Products example") }}</span>
+                    </div>
+                </div>
+                
+                <template v-if="listProducts?.length">
+                    <div
+                        v-for="(product, index) in listProducts"
+                        :key="`${localType}-${product.url}`"
+                        class="border border-gray-300 rounded px-2 py-4 bg-gray-50 shadow-sm relative grid grid-cols-5 gap-x-2"
+                    >
+                        <div class=" h-fit shadow aspect-square rounded border border-black/5 overflow-hidden">
+                            <img
+                                :src="product.attributes.image_url"
+                                :alt="`Images of ${product.attributes.title}`"
+                                class="w-full h-full object-contain"
+                            />
+                        </div>
+                        <div class="col-span-4">
+                            <!-- Static Icon -->
+                            <!-- <div class="text-gray-400 text-sm xmb-2 flex items-center gap-1">
+                                <span>Product {{ index + 1 }} from {{ normalizedModelValue.other_family?.name }} </span>
+                            </div> -->
+                            <!-- Read-only Product Info -->
+                            <div class="text-gray-700">
+                                <div class="font-semibold">{{ product.attributes.title }}</div>
+                                <div class="text-xs text-gray-500">Code: {{ product.attributes.product_code?.[0] }}</div>
+                                <div class="text-xs text-gray-500">Price: {{ product.attributes.formatted_price }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <div v-else-if="!isLoadingFetchLuigi" class="text-gray-500 text-sm text-center py-3 bg-gray-200">
+                    {{ trans("No recommendations found.") }}
+                </div>
+            </template>
+
+
+            
         </div>
     </div>
   </div>

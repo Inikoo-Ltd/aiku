@@ -76,8 +76,20 @@ const compSwiperOptions = computed(() => {
       </div>
     </div>
 
-    <div v-if="fieldValue.settings.products_data.type === 'luigi-top-trending'">
-      <RecommendersLuigi1Iris xrecommendation_type="trends" />
+    <div v-if="fieldValue.settings.products_data.type === 'luigi-trends'">
+        <RecommendersLuigi1Iris recommendation_type="trends" />
+    </div>
+
+    <div v-else-if="fieldValue.settings.products_data.type === 'luigi-recently_ordered'">
+        <RecommendersLuigi1Iris recommendation_type="recently_ordered" />
+    </div>
+
+    <div v-else-if="fieldValue.settings.products_data.type === 'luigi-last_seen'">
+        <RecommendersLuigi1Iris recommendation_type="last_seen" />
+    </div>
+
+    <div v-else-if="fieldValue.settings.products_data.type === 'luigi-item_detail_alternatives'">
+        <RecommendersLuigi1Iris recommendation_type="item_detail_alternatives" />
     </div>
 
     <!-- Carousel with custom navigation -->
