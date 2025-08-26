@@ -11,10 +11,12 @@ namespace App\Actions\Masters\MasterAsset;
 use App\Actions\GrpAction;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
+use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreMasterAssets extends GrpAction
@@ -27,22 +29,42 @@ class StoreMasterAssets extends GrpAction
      */
     public function handle(MasterProductCategory $parent, array $modelData)
     {
-        dd('xx');
-        foreach (Arr::get($modelData, 'trade_units', []) as $tradeUnitId) {
-            $tradeUnit = TradeUnit::find($tradeUnitId);
-            $data = [
-                // TODO
-            ];
-            StoreMasterAsset::make()->action($parent, $data);
-        }
+        DB::transaction(function () use ($parent, $modelData) {
+            foreach (Arr::get($modelData, 'items', []) as $item) {
+                $tradeUnit = TradeUnit::find(Arr::get($item, 'trade_unit_id'));
+                // dd(Arr::get($item, 'units', 0));
+                // dd($tradeUnit->unit);
+                $data = [
+                    'code' => $tradeUnit->code,
+                    'name' => $tradeUnit->name,
+                    'unit' => $tradeUnit->unit,
+                    'units' => Arr::get($item, 'units', 0),
+                    'description' => $tradeUnit->description,
+                    'type' => MasterAssetTypeEnum::PRODUCT
+                ];
+                $masterAsset = StoreMasterAsset::run($parent, $data);
+                $masterAsset->tradeUnits()->attach($tradeUnit->id);
+                $masterAsset->refresh();
+            }
+        });
     }
 
     public function rules(): array
     {
         $rules = [
-            'trade_units'                     => [
+            'items'                     => [
                 'required',
                 'array'
+            ],
+            'items.*.trade_unit_id'     => [
+                'required',
+                'integer',
+                'exists:trade_units,id'
+            ],
+            'items.*.units'             => [
+                'required',
+                'numeric',
+                'min:1'
             ],
         ];
 

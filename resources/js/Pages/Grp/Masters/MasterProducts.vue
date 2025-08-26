@@ -48,7 +48,7 @@ const save = (products) => {
 
   router.post(
     route('grp.models.master_family.store-assets', { masterFamily: props.familyId }),
-    { trade_units: payload }
+    { items: payload }
   )
 }
 
