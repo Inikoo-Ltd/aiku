@@ -47,7 +47,7 @@ const getNestedValue = (obj: Object, keys: Array) => {
 const value = ref(setFormValue(props.form, props.fieldName));
 
 watch(value, (newValue) => {
-    // Update the form field value when the value ref changes
+    console.log('dfdfdf')
     updateFormValue(newValue);
     props.form.errors[props.fieldName] = ''
 });
