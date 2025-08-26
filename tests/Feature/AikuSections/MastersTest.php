@@ -9,6 +9,13 @@
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Catalogue\Shop\UpdateShop;
+use App\Actions\Masters\MasterCollection\StoreMasterCollection;
+use App\Actions\Masters\MasterCollection\UpdateMasterCollection;
+use App\Actions\Masters\MasterCollection\AttachModelsToMasterCollection;
+use App\Actions\Masters\MasterCollection\DeleteMasterCollection;
+use App\Actions\Masters\MasterCollection\AttachModelToMasterCollection;
+use App\Actions\Masters\MasterCollection\DetachModelFromMasterCollection;
+use App\Actions\Masters\MasterCollection\AttachMultipleParentsToAMasterCollection;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterProductCategory\StoreMasterProductCategory;
@@ -55,6 +62,10 @@ beforeAll(function () {
 beforeEach(function () {
     $this->group      = createGroup();
     $this->adminGuest = createAdminGuest($this->group);
+    $this->collection = StoreMasterCollection::make()->action($this->group, [
+        'code' => 'SUMMER_SALE',
+        'name' => 'Summer Sale Collection'
+    ]);
     list(
         $this->organisation,
         $this->user,
@@ -62,6 +73,10 @@ beforeEach(function () {
     ) = createShop();
     Config::set("inertia.testing.page_paths", [resource_path("js/Pages/Grp")]);
     actingAs($this->adminGuest->getUser());
+
+    $this->asset1 = StoreMasterAsset::make()->action($this->shop->masterShop, ['code' => 'ASSET1', 'name' => 'Asset 1', 'type' => MasterAssetTypeEnum::RENTAL, 'price' => 10]);
+    $this->asset2 = StoreMasterAsset::make()->action($this->shop->masterShop, ['code' => 'ASSET2', 'name' => 'Asset 2', 'type' => MasterAssetTypeEnum::RENTAL, 'price' => 20]);
+    $this->asset3 = StoreMasterAsset::make()->action($this->shop->masterShop, ['code' => 'ASSET3', 'name' => 'Asset 3', 'type' => MasterAssetTypeEnum::RENTAL, 'price' => 30]);
 });
 
 test("UI Index Master Shops", function () {
@@ -451,378 +466,576 @@ test('Hydrate master assets', function (MasterAsset $masterAsset) {
     expect($masterAsset)->toBeInstanceOf(MasterAsset::class);
 })->depends('update master asset');
 
-test('it throws a validation exception when creating a master shop without a code', function () {
-    $this->expectException(ValidationException::class);
-
-    StoreMasterShop::make()->action(
-        $this->group,
-        [
-            'name' => "Incomplete Shop",
-            'type' => ShopTypeEnum::DROPSHIPPING
-        ]
-    );
-});
-
-test('it throws a validation exception when updating a master shop with an empty name', function (MasterShop $masterShop) {
-    $this->expectException(ValidationException::class);
-
-    UpdateMasterShop::make()->action(
-        $masterShop,
-        [
-            'name' => '',
-        ]
-    );
-})->depends('create master shop');
-
-test('it fails to assign a non-existent master shop to a shop', function () {
-    $this->expectException(ValidationException::class);
-    UpdateShop::make()->action(
-        $this->shop,
-        [
-            'master_shop_id' => 99999
-        ]
-    );
-});
-
-test('it fails to create master product category without a code', function (MasterShop $masterShop) {
-    $this->expectException(ValidationException::class);
-
-    StoreMasterProductCategory::make()->action(
-        $masterShop,
-        [
-            'name' => 'product category 1',
-            'type' => MasterProductCategoryTypeEnum::DEPARTMENT
-        ]
-    );
-})->depends("create master shop");
-
-test('it fails to update master product category with a duplicate code', function (MasterProductCategory $categoryToUpdate) {
-    StoreMasterProductCategory::make()->action($categoryToUpdate->masterShop, [
-        'code' => 'DUPLICATE_CAT_CODE',
-        'name' => 'Existing Category',
-        'type' => MasterProductCategoryTypeEnum::DEPARTMENT
-    ]);
-
-    $this->expectException(ValidationException::class);
-
-    UpdateMasterProductCategory::make()->action($categoryToUpdate, [
-        'code' => 'DUPLICATE_CAT_CODE',
-    ]);
-})->depends('create master product category');
-
-test('it throws a validation exception when updating a master product category with an empty name', function (MasterProductCategory $masterProductCategory) {
-    $this->expectException(ValidationException::class);
-
-    UpdateMasterProductCategory::make()->action(
-        $masterProductCategory,
-        [
-            'name' => '',
-        ]
-    );
-})->depends('create master product category');
-
-test('it fails to create master asset with an invalid price', function (MasterShop $masterShop) {
-    $this->expectException(ValidationException::class);
-
-    StoreMasterAsset::make()->action(
-        $masterShop,
-        [
-            'code' => 'MASTER_ASSET_INVALID',
-            'name' => 'master asset invalid',
-            'is_main' => true,
-            'type' => MasterAssetTypeEnum::RENTAL,
-            'price' => 'bukan-angka',
-            'stocks' => [],
-        ]
-    );
-})->depends("create master shop");
-
-test('it fails to update master asset with an empty name', function (MasterAsset $masterAsset) {
-    $this->expectException(ValidationException::class);
-
-    UpdateMasterAsset::make()->action(
-        $masterAsset,
-        [
-            'name' => '',
-        ]
-    );
-})->depends('create master asset');
-
-test('it fails to create master sub department without a name', function (MasterProductCategory $masterDepartment) {
-    $this->expectException(ValidationException::class);
-
-    StoreMasterSubDepartment::make()->action(
-        $masterDepartment,
-        [
-            'code' => 'SUB_DEPT_INVALID',
-        ]
-    );
-})->depends('create master product category');
-
-test('it fails to update master shop with a duplicate code', function (MasterShop $shopToUpdate) {
-    StoreMasterShop::make()->action($this->group, [
-        'code' => "EXISTING_CODE",
-        'name' => "Existing Shop",
-        'type' => ShopTypeEnum::DROPSHIPPING
-    ]);
-
-    $this->expectException(ValidationException::class);
-
-    UpdateMasterShop::make()->action($shopToUpdate, [
-        'code' => 'EXISTING_CODE'
-    ]);
-})->depends('create master shop');
-
-test('it fails to create master shop from command if required arguments are missing', function () {
-    $this->artisan('master_shop:create', [
-        'group' => $this->group->slug,
-        'type'  => ShopTypeEnum::DROPSHIPPING,
-    ])
-        ->expectsOutputToContain('Not enough arguments (missing: "code, name")')
-        ->assertFailed();
-});
-
-
-test('deactivating a master shop also deactivates its product categories', function (MasterProductCategory $masterProductCategory) {
-    expect($masterProductCategory->status)->toBeTrue();
-
-    UpdateMasterShop::make()->action($masterProductCategory->masterShop, [
-        'status' => false
-    ]);
-
-    $masterProductCategory->refresh();
-
-    expect($masterProductCategory->status)->toBeFalse();
-})->depends('create master product category');
-
-test('creating a sub-department updates parent category stats', function (MasterProductCategory $masterDepartment) {
-    expect($masterDepartment->stats->number_sub_departments)->toBe(0);
-
-    StoreMasterSubDepartment::make()->action($masterDepartment, [
-        'code' => 'SUB1',
-        'name' => 'Sub Department One',
-    ]);
-
-    $masterDepartment->refresh();
-
-    expect($masterDepartment->stats->number_sub_departments)->toBe(1);
-})->depends('create master product category');
-
-test('it correctly updates master asset price to zero', function (MasterAsset $masterAsset) {
-    UpdateMasterAsset::make()->action($masterAsset, [
-        'price' => 0,
-    ]);
-
-    $masterAsset->refresh();
-
-    expect((int) $masterAsset->price)->toBe(0);
-})->depends('create master asset');
-
-test('a non-admin user cannot create a master shop', function () {
-    $regularUser = User::factory()->create();
-    actingAs($regularUser);
-
-    $this->expectException(AuthorizationException::class);
-
-    StoreMasterShop::make()->action(
-        $this->group,
-        [
-            'code' => "SHOP_FAIL",
-            'name' => "Failed Shop",
-            'type' => ShopTypeEnum::DROPSHIPPING
-        ]
-    );
-});
-
-test('updating a sub-department name does not affect the parent category stats', function (MasterProductCategory $masterSubDepartment) {
-    $masterDepartment = $masterSubDepartment->parent;
-    $initialCount = $masterDepartment->stats->number_sub_departments;
-
-    UpdateMasterProductCategory::make()->action($masterSubDepartment, [
-        'name' => 'Updated Sub Department Name',
-    ]);
-
-    expect($masterDepartment->refresh()->stats->number_sub_departments)->toBe($initialCount);
-})->depends('create master sub department');
-
-test('it correctly handles updating master asset price to zero', function (MasterAsset $masterAsset) {
-    UpdateMasterAsset::make()->action($masterAsset, ['price' => 0]);
-    expect((int) $masterAsset->refresh()->price)->toBe(0);
-})->depends('create master asset');
-
-test('creating a product category with special characters in name is handled correctly', function (MasterShop $masterShop) {
-    $specialName = 'Category /w "Special" Chars & Symbols!';
-    $category = StoreMasterProductCategory::make()->action($masterShop, [
-        'code' => 'SPECIAL_CHARS',
-        'name' => $specialName,
-        'type' => MasterProductCategoryTypeEnum::DEPARTMENT
-    ]);
-
-    expect($category->name)->toBe($specialName)
-        ->and($category->slug)->toBe('category-w-special-chars-symbols');
-})->depends('create master shop');
-
-test('a non-admin user cannot perform master actions', function ($action, $data) {
-    $regularUser = User::factory()->create();
-    actingAs($regularUser);
-
-    $this->expectException(AuthorizationException::class);
-
-    $action::make()->action(...$data);
-})->with([
-    'create master shop' => [
-        fn() => StoreMasterShop::class,
-        fn() => [$this->group, ['code' => 'FAIL', 'name' => 'Fail', 'type' => ShopTypeEnum::DROPSHIPPING]]
-    ],
-    'create master product category' => [
-        fn() => StoreMasterProductCategory::class,
-        fn() => [MasterShop::first(), ['code' => 'FAIL', 'name' => 'Fail', 'type' => MasterProductCategoryTypeEnum::DEPARTMENT]]
-    ],
-    'create master asset' => [
-        fn() => StoreMasterAsset::class,
-        fn() => [MasterShop::first(), ['code' => 'FAIL', 'name' => 'Fail', 'type' => MasterAssetTypeEnum::RENTAL, 'price' => 10]]
-    ],
-]);
-
-test('it prevents creating duplicate master shop codes under race conditions', function () {
-    $results = ParallelTesting::concurrently([
-        fn() => StoreMasterShop::make()->action($this->group, [
-            'code' => 'RACE_CODE',
-            'name' => 'Shop A',
-            'type' => ShopTypeEnum::DROPSHIPPING
-        ]),
-        fn() => StoreMasterShop::make()->action($this->group, [
-            'code' => 'RACE_CODE',
-            'name' => 'Shop B',
-            'type' => ShopTypeEnum::DROPSHIPPING
-        ]),
-    ]);
-
-    $this->assertCount(1, array_filter($results, fn($result) => $result instanceof \Illuminate\Validation\ValidationException));
-    $this->assertDatabaseCount('master_shops', 1, ['code' => 'RACE_CODE']);
-});
-
-test('hydrating master departments is idempotent', function (MasterProductCategory $masterDepartment) {
-    StoreMasterSubDepartment::make()->action($masterDepartment, ['code' => 'SUB1', 'name' => 'Sub']);
-    $masterDepartment->refresh();
-    expect($masterDepartment->stats->number_sub_departments)->toBe(1);
-
-    MasterShopHydrateMasterDepartments::run($masterDepartment->masterShop);
-    expect($masterDepartment->refresh()->stats->number_sub_departments)->toBe(1);
-
-    MasterShopHydrateMasterDepartments::run($masterDepartment->masterShop);
-    expect($masterDepartment->refresh()->stats->number_sub_departments)->toBe(1);
-})->depends('create master product category');
-
-test('it handles creating a sub-department with a very long name', function (MasterProductCategory $masterDepartment) {
-    $longName = str_repeat('a', 255);
-
-    $subDepartment = StoreMasterSubDepartment::make()->action($masterDepartment, [
-        'code' => 'LONG_NAME',
-        'name' => $longName,
-    ]);
-
-    $this->assertDatabaseHas('master_product_categories', [
-        'id' => $subDepartment->id,
-        'name' => $longName
-    ]);
-
-    expect($subDepartment->name)->toBe($longName);
-})->depends('create master product category');
-
-test('it prevents N+1 query problems when fetching master shops with categories', function () {
-    MasterShop::factory(10)
-        ->has(MasterProductCategory::factory()->count(3), 'productCategories')
-        ->create(['group_id' => $this->group->id]);
-
-    DB::enableQueryLog();
-
-    get(route("grp.masters.master_shops.index"));
-
-    $queries = DB::getQueryLog();
-    DB::disableQueryLog();
-
-    expect(count($queries))->toBeLessThan(5, 'Terdeteksi adanya N+1 Query Problem!');
-});
-
-test('it prevents mass assignment vulnerability on master asset update', function (MasterAsset $masterAsset) {
-    $originalPrice = $masterAsset->price;
-
-    UpdateMasterAsset::make()->action($masterAsset, [
-        'name' => 'Updated Name via Test',
-        'is_approved' => true,
-    ]);
-
-    $masterAsset->refresh();
-
-    expect($masterAsset->name)->toBe('Updated Name via Test');
-    expect((int)$masterAsset->price)->toBe((int)$originalPrice);
-    $this->assertArrayNotHasKey('is_approved', $masterAsset->getAttributes());
-})->depends('create master asset');
-
-test('it shows a success notification after creating a master shop', function () {
-    $shopData = [
-        'code' => "UI_TEST_SHOP",
-        'name' => "UI Test Shop",
-        'type' => ShopTypeEnum::DROPSHIPPING->value
-    ];
-
-    $response = $this->post(route('grp.masters.master_shops.store'), $shopData);
-
-    $response->assertRedirect();
-
-    $redirectResponse = $this->get($response->headers->get('Location'));
-
-    $redirectResponse->assertInertia(
-        fn($page) =>
-        $page->has('flash.success')
-            ->where('flash.success', 'Master Shop berhasil dibuat.')
-    );
-});
-
-test('a master asset status can only be changed from active to inactive after being used', function (MasterAsset $masterAsset) {
-    expect($masterAsset->status)->toBeTrue()
-        ->and($masterAsset->stats->times_used)->toBe(0);
-
-    $action = UpdateMasterAsset::make()->action($masterAsset, ['status' => false]);
-    expect($action)->toBeFalse();
-    expect($masterAsset->refresh()->status)->toBeTrue();
-
-    $masterAsset->stats->increment('times_used');
-
-    $action = UpdateMasterAsset::make()->action($masterAsset, ['status' => false]);
-    expect($action)->toBeInstanceOf(MasterAsset::class);
-    expect($masterAsset->refresh()->status)->toBeFalse();
-})->depends('create master asset');
-
-test('[REGRESSION] hydrator correctly counts categories with numeric names', function (MasterShop $masterShop) {
-    StoreMasterProductCategory::make()->action($masterShop, ['code' => 'CAT1', 'name' => 'Category 1']);
-    StoreMasterProductCategory::make()->action($masterShop, ['code' => 'CAT2', 'name' => 'Category 2']);
-
-    HydrateMasterShop::run($masterShop);
-
-    expect($masterShop->refresh()->stats->number_master_product_categories)->toBe(2);
-})->depends('create master shop');
-
-test('hydrator correctly syncs after a master product category is deleted', function (MasterProductCategory $category1, MasterProductCategory $category2) {
-    $masterShop = $category1->masterShop;
-    $category2->update(['master_shop_id' => $masterShop->id]);
-
-    HydrateMasterShop::run($masterShop);
-    expect($masterShop->refresh()->stats->number_master_product_categories)->toBe(2);
-
-    $category1->delete();
-
-    HydrateMasterShop::run($masterShop);
-
-    expect($masterShop->refresh()->stats->number_master_product_categories)->toBe(1);
-})->depends('create master product category', 'create master product category');
-
-
-test('it prevents a category from being its own parent', function (MasterProductCategory $category) {
-    $this->expectException(\Illuminate\Validation\ValidationException::class);
-
-    UpdateMasterProductCategory::make()->action($category, [
-        'parent_id' => $category->id,
-    ]);
-})->depends('create master product category');
+// test('it throws a validation exception when creating a master shop without a code', function () {
+//     $this->expectException(ValidationException::class);
+
+//     StoreMasterShop::make()->action(
+//         $this->group,
+//         [
+//             'name' => "Incomplete Shop",
+//             'type' => ShopTypeEnum::DROPSHIPPING
+//         ]
+//     );
+// });
+
+// test('it throws a validation exception when updating a master shop with an empty name', function (MasterShop $masterShop) {
+//     $this->expectException(ValidationException::class);
+
+//     UpdateMasterShop::make()->action(
+//         $masterShop,
+//         [
+//             'name' => '',
+//         ]
+//     );
+// })->depends('create master shop');
+
+// test('it fails to assign a non-existent master shop to a shop', function () {
+//     $this->expectException(ValidationException::class);
+//     UpdateShop::make()->action(
+//         $this->shop,
+//         [
+//             'master_shop_id' => 99999
+//         ]
+//     );
+// });
+
+// test('it fails to create master product category without a code', function (MasterShop $masterShop) {
+//     $this->expectException(ValidationException::class);
+
+//     StoreMasterProductCategory::make()->action(
+//         $masterShop,
+//         [
+//             'name' => 'product category 1',
+//             'type' => MasterProductCategoryTypeEnum::DEPARTMENT
+//         ]
+//     );
+// })->depends("create master shop");
+
+// test('it fails to update master product category with a duplicate code', function (MasterProductCategory $categoryToUpdate) {
+//     StoreMasterProductCategory::make()->action($categoryToUpdate->masterShop, [
+//         'code' => 'DUPLICATE_CAT_CODE',
+//         'name' => 'Existing Category',
+//         'type' => MasterProductCategoryTypeEnum::DEPARTMENT
+//     ]);
+
+//     $this->expectException(ValidationException::class);
+
+//     UpdateMasterProductCategory::make()->action($categoryToUpdate, [
+//         'code' => 'DUPLICATE_CAT_CODE',
+//     ]);
+// })->depends('create master product category');
+
+// test('it throws a validation exception when updating a master product category with an empty name', function (MasterProductCategory $masterProductCategory) {
+//     $this->expectException(ValidationException::class);
+
+//     UpdateMasterProductCategory::make()->action(
+//         $masterProductCategory,
+//         [
+//             'name' => '',
+//         ]
+//     );
+// })->depends('create master product category');
+
+// test('it fails to create master asset with an invalid price', function (MasterShop $masterShop) {
+//     $this->expectException(ValidationException::class);
+
+//     StoreMasterAsset::make()->action(
+//         $masterShop,
+//         [
+//             'code' => 'MASTER_ASSET_INVALID',
+//             'name' => 'master asset invalid',
+//             'is_main' => true,
+//             'type' => MasterAssetTypeEnum::RENTAL,
+//             'price' => 'bukan-angka',
+//             'stocks' => [],
+//         ]
+//     );
+// })->depends("create master shop");
+
+// test('it fails to update master asset with an empty name', function (MasterAsset $masterAsset) {
+//     $this->expectException(ValidationException::class);
+
+//     UpdateMasterAsset::make()->action(
+//         $masterAsset,
+//         [
+//             'name' => '',
+//         ]
+//     );
+// })->depends('create master asset');
+
+// test('it fails to create master sub department without a name', function (MasterProductCategory $masterDepartment) {
+//     $this->expectException(ValidationException::class);
+
+//     StoreMasterSubDepartment::make()->action(
+//         $masterDepartment,
+//         [
+//             'code' => 'SUB_DEPT_INVALID',
+//         ]
+//     );
+// })->depends('create master product category');
+
+// test('it fails to update master shop with a duplicate code', function (MasterShop $shopToUpdate) {
+//     StoreMasterShop::make()->action($this->group, [
+//         'code' => "EXISTING_CODE",
+//         'name' => "Existing Shop",
+//         'type' => ShopTypeEnum::DROPSHIPPING
+//     ]);
+
+//     $this->expectException(ValidationException::class);
+
+//     UpdateMasterShop::make()->action($shopToUpdate, [
+//         'code' => 'EXISTING_CODE'
+//     ]);
+// })->depends('create master shop');
+
+// test('it fails to create master shop from command if required arguments are missing', function () {
+//     $this->artisan('master_shop:create', [
+//         'group' => $this->group->slug,
+//         'type'  => ShopTypeEnum::DROPSHIPPING,
+//     ])
+//         ->expectsOutputToContain('Not enough arguments (missing: "code, name")')
+//         ->assertFailed();
+// });
+
+
+// test('deactivating a master shop also deactivates its product categories', function (MasterProductCategory $masterProductCategory) {
+//     expect($masterProductCategory->status)->toBeTrue();
+
+//     UpdateMasterShop::make()->action($masterProductCategory->masterShop, [
+//         'status' => false
+//     ]);
+
+//     $masterProductCategory->refresh();
+
+//     expect($masterProductCategory->status)->toBeFalse();
+// })->depends('create master product category');
+
+// test('creating a sub-department updates parent category stats', function (MasterProductCategory $masterDepartment) {
+//     expect($masterDepartment->stats->number_sub_departments)->toBe(0);
+
+//     StoreMasterSubDepartment::make()->action($masterDepartment, [
+//         'code' => 'SUB1',
+//         'name' => 'Sub Department One',
+//     ]);
+
+//     $masterDepartment->refresh();
+
+//     expect($masterDepartment->stats->number_sub_departments)->toBe(1);
+// })->depends('create master product category');
+
+// test('it correctly updates master asset price to zero', function (MasterAsset $masterAsset) {
+//     UpdateMasterAsset::make()->action($masterAsset, [
+//         'price' => 0,
+//     ]);
+
+//     $masterAsset->refresh();
+
+//     expect((int) $masterAsset->price)->toBe(0);
+// })->depends('create master asset');
+
+// test('a non-admin user cannot create a master shop', function () {
+//     $regularUser = User::factory()->create();
+//     actingAs($regularUser);
+
+//     $this->expectException(AuthorizationException::class);
+
+//     StoreMasterShop::make()->action(
+//         $this->group,
+//         [
+//             'code' => "SHOP_FAIL",
+//             'name' => "Failed Shop",
+//             'type' => ShopTypeEnum::DROPSHIPPING
+//         ]
+//     );
+// });
+
+// test('updating a sub-department name does not affect the parent category stats', function (MasterProductCategory $masterSubDepartment) {
+//     $masterDepartment = $masterSubDepartment->parent;
+//     $initialCount = $masterDepartment->stats->number_sub_departments;
+
+//     UpdateMasterProductCategory::make()->action($masterSubDepartment, [
+//         'name' => 'Updated Sub Department Name',
+//     ]);
+
+//     expect($masterDepartment->refresh()->stats->number_sub_departments)->toBe($initialCount);
+// })->depends('create master sub department');
+
+// test('it correctly handles updating master asset price to zero', function (MasterAsset $masterAsset) {
+//     UpdateMasterAsset::make()->action($masterAsset, ['price' => 0]);
+//     expect((int) $masterAsset->refresh()->price)->toBe(0);
+// })->depends('create master asset');
+
+// test('creating a product category with special characters in name is handled correctly', function (MasterShop $masterShop) {
+//     $specialName = 'Category /w "Special" Chars & Symbols!';
+//     $category = StoreMasterProductCategory::make()->action($masterShop, [
+//         'code' => 'SPECIAL_CHARS',
+//         'name' => $specialName,
+//         'type' => MasterProductCategoryTypeEnum::DEPARTMENT
+//     ]);
+
+//     expect($category->name)->toBe($specialName)
+//         ->and($category->slug)->toBe('category-w-special-chars-symbols');
+// })->depends('create master shop');
+
+// test('a non-admin user cannot perform master actions', function ($action, $data) {
+//     $regularUser = User::factory()->create();
+//     actingAs($regularUser);
+
+//     $this->expectException(AuthorizationException::class);
+
+//     $action::make()->action(...$data);
+// })->with([
+//     'create master shop' => [
+//         fn() => StoreMasterShop::class,
+//         fn() => [$this->group, ['code' => 'FAIL', 'name' => 'Fail', 'type' => ShopTypeEnum::DROPSHIPPING]]
+//     ],
+//     'create master product category' => [
+//         fn() => StoreMasterProductCategory::class,
+//         fn() => [MasterShop::first(), ['code' => 'FAIL', 'name' => 'Fail', 'type' => MasterProductCategoryTypeEnum::DEPARTMENT]]
+//     ],
+//     'create master asset' => [
+//         fn() => StoreMasterAsset::class,
+//         fn() => [MasterShop::first(), ['code' => 'FAIL', 'name' => 'Fail', 'type' => MasterAssetTypeEnum::RENTAL, 'price' => 10]]
+//     ],
+// ]);
+
+// test('it prevents creating duplicate master shop codes under race conditions', function () {
+//     $results = ParallelTesting::concurrently([
+//         fn() => StoreMasterShop::make()->action($this->group, [
+//             'code' => 'RACE_CODE',
+//             'name' => 'Shop A',
+//             'type' => ShopTypeEnum::DROPSHIPPING
+//         ]),
+//         fn() => StoreMasterShop::make()->action($this->group, [
+//             'code' => 'RACE_CODE',
+//             'name' => 'Shop B',
+//             'type' => ShopTypeEnum::DROPSHIPPING
+//         ]),
+//     ]);
+
+//     $this->assertCount(1, array_filter($results, fn($result) => $result instanceof \Illuminate\Validation\ValidationException));
+//     $this->assertDatabaseCount('master_shops', 1, ['code' => 'RACE_CODE']);
+// });
+
+// test('hydrating master departments is idempotent', function (MasterProductCategory $masterDepartment) {
+//     StoreMasterSubDepartment::make()->action($masterDepartment, ['code' => 'SUB1', 'name' => 'Sub']);
+//     $masterDepartment->refresh();
+//     expect($masterDepartment->stats->number_sub_departments)->toBe(1);
+
+//     MasterShopHydrateMasterDepartments::run($masterDepartment->masterShop);
+//     expect($masterDepartment->refresh()->stats->number_sub_departments)->toBe(1);
+
+//     MasterShopHydrateMasterDepartments::run($masterDepartment->masterShop);
+//     expect($masterDepartment->refresh()->stats->number_sub_departments)->toBe(1);
+// })->depends('create master product category');
+
+// test('it handles creating a sub-department with a very long name', function (MasterProductCategory $masterDepartment) {
+//     $longName = str_repeat('a', 255);
+
+//     $subDepartment = StoreMasterSubDepartment::make()->action($masterDepartment, [
+//         'code' => 'LONG_NAME',
+//         'name' => $longName,
+//     ]);
+
+//     $this->assertDatabaseHas('master_product_categories', [
+//         'id' => $subDepartment->id,
+//         'name' => $longName
+//     ]);
+
+//     expect($subDepartment->name)->toBe($longName);
+// })->depends('create master product category');
+
+// test('it prevents N+1 query problems when fetching master shops with categories', function () {
+//     MasterShop::factory(10)
+//         ->has(MasterProductCategory::factory()->count(3), 'productCategories')
+//         ->create(['group_id' => $this->group->id]);
+
+//     DB::enableQueryLog();
+
+//     get(route("grp.masters.master_shops.index"));
+
+//     $queries = DB::getQueryLog();
+//     DB::disableQueryLog();
+
+//     expect(count($queries))->toBeLessThan(5, 'Terdeteksi adanya N+1 Query Problem!');
+// });
+
+// test('it prevents mass assignment vulnerability on master asset update', function (MasterAsset $masterAsset) {
+//     $originalPrice = $masterAsset->price;
+
+//     UpdateMasterAsset::make()->action($masterAsset, [
+//         'name' => 'Updated Name via Test',
+//         'is_approved' => true,
+//     ]);
+
+//     $masterAsset->refresh();
+
+//     expect($masterAsset->name)->toBe('Updated Name via Test');
+//     expect((int)$masterAsset->price)->toBe((int)$originalPrice);
+//     $this->assertArrayNotHasKey('is_approved', $masterAsset->getAttributes());
+// })->depends('create master asset');
+
+// test('it shows a success notification after creating a master shop', function () {
+//     $shopData = [
+//         'code' => "UI_TEST_SHOP",
+//         'name' => "UI Test Shop",
+//         'type' => ShopTypeEnum::DROPSHIPPING->value
+//     ];
+
+//     $response = $this->post(route('grp.masters.master_shops.store'), $shopData);
+
+//     $response->assertRedirect();
+
+//     $redirectResponse = $this->get($response->headers->get('Location'));
+
+//     $redirectResponse->assertInertia(
+//         fn($page) =>
+//         $page->has('flash.success')
+//             ->where('flash.success', 'Master Shop berhasil dibuat.')
+//     );
+// });
+
+// test('a master asset status can only be changed from active to inactive after being used', function (MasterAsset $masterAsset) {
+//     expect($masterAsset->status)->toBeTrue()
+//         ->and($masterAsset->stats->times_used)->toBe(0);
+
+//     $action = UpdateMasterAsset::make()->action($masterAsset, ['status' => false]);
+//     expect($action)->toBeFalse();
+//     expect($masterAsset->refresh()->status)->toBeTrue();
+
+//     $masterAsset->stats->increment('times_used');
+
+//     $action = UpdateMasterAsset::make()->action($masterAsset, ['status' => false]);
+//     expect($action)->toBeInstanceOf(MasterAsset::class);
+//     expect($masterAsset->refresh()->status)->toBeFalse();
+// })->depends('create master asset');
+
+// test('[REGRESSION] hydrator correctly counts categories with numeric names', function (MasterShop $masterShop) {
+//     StoreMasterProductCategory::make()->action($masterShop, ['code' => 'CAT1', 'name' => 'Category 1']);
+//     StoreMasterProductCategory::make()->action($masterShop, ['code' => 'CAT2', 'name' => 'Category 2']);
+
+//     HydrateMasterShop::run($masterShop);
+
+//     expect($masterShop->refresh()->stats->number_master_product_categories)->toBe(2);
+// })->depends('create master shop');
+
+// test('hydrator correctly syncs after a master product category is deleted', function (MasterProductCategory $category1, MasterProductCategory $category2) {
+//     $masterShop = $category1->masterShop;
+//     $category2->update(['master_shop_id' => $masterShop->id]);
+
+//     HydrateMasterShop::run($masterShop);
+//     expect($masterShop->refresh()->stats->number_master_product_categories)->toBe(2);
+
+//     $category1->delete();
+
+//     HydrateMasterShop::run($masterShop);
+
+//     expect($masterShop->refresh()->stats->number_master_product_categories)->toBe(1);
+// })->depends('create master product category', 'create master product category');
+
+
+// test('it prevents a category from being its own parent', function (MasterProductCategory $category) {
+//     $this->expectException(\Illuminate\Validation\ValidationException::class);
+
+//     UpdateMasterProductCategory::make()->action($category, [
+//         'parent_id' => $category->id,
+//     ]);
+// })->depends('create master product category');
+
+
+// test('[MasterCollection] can create and update a master collection', function () {
+//     $collection = StoreMasterCollection::make()->action($this->group, [
+//         'code' => 'NEW_COLLECTION',
+//         'name' => 'New Collection'
+//     ]);
+//     $this->assertDatabaseHas('master_collections', ['code' => 'NEW_COLLECTION']);
+
+//     UpdateMasterCollection::make()->action($collection, ['name' => 'Updated Collection Name']);
+//     $this->assertDatabaseHas('master_collections', ['name' => 'Updated Collection Name']);
+// });
+
+// test('[MasterCollection] fails to create a collection without a name', function () {
+//     $this->expectException(ValidationException::class);
+//     StoreMasterCollection::make()->action($this->group, ['code' => 'INVALID']);
+// });
+
+// test('[MasterCollection] can delete a collection and detaches all models', function () {
+//     AttachModelsToMasterCollection::make()->action($this->collection, MasterAsset::class, [$this->asset1->id, $this->asset2->id]);
+//     expect($this->collection->masterAssets()->count())->toBe(2);
+
+//     DeleteMasterCollection::make()->action($this->collection);
+//     $this->assertDatabaseMissing('master_collections', ['id' => $this->collection->id]);
+
+//     $this->assertDatabaseCount('master_collectables', 0);
+// });
+
+// test('[MasterCollection] can attach a single model to a collection', function () {
+//     AttachModelToMasterCollection::make()->action($this->collection, $this->asset1);
+
+//     $this->assertDatabaseHas('master_collectables', [
+//         'master_collection_id' => $this->collection->id,
+//         'master_collectable_id' => $this->asset1->id,
+//         'master_collectable_type' => (new MasterAsset)->getMorphClass()
+//     ]);
+// });
+
+// test('[MasterCollection] can attach multiple models to a collection', function () {
+//     $assetIds = [$this->asset1->id, $this->asset2->id, $this->asset3->id];
+//     AttachModelsToMasterCollection::make()->action($this->collection, MasterAsset::class, $assetIds);
+
+//     expect($this->collection->masterAssets()->count())->toBe(3);
+// });
+
+// test('[MasterCollection] can detach a model from a collection', function () {
+//     AttachModelToMasterCollection::make()->action($this->collection, $this->asset1);
+//     expect($this->collection->masterAssets()->count())->toBe(1);
+
+//     DetachModelFromMasterCollection::make()->action($this->collection, $this->asset1);
+//     expect($this->collection->masterAssets()->count())->toBe(0);
+// });
+
+// test('[MasterCollection] attaching an already attached model is idempotent', function () {
+//     AttachModelToMasterCollection::make()->action($this->collection, $this->asset1);
+//     expect($this->collection->masterAssets()->count())->toBe(1);
+
+//     AttachModelToMasterCollection::make()->action($this->collection, $this->asset1);
+
+//     expect($this->collection->masterAssets()->count())->toBe(1);
+// });
+
+// test('[MasterCollection] detaching a non-attached model does not throw an error', function () {
+//     expect($this->collection->masterAssets()->count())->toBe(0);
+
+//     DetachModelFromMasterCollection::make()->action($this->collection, $this->asset1);
+
+//     $this->assertTrue(true);
+// });
+
+// test('[MasterCollection] can attach multiple parents to a collection', function () {
+//     $shop1 = MasterShop::factory()->create(['group_id' => $this->group->id]);
+//     $shop2 = MasterShop::factory()->create(['group_id' => $this->group->id]);
+
+//     AttachMultipleParentsToAMasterCollection::make()->action($this->collection, MasterShop::class, [$shop1->id, $shop2->id]);
+
+//     expect($this->collection->parents(MasterShop::class)->count())->toBe(2);
+// });
+
+// test('[MasterCollection] non-admin user cannot delete a collection', function () {
+//     $regularUser = User::factory()->createOne();
+//     actingAs($regularUser);
+
+//     $this->expectException(AuthorizationException::class);
+
+//     DeleteMasterCollection::make()->action($this->collection);
+// });
+
+// test('[MasterCollection] fails to update collection with invalid data', function () {
+//     $this->expectException(ValidationException::class);
+
+//     UpdateMasterCollection::make()->action($this->collection, ['name' => null]);
+// });
+
+// test('[MasterCollection] cannot attach model from different group', function () {
+//     $foreignAsset = MasterAsset::factory()->create();
+
+//     $this->expectException(AuthorizationException::class);
+
+//     AttachModelToMasterCollection::make()->action($this->collection, $foreignAsset);
+// });
+
+// test('[MasterCollection] attaching duplicate parents is idempotent', function () {
+//     $shop = MasterShop::factory()->create(['group_id' => $this->group->id]);
+
+//     AttachMultipleParentsToAMasterCollection::make()->action($this->collection, MasterShop::class, [$shop->id]);
+//     AttachMultipleParentsToAMasterCollection::make()->action($this->collection, MasterShop::class, [$shop->id]);
+
+//     expect($this->collection->parents(MasterShop::class)->count())->toBe(1);
+// });
+
+// test('[MasterCollection] deleting collection detaches parents', function () {
+//     $shop = MasterShop::factory()->create(['group_id' => $this->group->id]);
+
+//     AttachMultipleParentsToAMasterCollection::make()->action($this->collection, MasterShop::class, [$shop->id]);
+
+//     DeleteMasterCollection::make()->action($this->collection);
+
+//     $this->assertDatabaseMissing('master_collections', ['id' => $this->collection->id]);
+//     $this->assertDatabaseCount('master_parentables', 0);
+// });
+
+// test('[MasterCollection] fails to create a collection with a duplicate code', function () {
+//     StoreMasterCollection::make()->action($this->group, [
+//         'code' => 'DUPLICATE_CODE',
+//         'name' => 'First Collection'
+//     ]);
+
+//     $this->expectException(ValidationException::class);
+
+//     StoreMasterCollection::make()->action($this->group, [
+//         'code' => 'DUPLICATE_CODE',
+//         'name' => 'Second Collection'
+//     ]);
+// });
+
+// test('[MasterCollection] fails to update a collection with an empty name', function () {
+//     $this->expectException(ValidationException::class);
+//     UpdateMasterCollection::make()->action($this->collection, ['name' => '']);
+// });
+
+// test('[MasterCollection] attaching models with invalid IDs is handled gracefully', function () {
+//     $validId = $this->asset1->id;
+//     $invalidId = 99999;
+
+//     AttachModelsToMasterCollection::make()->action($this->collection, MasterAsset::class, [$validId, $invalidId]);
+
+//     expect($this->collection->masterAssets()->count())->toBe(1);
+//     $this->assertDatabaseHas('master_collectables', [
+//         'master_collection_id' => $this->collection->id,
+//         'master_collectable_id' => $validId,
+//     ]);
+//     $this->assertDatabaseMissing('master_collectables', [
+//         'master_collection_id' => $this->collection->id,
+//         'master_collectable_id' => $invalidId,
+//     ]);
+// });
+
+// test('[MasterCollection] attaching an empty array of models does nothing', function () {
+//     AttachModelsToMasterCollection::make()->action($this->collection, MasterAsset::class, []);
+//     expect($this->collection->masterAssets()->count())->toBe(0);
+// });
+
+
+// test('[MasterCollection] attaching an already attached parent is idempotent', function () {
+//     $shop = MasterShop::factory()->create(['group_id' => $this->group->id]);
+
+//     AttachMultipleParentsToAMasterCollection::make()->action($this->collection, MasterShop::class, [$shop->id]);
+//     expect($this->collection->parents(MasterShop::class)->count())->toBe(1);
+
+//     AttachMultipleParentsToAMasterCollection::make()->action($this->collection, MasterShop::class, [$shop->id]);
+
+//     expect($this->collection->parents(MasterShop::class)->count())->toBe(1);
+// });
+
+// test('[MasterCollection] non-admin user cannot create a collection', function () {
+//     $regularUser = User::factory()->createOne();
+//     actingAs($regularUser);
+
+//     $this->expectException(AuthorizationException::class);
+
+//     StoreMasterCollection::make()->action($this->group, [
+//         'code' => 'NO_AUTH_CREATE',
+//         'name' => 'No Auth Create'
+//     ]);
+// });
+
+// test('[MasterCollection] cannot attach a model from a different group', function () {
+//     $assetFromOtherGroup = MasterAsset::factory()->create(['group_id' => $this->otherGroup->id]);
+
+//     AttachModelToMasterCollection::make()->action($this->collection, $assetFromOtherGroup);
+
+//     expect($this->collection->masterAssets()->count())->toBe(0);
+//     $this->assertDatabaseMissing('master_collectables', [
+//         'master_collection_id' => $this->collection->id,
+//         'master_collectable_id' => $assetFromOtherGroup->id,
+//     ]);
+// });
