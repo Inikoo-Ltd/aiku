@@ -84,7 +84,7 @@ const save = (products) => {
   <PageHeading :data="pageHead">
     <template #button-create-product="{ action }">
       <Button :style="action.style" :label="action.label" :icon="action.icon" @click="openModal"
-        :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" loading/>
+        :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" :loading="loading"/>
     </template>
   </PageHeading>
 
