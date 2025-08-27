@@ -42,6 +42,7 @@ const layout = inject('layout', retinaLayoutStructure)
 const listProducts = ref<ProductHits[] | null>()
 const isLoadingFetch = ref(false)
 const fetchRecommenders = async () => {
+    // console.log('11111 recommmmm', layout.user.user.customer_id)
     try {
         isLoadingFetch.value = true
         const response = await axios.post(
@@ -53,7 +54,7 @@ const fetchRecommenders = async () => {
                     "recommendation_type": props.recommendation_type || "test_reco",
                     "recommender_client_identifier": props.recommendation_type || "test_reco",
                     "size": 7,
-                    // "user_id": "1234",
+                    "user_id": layout.user?.customer_id,
                     "recommendation_context":  {},
                     // "hit_fields": ["url", "title"]
                 }
