@@ -132,8 +132,6 @@ const onUnselectFavourite = (product: ProductResource) => {
 
 <template>
     <div class="relative flex flex-col justify-between h-full">
-        {{ currency }}
-
         <!-- Top Section -->
         <div>
             <div v-if="product?.top_seller"

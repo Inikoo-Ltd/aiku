@@ -100,6 +100,7 @@ onMounted(()=> {
                             <img
                                 :src="image.attributes.image_link"
                                 :alt="image.attributes.title"
+                                class="w-full h-full object-contain"
                             >
                         </component>
                         <!-- Title -->
