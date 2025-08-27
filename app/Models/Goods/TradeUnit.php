@@ -209,7 +209,7 @@ class TradeUnit extends Model implements HasMedia, Auditable
 
     public function stocks(): MorphToMany
     {
-        return $this->morphedByMany(Stock::class, 'model', 'model_has_trade_units');
+        return $this->morphedByMany(Stock::class, 'model', 'model_has_trade_units')->withPivot(['quantity']);
     }
 
     public function products(): MorphToMany
