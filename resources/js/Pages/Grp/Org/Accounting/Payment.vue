@@ -153,13 +153,6 @@ interface Showcase {
     paymentAccount: { data: PaymentAccountData }
     paymentServiceProvider: { data: PaymentServiceProviderData }
     credit_transaction: { data: CreditTransactionData } | null
-    refund_route?: {
-        name: string
-        parameters: {
-            organisation: number
-            payment: number
-        }
-    }
 }
 
 interface Props {
@@ -171,6 +164,13 @@ interface Props {
     }
     showcase: Showcase
     refunds?: {}
+    refund_route?: {
+        name: string
+        parameters: {
+            organisation: number
+            payment: number
+        }
+    }
 }
 
 const props = defineProps<Props>()
@@ -188,7 +188,7 @@ const canRefund = computed(() => {
     return props.showcase.state === 'completed' &&
         !isRefund.value &&
         parseFloat(props.showcase.amount) > 0 &&
-        props.showcase.refund_route
+        props.refund_route
 })
 
 const showRefundButton = computed(() => {
@@ -233,7 +233,7 @@ const closeRefundModal = () => {
         </template></PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"></component>
-    <RefundModal :showcase="showcase" :refund-route="showcase.refund_route" :is-visible="showRefundModal"
+    <RefundModal :showcase="showcase" :refund-route="refund_route" :is-visible="showRefundModal"
         @close="closeRefundModal" />
 </template>
 
