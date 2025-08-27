@@ -18,7 +18,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class GetRecommendedTradeUnits extends GrpAction
+class GetTakenTradeUnits extends GrpAction
 {
     public function asController(MasterProductCategory $masterProductCategory, ActionRequest $request): LengthAwarePaginator
     {
@@ -45,11 +45,8 @@ class GetRecommendedTradeUnits extends GrpAction
                 $join->on('trade_units.id', '=', 'model_has_trade_units.trade_unit_id')
                     ->where('model_has_trade_units.model_type', '=', 'MasterAsset');
             });
-
-        $queryBuilder->where(function($query) use ($masterAssetIds) {
-            $query->whereNull('model_has_trade_units.model_id')
-                ->orWhereNotIn('model_has_trade_units.model_id', $masterAssetIds);
-        });
+        $queryBuilder->whereIn('model_has_trade_units.model_id', $masterAssetIds);
+       
 
         return $queryBuilder
             ->defaultSort('trade_units.code')
