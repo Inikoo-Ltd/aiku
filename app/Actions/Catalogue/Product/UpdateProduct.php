@@ -40,12 +40,14 @@ class UpdateProduct extends OrgAction
 
     public function handle(Product $product, array $modelData): Product
     {
+
+        $oldHistoricProduct = $product->current_historic_asset_id;
+
         if (Arr::has($modelData, 'family_id')) {
             UpdateProductFamily::make()->action($product, [
                 'family_id' => Arr::pull($modelData, 'family_id'),
             ]);
         }
-
 
         if (Arr::has($modelData, 'org_stocks')) {
             $orgStocksRaw = Arr::pull($modelData, 'org_stocks', []);
@@ -135,6 +137,11 @@ class UpdateProduct extends OrgAction
                 'price_updated_at' => now()
             ]);
         }
+
+        if ($oldHistoricProduct != $product->current_historic_asset_id) {
+            UpdateHistoricProductInBasketTransactions::run($product);
+        }
+
 
         return $product;
     }

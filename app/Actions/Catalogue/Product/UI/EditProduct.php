@@ -127,13 +127,7 @@ class EditProduct extends OrgAction
                         ]
                     ]
                 ],
-                // 'off_product_route' => [
-                //     'name'       => 'grp.models.product.offline',
-                //     'parameters' => [
-                //         'product' => $product->id
-                //     ],
-                //     'method'    => 'patch'
-                // ],
+
                 'formData'    => [
                     'blueprint' => $this->getBlueprint($product),
                     'args'      => [
@@ -151,10 +145,40 @@ class EditProduct extends OrgAction
         );
     }
 
+
     /**
      * @throws \Exception
      */
     public function getBlueprint(Product $product): array
+    {
+
+
+        return [
+
+            [
+                'label'  => __('Price'),
+                'title'  => __('id'),
+                'icon'   => 'fa-light fa-dollar',
+                'fields' => [
+
+                    'price'       => [
+                        'type'     => 'input',
+                        'label'    => __('price'),
+                        'required' => true,
+                        'value'    => $product->price
+                    ],
+
+                ]
+            ],
+
+
+        ];
+    }
+
+    /**
+     * @throws \Exception
+     */
+    public function getBlueprintOld(Product $product): array
     {
         $value = OrgStocksInProductResource::collection(GetOrgStocksInProduct::run($product))->resolve();
 
@@ -187,6 +211,8 @@ class EditProduct extends OrgAction
         }
 
         $barcodes = $product->tradeUnits->pluck('barcode')->filter()->unique();
+
+
 
         return [
             [
