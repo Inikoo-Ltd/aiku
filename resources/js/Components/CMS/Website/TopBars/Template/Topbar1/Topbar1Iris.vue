@@ -94,9 +94,9 @@ const urlLoginWithRedirect = () => {
         <div class="action_buttons flex justify-between md:justify-start items-center gap-x-1 flex-wrap md:flex-nowrap">
             <SwitchLanguage />
             <!-- Section: My account -->
-            <ButtonWithLink type="transparent"
+            <ButtonWithLink type="transparent"  class="bg-transparent"
                 v-if="checkVisible(model?.profile?.visible || null, isLoggedIn) && layout.retina?.type == 'dropshipping'"
-                v-tooltip="trans('My account')" url="/app/dashboard">
+                v-tooltip="trans('My account')" url="/app/dashboard" :noHover="true">
                 <template #label>
                     <span class="text-white"> {{ trans('My account') }}</span>
                 </template>
@@ -104,7 +104,7 @@ const urlLoginWithRedirect = () => {
 
             <!-- Section: Profile -->
             <ButtonWithLink v-if="checkVisible(model?.profile?.visible || null, isLoggedIn)"
-                v-tooltip="trans('Profile')" url="/app/profile" icon="fal fa-user" type="transparent">
+                v-tooltip="trans('Profile')" url="/app/profile" icon="fal fa-user" type="transparent" :noHover="true">
                  <template #icon>
                     <FontAwesomeIcon icon="fal fa-user" :style="{ color: 'white' }" fixed-width
                         aria-hidden="true" />
@@ -118,15 +118,15 @@ const urlLoginWithRedirect = () => {
             <!-- Section: Favourite -->
             <ButtonWithLink
                 v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping'"
-                v-tooltip="trans('Favourites')" url="/app/favourites" icon="fal fa-heart" type="transparent">
+                v-tooltip="trans('Favourites')" url="/app/favourites" icon="fal fa-heart" type="transparent" :noHover="true">
                  <template #icon>
                     <FontAwesomeIcon icon="fal fa-heart" :style="{ color: 'white' }" fixed-width
                         aria-hidden="true" />
                 </template>
                 <template #label>
-                    <span v-if="model?.favourite?.text === `{{ favourites_count }}`"
+                    <span class="text-white" v-if="model?.favourite?.text === `{{ favourites_count }}`"
                         v-html="textReplaceVariables(model?.favourite?.text, layout.iris_variables)" />
-                    <span v-else-if="model?.favourite?.text === `{{ favourites_count }} favourites`">
+                    <span  class="text-white" v-else-if="model?.favourite?.text === `{{ favourites_count }} favourites`">
                         {{ layout.iris_variables?.favourites_count }} {{ layout.iris_variables?.favourites_count > 1 ?
                             trans("favourites") : trans("favourite") }}
                     </span>
@@ -137,15 +137,15 @@ const urlLoginWithRedirect = () => {
             <!-- Section: Basket (cart) -->
             <ButtonWithLink
                 v-if="checkVisible(model?.cart?.visible || null, isLoggedIn) && layout.retina?.type == 'b2b'"
-                url="/app/basket" icon="fal fa-shopping-cart">
+                url="/app/basket" icon="fal fa-shopping-cart" :noHover="true">
                 <template #label>
-                    <span v-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)" />
+                    <span class="text-white" v-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)" />
                 </template>
             </ButtonWithLink>
 
             <!-- Section: Register -->
             <ButtonWithLink v-if="checkVisible(model?.register?.visible || null, isLoggedIn)" url="/app/register"
-                icon="fal fa-user-plus" type="transparent">
+                icon="fal fa-user-plus" type="transparent" :noHover="true">
                 <template #icon>
                     <FontAwesomeIcon icon="fal fa-user-plus" :style="{ color: 'white' }" fixed-width
                         aria-hidden="true" />
@@ -161,7 +161,7 @@ const urlLoginWithRedirect = () => {
 
             <!-- Section: Login -->
             <ButtonWithLink v-if="checkVisible(model?.login?.visible || null, isLoggedIn)" :url="urlLoginWithRedirect()"
-                icon="fal fa-sign-in" type="transparent" >
+                icon="fal fa-sign-in" type="transparent" :noHover="true" >
                 <template #icon>
                     <FontAwesomeIcon icon="fal fa-sign-in" :style="{ color: 'white' }" fixed-width
                         aria-hidden="true" />
@@ -175,7 +175,7 @@ const urlLoginWithRedirect = () => {
 
             <!-- Section: Logout -->
             <ButtonWithLink v-if="checkVisible(model?.logout?.visible || null, isLoggedIn)" url="/app/logout"
-                method="post" :data="{}" icon="fal fa-sign-out" type="transparent">
+                method="post" :data="{}" icon="fal fa-sign-out" type="transparent" :noHover="true">
                 <template #icon>
                     <FontAwesomeIcon icon="fal fa-sign-out" :style="{ color: 'white' }" fixed-width
                         aria-hidden="true" />
