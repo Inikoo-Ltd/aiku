@@ -40,19 +40,32 @@ class StoreMasterProductFromTradeUnits extends GrpAction
 
 
         $masterAsset = DB::transaction(function () use ($parent, $modelData, $tradeUnits) {
+            $stocks = [];
+            
+            foreach ($tradeUnits as $item) {
+                $tradeUnit = TradeUnit::find(Arr::get($item, 'id'));
+                foreach ($tradeUnit->stocks as $stock) {
+                    $stocks[$stock->id] = [
+                        'quantity' => $stock->pivot->quantity,
+                    ];
+                }
+            }
+            
             $data        = [
                 'code'    => Arr::get($modelData, 'code'),
                 'name'    => Arr::get($modelData, 'name'),
                 'price'   => Arr::get($modelData, 'price'),
                 'unit'    => Arr::get($modelData, 'unit'),
                 'is_main' => true,
-                'type'    => MasterAssetTypeEnum::PRODUCT
+                'type'    => MasterAssetTypeEnum::PRODUCT,
+                'stocks'  => $stocks
             ];
+            
             $masterAsset = StoreMasterAsset::run($parent, $data);
             $masterAsset->refresh();
             foreach ($tradeUnits as $item) {
-                $tradeUnit = TradeUnit::find(Arr::get($item, 'id'));
-                $masterAsset->tradeUnits()->attach($tradeUnit->id, [
+                $tradeUnitId = Arr::get($item, 'id');
+                $masterAsset->tradeUnits()->attach($tradeUnitId, [
                     'quantity' => Arr::get($item, 'quantity')
                 ]);
                 $masterAsset->refresh();

@@ -181,8 +181,11 @@ const resetAfterSubmit = () => {
         <!-- Selected list -->
         <div class="">
             <div class="flex justify-between">
-                <div><h3 class="font-semibold mb-2">{{ trans(props.head_label) }}</h3></div>
-                <div><Button @click="showDialog = true" :label="'select'" size="xs" type="dashed"  :icon="faPlus"></Button></div>
+                <div>
+                    <h3 class="font-semibold mb-2">{{ trans(props.head_label) }}</h3>
+                </div>
+                <div><Button @click="showDialog = true" :label="'select'" size="xs" type="dashed"
+                        :icon="faPlus"></Button></div>
             </div>
 
             <div v-if="selectedProduct.length" class="border rounded-md overflow-hidden">
@@ -221,8 +224,8 @@ const resetAfterSubmit = () => {
 
         <!-- Dialog -->
         <Dialog v-model:visible="showDialog" modal header="Select Products"
-            :style="{ width: '80vw', maxWidth: '1200px' }" :content-style="{ overflow: 'hidden', paddingLeft: '20px',  paddingRight: '20px', }"
-            @hide="$emit('close')">
+            :style="{ width: '80vw', maxWidth: '1200px' }"
+            :content-style="{ overflow: 'hidden', paddingLeft: '20px', paddingRight: '20px', }" @hide="$emit('close')">
 
             <div class="relative isolate">
                 <div v-if="isLoadingSubmit"
@@ -232,11 +235,9 @@ const resetAfterSubmit = () => {
 
                 <!-- Tabs -->
                 <div v-if="tabs?.length" class="flex gap-4 mb-4 border-b">
-                    <div v-for="(tab, index) in tabs" :key="index"
-                        @click="changeTab(index)"
-                        class="cursor-pointer px-4 py-2 -mb-px font-medium border-b-2"
-                        :class="activeTab === index 
-                            ? 'text-indigo-600 border-indigo-600' 
+                    <div v-for="(tab, index) in tabs" :key="index" @click="changeTab(index)"
+                        class="cursor-pointer px-4 py-2 -mb-px font-medium border-b-2" :class="activeTab === index
+                            ? 'text-indigo-600 border-indigo-600'
                             : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'">
                         {{ trans(tab.label) }}
                     </div>
@@ -292,7 +293,7 @@ const resetAfterSubmit = () => {
                                             </Transition>
 
                                             <slot name="product" :item="item">
-                                                <Image v-if="item.image" :src="item.image"
+                                                <Image v-if="item.image" :src="item.image?.thumbnail"
                                                     class="w-16 h-16 overflow-hidden mx-auto md:mx-0 mb-4 md:mb-0"
                                                     imageCover :alt="item.name" />
                                                 <div class="flex flex-col justify-between w-full">
@@ -315,13 +316,21 @@ const resetAfterSubmit = () => {
                                                     <div v-if="!item.no_price && item.price"
                                                         class="text-xs text-gray-x500">
                                                         {{ locale?.currencyFormat(item.currency_code || 'usd',
-                                                        item.price || 0) }}
+                                                            item.price || 0) }}
                                                     </div>
                                                     <NumberWithButtonSave v-if="withQuantity"
-                                                        :modelValue="get(item, props.key_quantity, 1)"
-                                                        :bindToTarget="{ min: 1 }"
-                                                        @update:modelValue="(e: number) => { set(item, props.key_quantity, e); if (!selectedProduct.find(p => p.id === item.id)) selectedProduct.push(item); done() }"
-                                                        noUndoButton noSaveButton parentClass="w-min" />
+                                                        :modelValue="selectedProduct.find(p => p.id === item.id)?.[props.key_quantity] || 1"
+                                                        :bindToTarget="{ min: 1 }" @update:modelValue="(val: number) => {
+                                                            const target = selectedProduct.find(p => p.id === item.id)
+                                                            if (target) {
+                                                                target[props.key_quantity] = val
+                                                            } else {
+                                                                const newItem: any = { ...item, [props.key_quantity]: val }
+                                                                selectedProduct.push(newItem)
+                                                            }
+                                                            done()
+                                                        }" noUndoButton noSaveButton parentClass="w-min" />
+
                                                 </div>
                                             </slot>
                                         </div>
