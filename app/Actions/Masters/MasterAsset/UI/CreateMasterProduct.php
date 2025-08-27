@@ -9,16 +9,9 @@
 namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\GrpAction;
-use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
-use App\Models\Catalogue\ProductCategory;
-use App\Models\Catalogue\Shop;
-use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
-use App\Http\Resources\Inventory\OrgStocksResource;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 
@@ -89,7 +82,7 @@ class CreateMasterProduct extends GrpAction
                                         'type'         => 'list-selector',
                                         'label'        => __('Trade units'),
                                         'withQuantity' => true,
-                                        'key_quantity' => 'quantity',     
+                                        'key_quantity' => 'quantity',
                                         'routeFetch'  => [
                                             'name'       => 'grp.json.master-product-category.recommended-trade-units',
                                             'parameters' => [

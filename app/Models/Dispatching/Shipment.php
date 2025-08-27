@@ -66,7 +66,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static Builder<static>|Shipment newQuery()
  * @method static Builder<static>|Shipment onlyTrashed()
  * @method static Builder<static>|Shipment query()
- * @method static Builder<static>|Shipment withTrashed()
+ * @method static Builder<static>|Shipment withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Shipment withoutTrashed()
  * @mixin Eloquent
  */

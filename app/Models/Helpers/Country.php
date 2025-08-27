@@ -13,8 +13,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- *
- *
  * @property int $id
  * @property string $code
  * @property string|null $iso3
@@ -34,7 +32,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Country newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Country onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Country query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Country withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Country withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Country withoutTrashed()
  * @mixin \Eloquent
  */

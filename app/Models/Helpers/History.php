@@ -12,8 +12,6 @@ use App\Models\Traits\InCustomer;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- *
- *
  * @property int $id
  * @property int|null $group_id
  * @property int|null $organisation_id

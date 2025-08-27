@@ -94,7 +94,7 @@ use App\Models\Traits\HasHistory;
  * @method static Builder<static>|WebUser permission($permissions, $without = false)
  * @method static Builder<static>|WebUser query()
  * @method static Builder<static>|WebUser role($roles, $guard = null, $without = false)
- * @method static Builder<static>|WebUser withTrashed()
+ * @method static Builder<static>|WebUser withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|WebUser withoutPermission($permissions)
  * @method static Builder<static>|WebUser withoutRole($roles, $guard = null)
  * @method static Builder<static>|WebUser withoutTrashed()

@@ -184,7 +184,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Customer newQuery()
  * @method static Builder<static>|Customer onlyTrashed()
  * @method static Builder<static>|Customer query()
- * @method static Builder<static>|Customer withTrashed()
+ * @method static Builder<static>|Customer withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Customer withoutTrashed()
  * @mixin \Eloquent
  */

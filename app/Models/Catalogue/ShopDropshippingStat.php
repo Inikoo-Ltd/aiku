@@ -11,8 +11,6 @@ namespace App\Models\Catalogue;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- *
- *
  * @property int $id
  * @property int $shop_id
  * @property int $number_customer_clients
