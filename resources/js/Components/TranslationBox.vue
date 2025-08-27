@@ -122,7 +122,7 @@ const saveTranslation = () => {
       },
       onError: (error) => {
         console.log(error)
-        notify({ title: trans('Something went wrong'), text: error || trans('Failed to save translation'), type: 'error' })
+        notify({ title: trans('Something went wrong'), text: error || trans('Failed to save translation'), type: 'error', duration : 50000 })
       },
       onFinish: () => (isLoading.value = false)
     }
