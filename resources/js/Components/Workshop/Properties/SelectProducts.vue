@@ -208,45 +208,45 @@ const listProducts = ref<LuigiProductHits[] | null>()
 const isLoadingFetchLuigi = ref(false)
 const isLuigiHaveError = ref(false)
 const fetchRecommenders = async (recommendation_type: string) => {
-    isLuigiHaveError.value = false
-    try {
-        isLoadingFetchLuigi.value = true
-        const response = await axios.post(
-            `https://live.luigisbox.com/v1/recommend?tracker_id=${webpage_luigi_tracker_id}`,
-            [
-                {
-                    "blacklisted_item_ids":  [],
-                    "item_ids": [],
-                    "recommendation_type": recommendation_type || "test_reco",
-                    "recommender_client_identifier": recommendation_type || "test_reco",
-                    "size": 4,
-                    // "user_id": "1234",
-                    "recommendation_context":  {},
-                    // "hit_fields": ["url", "title"]
-                }
-            ],
-            {
-                headers: {
-                    'Content-Type': 'application/json;charset=utf-8'
-                }
-            }
-        )
-        if (response.status !== 200) {
-            console.error('Error fetching recommenders:', response.statusText)
-        }
-        console.log('Response axios:', response.data)
-        listProducts.value = response.data[0].hits
-        console.log('list products xxxxx:', listProducts.value)
-    } catch (error: any) {
-        isLuigiHaveError.value = true
-        console.error('Error on fetching recommendations:', error)
-        notify({
-            title: trans("Something went wrong"),
-            text: trans("Recommendations might not be active yet. Please contact the support team."),
-            type: 'error'
-        })
-    }
-    isLoadingFetchLuigi.value = false
+    // isLuigiHaveError.value = false
+    // try {
+    //     isLoadingFetchLuigi.value = true
+    //     const response = await axios.post(
+    //         `https://live.luigisbox.com/v1/recommend?tracker_id=${webpage_luigi_tracker_id}`,
+    //         [
+    //             {
+    //                 "blacklisted_item_ids":  [],
+    //                 "item_ids": [],
+    //                 "recommendation_type": recommendation_type || "test_reco",
+    //                 "recommender_client_identifier": recommendation_type || "test_reco",
+    //                 "size": 4,
+    //                 // "user_id": "1234",
+    //                 "recommendation_context":  {},
+    //                 // "hit_fields": ["url", "title"]
+    //             }
+    //         ],
+    //         {
+    //             headers: {
+    //                 'Content-Type': 'application/json;charset=utf-8'
+    //             }
+    //         }
+    //     )
+    //     if (response.status !== 200) {
+    //         console.error('Error fetching recommenders:', response.statusText)
+    //     }
+    //     console.log('Response axios:', response.data)
+    //     listProducts.value = response.data[0].hits
+    //     console.log('list products xxxxx:', listProducts.value)
+    // } catch (error: any) {
+    //     isLuigiHaveError.value = true
+    //     console.error('Error on fetching recommendations:', error)
+    //     notify({
+    //         title: trans("Something went wrong"),
+    //         text: trans("Recommendations might not be active yet. Please contact the support team."),
+    //         type: 'error'
+    //     })
+    // }
+    // isLoadingFetchLuigi.value = false
 }
 const is_luigi_value = (value: string) => {
     return ['luigi-trends', 'luigi-recently_ordered', 'luigi-last_seen', 'luigi-item_detail_alternatives'].includes(value)
