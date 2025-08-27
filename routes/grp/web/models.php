@@ -397,7 +397,7 @@ Route::prefix('master-sub-department/{masterSubDepartment:id}')->name('master-su
 Route::prefix('/product_category/{productCategory:id}')->name('product_category.')->group(function () {
     Route::patch('update', UpdateProductCategory::class)->name('update');
     Route::delete('delete', DeleteProductCategory::class)->name('delete');
-    Route::delete('translations', UpdateProductCategoryTranslations::class)->name('translations.update');
+    Route::patch('translations', UpdateProductCategoryTranslations::class)->name('translations.update');
 });
 
 Route::prefix('sub-department/{productCategory:id}')->name('sub-department.')->group(function () {
