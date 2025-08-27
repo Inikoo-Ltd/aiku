@@ -33,6 +33,7 @@ interface ProductHits {
 
 const props = defineProps<{
     recommendation_type?: string
+    slidesPerView?: number
     size?: number
 }>()
 
@@ -83,9 +84,11 @@ onMounted(()=> {
 
 <template>
     <div class="py-4">
-        <Swiper xv-if="screenType === 'mobile' && fieldValue?.mobile?.type === 'carousel'" :slides-per-view="4"
-            :loop="true" :autoplay="false" :pagination="{ clickable: true }" :modules="[Autoplay]"
-            class="w-full" xstyle="getStyles(fieldValue?.value?.layout?.properties, screenType)">
+        <Swiper :slides-per-view="slidesPerView || 4"
+            :loop="false" :autoplay="false" :pagination="{ clickable: true }" :modules="[Autoplay]"
+            class="w-full" xstyle="getStyles(fieldValue?.value?.layout?.properties, screenType)"
+            spaceBetween="12"
+        >
             <div v-if="isLoadingFetch" class="grid grid-cols-4 gap-x-4">
                 <div v-for="xx in 4" class="skeleton w-full h-64 rounded">
 
@@ -94,9 +97,9 @@ onMounted(()=> {
 
             <template v-else>
                 <SwiperSlide v-for="(image, index) in listProducts" :key="index" class="w-full h-full">
-                    <div class="mx-2 xw-[400px] relative border border-gray-300 hover:border-gray-700 px-4 py-3 rounded flex flex-col justify-between h-full">
+                    <div class="relative border border-gray-300 hover:border-gray-700 px-4 py-3 rounded flex flex-col justify-between h-full">
                         <!-- Product Image -->
-                        <component :is="image.attributes.web_url?.[0] ? Link : 'div'" :href="image.attributes.web_url?.[0]" class="block rounded aspect-[5/4] w-full">
+                        <component :is="image.attributes.web_url?.[0] ? Link : 'div'" :href="image.attributes.web_url?.[0]" class="block rounded aspect-[5/4] w-full overflow-hidden">
                             <img
                                 :src="image.attributes.image_link"
                                 :alt="image.attributes.title"
