@@ -273,7 +273,8 @@ const listType = [
     {
         label: trans('Luigi: Top Trending'),
         value: 'luigi-trends',
-        show_new_until: '2025-09-27'
+        show_new_until: '2025-09-27',
+        is_disabled: false
     },
     {
         label: trans('Luigi: Customer Recently Ordered'),
@@ -318,7 +319,15 @@ const listType = [
             <option value="luigi-item_detail_alternatives">Luigi: You might also like</option>
         </select> -->
 
-        <Select v-model="localType" :options="listType" optionValue="value" optionLabel="label" placeholder="Select recommendation type" class="w-full">
+        <Select
+            v-model="localType"
+            :options="listType"
+            :optionDisabled="(e) => e.is_disabled"
+            optionValue="value"
+            optionLabel="label"
+            placeholder="Select recommendation type"
+            class="w-full"
+        >
             <template #option="slotProps">
                 <div class="flex items-center">
                     <div>{{ slotProps.option.label }}</div>
