@@ -173,7 +173,6 @@ test('cannot create category with duplicate code in the same shop', function () 
         // Optional: Log or assert the exception type here if needed
     }
 
-    // Assert: no duplicate was created
     $finalCount = MasterProductCategory::where('code', 'DUPLICATE-CODE')->count();
 
     expect($finalCount)->toBe($initialCount);
