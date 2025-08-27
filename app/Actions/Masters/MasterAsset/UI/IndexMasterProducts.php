@@ -226,7 +226,7 @@ class IndexMasterProducts extends GrpAction
                 ];
             }
         }
-
+        
         return Inertia::render(
             'Masters/MasterProducts',
             [
@@ -244,7 +244,7 @@ class IndexMasterProducts extends GrpAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'subNavigation' => $subNavigation,
-                    'actions'       => $this->parent instanceof ProductCategory && $this->parent->type == MasterProductCategoryTypeEnum::FAMILY ? [
+                    'actions'       => $this->parent instanceof MasterProductCategory && $this->parent->type == MasterProductCategoryTypeEnum::FAMILY ? [
                         [
                             'type'    => 'button',
                             'style'   => 'create',
