@@ -96,7 +96,7 @@ class RefundPayment extends OrgAction
 
     }
 
-    public function processOnlineRefunds(Payment $payment,Payment $refundPayment): void
+    public function processOnlineRefunds(Payment $payment, Payment $refundPayment): void
     {
         if ($payment->paymentAccount->type === PaymentAccountTypeEnum::CHECKOUT) {
             $ref = RefundPaymentApiRequest::run($refundPayment, $payment->reference);
@@ -114,14 +114,14 @@ class RefundPayment extends OrgAction
     public function rules(): array
     {
         return [
-            'amount' => ['required', 'numeric','gt:0','lte:'.$this->payment->amount-$this->payment->total_refund],
+            'amount' => ['required', 'numeric','gt:0','lte:'.$this->payment->amount - $this->payment->total_refund],
             'reason' => ['required', 'string', 'max:1000']
         ];
     }
 
     public function asController(Organisation $organisation, Payment $payment, ActionRequest $request): void
     {
-        $this->payment= $payment;
+        $this->payment = $payment;
         $this->initialisation($organisation, $request);
 
         $this->handle($payment, $this->validatedData);

@@ -146,8 +146,8 @@ class ShowMasterFamily extends GrpAction
                 ],
 
                 MasterFamilyTabsEnum::SHOWCASE->value => $this->tab == MasterFamilyTabsEnum::SHOWCASE->value ?
-                    fn() => GetMasterProductCategoryShowcase::run($masterFamily)
-                    : Inertia::lazy(fn() => GetMasterProductCategoryShowcase::run($masterFamily)),
+                    fn () => GetMasterProductCategoryShowcase::run($masterFamily)
+                    : Inertia::lazy(fn () => GetMasterProductCategoryShowcase::run($masterFamily)),
 
                 // FamilyTabsEnum::CUSTOMERS->value => $this->tab == FamilyTabsEnum::CUSTOMERS->value ?
                 //     fn () => CustomersResource::collection(IndexCustomers::run(parent : $masterFamily->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))

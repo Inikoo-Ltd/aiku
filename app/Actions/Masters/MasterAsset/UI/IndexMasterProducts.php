@@ -20,7 +20,6 @@ use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Http\Resources\Masters\MasterProductsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Catalogue\ProductCategory;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -226,7 +225,7 @@ class IndexMasterProducts extends GrpAction
                 ];
             }
         }
-        
+
         return Inertia::render(
             'Masters/MasterProducts',
             [
