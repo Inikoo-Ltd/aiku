@@ -38,7 +38,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
         $tradeUnits = Arr::pull($modelData, 'trade_units', []);
 
         if (!Arr::has($modelData, 'unit') && count($tradeUnits) == 1) {
-            data_set($modelData, 'unit', Arr::get($tradeUnits, '0.unit'));
+            data_set($modelData, 'unit', Arr::get($tradeUnits, '0.type'));
         }
 
 

@@ -55,6 +55,7 @@ class GetTakenTradeUnits extends GrpAction
                 'trade_units.code',
                 'trade_units.slug',
                 'trade_units.name',
+                'trade_units.type',
                 'trade_units.description',
                 'trade_units.gross_weight',
                 'trade_units.net_weight',
