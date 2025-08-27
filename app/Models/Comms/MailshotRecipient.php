@@ -13,8 +13,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
- *
- *
  * @property int $id
  * @property int $mailshot_id
  * @property int $dispatched_email_id

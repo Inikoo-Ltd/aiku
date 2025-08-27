@@ -125,7 +125,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Webpage newQuery()
  * @method static Builder<static>|Webpage onlyTrashed()
  * @method static Builder<static>|Webpage query()
- * @method static Builder<static>|Webpage withTrashed()
+ * @method static Builder<static>|Webpage withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Webpage withoutTrashed()
  * @mixin Eloquent
  */

@@ -226,7 +226,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Shop newQuery()
  * @method static Builder<static>|Shop onlyTrashed()
  * @method static Builder<static>|Shop query()
- * @method static Builder<static>|Shop withTrashed()
+ * @method static Builder<static>|Shop withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Shop withoutTrashed()
  * @mixin Eloquent
  */

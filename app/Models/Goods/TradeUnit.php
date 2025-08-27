@@ -141,7 +141,7 @@ use Spatie\Translatable\HasTranslations;
  * @method static Builder<static>|TradeUnit whereJsonContainsLocales(string $column, array $locales, ?mixed $value, string $operand = '=')
  * @method static Builder<static>|TradeUnit whereLocale(string $column, string $locale)
  * @method static Builder<static>|TradeUnit whereLocales(string $column, array $locales)
- * @method static Builder<static>|TradeUnit withTrashed()
+ * @method static Builder<static>|TradeUnit withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|TradeUnit withoutTrashed()
  * @mixin Eloquent
  */

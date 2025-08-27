@@ -56,6 +56,7 @@ class GetProductShowcase
             'hazard_environment' => $product->pictogram_environment,
             'health_hazard' => $product->pictogram_,
             'oxidising' => $product->pictogram_oxidising,
+
         ];
 
         $dataTradeUnits = [];
@@ -98,7 +99,7 @@ class GetProductShowcase
             'product' => ProductResource::make($product),
             'properties' => $properties,
             'gpsr' => $gpsr,
-            
+
             'parts' => OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
             'stats'   => $product->stats,
             'trade_units' => $dataTradeUnits,

@@ -13,8 +13,6 @@ use Illuminate\Support\Arr;
 use Laravel\Scout\Searchable;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id

@@ -156,7 +156,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|DeliveryNote newQuery()
  * @method static Builder<static>|DeliveryNote onlyTrashed()
  * @method static Builder<static>|DeliveryNote query()
- * @method static Builder<static>|DeliveryNote withTrashed()
+ * @method static Builder<static>|DeliveryNote withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|DeliveryNote withoutTrashed()
  * @mixin Eloquent
  */

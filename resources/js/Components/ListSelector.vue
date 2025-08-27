@@ -17,7 +17,7 @@ import { faSearch, faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
-import { faTrashAlt } from '@far'
+import { faEmptySet, faTrashAlt } from '@far'
 
 library.add(faCheckCircle, faTimes)
 
@@ -198,6 +198,16 @@ const resetAfterSubmit = () => {
             </div>
         </div>
 
+        <div v-else class="mb-4">
+            <div class="border rounded-md bg-gray-50 p-6 text-center text-gray-500">
+                <!-- Font Awesome Info Icon -->
+                <font-awesome-icon :icon="faEmptySet" class="text-4xl text-gray-400 mb-3" />
+
+                <p class="font-medium">No Data Available</p>
+                <p class="text-sm text-gray-400 mb-4">Please add an item to see content here.</p>
+
+            </div>
+        </div>
         <!-- Trigger -->
         <Button @click="showDialog = true" :label="'Add'" full type="create"></Button>
 
@@ -291,7 +301,7 @@ const resetAfterSubmit = () => {
                                                     <div v-if="!item.no_price && item.price"
                                                         class="text-xs text-gray-x500">
                                                         {{ locale?.currencyFormat(item.currency_code || 'usd',
-                                                        item.price || 0) }}
+                                                            item.price || 0) }}
                                                     </div>
 
                                                     <NumberWithButtonSave v-if="withQuantity"
@@ -322,8 +332,8 @@ const resetAfterSubmit = () => {
 
             <!-- footer -->
             <template #footer>
-                <Button type="secondary" @click="showDialog = false">{{ trans('Cancel') }}</Button>
-                <Button type="primary" @click="showDialog = false">{{ trans('Done') }}</Button>
+                <Button type="secondary" @click="showDialog = false" label="Cancel"></Button>
+                <Button type="create" @click="showDialog = false" label="add"></Button>
             </template>
         </Dialog>
     </div>

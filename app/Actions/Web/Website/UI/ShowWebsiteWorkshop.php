@@ -17,6 +17,7 @@ use App\Actions\Web\Website\GetWebsiteWorkshopLayout;
 use App\Actions\Web\Website\GetWebsiteWorkshopProduct;
 use App\Actions\Web\Website\GetWebsiteWorkshopSubDepartment;
 use App\Enums\UI\Web\WebsiteWorkshopTabsEnum;
+use App\Http\Resources\Helpers\CurrencyResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
@@ -211,6 +212,7 @@ class ShowWebsiteWorkshop extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => $navigation,
                 ],
+                'currency'  => $this->parent instanceof Shop ? CurrencyResource::make($this->parent->currency)->resolve() : null,
                 'settings' => $website->settings,
                 ...$tabs
             ]

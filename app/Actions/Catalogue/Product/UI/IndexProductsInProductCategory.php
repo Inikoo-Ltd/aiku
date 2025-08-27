@@ -341,7 +341,7 @@ class IndexProductsInProductCategory extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inSubDepartmentInShop(Organisation $organisation, Shop $shop,ProductCategory $subDepartment, ActionRequest $request): LengthAwarePaginator
+    public function inSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $subDepartment;
         $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::values());
