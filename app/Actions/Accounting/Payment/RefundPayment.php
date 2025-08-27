@@ -21,7 +21,9 @@ use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Models\Accounting\Payment;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
+use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
+use Symfony\Component\HttpFoundation\Response;
 
 class RefundPayment extends OrgAction
 {
@@ -30,7 +32,7 @@ class RefundPayment extends OrgAction
 
     private Payment $payment;
 
-    public function handle(Payment $payment, array $modelData): void
+    public function handle(Payment $payment, array $modelData): Payment
     {
         $amountPayPerRefund = Arr::get($modelData, 'amount');
 
@@ -52,6 +54,8 @@ class RefundPayment extends OrgAction
         $this->processInvoices($payment);
         $this->processOrders($payment);
         $this->processOnlineRefunds($payment, $refundPayment);
+
+        return $refundPayment;
     }
 
     public function processInvoices(Payment $payment): void
@@ -105,6 +109,13 @@ class RefundPayment extends OrgAction
         }
     }
 
+    public function htmlResponse(Payment $refundPayment): Response
+    {
+        return Inertia::location(route('grp.org.accounting.payments.show', [
+            'organisation' => $refundPayment->organisation->slug,
+            'payment' => $refundPayment->id
+        ]));
+    }
 
     public function rules(): array
     {
@@ -114,11 +125,11 @@ class RefundPayment extends OrgAction
         ];
     }
 
-    public function asController(Organisation $organisation, Payment $payment, ActionRequest $request): void
+    public function asController(Organisation $organisation, Payment $payment, ActionRequest $request): Payment
     {
         $this->payment = $payment;
         $this->initialisation($organisation, $request);
 
-        $this->handle($payment, $this->validatedData);
+        return $this->handle($payment, $this->validatedData);
     }
 }

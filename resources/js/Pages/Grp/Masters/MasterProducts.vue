@@ -45,9 +45,6 @@ const form = useForm({
 
 const priceCost = ref([])
 const ListSelectorChange = (value) => {
-  // replace instead of push
-  priceCost.value = value.map((item) => item.value)
-
   if (value.length === 1) {
     form.name = value[0].name
     form.code = value[0].code
@@ -106,20 +103,23 @@ const selectorTab = [
 ];
 
 const profitMargin = computed(() => {
-  if (!form.price || priceCost.value.length === 0) return null
+  if (!form.price || !form.trade_units.length) return null
 
-  const baseCost = priceCost.value[0]
+  // calculate total cost from trade_units
+  const totalCost = form.trade_units.reduce((sum, unit) => {
+    const unitPrice = Number(unit.value) || 0
+    const unitQty = Number(unit.quantity) || 0
+    return sum + (unitPrice * unitQty)
+  }, 0)
 
-  // special case: if baseCost is 0, use unit * 10 as % (ex: type 18 -> 180%)
-  if (baseCost === 0) {
-    return `${form.price * 10}`
-  }
+  // no cost = return 0 margin
+  if (totalCost <= 0) return "0"
 
-  if (baseCost < 0) return "0"
-
-  const margin = ((form.price - baseCost) / baseCost) * 100
+  // profit margin formula
+  const margin = ((form.price - totalCost) / totalCost) * 100
   return `${margin.toFixed(2)}`
 })
+
 const detailsVisible = ref(false)
 </script>
 
