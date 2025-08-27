@@ -172,9 +172,9 @@ class CallApiGlsEsShipping extends OrgAction
         $modelData['data']['uid'] = (string)$uid[0]["uid"];
 
 
-        $modelData['reference']   = $cb[0]["codbarras"];
-        $modelData['trackings'][] = $modelData['reference'];
-        $modelData['tracking']    = $modelData['reference'];
+        $modelData['reference']   = $modelData['data']['codbarras'];
+        $modelData['trackings'][] = $modelData['data']['codbarras'];
+        $modelData['tracking']    = $modelData['data']['codbarras'];
 
         return $modelData;
     }
@@ -216,7 +216,7 @@ class CallApiGlsEsShipping extends OrgAction
 
         $shipmentData                      = array();
         $shipmentData["date"]              = Carbon::now()->format('d/m/Y');
-        $shipmentData["service"]           = "96";
+        $shipmentData["service"]           = "1";
         $shipmentData["time"]              = "18";
         $shipmentData["parcels"]           = count($parcels);
         $shipmentData["weight"]            = $weight;
@@ -285,19 +285,6 @@ class CallApiGlsEsShipping extends OrgAction
          </soap12:Envelope>';
     }
 
-    public function getCommandSignature(): string
-    {
-        return 'gls_es_shipping:call';
-    }
 
-    public function asCommand(): void
-    {
-        /** @var DeliveryNote $deliveryNote */
-
-        $shipper = Shipper::where('id', 1)->first();
-
-        $deliveryNote = DeliveryNote::where('slug', 'des011122')->first();
-        $this->handle($deliveryNote, $shipper);
-    }
 
 }
