@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, ref, inject } from "vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faLink } from '@far'
-import { faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faMoneyBillWave, faBuilding, faCreditCard, faFileInvoice, faCheckCircle, faTimesCircle } from '@fal'
+import { faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faMoneyBillWave, faBuilding, faCreditCard, faFileInvoice, faCheckCircle, faTimesCircle, faUndo, faTimes } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Tag from "@/Components/Tag.vue"
 import { useLocaleStore } from "@/Stores/locale"
+import { router } from '@inertiajs/vue3'
 
-library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faMoneyBillWave, faBuilding, faCreditCard, faFileInvoice, faCheckCircle, faTimesCircle)
+library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faMoneyBillWave, faBuilding, faCreditCard, faFileInvoice, faCheckCircle, faTimesCircle, faUndo, faTimes)
 
 interface Country {
 	code: string
@@ -136,12 +137,69 @@ interface Showcase {
 	paymentAccount: { data: PaymentAccountData }
 	paymentServiceProvider: { data: PaymentServiceProviderData }
 	credit_transaction: { data: CreditTransactionData } | null
+	refund_route?: {
+		name: string
+		parameters: {
+			organisation: number
+			payment: number
+		}
+	}
 }
 
 const props = defineProps<{
 	data: Showcase
 	tab: string
 }>()
+
+const layout = inject('layout')
+
+// console.log(layout)
+
+// Dynamic theme colors based on layout.app.theme
+const themeColors = computed(() => {
+	const theme = layout?.app?.theme || [
+		"#f43f5e", "#F5F5F5", "#E3B7C8", "#000000", 
+		"#D6C7E2", "#000000", "#fca5a5", "#374151"
+	]
+	
+	return {
+		// 0-1: Main Layout (primary bg & primary text color)
+		primaryBg: theme[0] || "#f43f5e",
+		primaryText: theme[1] || "#F5F5F5",
+		
+		// 2-3: Navigation and box (bg & text color)
+		navBg: theme[2] || "#E3B7C8",
+		navText: theme[3] || "#000000",
+		
+		// 4-5: Button and mini-box (bg & text color)
+		buttonBg: theme[4] || "#D6C7E2",
+		buttonText: theme[5] || "#000000",
+		
+		// 6-7: SecondaryLink bg and text
+		secondaryBg: theme[6] || "#fca5a5",
+		secondaryText: theme[7] || "#374151"
+	}
+})
+
+// Dynamic styles for theme application
+const dynamicStyles = computed(() => ({
+	'--theme-primary-bg': themeColors.value.primaryBg,
+	'--theme-primary-text': themeColors.value.primaryText,
+	'--theme-nav-bg': themeColors.value.navBg,
+	'--theme-nav-text': themeColors.value.navText,
+	'--theme-button-bg': themeColors.value.buttonBg,
+	'--theme-button-text': themeColors.value.buttonText,
+	'--theme-secondary-bg': themeColors.value.secondaryBg,
+	'--theme-secondary-text': themeColors.value.secondaryText
+}))
+
+// Refund modal state
+const showRefundModal = ref(false)
+const refundAmount = ref('')
+const refundReason = ref('')
+const refundType = ref('partial') // 'partial' or 'full'
+const isProcessingRefund = ref(false)
+const refundErrors = ref({})
 
 // Normalize the showcase data so that the nested properties (like customer.data)
 // are flattened and available directly in the template.
@@ -165,6 +223,17 @@ const isRefund = computed(() => {
 	return parseFloat(normalizedShowcase.value.amount) < 0
 })
 
+const canRefund = computed(() => {
+	// Only allow refund for completed payments, not already refunds, and must have refund route
+	return normalizedShowcase.value.state === 'completed' &&
+		!isRefund.value &&
+		props.data.refund_route
+})
+
+const maxRefundAmount = computed(() => {
+	return Math.abs(parseFloat(normalizedShowcase.value.amount))
+})
+
 const mapPaymentState = computed(() => {
 	const state = normalizedShowcase.value.state
 	return state === 'in_process' ? 'processing' : state
@@ -185,31 +254,124 @@ const getStateTheme = (state: string) => {
 	}
 }
 
-console.log(props.data)
+// Refund functions
+const openRefundModal = () => {
+	showRefundModal.value = true
+	refundAmount.value = maxRefundAmount.value.toString()
+	refundReason.value = ''
+	refundType.value = 'partial'
+}
+
+const closeRefundModal = () => {
+	showRefundModal.value = false
+	refundAmount.value = ''
+	refundReason.value = ''
+	refundType.value = 'partial'
+	isProcessingRefund.value = false
+	refundErrors.value = {}
+}
+
+const processRefund = async () => {
+	if (!props.data.refund_route) {
+		alert('Refund route not available')
+		return
+	}
+
+	isProcessingRefund.value = true
+
+	try {
+		const refundAmountValue = refundType.value === 'full' ? maxRefundAmount.value : parseFloat(refundAmount.value)
+
+		const refundData = {
+			type: 'payment_refund', // Sesuai dengan chat yang menyebutkan "Payment Refund"
+			amount: refundAmountValue,
+			reason: refundReason.value,
+			refund_type: refundType.value,
+			currency_code: normalizedShowcase.value.currency.code,
+			original_payment_id: props.data.refund_route.parameters.payment
+		}
+
+		// Menggunakan Inertia router untuk POST request
+		router.post(
+			route(props.data.refund_route.name, props.data.refund_route.parameters),
+			refundData,
+			{
+				onSuccess: (response) => {
+					console.log('Refund processed successfully:', response)
+					closeRefundModal()
+					// Optionally reload the page to show updated data
+					// router.reload({ only: ['data'] })
+				},
+				onError: (errors) => {
+					console.error('Refund failed:', errors)
+					refundErrors.value = errors
+					isProcessingRefund.value = false
+				},
+				onFinish: () => {
+					// This runs regardless of success or error
+				}
+			}
+		)
+
+	} catch (error) {
+		console.error('Unexpected error during refund:', error)
+		alert('An unexpected error occurred. Please try again.')
+		isProcessingRefund.value = false
+	}
+}
+
+const validateRefundAmount = () => {
+	const amount = parseFloat(refundAmount.value)
+	if (isNaN(amount) || amount <= 0) {
+		return false
+	}
+	if (amount > maxRefundAmount.value) {
+		return false
+	}
+	return true
+}
+
+// console.log(props.data)
 </script>
 
 <template>
-	<div class="px-4 py-5 md:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
+	<div class="px-4 py-5 md:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6" :style="dynamicStyles">
 		<!-- Column 1: Payment & Customer Information -->
 		<div class="space-y-6">
 			<!-- Section: Payment Summary -->
 			<div class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
-				<div class="px-6 py-4 border-b border-gray-200">
+				<div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
 					<h3 class="text-lg font-medium text-gray-900 flex items-center gap-2">
-						<FontAwesomeIcon icon="fal fa-money-bill-wave" class="text-blue-600" />
+						<FontAwesomeIcon icon="fal fa-money-bill-wave" :style="{ color: themeColors.buttonBg }" />
 						{{ trans('Payment Summary') }}
 					</h3>
+					<!-- Refund Button  -->
+					<!-- Hide because BE not ready yet -->
+					<button v-if="canRefund && layout?.app?.environment !== 'production'" @click="openRefundModal"
+						class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200"
+						:style="{ 
+							backgroundColor: themeColors.buttonBg, 
+							color: themeColors.buttonText
+						}"
+						@mouseover="$event.target.style.backgroundColor = themeColors.primaryBg"
+						@mouseout="$event.target.style.backgroundColor = themeColors.buttonBg">
+						<FontAwesomeIcon icon="fal fa-undo" class="w-4 h-4"  />
+						{{ trans('Process Refund') }}
+					</button>
+
 				</div>
 				<dl class="px-6 py-4 space-y-4">
 					<!-- Payment Amount -->
-					<div class="flex items-center justify-between p-4 bg-gradient-to-r rounded-lg"
-						:class="isRefund ? 'from-red-50 to-pink-50' : 'from-blue-50 to-indigo-50'">
-						<dt class="text-sm font-medium text-gray-600">
+					<div class="flex items-center justify-between p-4 rounded-lg"
+						:style="{ 
+							background: `linear-gradient(to right, ${themeColors.buttonBg}, #ffffff)`
+						}">
+						<dt class="text-sm font-medium" :style="{ color: themeColors.buttonText }">
 							{{ isRefund ? trans('Refund Amount') : trans('Payment Amount') }}
 						</dt>
-						<dd class="text-2xl font-bold" :class="isRefund ? 'text-red-600' : 'text-blue-600'">
+						<dd class="text-2xl font-bold" :style="{ color: isRefund ? '#e00909' : themeColors.primaryBg }">
 							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code,
-							normalizedShowcase.amount) }}
+								normalizedShowcase.amount) }}
 						</dd>
 					</div>
 
@@ -232,7 +394,7 @@ console.log(props.data)
 					<!-- Payment Method -->
 					<div class="flex items-center justify-between">
 						<dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
-							<FontAwesomeIcon icon="fal fa-credit-card" class="text-gray-400" />
+							<FontAwesomeIcon icon="fal fa-credit-card" :style="{ color: themeColors.primaryBg }" />
 							{{ trans('Payment Method') }}
 						</dt>
 						<dd class="text-sm text-gray-900">{{ normalizedShowcase.paymentServiceProvider.name }}</dd>
@@ -252,7 +414,7 @@ console.log(props.data)
 			<div class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
 				<div class="px-6 py-4 border-b border-gray-200">
 					<h3 class="text-lg font-medium text-gray-900 flex items-center gap-2">
-						<FontAwesomeIcon icon="fal fa-male" class="text-green-600" />
+						<FontAwesomeIcon icon="fal fa-male" :style="{ color: themeColors.buttonBg }" />
 						{{ trans('Customer Information') }}
 					</h3>
 				</div>
@@ -360,7 +522,7 @@ console.log(props.data)
 			<div class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
 				<div class="px-6 py-4 border-b border-gray-200">
 					<h3 class="text-lg font-medium text-gray-900 flex items-center gap-2">
-						<FontAwesomeIcon icon="fal fa-file-invoice" class="text-orange-600" />
+						<FontAwesomeIcon icon="fal fa-file-invoice" :style="{ color: themeColors.buttonBg }" />
 						{{ trans('Order Information') }}
 					</h3>
 				</div>
@@ -368,9 +530,12 @@ console.log(props.data)
 				<!-- If parent_data exists -->
 				<div v-if="normalizedShowcase.parentData" class="px-6 py-4 space-y-4">
 					<!-- Order Reference -->
-					<div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-						<dt class="text-sm font-medium text-gray-600">{{ trans('Order Reference') }}</dt>
-						<dd class="text-lg font-bold text-gray-900">{{ normalizedShowcase.parentData.reference }}</dd>
+					<div class="flex items-center justify-between p-4 rounded-lg"
+						:style="{ 
+						background: `linear-gradient(to right, ${themeColors.buttonBg}, #ffffff)`
+						}">
+						<dt class="text-sm font-medium" :style="{ color: themeColors.buttonText }">{{ trans('Order Reference') }}</dt>
+						<dd class="text-lg font-bold" :style="{ color: themeColors.primaryBg }">{{ normalizedShowcase.parentData.reference }}</dd>
 					</div>
 
 					<!-- Order Status -->
@@ -385,9 +550,9 @@ console.log(props.data)
 					<!-- Total Amount -->
 					<div class="flex items-center justify-between py-2">
 						<dt class="text-sm font-medium text-gray-600">{{ trans('Total Amount') }}</dt>
-						<dd class="text-lg font-semibold text-gray-900">
+						<dd class="text-lg font-semibold" :style="{ color: themeColors.primaryBg }">
 							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code,
-							normalizedShowcase.parentData.total_amount) }}
+								normalizedShowcase.parentData.total_amount) }}
 						</dd>
 					</div>
 
@@ -410,7 +575,7 @@ console.log(props.data)
 						<dt class="text-sm font-medium text-gray-600">{{ trans('Net Amount') }}</dt>
 						<dd class="text-sm text-gray-900">
 							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code,
-							normalizedShowcase.parentData.net_amount) }}
+								normalizedShowcase.parentData.net_amount) }}
 						</dd>
 					</div>
 
@@ -419,7 +584,7 @@ console.log(props.data)
 						<dt class="text-sm font-medium text-gray-600">{{ trans('Payment Amount') }}</dt>
 						<dd class="text-sm text-gray-900">
 							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code,
-							normalizedShowcase.parentData.payment_amount) }}
+								normalizedShowcase.parentData.payment_amount) }}
 						</dd>
 					</div>
 
@@ -462,16 +627,16 @@ console.log(props.data)
 				class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
 				<div class="px-6 py-4 border-b border-gray-200">
 					<h3 class="text-lg font-medium text-gray-900 flex items-center gap-2">
-						<FontAwesomeIcon icon="fal fa-credit-card" class="text-indigo-600" />
+						<FontAwesomeIcon icon="fal fa-credit-card" :style="{ color: themeColors.buttonBg }" />
 						{{ trans('Credit Transaction') }}
 					</h3>
 				</div>
 				<dl class="px-6 py-4 space-y-4">
 					<!-- Transaction ID -->
-					<div class="flex items-center justify-between p-4 bg-indigo-50 rounded-lg">
-						<dt class="text-sm font-medium text-gray-600">{{ trans('Transaction ID') }}</dt>
-						<dd class="text-lg font-bold text-indigo-700">#{{ normalizedShowcase.creditTransaction.id }}
-						</dd>
+					<div class="flex items-center justify-between p-4 rounded-lg"
+						:style="{ backgroundColor: themeColors.buttonBg }">
+						<dt class="text-sm font-medium" :style="{ color: themeColors.buttonText }">{{ trans('Transaction ID') }}</dt>
+						<dd class="text-lg font-bold" :style="{ color: themeColors.buttonText }">#{{ normalizedShowcase.creditTransaction.id }}</dd>
 					</div>
 
 					<!-- Transaction Type -->
@@ -483,9 +648,9 @@ console.log(props.data)
 					<!-- Transaction Amount -->
 					<div class="flex items-center justify-between py-2">
 						<dt class="text-sm font-medium text-gray-600">{{ trans('Transaction Amount') }}</dt>
-						<dd class="text-lg font-semibold text-gray-900">
+						<dd class="text-lg font-semibold" :style="{ color: themeColors.primaryBg }">
 							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code,
-							normalizedShowcase.creditTransaction.amount) }}
+								normalizedShowcase.creditTransaction.amount) }}
 						</dd>
 					</div>
 
@@ -494,22 +659,21 @@ console.log(props.data)
 						<dt class="text-sm font-medium text-gray-600">{{ trans('Running Amount') }}</dt>
 						<dd class="text-sm text-gray-900">
 							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code,
-							normalizedShowcase.creditTransaction.running_amount) }}
+								normalizedShowcase.creditTransaction.running_amount) }}
 						</dd>
 					</div>
 
 					<!-- Payment ID -->
 					<div class="flex items-center justify-between py-2 border-t border-gray-200 pt-4">
 						<dt class="text-sm font-medium text-gray-600">{{ trans('Payment ID') }}</dt>
-						<dd class="text-sm text-gray-900">#{{ normalizedShowcase.creditTransaction.payment_id }}</dd>
+						<dd class="text-sm" :style="{ color: themeColors.primaryBg }">#{{ normalizedShowcase.creditTransaction.payment_id }}</dd>
 					</div>
 
 					<!-- Payment Reference -->
 					<div v-if="normalizedShowcase.creditTransaction.payment_reference"
 						class="flex items-center justify-between py-2">
 						<dt class="text-sm font-medium text-gray-600">{{ trans('Payment Reference') }}</dt>
-						<dd class="text-sm text-gray-900">{{ normalizedShowcase.creditTransaction.payment_reference }}
-						</dd>
+						<dd class="text-sm" :style="{ color: themeColors.primaryBg }">{{ normalizedShowcase.creditTransaction.payment_reference }}</dd>
 					</div>
 
 					<!-- Payment Type -->
@@ -536,19 +700,20 @@ console.log(props.data)
 			<div class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
 				<div class="px-6 py-4 border-b border-gray-200">
 					<h3 class="text-lg font-medium text-gray-900 flex items-center gap-2">
-						<FontAwesomeIcon icon="fal fa-building" class="text-purple-600" />
+						<FontAwesomeIcon icon="fal fa-building" :style="{ color: themeColors.buttonBg }" />
 						{{ trans('Account Information') }}
 					</h3>
 				</div>
 				<dl class="px-6 py-4 space-y-4">
 					<!-- Payment Account -->
-					<div class="p-4 bg-purple-50 rounded-lg">
-						<dt class="text-sm font-medium text-gray-600 mb-2">{{ trans('Payment Account') }}</dt>
+					<div class="p-4 rounded-lg"
+						:style="{ 
+	background: `linear-gradient(to right, ${themeColors.buttonBg}, #ffffff)`
+						}">
+						<dt class="text-sm font-medium mb-2" :style="{ color: themeColors.buttonText }">{{ trans('Payment Account') }}</dt>
 						<dd class="space-y-1">
-							<div class="text-lg font-semibold text-purple-700">{{ normalizedShowcase.paymentAccount.name
-								}}</div>
-							<div class="text-sm text-gray-500">{{ trans('Code') }}: {{
-								normalizedShowcase.paymentAccount.code }}</div>
+							<div class="text-lg font-semibold" :style="{ color: themeColors.buttonText }">{{ normalizedShowcase.paymentAccount.name }}</div>
+							<div class="text-sm" :style="{ color: themeColors.buttonText }">{{ trans('Code') }}: {{ normalizedShowcase.paymentAccount.code }}</div>
 						</dd>
 					</div>
 
@@ -567,9 +732,8 @@ console.log(props.data)
 					<!-- Total Payments -->
 					<div class="flex items-center justify-between py-2 border-t border-gray-200 pt-4">
 						<dt class="text-sm font-medium text-gray-600">{{ trans('Total Payments') }}</dt>
-						<dd class="text-2xl font-bold text-purple-700">
-							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code,
-									normalizedShowcase.paymentAccount.number_payments) }}
+						<dd class="text-2xl font-bold" :style="{ color: themeColors.primaryBg }">
+							{{ normalizedShowcase.paymentAccount.number_payments }}
 						</dd>
 					</div>
 				</dl>
@@ -585,6 +749,154 @@ console.log(props.data)
 						</p>
 					</div>
 				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Refund Modal -->
+	<div v-if="showRefundModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+		<div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+			<!-- Modal Header -->
+			<div class="flex items-center justify-between p-6 border-b border-gray-200">
+				<h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+					<FontAwesomeIcon icon="fal fa-undo" class="text-red-600" />
+					{{ trans('Process Payment Refund') }}
+				</h3>
+				<button @click="closeRefundModal" class="text-gray-400 hover:text-gray-600 transition-colors">
+					<FontAwesomeIcon icon="fal fa-times" class="w-5 h-5" />
+				</button>
+			</div>
+
+			<!-- Modal Body -->
+			<div class="p-6 space-y-4">
+				<!-- Error Messages -->
+				<div v-if="Object.keys(refundErrors).length > 0" class="bg-red-50 border border-red-200 rounded-lg p-4">
+					<div class="flex">
+						<FontAwesomeIcon icon="fal fa-times-circle" class="text-red-400 w-5 h-5 mt-0.5 mr-3" />
+						<div>
+							<h4 class="text-sm font-medium text-red-800 mb-1">{{ trans('Please correct the following errors') }}:</h4>
+							<ul class="text-sm text-red-700 space-y-1">
+								<li v-for="(error, field) in refundErrors" :key="field">
+									<span v-if="Array.isArray(error)">{{ error[0] }}</span>
+									<span v-else>{{ error }}</span>
+								</li>
+							</ul>
+						</div>
+					</div>
+				</div>
+				<!-- Original Payment Info -->
+				<div class="bg-gray-50 rounded-lg p-4">
+					<h4 class="text-sm font-medium text-gray-700 mb-2">{{ trans('Original Payment') }}</h4>
+					<div class="flex justify-between items-center">
+						<span class="text-sm text-gray-600">{{ trans('Amount') }}:</span>
+						<span class="font-semibold text-gray-900">
+							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code,
+								normalizedShowcase.amount) }}
+						</span>
+					</div>
+				</div>
+
+				<!-- Refund Type Selection -->
+				<div>
+					<label class="block text-sm font-medium text-gray-700 mb-2">{{ trans('Refund Type') }}</label>
+					<div class="space-y-2">
+						<label class="flex items-center">
+							<input v-model="refundType" type="radio" value="partial"
+								class="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300">
+							<span class="ml-2 text-sm text-gray-700">{{ trans('Partial Refund') }}</span>
+						</label>
+						<label class="flex items-center">
+							<input v-model="refundType" type="radio" value="full"
+								class="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300">
+							<span class="ml-2 text-sm text-gray-700">{{ trans('Full Refund') }}</span>
+						</label>
+					</div>
+				</div>
+
+				<!-- Refund Amount Input -->
+				<div v-if="refundType === 'partial'">
+					<label class="block text-sm font-medium text-gray-700 mb-2">
+						{{ trans('Refund Amount') }}
+					</label>
+					<div class="relative">
+						<input v-model="refundAmount" type="number" step="0.01" :max="maxRefundAmount" min="0.01"
+							class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+							:class="{ 'border-red-300 bg-red-50': !validateRefundAmount() && refundAmount }">
+						<div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+							<span class="text-gray-500 text-sm">{{ normalizedShowcase.currency.code }}</span>
+						</div>
+					</div>
+					<p v-if="!validateRefundAmount() && refundAmount" class="mt-1 text-sm text-red-600">
+						{{ trans('Invalid amount. Maximum refund') }}: {{
+							useLocaleStore().currencyFormat(normalizedShowcase.currency.code, maxRefundAmount) }}
+					</p>
+				</div>
+
+				<!-- Full Refund Amount Display -->
+				<div v-if="refundType === 'full'" class="bg-red-50 border border-red-200 rounded-lg p-4">
+					<div class="flex justify-between items-center">
+						<span class="text-sm font-medium text-red-800">{{ trans('Full Refund Amount') }}:</span>
+						<span class="text-lg font-bold text-red-900">
+							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code, maxRefundAmount) }}
+						</span>
+					</div>
+				</div>
+
+				<!-- Refund Reason -->
+				<div>
+					<label class="block text-sm font-medium text-gray-700 mb-2">
+						{{ trans('Refund Reason') }} <span class="text-red-500">*</span>
+					</label>
+					<textarea v-model="refundReason" rows="3"
+						class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+						:placeholder="trans('Please provide a reason for this refund...')"></textarea>
+				</div>
+
+				<!-- Refund Summary -->
+				<div class="border-t border-gray-200 pt-4">
+					<h4 class="text-sm font-medium text-gray-700 mb-3">{{ trans('Refund Summary') }}</h4>
+					<div class="bg-red-50 rounded-lg p-4 space-y-2">
+						<div class="flex justify-between text-sm">
+							<span class="text-gray-600">{{ trans('Type') }}:</span>
+							<span class="font-medium">{{ trans('Payment Refund') }}</span>
+						</div>
+						<div class="flex justify-between text-sm">
+							<span class="text-gray-600">{{ trans('Amount') }}:</span>
+							<span class="font-medium text-red-700">
+								-{{ useLocaleStore().currencyFormat(
+									normalizedShowcase.currency.code,
+									refundType === 'full' ? maxRefundAmount : parseFloat(refundAmount) || 0
+								) }}
+							</span>
+						</div>
+						<div class="flex justify-between text-sm">
+							<span class="text-gray-600">{{ trans('Currency') }}:</span>
+							<span class="font-medium">{{ normalizedShowcase.currency.code }}</span>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Modal Footer -->
+			<div class="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
+				<button @click="closeRefundModal"
+					class="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200"
+					:disabled="isProcessingRefund">
+					{{ trans('Cancel') }}
+				</button>
+				<button @click="processRefund"
+					:disabled="isProcessingRefund || !refundReason.trim() || (refundType === 'partial' && !validateRefundAmount())"
+					class="px-4 py-2 text-white rounded-lg transition-colors duration-200 flex items-center gap-2"
+					:style="{ 
+						backgroundColor: themeColors.buttonBg,
+						'&:hover': { backgroundColor: themeColors.primaryBg }
+					}"
+					@mouseover="$event.target.style.backgroundColor = themeColors.primaryBg"
+					@mouseout="$event.target.style.backgroundColor = themeColors.buttonBg">
+					<FontAwesomeIcon v-if="isProcessingRefund" icon="fal fa-sync" class="w-4 h-4 animate-spin" />
+					<FontAwesomeIcon v-else icon="fal fa-undo" class="w-4 h-4" />
+					{{ isProcessingRefund ? trans('Processing...') : trans('Process Refund') }}
+				</button>
 			</div>
 		</div>
 	</div>

@@ -52,8 +52,10 @@ class GetRecommendedTradeUnits extends GrpAction
                 'trade_units.marketing_dimensions',
                 'trade_units.volume',
                 'trade_units.type',
+                'trade_units.image_id',
                 'trade_units.id',
             ])
+            ->selectRaw("CASE WHEN trade_units.code LIKE '{$parent->code}%' THEN true ELSE false END as is_recommended")
             ->allowedSorts(['code', 'name', 'net_weight', 'gross_weight'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix)

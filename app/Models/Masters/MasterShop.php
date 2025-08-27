@@ -174,5 +174,4 @@ class MasterShop extends Model implements Auditable
     {
         return $this->morphToMany(MasterCollection::class, 'model', 'model_has_master_collections')->withTimestamps();
     }
-
 }
