@@ -62,7 +62,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|ClockingMachine newQuery()
  * @method static Builder<static>|ClockingMachine onlyTrashed()
  * @method static Builder<static>|ClockingMachine query()
- * @method static Builder<static>|ClockingMachine withTrashed()
+ * @method static Builder<static>|ClockingMachine withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|ClockingMachine withoutTrashed()
  * @mixin Eloquent
  */

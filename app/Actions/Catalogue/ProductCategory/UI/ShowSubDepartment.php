@@ -43,7 +43,7 @@ class ShowSubDepartment extends OrgAction
 
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inShop(Organisation $organisation, Shop $shop,  ProductCategory $subDepartment, ActionRequest $request): ProductCategory
+    public function inShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, ActionRequest $request): ProductCategory
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request)->withTab(DepartmentTabsEnum::values());
@@ -206,7 +206,7 @@ class ShowSubDepartment extends OrgAction
     public function getBreadcrumbs(ProductCategory $subDepartment, string $routeName, array $routeParameters, ?string $suffix = null): array
     {
 
-         $headCrumb = function (ProductCategory $subDepartment, array $routeParameters, $suffix) {
+        $headCrumb = function (ProductCategory $subDepartment, array $routeParameters, $suffix) {
             return [
 
                 [
@@ -253,7 +253,7 @@ class ShowSubDepartment extends OrgAction
             'grp.org.shops.show.catalogue.sub_departments.show.products.show',
             'grp.org.shops.show.catalogue.sub_departments.show.families.show.products.index',
             'grp.org.shops.show.catalogue.sub_departments.show.collection.index',
-            'grp.org.shops.show.catalogue.sub_departments.show.collection.show' => 
+            'grp.org.shops.show.catalogue.sub_departments.show.collection.show' =>
             array_merge(
                 ShowShop::make()->getBreadcrumbs($routeParameters),
                 $headCrumb(
@@ -273,7 +273,7 @@ class ShowSubDepartment extends OrgAction
             ),
             default => []
         };
-        
+
     }
 
     public function getPrevious(ProductCategory $subDepartment, ActionRequest $request): ?array

@@ -32,7 +32,7 @@ class StoreMasterAssetFromTradeUnits extends GrpAction
     {
         $masterAsset = DB::transaction(function () use ($parent, $modelData) {
             $data = [
-                'code' => Arr::get($modelData,'code'),
+                'code' => Arr::get($modelData, 'code'),
                 'name' => Arr::get($modelData, 'name'),
                 'price' => Arr::get($modelData, 'price'),
                 'unit' => Arr::get($modelData, 'unit'),

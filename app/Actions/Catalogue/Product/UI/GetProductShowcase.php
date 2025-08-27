@@ -38,7 +38,7 @@ class GetProductShowcase
             'ingredients'       => $ingredients,
             'tariff_code'       => $product->tariff_code,
             'duty_rate'         => $product->duty_rate,
-            
+
         ];
 
         $dataTradeUnits = [];

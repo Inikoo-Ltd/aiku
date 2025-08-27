@@ -75,7 +75,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Outbox newQuery()
  * @method static Builder<static>|Outbox onlyTrashed()
  * @method static Builder<static>|Outbox query()
- * @method static Builder<static>|Outbox withTrashed()
+ * @method static Builder<static>|Outbox withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Outbox withoutTrashed()
  * @mixin Eloquent
  */

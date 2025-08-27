@@ -22,8 +22,6 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\Sluggable\SlugOptions;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $supplier_id
@@ -59,7 +57,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SupplierUser newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SupplierUser onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SupplierUser query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SupplierUser withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SupplierUser withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SupplierUser withoutTrashed()
  * @mixin \Eloquent
  */

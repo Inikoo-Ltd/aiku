@@ -57,7 +57,7 @@ class StoreMasterAsset extends OrgAction
 
             if ($parent->type == ProductCategoryTypeEnum::FAMILY) {
                 data_set($modelData, 'master_family_id', $parent->id);
-                if($parent->master_sub_department_id) {
+                if ($parent->master_sub_department_id) {
                     data_set($modelData, 'master_sub_department_id', $parent->master_sub_department_id);
                 }
             }

@@ -127,7 +127,7 @@ class ShowFamily extends OrgAction
                         ]
                         ];
             } elseif ($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
-                if(request()->route()->getName() == 'grp.org.shops.show.catalogue.sub_departments.show.families.show') {
+                if (request()->route()->getName() == 'grp.org.shops.show.catalogue.sub_departments.show.families.show') {
                     $route = 'grp.org.shops.show.catalogue.sub_departments.show';
                 } else {
                     $route = 'grp.org.shops.show.catalogue.departments.show.sub_departments.show';

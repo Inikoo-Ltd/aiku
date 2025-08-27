@@ -17,8 +17,6 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id
