@@ -226,6 +226,7 @@ class IndexMasterProducts extends GrpAction
             }
         }
 
+        $isFamily = $this->parent instanceof MasterProductCategory && $this->parent->type == MasterProductCategoryTypeEnum::FAMILY;
         return Inertia::render(
             'Masters/MasterProducts',
             [
@@ -236,6 +237,12 @@ class IndexMasterProducts extends GrpAction
                 ),
                 'title'       => $title,
                 'familyId'      => $familyId,
+                'storeProductRoute' => $isFamily ?  [
+                        'name'       => 'grp.models.master_family.store-assets',
+                        'parameters' => [
+                            'masterFamily' => $this->parent->id,
+                        ]
+                    ] : [],
                 'pageHead'    => [
                     'title'         => $title,
                     'icon'          => $icon,
@@ -243,20 +250,14 @@ class IndexMasterProducts extends GrpAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'subNavigation' => $subNavigation,
-                    'actions'       => [
+                    'actions'       => $isFamily ? [
                         [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('create product'),
-                            'label'   => __('create product'),
-                            'route'   =>
-                                [
-                                    'name'       => preg_replace('/index$/', 'create', $request->route()->getName()),
-                                    'parameters' => $request->route()->originalParameters()
-                                ]
-
+                            'tooltip' => __('Add a master product to this family'),
+                            'label'   => __('master product'),
                         ],
-                    ],
+                    ] : [],
                 ],
                 'data'        => MasterProductsResource::collection($masterAssets),
 

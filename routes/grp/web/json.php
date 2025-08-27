@@ -62,7 +62,9 @@ use App\Actions\Helpers\Tag\Json\GetGrpTags;
 use App\Actions\Helpers\Tag\Json\GetTags;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocks;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
+use App\Actions\Masters\MasterAsset\Json\GetAllTradeUnits;
 use App\Actions\Masters\MasterAsset\Json\GetRecommendedTradeUnits;
+use App\Actions\Masters\MasterAsset\Json\GetTakenTradeUnits;
 use App\Actions\Masters\MasterCollection\UI\GetMasterCollections;
 use App\Actions\Masters\MasterCollection\UI\GetMasterFamilies;
 use App\Actions\Masters\MasterCollection\UI\GetMasterProductsNotAttachedToAMasterCollection;
@@ -191,3 +193,5 @@ Route::get('webpage/{webpage:id}/web-block-type/{webBlockType:id}/web-block-hist
 
 
 Route::get('master-product-category/{masterProductCategory}/recommended-trade-units', GetRecommendedTradeUnits::class)->name('master-product-category.recommended-trade-units')->withoutScopedBindings();
+Route::get('master-product-category/{masterProductCategory}/taken-trade-units', GetTakenTradeUnits::class)->name('master-product-category.taken-trade-units')->withoutScopedBindings();
+Route::get('master-product-category/{masterProductCategory}/all-trade-units', GetAllTradeUnits::class)->name('master-product-category.all-trade-units')->withoutScopedBindings();

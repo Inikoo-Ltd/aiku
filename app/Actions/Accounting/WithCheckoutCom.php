@@ -14,6 +14,7 @@ use Checkout\CheckoutApiException;
 use Checkout\CheckoutSdk;
 use Checkout\Environment;
 use Checkout\Payments\BillingInformation;
+use Checkout\Payments\RefundRequest;
 use Checkout\Payments\Sessions\PaymentSessionsRequest;
 use Sentry;
 
@@ -74,6 +75,36 @@ trait WithCheckoutCom
             ];
         }
 
+    }
+
+    private function refundPayment(PaymentAccountShop $paymentAccountShop, string $paymentID, ?float $amount = null): array
+    {
+        list($publicKey, $secretKey) = $paymentAccountShop->getCredentials();
+
+        $checkoutApi = $this->getCheckoutApi($publicKey, $secretKey);
+
+        try {
+            $refundRequest = new RefundRequest();
+            if ($amount !== null) {
+                if ($amount <= 0) {
+                    throw new \InvalidArgumentException('Refund amount must be greater than zero');
+                }
+
+                $refundRequest->amount = $amount;
+            }
+
+            return $checkoutApi->getPaymentsClient()->refundPayment($paymentID, $refundRequest);
+        } catch (CheckoutApiException $e) {
+            \Sentry\captureException($e);
+            $error_details    = $e->error_details;
+            $http_status_code = isset($e->http_metadata) ? $e->http_metadata->getStatusCode() : null;
+
+            return [
+                'error' => true,
+                'message' => $error_details,
+                'http_status_code' => $http_status_code
+            ];
+        }
     }
 
     protected function getFailureTitle($status): string

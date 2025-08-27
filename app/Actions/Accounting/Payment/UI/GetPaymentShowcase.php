@@ -49,14 +49,7 @@ class GetPaymentShowcase
             'currency'       => CurrencyResource::make($payment->currency),
             'paymentAccount' => PaymentAccountResource::make($payment->paymentAccount),
             'paymentServiceProvider' => $paymentServiceProvider,
-            'credit_transaction' => $creditTransaction,
-            'refund_route' => [
-                'name' => 'grp.models.org.payment_refund.store',
-                'parameters' => [
-                    'organisation' => $payment->organisation_id,
-                    'payment' => $payment->id
-                ]
-            ]
+            'credit_transaction' => $creditTransaction
         ];
     }
 }

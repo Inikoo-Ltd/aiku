@@ -80,7 +80,7 @@ class CompleteStandaloneFulfilmentInvoice extends OrgAction
         OrganisationHydrateInvoiceIntervals::dispatch($invoice->organisation);
         GroupHydrateInvoiceIntervals::dispatch($invoice->group);
 
-        if($invoice->master_shop_id){
+        if ($invoice->master_shop_id) {
             MasterShopHydrateSalesIntervals::dispatch($invoice->master_shop_id)->delay($this->hydratorsDelay);
             MasterShopHydrateInvoiceIntervals::dispatch($invoice->master_shop_id)->delay($this->hydratorsDelay);
         }

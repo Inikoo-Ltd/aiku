@@ -199,8 +199,7 @@ use App\Actions\HumanResources\JobPosition\UpdateJobPosition;
 use App\Actions\HumanResources\Workplace\DeleteWorkplace;
 use App\Actions\HumanResources\Workplace\StoreWorkplace;
 use App\Actions\HumanResources\Workplace\UpdateWorkplace;
-use App\Actions\Masters\MasterAsset\StoreMasterAssetFromTradeUnits;
-use App\Actions\Masters\MasterAsset\StoreMasterAssets;
+use App\Actions\Masters\MasterAsset\StoreMasterProductFromTradeUnits;
 use App\Actions\Masters\MasterCollection\AttachMasterCollectionToModel;
 use App\Actions\Masters\MasterCollection\AttachModelsToMasterCollection;
 use App\Actions\Masters\MasterCollection\AttachMultipleParentsToAMasterCollection;
@@ -377,7 +376,7 @@ Route::prefix('master-collection/{masterCollection:id}')->name('master_collectio
 });
 
 Route::prefix('master-family/{masterFamily:id}')->name('master_family.')->group(function () {
-    Route::post('store-assets', StoreMasterAssetFromTradeUnits::class)->name('store-assets');
+    Route::post('store-assets', StoreMasterProductFromTradeUnits::class)->name('store-assets');
 });
 
 Route::prefix('department/{productCategory:id}')->name('department.')->group(function () {
@@ -398,7 +397,7 @@ Route::prefix('master-sub-department/{masterSubDepartment:id}')->name('master-su
 Route::prefix('/product_category/{productCategory:id}')->name('product_category.')->group(function () {
     Route::patch('update', UpdateProductCategory::class)->name('update');
     Route::delete('delete', DeleteProductCategory::class)->name('delete');
-    Route::delete('translations', UpdateProductCategoryTranslations::class)->name('translations.update');
+    Route::patch('translations', UpdateProductCategoryTranslations::class)->name('translations.update');
 });
 
 Route::prefix('sub-department/{productCategory:id}')->name('sub-department.')->group(function () {

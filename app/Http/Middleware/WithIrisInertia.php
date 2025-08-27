@@ -15,6 +15,7 @@ use App\Http\Resources\Helpers\LanguageResource;
 use App\Http\Resources\UI\LoggedWebUserResource;
 use App\Http\Resources\Web\WebsiteIrisResource;
 use App\Models\CRM\WebUser;
+use App\Models\Helpers\Language;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
 
@@ -22,7 +23,6 @@ trait WithIrisInertia
 {
     public function getIrisData(Website $website, ?WebUser $webUser): array
     {
-
         $shop = $website->shop;
 
         $headerLayout   = Arr::get($website->published_layout, 'header');
@@ -54,6 +54,8 @@ trait WithIrisInertia
         }
 
 
+        $currentLanguage = Language::where('code', app()->getLocale())->first();
+
         return [
             'header'               => array_merge(
                 $isHeaderActive == 'active' ? Arr::get($website->published_layout, 'header') : [],
@@ -75,20 +77,22 @@ trait WithIrisInertia
             'theme'                => Arr::get($website->published_layout, 'theme'),
             'luigisbox_tracker_id' => Arr::get($website->settings, 'luigisbox.tracker_id'),
             'is_logged_in'         => (bool)$webUser,
-            'is_have_gtm'          => (bool) Arr::get($website->settings, 'google_tag_id'),
+            'is_have_gtm'          => (bool)Arr::get($website->settings, 'google_tag_id'),
             'currency'             => [
                 'code'   => $shop->currency->code,
                 'symbol' => $shop->currency->symbol,
                 'name'   => $shop->currency->name,
             ],
             'locale'               => app()->getLocale(),
-            'website_i18n' => [
-                'language' => LanguageResource::make($shop->language)->getArray(),
+
+            'website_i18n'       => [
+                'current_language' => LanguageResource::make($currentLanguage)->getArray(),
+                'shop_language'    => LanguageResource::make($shop->language)->getArray(),
                 'language_options' => GetLanguagesOptions::make()->getExtraShopLanguages($shop->extra_languages),
             ],
-            'user_auth'            => $webUser ? LoggedWebUserResource::make($webUser)->getArray() : null,
-            'customer'             => $webUser?->customer,
-            'variables'            => [
+            'user_auth'          => $webUser ? LoggedWebUserResource::make($webUser)->getArray() : null,
+            'customer'           => $webUser?->customer,
+            'variables'          => [
                 'reference'        => $webUser?->customer?->reference,
                 'name'             => $webUser?->contact_name,
                 'username'         => $webUser?->username,
@@ -97,7 +101,7 @@ trait WithIrisInertia
                 'cart_count'       => $cartCount,
                 'cart_amount'      => $cartAmount,
             ],
-            'migration_redirect'   => $migrationRedirect
+            'migration_redirect' => $migrationRedirect
         ];
     }
 }

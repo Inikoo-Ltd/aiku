@@ -81,6 +81,7 @@ const _popover = ref(null)
             <template #label>
                 {{ Object.values(layout.iris.website_i18n?.language_options || {})?.find(language => language.code === layout.iris.locale)?.name }}
                 <img class="inline pr-1 pl-1 h-[1em]" :src="`/flags/${layout.iris.locale.toLowerCase()}.png`" xalt="language.code"   xtitle='capitalize(countryName)'  />
+                <!-- <img class="inline pr-1 pl-1 h-[1em]" :src="`/flags/${layout.iris.locale_flag}`" xalt="language.code"   xtitle='capitalize(countryName)'  /> -->
             </template>
         </Button>
         <Popover ref="_popover">

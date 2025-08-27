@@ -9,7 +9,7 @@
 namespace App\Actions\Masters\MasterAsset\Json;
 
 use App\Actions\GrpAction;
-use App\Http\Resources\Goods\TradeUnitsResource;
+use App\Http\Resources\Goods\TradeUnitsForMasterResource;
 use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterProductCategory;
 use App\Services\QueryBuilder;
@@ -36,16 +36,28 @@ class GetRecommendedTradeUnits extends GrpAction
             });
         });
 
+        $masterAssetIds = $parent->masterAssets()->pluck('id')->toArray();
+
         $queryBuilder = QueryBuilder::for(TradeUnit::class);
-        $queryBuilder->where('trade_units.group_id', $parent->group_id);
+        $queryBuilder->where('trade_units.group_id', $parent->group_id)
+            ->where('trade_units.code', 'like', $parent->code . '%')
+            ->leftJoin('model_has_trade_units', function ($join) {
+                $join->on('trade_units.id', '=', 'model_has_trade_units.trade_unit_id')
+                    ->where('model_has_trade_units.model_type', '=', 'MasterAsset');
+            });
+
+        $queryBuilder->where(function ($query) use ($masterAssetIds) {
+            $query->whereNull('model_has_trade_units.model_id')
+                ->orWhereNotIn('model_has_trade_units.model_id', $masterAssetIds);
+        });
 
         return $queryBuilder
-            ->orderByRaw("CASE WHEN trade_units.code LIKE '{$parent->code}%' THEN 0 ELSE 1 END")
-            ->orderBy('trade_units.code')
+            ->defaultSort('trade_units.code')
             ->select([
                 'trade_units.code',
                 'trade_units.slug',
                 'trade_units.name',
+                'trade_units.type',
                 'trade_units.description',
                 'trade_units.gross_weight',
                 'trade_units.net_weight',
@@ -55,7 +67,6 @@ class GetRecommendedTradeUnits extends GrpAction
                 'trade_units.image_id',
                 'trade_units.id',
             ])
-            ->selectRaw("CASE WHEN trade_units.code LIKE '{$parent->code}%' THEN true ELSE false END as is_recommended")
             ->allowedSorts(['code', 'name', 'net_weight', 'gross_weight'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix)
@@ -64,6 +75,6 @@ class GetRecommendedTradeUnits extends GrpAction
 
     public function jsonResponse(LengthAwarePaginator $tradeUnits): AnonymousResourceCollection
     {
-        return TradeUnitsResource::collection($tradeUnits);
+        return TradeUnitsForMasterResource::collection($tradeUnits);
     }
 }
