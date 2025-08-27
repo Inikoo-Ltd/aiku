@@ -8,6 +8,7 @@
 
 namespace App\Models\Accounting;
 
+use App\Enums\Accounting\Payment\PaymentClassEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentSubsequentStatusEnum;
@@ -105,6 +106,7 @@ class Payment extends Model implements Auditable
         'status'            => PaymentStatusEnum::class,
         'subsequent_status' => PaymentSubsequentStatusEnum::class,
         'type'              => PaymentTypeEnum::class,
+        'class'             => PaymentClassEnum::class,
         'amount'            => 'decimal:2',
         'grp_amount'        => 'decimal:2',
         'org_amount'        => 'decimal:2',
