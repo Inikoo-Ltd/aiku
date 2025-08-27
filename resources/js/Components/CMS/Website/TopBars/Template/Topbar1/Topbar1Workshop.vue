@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import { trans } from 'laravel-vue-i18n'
-import { defineExpose, ref } from 'vue'
+import { ref } from 'vue'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus } from '@fal'
@@ -9,8 +9,6 @@ import { inject } from 'vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { getStyles } from '@/Composables/styles'
 import { checkVisible, textReplaceVariables, dummyIrisVariables } from '@/Composables/Workshop'
-import { iframeToParent } from '@/Composables/Workshop'
-import { sendMessageToParent } from '@/Composables/Workshop'
 
 library.add(faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus)
 
@@ -61,14 +59,6 @@ const layout = inject('layout', {})
 		}"
     >
         <div class="flex-shrink flex flex-col md:flex-row items-center justify-between w-full hover-dashed"  @click="()=> emits('setPanelActive', 'main_title')">
-            <!-- Section: greeting -->
-           <!--  <div
-                v-if="checkVisible(model?.greeting?.visible || null, isLoggedIn) && textReplaceVariables(model?.greeting?.text, layout.iris_variables)"
-                class="flex items-center"
-                v-html="textReplaceVariables(model?.greeting?.text, layout.iris_variables)"
-
-            /> -->
-            
             <!-- Section: Main title -->
             <div
                 v-if="checkVisible(model?.main_title?.visible || null, isLoggedIn) && textReplaceVariables(model?.main_title?.text, dummyIrisVariables)"
@@ -84,7 +74,6 @@ const layout = inject('layout', {})
             <a v-if="checkVisible(model?.profile?.visible || null, isLoggedIn)"
                 id="profile_button"
                 class="space-x-1.5 whitespace-nowrap hover-dashed"
-                xstyle="getStyles(model?.profile.container?.properties)"
                  @click="()=> emits('setPanelActive', 'profile')"
             >
                 <FontAwesomeIcon icon='fal fa-user' class='' v-tooltip="trans('Profile')" fixed-width aria-hidden='true' />
@@ -95,7 +84,6 @@ const layout = inject('layout', {})
             <a v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn)"
                 id="favorites_button"
                 class="space-x-1.5 whitespace-nowrap hover-dashed"
-                xstyle="getStyles(model?.favourite.container?.properties)"
                 @click="()=> emits('setPanelActive', 'favourite')"
             >
                 <FontAwesomeIcon icon='fal fa-heart' class='' fixed-width aria-hidden='true' />
