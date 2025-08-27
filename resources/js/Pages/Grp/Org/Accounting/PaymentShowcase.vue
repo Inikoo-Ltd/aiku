@@ -331,6 +331,20 @@ const validateRefundAmount = () => {
 	return true
 }
 
+const handleMouseOver = (event) => {
+	if (!isProcessingRefund.value) {
+		event.target.style.backgroundColor = themeColors.value.buttonBg
+	}
+}
+
+const handleMouseOut = (event) => {
+	if (!isProcessingRefund.value) {
+		event.target.style.backgroundColor = themeColors.value.buttonBg
+	} else {
+		event.target.style.backgroundColor = '#6B7280'
+	}
+}
+
 // console.log(props.data)
 </script>
 
@@ -887,16 +901,20 @@ const validateRefundAmount = () => {
 				<button @click="processRefund"
 					:disabled="isProcessingRefund || !refundReason.trim() || (refundType === 'partial' && !validateRefundAmount())"
 					class="px-4 py-2 text-white rounded-lg transition-colors duration-200 flex items-center gap-2"
-					:style="{ 
-						backgroundColor: themeColors.buttonBg,
-						'&:hover': { backgroundColor: themeColors.primaryBg }
+					:class="{
+					'cursor-not-allowed opacity-50': isProcessingRefund || !refundReason.trim() || (refundType === 'partial' && !validateRefundAmount())
 					}"
-					@mouseover="$event.target.style.backgroundColor = themeColors.primaryBg"
-					@mouseout="$event.target.style.backgroundColor = themeColors.buttonBg">
+					:style="{ 
+					backgroundColor: (isProcessingRefund || !refundReason.trim() || (refundType === 'partial' && !validateRefundAmount())) 
+						? '#6B7280' 
+						: themeColors.buttonBg
+					}"
+					@mouseover="handleMouseOver"
+					@mouseout="handleMouseOut">
 					<FontAwesomeIcon v-if="isProcessingRefund" icon="fal fa-sync" class="w-4 h-4 animate-spin" />
 					<FontAwesomeIcon v-else icon="fal fa-undo" class="w-4 h-4" />
 					{{ isProcessingRefund ? trans('Processing...') : trans('Process Refund') }}
-				</button>
+			</button>
 			</div>
 		</div>
 	</div>
