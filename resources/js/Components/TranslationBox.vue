@@ -120,8 +120,9 @@ const saveTranslation = () => {
       onSuccess: () => {
         notify({ title: trans('Success'), text: trans('Success to save translation'), type: 'success' })
       },
-      onError: () => {
-        notify({ title: trans('Something went wrong'), text: trans('Failed to save translation'), type: 'error' })
+      onError: (error) => {
+        console.log(error)
+        notify({ title: trans('Something went wrong'), text: error || trans('Failed to save translation'), type: 'error' })
       },
       onFinish: () => (isLoading.value = false)
     }
