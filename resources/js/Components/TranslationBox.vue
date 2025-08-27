@@ -111,7 +111,7 @@ const saveTranslation = () => {
     description_extra: props.master.description_extra
   }
 
-  router.patch(
+  router[props.save_route.method || 'patch'](
     route(props.save_route.name, props.save_route.parameters),
     { translations: translations.value, master },
     {
