@@ -54,7 +54,7 @@ class CreateMasterProduct extends GrpAction
                                 'fields' => [
                                     'trade_units' => [
                                         'type'         => 'list-selector',
-                                        'label'        => __('Trade units'),
+                                        'label'        => __(key: 'Trade units'),
                                         'withQuantity' => true,
                                         'key_quantity' => 'quantity',
                                         'routeFetch'  => [
