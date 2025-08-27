@@ -139,7 +139,7 @@ class UpdateProduct extends OrgAction
         }
 
         if ($oldHistoricProduct != $product->current_historic_asset_id) {
-            UpdateHistoricProductInBasketTransactions::run($product);
+            UpdateHistoricProductInBasketTransactions::dispatch($product);
         }
 
 
