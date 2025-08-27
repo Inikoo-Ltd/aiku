@@ -9,6 +9,7 @@
 namespace App\Actions\Masters\MasterAsset\Json;
 
 use App\Actions\GrpAction;
+use App\Http\Resources\Goods\TradeUnitsForMasterResource;
 use App\Http\Resources\Goods\TradeUnitsResource;
 use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterProductCategory;
@@ -71,6 +72,6 @@ class GetTakenTradeUnits extends GrpAction
 
     public function jsonResponse(LengthAwarePaginator $tradeUnits): AnonymousResourceCollection
     {
-        return TradeUnitsResource::collection($tradeUnits);
+        return TradeUnitsForMasterResource::collection($tradeUnits);
     }
 }

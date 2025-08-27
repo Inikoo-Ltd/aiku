@@ -9,6 +9,7 @@
 namespace App\Http\Resources\Goods;
 
 use App\Http\Resources\Helpers\ImageResource;
+use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -22,7 +23,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $number_current_products
  * @property mixed $id
  */
-class TradeUnitsResource extends JsonResource
+class TradeUnitsForMasterResource extends JsonResource
 {
     public function toArray($request): array
     {
@@ -41,6 +42,13 @@ class TradeUnitsResource extends JsonResource
             'number_current_products' => $this->number_current_products,
             'id'                      => $this->id,
             'image'                   => $this->image_id ? ImageResource::make($media)->getArray() : null,
+            'value'                   => $this->getStockValue($this->id) ?? 0
         ];
+    }
+
+    public function getStockValue($id)
+    {
+        $tradeUnit = TradeUnit::find($id);
+        return $tradeUnit->stocks->first()->unit_value;
     }
 }
