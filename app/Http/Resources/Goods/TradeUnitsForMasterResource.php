@@ -50,6 +50,6 @@ class TradeUnitsForMasterResource extends JsonResource
     public function getStockValue($id)
     {
         $tradeUnit = TradeUnit::find($id);
-        return $tradeUnit->stocks->first()->unit_value;
+        return $tradeUnit->stocks->first()->unit_value ?? 0;
     }
 }

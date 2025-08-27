@@ -58,6 +58,7 @@ const props = defineProps<{
   webpage: RootWebpage,
   webBlockTypes: Root
   url : string
+  luigi_tracker_id: string
 }>();
 console.log('ss', props.webpage)
 provide('isInWorkshop', true);
@@ -91,6 +92,7 @@ const MAX_HISTORY = 5;
 const undoStack = ref<any[]>(JSON.parse(localStorage.getItem('undoStack') || '[]'));
 const redoStack = ref<any[]>(JSON.parse(localStorage.getItem('redoStack') || '[]'));
 
+provide('webpage_luigi_tracker_id', props.luigi_tracker_id)
 provide('currentView', currentView);
 provide('openedBlockSideEditor', openedBlockSideEditor);
 provide('openedChildSideEditor', openedChildSideEditor);

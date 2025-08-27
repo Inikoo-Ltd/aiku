@@ -13,7 +13,7 @@ import Image from '@/Components/Image.vue'
 import { routeType } from '@/types/route'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheckCircle } from "@fas"
-import { faSearch, faTimes } from "@fal"
+import { faPlus, faSearch, faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
@@ -31,8 +31,11 @@ const props = withDefaults(defineProps<{
     valueToRefetch?: string
     idxSubmitSuccess?: number
     key_quantity?: string
+    head_label?: string
+    tabs?: Array<{ label: string, routeFetch: routeType }>
 }>(), {
     key_quantity: 'quantity_selected',
+    head_label: 'Selected Products'
 })
 
 const emits = defineEmits<{
@@ -48,6 +51,10 @@ interface Portfolio {
     gross_weight: string
     price: number
     currency_code: string
+    reference?: string
+    no_code?: boolean
+    no_price?: boolean
+    is_recommended?: boolean
 }
 
 const layout = inject('layout', layoutStructure)
@@ -62,6 +69,7 @@ const meta = ref()
 const link = ref()
 
 const selectedProduct = ref<Portfolio[]>(props.modelValue || [])
+const activeTab = ref(0)
 
 // --- helpers
 const done = () => {
@@ -71,8 +79,9 @@ const done = () => {
 const getPortfoliosList = async (url?: string) => {
     isLoadingFetch.value = true
     try {
-        const urlToFetch = url || route(props.routeFetch.name, {
-            ...props.routeFetch.parameters,
+        const tabRoute = props.tabs?.[activeTab.value]?.routeFetch || props.routeFetch
+        const urlToFetch = url || route(tabRoute.name, {
+            ...tabRoute.parameters,
             'filter[global]': queryPortfolio.value
         })
         const response = await axios.get(urlToFetch)
@@ -83,7 +92,7 @@ const getPortfoliosList = async (url?: string) => {
         console.error('Error', e)
         notify({
             title: trans("Something went wrong."),
-            text: trans("Error while get the portfolios list."),
+            text: trans("Error while getting the portfolios list."),
             type: "error"
         })
     } finally {
@@ -102,18 +111,14 @@ const selectProduct = (item: Portfolio) => {
     if (exists) {
         selectedProduct.value = selectedProduct.value.filter(p => p.id !== item.id)
     } else {
-        // clone to avoid mutating original reference
         const newItem: any = { ...item }
-
         if (props.withQuantity && !newItem[props.key_quantity]) {
             newItem[props.key_quantity] = 1
         }
-
         selectedProduct.value = [...selectedProduct.value, newItem]
     }
     done()
 }
-
 
 const deleteProduct = (id: number) => {
     selectedProduct.value = selectedProduct.value.filter(p => p.id !== id)
@@ -143,6 +148,12 @@ const selectAllProducts = () => {
     done()
 }
 
+const changeTab = (index: number) => {
+    activeTab.value = index
+    queryPortfolio.value = ''
+    getPortfoliosList()
+}
+
 // lifecycle
 onMounted(() => getPortfoliosList())
 onUnmounted(() => {
@@ -163,15 +174,21 @@ const resetAfterSubmit = () => {
     getPortfoliosList()
     done()
 }
-
 </script>
 
 <template>
     <div>
         <!-- Selected list -->
-        <div v-if="selectedProduct.length" class="mb-4">
-            <h3 class="font-semibold mb-2">{{ trans('Selected Portfolios') }}</h3>
-            <div class="border rounded-md overflow-hidden">
+        <div class="">
+            <div class="flex justify-between">
+                <div>
+                    <h3 class="font-semibold mb-2">{{ trans(props.head_label) }}</h3>
+                </div>
+                <div><Button @click="showDialog = true" :label="'select'" size="xs" type="dashed"
+                        :icon="faPlus"></Button></div>
+            </div>
+
+            <div v-if="selectedProduct.length" class="border rounded-md overflow-hidden">
                 <div v-for="item in selectedProduct" :key="item.id"
                     class="flex items-center justify-between gap-4 p-2 border-b last:border-b-0 bg-white hover:bg-gray-50">
 
@@ -196,25 +213,19 @@ const resetAfterSubmit = () => {
                     </div>
                 </div>
             </div>
-        </div>
-
-        <div v-else class="mb-4">
-            <div class="border rounded-md bg-gray-50 p-6 text-center text-gray-500">
-                <!-- Font Awesome Info Icon -->
-                <font-awesome-icon :icon="faEmptySet" class="text-4xl text-gray-400 mb-3" />
-
-                <p class="font-medium">No Data Available</p>
-                <p class="text-sm text-gray-400 mb-4">Please add an item to see content here.</p>
-
+            <div v-else>
+                <div class="border rounded-md bg-gray-50 p-6 text-center text-gray-500">
+                    <font-awesome-icon :icon="faEmptySet" class="text-4xl text-gray-400 mb-3" />
+                    <p class="font-medium">No Data Available</p>
+                    <p class="text-sm text-gray-400 mb-4">Please add an item to see content here.</p>
+                </div>
             </div>
         </div>
-        <!-- Trigger -->
-        <Button @click="showDialog = true" :label="'Add'" full type="create"></Button>
 
         <!-- Dialog -->
-        <Dialog v-model:visible="showDialog" modal header="Select Portfolios"
-            :style="{ width: '80vw', maxWidth: '1200px' }" :content-style="{ overflow: 'hidden', padding: '20px' }"
-            @hide="$emit('close')">
+        <Dialog v-model:visible="showDialog" modal header="Select Products"
+            :style="{ width: '80vw', maxWidth: '1200px' }"
+            :content-style="{ overflow: 'hidden', paddingLeft: '20px', paddingRight: '20px', }" @hide="$emit('close')">
 
             <div class="relative isolate">
                 <div v-if="isLoadingSubmit"
@@ -222,10 +233,21 @@ const resetAfterSubmit = () => {
                     <LoadingIcon />
                 </div>
 
+                <!-- Tabs -->
+                <div v-if="tabs?.length" class="flex gap-4 mb-4 border-b">
+                    <div v-for="(tab, index) in tabs" :key="index" @click="changeTab(index)"
+                        class="cursor-pointer px-4 py-2 -mb-px font-medium border-b-2" :class="activeTab === index
+                            ? 'text-indigo-600 border-indigo-600'
+                            : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'">
+                        {{ trans(tab.label) }}
+                    </div>
+                </div>
+
                 <!-- search -->
                 <div class="mb-2">
                     <PureInput v-model="queryPortfolio" @update:modelValue="() => debounceGetPortfoliosList()"
-                        :placeholder="trans('Input to search portfolios')" />
+                        :placeholder="trans('Input to search')">
+                    </PureInput>
                 </div>
 
                 <!-- list + pagination -->
@@ -263,7 +285,6 @@ const resetAfterSubmit = () => {
                                                 ? 'bg-indigo-100 border-indigo-300'
                                                 : 'bg-white hover:bg-gray-200 border-gray-300'">
 
-                                            <!-- check icon -->
                                             <Transition name="slide-to-right">
                                                 <FontAwesomeIcon v-if="compSelectedProduct.includes(item.id)"
                                                     icon="fas fa-check-circle"
@@ -272,22 +293,17 @@ const resetAfterSubmit = () => {
                                             </Transition>
 
                                             <slot name="product" :item="item">
-                                                <Image v-if="item.image" :src="item.image"
+                                                <Image v-if="item.image" :src="item.image?.thumbnail"
                                                     class="w-16 h-16 overflow-hidden mx-auto md:mx-0 mb-4 md:mb-0"
                                                     imageCover :alt="item.name" />
                                                 <div class="flex flex-col justify-between w-full">
-
                                                     <div class="flex items-center gap-2">
                                                         <div class="font-semibold leading-none mb-1">{{ item.name || 'no name' }}</div>
-
-                                                        <!-- 🔹 Badge for recommended -->
-
-                                                        <span v-if="item.is_recommended"
+                                                        <!-- <span v-if="item.is_recommended"
                                                             class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
                                                             {{ trans("Recommended") }}
-                                                        </span>
+                                                        </span> -->
                                                     </div>
-
                                                     <div v-if="!item.no_code" class="text-xs text-gray-400 italic">
                                                         {{ item.code || 'no code' }}
                                                     </div>
@@ -297,22 +313,27 @@ const resetAfterSubmit = () => {
                                                     <div v-if="item.gross_weight" class="text-xs text-gray-400 italic">
                                                         {{ item.gross_weight }}
                                                     </div>
-
                                                     <div v-if="!item.no_price && item.price"
                                                         class="text-xs text-gray-x500">
                                                         {{ locale?.currencyFormat(item.currency_code || 'usd',
                                                             item.price || 0) }}
                                                     </div>
-
                                                     <NumberWithButtonSave v-if="withQuantity"
-                                                        :modelValue="get(item, props.key_quantity, 1)"
-                                                        :bindToTarget="{ min: 1 }"
-                                                        @update:modelValue="(e: number) => { set(item, props.key_quantity, e); if (!selectedProduct.find(p => p.id === item.id)) selectedProduct.push(item); done() }"
-                                                        noUndoButton noSaveButton parentClass="w-min" />
+                                                        :modelValue="selectedProduct.find(p => p.id === item.id)?.[props.key_quantity] || 1"
+                                                        :bindToTarget="{ min: 1 }" @update:modelValue="(val: number) => {
+                                                            const target = selectedProduct.find(p => p.id === item.id)
+                                                            if (target) {
+                                                                target[props.key_quantity] = val
+                                                            } else {
+                                                                const newItem: any = { ...item, [props.key_quantity]: val }
+                                                                selectedProduct.push(newItem)
+                                                            }
+                                                            done()
+                                                        }" noUndoButton noSaveButton parentClass="w-min" />
+
                                                 </div>
                                             </slot>
                                         </div>
-
                                     </template>
                                     <div v-else class="text-center text-gray-500 col-span-3">
                                         {{ trans("No Results found") }}
@@ -333,7 +354,7 @@ const resetAfterSubmit = () => {
             <!-- footer -->
             <template #footer>
                 <Button type="secondary" @click="showDialog = false" label="Cancel"></Button>
-                <Button type="create" @click="showDialog = false" label="add"></Button>
+                <Button type="create" @click="showDialog = false" label="Select"></Button>
             </template>
         </Dialog>
     </div>

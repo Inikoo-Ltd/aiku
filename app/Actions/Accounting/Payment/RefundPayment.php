@@ -13,6 +13,7 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateCreditTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
+use App\Enums\Accounting\Payment\PaymentClassEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
@@ -31,20 +32,7 @@ class RefundPayment extends OrgAction
 
     public function handle(Payment $payment, array $modelData): void
     {
-        $maxToRefund  = $payment->amount;
-        $type         = Arr::get($modelData, 'type_refund', 'payment');
-        $refundAmount = Arr::get($modelData, 'amount');
-
-
-
-        if (!blank($payment->invoices)) {
-            $paymentAmount = $payment->invoices->sum('payment_amount');
-            $totalAmount   = $payment->invoices->sum('total_amount');
-
-            $maxToRefund = $paymentAmount - $totalAmount;
-        }
-
-        $amountPayPerRefund = min($refundAmount, $maxToRefund);
+        $amountPayPerRefund = Arr::get($modelData, 'amount');
 
         $refundPayment = StorePayment::make()->action($payment->customer, $payment->paymentAccount, [
             'type'                    => PaymentTypeEnum::REFUND,
@@ -53,47 +41,54 @@ class RefundPayment extends OrgAction
             'payment_account_shop_id' => $payment->payment_account_shop_id
         ]);
 
-        if ($type === 'credit') {
-            StoreCreditTransaction::make()->action($payment->customer, [
-                'amount' => abs($amountPayPerRefund),
-                'date'   => now(),
-                'type'   => CreditTransactionTypeEnum::MONEY_BACK
-            ]);
-        }
-
         $totalRefund = abs($payment->total_refund) + abs($amountPayPerRefund);
+
         $this->update($payment, [
             'total_refund' => $totalRefund,
             'with_refund'  => true
         ]);
 
 
+        $this->processInvoices($payment);
+        $this->processOrders($payment);
         $this->processOnlineRefunds($payment, $refundPayment);
+    }
 
+    public function processInvoices(Payment $payment): void
+    {
+        if (!blank($payment->invoices)) {
+            $paymentAmount = $payment->orders->sum('payment_amount');
+            $totalAmount   = $payment->orders->sum('total_amount');
 
-        if ($type === 'credit') {
+            // TODO
+        }
+    }
+
+    public function processOrders(Payment $payment): void
+    {
+        if (!blank($payment->orders)) {
+            $paymentAmount = $payment->invoices->sum('payment_amount');
+            $totalAmount   = $payment->invoices->sum('total_amount');
+
+            // TODO
+        }
+    }
+
+    public function processCreditTransactions(Payment $payment, float $amountPayPerRefund): void
+    {
+        if ($payment->class === PaymentClassEnum::TOPUP) {
+            StoreCreditTransaction::make()->action($payment->customer, [
+                'amount' => abs($amountPayPerRefund),
+                'date'   => now(),
+                'type'   => CreditTransactionTypeEnum::MONEY_BACK
+            ]);
+
             if ($this->asAction) {
                 CustomerHydrateCreditTransactions::run($payment->customer);
             } else {
                 CustomerHydrateCreditTransactions::dispatch($payment->customer);
             }
         }
-    }
-
-
-    public function processInvoices(ActionRequest $request): void
-    {
-
-    }
-
-    public function processOrders(ActionRequest $request): void
-    {
-
-    }
-
-    public function processCreditTransactions(ActionRequest $request): void
-    {
-
     }
 
     public function processOnlineRefunds(Payment $payment, Payment $refundPayment): void
