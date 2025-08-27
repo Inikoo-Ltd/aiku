@@ -118,7 +118,11 @@ const urlLoginWithRedirect = () => {
             <!-- Section: Favourite -->
             <ButtonWithLink
                 v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping'"
-                v-tooltip="trans('Favourites')" url="/app/favourites" icon="fal fa-heart">
+                v-tooltip="trans('Favourites')" url="/app/favourites" icon="fal fa-heart" type="transparent">
+                 <template #icon>
+                    <FontAwesomeIcon icon="fal fa-heart" :style="{ color: 'white' }" fixed-width
+                        aria-hidden="true" />
+                </template>
                 <template #label>
                     <span v-if="model?.favourite?.text === `{{ favourites_count }}`"
                         v-html="textReplaceVariables(model?.favourite?.text, layout.iris_variables)" />
