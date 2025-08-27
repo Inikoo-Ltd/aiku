@@ -13,6 +13,8 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateCreditTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
+use App\Enums\Accounting\Payment\PaymentStateEnum;
+use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Models\Accounting\Payment;
@@ -28,7 +30,7 @@ class RefundPayment extends OrgAction
     {
         $maxToRefund = $payment->amount;
         $type        = Arr::get($modelData, 'type_refund', 'payment');
-        $refundAmount = -abs(Arr::get($modelData, 'amount'));
+        $refundAmount = Arr::get($modelData, 'amount');
 
         if ($payment->total_refund === $payment->refunds->sum('amount')) {
             return;
@@ -41,13 +43,13 @@ class RefundPayment extends OrgAction
             $maxToRefund = $paymentAmount - $totalAmount;
         }
 
-        $amountPayPerRefund = max($refundAmount, $maxToRefund);
+        $amountPayPerRefund = min($refundAmount, $maxToRefund);
 
-        // TODO: Idk why the type after created still payment
-        StorePayment::make()->action($payment->customer, $payment->paymentAccount, [
+        $refundPayment = StorePayment::make()->action($payment->customer, $payment->paymentAccount, [
             'type' => PaymentTypeEnum::REFUND,
             'original_payment_id' => $payment->id,
-            'amount' => abs($amountPayPerRefund)
+            'amount' => -abs($amountPayPerRefund),
+            'payment_account_shop_id' => $payment->payment_account_shop_id
         ]);
 
         if ($type === 'credit') {
@@ -58,16 +60,21 @@ class RefundPayment extends OrgAction
             ]);
         }
 
-        $totalRefund = $payment->total_refund + abs($amountPayPerRefund);
+        $totalRefund = abs($payment->total_refund) + abs($amountPayPerRefund);
         $this->update($payment, [
-            'total_refund' => $totalRefund
+            'total_refund' => $totalRefund,
+            'with_refund' => true
         ]);
 
         if ($payment->paymentAccount->type === PaymentAccountTypeEnum::CHECKOUT) {
-            $ref = RefundPaymentApiRequest::run($payment);
+            $ref = RefundPaymentApiRequest::run($refundPayment, $payment->reference);
 
-            // TODO
-            dd($ref);
+            if (! Arr::get($ref, 'error')) {
+                $this->update($refundPayment, [
+                    'state' => PaymentStateEnum::COMPLETED,
+                    'status' => PaymentStatusEnum::SUCCESS
+                ]);
+            }
         }
 
         if ($type === 'credit') {
@@ -86,6 +93,13 @@ class RefundPayment extends OrgAction
         }
 
         return $request->user()->authTo("accounting.{$this->organisation->id}.edit");
+    }
+
+    public function rules(): array
+    {
+        return [
+            'amount' => ['required', 'numeric']
+        ];
     }
 
     public function asController(Organisation $organisation, Payment $payment, ActionRequest $request): void

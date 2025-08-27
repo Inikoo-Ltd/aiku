@@ -16,8 +16,8 @@ class RefundPaymentApiRequest extends OrgAction
 {
     use WithCheckoutCom;
 
-    public function handle(Payment $payment): array
+    public function handle(Payment $payment, string $paymentId): array
     {
-        return $this->refundPayment($payment->paymentAccountShop, $payment->reference);
+        return $this->refundPayment($payment->paymentAccountShop, $paymentId, abs($payment->amount));
     }
 }
