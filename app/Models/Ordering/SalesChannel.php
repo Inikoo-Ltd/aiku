@@ -20,8 +20,6 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property bool $is_active
@@ -45,7 +43,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SalesChannel newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SalesChannel onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SalesChannel query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|SalesChannel withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SalesChannel withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|SalesChannel withoutTrashed()
  * @mixin \Eloquent
  */

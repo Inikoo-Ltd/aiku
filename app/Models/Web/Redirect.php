@@ -18,8 +18,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id

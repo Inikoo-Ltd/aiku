@@ -37,7 +37,7 @@ class SendNewOrderEmailToSubscribers extends OrgAction
     {
 
         $order = Order::find($orderID);
-        if(!$order){
+        if (!$order) {
             return;
         }
 

@@ -7,7 +7,6 @@ use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
-use App\Models\SysAdmin\Group;
 use Illuminate\Validation\ValidationException;
 
 beforeAll(function () {

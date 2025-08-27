@@ -31,8 +31,6 @@ use Spatie\Sluggable\SlugOptions;
 use Spatie\Translatable\HasTranslations;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $master_shop_id
@@ -73,7 +71,7 @@ use Spatie\Translatable\HasTranslations;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection whereJsonContainsLocales(string $column, array $locales, ?mixed $value, string $operand = '=')
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection whereLocale(string $column, string $locale)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection whereLocales(string $column, array $locales)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection withoutTrashed()
  * @mixin \Eloquent
  */
