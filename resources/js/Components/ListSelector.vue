@@ -197,7 +197,10 @@ const resetAfterSubmit = () => {
                         <Image v-if="item.image" :src="item.image" class="w-12 h-12 rounded object-cover" />
                         <div>
                             <div class="font-medium leading-none">{{ item.name }}</div>
-                            <div class="text-xs text-gray-500">{{ item.code || '-' }}</div>
+                            <div class="flex justify-beetween mt-1 gap-5">
+                                <div class="text-xs text-gray-500">{{ item.code || '-' }}</div>
+                                <div v-if="item.value" class="text-xs text-gray-500">{{ locale.currencyFormat(layout.app?.currency?.code, item.value || 0)}}</div>
+                            </div>
                         </div>
                     </div>
 
