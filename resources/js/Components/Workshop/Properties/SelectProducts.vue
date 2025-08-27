@@ -11,6 +11,8 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { trans } from 'laravel-vue-i18n'
 import Image from '@/Components/Image.vue'
 import { notify } from '@kyvg/vue3-notification'
+import { Select } from 'primevue'
+import { isFutureDatePassed } from '@/Composables/useFormatTime'
 
 interface Product {
     id: number
@@ -21,7 +23,7 @@ interface Product {
 
 interface LuigiProductHits {
     attributes: {
-        image_link: string
+        image_url: string
         price: string
         formatted_price: string
         department: string[]
@@ -143,7 +145,8 @@ const localType = computed({
     }
 
     if (is_luigi_value(newType)) {
-        fetchRecommenders(newType)
+        const luigi_type = newType.replace(/^luigi-/, '')
+        fetchRecommenders(luigi_type)
     }
 
     emits('update:modelValue', {
@@ -249,6 +252,45 @@ const is_luigi_value = (value: string) => {
     return ['luigi-trends', 'luigi-recently_ordered', 'luigi-last_seen', 'luigi-item_detail_alternatives'].includes(value)
 }
 
+
+const listType = [
+    {
+        label: trans('Custom'),
+        value: 'custom'
+    },
+    {
+        label: trans('Best Seller'),
+        value: 'best-seller'
+    },
+    {
+        label: trans('Other Family'),
+        value: 'other-family'
+    },
+    {
+        label: trans('Current Family'),
+        value: 'current-family'
+    },
+    {
+        label: trans('Luigi: Top Trending'),
+        value: 'luigi-trends',
+        show_new_until: '2025-09-27'
+    },
+    {
+        label: trans('Luigi: Customer Recently Ordered'),
+        value: 'luigi-recently_ordered',
+        show_new_until: '2025-09-27'
+    },
+    {
+        label: trans('Luigi: Recently Viewed'),
+        value: 'luigi-last_seen',
+        show_new_until: '2025-09-27'
+    },
+    {
+        label: trans('Luigi: You might also like'),
+        value: 'luigi-item_detail_alternatives',
+        show_new_until: '2025-09-27'
+    }
+]
 </script>
 
 <template>
@@ -256,7 +298,7 @@ const is_luigi_value = (value: string) => {
     <!-- Type Selection -->
     <div>
         <label class="block text-sm text-gray-700">Select view type:</label>
-        <select
+        <!-- <select
             v-model="localType"
             class="border border-gray-300 px-4 py-2 rounded w-full focus:ring-2 focus:ring-primary focus:outline-none"
         >
@@ -274,7 +316,21 @@ const is_luigi_value = (value: string) => {
             <option value="luigi-recently_ordered">Luigi: Customer Recently Ordered</option>
             <option value="luigi-last_seen">Luigi: Recently Viewed</option>
             <option value="luigi-item_detail_alternatives">Luigi: You might also like</option>
-        </select>
+        </select> -->
+
+        <Select v-model="localType" :options="listType" optionValue="value" optionLabel="label" placeholder="Select recommendation type" class="w-full">
+            <template #option="slotProps">
+                <div class="flex items-center">
+                    <div>{{ slotProps.option.label }}</div>
+                    <div v-if="slotProps.option.show_new_until && !isFutureDatePassed(slotProps.option.show_new_until)"
+                        class="ml-2 inline bg-yellow-100 border border-yellow-300 text-yellow-600 whitespace-nowrap items-center gap-x-1 rounded select-none pl-0.5 pr-1 py-0.5 text-xs w-fit font-medium"
+                    >
+                        <FontAwesomeIcon icon="fas fa-sparkles" class="" fixed-width aria-hidden="true" />
+                        {{ trans("New") }}
+                    </div>
+                </div>
+            </template>
+        </Select>
     </div>
 
     <!-- Draggable Custom Products -->
@@ -556,7 +612,7 @@ const is_luigi_value = (value: string) => {
                 </template>
 
                 <div v-else-if="!isLoadingFetchLuigi" class="text-gray-500 text-sm text-center py-3 bg-gray-200">
-                    {{ trans("No recommendations found.") }}
+                    {{ trans("The products example not displayed here.") }}
                 </div>
             </template>
 
