@@ -19,6 +19,7 @@ import ListSelector from "@/Components/ListSelector.vue";
 import PureInputNumber from "@/Components/Pure/PureInputNumber.vue";
 import { trans } from "laravel-vue-i18n";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { routeType } from "@/types/route";
 
 library.add(faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome, faPlus);
 
@@ -27,6 +28,7 @@ const props = defineProps<{
   title: string;
   data: {};
   familyId: number;
+  storeProductRoute : routeType
 }>();
 
 // dialog state
@@ -49,21 +51,20 @@ const ListSelectorChange = (value) => {
   if (value.length === 1) {
     form.name = value[0].name
     form.code = value[0].code
-    form.unit = value[0].unit
+    form.unit = value[0].type
     form.price = value[0].value
   } else if (value.length > 1) {
     form.name = value[0].name
     form.code = value[0].code
-    form.unit = value[0].unit
+    form.unit = value[0].type
   }
 }
 
-
+console.log(props)
 // Submit handler
 const submitForm = () => {
-  form.post(route("grp.models.master_family.store-assets", { masterFamily: props.familyId }), {
+  form.post(route(props.storeProductRoute.name,props.storeProductRoute.parameters), {
     onSuccess: () => {
-      console.log('masuk')
       showDialog.value = false;
       form.reset();
     },

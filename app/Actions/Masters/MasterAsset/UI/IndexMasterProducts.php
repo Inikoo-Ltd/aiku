@@ -237,6 +237,12 @@ class IndexMasterProducts extends GrpAction
                 ),
                 'title'       => $title,
                 'familyId'      => $familyId,
+                'storeProductRoute' => $isFamily ?  [
+                        'name'       => 'grp.models.master_family.store-assets',
+                        'parameters' => [
+                            'masterFamily' => $this->parent->id,
+                        ]
+                    ] : [],
                 'pageHead'    => [
                     'title'         => $title,
                     'icon'          => $icon,
@@ -252,13 +258,6 @@ class IndexMasterProducts extends GrpAction
                             'label'   => __('master product'),
                         ],
                     ] : [],
-                    'storeProductRoute' => $isFamily ?  [
-                        'name'       => 'grp.models.master_family.store-assets',
-                        'parameters' => [
-                            'masterFamily' => $this->parent->id,
-                        ]
-                    ] : []
-                   
                 ],
                 'data'        => MasterProductsResource::collection($masterAssets),
 
