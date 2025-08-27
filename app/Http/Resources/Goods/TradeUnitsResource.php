@@ -41,7 +41,6 @@ class TradeUnitsResource extends JsonResource
             'number_current_products' => $this->number_current_products,
             'id'                      => $this->id,
             'image'                   => $this->image_id ? ImageResource::make($media)->getArray() : null,
-            'is_recommended'          => $this->is_recommended ?? null
         ];
     }
 }

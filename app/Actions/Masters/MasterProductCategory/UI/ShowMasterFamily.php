@@ -39,11 +39,10 @@ class ShowMasterFamily extends GrpAction
     }
 
 
-
     public function asController(MasterShop $masterShop, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
     {
         $this->parent = $masterShop;
-        $group = group();
+        $group        = group();
 
         $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
 
@@ -68,6 +67,7 @@ class ShowMasterFamily extends GrpAction
         return $this->handle($masterFamily);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
     {
         $group        = group();
@@ -77,6 +77,7 @@ class ShowMasterFamily extends GrpAction
         return $this->handle($masterFamily);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
     {
         $group        = group();
@@ -86,6 +87,7 @@ class ShowMasterFamily extends GrpAction
         return $this->handle($masterFamily);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inMasterSubDepartmentInMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
     {
         $group        = group();
@@ -111,14 +113,14 @@ class ShowMasterFamily extends GrpAction
                     'next'     => $this->getNext($masterFamily, $request),
                 ],
                 'pageHead'    => [
-                    'title'   => $masterFamily->name,
-                    'model'   => __('Master Family'),
-                    'icon'    => [
+                    'title'         => $masterFamily->name,
+                    'model'         => __('Master Family'),
+                    'icon'          => [
                         'icon'  => ['fal', 'fa-folder'],
                         'title' => __('department')
                     ],
-                    'actions' => [
-                         $this->canEdit ? [
+                    'actions'       => [
+                        $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
                             'route' => [
@@ -126,15 +128,6 @@ class ShowMasterFamily extends GrpAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ] : false,
-                        [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'label' => 'blueprint',
-                            'route' => [
-                                'name'       => preg_replace('/show$/', 'blueprint', $request->route()->getName()),
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ],
                         $this->canDelete ? [
                             'type'  => 'button',
                             'style' => 'delete',
@@ -144,7 +137,7 @@ class ShowMasterFamily extends GrpAction
                             ]
                         ] : false
                     ],
-                     'subNavigation' => $this->getMasterFamilySubNavigation($masterFamily)
+                    'subNavigation' => $this->getMasterFamilySubNavigation($masterFamily)
 
                 ],
                 'tabs'        => [
@@ -166,9 +159,8 @@ class ShowMasterFamily extends GrpAction
 
             ]
         )
-        // ->table(IndexCustomers::make()->tableStructure(parent: $masterFamily->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
+            // ->table(IndexCustomers::make()->tableStructure(parent: $masterFamily->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
             ->table(IndexMailshots::make()->tableStructure($masterFamily));
-
     }
 
 

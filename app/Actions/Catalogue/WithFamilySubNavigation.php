@@ -43,8 +43,8 @@ trait WithFamilySubNavigation
             ];
 
         } elseif ($parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
-            if(request()->route()->getName() == 'grp.org.shops.show.catalogue.sub_departments.show.families.show' ||
-               request()->route()->getName() == 'grp.org.shops.show.catalogue.sub_departments.show.families.show.products.index' ) {
+            if (request()->route()->getName() == 'grp.org.shops.show.catalogue.sub_departments.show.families.show' ||
+               request()->route()->getName() == 'grp.org.shops.show.catalogue.sub_departments.show.families.show.products.index') {
                 $familyRoute  = [
                     'name'       => 'grp.org.shops.show.catalogue.sub_departments.show.families.show',
                     'parameters' => $routeParameters

@@ -11,8 +11,6 @@ namespace App\Models\Goods;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- *
- *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockTimeSeriesRecord newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockTimeSeriesRecord newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|StockTimeSeriesRecord query()

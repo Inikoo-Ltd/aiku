@@ -111,7 +111,7 @@ const saveTranslation = () => {
     description_extra: props.master.description_extra
   }
 
-  router.patch(
+  router[props.save_route.method || 'patch'](
     route(props.save_route.name, props.save_route.parameters),
     { translations: translations.value, master },
     {
@@ -120,8 +120,9 @@ const saveTranslation = () => {
       onSuccess: () => {
         notify({ title: trans('Success'), text: trans('Success to save translation'), type: 'success' })
       },
-      onError: () => {
-        notify({ title: trans('Something went wrong'), text: trans('Failed to save translation'), type: 'error' })
+      onError: (error) => {
+        console.log(error)
+        notify({ title: trans('Something went wrong'), text: error || trans('Failed to save translation'), type: 'error', duration : 50000 })
       },
       onFinish: () => (isLoading.value = false)
     }

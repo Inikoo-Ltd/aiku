@@ -11,8 +11,6 @@ namespace App\Models\CRM;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- *
- *
  * @property int $id
  * @property int $poll_id
  * @property int $number_customers

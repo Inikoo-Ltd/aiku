@@ -54,7 +54,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamily newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamily onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamily query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamily withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamily withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockFamily withoutTrashed()
  * @mixin \Eloquent
  */

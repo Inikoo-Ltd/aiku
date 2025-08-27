@@ -23,6 +23,10 @@ const props = defineProps<{
     products: routeType;
     families: any;
   }
+  currency: {
+    code: string
+    name: string
+  }
 }>()
 
 const reload = inject('reload') as () => void
@@ -72,7 +76,7 @@ provide("currentView", currentView)
 
 <template>
   <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
-    <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
+    <div class="col-span-3 bg-white rounded-xl shadow-md py-4 overflow-y-auto border">
       <SideMenuProductWorkshop 
         :data="props.data.layout" 
         :webBlockTypes="props.data.web_block_types" 
@@ -94,6 +98,7 @@ provide("currentView", currentView)
           :is="getComponent(props.data.layout.code)" 
           :modelValue="props.data.layout.data.fieldValue"  
           :templateEdit="'template'"
+          :currency
         />
       </div>
 

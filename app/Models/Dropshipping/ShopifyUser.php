@@ -99,7 +99,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|ShopifyUser onlyTrashed()
  * @method static Builder<static>|ShopifyUser permission($permissions, $without = false)
  * @method static Builder<static>|ShopifyUser query()
- * @method static Builder<static>|ShopifyUser withTrashed()
+ * @method static Builder<static>|ShopifyUser withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|ShopifyUser withoutPermission($permissions)
  * @method static Builder<static>|ShopifyUser withoutTrashed()
  * @mixin Eloquent

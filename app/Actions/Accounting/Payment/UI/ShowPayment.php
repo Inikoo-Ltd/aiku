@@ -118,10 +118,13 @@ class ShowPayment extends OrgAction
                     fn () => GetPaymentShowcase::run($payment)
                     : Inertia::lazy(fn () => GetPaymentShowcase::run($payment)),
 
-            ]
-        );
-    }
+                PaymentTabsEnum::REFUNDS->value => $this->tab == PaymentTabsEnum::REFUNDS->value ?
+                    fn () => PaymentsResource::collection(IndexRefundPayments::run($payment, PaymentTabsEnum::REFUNDS->value))
+                    : Inertia::lazy(fn () => PaymentsResource::collection(IndexRefundPayments::run($payment, PaymentTabsEnum::REFUNDS->value))),
 
+            ]
+        )->table(IndexRefundPayments::make()->tableStructure($payment, [], PaymentTabsEnum::REFUNDS->value));
+    }
 
     public function jsonResponse(Payment $payment): PaymentsResource
     {

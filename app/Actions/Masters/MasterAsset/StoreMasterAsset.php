@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterAsset;
 
+use App\Actions\Catalogue\Product\StoreProductFromMasterProduct;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterAssets;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateMasterAssets;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
@@ -57,7 +58,7 @@ class StoreMasterAsset extends OrgAction
 
             if ($parent->type == ProductCategoryTypeEnum::FAMILY) {
                 data_set($modelData, 'master_family_id', $parent->id);
-                if($parent->master_sub_department_id) {
+                if ($parent->master_sub_department_id) {
                     data_set($modelData, 'master_sub_department_id', $parent->master_sub_department_id);
                 }
             }
@@ -77,6 +78,8 @@ class StoreMasterAsset extends OrgAction
                 $masterAsset->timeSeries()->create(['frequency' => $frequency]);
             }
             $masterAsset->stocks()->sync($stocks);
+
+            StoreProductFromMasterProduct::make()->action($masterAsset);
 
             return ModelHydrateSingleTradeUnits::run($masterAsset);
         });

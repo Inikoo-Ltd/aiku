@@ -173,7 +173,7 @@ class EditSubDepartment extends OrgAction
     }
 
 
-    public function getBreadcrumbs(ProductCategory $subDepartment, string $routeName,array $routeParameters): array
+    public function getBreadcrumbs(ProductCategory $subDepartment, string $routeName, array $routeParameters): array
     {
         return ShowSubDepartment::make()->getBreadcrumbs(
             subDepartment: $subDepartment,

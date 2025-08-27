@@ -15,6 +15,7 @@ use App\Http\Resources\Helpers\LanguageResource;
 use App\Http\Resources\UI\LoggedWebUserResource;
 use App\Http\Resources\Web\WebsiteIrisResource;
 use App\Models\CRM\WebUser;
+use App\Models\Helpers\Language;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
 
@@ -54,6 +55,8 @@ trait WithIrisInertia
         }
 
 
+        $currentLanguage = Language::where('code', app()->getLocale())->first();
+
         return [
             'header'               => array_merge(
                 $isHeaderActive == 'active' ? Arr::get($website->published_layout, 'header') : [],
@@ -86,9 +89,9 @@ trait WithIrisInertia
                 'language' => LanguageResource::make($shop->language)->getArray(),
                 'language_options' => GetLanguagesOptions::make()->getExtraShopLanguages($shop->extra_languages),
             ],
-            'user_auth'            => $webUser ? LoggedWebUserResource::make($webUser)->getArray() : null,
-            'customer'             => $webUser?->customer,
-            'variables'            => [
+            'user_auth'          => $webUser ? LoggedWebUserResource::make($webUser)->getArray() : null,
+            'customer'           => $webUser?->customer,
+            'variables'          => [
                 'reference'        => $webUser?->customer?->reference,
                 'name'             => $webUser?->contact_name,
                 'username'         => $webUser?->username,
@@ -97,7 +100,7 @@ trait WithIrisInertia
                 'cart_count'       => $cartCount,
                 'cart_amount'      => $cartAmount,
             ],
-            'migration_redirect'   => $migrationRedirect
+            'migration_redirect' => $migrationRedirect
         ];
     }
 }

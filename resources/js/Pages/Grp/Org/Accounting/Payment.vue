@@ -12,15 +12,16 @@ import {
 } from '@fal';
 
 import PageHeading from '@/Components/Headings/PageHeading.vue';
-import { computed, defineAsyncComponent, ref } from "vue";
-import { useTabChange } from "@/Composables/tab-change";
+import {computed, defineAsyncComponent, ref} from "vue";
+import {useTabChange} from "@/Composables/tab-change";
 import ModelDetails from "@/Components/ModelDetails.vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
-import { capitalize } from "@/Composables/capitalize"
+import {capitalize} from "@/Composables/capitalize"
 import PaymentShowcase from './PaymentShowcase.vue';
 // import { PageHeading as PageHeadingTS } from '@/types/PageHeading'
 import RefundModal from '@/Components/RefundModal.vue';
 import Button from '@/Components/Elements/Buttons/Button.vue';
+import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.vue";
 
 
 library.add(faCoins, faUndo);
@@ -169,6 +170,7 @@ interface Props {
         navigation: Record<string, any>
     }
     showcase: Showcase
+    refunds?: {}
 }
 
 const props = defineProps<Props>()
@@ -194,7 +196,6 @@ const showRefundButton = computed(() => {
     return props.tabs.current === 'showcase' && canRefund.value
 })
 
-
 let currentTab = ref(props.tabs.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 
@@ -203,7 +204,8 @@ const component = computed(() => {
     const components = {
         details: ModelDetails,
         history: ModelChangelog,
-        showcase: PaymentShowcase
+        showcase: PaymentShowcase,
+        refunds: TablePayments
     };
     return components[currentTab.value];
 

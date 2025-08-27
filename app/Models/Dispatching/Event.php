@@ -27,7 +27,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static Builder<static>|Event newQuery()
  * @method static Builder<static>|Event onlyTrashed()
  * @method static Builder<static>|Event query()
- * @method static Builder<static>|Event withTrashed()
+ * @method static Builder<static>|Event withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Event withoutTrashed()
  * @mixin Eloquent
  */

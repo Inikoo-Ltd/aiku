@@ -82,7 +82,7 @@ class ShowCollection extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inSubDepartmentInShop(Organisation $organisation, Shop $shop,ProductCategory $subDepartment, Collection $collection, ActionRequest $request): Collection
+    public function inSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, Collection $collection, ActionRequest $request): Collection
     {
         $this->parent = $subDepartment;
         $this->initialisationFromShop($shop, $request)->withTab(CollectionTabsEnum::values());

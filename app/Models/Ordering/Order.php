@@ -53,8 +53,6 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id
@@ -162,7 +160,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Order newQuery()
  * @method static Builder<static>|Order onlyTrashed()
  * @method static Builder<static>|Order query()
- * @method static Builder<static>|Order withTrashed()
+ * @method static Builder<static>|Order withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Order withoutTrashed()
  * @mixin Eloquent
  */

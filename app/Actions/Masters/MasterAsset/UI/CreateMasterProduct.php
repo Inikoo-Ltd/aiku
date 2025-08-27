@@ -2,23 +2,16 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 08 Apr 2024 09:52:43 Central Indonesia Time, Bali Office , Indonesia
+ * Created: Mon, 08 Apr 2024 09:52:43 Central Indonesia Time, Bali Office, Indonesia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
 namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\GrpAction;
-use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
-use App\Models\Catalogue\ProductCategory;
-use App\Models\Catalogue\Shop;
-use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
-use App\Http\Resources\Inventory\OrgStocksResource;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 
@@ -28,6 +21,8 @@ class CreateMasterProduct extends GrpAction
 
     public function handle(MasterProductCategory $parent, ActionRequest $request): Response
     {
+        $request->route()->getName();
+
         return Inertia::render(
             'CreateModel',
             [
@@ -44,9 +39,7 @@ class CreateMasterProduct extends GrpAction
                             'style' => 'cancel',
                             'label' => __('cancel'),
                             'route' => [
-                                'name' => match ($request->route()->getName()) {
-                                    default                         => preg_replace('/create$/', 'index', $request->route()->getName())
-                                },
+                                'name' => preg_replace('/create$/', 'index', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())
                             ],
                         ]
@@ -59,6 +52,19 @@ class CreateMasterProduct extends GrpAction
                             [
                                 'title'  => __('Create Master Product'),
                                 'fields' => [
+                                    'trade_units' => [
+                                        'type'         => 'list-selector',
+                                        'label'        => __(key: 'Trade units'),
+                                        'withQuantity' => true,
+                                        'key_quantity' => 'quantity',
+                                        'routeFetch'  => [
+                                            'name'       => 'grp.json.master-product-category.recommended-trade-units',
+                                            'parameters' => [
+                                                'masterProductCategory' => $parent->slug,
+                                            ]
+                                        ],
+                                        'value'        => []
+                                    ],
                                     'code' => [
                                         'type'       => 'input',
                                         'label'      => __('code'),
@@ -74,30 +80,9 @@ class CreateMasterProduct extends GrpAction
                                         'label'      => __('price'),
                                         'required'   => true
                                     ],
-                                    'unit' => [
-                                        'type'     => 'input',
-                                        'label'    => __('unit'),
-                                        'required' => true,
-                                    ],
-                                    'is_main' => [
-                                        'type'     => 'toggle',
-                                        'label'    => __('main'),
-                                        'value'    => true,
-                                        'required' => true,
-                                    ],
-                                    'trade_units' => [
-                                        'type'         => 'list-selector',
-                                        'label'        => __('Trade units'),
-                                        'withQuantity' => true,
-                                        'key_quantity' => 'quantity',     
-                                        'routeFetch'  => [
-                                            'name'       => 'grp.json.master-product-category.recommended-trade-units',
-                                            'parameters' => [
-                                                'masterProductCategory' => $parent->slug,
-                                            ]
-                                        ],
-                                        'value'        => []
-                                    ],
+
+
+
                                 ]
                             ]
                         ],
@@ -113,6 +98,7 @@ class CreateMasterProduct extends GrpAction
         );
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inMasterFamilyInMasterShop(MasterShop $masterShop, MasterProductCategory $masterFamily, ActionRequest $request): Response
     {
         $group        = group();
@@ -123,6 +109,7 @@ class CreateMasterProduct extends GrpAction
         return $this->handle($masterFamily, $request);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inMasterFamilyInMasterSubDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): Response
     {
         $group        = group();
@@ -133,6 +120,7 @@ class CreateMasterProduct extends GrpAction
         return $this->handle($masterFamily, $request);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inMasterFamilyInMasterSubDepartmentInMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): Response
     {
         $group        = group();
@@ -143,6 +131,7 @@ class CreateMasterProduct extends GrpAction
         return $this->handle($masterFamily, $request);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inMasterFamilyInMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterFamily, ActionRequest $request): Response
     {
         $group        = group();
