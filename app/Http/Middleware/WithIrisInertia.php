@@ -23,7 +23,6 @@ trait WithIrisInertia
 {
     public function getIrisData(Website $website, ?WebUser $webUser): array
     {
-
         $shop = $website->shop;
 
         $headerLayout   = Arr::get($website->published_layout, 'header');
@@ -78,15 +77,17 @@ trait WithIrisInertia
             'theme'                => Arr::get($website->published_layout, 'theme'),
             'luigisbox_tracker_id' => Arr::get($website->settings, 'luigisbox.tracker_id'),
             'is_logged_in'         => (bool)$webUser,
-            'is_have_gtm'          => (bool) Arr::get($website->settings, 'google_tag_id'),
+            'is_have_gtm'          => (bool)Arr::get($website->settings, 'google_tag_id'),
             'currency'             => [
                 'code'   => $shop->currency->code,
                 'symbol' => $shop->currency->symbol,
                 'name'   => $shop->currency->name,
             ],
             'locale'               => app()->getLocale(),
-            'website_i18n' => [
-                'language' => LanguageResource::make($shop->language)->getArray(),
+
+            'website_i18n'       => [
+                'current_language' => LanguageResource::make($currentLanguage)->getArray(),
+                'shop_language'    => LanguageResource::make($shop->language)->getArray(),
                 'language_options' => GetLanguagesOptions::make()->getExtraShopLanguages($shop->extra_languages),
             ],
             'user_auth'          => $webUser ? LoggedWebUserResource::make($webUser)->getArray() : null,
