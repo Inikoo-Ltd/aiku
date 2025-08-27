@@ -19,7 +19,8 @@
   },
   {
     "name": "Albanian",
-    "code": "sq"
+    "code": "sq",
+    "flag": "al.png"
   },
   {
     "name": "Amharic",
@@ -211,7 +212,8 @@
   },
   {
     "name": "Chinese (simplified)",
-    "code": "zh-Hans"
+    "code": "zh-Hans",
+    "flag": "cn.png"
   },
   {
     "name": "Chinese (traditional)",
@@ -271,7 +273,8 @@
   },
   {
     "name": "English",
-    "code": "en"
+    "code": "en",
+    "flag": "gb.png"
   },
   {
     "name": "English (AU)",
@@ -471,7 +474,8 @@
   },
   {
     "name": "Hebrew",
-    "code": "he"
+    "code": "he",
+    "flag": "il.png"
   },
   {
     "name": "Herero",
@@ -479,7 +483,8 @@
   },
   {
     "name": "Hindi",
-    "code": "hi"
+    "code": "hi",
+    "flag": "in.png"
   },
   {
     "name": "Hiri Motu",
@@ -527,7 +532,8 @@
   },
   {
     "name": "Irish",
-    "code": "ga"
+    "code": "ga",
+    "flag": "ie.png"
   },
   {
     "name": "Italian",
@@ -539,11 +545,13 @@
   },
   {
     "name": "Jamaican Patois",
-    "code": "jam"
+    "code": "jam",
+    "flag": "jm.png"
   },
   {
     "name": "Japanese",
-    "code": "ja"
+    "code": "ja",
+    "flag": "jp.png"
   },
   {
     "name": "Javanese",
@@ -611,7 +619,8 @@
   },
   {
     "name": "Lao",
-    "code": "lo"
+    "code": "lo",
+    "flag": "la.png"
   },
   {
     "name": "Latin",
@@ -643,7 +652,8 @@
   },
   {
     "name": "Luxembourgish",
-    "code": "lb"
+    "code": "lb",
+    "flag": "lu.png"
   },
   {
     "name": "Macedonian",
@@ -1051,7 +1061,8 @@
   },
   {
     "name": "Ukrainian",
-    "code": "uk"
+    "code": "uk",
+    "flag": "ua.png"
   },
   {
     "name": "Urdu",
