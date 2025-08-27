@@ -12,13 +12,14 @@ import {
 } from '@fal';
 
 import PageHeading from '@/Components/Headings/PageHeading.vue';
-import { computed, defineAsyncComponent, ref } from "vue";
-import { useTabChange } from "@/Composables/tab-change";
+import {computed, defineAsyncComponent, ref} from "vue";
+import {useTabChange} from "@/Composables/tab-change";
 import ModelDetails from "@/Components/ModelDetails.vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
-import { capitalize } from "@/Composables/capitalize"
+import {capitalize} from "@/Composables/capitalize"
 import PaymentShowcase from './PaymentShowcase.vue';
-import { PageHeading as PageHeadingTS } from '@/types/PageHeading'
+import {PageHeading as PageHeadingTS} from '@/types/PageHeading'
+import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.vue";
 
 library.add(faCoins);
 
@@ -32,6 +33,7 @@ const props = defineProps<{
         navigation: {};
     }
     showcase?: {}
+    refunds?: {}
 }>()
 
 let currentTab = ref(props.tabs.current);
@@ -42,7 +44,8 @@ const component = computed(() => {
     const components = {
         details: ModelDetails,
         history: ModelChangelog,
-        showcase: PaymentShowcase
+        showcase: PaymentShowcase,
+        refunds: TablePayments
     };
     return components[currentTab.value];
 
