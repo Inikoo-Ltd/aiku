@@ -48,7 +48,7 @@ class GetProductShowcase
             'how_to_use' => $product->gpsr_manual,
             'gpsr_class_category_danger' => $product->gpsr_class_category_danger,
             'product_languages' => $product->gpsr_class_languages,
-            'acute_toxicity'=> $product->pictogram_toxic,
+            'acute_toxicity' => $product->pictogram_toxic,
             'corrosive' => $product->pictogram_corrosive,
             'explosive' => $product->pictogram_explosive,
             'flammable' => $product->pictogram_flammable,

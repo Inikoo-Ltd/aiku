@@ -10,7 +10,6 @@ namespace App\Actions\Masters\MasterAsset\Json;
 
 use App\Actions\GrpAction;
 use App\Http\Resources\Goods\TradeUnitsForMasterResource;
-use App\Http\Resources\Goods\TradeUnitsResource;
 use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterProductCategory;
 use App\Services\QueryBuilder;
@@ -36,7 +35,7 @@ class GetAllTradeUnits extends GrpAction
                     ->orWhereStartWith('trade_units.name', $value);
             });
         });
-        
+
         $queryBuilder = QueryBuilder::for(TradeUnit::class);
         $queryBuilder->where('trade_units.group_id', $parent->group_id);
 
