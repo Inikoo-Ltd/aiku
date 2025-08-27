@@ -249,12 +249,6 @@ class IndexMasterProducts extends GrpAction
                             'style'   => 'create',
                             'tooltip' => __('Add a master product to this family'),
                             'label'   => __('master product'),
-                            'route'   =>
-                                [
-                                    'name'       => preg_replace('/index$/', 'create', $request->route()->getName()),
-                                    'parameters' => $request->route()->originalParameters()
-                                ]
-
                         ],
                     ] : [],
                 ],
