@@ -26,7 +26,6 @@ enum ProductTabsEnum: string
     case ORDERS = 'orders';
     case FAVOURITES = 'favourites';
     case REMINDERS = 'reminders';
-    case TRANSLATION = 'translation';
 
 
     public function blueprint(): array
@@ -85,11 +84,6 @@ enum ProductTabsEnum: string
                 'title' => __('favourites'),
                 'icon'  => 'fal fa-heart',
                 'align' => 'right',
-                'type'  => 'icon',
-            ],
-            ProductTabsEnum::TRANSLATION => [
-                'title' => __('translation'),
-                'icon'  => 'fal fa-language',
                 'type'  => 'icon',
             ],
         };

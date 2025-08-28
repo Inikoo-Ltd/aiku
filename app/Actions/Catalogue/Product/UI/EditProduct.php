@@ -24,6 +24,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
 use App\Http\Resources\Inventory\OrgStocksResource;
+use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 
 class EditProduct extends OrgAction
 {
@@ -154,24 +155,19 @@ class EditProduct extends OrgAction
 
 
         return [
-
             [
                 'label'  => __('Price'),
                 'title'  => __('id'),
                 'icon'   => 'fa-light fa-dollar',
                 'fields' => [
-
                     'price'       => [
                         'type'     => 'input',
                         'label'    => __('price'),
                         'required' => true,
                         'value'    => $product->price
                     ],
-
                 ]
             ],
-
-
         ];
     }
 
@@ -224,61 +220,70 @@ class EditProduct extends OrgAction
                         'label' => __('code'),
                         'value' => $product->code
                     ],
-                    'name' => [
+                    /* 'name' => [
                         'type'  => 'input',
                         'label' => __('name'),
                         'value' => $product->name
-                    ],
-
+                    ], */
                     //translation input raul request 7/24/25
-                  /*   'name' => [
+                    'name' => [
                         'type'  => 'input_translation',
                         'label' => __('name'),
+                        'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($product->shop->extra_languages),
                         'value' => [
-                            "en" => [
+                            "master" => [
                                 'value' => $product->name,
-                                'default' => true,
                             ],
-                            "hr" => [
-                                'value' => '',
-                            ],
-                            'zh-Hans' => [
-                                'value' => '',
+                            "translate" => [
+                                'value'  => $product->getTranslations('name_i8n'),
                             ]
                         ]
-                    ], */
-                    'description_title' => [
-                        'type'  => 'input',
-                        'label' => __('description title'),
-                        'value' => $product->description_title
                     ],
-                    'description' => [
+                    'description_title' => [
+                        'type'  => 'input_translation',
+                        'label' => __('description title'),
+                        'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($product->shop->extra_languages),
+                        'value' => [
+                            "master" => [
+                                'value' => $product->description_title,
+                            ],
+                            "translate" => [
+                                'value'  => $product->getTranslations('description_title_i8n'),
+                            ]
+                        ]
+                    ],
+                    /* 'description' => [
                         'type'  => 'textEditor',
                         'label' => __('description'),
                         'value' => $product->description
-                    ],
+                    ], */
 
                     //textEditor_translation
-                    /* 'description' => [
+                    'description' => [
                         'type'  => 'textEditor_translation',
                         'label' => __('description'),
+                        'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($product->shop->extra_languages),
                         'value' => [
-                            "en" => [
-                                'value' =>  $product->description_title,
-                                'default' => true,
+                            "master" => [
+                                'value' => $product->description,
                             ],
-                            "hr" => [
-                                'value' => '',
-                            ],
-                            'zh-Hans' => [
-                                'value' => '',
+                            "translate" => [
+                                'value'  => $product->getTranslations('description_i8n'),
                             ]
                         ]
-                    ], */
+                    ],
                     'description_extra' => [
                         'type'  => 'textEditor',
                         'label' => __('description extra'),
-                        'value' => $product->description_extra
+                        'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($product->shop->extra_languages),
+                        'value' => [
+                            "master" => [
+                                'value' => $product->description_extra,
+                            ],
+                            "translate" => [
+                                'value'  => $product->getTranslations('description_extra_i8n'),
+                            ]
+                        ]
                     ],
                 ]
             ],
@@ -344,7 +349,6 @@ class EditProduct extends OrgAction
                     'org_stocks' => [
                         'type'         => 'product_parts',
                         'label'        => __('Parts'),
-                        // 'readonly' => true,
                         'full'         => true,
                         'fetch_route'  => [
                             'name'       => 'grp.json.org_stocks.index',
@@ -381,7 +385,6 @@ class EditProduct extends OrgAction
                     ]
                 ],
             ],
-
         ];
     }
 

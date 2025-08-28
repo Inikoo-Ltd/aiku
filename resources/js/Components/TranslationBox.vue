@@ -159,7 +159,7 @@ const saveTranslation = () => {
               <Button
                 v-for="opt in langOptions"
                 @click="selectedLangCode = opt.code"
-                :key="opt.code"
+                :key="opt.code + selectedLangCode "
                 :label="opt.name"
                 size="xxs"
                 :type="selectedLangCode === opt.code ? 'primary' : 'tertiary'"
