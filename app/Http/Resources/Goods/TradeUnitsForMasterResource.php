@@ -9,7 +9,6 @@
 namespace App\Http\Resources\Goods;
 
 use App\Http\Resources\Helpers\ImageResource;
-use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -36,20 +35,14 @@ class TradeUnitsForMasterResource extends JsonResource
             'slug'                    => $this->slug,
             'code'                    => $this->code,
             'name'                    => $this->name,
-            'type'                    => $this->type,            
+            'type'                    => $this->type,
             'weight'                  => $this->net_weight !== null ? ($this->net_weight / 1000).' kg' : null,
             'type'                    => $this->type,
             'number_current_stocks'   => $this->number_current_stocks,
             'number_current_products' => $this->number_current_products,
             'id'                      => $this->id,
             'image'                   => $this->image_id ? ImageResource::make($media)->getArray() : null,
-            'value'                   => $this->getStockValue($this->id) ?? 0
+            'cost_price'              => $this->cost_price ?? 0
         ];
-    }
-
-    public function getStockValue($id)
-    {
-        $tradeUnit = TradeUnit::find($id);
-        return $tradeUnit->stocks->first()->unit_value ?? 0;
     }
 }

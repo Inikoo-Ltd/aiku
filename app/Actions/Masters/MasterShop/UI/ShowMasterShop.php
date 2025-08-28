@@ -63,7 +63,7 @@ class ShowMasterShop extends GrpAction
                     ],
                     'subNavigation' => $subNavigation,
                     'actions' => [
-                        [
+                       /*  [
                             'type'  => 'button',
                             'style' => 'edit',
                             'label' => 'blueprint',
@@ -71,7 +71,7 @@ class ShowMasterShop extends GrpAction
                                 'name'       => "grp.masters.master_shops.blueprint",
                                 'parameters' => $request->route()->originalParameters()
                             ]
-                        ],
+                        ], */
                     ],
                 ],
                 'tabs'     => [

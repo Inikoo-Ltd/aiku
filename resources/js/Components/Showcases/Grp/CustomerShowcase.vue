@@ -5,25 +5,35 @@
   -->
 
 <script setup lang="ts">
-import { useFormatTime } from "@/Composables/useFormatTime"
-import { routeType } from "@/types/route"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faLink } from "@far"
-import { faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faPencil, faArrowAltFromTop, faArrowAltFromBottom } from "@fal"
-import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from "laravel-vue-i18n"
-import { inject, ref } from "vue"
+import {useFormatTime} from "@/Composables/useFormatTime"
+import {routeType} from "@/types/route"
+import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
+import {faLink} from "@far"
+import {
+    faSync,
+    faCalendarAlt,
+    faEnvelope,
+    faPhone,
+    faMapMarkerAlt,
+    faMale,
+    faPencil,
+    faArrowAltFromTop,
+    faArrowAltFromBottom
+} from "@fal"
+import {library} from "@fortawesome/fontawesome-svg-core"
+import {trans} from "laravel-vue-i18n"
+import {inject, ref} from "vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import CustomerAddressManagementModal from "@/Components/Utils/CustomerAddressManagementModal.vue"
-import { Address, AddressManagement } from "@/types/PureComponent/Address"
+import {Address, AddressManagement} from "@/types/PureComponent/Address"
 import Tag from "@/Components/Tag.vue"
-import { faCheck, faTimes } from "@fas"
+import {faCheck, faTimes} from "@fas"
 import ModalRejected from "@/Components/Utils/ModalRejected.vue"
 import ButtonPrimeVue from "primevue/button"
-import { Link } from "@inertiajs/vue3"
+import {Link} from "@inertiajs/vue3"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import CountUp from "vue-countup-v3"
-import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import {aikuLocaleStructure} from "@/Composables/useLocaleStructure"
 import CustomerDSBalanceIncrease from "@/Components/Dropshipping/CustomerDSBalanceIncrease.vue"
 import CustomerDSBalanceDecrease from "@/Components/Dropshipping/CustomerDSBalanceDecrease.vue"
 
@@ -65,7 +75,8 @@ const props = defineProps<{
         editWebUser: routeType
         balance: {
             route_store: routeType
-            route_update: routeType
+            route_increase: routeType
+            route_decrease: routeType
             increaase_reasons_options: {}[]
             decrease_reasons_options: {}[]
         }
@@ -113,7 +124,7 @@ const isModalBalanceIncrease = ref(false)
     <!-- Section: Stats box -->
     <div class="px-4 py-5 md:px-6 lg:px-8 grid grid-cols-2 gap-8">
         <div v-if="data.require_approval && data.customer.status === 'pending_approval'"
-            class="w-full max-w-md justify-self-end">
+             class="w-full max-w-md justify-self-end">
             <div class="p-5 border rounded-lg bg-white">
                 <div class="flex flex-col items-center text-center gap-2">
                     <h3 class="text-lg font-semibold text-gray-800">Pending Application</h3>
@@ -124,16 +135,16 @@ const isModalBalanceIncrease = ref(false)
 
                 <div class="mt-5 flex justify-center gap-3">
                     <Link :href="route(data.approveRoute.name, data.approveRoute.parameters)" method="patch"
-                        :data="{ status: 'approved' }">
-                    <ButtonPrimeVue class="fixed-width-btn" severity="success" size="small" variant="outlined">
-                        <FontAwesomeIcon :icon="faCheck" @click="visible = false" />
-                        <span> Approve </span>
-                    </ButtonPrimeVue>
+                          :data="{ status: 'approved' }">
+                        <ButtonPrimeVue class="fixed-width-btn" severity="success" size="small" variant="outlined">
+                            <FontAwesomeIcon :icon="faCheck" @click="visible = false"/>
+                            <span> Approve </span>
+                        </ButtonPrimeVue>
                     </Link>
 
                     <ButtonPrimeVue class="fixed-width-btn" severity="danger" size="small" variant="outlined"
-                        @click="() => openRejectedModal(data.customer)">
-                        <FontAwesomeIcon :icon="faTimes" @click="visible = false" />
+                                    @click="() => openRejectedModal(data.customer)">
+                        <FontAwesomeIcon :icon="faTimes" @click="visible = false"/>
                         <span> Reject </span>
                     </ButtonPrimeVue>
                 </div>
@@ -169,22 +180,22 @@ const isModalBalanceIncrease = ref(false)
                     <div class="flex flex-col gap-y-3 border-t border-gray-900/5 w-full py-6">
                         <!-- Field: Contact name -->
                         <div v-if="data?.customer?.contact_name"
-                            class="flex items-center w-full flex-none gap-x-4 px-6">
+                             class="flex items-center w-full flex-none gap-x-4 px-6">
                             <dt v-tooltip="trans('Contact name')" class="flex-none">
                                 <span class="sr-only">Contact name</span>
                                 <FontAwesomeIcon icon="fal fa-male" class="text-gray-400" fixed-width
-                                    aria-hidden="true" />
+                                                 aria-hidden="true"/>
                             </dt>
                             <dd class="text-gray-500">{{ data?.customer?.contact_name }}</dd>
                         </div>
 
                         <!-- Field: Contact name -->
                         <div v-if="data?.customer?.company_name"
-                            class="flex items-center w-full flex-none gap-x-4 px-6">
+                             class="flex items-center w-full flex-none gap-x-4 px-6">
                             <dt v-tooltip="trans('Company name')" class="flex-none">
                                 <span class="sr-only">Company name</span>
                                 <FontAwesomeIcon icon="fal fa-building" class="text-gray-400" fixed-width
-                                    aria-hidden="true" />
+                                                 aria-hidden="true"/>
                             </dt>
                             <dd class="text-gray-500">{{ data?.customer?.company_name }}</dd>
                         </div>
@@ -194,7 +205,7 @@ const isModalBalanceIncrease = ref(false)
                             <dt v-tooltip="trans('Created at')" class="flex-none">
                                 <span class="sr-only">Created at</span>
                                 <FontAwesomeIcon icon="fal fa-calendar-alt" class="text-gray-400" fixed-width
-                                    aria-hidden="true" />
+                                                 aria-hidden="true"/>
                             </dt>
                             <dd class="text-gray-500">
                                 <time datetime="2023-01-31">{{ useFormatTime(data?.customer?.created_at) }}</time>
@@ -206,7 +217,7 @@ const isModalBalanceIncrease = ref(false)
                             <dt v-tooltip="trans('Email')" class="flex-none">
                                 <span class="sr-only">Email</span>
                                 <FontAwesomeIcon icon="fal fa-envelope" class="text-gray-400" fixed-width
-                                    aria-hidden="true" />
+                                                 aria-hidden="true"/>
                             </dt>
                             <dd class="text-gray-500">
                                 <a :href="`mailto:${data.customer.email}`">{{ data?.customer?.email }}</a>
@@ -218,7 +229,7 @@ const isModalBalanceIncrease = ref(false)
                             <dt v-tooltip="trans('Phone')" class="flex-none">
                                 <span class="sr-only">Phone</span>
                                 <FontAwesomeIcon icon="fal fa-phone" class="text-gray-400" fixed-width
-                                    aria-hidden="true" />
+                                                 aria-hidden="true"/>
                             </dt>
                             <dd class="text-gray-500">
                                 <a :href="`tel:${data.customer.email}`">{{ data?.customer?.phone }}</a>
@@ -229,15 +240,15 @@ const isModalBalanceIncrease = ref(false)
                         <div v-if="data?.customer?.address" class="relative flex items w-full flex-none gap-x-4 px-6">
                             <dt v-tooltip="'Address'" class="flex-none">
                                 <FontAwesomeIcon icon="fal fa-map-marker-alt" class="text-gray-400" fixed-width
-                                    aria-hidden="true" />
+                                                 aria-hidden="true"/>
                             </dt>
                             <dd class="w-full text-gray-500">
                                 <div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
-                                    <span class="" v-html="data?.customer?.address.formatted_address" />
+                                    <span class="" v-html="data?.customer?.address.formatted_address"/>
 
                                     <div v-if="data.address_management.can_open_address_management"
-                                        @click="() => isModalAddress = true"
-                                        class="w-fit pr-4 whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
+                                         @click="() => isModalAddress = true"
+                                         class="w-fit pr-4 whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
                                         <span>{{ trans("Edit") }}</span>
                                     </div>
                                 </div>
@@ -260,34 +271,40 @@ const isModalBalanceIncrease = ref(false)
                     </div>
                     <div class="flex flex-col items-end">
                         <div class="text-2xl font-bold">
-                            <CountUp :endVal="data.customer.balance" :decimalPlaces="2" :duration="1.5" :scrollSpyOnce="true" :options="{
+                            <CountUp :endVal="data.customer.balance" :decimalPlaces="2" :duration="1.5"
+                                     :scrollSpyOnce="true" :options="{
                                 formattingFn: (value) =>
                                     locale.currencyFormat(data.currency?.code, value),
-                            }" />
+                            }"/>
                         </div>
                         <div class="flex items-center">
-                            <div @click="() => isModalBalanceIncrease = true" v-tooltip="trans('Increase customer balance')" class="cursor-pointer text-gray-400 hover:text-indigo-600">
+                            <div @click="() => isModalBalanceIncrease = true"
+                                 v-tooltip="trans('Increase customer balance')"
+                                 class="cursor-pointer text-gray-400 hover:text-indigo-600">
                                 <FontAwesomeIcon
                                     :icon="faArrowAltFromBottom"
                                     class="text-base"
                                     tooltip="Decrease Balance"
                                     fixed-width
-                                    aria-hidden="true" />
+                                    aria-hidden="true"/>
                             </div>
                             <span class="mx-2 text-gray-400">|</span>
-                            <div @click="() => isModalBalanceDecrease = true" v-tooltip="trans('Decrease customer balance')" class="cursor-pointer text-gray-400 hover:text-indigo-600">
+                            <div @click="() => isModalBalanceDecrease = true"
+                                 v-tooltip="trans('Decrease customer balance')"
+                                 class="cursor-pointer text-gray-400 hover:text-indigo-600">
                                 <FontAwesomeIcon
                                     :icon="faArrowAltFromTop"
                                     class="text-base"
                                     tooltip="Decrease Balance"
                                     fixed-width
-                                    aria-hidden="true" />
+                                    aria-hidden="true"/>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div v-if="handleTabUpdate" @click="() => handleTabUpdate('credit_transactions')" class="w-fit text-xs text-gray-400 hover:text-gray-700 mt-2 italic underline cursor-pointer">
+                <div v-if="handleTabUpdate" @click="() => handleTabUpdate('credit_transactions')"
+                     class="w-fit text-xs text-gray-400 hover:text-gray-700 mt-2 italic underline cursor-pointer">
                     {{ trans("See all transactions list") }}
                 </div>
             </div>
@@ -295,7 +312,7 @@ const isModalBalanceIncrease = ref(false)
             <div class="mt-4 w-64 border border-gray-300 rounded-md p-2">
                 <div v-for="(item, index) in links" :key="index" class="p-2">
                     <ButtonWithLink :routeTarget="item.route_target" full :icon="item.icon" :label="item.label"
-                        type="secondary" />
+                                    type="secondary"/>
                 </div>
             </div>
         </div>
@@ -303,30 +320,30 @@ const isModalBalanceIncrease = ref(false)
 
     <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
         <CustomerAddressManagementModal :addresses="data.address_management.addresses"
-            :updateRoute="data.address_management.address_update_route" />
+                                        :updateRoute="data.address_management.address_update_route"/>
     </Modal>
 
     <!-- Modal: Increase balance -->
     <Modal :isOpen="isModalBalanceIncrease" @onClose="() => (isModalBalanceIncrease = false)" width="max-w-2xl w-full">
         <CustomerDSBalanceIncrease
             v-model="isModalBalanceIncrease"
-            :routeSubmit="data.balance.route_store"
+            :routeSubmit="data.balance.route_increase"
             :options="data.balance.increaase_reasons_options"
             :currency="data.currency"
             :types="data.balance.type_options"
         />
     </Modal>
-    
+
     <!-- Modal: Decrease balance -->
     <Modal :isOpen="isModalBalanceDecrease" @onClose="() => (isModalBalanceDecrease = false)" width="max-w-2xl w-full">
         <CustomerDSBalanceDecrease
             v-model="isModalBalanceDecrease"
-            :routeSubmit="data.balance.route_store"
+            :routeSubmit="data.balance.route_decrease"
             :options="data.balance.decrease_reasons_options"
             :currency="data.currency"
             :types="data.balance.type_options"
         />
     </Modal>
 
-    <ModalRejected v-model="isModalUploadOpen" :customerID="customerID" :customerName="customerName" />
+    <ModalRejected v-model="isModalUploadOpen" :customerID="customerID" :customerName="customerName"/>
 </template>

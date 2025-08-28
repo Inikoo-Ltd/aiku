@@ -12,12 +12,12 @@ use App\Actions\Accounting\WithCheckoutCom;
 use App\Actions\OrgAction;
 use App\Models\Accounting\Payment;
 
-class RefundPaymentApiRequest extends OrgAction
+class CheckPaymentCheckoutCom extends OrgAction
 {
     use WithCheckoutCom;
 
     public function handle(Payment $payment, string $paymentId): array
     {
-        return $this->refundPayment($payment->paymentAccountShop, $paymentId, abs($payment->amount));
+        return $this->getCheckOutPayment($payment->paymentAccountShop, $paymentId);
     }
 }

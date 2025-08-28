@@ -112,6 +112,14 @@ class ShowMasterFamily extends GrpAction
                     'previous' => $this->getPrevious($masterFamily, $request),
                     'next'     => $this->getNext($masterFamily, $request),
                 ],
+                'familyId'      => $masterFamily->id,
+                'currency' => $masterFamily->group->currency->code,
+                'storeProductRoute' => [
+                        'name'       => 'grp.models.master_family.store-assets',
+                        'parameters' => [
+                            'masterFamily' => $masterFamily->id,
+                        ]
+                ],
                 'pageHead'    => [
                     'title'         => $masterFamily->name,
                     'model'         => __('Master Family'),
@@ -135,7 +143,13 @@ class ShowMasterFamily extends GrpAction
                                 'name'       => 'shops.show.families.remove',
                                 'parameters' => $request->route()->originalParameters()
                             ]
-                        ] : false
+                        ] : false,
+                        [
+                            'type'    => 'button',
+                            'style'   => 'create',
+                            'tooltip' => __('Add a master product to this family'),
+                            'label'   => __('master product'),
+                        ],
                     ],
                     'subNavigation' => $this->getMasterFamilySubNavigation($masterFamily)
 
@@ -198,7 +212,8 @@ class ShowMasterFamily extends GrpAction
             'grp.masters.master_shops.show.master_families.show',
             'grp.masters.master_shops.show.master_families.edit',
             'grp.masters.master_shops.show.master_families.create',
-            'grp.masters.master_shops.show.master_families.master_products.index' =>
+            'grp.masters.master_shops.show.master_families.master_products.index',
+            'grp.masters.master_shops.show.master_families.master_products.show' =>
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($masterFamily->masterShop, $routeParameters),
                 $headCrumb(

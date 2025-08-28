@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Fri, 23 May 2025 16:10:18 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Created: Thu, 28 Aug 2025 09:46:37 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
@@ -13,16 +13,16 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::table('delivery_note_items', function (Blueprint $table) {
-            $table->boolean('is_completed')->default(false)->index();
+        Schema::table('trade_units', function (Blueprint $table) {
+            $table->decimal('cost_price', 16, 3)->nullable();
         });
     }
 
 
     public function down(): void
     {
-        Schema::table('delivery_note_items', function (Blueprint $table) {
-            $table->dropColumn('is_completed');
+        Schema::table('trade_units', function (Blueprint $table) {
+            $table->dropColumn('cost_price');
         });
     }
 };

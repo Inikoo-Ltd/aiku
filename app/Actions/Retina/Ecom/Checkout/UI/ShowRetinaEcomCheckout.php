@@ -85,11 +85,12 @@ class ShowRetinaEcomCheckout extends RetinaAction
         $toPayByOther   = $paymentAmounts['by_other'];
 
         return Inertia::render(
-            'Ecom/Checkout',
+            'Ecom/RetinaEcomCheckout',
             [
                 'breadcrumbs'    => $this->getBreadcrumbs(),
                 'title'          => __('Checkout'),
                 'pageHead'       => [
+                    'icon'  => 'fal fa-shopping-cart',
                     'title' => $order->reference,
                     'model' => __('Checkout'),
                 ],
@@ -114,7 +115,7 @@ class ShowRetinaEcomCheckout extends RetinaAction
                         'method'     => 'patch'
                     ],
                     'back_to_basket'   => [
-                        'name'       => 'retina.ecom.basket.show	',
+                        'name'       => 'retina.ecom.basket.show',
                         'parameters' => []
                     ]
                 ]

@@ -17,40 +17,40 @@ class StoreProductFromMasterProduct extends GrpAction
     /**
      * @throws \Throwable
      */
-    public function handle(MasterAsset $masterAsset): Product
+    public function handle(MasterAsset $masterAsset)
     {
         $productCategories = $masterAsset->masterFamily->productCategories;
 
-
-        foreach($productCategories as $productCategory) {
-            $orgStocks = [];
-            foreach ($masterAsset->stocks as $stock) {
-                foreach ($stock->orgStocks()->where('organisation_id', $productCategory->organisation_id)->get() as $orgStock) {
-                    $orgStocks[$orgStock->id] = [
-                        'quantity' => $orgStock->quantity_in_locations,
-                    ];
+        if($productCategories)
+        {
+            foreach ($productCategories as $productCategory) {
+                $orgStocks = [];
+                foreach ($masterAsset->stocks as $stock) {
+                    foreach ($stock->orgStocks()->where('organisation_id', $productCategory->organisation_id)->get() as $orgStock) {
+                        $orgStocks[$orgStock->id] = [
+                            'quantity' => $orgStock->quantity_in_locations,
+                        ];
+                    }
                 }
+    
+                $data = [
+                    'code' => $masterAsset->code,
+                    'name' => $masterAsset->name,
+                    'price' => $masterAsset->price,
+                    'unit'    => $masterAsset->unit,
+                    'is_main' => true,
+                    'org_stocks'  => $orgStocks
+                ];
+                StoreProduct::run($productCategory, $data);
+    
             }
-
-            $data = [
-                'code' => $masterAsset->code,
-                'name' => $masterAsset->name,
-                'price' => $masterAsset->price,
-                'unit'    => $masterAsset->unit,
-                'is_main' => true,
-                'org_stocks'  => $orgStocks
-            ];
-            $product = StoreProduct::run($productCategory, $data);
-
         }
-        
-        return $product;
     }
 
     /**
      * @throws \Throwable
      */
-    public function action(MasterAsset $masterAsset, int $hydratorsDelay = 0, $strict = true, $audit = true): Product
+    public function action(MasterAsset $masterAsset, int $hydratorsDelay = 0, $strict = true, $audit = true)
     {
         if (!$audit) {
             Product::disableAuditing();

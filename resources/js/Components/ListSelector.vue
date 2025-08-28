@@ -184,8 +184,10 @@ const resetAfterSubmit = () => {
                 <div>
                     <h3 class="font-semibold mb-2">{{ trans(props.head_label) }}</h3>
                 </div>
-                <div><Button @click="showDialog = true" :label="'select'" size="xs" type="dashed"
-                        :icon="faPlus"></Button></div>
+                <div>
+                    <Button v-if="selectedProduct.length" @click="showDialog = true" :label="'select'" size="xs" type="dashed"
+                        :icon="faPlus"></Button>
+                </div>
             </div>
 
             <div v-if="selectedProduct.length" class="border rounded-md overflow-hidden">
@@ -194,7 +196,7 @@ const resetAfterSubmit = () => {
 
                     <!-- Info -->
                     <div class="flex items-center gap-3">
-                        <Image v-if="item.image" :src="item.image" class="w-12 h-12 rounded object-cover" />
+                        <Image v-if="item.image" :src="item.image.thumbnail" class="w-12 h-12 rounded object-cover" />
                         <div>
                             <div class="font-medium leading-none">{{ item.name }}</div>
                             <div class="flex justify-beetween mt-1 gap-5">
@@ -218,9 +220,10 @@ const resetAfterSubmit = () => {
             </div>
             <div v-else>
                 <div class="border rounded-md bg-gray-50 p-6 text-center text-gray-500">
-                    <font-awesome-icon :icon="faEmptySet" class="text-4xl text-gray-400 mb-3" />
+                    <!-- <font-awesome-icon :icon="faEmptySet" class="text-4xl text-gray-400 mb-3" /> -->
                     <p class="font-medium">No Data Available</p>
                     <p class="text-sm text-gray-400 mb-4">Please add an item to see content here.</p>
+                    <div><Button @click="showDialog = true" :label="'select'" size="xs" type="dashed" :icon="faPlus"></Button></div>
                 </div>
             </div>
         </div>
