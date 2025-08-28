@@ -25,6 +25,7 @@ use App\Models\Accounting\OrgPaymentServiceProvider;
 use App\Models\Accounting\Payment;
 use App\Models\Accounting\PaymentAccount;
 use App\Models\Catalogue\Shop;
+use App\Models\CRM\Customer;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Group;
@@ -44,9 +45,9 @@ class IndexPayments extends OrgAction
     use WithPaymentAccountSubNavigation;
     use WithAccountingSubNavigation;
 
-    private Fulfilment|Group|Organisation|PaymentAccount|Shop|OrgPaymentServiceProvider|Invoice $parent;
+    private Fulfilment|Group|Organisation|PaymentAccount|Shop|OrgPaymentServiceProvider|Invoice|Customer $parent;
 
-    public function handle(Group|Fulfilment|Organisation|PaymentAccount|Shop|OrgPaymentServiceProvider|Invoice|Order $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Group|Fulfilment|Organisation|PaymentAccount|Shop|OrgPaymentServiceProvider|Invoice|Order|Customer $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -67,7 +68,9 @@ class IndexPayments extends OrgAction
         } elseif (class_basename($parent) == 'PaymentAccount') {
             $queryBuilder->where('payments.payment_account_id', $parent->id);
         } elseif (class_basename($parent) == 'Shop') {
-            $queryBuilder->where('payments.shop_id', $parent->id);
+            $queryBuilder->where('payments.payment_account_id', $parent->id);
+        } elseif (class_basename($parent) == 'Customer') {
+            $queryBuilder->where('payments.customer_id', $parent->id);
         } elseif (class_basename($parent) == 'Group') {
             $queryBuilder->where('payments.group_id', $parent->id);
         } elseif (class_basename($parent) == 'Fulfilment') {
@@ -127,7 +130,7 @@ class IndexPayments extends OrgAction
             ->withQueryString();
     }
 
-    protected function getElementGroups(Group|Organisation|PaymentAccount|Shop|Fulfilment|OrgPaymentServiceProvider $parent): array
+    protected function getElementGroups(Group|Organisation|PaymentAccount|Shop|Fulfilment|OrgPaymentServiceProvider|Customer $parent): array
     {
 
         return [
@@ -148,7 +151,7 @@ class IndexPayments extends OrgAction
         ];
     }
 
-    public function tableStructure(Group|Fulfilment|Invoice|Shop|Organisation|OrgPaymentServiceProvider|PaymentAccount|Order $parent, ?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(Group|Fulfilment|Invoice|Shop|Organisation|OrgPaymentServiceProvider|PaymentAccount|Order|Customer $parent, ?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($modelOperations, $prefix, $parent) {
             if ($prefix) {

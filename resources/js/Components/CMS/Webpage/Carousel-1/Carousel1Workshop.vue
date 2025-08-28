@@ -77,7 +77,7 @@ const getHref = (item: any) => !!item?.link?.href
           v-for="(card, index) in modelValue.carousel_data.cards"
           :key="index"
           class="flex flex-col"
-          :style="{ ...getStyles(modelValue?.carousel_data?.card_container?.properties, screenType), height: '100%' }"
+          :style="{  height: '100%' , overflow : 'auto', ...getStyles(modelValue?.carousel_data?.card_container?.properties, screenType)}"
         >
           <component
             :is="getHref(card) ? 'a' : 'div'"
