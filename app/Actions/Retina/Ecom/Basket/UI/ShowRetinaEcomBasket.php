@@ -45,7 +45,7 @@ class ShowRetinaEcomBasket extends RetinaAction
     {
 
         return Inertia::render(
-            'Ecom/Basket',
+            'Ecom/RetinaEcomBasket',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('Baskets'),
@@ -76,9 +76,15 @@ class ShowRetinaEcomBasket extends RetinaAction
                 'order'          => $order ? OrderResource::make($order)->resolve() : [],
                 'summary'     => $order ? $this->getOrderBoxStats($order) : null,
                 'balance'       => $this->customer->balance,
-                'total_to_pay'  => $order?->total_amount,
+                // 'total_to_pay'  => $order?->total_amount,
+                'total_to_pay' => max(0, $order->total_amount - $order->customer->balance),
+                'total_products'    => $order->transactions->whereIn('model_type', ['Product', 'Service'])->count(),
                 'transactions'  => $order ? RetinaEcomBasketTransactionsResources::collection(IndexBasketTransactions::run($order)) : null,
-                ]
+            ]
+        )->table(
+            IndexBasketTransactions::make()->tableStructure(
+                order: $order,
+            )
         );
     }
 
