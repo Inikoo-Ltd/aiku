@@ -50,7 +50,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
                     ];
                 }
             }
-            
+
             $data        = [
                 'code'    => Arr::get($modelData, 'code'),
                 'name'    => Arr::get($modelData, 'name'),
@@ -61,7 +61,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
                 'stocks'  => $stocks
             ];
             
-            $masterAsset = StoreMasterAsset::run($parent, $data);
+            $masterAsset = StoreMasterAsset::make()->action($parent, $data);
             $masterAsset->refresh();
             foreach ($tradeUnits as $item) {
                 $tradeUnitId = Arr::get($item, 'id');
