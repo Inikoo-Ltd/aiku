@@ -20,7 +20,6 @@ use Database\Seeders\LanguageSeeder;
 use Database\Seeders\TimezoneSeeder;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
-use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Tests\UsesIsolatedMigrations; // Import trait isolasi
 
@@ -122,7 +121,7 @@ test('it handles various department update scenarios', function () {
     ]);
 
     expect(
-        fn() => UpdateMasterFamilyMasterDepartment::make()->asController(
+        fn () => UpdateMasterFamilyMasterDepartment::make()->asController(
             $familyForScenario2,
             new ActionRequest(['master_department_id' => $notADepartment->id])
         )

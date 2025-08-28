@@ -9,7 +9,6 @@
 namespace App\Http\Resources\Goods;
 
 use App\Http\Resources\Helpers\ImageResource;
-use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -36,7 +35,7 @@ class TradeUnitsForMasterResource extends JsonResource
             'slug'                    => $this->slug,
             'code'                    => $this->code,
             'name'                    => $this->name,
-            'type'                    => $this->type,            
+            'type'                    => $this->type,
             'weight'                  => $this->net_weight !== null ? ($this->net_weight / 1000).' kg' : null,
             'type'                    => $this->type,
             'number_current_stocks'   => $this->number_current_stocks,

@@ -33,9 +33,9 @@ class DashboardMasterShopSalesInGroupResource extends JsonResource
                     'formatted_value' => $this->name,
                     'align'           => 'left',
                     'route_target'    => [
-                        'name'=>'grp.masters.master_shops.show',
+                        'name' => 'grp.masters.master_shops.show',
                         'parameters' => [
-                            'masterShop'=>$this->slug,
+                            'masterShop' => $this->slug,
                         ]
                     ]
                 ]

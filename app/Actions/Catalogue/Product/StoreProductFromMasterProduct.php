@@ -22,7 +22,7 @@ class StoreProductFromMasterProduct extends GrpAction
         $productCategories = $masterAsset->masterFamily->productCategories;
 
 
-        foreach($productCategories as $productCategory) {
+        foreach ($productCategories as $productCategory) {
             $orgStocks = [];
             foreach ($masterAsset->stocks as $stock) {
                 foreach ($stock->orgStocks()->where('organisation_id', $productCategory->organisation_id)->get() as $orgStock) {
@@ -43,7 +43,7 @@ class StoreProductFromMasterProduct extends GrpAction
             $product = StoreProduct::run($productCategory, $data);
 
         }
-        
+
         return $product;
     }
 
