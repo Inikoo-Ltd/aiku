@@ -47,10 +47,10 @@ library.add(faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFol
 
 const layout = useLayoutStore()
 const locale = useLocaleStore()
-
+const isOpenMenuMobile = ref(false)
 provide("layout", layout)
 provide("locale", locale)
-
+provide('isOpenMenuMobile', isOpenMenuMobile)
 const { props } = usePage()
 const irisTheme = props?.iris?.theme ?? { color: [...useColorTheme[2]] }
 
@@ -80,6 +80,7 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 			:data="layout.iris.header"
 			:colorThemed="irisTheme"
 			:menu="layout.iris.menu" />
+			
 
 		<!-- wrapper for mobile overlay + content -->
 		<div class="relative">
