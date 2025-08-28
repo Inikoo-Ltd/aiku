@@ -24,6 +24,7 @@ import {capitalize} from "@/Composables/capitalize";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import {computed, ref} from "vue";
 import {useTabChange} from "@/Composables/tab-change";
+import TransleteLanguage from "@/Components/Showcases/Grp/TransleteLanguage.vue";
 
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import MasterProductShowcase from "@/Components/Showcases/Grp/MasterProductShowcase.vue";
@@ -42,6 +43,7 @@ const props = defineProps<{
     title: string
     showcase?: {}
     history?: {}
+    language?:{}
 
 }>();
 
@@ -52,6 +54,7 @@ const component = computed(() => {
 
     const components = {
         showcase: MasterProductShowcase,
+        language : TransleteLanguage,
         history: TableHistories
     };
     return components[currentTab.value];

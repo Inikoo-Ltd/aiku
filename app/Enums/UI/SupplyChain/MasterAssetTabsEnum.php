@@ -44,7 +44,7 @@ enum MasterAssetTabsEnum: string
             ],
             MasterAssetTabsEnum::LANGUAGE => [
                 'title' => __('language'),
-                'icon'  => 'fal fa-books',
+                'icon'  => 'fal fa-language',
             ],
         };
     }
