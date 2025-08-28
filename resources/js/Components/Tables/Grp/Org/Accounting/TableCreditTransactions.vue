@@ -7,6 +7,7 @@
 <script setup lang="ts">
 import Table from "@/Components/Table/Table.vue";
 import { Link } from "@inertiajs/vue3"
+import { trans } from "laravel-vue-i18n"
 import { RouteParams } from "@/types/route-params"
 import { CreditTransaction } from "@/types/credit-transaction"
 import Button from "@/Components/Elements/Buttons/Button.vue";
@@ -104,7 +105,7 @@ function createRefundRoute(transaction: CreditTransaction) {
           <Button 
             v-if="item.payment_id !== null && item.payment_reference !== null" 
             :icon="faUndo" 
-            v-tooltip="'Proceed Refund'"
+            v-tooltip="trans('Proceed Refund')"
             @click="openRefundModal(item)"
           />
         </template>

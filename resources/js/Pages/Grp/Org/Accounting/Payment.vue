@@ -23,6 +23,7 @@ import RefundModal from '@/Components/RefundModal.vue';
 import Button from '@/Components/Elements/Buttons/Button.vue';
 import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.vue";
 import TableHistoryNotes from "@/Components/Tables/Grp/Org/Fulfilment/TableHistoryNotes.vue";
+import { trans } from "laravel-vue-i18n"
 
 
 library.add(faCoins, faUndo);
@@ -231,7 +232,11 @@ const closeRefundModal = () => {
     <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead">
         <template #other>
+<<<<<<< Updated upstream
             <Button v-if="showRefundButton" @click="openRefundModal" :icon="faUndo" label="Proceed Refund">
+=======
+            <Button v-if="showRefundButton && layout?.app?.environment !== 'production'" @click="openRefundModal" :icon="faUndo" :label="trans('Proceed Refund')">
+>>>>>>> Stashed changes
 
             </Button>
         </template>
