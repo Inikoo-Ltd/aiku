@@ -40,7 +40,7 @@ class PaymentsResource extends JsonResource
             'amount'     => $this->amount,
             'route' => match ($request->route()->getName()) {
                 'grp.org.shops.show.crm.customers.show' => [
-                        'name' => 'grp.org.shops.show.crm.customers.show.payments.show',
+                        'name' => 'grp.org.shops.show.crm.customers.show.'.$this->type->value.'s.show',
                         'params' => [
                             ...$request->route()->originalParameters(),
                             'payment' => $this->id
