@@ -278,19 +278,19 @@ const processRefund = async () => {
     }
 }
 
-const handleMouseOver = (event) => {
-    if (!isProcessingRefund.value) {
-        event.target.style.backgroundColor = hexToRgba(themeColors.value.primaryBg, 0.8)
-    }
-}
+// const handleMouseOver = (event) => {
+//     if (!isProcessingRefund.value) {
+//         event.target.style.backgroundColor = hexToRgba(themeColors.value.primaryBg, 0.8)
+//     }
+// }
 
-const handleMouseOut = (event) => {
-    if (!isProcessingRefund.value) {
-        event.target.style.backgroundColor = themeColors.value.buttonBg
-    } else {
-        event.target.style.backgroundColor = '#6B7280'
-    }
-}
+// const handleMouseOut = (event) => {
+//     if (!isProcessingRefund.value) {
+//         event.target.style.backgroundColor = themeColors.value.buttonBg
+//     } else {
+//         event.target.style.backgroundColor = '#6B7280'
+//     }
+// }
 
 // Handle reason field blur
 const handleReasonBlur = () => {
@@ -471,7 +471,7 @@ const handleReasonBlur = () => {
                     :disabled="isProcessingRefund">
                     {{ trans('Cancel') }}
                 </button>
-                <Button @click="processRefund" :disabled="isProcessingRefund"
+                <Button @click="processRefund" :disabled="isProcessingRefund" :icon="faUndo" :loading="isProcessingRefund"
                     :label="isProcessingRefund ? trans('Processing...') : trans('Process Refund') ">
                 </Button>
             </div>
