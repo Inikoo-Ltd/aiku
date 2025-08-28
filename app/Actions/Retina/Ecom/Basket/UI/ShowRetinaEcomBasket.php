@@ -79,7 +79,7 @@ class ShowRetinaEcomBasket extends RetinaAction
 
                 'voucher' => [],
 
-                'order'             => $order ? OrderResource::make($order)->resolve() : [],
+                'order'             => $order ? OrderResource::make($order)->resolve() : null,
                 'summary'           => $order ? $this->getOrderBoxStats($order) : null,
                 'balance'           => $this->customer->balance,
                 'is_in_basket'      => true,
