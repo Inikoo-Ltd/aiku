@@ -14,13 +14,11 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Payment\PaymentClassEnum;
-use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
-use App\Enums\Accounting\Payment\PaymentTypeEnum;
-use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Models\Accounting\Payment;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\Response;
@@ -32,41 +30,30 @@ class RefundPayment extends OrgAction
 
     private Payment $payment;
 
-    public function handle(Payment $payment, array $modelData): Payment
+    public function handle(Payment $payment, array $modelData): Payment|array
     {
         $amountPayPerRefund = Arr::get($modelData, 'amount');
+        $refundPayment = $this->processOnlineRefunds($payment, $amountPayPerRefund);
 
-
-        $this->processOnlineRefunds($payment,$amountPayPerRefund);
-        dd('xxxxx');
-        // if payment cab be refonded online  call refund onliner methid  $this->processOnlineRefunds($payment, $refundPayment);
-        //if not cal met=s
-
-
-        $refundPayment = StorePayment::make()->action($payment->customer, $payment->paymentAccount, [
-            'type'                    => PaymentTypeEnum::REFUND,
-            'original_payment_id'     => $payment->id,
-            'amount'                  => -abs($amountPayPerRefund),
-            'payment_account_shop_id' => $payment->payment_account_shop_id
-        ]);
+        if ($refundPayment->status !== PaymentStatusEnum::SUCCESS) {
+            throw ValidationException::withMessages([
+                'error' => true,
+                'message' => __('We still waiting response from checkout.com')
+            ]);
+        }
 
         $totalRefund = abs($payment->total_refund) + abs($amountPayPerRefund);
-
         $this->update($payment, [
             'total_refund' => $totalRefund,
             'with_refund'  => true
         ]);
 
-
-
-        if($payment->class==PaymentClassEnum::TOPUP){
-            $this->processCreditTransactions($payment, $refundPayment->amount);
-        }else{
+        if ($payment->class == PaymentClassEnum::TOPUP) {
+            $this->processCreditTransactions($refundPayment, $refundPayment->amount);
+        } else {
             $this->processInvoices($payment);
             $this->processOrders($payment);
         }
-
-
         return $refundPayment;
     }
 
@@ -90,30 +77,25 @@ class RefundPayment extends OrgAction
         }
     }
 
-    public function processCreditTransactions(Payment $payment, float $amountPayPerRefund): void
+    public function processCreditTransactions(Payment $refundPayment, float $amountPayPerRefund): void
     {
-        if ($payment->class === PaymentClassEnum::TOPUP) {
-            StoreCreditTransaction::make()->action($payment->customer, [
-                'amount' => abs($amountPayPerRefund),
-                'date'   => now(),
-                'type'   => CreditTransactionTypeEnum::MONEY_BACK
-            ]);
+        StoreCreditTransaction::make()->action($refundPayment->customer, [
+            'payment_id' => $refundPayment->id,
+            'amount' => abs($amountPayPerRefund),
+            'date'   => now(),
+            'type'   => CreditTransactionTypeEnum::MONEY_BACK
+        ]);
 
-            if ($this->asAction) {
-                CustomerHydrateCreditTransactions::run($payment->customer);
-            } else {
-                CustomerHydrateCreditTransactions::dispatch($payment->customer);
-            }
+        if ($this->asAction) {
+            CustomerHydrateCreditTransactions::run($refundPayment->customer);
+        } else {
+            CustomerHydrateCreditTransactions::dispatch($refundPayment->customer);
         }
     }
 
-    public function processOnlineRefunds(Payment $payment,$amount): void
+    public function processOnlineRefunds(Payment $payment, $amount): Payment
     {
-        if ($payment->paymentAccount->type === PaymentAccountTypeEnum::CHECKOUT) {
-            $refundPayment = RefundPaymentCheckoutCom::run($payment, $amount);
-
-
-        }
+        return RefundPaymentCheckoutCom::run($payment, $amount);
     }
 
     public function htmlResponse(Payment $refundPayment): Response
