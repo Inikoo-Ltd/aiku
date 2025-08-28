@@ -225,14 +225,16 @@ const closeRefundModal = () => {
 
 
 <template>
+
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead"><template #other>
             <Button v-if="showRefundButton" @click="openRefundModal" :icon="faUndo" label="Proceed Refund">
-                
+
             </Button>
         </template></PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"></component>
+    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" @open-refund-modal="openRefundModal">
+    </component>
     <RefundModal :showcase="showcase" :refund-route="refund_route" :is-visible="showRefundModal"
         @close="closeRefundModal" />
 </template>
