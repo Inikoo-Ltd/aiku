@@ -48,38 +48,42 @@ class ShowRetinaEcomBasket extends RetinaAction
             'Ecom/RetinaEcomBasket',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('Baskets'),
+                'title'       => __('Basket'),
                 'pageHead'    => [
-                        'title' => __('Baskets'),
-                        'icon'  => 'fal fa-shopping-basket'
-                    ],
+                    'title' => __('Basket'),
+                    'icon'  => 'fal fa-shopping-basket',
+                    'afterTitle' => [
+                        'label' => '#' . $order->slug
+                    ]
+                ],
 
                 'routes'    => [
-                        'update_route' => [
-                            'name'       => 'retina.models.order.update',
-                            'parameters' => [
-                                'order' => $order?->id
-                            ],
-                            'method'     => 'patch'
+                    'update_route' => [
+                        'name'       => 'retina.models.order.update',
+                        'parameters' => [
+                            'order' => $order?->id
                         ],
-                        'submit_route' => [
-                            'name'       => 'retina.models.order.submit',
-                            'parameters' => [
-                                'order' => $order?->id
-                            ],
-                            'method'     => 'patch'
-                        ]
+                        'method'     => 'patch'
                     ],
+                    'submit_route' => [
+                        'name'       => 'retina.models.order.submit',
+                        'parameters' => [
+                            'order' => $order?->id
+                        ],
+                        'method'     => 'patch'
+                    ]
+                ],
 
                 'voucher' => [],
 
-                'order'          => $order ? OrderResource::make($order)->resolve() : [],
-                'summary'     => $order ? $this->getOrderBoxStats($order) : null,
-                'balance'       => $this->customer->balance,
-                // 'total_to_pay'  => $order?->total_amount,
-                'total_to_pay' => max(0, $order->total_amount - $order->customer->balance),
+                'order'             => $order ? OrderResource::make($order)->resolve() : [],
+                'summary'           => $order ? $this->getOrderBoxStats($order) : null,
+                'balance'           => $this->customer->balance,
+                // 'total_to_pay'      => $order?->total_amount,
+                'is_in_basket'      => true,
+                'total_to_pay'      => max(0, $order->total_amount - $order->customer->balance),
                 'total_products'    => $order->transactions->whereIn('model_type', ['Product', 'Service'])->count(),
-                'transactions'  => $order ? RetinaEcomBasketTransactionsResources::collection(IndexBasketTransactions::run($order)) : null,
+                'transactions'      => $order ? RetinaEcomBasketTransactionsResources::collection(IndexBasketTransactions::run($order)) : null,
             ]
         )->table(
             IndexBasketTransactions::make()->tableStructure(
