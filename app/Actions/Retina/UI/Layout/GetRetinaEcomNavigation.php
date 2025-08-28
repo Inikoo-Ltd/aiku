@@ -15,7 +15,7 @@ class GetRetinaEcomNavigation
 {
     use AsAction;
 
-    public function handle(WebUser $webUser): array
+    public function handle(): array
     {
         $groupNavigation = [];
 
@@ -80,7 +80,7 @@ class GetRetinaEcomNavigation
             'icon'    => ['fal', 'fa-users-cog'],
             'root'    => 'retina.sysadmin.',
             'route'   => [
-                'name' => 'retina.sysadmin.dropshipping.dashboard'
+                'name' => 'retina.sysadmin.dashboard'
             ],
             'topMenu' => [
                 'subSections' => [
