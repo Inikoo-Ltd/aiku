@@ -1,15 +1,17 @@
 <script setup lang='ts'>
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import Image from '@/Components/Image.vue'
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import Table from '@/Components/Table/Table.vue'
 import Tag from '@/Components/Tag.vue'
+import ConditionIcon from '@/Components/Utils/ConditionIcon.vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { routeType } from '@/types/route'
 import { Table as TableTS} from '@/types/Table'
 import { Link, router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
-import { debounce } from 'lodash-es'
+import { debounce, get, set } from 'lodash-es'
 import { inject, ref } from 'vue'
 
 const props = defineProps<{
@@ -41,6 +43,7 @@ function productRoute(product) {
 
 
 // Section: Quantity
+const listState = ref({})
 const isLoading = ref<string | boolean>(false)
 const onUpdateQuantity = (routeUpdate: routeType, idTransaction: number, value: number) => {
     router.patch(
@@ -56,9 +59,20 @@ const onUpdateQuantity = (routeUpdate: routeType, idTransaction: number, value: 
                     type: "error",
                 })
             },
-            onStart: () => isLoading.value = 'quantity' + idTransaction,
-            onFinish: () => isLoading.value = false,
-            only: ['transactions', 'box_stats', 'total_to_pay', 'balance'],
+            onStart: () => {
+                set(listState.value, [idTransaction, 'quantity'], 'loading'),
+                isLoading.value = 'quantity' + idTransaction
+            },
+            onSuccess: () => {
+                set(listState.value, [idTransaction, 'quantity'], 'success')
+            },
+            onFinish: () => {
+                isLoading.value = false,
+                setTimeout(() => {
+                    set(listState.value, [idTransaction, 'quantity'], null)
+                }, 3000)
+            },
+            only: ['transactions', 'summary', 'total_to_pay', 'balance'],
             preserveScroll: true,
         }
     )
@@ -75,6 +89,16 @@ const debounceUpdateQuantity = debounce(
 
 <template>
     <Table :resource="data" :name="tab">
+        <!-- Column: Image -->
+        <template #cell(image)="{ item }">
+            <div class="flex relative w-8 aspect-square overflow-hidden">
+                <Image
+                    :src="item.image.thumbnail"
+                    class="w-full h-full object-contain"
+                />
+            </div>
+        </template>
+
         <!-- Column: Code -->
         <template #cell(asset_code)="{ item }">
             <Link :href="productRoute(item)" class="primaryLink">
@@ -86,7 +110,7 @@ const debounceUpdateQuantity = debounce(
         <template #cell(asset_name)="{ item }">
             <div>
                 <div>{{ item.asset_name }}</div>
-                <div v-if="typeof item.available_quantity !== 'undefined' && item.available_quantity < 1">
+                <div v-if="!item.available_quantity">
                     <Tag label="Out of stock" no-hover-color :theme="7" size="xxs" />
                 </div>
                 <div v-else class="text-gray-500 italic text-xs">
@@ -98,48 +122,29 @@ const debounceUpdateQuantity = debounce(
 
         <!-- Column: Quantity -->
         <template #cell(quantity_ordered)="{ item }">
-            <div class="flex items-center justify-end">
-                <div v-if="state === 'creating' || state === 'xsubmitted'" class="w-fit">
+            <div class="px-2 relative text-right w-full">
+                <!-- <pre>{{ item }}</pre> -->
+                <div class="w-fit ml-auto">
                     <NumberWithButtonSave
-                        :modelValue="item.quantity_ordered"
+                        v-model="item.quantity_ordered"
+                        @update:modelValue="(value: number) => {
+                            debounceUpdateQuantity(item.updateRoute, item.id, value)
+                        }"
                         :routeSubmit="item.updateRoute"
-                        :bindToTarget="{ min: 0 }"
-                        isWithRefreshModel
-                        keySubmit="quantity_ordered"
-                        :isLoading="isLoading === 'quantity' + item.id"
-                        :readonly="readonly"
-                        @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e)"
-                        noUndoButton
+                        key-submit="quantity_ordered"
+                        xxsaveOnForm
                         noSaveButton
+                        noUndoButton
+                        :min="1"
                     />
                 </div>
 
-                <div v-else>
-                    {{
-                        Number.isInteger(Number(item.quantity_ordered)) && String(item.quantity_ordered).match(/^\d+(\.0+)?$/)
-                            ? parseInt(item.quantity_ordered)
-                            : parseFloat(item.quantity_ordered)
-                    }}
-                </div>
+                <ConditionIcon
+                    class="absolute ml-2 top-1/2 -translate-y-1/2 text-base"
+                    :state="get(listState, [item.id, 'quantity'], null)"
+                />
                 
-                <!-- <Transition name="spin-to-down">
-                    <span :key="item.quantity_ordered">
-                        {{ item['quantity_ordered'] }}
-                    </span>
-                </Transition> -->
-
-                <!-- <PureInput
-                    :modelValue="item.quantity_ordered"
-                    @onEnter="(e: number) => onUpdateQuantity(item.updateRoute, item.id, e)"
-                    @blur="(e: string) => e == item.quantity_ordered ? false : onUpdateQuantity(item.updateRoute, item.id, e)"
-                    :isLoading="isLoading === 'quantity' + item.id"
-                    type="number"
-                    align="right"
-                    :disabled="state === 'dispatched'"
-                /> -->
             </div>
-
-            <!-- <div v-else>{{ item.quantity }}</div> -->
         </template>
 
         <!-- Column: Action -->
@@ -159,4 +164,40 @@ const debounceUpdateQuantity = debounce(
             </div>
         </template>
     </Table>
+
+    <!-- <div>
+        <div>
+            <div :colspan="4">
+                <div>
+                    <div class="px-2 flex justify-end relative">
+                        For the same day dispatch of your order before 12pm (£7.50)
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div>
+                    <div class="px-2 flex justify-end relative">
+                        <Toggle :modelValue="true" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <div :colspan="4">
+                <div>
+                    <div class="px-2 flex justify-end relative">
+                        Glass & ceramics insurance (£2.75)
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div>
+                    <div class="px-2 flex justify-end relative">
+                        <Toggle :modelValue="true" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> -->
 </template>

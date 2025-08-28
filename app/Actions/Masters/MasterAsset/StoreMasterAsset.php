@@ -17,6 +17,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterAssets;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Actions\Traits\Rules\WithNoStrictRules;
+use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
@@ -56,17 +57,17 @@ class StoreMasterAsset extends OrgAction
             data_set($modelData, 'master_department_id', $parent->master_department_id);
             data_set($modelData, 'master_shop_id', $parent->master_shop_id);
 
-            if ($parent->type == ProductCategoryTypeEnum::FAMILY) {
+            if ($parent->type == MasterProductCategoryTypeEnum::FAMILY) {
                 data_set($modelData, 'master_family_id', $parent->id);
                 if ($parent->master_sub_department_id) {
                     data_set($modelData, 'master_sub_department_id', $parent->master_sub_department_id);
                 }
             }
-            if ($parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            if ($parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
                 data_set($modelData, 'master_sub_department_id', $parent->id);
             }
         }
-
+        
         $masterAsset = DB::transaction(function () use ($parent, $modelData, $stocks) {
             /** @var MasterAsset $masterAsset */
             $masterAsset = $parent->masterAssets()->create($modelData);
@@ -78,7 +79,7 @@ class StoreMasterAsset extends OrgAction
                 $masterAsset->timeSeries()->create(['frequency' => $frequency]);
             }
             $masterAsset->stocks()->sync($stocks);
-
+            $masterAsset->refresh();
             StoreProductFromMasterProduct::make()->action($masterAsset);
 
             return ModelHydrateSingleTradeUnits::run($masterAsset);

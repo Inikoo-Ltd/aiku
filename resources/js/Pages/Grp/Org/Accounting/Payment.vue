@@ -22,6 +22,7 @@ import PaymentShowcase from './PaymentShowcase.vue';
 import RefundModal from '@/Components/RefundModal.vue';
 import Button from '@/Components/Elements/Buttons/Button.vue';
 import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.vue";
+import TableHistoryNotes from "@/Components/Tables/Grp/Org/Fulfilment/TableHistoryNotes.vue";
 
 
 library.add(faCoins, faUndo);
@@ -164,6 +165,7 @@ interface Props {
     }
     showcase: Showcase
     refunds?: {}
+    history_notes?: {}
     refund_route?: {
         name: string
         parameters: {
@@ -205,7 +207,8 @@ const component = computed(() => {
         details: ModelDetails,
         history: ModelChangelog,
         showcase: PaymentShowcase,
-        refunds: TablePayments
+        refunds: TablePayments,
+        history_notes: TableHistoryNotes
     };
     return components[currentTab.value];
 
@@ -225,17 +228,17 @@ const closeRefundModal = () => {
 
 
 <template>
-
-    <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead"><template #other>
+    <Head :title="capitalize(title)"/>
+    <PageHeading :data="pageHead">
+        <template #other>
             <Button v-if="showRefundButton" @click="openRefundModal" :icon="faUndo" label="Proceed Refund">
 
             </Button>
-        </template></PageHeading>
-    <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" @open-refund-modal="openRefundModal">
-    </component>
+        </template>
+    </PageHeading>
+    <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate"/>
+    <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"></component>
     <RefundModal :showcase="showcase" :refund-route="refund_route" :is-visible="showRefundModal"
-        @close="closeRefundModal" />
+                 @close="closeRefundModal"/>
 </template>
 
