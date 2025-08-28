@@ -17,7 +17,7 @@ use App\Services\QueryBuilder;
 
 class IndexMasterShopsSalesTable extends OrgAction
 {
-    public function handle(Group $group)
+    public function handle(Group $group): \Illuminate\Contracts\Pagination\Paginator|\Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
         $queryBuilder = QueryBuilder::for(MasterShop::class);
         $queryBuilder->leftJoin('master_shop_sales_intervals', 'master_shops.id', 'master_shop_sales_intervals.master_shop_id');
