@@ -56,7 +56,7 @@ class GetRetinaLayout
             'navigation' => $isPreRegistration ? null : match ($request->get('website')->type->value) {
                 'fulfilment' => GetRetinaFulfilmentNavigation::run($webUser),
                 'dropshipping' => GetRetinaDropshippingNavigation::run($webUser),
-                'b2b' => GetRetinaB2bNavigation::run($webUser),
+                'b2b' => GetRetinaEcomNavigation::run($webUser),
                 default => []
             },
         ];
