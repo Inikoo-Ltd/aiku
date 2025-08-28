@@ -101,10 +101,13 @@ class ShowMasterProducts extends GrpAction
                     'next'     => $this->getNext($masterAsset, $request),
                 ],
                 'pageHead'    => [
-                    'title'   => $masterAsset->name,
+                    'title'   => $masterAsset->code,
+                    'afterTitle' => [
+                        'label' => $masterAsset->name
+                    ],
                     'model'   => '',
                     'icon'    => [
-                        'icon'  => ['fal', 'fa-folder'],
+                        'icon'  => ['fal', 'fa-cube'],
                         'title' => __('master asset')
                     ],
                     'actions' => [
