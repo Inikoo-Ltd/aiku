@@ -93,7 +93,7 @@ const debounceUpdateQuantity = debounce(
         <template #cell(image)="{ item }">
             <div class="flex relative w-8 aspect-square overflow-hidden">
                 <Image
-                    :src="item.image.thumbnail"
+                    :src="item.image?.thumbnail"
                     class="w-full h-full object-contain"
                 />
             </div>

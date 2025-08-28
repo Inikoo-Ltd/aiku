@@ -17,7 +17,7 @@ import { ref, inject } from "vue";
 
 library.add(faUndo)
 
-const props = defineProps<{
+defineProps<{
     data: object,
     tab?: string
 }>();
@@ -75,8 +75,6 @@ function createShowcase(transaction: CreditTransaction) {
     }
 }
 
-console.log(props.data)
-
 // Create refund route for RefundModal
 function createRefundRoute(transaction: CreditTransaction) {
     if (!transaction.payment_id) return undefined
@@ -84,7 +82,7 @@ function createRefundRoute(transaction: CreditTransaction) {
     return {
       name: "grp.models.org.payment_refund.store",
         parameters: {
-            organisation: (route().params as RouteParams).organisation, // waiting data from BE
+            organisation: layout?.group?.id,
             payment: transaction.payment_id
         }
     }
