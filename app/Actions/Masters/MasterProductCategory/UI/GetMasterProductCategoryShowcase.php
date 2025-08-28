@@ -31,8 +31,11 @@ class GetMasterProductCategoryShowcase
                 'translation_box' => [
                 'title' => __('Multi-language Translations'),
                 'save_route' => [
+                     'method' => 'patch',
                      'name'       => 'grp.models.master_product_categories.translations.update',
-                     'parameters' => []
+                     'parameters' => [
+                         'masterProductCategory' => $productCategory->id
+                     ]
                 ],
             ],
             ],
@@ -42,16 +45,22 @@ class GetMasterProductCategoryShowcase
                 'translation_box' => [
                 'title'      => __('Multi-language Translations'),
                 'save_route' => [
+                    'method' => 'patch',
                     'name'       => 'grp.models.master_product_categories.translations.update',
-                    'parameters' => []
+                    'parameters' => [
+                        'masterProductCategory' => $productCategory->id
+                    ]
                 ],
             ],
             ],
             default => [
                 'family' => MasterProductCategoryResource::make($productCategory),
                 'save_route' => [
+                    'method' => 'patch',
                     'name'       => 'grp.models.master_product_categories.translations.update',
-                    'parameters' => []
+                    'parameters' => [
+                        'masterProductCategory' => $productCategory->id
+                    ]
                 ],
             ],
         };

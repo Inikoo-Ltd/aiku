@@ -26,8 +26,6 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property string $slug
@@ -54,7 +52,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShop newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShop onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShop query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShop withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShop withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShop withoutTrashed()
  * @mixin \Eloquent
  */
@@ -174,5 +172,4 @@ class MasterShop extends Model implements Auditable
     {
         return $this->morphToMany(MasterCollection::class, 'model', 'model_has_master_collections')->withTimestamps();
     }
-
 }

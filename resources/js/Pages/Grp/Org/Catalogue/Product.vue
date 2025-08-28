@@ -5,7 +5,7 @@ import {
     faBox, faBullhorn, faCameraRetro, faCube, faFolder,
     faMoneyBillWave, faProjectDiagram, faRoad, faShoppingCart,
     faStream, faUsers, faHeart, faMinus,
-    faFolderTree, faLanguage
+    faFolderTree, faBrowser, faLanguage
 } from '@fal'
 import { ref, computed } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
@@ -46,7 +46,9 @@ library.add(
     faRoad,
     faHeart,
     faMinus,
-    faLanguage
+    faBrowser,
+    faLanguage,
+    faFolderTree
 )
 
 const props = defineProps<{

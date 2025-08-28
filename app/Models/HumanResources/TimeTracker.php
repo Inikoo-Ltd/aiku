@@ -16,8 +16,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- *
- *
  * @property int $id
  * @property int|null $workplace_id
  * @property int|null $timesheet_id
@@ -38,7 +36,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static Builder<static>|TimeTracker newQuery()
  * @method static Builder<static>|TimeTracker onlyTrashed()
  * @method static Builder<static>|TimeTracker query()
- * @method static Builder<static>|TimeTracker withTrashed()
+ * @method static Builder<static>|TimeTracker withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|TimeTracker withoutTrashed()
  * @mixin \Eloquent
  */

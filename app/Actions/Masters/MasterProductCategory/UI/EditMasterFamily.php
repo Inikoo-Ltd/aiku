@@ -152,8 +152,8 @@ class EditMasterFamily extends OrgAction
                             ]
                         ],
                         [
-                            'label'  => __('Master Department'),
-                            'icon'   => 'fa-light fa-box',
+                            'label'  => __('Parent').' ('.__('Department/Sub-Department').')',
+                            'icon'   => 'fa-light fa-folder-tree',
                             'fields' => [
                                 'department_id'  =>  [
                                     'type'    => 'select_infinite',

@@ -82,7 +82,7 @@ class ShowCollection extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inSubDepartmentInShop(Organisation $organisation, Shop $shop,ProductCategory $subDepartment, Collection $collection, ActionRequest $request): Collection
+    public function inSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, Collection $collection, ActionRequest $request): Collection
     {
         $this->parent = $subDepartment;
         $this->initialisationFromShop($shop, $request)->withTab(CollectionTabsEnum::values());
@@ -444,6 +444,24 @@ class ShowCollection extends OrgAction
                         ],
                         'model' => [
                             'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.shops.show.catalogue.sub_departments.show.collection.show' =>
+            array_merge(
+                ShowSubDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
+                $headCrumb(
+                    $collection,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.sub_departments.show.collection.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.sub_departments.show.collection.show',
                             'parameters' => $routeParameters
                         ]
                     ],

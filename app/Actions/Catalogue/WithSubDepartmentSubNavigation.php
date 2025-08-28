@@ -40,7 +40,7 @@ trait WithSubDepartmentSubNavigation
             'grp.org.shops.show.catalogue.sub_departments.show.collection.index',
         ];
 
-        if(in_array($route, $targetRoutes, true)) {
+        if (in_array($route, $targetRoutes, true)) {
             $subDepartmentRoute = [
                 'name'       => 'grp.org.shops.show.catalogue.sub_departments.show',
                 'parameters' => [$this->organisation->slug, $subDepartment->shop->slug, $subDepartment->slug]

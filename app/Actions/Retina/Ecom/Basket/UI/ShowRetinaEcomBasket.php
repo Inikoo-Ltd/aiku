@@ -27,16 +27,13 @@ class ShowRetinaEcomBasket extends RetinaAction
 
     public function handle(Customer $customer): Order|null
     {
+
         if (!$customer->current_order_in_basket_id) {
             return null;
         }
         return Order::find($customer->current_order_in_basket_id);
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->is_root;
-    }
 
     public function asController(ActionRequest $request): Order|null
     {
@@ -78,7 +75,6 @@ class ShowRetinaEcomBasket extends RetinaAction
 
                 'order'          => $order ? OrderResource::make($order)->resolve() : [],
                 'summary'     => $order ? $this->getOrderBoxStats($order) : null,
-
                 'balance'       => $this->customer->balance,
                 'total_to_pay'  => $order?->total_amount,
                 'transactions'  => $order ? RetinaEcomBasketTransactionsResources::collection(IndexBasketTransactions::run($order)) : null,

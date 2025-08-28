@@ -146,11 +146,11 @@ const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false));
                 <div class="grid grid-cols-4 gap-3 p-6">
                     <div v-for="subnav in hoveredNavigation?.subnavs" :key="subnav.title" class="space-y-4">
                         <div v-if="!subnav?.link?.href && subnav.title"
-                            :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin : 0, padding : 0, ...getStyles(fieldValue?.sub_navigation?.properties, screenType) }"
-                            class="font-semibold text-gray-700">{{ subnav.title }}</div>
+                            :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin : 0, padding : 0, fontWeight : 600, ...getStyles(fieldValue?.sub_navigation?.properties, screenType) }"
+                            class="text-gray-700">{{ subnav.title }}</div>
                         <a v-if="subnav?.link?.href && subnav.title" :href="subnav?.link?.href"
                             :target="subnav?.link?.target"
-                            :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin : 0, padding : 0, ...getStyles(fieldValue?.sub_navigation?.properties, screenType)}"
+                            :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin : 0, padding : 0, fontWeight : 600, ...getStyles(fieldValue?.sub_navigation?.properties, screenType)}"
                             class="font-semibold text-gray-700">{{ subnav.title }}</a>
                         <!-- Sub-navigation Links -->
                         <div class="flex flex-col gap-y-3">
@@ -186,4 +186,13 @@ const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false));
     -ms-overflow-style: none;
     scrollbar-width: none;
 }
+
+.editor-class a  {
+   font-weight: 400;
+}
+
+.sub-nav-title  {
+    .editor-class a {
+        font-weight: 600;
+    }}
 </style>

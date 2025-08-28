@@ -19,6 +19,7 @@ use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInProduct;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksInProduct;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Catalogue\ProductBackInStockRemindersResource;
 use App\Http\Resources\Catalogue\ProductFavouritesResource;
@@ -40,6 +41,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowProduct extends OrgAction
 {
+    use WithCatalogueAuthorisation;
+
     private Group|Organisation|Shop|Fulfilment|ProductCategory $parent;
 
 
@@ -221,9 +224,8 @@ class ShowProduct extends OrgAction
                             [
                                 'type'    => 'button',
                                 'style'   => 'edit',
-                                'tooltip' => __('To Webpage'),
-                                'label'   => __('To Webpage'),
-                                'icon'    => ["fal", "fa-drafting-compass"],
+                                'label'   => __('Webpage'),
+                                'icon'    => ["fal", "fa-browser"],
                                 'route'   => [
                                     'name'       => 'grp.org.shops.show.web.webpages.show',
                                     'parameters' => [
@@ -239,7 +241,7 @@ class ShowProduct extends OrgAction
                             'style'   => 'edit',
                             'tooltip' => __('Create Webpage'),
                             'label'   => __('Create Webpage'),
-                            'icon'    => ["fal", "fa-drafting-compass"],
+                            'icon'    => ["fal", "fa-browser"],
                             'route'   => [
                                 'name'       => 'grp.models.webpages.product.store',
                                 'parameters' => $product->id,
@@ -250,6 +252,7 @@ class ShowProduct extends OrgAction
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
+                            'label'   => __('Edit'),
                             'route' => [
                                 'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()

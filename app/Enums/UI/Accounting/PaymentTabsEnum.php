@@ -17,19 +17,12 @@ enum PaymentTabsEnum: string
     use HasTabs;
 
     case SHOWCASE          = 'showcase';
-    case DATA          = 'data';
+    case REFUNDS          = 'refunds';
     case HISTORY_NOTES = 'history_notes';
 
     public function blueprint(): array
     {
         return match ($this) {
-            PaymentTabsEnum::DATA => [
-                'title' => __('data'),
-                'icon'  => 'fal fa-database',
-                'type'  => 'icon',
-                'align' => 'right',
-            ],
-
             PaymentTabsEnum::HISTORY_NOTES => [
                 'title' => __('history, notes'),
                 'icon'  => 'fal fa-clock',
@@ -40,6 +33,10 @@ enum PaymentTabsEnum: string
                 'title' => __('showcase'),
                 'icon'  => 'fas fa-info-circle',
             ],
+            PaymentTabsEnum::REFUNDS => [
+                'title' => __('refunds'),
+                'icon'  => 'fas fa-undo',
+            ]
         };
     }
 }

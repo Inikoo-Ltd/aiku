@@ -9,7 +9,7 @@
 namespace App\Actions\Masters\MasterAsset\Json;
 
 use App\Actions\GrpAction;
-use App\Http\Resources\Goods\TradeUnitsResource;
+use App\Http\Resources\Goods\TradeUnitsForMasterResource;
 use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterProductCategory;
 use App\Services\QueryBuilder;
@@ -36,9 +36,20 @@ class GetRecommendedTradeUnits extends GrpAction
             });
         });
 
+        $masterAssetIds = $parent->masterAssets()->pluck('id')->toArray();
+
         $queryBuilder = QueryBuilder::for(TradeUnit::class);
         $queryBuilder->where('trade_units.group_id', $parent->group_id)
-            ->where('trade_units.code', 'like', $parent->code . '%');
+            ->where('trade_units.code', 'like', $parent->code . '%')
+            ->leftJoin('model_has_trade_units', function ($join) {
+                $join->on('trade_units.id', '=', 'model_has_trade_units.trade_unit_id')
+                    ->where('model_has_trade_units.model_type', '=', 'MasterAsset');
+            });
+
+        $queryBuilder->where(function ($query) use ($masterAssetIds) {
+            $query->whereNull('model_has_trade_units.model_id')
+                ->orWhereNotIn('model_has_trade_units.model_id', $masterAssetIds);
+        });
 
         return $queryBuilder
             ->defaultSort('trade_units.code')
@@ -46,12 +57,14 @@ class GetRecommendedTradeUnits extends GrpAction
                 'trade_units.code',
                 'trade_units.slug',
                 'trade_units.name',
+                'trade_units.type',
                 'trade_units.description',
                 'trade_units.gross_weight',
                 'trade_units.net_weight',
                 'trade_units.marketing_dimensions',
                 'trade_units.volume',
                 'trade_units.type',
+                'trade_units.image_id',
                 'trade_units.id',
             ])
             ->allowedSorts(['code', 'name', 'net_weight', 'gross_weight'])
@@ -62,6 +75,6 @@ class GetRecommendedTradeUnits extends GrpAction
 
     public function jsonResponse(LengthAwarePaginator $tradeUnits): AnonymousResourceCollection
     {
-        return TradeUnitsResource::collection($tradeUnits);
+        return TradeUnitsForMasterResource::collection($tradeUnits);
     }
 }
