@@ -115,7 +115,7 @@ const profitMargin = computed(() => {
 
   // calculate total cost from trade_units
   const totalCost = form.trade_units.reduce((sum, unit) => {
-    const unitPrice = Number(unit.value) || 0
+    const unitPrice = Number(unit.cost_price) || 0
     const unitQty = Number(unit.quantity) || 0
     return sum + (unitPrice * unitQty)
   }, 0)
