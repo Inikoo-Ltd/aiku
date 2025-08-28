@@ -8,6 +8,7 @@ import { faCog, faFolderOpen, faSeedling, faTimesCircle, faTriangle, faSitemap }
 import "tippy.js/dist/tippy.css"
 import { capitalize } from "@/Composables/capitalize"
 import Dashboard from "@/Components/DataDisplay/Dashboard/Dashboard.vue"
+import { Dashboard as DashboardTS } from "@/types/Components/Dashboard"
 
 library.add(faTriangle, faSitemap, faChevronDown, faSeedling, faTimesCircle, faFolderOpen, faPlay, faCog, faChartLine)
 
@@ -144,7 +145,7 @@ const props = defineProps<{
 		}
 		settings: {}
 	}
-	dashboard: {}
+	dashboard: DashboardTS
 }>()
 
 ChartJS.register(ArcElement, Tooltip, Legend, Colors)
