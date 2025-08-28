@@ -43,7 +43,7 @@ class ShowRetinaEcomBasket extends RetinaAction
 
     public function htmlResponse(Order|null $order): Response|RedirectResponse
     {
-
+        // dd(RetinaEcomBasketTransactionsResources::collection(IndexBasketTransactions::run($order)));
         return Inertia::render(
             'Ecom/RetinaEcomBasket',
             [
