@@ -53,6 +53,15 @@ function masterProductRoute(masterProduct: MasterProduct) {
                 masterProduct: masterProduct.slug
             }
         )
+    } else if (route().current() == "grp.masters.master_shops.show.master_families.master_products.index") {
+        return route(
+            "grp.masters.master_shops.show.master_families.master_products.show",
+            {
+                masterShop: (route().params as RouteParams).masterShop,
+                masterFamily: (route().params as RouteParams).masterFamily,
+                masterProduct: masterProduct.slug
+            }
+        )
     } else {
         return route(
             "grp.masters.master_shops.show.master_products.show",
