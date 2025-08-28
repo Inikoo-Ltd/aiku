@@ -84,7 +84,8 @@ onMounted(()=> {
 
 <template>
     <div class="py-4">
-        <Swiper :slides-per-view="slidesPerView"
+        <Swiper
+            :slides-per-view="slidesPerView ? Math.min(listProducts?.length || 0, slidesPerView || 0) : 4"
             :loop="false" :autoplay="false" :pagination="{ clickable: true }" :modules="[Autoplay]"
             class="w-full" xstyle="getStyles(fieldValue?.value?.layout?.properties, screenType)"
             spaceBetween="12"
