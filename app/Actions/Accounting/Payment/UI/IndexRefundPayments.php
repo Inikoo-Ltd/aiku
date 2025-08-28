@@ -99,7 +99,7 @@ class IndexRefundPayments extends OrgAction
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
                 ->withEmptyState([
-                    'title' => __("No services found"),
+                    'title' => __("No refunds found"),
                     'count' => $parent->refunds->count()
                 ])
                 ->defaultSort('-date')
