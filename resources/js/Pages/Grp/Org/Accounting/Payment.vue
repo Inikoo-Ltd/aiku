@@ -12,7 +12,7 @@ import {
 } from '@fal';
 
 import PageHeading from '@/Components/Headings/PageHeading.vue';
-import {computed, defineAsyncComponent, ref} from "vue";
+import {computed, defineAsyncComponent, ref, inject} from "vue";
 import {useTabChange} from "@/Composables/tab-change";
 import ModelDetails from "@/Components/ModelDetails.vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
@@ -177,6 +177,8 @@ interface Props {
 
 const props = defineProps<Props>()
 
+const layout = inject('layout')
+
 // Refund modal state
 const showRefundModal = ref(false)
 
@@ -231,7 +233,7 @@ const closeRefundModal = () => {
     <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead">
         <template #other>
-            <Button v-if="showRefundButton" @click="openRefundModal" :icon="faUndo" label="Proceed Refund">
+            <Button v-if="showRefundButton && layout?.app?.environment !== 'production'" @click="openRefundModal" :icon="faUndo" label="Proceed Refund">
 
             </Button>
         </template>
