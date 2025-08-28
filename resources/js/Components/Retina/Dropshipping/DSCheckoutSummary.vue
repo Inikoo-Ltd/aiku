@@ -108,7 +108,6 @@ const updateCollectionNotes = () => {
 
             <!-- Field: Reference Number -->
 
-<<<<<<< Updated upstream
             <Link v-if="summary?.customer_client.ulid" as="a" v-tooltip="trans('Client')"
                   :href="route('retina.dropshipping.customer_sales_channels.client.show', [summary.customer_channel?.slug, summary?.customer_client.ulid])"
                   class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
@@ -123,22 +122,6 @@ const updateCollectionNotes = () => {
             <!-- Field: Contact name -->
             <div v-if="summary?.customer_client.contact_name" v-tooltip="trans('Contact name')"
                  class="pl-1 flex items-center w-fit flex-none gap-x-2">
-=======
-            <Link v-if="summary?.customer_client?.ulid" as="a" v-tooltip="trans('Client')"
-                :href="route('retina.dropshipping.customer_sales_channels.client.show', [summary.customer_channel?.slug, summary?.customer_client.ulid])"
-                class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
-            <div class="flex-none">
-                <FontAwesomeIcon icon='fal fa-user' class='text-gray-400' fixed-width aria-hidden='true' />
-            </div>
-            <dd class="text-sm text-gray-500">
-                #{{ summary?.customer_client.reference ?? summary?.customer_client?.name }}
-            </dd>
-            </Link>
-
-            <!-- Field: Contact name -->
-            <div v-if="summary?.customer_client?.contact_name" v-tooltip="trans('Contact name')"
-                class="pl-1 flex items-center w-fit flex-none gap-x-2">
->>>>>>> Stashed changes
                 <div class="flex-none">
                     <FontAwesomeIcon icon='fal fa-id-card-alt' class='text-gray-400' fixed-width aria-hidden='true' />
                 </div>
@@ -146,13 +129,8 @@ const updateCollectionNotes = () => {
             </div>
 
             <!-- Field: Company name -->
-<<<<<<< Updated upstream
-            <div v-if="summary?.customer_client.company_name" v-tooltip="trans('Company name')"
-                 class="pl-1 flex items-center w-full flex-none gap-x-2">
-=======
             <div v-if="summary?.customer_client?.company_name" v-tooltip="trans('Company name')"
                 class="pl-1 flex items-center w-full flex-none gap-x-2">
->>>>>>> Stashed changes
                 <div class="flex-none">
                     <FontAwesomeIcon icon='fal fa-building' class='text-gray-400' fixed-width aria-hidden='true' />
                 </div>
