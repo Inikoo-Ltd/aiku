@@ -80,8 +80,8 @@ const emits = defineEmits<(e: "onChangeTab", val: string) => void>()
 
 const isLoadingOnTable = inject("isLoadingOnTable", ref(false))
 
-console.log('%c Tables ', 'background: red; color: white', props.tableData.tables);
-console.log('%c Settings ', 'background: blue; color: white', props.settings);
+// console.log('%c Tables ', 'background: red; color: white', props.tableData.tables);
+// console.log('%c Settings ', 'background: blue; color: white', props.settings);
 
 
 const compTableBody = computed(() => {
