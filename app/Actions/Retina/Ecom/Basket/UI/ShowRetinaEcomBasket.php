@@ -27,10 +27,10 @@ class ShowRetinaEcomBasket extends RetinaAction
 
     public function handle(Customer $customer): Order|null
     {
-
         if (!$customer->current_order_in_basket_id) {
             return null;
         }
+
         return Order::find($customer->current_order_in_basket_id);
     }
 
@@ -38,29 +38,26 @@ class ShowRetinaEcomBasket extends RetinaAction
     public function asController(ActionRequest $request): Order|null
     {
         $this->initialisation($request);
+
         return $this->handle($this->customer);
     }
 
     public function htmlResponse(Order|null $order): Response|RedirectResponse
     {
-
-
-
-
         return Inertia::render(
             'Ecom/RetinaEcomBasket',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('Basket'),
                 'pageHead'    => [
-                    'title' => __('Basket'),
-                    'icon'  => 'fal fa-shopping-basket',
+                    'title'      => __('Basket'),
+                    'icon'       => 'fal fa-shopping-basket',
                     'afterTitle' => [
-                        'label' => $order?'#' . $order->slug:''
+                        'label' => $order ? '#'.$order->slug : ''
                     ]
                 ],
 
-                'routes'    => [
+                'routes' => [
                     'update_route' => [
                         'name'       => 'retina.models.order.update',
                         'parameters' => [
@@ -79,13 +76,13 @@ class ShowRetinaEcomBasket extends RetinaAction
 
                 'voucher' => [],
 
-                'order'             => $order ? OrderResource::make($order)->resolve() : null,
-                'summary'           => $order ? $this->getOrderBoxStats($order) : null,
-                'balance'           => $this->customer->balance,
-                'is_in_basket'      => true,
-                'total_to_pay'      => $order?max(0, $order->total_amount - $order->customer->balance):0,
-                'total_products'    => $order?$order->transactions->whereIn('model_type', ['Product', 'Service'])->count():0,
-                'transactions'      => $order ? RetinaEcomBasketTransactionsResources::collection(IndexBasketTransactions::run($order)) : null,
+                'order'          => $order ? OrderResource::make($order)->resolve() : null,
+                'summary'        => $order ? $this->getOrderBoxStats($order) : null,
+                'balance'        => $this->customer->balance,
+                'is_in_basket'   => true,
+                'total_to_pay'   => $order ? max(0, $order->total_amount - $order->customer->balance) : 0,
+                'total_products' => $order ? $order->transactions->whereIn('model_type', ['Product', 'Service'])->count() : 0,
+                'transactions'   => $order ? RetinaEcomBasketTransactionsResources::collection(IndexBasketTransactions::run($order)) : null,
             ]
         )->table(
             IndexBasketTransactions::make()->tableStructure()
