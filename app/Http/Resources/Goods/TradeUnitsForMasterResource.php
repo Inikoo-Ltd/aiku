@@ -43,13 +43,7 @@ class TradeUnitsForMasterResource extends JsonResource
             'number_current_products' => $this->number_current_products,
             'id'                      => $this->id,
             'image'                   => $this->image_id ? ImageResource::make($media)->getArray() : null,
-            'value'                   => $this->getStockValue($this->id) ?? 0
+            'cost_price'              => $this->cost_price ?? 0
         ];
-    }
-
-    public function getStockValue($id)
-    {
-        $tradeUnit = TradeUnit::find($id);
-        return $tradeUnit->stocks->first()->unit_value ?? 0;
     }
 }

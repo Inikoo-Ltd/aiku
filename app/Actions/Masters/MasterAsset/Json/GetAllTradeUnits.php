@@ -54,6 +54,7 @@ class GetAllTradeUnits extends GrpAction
                 'trade_units.type',
                 'trade_units.image_id',
                 'trade_units.id',
+                'trade_units.cost_price',
             ])
             ->allowedSorts(['code', 'name', 'net_weight', 'gross_weight'])
             ->allowedFilters([$globalSearch])
