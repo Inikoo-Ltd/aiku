@@ -71,9 +71,9 @@ class IndexRetinaEcomInvoices extends RetinaAction
             ->withQueryString();
     }
 
-    public function tableStructure(FulfilmentCustomer $fulfilmentCustomer, $prefix = null): Closure
+    public function tableStructure($prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($prefix, $fulfilmentCustomer) {
+        return function (InertiaTable $table) use ($prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -88,7 +88,7 @@ class IndexRetinaEcomInvoices extends RetinaAction
                 ->withEmptyState(
                     [
                         'title' => $noResults,
-                        'count' => $fulfilmentCustomer->customer->number_invoices ?? 0,
+                        'count' => $this->customer->number_invoices ?? 0,
                     ]
                 );
 
@@ -152,7 +152,7 @@ class IndexRetinaEcomInvoices extends RetinaAction
 
 
             ]
-        )->table($this->tableStructure($this->parent));
+        )->table($this->tableStructure());
     }
 
     public function asController(ActionRequest $request): LengthAwarePaginator
