@@ -22,7 +22,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexRetinaInvoices extends RetinaAction
+class IndexRetinaFulfilmentInvoices extends RetinaAction
 {
     private FulfilmentCustomer $parent;
 
