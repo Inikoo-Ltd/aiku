@@ -9,6 +9,7 @@
 
 namespace App\Http\Resources\Masters;
 
+use App\Http\Resources\Goods\TradeUnitsForMasterResource;
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -39,6 +40,7 @@ class MasterProductResource extends JsonResource
             'description'           => $this->description,
             'description_title'     => $this->description_title,
             'description_extra'     => $this->description_extra,
+            'trade_units'           => TradeUnitsForMasterResource::collection($this->tradeUnits)->resolve(),
             'name_i8n'              => $this->getTranslations('name_i8n'),
             'description_i8n'       => $this->getTranslations('description_i8n'),
             'description_title_i8n' => $this->getTranslations('description_title_i8n'),
@@ -50,6 +52,7 @@ class MasterProductResource extends JsonResource
                 'parameters' => []
                 ],
             ],
+
         ];
     }
 }

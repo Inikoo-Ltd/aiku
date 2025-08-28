@@ -138,6 +138,9 @@ class ShowMasterProducts extends GrpAction
                 MasterAssetTabsEnum::SHOWCASE->value => $this->tab == MasterAssetTabsEnum::SHOWCASE->value ?
                     fn () => MasterProductResource::make($masterAsset)
                     : Inertia::lazy(fn () => MasterProductResource::make($masterAsset)),
+                MasterAssetTabsEnum::LANGUAGE->value => $this->tab == MasterAssetTabsEnum::LANGUAGE->value ?
+                    fn () => MasterProductResource::make($masterAsset)
+                    : Inertia::lazy(fn () => MasterProductResource::make($masterAsset)),
             ]
         )->table(IndexMailshots::make()->tableStructure($masterAsset));
     }
