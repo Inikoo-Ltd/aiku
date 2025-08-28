@@ -43,7 +43,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
 
         $masterAsset = DB::transaction(function () use ($parent, $modelData, $tradeUnits) {
             $stocks = [];
-            
+
             foreach ($tradeUnits as $item) {
                 $tradeUnit = TradeUnit::find(Arr::get($item, 'id'));
                 foreach ($tradeUnit->stocks as $stock) {
@@ -62,7 +62,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
                 'type'    => MasterAssetTypeEnum::PRODUCT,
                 'stocks'  => $stocks
             ];
-            
+
             $masterAsset = StoreMasterAsset::make()->action($parent, $data);
             $masterAsset->refresh();
             foreach ($tradeUnits as $item) {
