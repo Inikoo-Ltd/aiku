@@ -80,7 +80,7 @@ const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false));
 
             <!-- All categories -->
             <div v-if="layout.retina?.type !== 'fulfilment'" class="relative">
-                <div @click="() => isOpenMenuMobile = true" class="flex items-center gap-x-2 h-fit px-5 py-1  text-sm rounded-full hover:bg-gray-100 border border-gray-300 w-fit cursor-pointer whitespace-nowrap ">
+                <div @click="() => {isOpenMenuMobile = true}" class="flex items-center gap-x-2 h-fit px-5 py-1  text-sm rounded-full hover:bg-gray-100 border border-gray-300 w-fit cursor-pointer whitespace-nowrap ">
                     <FontAwesomeIcon icon="fal fa-bars" class="text-gray-400" fixed-width aria-hidden="true" :class="'text-[10px]'" />
                     <span class="font-medium text-gray-600">{{ trans("All Categories") }}</span>
                 </div>

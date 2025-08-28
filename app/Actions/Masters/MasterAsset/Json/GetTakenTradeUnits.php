@@ -46,9 +46,10 @@ class GetTakenTradeUnits extends GrpAction
                     ->where('model_has_trade_units.model_type', '=', 'MasterAsset');
             });
         $queryBuilder->whereIn('model_has_trade_units.model_id', $masterAssetIds);
-
+        
 
         return $queryBuilder
+            ->groupBy('trade_units.id')
             ->defaultSort('trade_units.code')
             ->select([
                 'trade_units.code',

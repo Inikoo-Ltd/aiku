@@ -237,6 +237,7 @@ class IndexMasterProducts extends GrpAction
                 ),
                 'title'       => $title,
                 'familyId'      => $familyId,
+                'currency' => $this->parent->group->currency->code,
                 'storeProductRoute' => $isFamily ?  [
                         'name'       => 'grp.models.master_family.store-assets',
                         'parameters' => [
