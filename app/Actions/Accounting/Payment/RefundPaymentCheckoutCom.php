@@ -10,23 +10,27 @@ namespace App\Actions\Accounting\Payment;
 
 use App\Actions\Accounting\WithCheckoutCom;
 use App\Actions\OrgAction;
+use App\Enums\Accounting\Payment\PaymentClassEnum;
+use App\Enums\Accounting\Payment\PaymentStateEnum;
+use App\Enums\Accounting\Payment\PaymentStatusEnum;
+use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Models\Accounting\Payment;
-use App\Models\Accounting\PaymentAccountShop;
 use Checkout\CheckoutApiException;
 use Checkout\Payments\RefundRequest;
+use Illuminate\Support\Arr;
 
 class RefundPaymentCheckoutCom extends OrgAction
 {
     use WithCheckoutCom;
 
-    public function handle(Payment $payment, $amount): array
+    public function handle(Payment $payment, $amount): Payment
     {
         return $this->refundPayment($payment, $amount);
     }
 
-    public function refundPayment(Payment $payment,  ?float $amount = null): array
+    public function refundPayment(Payment $payment, ?float $amount = null): Payment
     {
-        $paymentAccountShop=$payment->paymentAccountShop;
+        $paymentAccountShop = $payment->paymentAccountShop;
         list($publicKey, $secretKey) = $paymentAccountShop->getCredentials();
 
         $checkoutApi = $this->getCheckoutApi($publicKey, $secretKey);
@@ -42,10 +46,50 @@ class RefundPaymentCheckoutCom extends OrgAction
                 $refundRequest->amount = $amount;
             }
 
-            $result= $checkoutApi->getPaymentsClient()->refundPayment($payment->reference, $refundRequest);
+            $result = $checkoutApi->getPaymentsClient()->refundPayment($payment->reference, $refundRequest);
 
-            dd($result);
+            $referencePayId = basename(Arr::get($result, '_links.payment.href'));
 
+            $count = 0;
+            do {
+                $checkoutPayment = CheckPaymentCheckoutCom::run($payment, $referencePayId);
+                sleep(1);
+
+                match (Arr::get($checkoutPayment, 'status')) {
+                    'Refunded', 'Partially Refunded' => [
+                        $status = PaymentStatusEnum::SUCCESS,
+                        $state = PaymentStateEnum::COMPLETED
+                    ],
+                    'Declined' => [
+                        $status = PaymentStatusEnum::FAIL,
+                        $state = PaymentStateEnum::DECLINED
+                    ],
+                    'Canceled', 'Expired' => [
+                        $status = PaymentStatusEnum::FAIL,
+                        $state = PaymentStateEnum::CANCELLED
+                    ],
+                    default => [
+                        $status = PaymentStatusEnum::IN_PROCESS,
+                        $state = PaymentStateEnum::IN_PROCESS
+                    ]
+                };
+
+                if ($status === PaymentStatusEnum::SUCCESS) {
+                    $count = 5;
+                }
+
+                $count++;
+            } while ($count < 5);
+
+            return StorePayment::make()->action($payment->customer, $payment->paymentAccount, [
+                'type'                    => PaymentTypeEnum::REFUND,
+                'original_payment_id'     => $payment->id,
+                'amount'                  => -$amount,
+                'payment_account_shop_id' => $payment->payment_account_shop_id,
+                'status'                  => $status,
+                'state'                   => $state,
+                'class'                   => PaymentClassEnum::TOPUP
+            ]);
 
         } catch (CheckoutApiException $e) {
             dd($e);
