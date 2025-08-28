@@ -43,7 +43,7 @@ class ShowRetinaEcomBasket extends RetinaAction
 
     public function htmlResponse(Order|null $order): Response|RedirectResponse
     {
-
+        // dd(RetinaEcomBasketTransactionsResources::collection(IndexBasketTransactions::run($order)));
         return Inertia::render(
             'Ecom/Basket',
             [
@@ -79,7 +79,12 @@ class ShowRetinaEcomBasket extends RetinaAction
                 'total_to_pay'  => $order?->total_amount,
                 'transactions'  => $order ? RetinaEcomBasketTransactionsResources::collection(IndexBasketTransactions::run($order)) : null,
                 ]
-        );
+        )->table(
+                IndexBasketTransactions::make()->tableStructure(
+                    order: $order,
+                    prefix: 'transactions'
+                )
+            );
     }
 
     public function getBreadcrumbs(): array
