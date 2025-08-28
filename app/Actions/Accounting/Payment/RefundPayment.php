@@ -36,6 +36,13 @@ class RefundPayment extends OrgAction
     {
         $amountPayPerRefund = Arr::get($modelData, 'amount');
 
+
+        $this->processOnlineRefunds($payment,$amountPayPerRefund);
+        dd('xxxxx');
+        // if payment cab be refonded online  call refund onliner methid  $this->processOnlineRefunds($payment, $refundPayment);
+        //if not cal met=s
+
+
         $refundPayment = StorePayment::make()->action($payment->customer, $payment->paymentAccount, [
             'type'                    => PaymentTypeEnum::REFUND,
             'original_payment_id'     => $payment->id,
@@ -51,9 +58,14 @@ class RefundPayment extends OrgAction
         ]);
 
 
-        $this->processInvoices($payment);
-        $this->processOrders($payment);
-        $this->processOnlineRefunds($payment, $refundPayment);
+
+        if($payment->class==PaymentClassEnum::TOPUP){
+            $this->processCreditTransactions($payment, $refundPayment->amount);
+        }else{
+            $this->processInvoices($payment);
+            $this->processOrders($payment);
+        }
+
 
         return $refundPayment;
     }
@@ -95,17 +107,12 @@ class RefundPayment extends OrgAction
         }
     }
 
-    public function processOnlineRefunds(Payment $payment, Payment $refundPayment): void
+    public function processOnlineRefunds(Payment $payment,$amount): void
     {
         if ($payment->paymentAccount->type === PaymentAccountTypeEnum::CHECKOUT) {
-            $ref = RefundPaymentApiRequest::run($refundPayment, $payment->reference);
+            $refundPayment = RefundPaymentCheckoutCom::run($payment, $amount);
 
-            if (!Arr::get($ref, 'error')) {
-                $this->update($refundPayment, [
-                    'state'  => PaymentStateEnum::COMPLETED,
-                    'status' => PaymentStatusEnum::SUCCESS
-                ]);
-            }
+
         }
     }
 
