@@ -24,9 +24,9 @@ class IndexBasketTransactions extends OrgAction
         return IndexTransactions::run($order, $prefix);
     }
 
-    public function tableStructure(Order $order, $tableRows = null, $prefix = null): Closure
+    public function tableStructure($tableRows = null, $prefix = null): Closure
     {
-         return function (InertiaTable $table) use ($order, $prefix, $tableRows) {
+         return function (InertiaTable $table) use ($prefix, $tableRows) {
             if ($prefix) {
                 $table
                     ->name($prefix)

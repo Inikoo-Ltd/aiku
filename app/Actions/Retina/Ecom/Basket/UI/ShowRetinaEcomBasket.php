@@ -83,14 +83,12 @@ class ShowRetinaEcomBasket extends RetinaAction
                 'summary'           => $order ? $this->getOrderBoxStats($order) : null,
                 'balance'           => $this->customer->balance,
                 'is_in_basket'      => true,
-                'total_to_pay'      => max(0, $order->total_amount - $order->customer->balance),
-                'total_products'    => $order->transactions->whereIn('model_type', ['Product', 'Service'])->count(),
+                'total_to_pay'      => $order?max(0, $order->total_amount - $order->customer->balance):0,
+                'total_products'    => $order?$order->transactions->whereIn('model_type', ['Product', 'Service'])->count():0,
                 'transactions'      => $order ? RetinaEcomBasketTransactionsResources::collection(IndexBasketTransactions::run($order)) : null,
             ]
         )->table(
-            IndexBasketTransactions::make()->tableStructure(
-                order: $order,
-            )
+            IndexBasketTransactions::make()->tableStructure()
         );
     }
 
