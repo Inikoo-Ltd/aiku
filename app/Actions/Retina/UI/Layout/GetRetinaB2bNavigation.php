@@ -33,7 +33,7 @@ class GetRetinaB2bNavigation
 
         $groupNavigation['basket'] = [
             'label' => __('Basket'),
-            'icon' => ['fal', 'fa-shopping-basket'],
+            'icon' => ['fal', 'fa-shopping-cart'],
             'root' => 'retina.ecom.basket.',
             'route' => [
                 'name' => 'retina.ecom.basket.show'
