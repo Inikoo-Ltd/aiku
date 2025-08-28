@@ -10,7 +10,7 @@
 
 namespace App\Actions\Retina\Ecom\Basket\UI;
 
-use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
+use App\Actions\Retina\Ecom\Orders\IndexRetinaEcomOrders;
 use App\Actions\RetinaAction;
 use App\Http\Resources\Fulfilment\RetinaEcomBasketTransactionsResources;
 use App\Models\CRM\Customer;
@@ -43,7 +43,10 @@ class ShowRetinaEcomBasket extends RetinaAction
 
     public function htmlResponse(Order|null $order): Response|RedirectResponse
     {
-        // dd(RetinaEcomBasketTransactionsResources::collection(IndexBasketTransactions::run($order)));
+
+
+
+
         return Inertia::render(
             'Ecom/RetinaEcomBasket',
             [
@@ -53,7 +56,7 @@ class ShowRetinaEcomBasket extends RetinaAction
                     'title' => __('Basket'),
                     'icon'  => 'fal fa-shopping-basket',
                     'afterTitle' => [
-                        'label' => '#' . $order->slug
+                        'label' => $order?'#' . $order->slug:''
                     ]
                 ],
 
@@ -79,16 +82,13 @@ class ShowRetinaEcomBasket extends RetinaAction
                 'order'             => $order ? OrderResource::make($order)->resolve() : [],
                 'summary'           => $order ? $this->getOrderBoxStats($order) : null,
                 'balance'           => $this->customer->balance,
-                // 'total_to_pay'      => $order?->total_amount,
                 'is_in_basket'      => true,
-                'total_to_pay'      => max(0, $order->total_amount - $order->customer->balance),
-                'total_products'    => $order->transactions->whereIn('model_type', ['Product', 'Service'])->count(),
+                'total_to_pay'      => $order?max(0, $order->total_amount - $order->customer->balance):0,
+                'total_products'    => $order?$order->transactions->whereIn('model_type', ['Product', 'Service'])->count():0,
                 'transactions'      => $order ? RetinaEcomBasketTransactionsResources::collection(IndexBasketTransactions::run($order)) : null,
             ]
         )->table(
-            IndexBasketTransactions::make()->tableStructure(
-                order: $order,
-            )
+            IndexBasketTransactions::make()->tableStructure()
         );
     }
 
@@ -96,7 +96,7 @@ class ShowRetinaEcomBasket extends RetinaAction
     {
         return
             array_merge(
-                ShowRetinaDashboard::make()->getBreadcrumbs(),
+                IndexRetinaEcomOrders::make()->getBreadcrumbs(),
                 [
                     // [
                     //     'type'   => 'simple',

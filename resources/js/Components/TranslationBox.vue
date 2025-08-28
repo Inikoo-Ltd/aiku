@@ -143,7 +143,8 @@ const saveTranslation = () => {
 </script>
 
 <template>
-  <div class="px-8 grid grid-cols-2 gap-3">
+
+  <div class="px-4 grid grid-cols-2 gap-3 mt-4">
     <h2 v-if="props.title" class="text-lg font-bold flex items-center gap-2">
       <FontAwesomeIcon :icon="faLanguage" />
       {{ props.title }}
@@ -158,7 +159,7 @@ const saveTranslation = () => {
               <Button
                 v-for="opt in langOptions"
                 @click="selectedLangCode = opt.code"
-                :key="opt.code"
+                :key="opt.code + selectedLangCode "
                 :label="opt.name"
                 size="xxs"
                 :type="selectedLangCode === opt.code ? 'primary' : 'tertiary'"

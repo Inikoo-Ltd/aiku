@@ -35,7 +35,7 @@ enum PaymentTabsEnum: string
             ],
             PaymentTabsEnum::REFUNDS => [
                 'title' => __('refunds'),
-                'icon'  => 'fas fa-undo',
+                'icon'  => 'fas fa-undo'
             ]
         };
     }

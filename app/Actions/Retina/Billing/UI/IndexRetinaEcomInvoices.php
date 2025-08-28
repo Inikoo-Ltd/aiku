@@ -1,0 +1,183 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 28 Aug 2025 14:56:22 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\Retina\Billing\UI;
+
+use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
+use App\Actions\RetinaAction;
+use App\Http\Resources\Accounting\InvoicesResource;
+use App\InertiaTable\InertiaTable;
+use App\Models\Accounting\Invoice;
+use App\Models\CRM\Customer;
+use App\Models\Fulfilment\FulfilmentCustomer;
+use App\Services\QueryBuilder;
+use Closure;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Inertia\Inertia;
+use Inertia\Response;
+use Lorisleiva\Actions\ActionRequest;
+use Spatie\QueryBuilder\AllowedFilter;
+
+class IndexRetinaEcomInvoices extends RetinaAction
+{
+    public function handle(Customer $customer, $prefix = null): LengthAwarePaginator
+    {
+        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
+            $query->where(function ($query) use ($value) {
+                $query->whereWith('reference', $value);
+            });
+        });
+
+        if ($prefix) {
+            InertiaTable::updateQueryBuilderParameters($prefix);
+        }
+
+
+        $queryBuilder = QueryBuilder::for(Invoice::class);
+
+        $queryBuilder->where('invoices.customer_id', $customer->id);
+
+
+
+        $queryBuilder->defaultSort('-invoices.date')
+            ->select([
+                'invoices.reference',
+                'invoices.total_amount',
+                'invoices.net_amount',
+                'invoices.date',
+                'invoices.type',
+                'invoices.created_at',
+                'invoices.updated_at',
+                'invoices.slug',
+                'invoices.pay_status',
+                'currencies.code as currency_code',
+                'currencies.symbol as currency_symbol',
+            ])
+            ->leftJoin('currencies', 'invoices.currency_id', 'currencies.id')
+            ->leftJoin('invoice_stats', 'invoices.id', 'invoice_stats.invoice_id');
+
+
+
+
+        return $queryBuilder->allowedSorts(['number', 'total_amount', 'net_amount', 'date', 'customer_name', 'reference'])
+            ->allowedFilters([$globalSearch])
+            ->withPaginator($prefix, tableName: request()->route()->getName())
+            ->withQueryString();
+    }
+
+    public function tableStructure($prefix = null): Closure
+    {
+        return function (InertiaTable $table) use ($prefix) {
+            if ($prefix) {
+                $table
+                    ->name($prefix)
+                    ->pageName($prefix.'Page');
+            }
+
+
+            $noResults = __("No invoices found");
+
+            $table
+                ->withGlobalSearch()
+                ->withEmptyState(
+                    [
+                        'title' => $noResults,
+                        'count' => $this->customer->number_invoices ?? 0,
+                    ]
+                );
+
+            $table->column(key: 'type', label: '', canBeHidden: false, searchable: true, type: 'icon')
+                ->defaultSort('reference');
+            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
+
+            $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+
+
+
+
+            $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, sortable: true, searchable: true, type: 'number')
+                ->defaultSort('reference');
+        };
+    }
+
+
+
+
+    public function jsonResponse(LengthAwarePaginator $invoices): AnonymousResourceCollection
+    {
+        return InvoicesResource::collection($invoices);
+    }
+
+
+    public function htmlResponse(LengthAwarePaginator $invoices, ActionRequest $request): Response
+    {
+
+
+        $afterTitle = null;
+        $iconRight  = null;
+        $model      = null;
+        $actions    = null;
+
+        $title      = __('Invoices');
+
+        $icon  = [
+            'icon'  => ['fal', 'fa-file-invoice-dollar'],
+            'title' => __('Invoices')
+        ];
+
+
+
+
+        return Inertia::render(
+            'Billing/RetinaInvoices',
+            [
+                'breadcrumbs' => $this->getBreadcrumbs(),
+                'title'       => __('invoices'),
+                'pageHead'    => [
+
+                    'title'         => $title,
+                    'model'         => $model,
+                    'afterTitle'    => $afterTitle,
+                    'iconRight'     => $iconRight,
+                    'icon'          => $icon,
+                    'actions'       => $actions
+                ],
+                'data'        => InvoicesResource::collection($invoices),
+
+
+            ]
+        )->table($this->tableStructure());
+    }
+
+    public function asController(ActionRequest $request): LengthAwarePaginator
+    {
+        $this->initialisation($request);
+
+        return $this->handle($this->customer);
+    }
+
+    public function getBreadcrumbs(): array
+    {
+        return
+            array_merge(
+                ShowRetinaDashboard::make()->getBreadcrumbs(),
+                [
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'route' => [
+                                'name' => 'retina.ecom.invoices.index'
+                            ],
+                            'label' => __('Invoices'),
+                        ]
+                    ]
+                ]
+            );
+    }
+}

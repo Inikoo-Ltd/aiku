@@ -10,11 +10,13 @@ namespace App\Actions\Accounting\Payment\UI;
 
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithAccountingAuthorisation;
 use App\Enums\UI\Accounting\PaymentTabsEnum;
 use App\Enums\UI\Catalogue\DepartmentTabsEnum;
 use App\Http\Resources\Accounting\PaymentsResource;
+use App\Http\Resources\History\HistoryResource;
 use App\Models\Accounting\Payment;
 use App\Models\Accounting\PaymentAccount;
 use App\Models\Accounting\PaymentServiceProvider;
@@ -130,8 +132,13 @@ class ShowPayment extends OrgAction
                     fn () => PaymentsResource::collection(IndexRefundPayments::run($payment, PaymentTabsEnum::REFUNDS->value))
                     : Inertia::lazy(fn () => PaymentsResource::collection(IndexRefundPayments::run($payment, PaymentTabsEnum::REFUNDS->value))),
 
+                PaymentTabsEnum::HISTORY_NOTES->value => $this->tab == PaymentTabsEnum::HISTORY_NOTES->value ?
+                    fn () => HistoryResource::collection(IndexHistory::run($payment, PaymentTabsEnum::HISTORY_NOTES->value))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($payment, PaymentTabsEnum::HISTORY_NOTES->value))),
+
             ]
-        )->table(IndexRefundPayments::make()->tableStructure($payment, [], PaymentTabsEnum::REFUNDS->value));
+        )->table(IndexRefundPayments::make()->tableStructure($payment, [], PaymentTabsEnum::REFUNDS->value))
+            ->table(IndexHistory::make()->tableStructure(PaymentTabsEnum::HISTORY_NOTES->value));
     }
 
     public function jsonResponse(Payment $payment): PaymentsResource
