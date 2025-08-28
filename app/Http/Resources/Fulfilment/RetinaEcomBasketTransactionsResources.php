@@ -10,7 +10,9 @@
 
 namespace App\Http\Resources\Fulfilment;
 
+use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Catalogue\Product;
+use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -29,6 +31,10 @@ class RetinaEcomBasketTransactionsResources extends JsonResource
     public function toArray($request): array
     {
         $transaction = $this;
+        $media = null;
+        if ($transaction->product_image_id) {
+            $media = Media::find($transaction->product_image_id);
+        }
 
         return [
             'id'                  => $transaction->id,
@@ -45,6 +51,7 @@ class RetinaEcomBasketTransactionsResources extends JsonResource
             'asset_name'          => $transaction->asset_name,
             'asset_type'          => $transaction->asset_type,
             'product_slug'        => $transaction->product_slug,
+              'image'             => $transaction->product_image_id ? ImageResource::make($media)->getArray() : null,
             'created_at'          => $transaction->created_at,
             'currency_code'       => $transaction->currency_code,
             'image'               => $transaction->product_id ? Product::find($transaction->product_id)->imageSources(200, 200) : null,

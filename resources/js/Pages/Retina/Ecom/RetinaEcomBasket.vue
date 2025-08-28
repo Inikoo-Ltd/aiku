@@ -25,6 +25,8 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import Textarea from "primevue/textarea"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { debounce } from 'lodash-es';
+import PureTextarea from "@/Components/Pure/PureTextarea.vue"
+import TableEcomBasket from "@/Components/Retina/Ecom/Order/TableEcomBasket.vue"
 library.add(faTag)
 
 const props = defineProps<{
@@ -47,6 +49,7 @@ const props = defineProps<{
         update_route: routeType
         submit_route: routeType
     }
+    total_products: number
 }>()
 
 const debSubmitForm = debounce((save: Function) => {
@@ -102,21 +105,31 @@ const debounceSubmitNote = debounce(onSubmitNote, 800)
         />
     </div>
 
+    
+    <div class="px-4 text-xl">
+        <span class="text-gray-500">{{ trans("Order number") }}</span> <span class="font-bold">#{{ order.reference }}</span>
+    </div>
+
+    <CheckoutSummary
+        :summary
+        :balance
+    />
+
+    <div class="mb-4 mx-4 mt-4 rounded-md border border-gray-200">
+        <TableEcomBasket
+            :data="transactions"
+            :updateRoute="routes.update_route"
+        />
+    </div>
+
     <div v-if="!transactions" class="text-center text-gray-500 text-2xl pt-6">
         {{ trans("Your basket is empty") }}
     </div>
 
     <div v-else class="w-full px-4 mt-8">
-        <div class="px-4 text-xl">
-            <span class="text-gray-500">{{ trans("Order number") }}</span> <span class="font-bold">#{{ order.reference }}</span>
-        </div>
         
-        <CheckoutSummary
-            :summary
-            :balance
-        />
 
-        <DataTable :value="transactions.data" removableSort scrollable class="border-t border-gray-300 mt-8">
+        <DataTable v-if="false" :value="transactions.data" removableSort scrollable class="border-t border-gray-300 mt-8">
             <template #empty>
                 <div class="flex items-center justify-center h-full text-center">
                     {{ trans("No data available.") }}
@@ -322,6 +335,87 @@ const debounceSubmitNote = debounce(onSubmitNote, 800)
             </div>
             
 
+        </div>
+
+        <div v-if="false && total_products > 0" class="flex justify-end px-6 gap-x-4">
+            <div class="grid grid-cols-3 gap-x-4 w-full">
+                <div></div>
+                
+                <!-- Input text: Delivery instructions -->
+                <div class="">
+                    <div class="text-sm text-gray-500">
+                        <FontAwesomeIcon icon="fal fa-truck" class="text-[#38bdf8]" fixed-width aria-hidden="true" />
+                        {{ trans("Delivery instructions") }}
+                        <FontAwesomeIcon v-tooltip="trans('To be printed in shipping label')" icon="fal fa-info-circle" class="text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
+                        :
+                    </div>
+                    <PureTextarea
+                        v-model="deliveryInstructions"
+                        @update:modelValue="() => debounceDeliveryInstructions()"
+                        :placeholder="trans('Add if needed')"
+                        rows="4"
+                        :disabled="!is_in_basket"
+                        :loading="isLoadingNote.includes('shipping_notes')"
+                        :isSuccess="recentlySuccessNote.includes('shipping_notes')"
+                        :isError="recentlyErrorNote"
+                    />
+                </div>
+
+                <!-- Input text: Other instructions -->
+                <div class="">
+                    <div class="text-sm text-gray-500">
+                        <FontAwesomeIcon icon="fal fa-sticky-note" style="color: rgb(255, 125, 189)" fixed-width aria-hidden="true" />
+                        {{ trans("Other instructions") }}:
+                    </div>
+                    <PureTextarea
+                        v-model="noteToSubmit"
+                        @update:modelValue="() => debounceSubmitNote()"
+                        :placeholder="trans('Add if needed')"
+                        rows="4"
+                        :disabled="!is_in_basket"
+                        :loading="isLoadingNote.includes('customer_notes')"
+                        :isSuccess="recentlySuccessNote.includes('customer_notes')"
+                        :isError="recentlyErrorNote"
+                    />
+                </div>
+            </div>
+
+
+            <div class="w-72 pt-5">
+                <!-- Place Order -->
+                <template v-if="total_to_pay == 0 && balance > 0">
+                    <ButtonWithLink
+                        iconRight="fas fa-arrow-right"
+                        :label="trans('Place order')"
+                        :routeTarget="routes?.pay_with_balance"
+                        class="w-full"
+                        full
+                    >
+                    </ButtonWithLink>
+
+                    <div class="text-xs text-gray-500 mt-2 italic flex items-start gap-x-1">
+                        <FontAwesomeIcon icon="fal fa-info-circle" class="mt-[4px]" fixed-width aria-hidden="true" />
+                        <div class="leading-5">
+                            {{ trans("This is your final confirmation. You can pay totally with your current balance.") }}
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Checkout -->
+                <ButtonWithLink
+                    v-else
+                    iconRight="fas fa-arrow-right"
+                    :label="trans('Continue to Checkout')"
+                    :routeTarget="{
+                        name: 'retina.dropshipping.checkout.show',
+                        parameters: {
+                            order: props?.data?.data?.slug
+                        }
+                    }"
+                    class="w-full"
+                    full
+                />
+            </div>
         </div>
 
     </div>

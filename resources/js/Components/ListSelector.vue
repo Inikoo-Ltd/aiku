@@ -184,8 +184,10 @@ const resetAfterSubmit = () => {
                 <div>
                     <h3 class="font-semibold mb-2">{{ trans(props.head_label) }}</h3>
                 </div>
-                <div><Button v-if="selectedProduct.length" @click="showDialog = true" :label="'select'" size="xs" type="dashed"
-                        :icon="faPlus"></Button></div>
+                <div>
+                    <Button v-if="selectedProduct.length" @click="showDialog = true" :label="'select'" size="xs" type="dashed"
+                        :icon="faPlus"></Button>
+                </div>
             </div>
 
             <div v-if="selectedProduct.length" class="border rounded-md overflow-hidden">
