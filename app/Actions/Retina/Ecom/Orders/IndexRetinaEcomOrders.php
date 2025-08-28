@@ -103,7 +103,6 @@ class IndexRetinaEcomOrders extends RetinaAction
     public function htmlResponse(LengthAwarePaginator $orders): Response
     {
         $actions = [];
-
         return Inertia::render(
             'Ecom/RetinaEcomOrders',
             [
@@ -115,6 +114,7 @@ class IndexRetinaEcomOrders extends RetinaAction
                     'actions'    => $actions
                 ],
                 'currency'              => CurrencyResource::make($this->shop->currency)->getArray(),
+                'data'                  => $orders,
             ]
         )->table($this->tableStructure());
     }
