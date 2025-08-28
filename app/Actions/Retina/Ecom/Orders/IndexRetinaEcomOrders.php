@@ -105,7 +105,7 @@ class IndexRetinaEcomOrders extends RetinaAction
         $actions = [];
 
         return Inertia::render(
-            'Ecom/RetinaOrders',
+            'Ecom/RetinaEcomOrders',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('Orders'),
