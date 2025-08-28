@@ -20,7 +20,7 @@ enum PaymentTabsEnum: string
     case REFUNDS          = 'refunds';
     case HISTORY_NOTES = 'history_notes';
 
-    public function blueprint(): array
+    public function blueprint($countData = []): array
     {
         return match ($this) {
             PaymentTabsEnum::HISTORY_NOTES => [
@@ -35,7 +35,7 @@ enum PaymentTabsEnum: string
             ],
             PaymentTabsEnum::REFUNDS => [
                 'title' => __('refunds'),
-                'icon'  => 'fas fa-undo',
+                'icon'  => 'fas fa-undo'
             ]
         };
     }
