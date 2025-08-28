@@ -48,7 +48,6 @@ const form = useForm({
   price: null
 });
 
-const priceCost = ref([])
 const ListSelectorChange = (value) => {
   if (value.length === 1) {
     form.name = value[0].name
