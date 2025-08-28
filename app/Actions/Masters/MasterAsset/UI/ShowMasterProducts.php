@@ -111,15 +111,15 @@ class ShowMasterProducts extends GrpAction
                         'title' => __('master asset')
                     ],
                     'actions' => [
-                        [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'label' => 'blueprint',
-                            'route' => [
-                                'name'       => preg_replace('/show$/', 'blueprint', $request->route()->getName()),
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ],
+                        // [
+                        //     'type'  => 'button',
+                        //     'style' => 'edit',
+                        //     'label' => 'blueprint',
+                        //     'route' => [
+                        //         'name'       => preg_replace('/show$/', 'blueprint', $request->route()->getName()),
+                        //         'parameters' => $request->route()->originalParameters()
+                        //     ]
+                        // ],
                         $this->canDelete ? [
                             'type'  => 'button',
                             'style' => 'delete',
@@ -136,6 +136,9 @@ class ShowMasterProducts extends GrpAction
                 ],
 
                 MasterAssetTabsEnum::SHOWCASE->value => $this->tab == MasterAssetTabsEnum::SHOWCASE->value ?
+                    fn () => MasterProductResource::make($masterAsset)
+                    : Inertia::lazy(fn () => MasterProductResource::make($masterAsset)),
+                MasterAssetTabsEnum::LANGUAGE->value => $this->tab == MasterAssetTabsEnum::LANGUAGE->value ?
                     fn () => MasterProductResource::make($masterAsset)
                     : Inertia::lazy(fn () => MasterProductResource::make($masterAsset)),
             ]

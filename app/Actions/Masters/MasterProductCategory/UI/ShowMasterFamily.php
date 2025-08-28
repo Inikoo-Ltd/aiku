@@ -117,7 +117,7 @@ class ShowMasterFamily extends GrpAction
                 'storeProductRoute' => [
                         'name'       => 'grp.models.master_family.store-assets',
                         'parameters' => [
-                            'masterFamily' => $this->parent->id,
+                            'masterFamily' => $masterFamily->id,
                         ]
                 ],
                 'pageHead'    => [
