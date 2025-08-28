@@ -3,6 +3,7 @@ import ProductCategoryCard from "@/Components/ProductCategoryCard.vue";
 import { faImage } from "@fal";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import Image from "@/Components/Image.vue";
+import { trans } from "laravel-vue-i18n";
 
 // Interfaces
 interface TradeUnit {
@@ -84,7 +85,7 @@ const props = defineProps<{
         </div>
 
         <div v-else class="text-sm text-gray-500 italic p-3 bg-gray-50 rounded-md">
-          No trade units available
+            {{trans('No trade units available')}}
         </div>
       </div>
     </div>
