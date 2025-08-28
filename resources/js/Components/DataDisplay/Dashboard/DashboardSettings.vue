@@ -11,30 +11,12 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCog } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
+import { Intervals, Settings } from "@/types/Components/Dashboard"
 library.add(faCog)
 
 const props = defineProps<{
-	intervals: {
-		options: {
-			label: string
-			value: string
-			labelShort: string
-		}[]
-		value: string
-	}
-	settings: {
-		[key: string]: {  // 'data_display_type' || 'model_state_type' || 'currency_type'
-			align: string
-			id: string
-			options: {
-				label: string
-				value: string
-				tooltip?: string
-			}[]
-			type: string
-			value: string
-		}
-	}
+	intervals: Intervals
+	settings: Settings
 	currentTab: string
 }>()
 

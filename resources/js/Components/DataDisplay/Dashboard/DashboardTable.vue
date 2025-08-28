@@ -15,6 +15,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import axios from "axios"
 import { debounce } from 'lodash-es'
 import DashboardCell from "./DashboardCell.vue"
+import { Intervals, Settings } from "@/types/Components/Dashboard"
 library.add(faYinYang, faShoppingBasket, faSitemap, faStore)
 
 interface Column {
@@ -70,27 +71,8 @@ const props = defineProps<{
 			}
 		}
 	}
-	intervals: {
-		options: {
-            label: string
-            value: string
-            labelShort: string
-        }[]
-		value: string
-		range_interval: string
-	}
-	settings: {
-		[key: string]: {  // 'data_display_type'
-			align: string
-			id: string
-			options: {
-				label: string
-				value: string
-			}[]
-			type: string
-			value: string
-		}
-	}
+	intervals: Intervals
+	settings: Settings
 	currentTab: string
 }>()
 
