@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref } from "vue"
-import { routeType } from "@/types/route"
+import {ref} from "vue"
+import {routeType} from "@/types/route"
 import Select from "primevue/select"
-import { router } from "@inertiajs/vue3"
-import { trans } from "laravel-vue-i18n"
+import {router} from "@inertiajs/vue3"
+import {trans} from "laravel-vue-i18n"
 import Button from "../Elements/Buttons/Button.vue"
-import { InputNumber } from "primevue"
-import { notify } from "@kyvg/vue3-notification"
+import {InputNumber} from "primevue"
+import {notify} from "@kyvg/vue3-notification"
 
 
 const model = defineModel()
@@ -77,7 +77,9 @@ const onSubmitDecrease = () => {
 <template>
     <div class="p-6">
         <h2 class="text-3xl font-bold text-center">{{ trans("Decrease Balance") }}</h2>
-        <p class="text-base text-gray-500 italic mb-6 text-center">{{ trans("Enter the details to decrease balance") }}</p>
+        <p class="text-base text-gray-500 italic mb-6 text-center">{{
+                trans("Enter the details to decrease balance")
+            }}</p>
 
         <div class="space-y-6">
             <!-- Reason -->
@@ -91,21 +93,6 @@ const onSubmitDecrease = () => {
                     optionLabel="label"
                     optionValue="value"
                     :placeholder="trans('Select your reason')"
-                    class="w-full"
-                />
-            </div>
-
-            <!-- Type -->
-            <div>
-                <label for="type" class="block text-gray-700 font-medium mb-2">
-                    {{ trans("Select type of the decrease:") }}
-                </label>
-                <Select
-                    v-model="decreaseType"
-                    :options="types ?? []"
-                    optionLabel="label"
-                    optionValue="value"
-                    :placeholder="trans('Select your type')"
                     class="w-full"
                 />
             </div>
