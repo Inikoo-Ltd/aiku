@@ -3,7 +3,7 @@ import { trans } from 'laravel-vue-i18n'
 import CheckoutSummary from "@/Components/Retina/Ecom/CheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { Head, Link } from "@inertiajs/vue3"
-import { ref } from "vue"
+import { inject, ref } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import { routeType } from "@/types/route"
@@ -16,6 +16,8 @@ import TableEcomBasket from "@/Components/Retina/Ecom/Order/TableEcomBasket.vue"
 import { Image as ImageTS } from "@/types/Image"
 import { PageHeading as PageHeadingTS } from "@/types/PageHeading"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
+import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
+import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 library.add(faTag)
 
 const props = defineProps<{
@@ -77,7 +79,8 @@ const props = defineProps<{
     is_in_basket: boolean
 }>()
 
-
+const layout = inject('layout', retinaLayoutStructure)
+const locale = inject('locale', aikuLocaleStructure)
 
 // Section: Submit Note
 const noteToSubmit = ref(props?.order?.customer_notes || '')
