@@ -17,6 +17,8 @@ use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
+use App\Rules\AlphaDashDot;
+use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
@@ -84,7 +86,18 @@ class StoreMasterProductFromTradeUnits extends GrpAction
     public function rules(): array
     {
         return [
-            'code'                   => ['required', 'string'],
+            'code'                     => [
+                'required',
+                'max:32',
+                new AlphaDashDot(),
+                new IUnique(
+                    table: 'master_assets',
+                    extraConditions: [
+                        ['column' => 'group_id', 'value' => $this->group->id],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
+                    ]
+                ),
+            ],
             'name'                   => ['required', 'string'],
             'unit'                   => ['sometimes', 'string'],
             'price'                  => ['required', 'numeric', 'min:0'],
@@ -126,14 +139,15 @@ class StoreMasterProductFromTradeUnits extends GrpAction
     public function asController(MasterProductCategory $masterFamily, ActionRequest $request): MasterAsset
     {
         $this->initialisation($masterFamily->group, $request);
-
+        dd($this->validatedData);
         return $this->handle($masterFamily, $this->validatedData);
     }
 
     public function htmlResponse(MasterAsset $masterAsset): \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
     {
-        return Redirect::route('grp.masters.master_shops.show.master_products.show', [
+        return Redirect::route('grp.masters.master_shops.show.master_families.master_products.index', [
             'masterShop'    => $masterAsset->masterShop->slug,
+            'masterFamily' => $masterAsset->masterFamily->slug,
             'masterProduct' => $masterAsset->slug
         ]);
     }
