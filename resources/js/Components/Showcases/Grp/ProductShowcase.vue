@@ -8,7 +8,7 @@ import Image from "@/Components/Image.vue"
 import { inject, ref, computed, watch } from "vue"
 // import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece } from "@fal"
+import { faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
 // import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -24,10 +24,11 @@ import { faImage } from "@far"
 import EditTradeUnit from "@/Components/Goods/EditTradeUnit.vue"
 import { Fieldset, Select } from "primevue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import { Accordion, AccordionPanel, AccordionHeader, AccordionContent } from 'primevue'
 // import TranslationBox from '@/Components/TranslationBox.vue';
 
 
-library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus, faBarcode, faPuzzlePiece)
+library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus, faBarcode, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp)
 
 const props = defineProps<{
 	taxonomy: any
@@ -84,10 +85,28 @@ const props = defineProps<{
 			}
 			tags: {}[]
 			tags_selected_id: number[]
-		}[]
+		}[],
+		gpsr: {
+			acute_toxicity: boolean
+			corrosive: boolean
+			eu_responsible: string | null
+			explosive: boolean
+			flammable: boolean
+			gas_under_pressure: boolean
+			gpsr_class_category_danger: string | null
+			hazard_environment: boolean
+			health_hazard: boolean | null
+			how_to_use: string
+			manufacturer: null | string
+			oxidising: boolean
+			product_languages: string | null
+			warnings: string | null
+		}
 	}
 }>()
 console.log('qqq', props.data.trade_units)
+
+console.log(props.data)
 
 const locale = inject("locale", aikuLocaleStructure)
 const selectedImage = ref(0)
@@ -95,6 +114,8 @@ const isLoading = ref<string[] | number[]>([])
 const showAllImages = ref(false)
 const showAllStats = ref(false)
 const isModalGallery = ref(false)
+const showFullWarnings = ref(false)
+const showFullInstructions = ref(false)
 
 const images = computed(() => props.data?.product?.data?.images ?? [])
 
@@ -196,6 +217,22 @@ const hazardDefinitions = ref([
 
 const getHazardIconPath = (iconName) => {
 	return `/hazardIcon/${iconName}`
+}
+
+const getActiveHazards = () => {
+	return hazardDefinitions.value.filter(hazard => {
+		switch (hazard.key) {
+			case 'acuteToxicity': return props.data.gpsr.acute_toxicity
+			case 'corrosive': return props.data.gpsr.corrosive
+			case 'explosive': return props.data.gpsr.explosive
+			case 'flammable': return props.data.gpsr.flammable
+			case 'gasUnderPressure': return props.data.gpsr.gas_under_pressure
+			case 'environmentHazard': return props.data.gpsr.hazard_environment
+			case 'healthHazard': return props.data.gpsr.health_hazard
+			case 'oxidising': return props.data.gpsr.oxidising
+			default: return false
+		}
+	})
 }
 
 // console.log(props)
@@ -481,7 +518,7 @@ const getHazardIconPath = (iconName) => {
 							</dd>
 						</div>
 					</div>
-					<div class="space-y-3">
+					<!-- <div class="space-y-3">
 						<h4 class="font-medium text-base border-b pb-2 mb-2">{{ trans("GPSR (if empty will use Part GPSR)") }}</h4>
 						<div class="flex justify-between">
 							<dt class="text-gray-500">{{ trans("Manufacturer") }}</dt>
@@ -527,6 +564,161 @@ const getHazardIconPath = (iconName) => {
 									class="w-full h-full object-contain">
 							</div>
 						</div>
+					</div> -->
+					<div class="space-y-3">
+						<Accordion>
+							<AccordionPanel>
+								<AccordionHeader>
+									<div class="flex items-center gap-2">
+										<FontAwesomeIcon icon="fal fa-shield-alt" class="text-blue-500" />
+										<span class="font-medium text-base">{{ trans("GPSR (if empty will use Part GPSR)") }}</span>
+									</div>
+								</AccordionHeader>
+								<AccordionContent>
+									<div class="space-y-4 pt-2">
+										<!-- Basic Information -->
+										<div class="grid grid-cols-1 gap-4">
+											<div class="space-y-3">
+												<div class="flex justify-between items-start">
+													<dt class="text-gray-500 text-sm">{{ trans("Manufacturer") }}</dt>
+													<dd class="font-medium text-sm text-right flex-1 ml-2">
+														<span v-if="data.gpsr.manufacturer">{{ data.gpsr.manufacturer
+															}}</span>
+														<FontAwesomeIcon v-else icon="fal fa-info-circle"
+															class="text-gray-400"
+															v-tooltip="trans('No manufacturer specified')" />
+													</dd>
+												</div>
+
+												<div class="flex justify-between items-start">
+													<dt class="text-gray-500 text-sm">{{ trans("EU responsible") }}</dt>
+													<dd class="font-medium text-sm text-right flex-1 ml-2">
+														<span v-if="data.gpsr.eu_responsible">{{
+															data.gpsr.eu_responsible }}</span>
+														<FontAwesomeIcon v-else icon="fal fa-info-circle"
+															class="text-gray-400"
+															v-tooltip="trans('No EU responsible specified')" />
+													</dd>
+												</div>
+
+												<div class="flex justify-between items-start">
+													<dt class="text-gray-500 text-sm">{{ trans("Class & category of danger") }}</dt>
+													<dd class="font-medium text-sm text-right flex-1 ml-2">
+														<span v-if="data.gpsr.gpsr_class_category_danger">{{
+															data.gpsr.gpsr_class_category_danger }}</span>
+														<FontAwesomeIcon v-else icon="fal fa-info-circle"
+															class="text-gray-400"
+															v-tooltip="trans('No danger class specified')" />
+													</dd>
+												</div>
+
+												<div class="flex justify-between items-start">
+													<dt class="text-gray-500 text-sm">{{ trans("Product GPSR Languages")
+														}}</dt>
+													<dd class="font-medium text-sm text-right flex-1 ml-2">
+														<span v-if="data.gpsr.product_languages">{{
+															data.gpsr.product_languages }}</span>
+														<FontAwesomeIcon v-else icon="fal fa-info-circle"
+															class="text-gray-400"
+															v-tooltip="trans('No languages specified')" />
+													</dd>
+												</div>
+											</div>
+										</div>
+
+										<!-- Hazard Icons Section -->
+										<div class="border-t pt-4">
+											<h5 class="text-sm font-medium text-gray-700 mb-3">{{ trans("Hazard Symbols") }}</h5>
+											<div class="flex gap-2 overflow-x-auto pb-2">
+												<div v-for="hazard in getActiveHazards()" :key="hazard.key"
+													class="flex-shrink-0 w-10 h-10 bg-white rounded border-2 border-red-200 p-1.5 shadow-sm"
+													v-tooltip="hazard.name">
+													<img :src="getHazardIconPath(hazard.icon)" :alt="hazard.name"
+														class="w-full h-full object-contain">
+												</div>
+												<div v-if="getActiveHazards().length === 0"
+													class="flex items-center text-gray-400 text-sm">
+													<FontAwesomeIcon icon="fal fa-info-circle" class="mr-2" />
+													{{ trans("No hazards identified") }}
+												</div>
+											</div>
+										</div>
+
+										<!-- Warnings Section -->
+										<div class="border-t pt-4">
+											<h5 class="text-sm font-medium text-gray-700 mb-2">{{ trans("Warnings") }}
+											</h5>
+											<div v-if="data.gpsr.warnings">
+												<div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+													<div v-if="!showFullWarnings && data.gpsr.warnings.length > 200"
+														class="space-y-2">
+														<p class="text-sm text-gray-700 leading-relaxed">
+															{{ data.gpsr.warnings.substring(0, 200) }}...
+														</p>
+														<button @click="showFullWarnings = true"
+															class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1">
+															<FontAwesomeIcon icon="fal fa-chevron-down" />
+															{{ trans("Show more") }}
+														</button>
+													</div>
+													<div v-else class="space-y-2">
+														<p
+															class="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+															{{ data.gpsr.warnings }}</p>
+														<button v-if="data.gpsr.warnings.length > 200"
+															@click="showFullWarnings = false"
+															class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1">
+															<FontAwesomeIcon icon="fal fa-chevron-up" />
+															{{ trans("Show less") }}
+														</button>
+													</div>
+												</div>
+											</div>
+											<div v-else class="flex items-center text-gray-400 text-sm">
+												<FontAwesomeIcon icon="fal fa-info-circle" class="mr-2" />
+												{{ trans("No warnings specified") }}
+											</div>
+										</div>
+
+										<!-- How to Use Section -->
+										<div class="border-t pt-4">
+											<h5 class="text-sm font-medium text-gray-700 mb-2">{{ trans("How to use") }}
+											</h5>
+											<div v-if="data.gpsr.how_to_use">
+												<div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+													<div v-if="!showFullInstructions && data.gpsr.how_to_use.length > 200"
+														class="space-y-2">
+														<p class="text-sm text-gray-700 leading-relaxed">
+															{{ data.gpsr.how_to_use.substring(0, 200) }}...
+														</p>
+														<button @click="showFullInstructions = true"
+															class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1">
+															<FontAwesomeIcon icon="fal fa-chevron-down" />
+															{{ trans("Show more") }}
+														</button>
+													</div>
+													<div v-else class="space-y-2">
+														<p
+															class="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+															{{ data.gpsr.how_to_use }}</p>
+														<button v-if="data.gpsr.how_to_use.length > 200"
+															@click="showFullInstructions = false"
+															class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1">
+															<FontAwesomeIcon icon="fal fa-chevron-up" />
+															{{ trans("Show less") }}
+														</button>
+													</div>
+												</div>
+											</div>
+											<div v-else class="flex items-center text-gray-400 text-sm">
+												<FontAwesomeIcon icon="fal fa-info-circle" class="mr-2" />
+												{{ trans("No instructions specified") }}
+											</div>
+										</div>
+									</div>
+								</AccordionContent>
+							</AccordionPanel>
+						</Accordion>
 					</div>
 				</dl>
 			</div>
@@ -543,3 +735,41 @@ const getHazardIconPath = (iconName) => {
 	</Dialog>
 </template>
 
+<style scoped>
+/* Add custom styles if needed for better text readability */
+.whitespace-pre-wrap {
+	white-space: pre-wrap;
+	word-wrap: break-word;
+}
+
+/* Remove all padding from accordion */
+:deep(.p-accordion) {
+	padding: 0;
+}
+
+:deep(.p-accordion-panel) {
+	border: none;
+}
+
+:deep(.p-accordionheader) {
+	padding: 10px 0;
+	background: #f8fafc;
+	border-radius: 0.5rem;
+	border: none;
+	background-color: #ffffff;
+}
+
+:deep(.p-accordionheader:hover) {
+	background: #e2e8f0;
+}
+
+:deep(.p-accordioncontent-content) {
+	padding: 0 !important;
+	border: none;
+}
+
+:deep(.p-accordionheader-text) {
+	padding: 0.75rem 1rem;
+	width: 100%;
+}
+</style>
