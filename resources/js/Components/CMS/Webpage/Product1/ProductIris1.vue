@@ -49,6 +49,8 @@ const props = withDefaults(defineProps<{
 	screenType: 'mobile' | 'tablet' | 'desktop'
 }>(), {
 })
+console.log('propopop', props.fieldValue.product.luigi_identity)
+
 const layout = inject('layout',{})
 const currency = layout?.iris?.currency
 const locale = useLocaleStore()
@@ -166,6 +168,20 @@ onMounted(() => {
             showButton.value = true
         }
     })
+
+    // Luigi: last_seen recommendations
+    if (props.fieldValue?.product?.luigi_identity) {
+        window?.dataLayer?.push({
+            event: "view_item",
+            ecommerce: {
+                items: [
+                    {
+                        item_id: props.fieldValue?.product?.luigi_identity,
+                    }
+                ]
+            }
+        })
+    }
 })
 
 const toggleExpanded = () => {

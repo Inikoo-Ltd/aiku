@@ -73,6 +73,7 @@ class WebBlockProductResourceEcom extends JsonResource
         }
 
         return [
+            'luigi_identity'    => "$product->group_id:$product->organisation_id:$product->shop_id:$product->id",
             'slug'              => $product->slug,
             'code'              => $product->code,
             'name'              => $product->name,
