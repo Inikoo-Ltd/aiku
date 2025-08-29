@@ -115,7 +115,7 @@ test("UI Show master shop", function (MasterShop $masterShop) {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) =>
+                fn(AssertableInertia $page) =>
                 $page->where("title", $masterShop->name)
                     ->has('subNavigation')
                     ->etc()
@@ -193,7 +193,7 @@ test("UI Index Master Departments", function (MasterShop $masterShop) {
             ->has("data")
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) =>
+                fn(AssertableInertia $page) =>
                 $page->has('subNavigation')->etc()
             );
     });
@@ -210,7 +210,7 @@ test("UI Master Dashboard", function () {
             ->has("breadcrumbs", 2)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) =>
+                fn(AssertableInertia $page) =>
                 $page->has('title')->etc()
             );
     });
@@ -228,7 +228,7 @@ test("UI Index Master Families", function (MasterShop $masterShop) {
             ->has("data")
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) =>
+                fn(AssertableInertia $page) =>
                 $page->has('subNavigation')->etc()
             );
     });
@@ -246,7 +246,7 @@ test("UI Index Master SubDepartments", function (MasterShop $masterShop) {
             ->has("data")
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) =>
+                fn(AssertableInertia $page) =>
                 $page->has('subNavigation')->etc()
             );
     });
@@ -399,7 +399,7 @@ test("UI Index Master SubDepartments in Department", function (MasterProductCate
             ->has("data")
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) =>
+                fn(AssertableInertia $page) =>
                 $page->has('subNavigation')->etc()
             );
     });
@@ -420,7 +420,7 @@ test("UI Show Master SubDepartment", function (MasterProductCategory $masterSubD
             ->has("title")
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) =>
+                fn(AssertableInertia $page) =>
                 $page->has('subNavigation')->etc()
             )
             ->has("tabs");
