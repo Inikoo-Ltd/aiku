@@ -44,6 +44,7 @@ class ShowRetinaEcomBasket extends RetinaAction
 
     public function htmlResponse(Order|null $order): Response|RedirectResponse
     {
+        $isOrder = $order instanceof Order;
         return Inertia::render(
             'Ecom/RetinaEcomBasket',
             [
@@ -59,11 +60,10 @@ class ShowRetinaEcomBasket extends RetinaAction
 
                 'routes' => [
                     'select_products'     => [
-                        'name'       => 'retina.dropshipping.select_products_for_basket',
-                        'parameters' => [
-                            'order' => $order?->id
-                        ],
-                        'method'     => 'patch'
+                        'name'       => $isOrder ? 'retina.dropshipping.select_products_for_basket' : 'retina.dropshipping.select_products_for_empty_basket',
+                        'parameters' => $isOrder ? [
+                            'order' => $order->id
+                        ] : [],
                     ],
                     'update_route' => [
                         'name'       => 'retina.models.order.update',
