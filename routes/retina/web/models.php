@@ -269,7 +269,7 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('{customerSalesChannel:id}/woo-batch-match', MatchRetinaBulkNewProductToCurrentWooCommerce::class)->name('woo.batch_match')->withoutScopedBindings();
     Route::post('{customerSalesChannel:id}/woo-batch-all', CreateRetinaNewAllPortfoliosToWoo::class)->name('woo.batch_all')->withoutScopedBindings();
 
-    Route::post('{wooCommerceUser:id}/woo-batch-upload', CreateNewBulkPortfolioToWooCommerce::class)->name('woo.batch_upload')->withoutScopedBindings();
+    Route::post('{wooCommerceUser:id}/woo-batch-upload', CreateNewBulkPortfolioToWooCommerce::class)->name('woo.batch_upload_legacy')->withoutScopedBindings();
     Route::post('{wooCommerceUser:id}/woo-batch-sync', [CreateNewBulkPortfolioToWooCommerce::class, 'asBatchSync'])->name('woo.batch_sync')->withoutScopedBindings();
     Route::post('{wooCommerceUser:id}/woo-batch-brave', [CreateNewBulkPortfolioToWooCommerce::class, 'asBraveMode'])->name('woo.batch_brave')->withoutScopedBindings();
     Route::post('{wooCommerceUser:id}/woo-single-upload/{portfolio:id}', StoreNewProductToCurrentWooCommerce::class)->name('woo.single_upload')->withoutScopedBindings();
