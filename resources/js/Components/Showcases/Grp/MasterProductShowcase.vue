@@ -179,7 +179,7 @@ console.log(props)
                 'transition-colors',
                 forms[item.product_id].isDirty
                   ? 'bg-yellow-50'
-                  : 'odd:bg-white even:bg-gray-50 hover:bg-gray-100'
+                  : ''
               ]"
             >
               <td class="px-4 py-2 border font-medium text-gray-700">
