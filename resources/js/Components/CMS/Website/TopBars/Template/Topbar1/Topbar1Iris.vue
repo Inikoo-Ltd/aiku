@@ -139,7 +139,12 @@ const urlLoginWithRedirect = () => {
                 v-if="checkVisible(model?.cart?.visible || null, isLoggedIn) && layout.retina?.type == 'b2b'"
                 url="/app/basket" icon="fal fa-shopping-cart" :noHover="true">
                 <template #label>
-                    <span class="text-white" v-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)" />
+                    <span
+                        class="text-white"
+                        xv-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)"
+                        v-html="textReplaceVariables('{{ items_count }} items ({{ cart_amount }})', layout.iris_variables)"
+                    >
+                    </span>
                 </template>
             </ButtonWithLink>
 

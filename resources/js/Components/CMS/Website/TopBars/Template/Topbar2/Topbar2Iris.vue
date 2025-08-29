@@ -174,7 +174,13 @@ const urlLoginWithRedirect = () => {
                 type="transparent"
             >
                 <template #label>
-                <span v-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)" />
+                <!-- <span v-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)" /> -->
+                <span
+                    xclass="text-white"
+                    xv-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)"
+                    v-html="textReplaceVariables('{{ items_count }} items ({{ cart_amount }})', layout.iris_variables)"
+                >
+                </span>
                 </template>
             </ButtonWithLink>
 
