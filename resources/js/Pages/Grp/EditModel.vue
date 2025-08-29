@@ -51,7 +51,8 @@ import {
 	faTransporter,
 	faCode,
 	faExchange,
-	faBoxes
+	faBoxes,
+	faAtom
 } from "@fal"
 import { faBan } from "@far"
 import { Head, usePage } from "@inertiajs/vue3"
@@ -59,6 +60,7 @@ import axios from "axios"
 import { router } from "@inertiajs/vue3"
 
 library.add(
+	faAtom,
 	faTag,
 	faMicrophoneAltSlash,
 	faImage,
