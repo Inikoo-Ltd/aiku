@@ -67,7 +67,7 @@ class StoreMasterAsset extends OrgAction
                 data_set($modelData, 'master_sub_department_id', $parent->id);
             }
         }
-        
+
         $masterAsset = DB::transaction(function () use ($parent, $modelData, $stocks) {
             /** @var MasterAsset $masterAsset */
             $masterAsset = $parent->masterAssets()->create($modelData);

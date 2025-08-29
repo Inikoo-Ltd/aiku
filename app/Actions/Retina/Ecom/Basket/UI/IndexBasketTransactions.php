@@ -26,7 +26,7 @@ class IndexBasketTransactions extends OrgAction
 
     public function tableStructure($tableRows = null, $prefix = null): Closure
     {
-         return function (InertiaTable $table) use ($prefix, $tableRows) {
+        return function (InertiaTable $table) use ($prefix, $tableRows) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -48,7 +48,7 @@ class IndexBasketTransactions extends OrgAction
             $table->column(key: 'quantity_ordered', label: __('Quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
             $table->column(key: 'net_amount', label: __('Net'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
             $table->column(key: 'actions', label: __('action'), canBeHidden: false, sortable: false, searchable: false);
-        
+
         };
     }
 
