@@ -4,7 +4,7 @@ import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import { InputNumber } from 'primevue'
 import { router } from '@inertiajs/vue3'
-import { ref, watch } from 'vue'
+import { inject, ref } from 'vue'
 import { get, set } from 'lodash-es'
 import { ProductResource } from '@/types/Iris/Products'
 import axios from 'axios'
@@ -12,11 +12,13 @@ import axios from 'axios'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faTrashAlt, faShoppingCart, faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 library.add(faTrashAlt, faShoppingCart, faTimes)
 
 const props = defineProps<{
     product: ProductResource
 }>()
+const layout = inject('layout', retinaLayoutStructure)
 
 const isLoadingSubmitQuantityProduct = ref(false)
 const onAddToBasket = async (product: ProductResource) => {
@@ -43,6 +45,19 @@ const onAddToBasket = async (product: ProductResource) => {
         product.transaction_id = response.data?.transaction_id
         product.quantity_ordered = response.data?.quantity_ordered
 
+        // Luigi: event add to cart
+        window?.dataLayer?.push({
+            event: "add_to_cart",
+            ecommerce: {
+                currency: layout?.iris?.currency?.code,
+                value: product.price,
+                items: [
+                    {
+                        item_id: product?.luigi_identity,
+                    }
+                ]
+            }
+        })
     } catch (error: any) {
         notify({
             title: trans("Something went wrong"),
