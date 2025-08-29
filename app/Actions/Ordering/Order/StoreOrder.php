@@ -31,6 +31,7 @@ use App\Actions\Traits\WithOrderExchanges;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Ordering\Order\OrderHandingTypeEnum;
+use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
@@ -83,6 +84,7 @@ class StoreOrder extends OrgAction
 
         if ($this->strict) {
             $modelData['pay_status'] = OrderPayStatusEnum::UNPAID->value;
+            $modelData['pay_detailed_status'] = OrderPayDetailedStatusEnum::UNPAID->value;
             if ($parent instanceof Customer) {
                 data_forget($modelData, 'billing_address'); // Just in case is added by mistake
                 data_forget($modelData, 'delivery_address'); // Just in case is added by mistake

@@ -77,7 +77,7 @@ const urlLoginWithRedirect = () => {
 
 <template>
     <div></div>
-    <div id="top_bar_1_iris" class="py-1 px-4 flex flex-col md:flex-row md:justify-between gap-x-4" :style="{
+    <div id="top_bar_1_iris" class="py-1 px-4 flex flex-col md:flex-row md:justify-between gap-x-4 sticky top-0 z-50" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         margin: 0,
         ...getStyles(model?.container?.properties, screenType)

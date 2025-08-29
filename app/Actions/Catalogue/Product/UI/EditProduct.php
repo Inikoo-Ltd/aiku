@@ -174,7 +174,7 @@ class EditProduct extends OrgAction
     /**
      * @throws \Exception
      */
-    public function getBlueprintOld(Product $product): array
+    public function getBlueprintold(Product $product): array
     {
         $value = OrgStocksInProductResource::collection(GetOrgStocksInProduct::run($product))->resolve();
 
@@ -273,7 +273,7 @@ class EditProduct extends OrgAction
                         ]
                     ],
                     'description_extra' => [
-                        'type'  => 'textEditor',
+                        'type'  => 'textEditor_translation',
                         'label' => __('description extra'),
                         'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($product->shop->extra_languages),
                         'value' => [
@@ -360,6 +360,30 @@ class EditProduct extends OrgAction
                         'value'        => $value
                     ],
                 ]
+            ],
+            [
+                'label'  => __('Trade unit'),
+                'icon'   => 'fa-light fa-atom',
+                'fields' => [
+                    'family_id' => [
+                        'type'       => 'select_infinite',
+                        'label'      => __('Family'),
+                        'options'    => [
+                            $familyOptions
+                        ],
+                        'fetchRoute' => [
+                            'name'       => 'grp.json.shop.families',
+                            'parameters' => [
+                                'shop' => $product->shop->id
+                            ]
+                        ],
+                        'valueProp'  => 'id',
+                        'labelProp'  => 'code',
+                        'required'   => true,
+                        'value'      => $product->family->id ?? null,
+                        'type_label' => 'families'
+                    ]
+                ],
             ],
             [
                 'label'  => __('Family'),

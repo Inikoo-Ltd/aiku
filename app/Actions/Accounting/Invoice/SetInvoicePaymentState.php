@@ -10,7 +10,9 @@ namespace App\Actions\Accounting\Invoice;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
+use App\Enums\Accounting\Invoice\InvoicePayDetailedStatusEnum;
 use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Models\Accounting\Invoice;
@@ -33,49 +35,64 @@ class SetInvoicePaymentState extends OrgAction
     protected function handle(Invoice $invoice): Invoice
     {
         $payStatus             = InvoicePayStatusEnum::UNPAID;
+        $payDetailedStatus     = InvoicePayDetailedStatusEnum::UNPAID;
         $paymentAt             = null;
         $runningPaymentsAmount = 0;
 
-        if (!$invoice->original_invoice_id) {
-            $payments = $invoice->payments()
-                ->where('payments.status', PaymentStatusEnum::SUCCESS)
-                ->where('payments.type', '=', PaymentTypeEnum::PAYMENT)
-                ->get();
-        } else {
-            $payments = $invoice->payments()
-                ->where('payments.status', PaymentStatusEnum::SUCCESS)
-                ->where('payments.type', '=', PaymentTypeEnum::REFUND)
-                ->get();
-        }
+
+        $payments = $invoice->payments()
+            ->where('payments.status', PaymentStatusEnum::SUCCESS)
+            ->where('payments.type', '=', PaymentTypeEnum::PAYMENT)
+            ->orderBy('payments.date')
+            ->get();
 
         /** @var Payment $payment */
         foreach (
             $payments as $payment
         ) {
             $runningPaymentsAmount += $payment->amount;
-            if ($payStatus == InvoicePayStatusEnum::UNPAID && abs($runningPaymentsAmount) >= abs($invoice->total_amount)) {
-                $payStatus = InvoicePayStatusEnum::PAID;
+            if (abs($runningPaymentsAmount) >= abs($invoice->total_amount) && $paymentAt === null) {
                 $paymentAt = $payment->date;
             }
         }
 
-
-        if (!$invoice->original_invoice_id) {
-            $cutOffDate = Arr::get($invoice->shop->settings, 'unpaid_invoices_unknown_before', config('app.unpaid_invoices_unknown_before'));
-            if ($cutOffDate) {
-                $cutOffDate = Carbon::parse($cutOffDate);
+        if($invoice->type==InvoiceTypeEnum::INVOICE){
+            if ($runningPaymentsAmount > $invoice->total_amount) {
+                $payDetailedStatus = InvoicePayDetailedStatusEnum::OVERPAID;
+            } elseif ($runningPaymentsAmount == $invoice->total_amount) {
+                $payDetailedStatus = InvoicePayDetailedStatusEnum::PAID;
+            } elseif ($runningPaymentsAmount > 0) {
+                $payDetailedStatus = InvoicePayDetailedStatusEnum::PARTIALLY_PAID;
             }
-
-            if ($payStatus == InvoicePayStatusEnum::UNPAID && $cutOffDate && $invoice->created_at->lt($cutOffDate)) {
-                $payStatus = InvoicePayStatusEnum::UNKNOWN;
+        }else{
+            if ($runningPaymentsAmount < $invoice->total_amount) {
+                $payDetailedStatus = InvoicePayDetailedStatusEnum::OVERPAID;
+            } elseif ($runningPaymentsAmount == $invoice->total_amount) {
+                $payDetailedStatus = InvoicePayDetailedStatusEnum::PAID;
+            } elseif ($runningPaymentsAmount < 0) {
+                $payDetailedStatus = InvoicePayDetailedStatusEnum::PARTIALLY_PAID;
             }
         }
 
+
+
+        $cutOffDate = Arr::get($invoice->shop->settings, 'unpaid_invoices_unknown_before', config('app.unpaid_invoices_unknown_before'));
+        if ($cutOffDate) {
+            $cutOffDate = Carbon::parse($cutOffDate);
+        }
+
+        if ($runningPaymentsAmount == 0 && $cutOffDate && $invoice->created_at->lt($cutOffDate)) {
+            $payStatus         = InvoicePayStatusEnum::UNKNOWN;
+            $payDetailedStatus = InvoicePayDetailedStatusEnum::UNKNOWN;
+        }
+
+
         $invoice->update(
             [
-                'pay_status'     => $payStatus,
-                'paid_at'        => $paymentAt,
-                'payment_amount' => $runningPaymentsAmount
+                'pay_status'          => $payStatus,
+                'paid_at'             => $paymentAt,
+                'pay_detailed_status' => $payDetailedStatus,
+                'payment_amount'      => $runningPaymentsAmount
             ]
         );
 
