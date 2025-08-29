@@ -10,12 +10,10 @@ namespace App\Actions\Maintenance\Web;
 
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\PublishWebpage;
-use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Web\Webpage;
 use Illuminate\Console\Command;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 class RepairUnpublishedProductsWebpages

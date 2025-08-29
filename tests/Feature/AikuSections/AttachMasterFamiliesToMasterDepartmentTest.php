@@ -70,7 +70,7 @@ test('can attach multiple families to a department', function () {
 test('it throws validation exception if master_families is empty', function () {
     $familiesToAttach = ['master_families' => []];
 
-    expect(fn() => AttachMasterFamiliesToMasterDepartment::make()->action($this->department, $familiesToAttach))
+    expect(fn () => AttachMasterFamiliesToMasterDepartment::make()->action($this->department, $familiesToAttach))
         ->toThrow(ValidationException::class);
 });
 
@@ -83,7 +83,7 @@ test('it throws validation exception if a family does not exist', function () {
         ],
     ];
 
-    expect(fn() => AttachMasterFamiliesToMasterDepartment::make()->action($this->department, $familiesToAttach))
+    expect(fn () => AttachMasterFamiliesToMasterDepartment::make()->action($this->department, $familiesToAttach))
         ->toThrow(ValidationException::class);
 });
 
@@ -107,7 +107,7 @@ test('it throws validation exception if a family belongs to another shop', funct
         ],
     ];
 
-    expect(fn() => AttachMasterFamiliesToMasterDepartment::make()->action($this->department, $familiesToAttach))
+    expect(fn () => AttachMasterFamiliesToMasterDepartment::make()->action($this->department, $familiesToAttach))
         ->toThrow(ValidationException::class);
 });
 

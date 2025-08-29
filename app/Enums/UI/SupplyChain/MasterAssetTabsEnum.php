@@ -18,7 +18,7 @@ enum MasterAssetTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    
+
     case SHOWCASE = 'showcase';
     case LANGUAGE = 'language';
     case HISTORY  = 'history';

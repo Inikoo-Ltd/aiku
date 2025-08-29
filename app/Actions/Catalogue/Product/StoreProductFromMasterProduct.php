@@ -21,8 +21,7 @@ class StoreProductFromMasterProduct extends GrpAction
     {
         $productCategories = $masterAsset->masterFamily->productCategories;
 
-        if($productCategories)
-        {
+        if ($productCategories) {
             foreach ($productCategories as $productCategory) {
                 $orgStocks = [];
                 foreach ($masterAsset->stocks as $stock) {
@@ -32,7 +31,7 @@ class StoreProductFromMasterProduct extends GrpAction
                         ];
                     }
                 }
-    
+
                 $data = [
                     'code' => $masterAsset->code,
                     'name' => $masterAsset->name,
@@ -42,7 +41,7 @@ class StoreProductFromMasterProduct extends GrpAction
                     'org_stocks'  => $orgStocks
                 ];
                 StoreProduct::run($productCategory, $data);
-    
+
             }
         }
     }
