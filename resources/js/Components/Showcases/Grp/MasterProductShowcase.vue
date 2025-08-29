@@ -60,17 +60,12 @@ const forms = props.data.data.products.reduce((acc: any, product) => {
   return acc;
 }, {});
 
-function startEditing(id: number) {
-  editingRowId.value = id;
-  successRowId.value = null; // reset success highlight if editing again
-}
 
 function saveForm(item: ProductItem) {
   const form = forms[item.product_id]
 
-  form.put(route(item.update_route.name, item.update_route.parameters), {
+  form.patch(route(item.update_route.name, item.update_route.parameters), {
     onSuccess: () => {
-      // Reset form state so .isDirty = false
       form.defaults({ price: form.price })
     },
   })
