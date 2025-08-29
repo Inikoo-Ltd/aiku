@@ -37,6 +37,7 @@ class MasterProductResource extends JsonResource
             'slug'                   => $this->slug,
             'code'                   => $this->code,
             'name'                   => $this->name,
+            'price'                 => $this->price,
             'description'           => $this->description,
             'description_title'     => $this->description_title,
             'description_extra'     => $this->description_extra,
