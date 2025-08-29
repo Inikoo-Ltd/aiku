@@ -44,7 +44,7 @@ class GetRetinaEcomNavigation
 
         $groupNavigation['orders'] = [
             'label'   => __('Orders'),
-            'icon'    => ['fal', 'fa-shopping-cart'],
+            'icon'    => ['fal', 'fa-shopping-basket'],
             'root'    => 'retina.ecom.orders.',
             'route'   => [
                 'name' => 'retina.ecom.orders.index'
