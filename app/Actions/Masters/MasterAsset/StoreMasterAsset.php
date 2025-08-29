@@ -69,7 +69,7 @@ class StoreMasterAsset extends OrgAction
             }
         }
 
-        $masterAsset = DB::transaction(function () use ($parent, $modelData, $tradeUnits) { 
+        $masterAsset = DB::transaction(function () use ($parent, $modelData, $tradeUnits) {
             /** @var MasterAsset $masterAsset */
             $masterAsset = $parent->masterAssets()->create($modelData);
             $masterAsset->stats()->create();
@@ -102,26 +102,26 @@ class StoreMasterAsset extends OrgAction
         return $masterAsset;
     }
 
-    public function processTradeUnits(MasterAsset $masterAsset, array $tradeUnits) 
+    public function processTradeUnits(MasterAsset $masterAsset, array $tradeUnits)
     {
         foreach ($tradeUnits as $item) {
             $tradeUnit = TradeUnit::find(Arr::get($item, 'id'));
             $masterAsset->tradeUnits()->attach($tradeUnit->id, [
                 'quantity' => Arr::get($item, 'quantity')
             ]);
-            
+
             foreach ($tradeUnit->stocks as $stock) {
                     $stocks[$stock->id] = [
                         'quantity' => $stock->pivot->quantity,
                     ];
             }
             $masterAsset->stocks()->sync($stocks);
-            
+
             $masterAsset->refresh();
         }
     }
 
-    public function rules(): array 
+    public function rules(): array
     {
         $rules = [
             'code'                     => [
@@ -155,9 +155,9 @@ class StoreMasterAsset extends OrgAction
             'price'                    => ['required', 'numeric', 'min:0'],
             'unit'                     => ['sometimes', 'required', 'string'],
             'rrp'                      => ['sometimes', 'required', 'numeric', 'min:0'],
-            'description'              => ['sometimes', 'required', 'max:1500'],
+            'description'              => ['sometimes', 'nullable', 'max:10000'],
             'data'                     => ['sometimes', 'array'],
-            'is_main'                  => ['required', 'boolean'],
+            'is_main'                  => ['sometimes', 'boolean'],
             'main_master_asset_id'     => [
                 'sometimes',
                 'nullable',

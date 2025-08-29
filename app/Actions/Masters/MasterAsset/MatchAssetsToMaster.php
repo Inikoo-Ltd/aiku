@@ -9,7 +9,9 @@
 namespace App\Actions\Masters\MasterAsset;
 
 use App\Actions\Catalogue\Asset\UpdateAsset;
+use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Asset\AssetTypeEnum;
 use App\Models\Catalogue\Asset;
 use App\Models\Masters\MasterAsset;
 use Exception;
@@ -40,6 +42,12 @@ class MatchAssetsToMaster extends OrgAction
                 'master_asset_id' => $masterAsset?->id,
             ]
         );
+
+        if ($asset->type == AssetTypeEnum::PRODUCT) {
+            UpdateProduct::make()->action($asset->product, [
+                'master_product_id' => $masterAsset?->id,
+            ]);
+        }
 
 
         return $asset;
