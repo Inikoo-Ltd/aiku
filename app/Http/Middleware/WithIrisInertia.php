@@ -35,10 +35,12 @@ trait WithIrisInertia
 
         $cartCount  = 0;
         $cartAmount = 0;
+        $itemsCount = 0;
         if ($webUser && $shop->type == ShopTypeEnum::B2B) {
             $orderInBasket = $webUser->customer->orderInBasket;
             $cartCount     = $orderInBasket ? $orderInBasket->stats->number_item_transactions : 0;
             $cartAmount    = $orderInBasket ? $orderInBasket->total_amount : 0;
+            $itemsCount = 0;  // TODO: Kirin
         }
 
         $migrationRedirect = null;
@@ -98,7 +100,8 @@ trait WithIrisInertia
                 'username'         => $webUser?->username,
                 'email'            => $webUser?->email,
                 'favourites_count' => $webUser?->customer?->stats?->number_favourites,
-                'cart_count'       => $cartCount,
+                'items_count'      => $itemsCount,  // Count of all items with the quantity
+                'cart_count'       => $cartCount,  // Count of unique items
                 'cart_amount'      => $cartAmount,
             ],
             'migration_redirect' => $migrationRedirect
