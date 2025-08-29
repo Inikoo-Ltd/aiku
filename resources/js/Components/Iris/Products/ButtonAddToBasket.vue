@@ -126,7 +126,6 @@ const onUpdateQuantity = (product: ProductResource) => {
 
 
 const debAddAndUpdateProduct = debounce(() => {
-    console.log('Debounced function called', props.product.quantity_ordered)
     if (!props.product.quantity_ordered) {
         onAddToBasket(props.product)
     } else if (props.product.quantity_ordered_new === 0) {
