@@ -27,7 +27,7 @@ class StoreProductFromMasterProduct extends GrpAction
                 $orgStocks = [];
                 foreach ($masterAsset->stocks as $stock) {
                     $stockOrgStocks = $stock->orgStocks()->where('organisation_id', $productCategory->organisation_id)->get();
-                    
+
                     if ($stockOrgStocks->isEmpty()) {
 
                         StoreOrgStock::make()->action(
@@ -38,7 +38,7 @@ class StoreProductFromMasterProduct extends GrpAction
                         $stockOrgStocks = $stock->orgStocks()->where('organisation_id', $productCategory->organisation_id)->get();
 
                     }
-                    
+
                     foreach ($stockOrgStocks as $orgStock) {
                         $orgStocks[$orgStock->id] = [
                             'quantity' => $orgStock->quantity_in_locations,
@@ -52,16 +52,17 @@ class StoreProductFromMasterProduct extends GrpAction
                     'price' => $masterAsset->price,
                     'unit'    => $masterAsset->unit,
                     'is_main' => true,
-                    'org_stocks'  => $orgStocks
+                    'org_stocks'  => $orgStocks,
+                    'master_product_id' => $masterAsset->id
                 ];
                 $product = StoreProduct::run($productCategory, $data);
 
-                foreach($masterAsset->tradeUnits as $tradeUnit) {
+                foreach ($masterAsset->tradeUnits as $tradeUnit) {
                     $product->tradeUnits()->attach($tradeUnit->id, [
                         'quantity' => $tradeUnit->pivot->quantity
                     ]);
                 }
-                
+
             }
         }
     }
