@@ -136,6 +136,7 @@ onMounted(() => {
     })
 
     // Luigi: last_seen recommendations
+    console.log('iden', props.fieldValue.product.luigi_identity)
     if (props.fieldValue?.product?.luigi_identity) {
         window?.dataLayer?.push({
             event: "view_item",
