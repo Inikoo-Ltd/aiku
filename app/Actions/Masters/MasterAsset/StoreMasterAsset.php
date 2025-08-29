@@ -21,6 +21,7 @@ use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
+use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -40,10 +41,10 @@ class StoreMasterAsset extends OrgAction
      */
     public function handle(MasterShop|MasterProductCategory $parent, array $modelData): MasterAsset
     {
-        $stocks = Arr::pull($modelData, 'stocks', []);
+        $tradeUnits = Arr::pull($modelData, 'trade_units', []);
 
-        if (count($stocks) == 1) {
-            $units = $stocks[array_key_first($stocks)]['quantity'];
+        if (count($tradeUnits) == 1) {
+            $units = $tradeUnits[array_key_first($tradeUnits)]['quantity'];
         } else {
             $units = 1;
         }
@@ -68,7 +69,7 @@ class StoreMasterAsset extends OrgAction
             }
         }
 
-        $masterAsset = DB::transaction(function () use ($parent, $modelData, $stocks) {
+        $masterAsset = DB::transaction(function () use ($parent, $modelData, $tradeUnits) { 
             /** @var MasterAsset $masterAsset */
             $masterAsset = $parent->masterAssets()->create($modelData);
             $masterAsset->stats()->create();
@@ -78,9 +79,12 @@ class StoreMasterAsset extends OrgAction
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
                 $masterAsset->timeSeries()->create(['frequency' => $frequency]);
             }
-            $masterAsset->stocks()->sync($stocks);
+            $this->processTradeUnits($masterAsset, $tradeUnits);
             $masterAsset->refresh();
-            StoreProductFromMasterProduct::make()->action($masterAsset);
+
+            if($masterAsset->type == MasterAssetTypeEnum::PRODUCT) {
+                StoreProductFromMasterProduct::make()->action($masterAsset);
+            }
 
             return ModelHydrateSingleTradeUnits::run($masterAsset);
         });
@@ -98,7 +102,26 @@ class StoreMasterAsset extends OrgAction
         return $masterAsset;
     }
 
-    public function rules(): array
+    public function processTradeUnits(MasterAsset $masterAsset, array $tradeUnits) 
+    {
+        foreach ($tradeUnits as $item) {
+            $tradeUnit = TradeUnit::find(Arr::get($item, 'id'));
+            $masterAsset->tradeUnits()->attach($tradeUnit->id, [
+                'quantity' => Arr::get($item, 'quantity')
+            ]);
+            
+            foreach ($tradeUnit->stocks as $stock) {
+                    $stocks[$stock->id] = [
+                        'quantity' => $stock->pivot->quantity,
+                    ];
+            }
+            $masterAsset->stocks()->sync($stocks);
+            
+            $masterAsset->refresh();
+        }
+    }
+
+    public function rules(): array 
     {
         $rules = [
             'code'                     => [
@@ -143,7 +166,7 @@ class StoreMasterAsset extends OrgAction
             ],
             'variant_ratio'            => ['sometimes', 'required', 'numeric', 'gt:0'],
             'variant_is_visible'       => ['sometimes', 'required', 'boolean'],
-            'stocks'                   => ['present', 'array'],
+            'trade_units'              => ['sometimes', 'array', 'nullable'],
             'type'                     => ['required', Rule::enum(MasterAssetTypeEnum::class)]
 
         ];

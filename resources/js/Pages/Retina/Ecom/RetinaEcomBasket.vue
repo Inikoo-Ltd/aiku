@@ -2,7 +2,7 @@
 import { trans } from 'laravel-vue-i18n'
 import CheckoutSummary from "@/Components/Retina/Ecom/CheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
-import { Head, Link } from "@inertiajs/vue3"
+import { Head, Link, router } from "@inertiajs/vue3"
 import { inject, ref } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
@@ -19,6 +19,9 @@ import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import EmptyState from '@/Components/Utils/EmptyState.vue'
+import Button from '@/Components/Elements/Buttons/Button.vue'
+import Modal from '@/Components/Utils/Modal.vue'
+import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
 library.add(faTag)
 
 const props = defineProps<{
@@ -75,13 +78,23 @@ const props = defineProps<{
     routes: {
         update_route: routeType
         submit_route: routeType
+        select_products: routeType
+        pay_whit_balance: routeType
     }
     total_products: number
     is_in_basket: boolean
 }>()
 
+console.log(props)
+
 const layout = inject('layout', retinaLayoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
+
+const isModalProductListOpen = ref(false)
+const listLoadingProducts = ref({
+
+})
+const isLoadingSubmit = ref(false)
 
 // Section: Submit Note
 const noteToSubmit = ref(props?.order?.customer_notes || '')
@@ -118,23 +131,75 @@ const onSubmitNote = async (key_in_db: string, value: string) => {
 const debounceSubmitNote = debounce(() => onSubmitNote('customer_notes', noteToSubmit.value), 800)
 const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes', deliveryInstructions.value), 800)
 
+const onAddProducts = async (product: { historic_asset_id: number }) => {
+    const routePost = product?.transaction_id ?
+        {
+            route_post: route('retina.models.transaction.update', { transaction: product.transaction_id }),
+            method: 'patch',
+            body: {
+                quantity_ordered: product.quantity_selected ?? 1,
+            }
+        } : {
+            route_post: route('retina.models.order.transaction.store', { order: props?.order.id }),
+            method: 'post',
+            body: {
+                quantity: product.quantity_selected ?? 1,
+                historic_asset_id: product.historic_asset_id,
+            }
+        }
+
+    // return
+
+    router[routePost.method](
+        routePost.route_post,
+        routePost.body,
+        {
+            only: ['transactions', 'box_stats', 'total_products', 'balance', 'total_to_pay'],
+            onStart: () => {
+                listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'loading'
+            },
+            onBefore: () => 'isLoadingSubmit.value = true',
+            onError: (error) => {
+                notify({
+                    title: trans("Something went wrong."),
+                    text: error.products || undefined,
+                    type: "error"
+                })
+                listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'error'
+            },
+            onSuccess: () => {
+                // notify({
+                //     title: trans("Success!"),
+                //     text: trans("Successfully added portfolios"),
+                //     type: "success"
+                // })
+                listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'success'
+            },
+            onFinish: () => {
+                isLoadingSubmit.value = false
+                setTimeout(() => {
+                    listLoadingProducts.value[`id-${product.historic_asset_id}`] = null
+                }, 3000)
+            }
+        })
+}
 </script>
 
 <template>
     <Head :title="trans('Basket')" />
     <PageHeading :data="pageHead">
-        <!-- <template #button-group-upload-add="{ action }">
+        <template #other>
             <div class="flex items-center border border-gray-300 rounded-md divide-x divide-gray-300">
-				<Button
+				<!-- <Button
 					v-if="upload_spreadsheet"
 					@click="() => upload_spreadsheet ? isModalUploadSpreadsheet = true : onNoStructureUpload()"
 					:label="trans('Upload products')"
                     icon="upload"
                     type="tertiary"
 					class="rounded-none border-0"
-				/>
+				/> -->
                 <Button
-                    v-if="is_in_basket"
+                   v-if="is_in_basket"
                     @click="() => isModalProductListOpen = true"
                     :label="trans('Add products')"
                     type="tertiary"
@@ -143,7 +208,7 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes
                 />
 			</div>
 
-        </template> -->
+        </template>
     </PageHeading>
 
 
@@ -243,4 +308,17 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes
             }"
         />
     </div>
+
+      <!-- Modal: add products to Order -->
+    <Modal :isOpen="isModalProductListOpen" @onClose="isModalProductListOpen = false" width="w-full max-w-6xl" key="">
+        <ProductsSelectorAutoSelect
+            :headLabel="trans('Add products to Order') + ' #' + props?.order?.reference"
+            :routeFetch="props.routes.select_products"
+            :isLoadingSubmit
+            @submit="(products: {}) => onAddProducts(products)"
+            :listLoadingProducts
+            withQuantity
+        >
+        </ProductsSelectorAutoSelect>
+    </Modal>
 </template>
