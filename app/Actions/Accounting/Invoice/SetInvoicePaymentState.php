@@ -56,7 +56,7 @@ class SetInvoicePaymentState extends OrgAction
             }
         }
 
-        if($invoice->type==InvoiceTypeEnum::INVOICE){
+        if ($invoice->type == InvoiceTypeEnum::INVOICE) {
             if ($runningPaymentsAmount > $invoice->total_amount) {
                 $payDetailedStatus = InvoicePayDetailedStatusEnum::OVERPAID;
             } elseif ($runningPaymentsAmount == $invoice->total_amount) {
@@ -64,7 +64,7 @@ class SetInvoicePaymentState extends OrgAction
             } elseif ($runningPaymentsAmount > 0) {
                 $payDetailedStatus = InvoicePayDetailedStatusEnum::PARTIALLY_PAID;
             }
-        }else{
+        } else {
             if ($runningPaymentsAmount < $invoice->total_amount) {
                 $payDetailedStatus = InvoicePayDetailedStatusEnum::OVERPAID;
             } elseif ($runningPaymentsAmount == $invoice->total_amount) {
