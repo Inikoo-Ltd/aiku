@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Product;
 
 use App\Actions\GrpAction;
+use App\Actions\Inventory\OrgStock\StoreOrgStock;
 use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterAsset;
 
@@ -26,13 +27,26 @@ class StoreProductFromMasterProduct extends GrpAction
             foreach ($productCategories as $productCategory) {
                 $orgStocks = [];
                 foreach ($masterAsset->stocks as $stock) {
-                    foreach ($stock->orgStocks()->where('organisation_id', $productCategory->organisation_id)->get() as $orgStock) {
+                    $stockOrgStocks = $stock->orgStocks()->where('organisation_id', $productCategory->organisation_id)->get();
+                    
+                    if ($stockOrgStocks->isEmpty()) {
+
+                        StoreOrgStock::make()->action(
+                            $productCategory->organisation,
+                            $stock,
+                            []
+                        );
+                        $stockOrgStocks = $stock->orgStocks()->where('organisation_id', $productCategory->organisation_id)->get();
+
+                    }
+                    
+                    foreach ($stockOrgStocks as $orgStock) {
                         $orgStocks[$orgStock->id] = [
                             'quantity' => $orgStock->quantity_in_locations,
                         ];
                     }
                 }
-    
+
                 $data = [
                     'code' => $masterAsset->code,
                     'name' => $masterAsset->name,
@@ -41,8 +55,14 @@ class StoreProductFromMasterProduct extends GrpAction
                     'is_main' => true,
                     'org_stocks'  => $orgStocks
                 ];
-                StoreProduct::run($productCategory, $data);
-    
+                $product = StoreProduct::run($productCategory, $data);
+
+                foreach($masterAsset->tradeUnits as $tradeUnit) {
+                    $product->tradeUnits()->attach($tradeUnit->id, [
+                        'quantity' => $tradeUnit->pivot->quantity
+                    ]);
+                }
+                
             }
         }
     }
