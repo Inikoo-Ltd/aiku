@@ -17,7 +17,7 @@ return new class () extends Migration {
             if (!Schema::hasColumn('languages', 'flag')) {
                 $table->string('flag', 32)->nullable();
             }
-            
+
             if (Schema::hasColumn('languages', 'original_name') && !Schema::hasColumn('languages', 'native_name')) {
                 $table->renameColumn('original_name', 'native_name');
             }
