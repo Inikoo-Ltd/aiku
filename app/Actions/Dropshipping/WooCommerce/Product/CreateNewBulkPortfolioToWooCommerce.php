@@ -9,19 +9,16 @@
 namespace App\Actions\Dropshipping\WooCommerce\Product;
 
 use App\Actions\RetinaAction;
-use App\Enums\Catalogue\Portfolio\PortfolioPlatformAvailabilityOptionEnum;
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class SyncronisePortfoliosToWooCommerce extends RetinaAction
+class CreateNewBulkPortfolioToWooCommerce extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
-
-    private string $mode = PortfolioPlatformAvailabilityOptionEnum::BRAVE->value;
 
     /**
      * @throws \Exception
@@ -36,11 +33,7 @@ class SyncronisePortfoliosToWooCommerce extends RetinaAction
             ->get();
 
         foreach ($portfolios as $portfolio) {
-            match ($this->mode) {
-                PortfolioPlatformAvailabilityOptionEnum::USE_EXISTING->value => SyncExistingPortfolioWooCommerce::dispatch($wooCommerceUser, $portfolio),
-                PortfolioPlatformAvailabilityOptionEnum::DUPLICATE->value => UploadPortfolioWooCommerce::dispatch($wooCommerceUser, $portfolio),
-                default => UploadPortfolioWooCommerceBraveMode::dispatch($wooCommerceUser, $portfolio)
-            };
+            StoreWooCommerceProduct::dispatch($wooCommerceUser, $portfolio);
         }
     }
 
@@ -54,23 +47,6 @@ class SyncronisePortfoliosToWooCommerce extends RetinaAction
 
     public function asController(WooCommerceUser $wooCommerceUser, ActionRequest $request)
     {
-        $this->mode = PortfolioPlatformAvailabilityOptionEnum::DUPLICATE->value;
-        $this->initialisation($request);
-
-        $this->handle($wooCommerceUser, $this->validatedData);
-    }
-
-    public function asBatchSync(WooCommerceUser $wooCommerceUser, ActionRequest $request)
-    {
-        $this->mode = PortfolioPlatformAvailabilityOptionEnum::USE_EXISTING->value;
-        $this->initialisation($request);
-
-        $this->handle($wooCommerceUser, $this->validatedData);
-    }
-
-    public function asBraveMode(WooCommerceUser $wooCommerceUser, ActionRequest $request)
-    {
-        $this->mode = PortfolioPlatformAvailabilityOptionEnum::BRAVE->value;
         $this->initialisation($request);
 
         $this->handle($wooCommerceUser, $this->validatedData);

@@ -12,7 +12,6 @@ use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
-use App\Events\UploadProductToWooCommerceProgressEvent;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
@@ -21,7 +20,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
 
-class UploadPortfolioWooCommerce extends RetinaAction
+class StoreWooCommerceProduct extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
@@ -62,13 +61,22 @@ class UploadPortfolioWooCommerce extends RetinaAction
 
             $result = $wooCommerceUser->createWooCommerceProduct($wooCommerceProduct);
 
-            $portfolio = UpdatePortfolio::run($portfolio, [
-                'platform_product_id' => Arr::get($result, 'id')
+            UpdatePortfolio::run($portfolio, [
+                'platform_product_id' => Arr::get($result, 'id'),
+                'platform_product_variant_id' => Arr::get($result, 'id'),
             ]);
 
-            UploadProductToWooCommerceProgressEvent::dispatch($wooCommerceUser, $portfolio);
+            CheckWooPortfolio::run($portfolio, []);
+
+            return $result;
         } catch (\Exception $e) {
             Sentry::captureMessage("Failed to upload product due to: " . $e->getMessage());
+
+            UpdatePortfolio::run($portfolio, [
+                'errors_response' => [$e->getMessage()]
+            ]);
+
+            return null;
         }
     }
 
