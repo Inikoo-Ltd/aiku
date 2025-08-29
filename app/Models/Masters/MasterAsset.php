@@ -9,6 +9,7 @@
 namespace App\Models\Masters;
 
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
 use App\Models\SysAdmin\Group;
@@ -175,6 +176,11 @@ class MasterAsset extends Model implements Auditable, HasMedia
     public function masterShop(): BelongsTo
     {
         return $this->belongsTo(MasterShop::class);
+    }
+
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class, 'master_product_id');
     }
 
     public function masterProductVariants(): HasMany
