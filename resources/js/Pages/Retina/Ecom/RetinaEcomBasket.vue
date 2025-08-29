@@ -131,30 +131,43 @@ const onSubmitNote = async (key_in_db: string, value: string) => {
 const debounceSubmitNote = debounce(() => onSubmitNote('customer_notes', noteToSubmit.value), 800)
 const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes', deliveryInstructions.value), 800)
 
-const onAddProducts = async (product: { historic_asset_id: number }) => {
-    const routePost = product?.transaction_id ?
-        {
-            route_post: route('retina.models.transaction.update', { transaction: product.transaction_id }),
-            method: 'patch',
-            body: {
-                quantity_ordered: product.quantity_selected ?? 1,
-            }
-        } : {
-            route_post: route('retina.models.order.transaction.store', { order: props?.order.id }),
-            method: 'post',
-            body: {
-                quantity: product.quantity_selected ?? 1,
-                historic_asset_id: product.historic_asset_id,
-            }
+interface Product {
+    historic_asset_id: number
+    id: number
+    quantity_selected?: number
+    transaction_id?: string
+    quantity_ordered?: number
+}
+const onAddProducts = async (product: Product) => {
+    const storeRoute = {
+        route_post: route('retina.models.product.add-to-basket', { 
+            product: product.id
+        }),
+        method: 'post',
+        body: {
+            quantity: product.quantity_selected ?? 1,
         }
+    }
+    
+    const routePost = product?.transaction_id ? {
+        route_post: route('retina.models.transaction.update', {
+            transaction: product.transaction_id
+        }),
+        method: 'patch',
+        body: {
+            quantity_ordered: product.quantity_selected ?? 1,
+        }
+    } : storeRoute
 
     // return
+
+    const onlyProps = product?.transaction_id ? ['transactions', 'box_stats', 'total_products', 'balance', 'total_to_pay'] : {}
 
     router[routePost.method](
         routePost.route_post,
         routePost.body,
         {
-            only: ['transactions', 'box_stats', 'total_products', 'balance', 'total_to_pay'],
+            ...onlyProps,
             onStart: () => {
                 listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'loading'
             },
@@ -313,7 +326,7 @@ const onAddProducts = async (product: { historic_asset_id: number }) => {
       <!-- Modal: add products to Order -->
     <Modal :isOpen="isModalProductListOpen" @onClose="isModalProductListOpen = false" width="w-full max-w-6xl" key="">
         <ProductsSelectorAutoSelect
-            :headLabel="trans('Add products to Order') + ' #' + props?.order?.reference"
+            :headLabel="trans('Add products to basket')"
             :routeFetch="props.routes.select_products"
             :isLoadingSubmit
             @submit="(products: {}) => onAddProducts(products)"
