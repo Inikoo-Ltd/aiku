@@ -16,8 +16,10 @@ use App\Http\Resources\UI\LoggedWebUserResource;
 use App\Http\Resources\Web\WebsiteIrisResource;
 use App\Models\CRM\WebUser;
 use App\Models\Helpers\Language;
+use App\Models\Ordering\Order;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 
 trait WithIrisInertia
 {
@@ -40,7 +42,7 @@ trait WithIrisInertia
             $orderInBasket = $webUser->customer->orderInBasket;
             $cartCount     = $orderInBasket ? $orderInBasket->stats->number_item_transactions : 0;
             $cartAmount    = $orderInBasket ? $orderInBasket->total_amount : 0;
-            $itemsCount = 0;  // TODO: Kirin
+            $itemsCount    = $orderInBasket ? intval($this->countItems($orderInBasket)) : 0;  
         }
 
         $migrationRedirect = null;
@@ -106,5 +108,13 @@ trait WithIrisInertia
             ],
             'migration_redirect' => $migrationRedirect
         ];
+    }
+
+    public function countItems(Order $order) {
+        return DB::table('transactions')
+            ->where('order_id', $order->id)
+            ->where('model_type', 'Product')
+            ->whereNull('deleted_at')
+            ->sum('quantity_ordered');
     }
 }
