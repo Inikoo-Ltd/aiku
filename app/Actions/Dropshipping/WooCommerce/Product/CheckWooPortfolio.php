@@ -23,9 +23,9 @@ class CheckWooPortfolio
             return $portfolio;
         }
 
-        $WooUser = $portfolio->customerSalesChannel->user;
+        $wooUser = $portfolio->customerSalesChannel->user;
 
-        if (!$WooUser instanceof WooCommerceUser) {
+        if (!$wooUser instanceof WooCommerceUser) {
             return $portfolio;
         }
 
@@ -34,7 +34,7 @@ class CheckWooPortfolio
         $productExistsInWoo = false;
         $hasVariantAtLocation   = false;
         if ($hasValidProductId) {
-            $result = CheckIfProductExistInWoo::run($WooUser, $portfolio);
+            $result = CheckIfProductExistInWoo::run($wooUser, $portfolio);
             $productExistsInWoo = ! blank($result);
             $hasVariantAtLocation   = $productExistsInWoo;
         }
@@ -44,7 +44,7 @@ class CheckWooPortfolio
         $matches       = [];
 
         if (!$hasValidProductId || !$productExistsInWoo || !$hasVariantAtLocation) {
-            $result = CheckIfProductExistInWoo::run($WooUser, $portfolio);
+            $result = CheckIfProductExistInWoo::run($wooUser, $portfolio);
 
             $matches       = $result;
             $numberMatches = count($matches);
