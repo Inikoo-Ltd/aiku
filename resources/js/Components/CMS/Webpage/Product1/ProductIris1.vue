@@ -49,7 +49,6 @@ const props = withDefaults(defineProps<{
 	screenType: 'mobile' | 'tablet' | 'desktop'
 }>(), {
 })
-console.log('propopop', props.fieldValue.product.luigi_identity)
 
 const layout = inject('layout',{})
 const currency = layout?.iris?.currency
@@ -170,6 +169,7 @@ onMounted(() => {
     })
 
     // Luigi: last_seen recommendations
+    console.log('iden', props.fieldValue.product.luigi_identity)
     if (props.fieldValue?.product?.luigi_identity) {
         window?.dataLayer?.push({
             event: "view_item",

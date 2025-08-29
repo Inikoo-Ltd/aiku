@@ -32,7 +32,7 @@ class GetRetinaEcomNavigation
 
         $groupNavigation['basket'] = [
             'label' => __('Basket'),
-            'icon' => ['fal', 'fa-shopping-basket'],
+            'icon' => ['fal', 'fa-shopping-cart'],
             'root' => 'retina.ecom.basket.',
             'route' => [
                 'name' => 'retina.ecom.basket.show'
@@ -44,7 +44,7 @@ class GetRetinaEcomNavigation
 
         $groupNavigation['orders'] = [
             'label'   => __('Orders'),
-            'icon'    => ['fal', 'fa-shopping-cart'],
+            'icon'    => ['fal', 'fa-shopping-basket'],
             'root'    => 'retina.ecom.orders.',
             'route'   => [
                 'name' => 'retina.ecom.orders.index'

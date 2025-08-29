@@ -171,7 +171,7 @@ const getActionIcon = (icon: any) => {
   >
     <slot>
       <slot name="loading">
-        <FontAwesomeIcon v-if="loading" icon="fad fa-spinner-third" class="animate-spin" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-if="!(!icon && iconRight) && loading" icon="fad fa-spinner-third" class="animate-spin" fixed-width aria-hidden="true" />
       </slot>
       <slot name="icon" v-if="!loading">
         <FontAwesomeIcon v-if="getActionIcon(icon)" :icon="getActionIcon(icon)" :rotation="iconRotation" fixed-width class="" aria-hidden="true" />
@@ -179,7 +179,8 @@ const getActionIcon = (icon: any) => {
       <slot name="label"></slot>
       <span v-if="getActionLabel(label)" class="leading-none tabular-nums" :class="{'capitalize': capitalize}">{{ getActionLabel(label) }}</span>
       <slot name="iconRight">
-        <FontAwesomeIcon v-if="iconRight" :icon="getActionIcon(iconRight)" :rotation="iconRightRotation" fixed-width class="" aria-hidden="true" />
+        <FontAwesomeIcon v-if="loading && iconRight" icon="fad fa-spinner-third" class="animate-spin" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-else-if="iconRight" :icon="getActionIcon(iconRight)" :rotation="iconRightRotation" fixed-width class="" aria-hidden="true" />
       </slot>
     </slot>
   </button>
