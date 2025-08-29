@@ -52,7 +52,8 @@ class StoreProductFromMasterProduct extends GrpAction
                     'price' => $masterAsset->price,
                     'unit'    => $masterAsset->unit,
                     'is_main' => true,
-                    'org_stocks'  => $orgStocks
+                    'org_stocks'  => $orgStocks,
+                    'master_product_id' => $masterAsset->id
                 ];
                 $product = StoreProduct::run($productCategory, $data);
 
