@@ -58,6 +58,13 @@ class ShowRetinaEcomBasket extends RetinaAction
                 ],
 
                 'routes' => [
+                    'select_products'     => [
+                        'name'       => 'retina.dropshipping.select_products_for_basket',
+                        'parameters' => [
+                            'order' => $order->id
+                        ],
+                        'method'     => 'patch'
+                    ],
                     'update_route' => [
                         'name'       => 'retina.models.order.update',
                         'parameters' => [
@@ -71,7 +78,14 @@ class ShowRetinaEcomBasket extends RetinaAction
                             'order' => $order?->id
                         ],
                         'method'     => 'patch'
-                    ]
+                    ],
+                    'pay_with_balance' => [
+                        'name'       => 'retina.models.order.pay_with_balance',
+                        'parameters' => [
+                            'order' => $order->id
+                        ],
+                        'method'     => 'patch'
+                    ],
                 ],
 
                 'voucher' => [],
