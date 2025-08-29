@@ -9,7 +9,6 @@
 
 namespace App\Http\Resources\Masters;
 
-use App\Http\Resources\Goods\TradeUnitsForMasterResource;
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
 
