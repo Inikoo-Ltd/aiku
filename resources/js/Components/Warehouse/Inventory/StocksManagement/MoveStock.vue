@@ -71,9 +71,19 @@ const closeMoveStock = () => {
 }
 
 const updateMoveQuantity = (value) => {
-    moveStock.value.quantity = value
+    // Ensure value is valid and within bounds
+    const validValue = value || 0
+    const maxQuantity = getMaxQuantity()
+    
+    // Reset to 0 if value is invalid or exceeds maximum
+    if (validValue < 0 || validValue > maxQuantity) {
+        moveStock.value.quantity = 0
+    } else {
+        moveStock.value.quantity = validValue
+    }
+    
     if (form.moveStock) {
-        form.moveStock.quantity = value
+        form.moveStock.quantity = moveStock.value.quantity
     }
 }
 
