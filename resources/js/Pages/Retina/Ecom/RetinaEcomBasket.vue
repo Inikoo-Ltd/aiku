@@ -286,7 +286,7 @@ const onAddProducts = async (product: { historic_asset_id: number }) => {
                     <ButtonWithLink
                         v-else
                         iconRight="fas fa-arrow-right"
-                        :label="trans('Continue to Checkout')"
+                        :label="trans('Pay with Checkout')"
                         :routeTarget="{
                             name: 'retina.ecom.checkout.show',
                             parameters: {

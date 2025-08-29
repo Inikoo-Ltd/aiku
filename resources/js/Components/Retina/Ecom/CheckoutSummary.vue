@@ -46,7 +46,7 @@ const locale = inject('locale', {})
             <div class="">
                 <div class="font-semibold">
                     <FontAwesomeIcon :icon="faDollarSign" class="" fixed-width aria-hidden="true" />
-                    {{ trans("Invoice Address") }}
+                    {{ trans("Billing Address") }}
                 </div>
                 <div class="pl-6 pr-3" v-html="summary?.customer?.addresses?.billing?.formatted_address">
             
