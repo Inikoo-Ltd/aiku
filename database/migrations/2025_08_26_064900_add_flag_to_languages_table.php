@@ -14,16 +14,25 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::table('languages', function (Blueprint $table) {
-            $table->string('flag', 32)->nullable();
-            $table->renameColumn('original_name', 'native_name');
+            if (!Schema::hasColumn('languages', 'flag')) {
+                $table->string('flag', 32)->nullable();
+            }
+            
+            if (Schema::hasColumn('languages', 'original_name') && !Schema::hasColumn('languages', 'native_name')) {
+                $table->renameColumn('original_name', 'native_name');
+            }
         });
     }
 
     public function down(): void
     {
         Schema::table('languages', function (Blueprint $table) {
-            $table->dropColumn('flag');
-            $table->renameColumn('native_name', 'original_name');
+            if (Schema::hasColumn('languages', 'flag')) {
+                $table->dropColumn('flag');
+            }
+            if (Schema::hasColumn('languages', 'native_name') && !Schema::hasColumn('languages', 'original_name')) {
+                $table->renameColumn('native_name', 'original_name');
+            }
         });
     }
 };
