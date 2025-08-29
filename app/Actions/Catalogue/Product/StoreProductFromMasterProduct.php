@@ -56,13 +56,12 @@ class StoreProductFromMasterProduct extends GrpAction
                     'master_product_id' => $masterAsset->id
                 ];
                 $product = StoreProduct::run($productCategory, $data);
-
+                $product->refresh();
+                $tradeUnitsData = [];
                 foreach ($masterAsset->tradeUnits as $tradeUnit) {
-                    $product->tradeUnits()->attach($tradeUnit->id, [
-                        'quantity' => $tradeUnit->pivot->quantity
-                    ]);
+                    $tradeUnitsData[$tradeUnit->id] = ['quantity' => $tradeUnit->pivot->quantity];
                 }
-
+                $product->tradeUnits()->syncWithoutDetaching($tradeUnitsData);
             }
         }
     }
