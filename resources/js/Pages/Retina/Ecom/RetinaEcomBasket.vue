@@ -212,11 +212,12 @@ const onAddProducts = async (product: { historic_asset_id: number }) => {
     </PageHeading>
 
 
+    <CheckoutSummary
+        :summary
+        :balance
+    />
+    
     <template v-if="order">
-        <CheckoutSummary
-            :summary
-            :balance
-        />
         <div class="mb-4 mx-4 mt-4 rounded-md border border-gray-200">
             <TableEcomBasket
                 :data="transactions"

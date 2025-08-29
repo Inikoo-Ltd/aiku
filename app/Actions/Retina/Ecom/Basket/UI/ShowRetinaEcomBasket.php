@@ -51,7 +51,7 @@ class ShowRetinaEcomBasket extends RetinaAction
                 'title'       => __('Basket'),
                 'pageHead'    => [
                     'title'      => __('Basket'),
-                    'icon'       => 'fal fa-shopping-basket',
+                    'icon'       => 'fal fa-shopping-cart',
                     'afterTitle' => [
                         'label' => $order ? '#'.$order->slug : ''
                     ]
@@ -61,7 +61,7 @@ class ShowRetinaEcomBasket extends RetinaAction
                     'select_products'     => [
                         'name'       => 'retina.dropshipping.select_products_for_basket',
                         'parameters' => [
-                            'order' => $order->id
+                            'order' => $order?->id
                         ],
                         'method'     => 'patch'
                     ],
@@ -82,7 +82,7 @@ class ShowRetinaEcomBasket extends RetinaAction
                     'pay_with_balance' => [
                         'name'       => 'retina.models.order.pay_with_balance',
                         'parameters' => [
-                            'order' => $order->id
+                            'order' => $order?->id
                         ],
                         'method'     => 'patch'
                     ],
@@ -91,7 +91,43 @@ class ShowRetinaEcomBasket extends RetinaAction
                 'voucher' => [],
 
                 'order'          => $order ? OrderResource::make($order)->resolve() : null,
-                'summary'        => $order ? $this->getOrderBoxStats($order) : null,
+                'summary'        => $order ? $this->getOrderBoxStats($order) : [
+                    'order_summary' => [
+                        [
+                            [
+                                'label'       => 'Items',
+                                'quantity'    => 0,
+                                'price_base'  => 'Multiple',
+                                'price_total' => 0
+                            ],
+                        ],
+                        [
+                            [
+                                'label'       => 'Charges',
+                                'information' => '',
+                                'price_total' => 0
+                            ],
+                            [
+                                'label'       => 'Shipping',
+                                'information' => '',
+                                'price_total' => 0
+                            ]
+                        ],
+                        [
+                            [
+                                'label'       => 'Net',
+                                'information' => '',
+                                'price_total' => 0
+                            ],
+                        ],
+                        [
+                            [
+                                'label'       => 'Total',
+                                'price_total' => 0
+                            ],
+                        ],
+                    ]
+                ],
                 'balance'        => $this->customer->balance,
                 'is_in_basket'   => true,
                 'total_to_pay'   => $order ? max(0, $order->total_amount - $order->customer->balance) : 0,
