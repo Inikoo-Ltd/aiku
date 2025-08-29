@@ -24,16 +24,16 @@ class StoreRetinaTransaction extends RetinaAction
     public function handle(Order $order, array $modelData): Transaction
     {
         $historicAssetId = $modelData['historic_asset_id'];
-        
+
         $existingTransaction = $order->transactions()->where('historic_asset_id', $historicAssetId)->first();
         if ($existingTransaction) {
             throw ValidationException::withMessages(
-                    [
+                [
                         'message' => [
                             'amount' => 'Item already exist in basket',
                         ]
                     ]
-                );
+            );
         }
 
         $historicAsset = HistoricAsset::find($historicAssetId);

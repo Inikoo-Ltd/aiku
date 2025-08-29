@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Actions\Retina\Dropshipping\Orders\Transaction;
 
 use App\Actions\Iris\Basket\StoreEcomBasket;
@@ -25,11 +24,10 @@ class StoreRetinaEcomBasketTransaction extends IrisAction
 
         $historicAsset = $product->currentHistoricProduct;
 
-        $transaction = StoreTransaction::make()->action($order, $historicAsset, [
+        return StoreTransaction::make()->action($order, $historicAsset, [
             'quantity_ordered' => Arr::get($modelData, 'quantity')
         ]);
 
-        return $transaction;
     }
 
     public function rules(): array

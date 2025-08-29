@@ -82,7 +82,7 @@ class StoreMasterAsset extends OrgAction
             $this->processTradeUnits($masterAsset, $tradeUnits);
             $masterAsset->refresh();
 
-            if($masterAsset->type == MasterAssetTypeEnum::PRODUCT) {
+            if ($masterAsset->type == MasterAssetTypeEnum::PRODUCT) {
                 StoreProductFromMasterProduct::make()->action($masterAsset);
             }
 
@@ -111,9 +111,9 @@ class StoreMasterAsset extends OrgAction
             ]);
 
             foreach ($tradeUnit->stocks as $stock) {
-                    $stocks[$stock->id] = [
-                        'quantity' => $stock->pivot->quantity,
-                    ];
+                $stocks[$stock->id] = [
+                    'quantity' => $stock->pivot->quantity,
+                ];
             }
             $masterAsset->stocks()->sync($stocks);
 

@@ -42,7 +42,7 @@ trait WithIrisInertia
             $orderInBasket = $webUser->customer->orderInBasket;
             $cartCount     = $orderInBasket ? $orderInBasket->stats->number_item_transactions : 0;
             $cartAmount    = $orderInBasket ? $orderInBasket->total_amount : 0;
-            $itemsCount    = $orderInBasket ? intval($this->countItems($orderInBasket)) : 0;  
+            $itemsCount    = $orderInBasket ? intval($this->countItems($orderInBasket)) : 0;
         }
 
         $migrationRedirect = null;
@@ -110,7 +110,8 @@ trait WithIrisInertia
         ];
     }
 
-    public function countItems(Order $order) {
+    public function countItems(Order $order)
+    {
         return DB::table('transactions')
             ->where('order_id', $order->id)
             ->where('model_type', 'Product')

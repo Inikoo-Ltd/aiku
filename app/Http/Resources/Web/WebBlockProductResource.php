@@ -48,7 +48,7 @@ class WebBlockProductResource extends JsonResource
         ];
 
         $luigi_identity = $product->group_id . ':' . $product->organisation_id . ':' . $product->shop_id . ':' . $product->webpage->website->id . ':' . $product->webpage->id;
-        
+
         return [
             'luigi_identity'    => $luigi_identity,
             'slug'              => $product->slug,

@@ -64,8 +64,8 @@ class GetWebBlockSeeAlso
         // Merge manually-selected products with database values
         $ids = collect($products)
             ->pluck('id')
-            ->filter(fn($id) => is_numeric($id))
-            ->map(fn($id) => (int) $id)
+            ->filter(fn ($id) => is_numeric($id))
+            ->map(fn ($id) => (int) $id)
             ->values()
             ->all();
 

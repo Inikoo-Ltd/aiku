@@ -11,7 +11,6 @@ namespace App\Actions\Retina\Dropshipping\Basket\UI;
 use App\Actions\RetinaAction;
 use App\Http\Resources\Dropshipping\SelectProductsForBasketResource;
 use App\Models\Catalogue\Product;
-use App\Models\Ordering\Order;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Lorisleiva\Actions\ActionRequest;

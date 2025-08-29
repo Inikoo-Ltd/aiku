@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Fri, 29 Aug 2025 21:22:59 Malaysia Time, Kuala Lumpur, Malaysia
@@ -71,7 +72,7 @@ class AddMissingMasterAssets
         if (!$foundMasterAssetData) {
             $masterFamily = $this->getMasterFamily($masterShop, $product);
 
-            $exchange=GetCurrencyExchange::make()->run(group()->currency,$product->shop->currency);
+            $exchange = GetCurrencyExchange::make()->run(group()->currency, $product->shop->currency);
 
             $price = $product->price * $exchange;
 
