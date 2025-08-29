@@ -41,6 +41,7 @@ class MasterProductResource extends JsonResource
             'description_title'     => $this->description_title,
             'description_extra'     => $this->description_extra,
             'trade_units'           => TradeUnitsForMasterResource::collection($this->tradeUnits)->resolve(),
+            'products'               => MasterProductProductsResource::collection($this->products)->resolve(),
             'name_i8n'              => $this->getTranslations('name_i8n'),
             'description_i8n'       => $this->getTranslations('description_i8n'),
             'description_title_i8n' => $this->getTranslations('description_title_i8n'),

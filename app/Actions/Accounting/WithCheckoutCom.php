@@ -14,7 +14,6 @@ use Checkout\CheckoutApiException;
 use Checkout\CheckoutSdk;
 use Checkout\Environment;
 use Checkout\Payments\BillingInformation;
-use Checkout\Payments\RefundRequest;
 use Checkout\Payments\Sessions\PaymentSessionsRequest;
 use Sentry;
 

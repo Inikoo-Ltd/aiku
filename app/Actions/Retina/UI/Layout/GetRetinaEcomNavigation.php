@@ -8,7 +8,6 @@
 
 namespace App\Actions\Retina\UI\Layout;
 
-use App\Models\CRM\WebUser;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetRetinaEcomNavigation

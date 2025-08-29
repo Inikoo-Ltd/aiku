@@ -8,7 +8,7 @@ import Image from "@/Components/Image.vue"
 import { inject, ref, computed, watch } from "vue"
 // import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp } from "@fal"
+import { faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
 // import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
@@ -28,7 +28,7 @@ import { Accordion, AccordionPanel, AccordionHeader, AccordionContent } from 'pr
 // import TranslationBox from '@/Components/TranslationBox.vue';
 
 
-library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus, faBarcode, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp)
+library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus, faBarcode, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo)
 
 const props = defineProps<{
 	taxonomy: any
@@ -394,184 +394,182 @@ const getActiveHazards = () => {
 							</dd>
 						</div>
 					</div>
-					<div>
-						<h4 class="font-medium text-base border-b pb-2 mb-2">{{ trans("Video (vimeo)") }}</h4>
-						<!-- <dt class="text-gray-500">{{ trans("Vimeo video link") }}</dt> -->
-						<!-- <iframe src="https://player.vimeo.com/video/1112228622?autoplay=1"
-							class="w-full h-auto aspect-video rounded-lg" frameborder="0" allow="autoplay;">
-						</iframe> -->
-						<div class="w-full h-auto aspect-video rounded-lg bg-gray-200 flex items-center justify-center">
-							<span>No Video to Show</span>
-						</div>
-					</div>
-					<div>
-						<h4 class="font-medium text-base border-b pb-2 mb-2">{{ trans("Parts") }}</h4>
-						<dt class="text-gray-500">{{ trans("Parts") }}</dt>
-						<ul class="list-disc list-inside text-gray-700 mt-1 space-y-1">
-							<li v-for="part in data.parts" :key="part.id">
-								{{ part.name }}
-							</li>
-						</ul>
-					</div>
+
+					<!-- Video Section - Accordion -->
 					<div class="space-y-3">
-						<h4 class="font-medium text-base border-b pb-2 mb-2">{{ trans("Outer") }}</h4>
-						<div class="flex justify-between">
-							<dt class="text-gray-500">{{ trans("Unit per outer") }}</dt>
-							<dd class="font-medium">
-								-
-							</dd>
-						</div>
-						<div class="flex justify-between">
-							<dt class="text-gray-500">{{ trans("Pricing policy") }}</dt>
-							<dd class="font-medium">
-								-
-							</dd>
-						</div>
-						<div class="flex justify-between">
-							<dt class="text-gray-500">{{ trans("Outer price") }}</dt>
-							<dd class="font-medium">
-								-
-							</dd>
-						</div>
-					</div>
-					<div class="space-y-3">
-						<div class="flex justify-between items-center border-b pb-2 mb-2">
-							<h4 class="font-medium text-base">{{ trans("Properties") }}</h4>
-							<span v-tooltip="'Material/ingredients label'" class="text-xs cursor-pointer">
-								<FontAwesomeIcon :icon="faPuzzlePiece" />
-							</span>
-						</div>
-						<div>
-							<dt class="text-gray-500">{{ trans("Materials/Ingredients") }}</dt>
-							<ul class="list-disc list-inside text-gray-700 mt-1 space-y-1">
-								<li v-for="ingredient in data.product.data.specifications?.ingredients"
-									:key="ingredient.id">
-									{{ ingredient }}
-								</li>
-							</ul>
-						</div>
-						<div class="flex justify-between">
-							<dt class="text-gray-500">{{ trans("Country of origin") }}</dt>
-							<dd class="font-medium">
-								<div v-if="data?.properties?.country_of_origin.code">
-									<img class="inline-block h-[14px] w-[20px] object-cover rounded-sm"
-										:src="'/flags/' + data?.properties?.country_of_origin.code.toLowerCase() + '.png'"
-										:alt="`Bendera ${'us'}`" loading="lazy" />
-									<span class="ml-2">{{ data.properties.country_of_origin.name }}</span>
-								</div>
-								<span v-else>-</span>
-							</dd>
-						</div>
-						<div class="flex justify-between">
-							<dt class="text-gray-500">{{ trans("Tariff code") }}</dt>
-							<dd class="font-medium">
-								{{ data.properties.tariff_code || '-' }}
-							</dd>
-						</div>
-						<div class="flex justify-between">
-							<dt class="text-gray-500">{{ trans("Duty rate") }}</dt>
-							<dd class="font-medium">
-								{{ data.properties.duty_rate }}
-							</dd>
-						</div>
-						<div class="flex justify-between">
-							<dt v-tooltip="'Harmonized Tariff Schedule of the United States Code'"
-								class="text-gray-500">{{ trans("HTS US") }}
-								<img class="inline-block h-[14px] w-[20px] object-cover rounded-sm"
-									:src="'/flags/' + 'us' + '.png'" :alt="`Bendera ${'us'}`" loading="lazy" />
-							</dt>
-							<dd class="font-medium">
-								-
-							</dd>
-						</div>
-					</div>
-					<div class="space-y-3">
-						<h4 class="font-medium text-base border-b pb-2 mb-2">{{ trans("Health & Safety") }}</h4>
-						<div class="flex justify-between">
-							<dt class="text-gray-500">{{ trans("UN number") }}</dt>
-							<dd class="font-medium">
-								-
-							</dd>
-						</div>
-						<div class="flex justify-between">
-							<dt class="text-gray-500">{{ trans("UN class") }}</dt>
-							<dd class="font-medium">
-								-
-							</dd>
-						</div>
-						<div class="flex justify-between">
-							<dt class="text-gray-500">{{ trans("Packing group") }}</dt>
-							<dd class="font-medium">
-								-
-							</dd>
-						</div>
-						<div class="flex justify-between">
-							<dt class="text-gray-500">{{ trans("Proper shipping name") }}</dt>
-							<dd class="font-medium">
-								-
-							</dd>
-						</div>
-						<div class="flex justify-between">
-							<dt class="text-gray-500">{{ trans("Hazard identification number") }}</dt>
-							<dd class="font-medium">
-								-
-							</dd>
-						</div>
-					</div>
-					<!-- <div class="space-y-3">
-						<h4 class="font-medium text-base border-b pb-2 mb-2">{{ trans("GPSR (if empty will use Part GPSR)") }}</h4>
-						<div class="flex justify-between">
-							<dt class="text-gray-500">{{ trans("Manufacturer") }}</dt>
-							<dd class="font-medium">
-								-
-							</dd>
-						</div>
-						<div class="flex justify-between">
-							<dt class="text-gray-500">{{ trans("EU responsible") }}</dt>
-							<dd class="font-medium">
-								-
-							</dd>
-						</div>
-						<div class="flex justify-between">
-							<dt class="text-gray-500">{{ trans("Warnings") }}</dt>
-							<dd class="font-medium">
-								-
-							</dd>
-						</div>
-						<div class="flex justify-between">
-							<dt class="text-gray-500">{{ trans("How to use") }}</dt>
-							<dd class="font-medium">
-								-
-							</dd>
-						</div>
-						<div class="flex justify-between">
-							<dt class="text-gray-500">{{ trans("Class & category of danger") }}</dt>
-							<dd class="font-medium">
-								-
-							</dd>
-						</div>
-						<div class="flex justify-between">
-							<dt class="text-gray-500">{{ trans("Product GPSR Languages") }}</dt>
-							<dd class="font-medium">
-								-
-							</dd>
-						</div>
-						<div class="flex gap-2 overflow-x-auto">
-							<div v-for="hazard in hazardDefinitions" :key="hazard.key"
-								class="flex-shrink-0 w-8 h-8 bg-white rounded border border-red-200 p-1"
-								v-tooltip="hazard.name">
-								<img :src="getHazardIconPath(hazard.icon)" :alt="hazard.name"
-									class="w-full h-full object-contain">
-							</div>
-						</div>
-					</div> -->
-					<div class="space-y-3">
-						<Accordion>
-							<AccordionPanel>
+						<Accordion multiple>
+							<AccordionPanel value="0">
 								<AccordionHeader>
 									<div class="flex items-center gap-2">
-										<FontAwesomeIcon icon="fal fa-shield-alt" class="text-blue-500" />
+										<span class="font-medium text-base">{{ trans("Video (vimeo)") }}</span>
+										<FontAwesomeIcon icon="fal fa-video" class="text-purple-500" />
+									</div>
+								</AccordionHeader>
+								<AccordionContent>
+									<div class="py-2">
+										<!-- <dt class="text-gray-500">{{ trans("Vimeo video link") }}</dt> -->
+										<!-- <iframe src="https://player.vimeo.com/video/1112228622?autoplay=1"
+											class="w-full h-auto aspect-video rounded-lg" frameborder="0" allow="autoplay;">
+										</iframe> -->
+										<div
+											class="w-full h-auto aspect-video rounded-lg bg-gray-200 flex items-center justify-center">
+											<span>No Video to Show</span>
+										</div>
+									</div>
+								</AccordionContent>
+							</AccordionPanel>
+							<AccordionPanel value="1">
+								<AccordionHeader>
+									<div class="flex items-center gap-2">
+										<span class="font-medium text-base">{{ trans("Parts") }}</span>
+										<FontAwesomeIcon icon="fal fa-puzzle-piece" class="text-green-500" />
+									</div>
+								</AccordionHeader>
+								<AccordionContent>
+									<div class="py-2">
+										<dt class="text-gray-500">{{ trans("Parts") }}</dt>
+										<ul class="list-disc list-inside text-gray-700 mt-1 space-y-1">
+											<li v-for="part in data.parts" :key="part.id">
+												{{ part.name }}
+											</li>
+										</ul>
+									</div>
+								</AccordionContent>
+							</AccordionPanel>
+							<AccordionPanel value="2">
+								<AccordionHeader>
+									<div class="flex items-center gap-2">
+										<span class="font-medium text-base">{{ trans("Outer") }}</span>
+										<FontAwesomeIcon icon="fal fa-box" class="text-orange-500" />
+									</div>
+								</AccordionHeader>
+								<AccordionContent>
+									<div class="space-y-3 py-2">
+										<div class="flex justify-between">
+											<dt class="text-gray-500">{{ trans("Unit per outer") }}</dt>
+											<dd class="font-medium">
+												-
+											</dd>
+										</div>
+										<div class="flex justify-between">
+											<dt class="text-gray-500">{{ trans("Pricing policy") }}</dt>
+											<dd class="font-medium">
+												-
+											</dd>
+										</div>
+										<div class="flex justify-between">
+											<dt class="text-gray-500">{{ trans("Outer price") }}</dt>
+											<dd class="font-medium">
+												-
+											</dd>
+										</div>
+									</div>
+								</AccordionContent>
+							</AccordionPanel>
+							<AccordionPanel value="3">
+								<AccordionHeader>
+									<div class="flex items-center gap-2">
+										<span class="font-medium text-base">{{ trans("Properties") }}</span>
+										<FontAwesomeIcon icon="fal fa-puzzle-piece" class="text-indigo-500" />
+									</div>
+								</AccordionHeader>
+								<AccordionContent>
+									<div class="space-y-3 py-2">
+										<div>
+											<dt class="text-gray-500">{{ trans("Materials/Ingredients") }}</dt>
+											<ul class="list-disc list-inside text-gray-700 mt-1 space-y-1">
+												<li v-for="ingredient in data.product.data.specifications?.ingredients"
+													:key="ingredient.id">
+													{{ ingredient }}
+												</li>
+											</ul>
+										</div>
+										<div class="flex justify-between">
+											<dt class="text-gray-500">{{ trans("Country of origin") }}</dt>
+											<dd class="font-medium">
+												<div v-if="data?.properties?.country_of_origin.code">
+													<img class="inline-block h-[14px] w-[20px] object-cover rounded-sm"
+														:src="'/flags/' + data?.properties?.country_of_origin.code.toLowerCase() + '.png'"
+														:alt="`Bendera ${'us'}`" loading="lazy" />
+													<span class="ml-2">{{ data.properties.country_of_origin.name
+														}}</span>
+												</div>
+												<span v-else>-</span>
+											</dd>
+										</div>
+										<div class="flex justify-between">
+											<dt class="text-gray-500">{{ trans("Tariff code") }}</dt>
+											<dd class="font-medium">
+												{{ data.properties.tariff_code || '-' }}
+											</dd>
+										</div>
+										<div class="flex justify-between">
+											<dt class="text-gray-500">{{ trans("Duty rate") }}</dt>
+											<dd class="font-medium">
+												{{ data.properties.duty_rate }}
+											</dd>
+										</div>
+										<div class="flex justify-between">
+											<dt v-tooltip="'Harmonized Tariff Schedule of the United States Code'"
+												class="text-gray-500">{{ trans("HTS US") }}
+												<img class="inline-block h-[14px] w-[20px] object-cover rounded-sm"
+													:src="'/flags/' + 'us' + '.png'" :alt="`Bendera ${'us'}`"
+													loading="lazy" />
+											</dt>
+											<dd class="font-medium">
+												-
+											</dd>
+										</div>
+									</div>
+								</AccordionContent>
+							</AccordionPanel>
+							<AccordionPanel value="4">
+								<AccordionHeader>
+									<div class="flex items-center gap-2">
+										<span class="font-medium text-base">{{ trans("Health & Safety") }}</span>
+										<FontAwesomeIcon icon="fal fa-shield-alt" class="text-red-500" />
+									</div>
+								</AccordionHeader>
+								<AccordionContent>
+									<div class="space-y-3 py-2">
+										<div class="flex justify-between">
+											<dt class="text-gray-500">{{ trans("UN number") }}</dt>
+											<dd class="font-medium">
+												-
+											</dd>
+										</div>
+										<div class="flex justify-between">
+											<dt class="text-gray-500">{{ trans("UN class") }}</dt>
+											<dd class="font-medium">
+												-
+											</dd>
+										</div>
+										<div class="flex justify-between">
+											<dt class="text-gray-500">{{ trans("Packing group") }}</dt>
+											<dd class="font-medium">
+												-
+											</dd>
+										</div>
+										<div class="flex justify-between">
+											<dt class="text-gray-500">{{ trans("Proper shipping name") }}</dt>
+											<dd class="font-medium">
+												-
+											</dd>
+										</div>
+										<div class="flex justify-between">
+											<dt class="text-gray-500">{{ trans("Hazard identification number") }}</dt>
+											<dd class="font-medium">
+												-
+											</dd>
+										</div>
+									</div>
+								</AccordionContent>
+							</AccordionPanel>
+							<AccordionPanel value="5">
+								<AccordionHeader>
+									<div class="flex items-center gap-2">
 										<span class="font-medium text-base">{{ trans("GPSR (if empty will use Part GPSR)") }}</span>
+										<FontAwesomeIcon icon="fal fa-shield-alt" class="text-blue-500" />
 									</div>
 								</AccordionHeader>
 								<AccordionContent>
@@ -720,6 +718,8 @@ const getActiveHazards = () => {
 							</AccordionPanel>
 						</Accordion>
 					</div>
+
+
 				</dl>
 			</div>
 		</div>
