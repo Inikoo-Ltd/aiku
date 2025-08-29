@@ -2,17 +2,18 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Fri, 14 Feb 2025 15:16:34 Central Indonesia Time, Kuala Lumpur, Malaysia
+ * Created: Thu, 28 Aug 2025 14:56:22 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
 namespace App\Actions\Retina\Billing\UI;
 
+use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Http\Resources\Accounting\InvoicesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\Invoice;
-use App\Models\Fulfilment\FulfilmentCustomer;
+use App\Models\CRM\Customer;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -22,11 +23,9 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexRetinaInvoices extends RetinaAction
+class IndexRetinaEcomInvoices extends RetinaAction
 {
-    private FulfilmentCustomer $parent;
-
-    public function handle(FulfilmentCustomer $fulfilmentCustomer, $prefix = null): LengthAwarePaginator
+    public function handle(Customer $customer, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -41,7 +40,7 @@ class IndexRetinaInvoices extends RetinaAction
 
         $queryBuilder = QueryBuilder::for(Invoice::class);
 
-        $queryBuilder->where('invoices.customer_id', $fulfilmentCustomer->customer->id);
+        $queryBuilder->where('invoices.customer_id', $customer->id);
 
 
 
@@ -71,9 +70,9 @@ class IndexRetinaInvoices extends RetinaAction
             ->withQueryString();
     }
 
-    public function tableStructure(FulfilmentCustomer $fulfilmentCustomer, $prefix = null): Closure
+    public function tableStructure($prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($prefix, $fulfilmentCustomer) {
+        return function (InertiaTable $table) use ($prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -88,7 +87,7 @@ class IndexRetinaInvoices extends RetinaAction
                 ->withEmptyState(
                     [
                         'title' => $noResults,
-                        'count' => $fulfilmentCustomer->customer->number_invoices ?? 0,
+                        'count' => $this->customer->number_invoices ?? 0,
                     ]
                 );
 
@@ -152,34 +151,32 @@ class IndexRetinaInvoices extends RetinaAction
 
 
             ]
-        )->table($this->tableStructure($this->parent));
+        )->table($this->tableStructure());
     }
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
-        $this->parent = $request->user()->customer->fulfilmentCustomer;
         $this->initialisation($request);
 
-        return $this->handle($request->user()->customer->fulfilmentCustomer);
+        return $this->handle($this->customer);
     }
 
     public function getBreadcrumbs(): array
     {
-        return array_merge(
-            ShowRetinaBillingDashboard::make()->getBreadcrumbs(),
-            [
+        return
+            array_merge(
+                ShowRetinaDashboard::make()->getBreadcrumbs(),
                 [
-                    'type'   => 'simple',
-                    'simple' => [
-                        'route' => [
-                            'name' => 'retina.fulfilment.billing.invoices.index',
-                        ],
-                        'label' => __('Invoices'),
-                        'icon'  => 'fal fa-bars',
-                    ],
-
+                    [
+                        'type'   => 'simple',
+                        'simple' => [
+                            'route' => [
+                                'name' => 'retina.ecom.invoices.index'
+                            ],
+                            'label' => __('Invoices'),
+                        ]
+                    ]
                 ]
-            ]
-        );
+            );
     }
 }

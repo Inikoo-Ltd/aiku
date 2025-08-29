@@ -10,6 +10,7 @@ namespace App\Models\Ordering;
 
 use App\Enums\Ordering\Order\OrderChargesEngineEnum;
 use App\Enums\Ordering\Order\OrderHandingTypeEnum;
+use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderShippingEngineEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -128,6 +129,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $shipping_notes
  * @property string|null $traffic_sources
  * @property int|null $master_shop_id
+ * @property OrderPayDetailedStatusEnum|null $pay_detailed_status
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -212,12 +214,13 @@ class Order extends Model implements HasMedia, Auditable
         'payment_amount'   => 'decimal:2',
 
 
-        'state'           => OrderStateEnum::class,
-        'status'          => OrderStatusEnum::class,
-        'handing_type'    => OrderHandingTypeEnum::class,
-        'pay_status'      => OrderPayStatusEnum::class,
-        'shipping_engine' => OrderShippingEngineEnum::class,
-        'charges_engine'  => OrderChargesEngineEnum::class
+        'state'               => OrderStateEnum::class,
+        'status'              => OrderStatusEnum::class,
+        'handing_type'        => OrderHandingTypeEnum::class,
+        'pay_status'          => OrderPayStatusEnum::class,
+        'pay_detailed_status' => OrderPayDetailedStatusEnum::class,
+        'shipping_engine'     => OrderShippingEngineEnum::class,
+        'charges_engine'      => OrderChargesEngineEnum::class
     ];
 
     protected $attributes = [
@@ -346,7 +349,6 @@ class Order extends Model implements HasMedia, Auditable
     {
         return $this->hasMany(OrderPaymentApiPoint::class);
     }
-
 
 
 }

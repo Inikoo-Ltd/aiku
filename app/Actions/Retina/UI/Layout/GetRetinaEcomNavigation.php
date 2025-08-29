@@ -8,14 +8,13 @@
 
 namespace App\Actions\Retina\UI\Layout;
 
-use App\Models\CRM\WebUser;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GetRetinaB2bNavigation
+class GetRetinaEcomNavigation
 {
     use AsAction;
 
-    public function handle(WebUser $webUser): array
+    public function handle(): array
     {
         $groupNavigation = [];
 
@@ -43,6 +42,15 @@ class GetRetinaB2bNavigation
             ]
         ];
 
+        $groupNavigation['orders'] = [
+            'label'   => __('Orders'),
+            'icon'    => ['fal', 'fa-shopping-cart'],
+            'root'    => 'retina.ecom.orders.',
+            'route'   => [
+                'name' => 'retina.ecom.orders.index'
+            ],
+        ];
+
         $groupNavigation['favourites'] = [
             'label' => __('Favourites'),
             'icon' => ['fal', 'fa-heart'],
@@ -55,56 +63,23 @@ class GetRetinaB2bNavigation
             ]
         ];
 
-        $groupNavigation['invoice'] = [
-            'label'   => __('Invoice'),
+        $groupNavigation['invoices'] = [
+            'label'   => __('Invoices'),
             'icon'    => ['fal', 'fa-file-invoice-dollar'],
-            'root'    => 'retina.dropshipping.invoices.',
+            'root'    => 'retina.ecom.invoices.',
             'route'   => [
-                'name' => 'retina.dropshipping.invoices.index'
+                'name' => 'retina.ecom.invoices.index'
             ],
-            // 'topMenu' => [
-            //     'subSections' => [
-            //         [
-            //             'label' => __('View Top ups'),
-            //             'icon'  => ['far', 'fa-eye'],
-            //             'root'  => 'retina.top_up.',
-            //             'route' => [
-            //                 'name' => 'retina.top_up.index',
-
-            //             ]
-            //         ],
-            //     ]
-            // ]
         ];
 
-        $groupNavigation['top_up'] = [
-            'label'   => __('Top Up'),
-            'icon'    => ['fal', 'fa-money-bill-wave'],
-            'root'    => 'retina.top_up.',
-            'route'   => [
-                'name' => 'retina.top_up.dashboard'
-            ],
-            'topMenu' => [
-                'subSections' => [
-                    [
-                        'label' => __('View Top ups'),
-                        'icon'  => ['far', 'fa-eye'],
-                        'root'  => 'retina.top_up.',
-                        'route' => [
-                            'name' => 'retina.top_up.index',
 
-                        ]
-                    ],
-                ]
-            ]
-        ];
 
         $groupNavigation['sysadmin'] = [
             'label'   => __('manage account'),
             'icon'    => ['fal', 'fa-users-cog'],
             'root'    => 'retina.sysadmin.',
             'route'   => [
-                'name' => 'retina.sysadmin.dropshipping.dashboard'
+                'name' => 'retina.sysadmin.dashboard'
             ],
             'topMenu' => [
                 'subSections' => [

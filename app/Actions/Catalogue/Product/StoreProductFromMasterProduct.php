@@ -22,8 +22,7 @@ class StoreProductFromMasterProduct extends GrpAction
     {
         $productCategories = $masterAsset->masterFamily->productCategories;
 
-        if($productCategories)
-        {
+        if ($productCategories) {
             foreach ($productCategories as $productCategory) {
                 $orgStocks = [];
                 foreach ($masterAsset->stocks as $stock) {

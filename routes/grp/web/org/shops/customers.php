@@ -10,6 +10,7 @@
 use App\Actions\Accounting\Invoice\UI\IndexInvoices;
 use App\Actions\Accounting\Invoice\UI\ShowInvoice;
 use App\Actions\Accounting\Payment\UI\ShowPayment;
+use App\Actions\Accounting\Payment\UI\ShowRefundPayment;
 use App\Actions\CRM\Customer\UI\CreateCustomer;
 use App\Actions\CRM\Customer\UI\CreateCustomerClient;
 use App\Actions\CRM\Customer\UI\EditCustomer;
@@ -40,6 +41,7 @@ Route::prefix('{customer}')->as('show')->group(function () {
     Route::get('/orders/{order}', [ShowOrder::class, 'inCustomerInShop'])->name('.orders.show');
 
     Route::get('/payments/{payment}', [ShowPayment::class, 'inCustomer'])->name('.payments.show');
+    Route::get('/refunds/{payment}', [ShowRefundPayment::class, 'inCustomer'])->name('.refunds.show');
 
     Route::get('/delivery_notes', IndexDeliveryNotesInCustomers::class)->name('.delivery_notes.index');
     Route::get('/delivery_notes/{deliveryNote}', [ShowDeliveryNote::class, 'inCustomerInShop'])->name('.delivery_notes.show');

@@ -98,6 +98,10 @@ class IndexRefundPayments extends OrgAction
             $table
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)
+                ->withEmptyState([
+                    'title' => __("No refunds found"),
+                    'count' => $parent->refunds->count()
+                ])
                 ->defaultSort('-date')
                 ->column(key: 'status', label: __('status'), canBeHidden: false, sortable: true, searchable: true, type: 'icon')
                 ->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true)

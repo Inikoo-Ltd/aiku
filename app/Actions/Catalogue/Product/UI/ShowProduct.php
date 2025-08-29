@@ -273,6 +273,7 @@ class ShowProduct extends OrgAction
                     : Inertia::lazy(fn () => GetProductShowcase::run($product)),
 
 
+
                 ProductTabsEnum::FAVOURITES->value => $this->tab == ProductTabsEnum::FAVOURITES->value ?
                     fn () => ProductFavouritesResource::collection(IndexProductFavourites::run($product))
                     : Inertia::lazy(fn () => ProductFavouritesResource::collection(IndexProductFavourites::run($product))),

@@ -58,7 +58,7 @@ const props = defineProps<{
         class="col-span-1 md:col-span-2 lg:col-span-3 bg-white border rounded-lg shadow-sm p-4 h-fit"
       >
         <h3 class="text-lg font-semibold mb-3 text-gray-800">
-          Trade Units
+          Trade Units ({{ data.data.trade_units.length }})
         </h3>
 
         <div v-if="data.data.trade_units.length" class="divide-y border rounded-md bg-gray-50">

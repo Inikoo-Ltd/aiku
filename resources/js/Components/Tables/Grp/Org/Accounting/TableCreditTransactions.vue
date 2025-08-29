@@ -9,11 +9,24 @@ import Table from "@/Components/Table/Table.vue";
 import { Link } from "@inertiajs/vue3"
 import { RouteParams } from "@/types/route-params"
 import { CreditTransaction } from "@/types/credit-transaction"
+import Button from "@/Components/Elements/Buttons/Button.vue";
+import RefundModal from "@/Components/RefundModal.vue";
+import { faUndo } from "@fal";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { ref, inject } from "vue";
+
+library.add(faUndo)
 
 defineProps<{
     data: object,
     tab?: string
 }>();
+
+const layout = inject("layout");
+
+// Modal state
+const isRefundModalVisible = ref(false)
+const selectedTransaction = ref<CreditTransaction | null>(null)
 
 function paymentRoute(credit_transaction?: CreditTransaction) {
 
@@ -34,6 +47,47 @@ function paymentRoute(credit_transaction?: CreditTransaction) {
     return '';
 }
 
+// Function to open refund modal
+function openRefundModal(transaction: CreditTransaction) {
+    selectedTransaction.value = transaction
+    isRefundModalVisible.value = true
+}
+
+// Function to close refund modal
+function closeRefundModal() {
+    isRefundModalVisible.value = false
+    selectedTransaction.value = null
+}
+
+// Create showcase object for RefundModal
+function createShowcase(transaction: CreditTransaction) {
+    return {
+        amount: transaction.amount?.toString() || '0',
+        state: 'completed', // Assuming completed state for refund eligibility
+        currency: {
+            data: {
+                id: 1, // Default values - adjust based on your data structure
+                code: transaction.currency_code || 'USD',
+                name: transaction.currency_code || 'USD',
+                symbol: '$' // Default symbol - adjust based on your needs
+            }
+        }
+    }
+}
+
+// Create refund route for RefundModal
+function createRefundRoute(transaction: CreditTransaction) {
+    if (!transaction.payment_id) return undefined
+
+    return {
+      name: "grp.models.org.payment_refund.store",
+        parameters: {
+            organisation: layout?.group?.id,
+            payment: transaction.payment_id
+        }
+    }
+}
+
 </script>
 
 <template>
@@ -46,7 +100,22 @@ function paymentRoute(credit_transaction?: CreditTransaction) {
               {{ credit_transaction.payment_reference }}
             </div>
         </template>
+        <template #cell(actions)="{item}">
+          <Button 
+            v-if="item.payment_id !== null && item.payment_reference !== null && layout?.app?.environment !== 'production'" 
+            :icon="faUndo" 
+            v-tooltip="'Proceed Refund'"
+            @click="openRefundModal(item)"
+          />
+        </template>
     </Table>
+
+    <!-- Refund Modal -->
+    <RefundModal
+        v-if="selectedTransaction && layout?.app?.environment !== 'production'"
+        :showcase="createShowcase(selectedTransaction)"
+        :refund-route="createRefundRoute(selectedTransaction)"
+        :is-visible="isRefundModalVisible"
+        @close="closeRefundModal"
+    />
 </template>
-
-

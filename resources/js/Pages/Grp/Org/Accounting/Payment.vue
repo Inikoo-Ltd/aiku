@@ -12,7 +12,7 @@ import {
 } from '@fal';
 
 import PageHeading from '@/Components/Headings/PageHeading.vue';
-import {computed, defineAsyncComponent, ref} from "vue";
+import {computed, defineAsyncComponent, ref, inject} from "vue";
 import {useTabChange} from "@/Composables/tab-change";
 import ModelDetails from "@/Components/ModelDetails.vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
@@ -22,6 +22,7 @@ import PaymentShowcase from './PaymentShowcase.vue';
 import RefundModal from '@/Components/RefundModal.vue';
 import Button from '@/Components/Elements/Buttons/Button.vue';
 import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.vue";
+import TableHistoryNotes from "@/Components/Tables/Grp/Org/Fulfilment/TableHistoryNotes.vue";
 
 
 library.add(faCoins, faUndo);
@@ -164,6 +165,7 @@ interface Props {
     }
     showcase: Showcase
     refunds?: {}
+    history_notes?: {}
     refund_route?: {
         name: string
         parameters: {
@@ -174,6 +176,8 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+
+const layout = inject('layout')
 
 // Refund modal state
 const showRefundModal = ref(false)
@@ -205,7 +209,8 @@ const component = computed(() => {
         details: ModelDetails,
         history: ModelChangelog,
         showcase: PaymentShowcase,
-        refunds: TablePayments
+        refunds: TablePayments,
+        history_notes: TableHistoryNotes
     };
     return components[currentTab.value];
 
@@ -225,15 +230,17 @@ const closeRefundModal = () => {
 
 
 <template>
-    <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead"><template #other>
-            <Button v-if="showRefundButton" @click="openRefundModal" :icon="faUndo" label="Proceed Refund">
-                
+    <Head :title="capitalize(title)"/>
+    <PageHeading :data="pageHead">
+        <template #other>
+            <Button v-if="showRefundButton && layout?.app?.environment !== 'production'" @click="openRefundModal" :icon="faUndo" label="Proceed Refund">
+
             </Button>
-        </template></PageHeading>
-    <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
+        </template>
+    </PageHeading>
+    <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate"/>
     <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"></component>
     <RefundModal :showcase="showcase" :refund-route="refund_route" :is-visible="showRefundModal"
-        @close="closeRefundModal" />
+                 @close="closeRefundModal"/>
 </template>
 

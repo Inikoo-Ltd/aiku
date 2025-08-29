@@ -4,12 +4,13 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faLink } from '@far'
-import { faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faMoneyBillWave, faBuilding, faCreditCard, faFileInvoice, faCheckCircle, faTimesCircle, faUndo, faTimes } from '@fal'
+import { faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faMoneyBillWave, faBuilding, faCreditCard, faFileInvoice, faCheckCircle, faTimesCircle, faUndo, faTimes, faEye } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Tag from "@/Components/Tag.vue"
 import { useLocaleStore } from "@/Stores/locale"
+import { usePage } from '@inertiajs/vue3'
 
-library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faMoneyBillWave, faBuilding, faCreditCard, faFileInvoice, faCheckCircle, faTimesCircle, faUndo, faTimes)
+library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faMoneyBillWave, faBuilding, faCreditCard, faFileInvoice, faCheckCircle, faTimesCircle, faUndo, faTimes, faEye)
 
 interface Country {
 	code: string
@@ -151,6 +152,25 @@ const props = defineProps<{
 }>()
 
 const layout = inject('layout')
+const page = usePage()
+
+// Check if we're in a customer menu context
+const isInCustomerMenu = computed(() => {
+	const currentRoute = page.url
+	return currentRoute.includes('/customers/')
+})
+
+// Modal state for Account Information
+const isAccountModalVisible = ref(false)
+
+// Functions to control modal
+const openAccountModal = () => {
+	isAccountModalVisible.value = true
+}
+
+const closeAccountModal = () => {
+	isAccountModalVisible.value = false
+}
 
 // Dynamic theme colors based on layout.app.theme
 const themeColors = computed(() => {
@@ -233,6 +253,7 @@ const getStateTheme = (state: string) => {
 			return 99 // default
 	}
 }
+// console.log(props.data)
 </script>
 
 <template>
@@ -256,7 +277,7 @@ const getStateTheme = (state: string) => {
 						<dd class="text-lg font-semibold"
 							:style="{ color: isRefund ? '#e00909' : themeColors.primaryBg }">
 							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code,
-								normalizedShowcase.amount) }}
+							normalizedShowcase.amount) }}
 						</dd>
 					</div>
 
@@ -273,7 +294,14 @@ const getStateTheme = (state: string) => {
 						<dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
 							{{ trans('Payment Method') }}
 						</dt>
-						<dd class="text-sm text-gray-900">{{ normalizedShowcase.paymentServiceProvider.name }}</dd>
+						<dd class="text-sm text-gray-900 flex items-center gap-2">
+							<button @click="openAccountModal"
+								class="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+								v-tooltip="trans('View Account Information')">
+								<FontAwesomeIcon icon="fal fa-eye" class="w-4 h-4" />
+							</button>
+							{{ normalizedShowcase.paymentServiceProvider.name }}
+						</dd>
 					</div>
 
 					<!-- Currency -->
@@ -287,7 +315,7 @@ const getStateTheme = (state: string) => {
 			</div>
 
 			<!-- Section: Customer Profile -->
-			<div class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
+			<div v-if="!isInCustomerMenu" class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
 				<div class="px-6 py-4 border-b border-gray-200">
 					<h3 class="text-lg font-medium text-gray-900 flex items-center gap-2">
 						<FontAwesomeIcon icon="fal fa-male" :style="{ color: themeColors.buttonBg }" />
@@ -397,7 +425,7 @@ const getStateTheme = (state: string) => {
 						<dt class="text-sm font-medium text-gray-600">{{ trans('Total Amount') }}</dt>
 						<dd class="text-lg font-semibold" :style="{ color: themeColors.primaryBg }">
 							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code,
-								normalizedShowcase.parentData.total_amount) }}
+							normalizedShowcase.parentData.total_amount) }}
 						</dd>
 					</div>
 
@@ -430,7 +458,7 @@ const getStateTheme = (state: string) => {
 						<dt class="text-sm font-medium text-gray-600">{{ trans('Net Amount') }}</dt>
 						<dd class="text-sm text-gray-900">
 							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code,
-								normalizedShowcase.parentData.net_amount) }}
+							normalizedShowcase.parentData.net_amount) }}
 						</dd>
 					</div>
 
@@ -439,7 +467,7 @@ const getStateTheme = (state: string) => {
 						<dt class="text-sm font-medium text-gray-600">{{ trans('Payment Amount') }}</dt>
 						<dd class="text-sm text-gray-900">
 							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code,
-								normalizedShowcase.parentData.payment_amount) }}
+							normalizedShowcase.parentData.payment_amount) }}
 						</dd>
 					</div>
 
@@ -452,7 +480,7 @@ const getStateTheme = (state: string) => {
 							</dt>
 							<dd class="text-sm text-gray-900">
 								{{ useFormatTime(normalizedShowcase.parentData.created_at, {
-									formatTime: 'hm'
+								formatTime: 'hm'
 								}) }}
 							</dd>
 						</div>
@@ -465,7 +493,7 @@ const getStateTheme = (state: string) => {
 							</dt>
 							<dd class="text-sm text-red-600">
 								{{ useFormatTime(normalizedShowcase.parentData.cancelled_at, {
-									formatTime: 'hm'
+								formatTime: 'hm'
 								}) }}
 							</dd>
 						</div>
@@ -503,7 +531,7 @@ const getStateTheme = (state: string) => {
 						<dt class="text-sm font-medium text-gray-600">{{ trans('Transaction Amount') }}</dt>
 						<dd class="text-lg font-semibold" :style="{ color: themeColors.primaryBg }">
 							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code,
-								normalizedShowcase.creditTransaction.amount) }}
+							normalizedShowcase.creditTransaction.amount) }}
 						</dd>
 					</div>
 
@@ -521,22 +549,46 @@ const getStateTheme = (state: string) => {
 						</dt>
 						<dd class="text-sm text-gray-900">
 							{{ useFormatTime(normalizedShowcase.creditTransaction.created_at, {
-								formatTime: 'hm'
+							formatTime: 'hm'
 							}) }}
 						</dd>
 					</div>
 				</dl>
 			</div>
 
-			<!-- Section: Payment Account Information -->
-			<div class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
-				<div class="px-6 py-4 border-b border-gray-200">
-					<h3 class="text-lg font-medium text-gray-900 flex items-center gap-2">
-						<FontAwesomeIcon icon="fal fa-building" :style="{ color: themeColors.buttonBg }" />
-						{{ trans('Account Information') }}
-					</h3>
+
+			<!-- Section: Credit Transaction Status -->
+			<div v-if="normalizedShowcase.credit_transaction === null"
+				class="rounded-lg bg-yellow-50 border-l-4 border-yellow-400 p-4">
+				<div class="flex">
+					<div class="ml-3">
+						<p class="text-sm text-yellow-700">
+							<strong>{{ trans('Info') }}:</strong> {{ trans('No credit transaction associated with thispayment') }}.
+						</p>
+					</div>
 				</div>
-				<dl class="px-6 py-4 space-y-4">
+			</div>
+		</div>
+	</div>
+
+	<!-- Account Information Modal -->
+	<div v-if="isAccountModalVisible"
+		class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50" :style="dynamicStyles">
+		<div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+			<!-- Modal Header -->
+			<div class="flex items-center justify-between p-6 border-b">
+				<h3 class="text-lg font-semibold flex items-center gap-2">
+					<FontAwesomeIcon icon="fal fa-building" />
+					{{ trans('Account Information') }}
+				</h3>
+				<button @click="closeAccountModal" class="hover:opacity-70 transition-opacity">
+					<FontAwesomeIcon icon="fal fa-times" class="w-5 h-5" />
+				</button>
+			</div>
+
+			<!-- Modal Body -->
+			<div class="p-6">
+				<dl class="space-y-4">
 					<!-- Payment Account -->
 					<div class="p-4 rounded-lg" :style="{
 						background: `linear-gradient(to right, ${themeColors.buttonBg}, #ffffff)`
@@ -552,37 +604,32 @@ const getStateTheme = (state: string) => {
 					</div>
 
 					<!-- Service Provider -->
-					<div class="flex items-center justify-between py-2">
-						<dt class="text-sm font-medium text-gray-600">{{ trans('Service Provider') }}</dt>
+					<div class="flex items-center justify-between py-3 border-b border-gray-100">
+						<dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
+							{{ trans('Service Provider') }}
+						</dt>
 						<dd class="text-sm text-gray-900">{{ normalizedShowcase.paymentServiceProvider.name }}</dd>
 					</div>
 
 					<!-- Provider Code -->
-					<div class="flex items-center justify-between py-2">
-						<dt class="text-sm font-medium text-gray-600">{{ trans('Provider Code') }}</dt>
+					<div class="flex items-center justify-between py-3 border-b border-gray-100">
+						<dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
+							{{ trans('Provider Code') }}
+						</dt>
 						<dd class="text-sm text-gray-900">{{ normalizedShowcase.paymentServiceProvider.code }}</dd>
-					</div>
-
-					<!-- Total Payments -->
-					<div class="flex items-center justify-between py-2 border-t border-gray-200 pt-4">
-						<dt class="text-sm font-medium text-gray-600">{{ trans('Total Payments') }}</dt>
-						<dd class="text-lg font-semibold" :style="{ color: themeColors.primaryBg }">
-							{{ normalizedShowcase.paymentAccount.number_payments }}
-						</dd>
 					</div>
 				</dl>
 			</div>
 
-			<!-- Section: Credit Transaction Status -->
-			<div v-if="normalizedShowcase.credit_transaction === null"
-				class="rounded-lg bg-yellow-50 border-l-4 border-yellow-400 p-4">
-				<div class="flex">
-					<div class="ml-3">
-						<p class="text-sm text-yellow-700">
-							<strong>{{ trans('Info') }}:</strong> {{ trans('No credit transaction associated with thispayment') }}.
-						</p>
-					</div>
-				</div>
+			<!-- Modal Footer -->
+			<div class="flex items-center justify-end py-4 px-6 border-gray-200">
+				<button @click="closeAccountModal"
+					class="px-4 py-2 rounded-md transition-colors duration-200 hover:opacity-80 text-sm" :style="{
+						backgroundColor: themeColors.buttonBg,
+						color: themeColors.buttonText
+					}">
+					{{ trans('Close') }}
+				</button>
 			</div>
 		</div>
 	</div>
