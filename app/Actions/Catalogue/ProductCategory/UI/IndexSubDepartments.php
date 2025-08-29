@@ -37,7 +37,7 @@ class IndexSubDepartments extends OrgAction
 
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inShop(Organisation $organisation, Shop $shop,ActionRequest $request): LengthAwarePaginator
+    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
@@ -77,9 +77,9 @@ class IndexSubDepartments extends OrgAction
             );
         }
 
-        if($parent instanceof  Shop){
+        if ($parent instanceof  Shop) {
             $queryBuilder->where('product_categories.shop_id', $parent->id);
-        }else{
+        } else {
             $queryBuilder->where('product_categories.department_id', $parent->id);
 
         }
@@ -225,7 +225,7 @@ class IndexSubDepartments extends OrgAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'actions'       => [
-                        $this->canEdit && is_null($this->shop->master_shop_id) && $request->route()->getName() == 'grp.org.shops.show.catalogue.departments.show.sub_departments.index'   ? [
+                        $this->canEdit && is_null($this->shop->master_shop_id) && $request->route()->getName() == 'grp.org.shops.show.catalogue.departments.show.sub_departments.index' ? [
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('new Sub-department'),

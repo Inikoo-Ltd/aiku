@@ -40,22 +40,24 @@ class UpdateProduct extends OrgAction
 
     public function handle(Product $product, array $modelData): Product
     {
+        $oldHistoricProduct = $product->current_historic_asset_id;
+
         if (Arr::has($modelData, 'family_id')) {
             UpdateProductFamily::make()->action($product, [
                 'family_id' => Arr::pull($modelData, 'family_id'),
             ]);
         }
 
-
         if (Arr::has($modelData, 'org_stocks')) {
             $orgStocksRaw = Arr::pull($modelData, 'org_stocks', []);
             $orgStocksRaw = array_column($orgStocksRaw, null, 'org_stock_id');
-            $orgStocksRaw = array_map(function($item) {
-                $filtered = Arr::only($item, ['org_stock_id', 'quantity', 'notes']);
-                $filtered['quantity'] = (float) $filtered['quantity']; // or (int) if you want integers
+            $orgStocksRaw = array_map(function ($item) {
+                $filtered             = Arr::only($item, ['org_stock_id', 'quantity', 'notes']);
+                $filtered['quantity'] = (float)$filtered['quantity']; // or (int) if you want integers
+
                 return $filtered;
             }, $orgStocksRaw);
-            
+
             $this->syncOrgStocks($product, $orgStocksRaw);
             //todo  after updating orgStock need a new method to update Trade Units
         }
@@ -136,6 +138,11 @@ class UpdateProduct extends OrgAction
             ]);
         }
 
+        if ($oldHistoricProduct != $product->current_historic_asset_id) {
+            UpdateHistoricProductInBasketTransactions::dispatch($product);
+        }
+
+
         return $product;
     }
 
@@ -171,6 +178,7 @@ class UpdateProduct extends OrgAction
             'trade_config'      => ['sometimes', 'required', Rule::enum(ProductTradeConfigEnum::class)],
             'follow_master'     => ['sometimes', 'boolean'],
             'family_id'         => ['sometimes', 'nullable', Rule::exists('product_categories', 'id')->where('shop_id', $this->shop->id)],
+            'master_product_id' => ['sometimes', 'nullable', 'integer', Rule::exists('master_assets', 'id')->where('master_shop_id', $this->shop->master_shop_id)],
             'barcode'           => [
                 'sometimes',
                 'nullable',

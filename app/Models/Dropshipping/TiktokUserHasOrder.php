@@ -13,8 +13,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
- *
- *
  * @property int $id
  * @property int $tiktok_user_id
  * @property string $model_type

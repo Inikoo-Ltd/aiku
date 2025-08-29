@@ -11,11 +11,11 @@ namespace App\Actions\CRM\WebUser;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateWebUsers;
 use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithProfile;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\CRM\WebUser;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
@@ -30,6 +30,7 @@ class UpdateWebUser extends OrgAction
     use WithActionUpdate;
     use WithNoStrictRules;
     use WithProfile;
+    use WithCRMEditAuthorisation;
 
     private WebUser $webUser;
 
@@ -64,23 +65,6 @@ class UpdateWebUser extends OrgAction
         }
 
         return $webUser;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        if ($request->user() instanceof WebUser) {
-            return true;
-        }
-
-        if ($this->shop->type == ShopTypeEnum::FULFILMENT) {
-            return $request->user()->authTo("fulfilment.{$this->shop->fulfilment->id}.edit");
-        } else {
-            return $request->user()->authTo("crm.{$this->shop->id}.edit");
-        }
     }
 
     public function rules(): array
@@ -142,13 +126,6 @@ class UpdateWebUser extends OrgAction
         return $this->handle($webUser, $this->validatedData);
     }
 
-    public function inRetina(WebUser $webUser, ActionRequest $request): WebUser
-    {
-        $this->webUser = $webUser;
-        $this->initialisationFromShop($webUser->shop, $request);
-
-        return $this->handle($webUser, $this->validatedData);
-    }
 
     public function action(WebUser $webUser, $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): WebUser
     {

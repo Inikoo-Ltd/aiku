@@ -9,6 +9,7 @@
 namespace App\Models\Masters;
 
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
 use App\Models\SysAdmin\Group;
@@ -29,8 +30,6 @@ use Spatie\Sluggable\SlugOptions;
 use Spatie\Translatable\HasTranslations;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int|null $master_shop_id
@@ -84,6 +83,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\Masters\MasterAssetOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Masters\MasterAssetOrderingStats|null $orderingStats
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Product> $products
  * @property-read \App\Models\Masters\MasterAssetSalesIntervals|null $salesIntervals
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Masters\MasterAssetStats|null $stats
@@ -100,7 +100,7 @@ use Spatie\Translatable\HasTranslations;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset whereJsonContainsLocales(string $column, array $locales, ?mixed $value, string $operand = '=')
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset whereLocale(string $column, string $locale)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset whereLocales(string $column, array $locales)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterAsset withoutTrashed()
  * @mixin \Eloquent
  */
@@ -176,6 +176,11 @@ class MasterAsset extends Model implements Auditable, HasMedia
     public function masterShop(): BelongsTo
     {
         return $this->belongsTo(MasterShop::class);
+    }
+
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class, 'master_product_id');
     }
 
     public function masterProductVariants(): HasMany

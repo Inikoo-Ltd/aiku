@@ -33,7 +33,7 @@ const props = defineProps<{
 <template>
     <div @click="props.notification.close" :class="props.notification.class" class="flex pl-3 pr-4 py-2 gap-x-3">
         <div class="flex items-center justify-center">
-            <FontAwesomeIcon v-if="props.notification.item.type == 'error'" icon='fal fa-times-circle' class='h-7'
+            <FontAwesomeIcon v-if="['error', 'failure'].includes(props.notification.item.type)" icon='fal fa-times-circle' class='h-7'
                 aria-hidden='true' />
             <FontAwesomeIcon v-if="props.notification.item.type == 'success'" icon='fal fa-check-circle' class='h-7'
                 aria-hidden='true' />

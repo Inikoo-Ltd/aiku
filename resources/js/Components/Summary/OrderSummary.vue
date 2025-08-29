@@ -39,7 +39,7 @@ const locale = inject('locale', aikuLocaleStructure)
                     <div class="relative col-span-4 justify-self-end font-medium overflow-hidden">
                         <Transition name="spin-to-right">
                             <dd :key="fieldSummary.price_total" class="" :class="[fieldSummary.price_total_class, fieldSummary.price_total === 'free' ? 'text-green-600 animate-pulse' : '']">
-                                {{ locale.currencyFormat(currency_code || 'usd', fieldSummary.price_total || 0) }}
+                                {{ locale.currencyFormat(currency_code, fieldSummary.price_total || 0) }}
                             </dd>
                         </Transition>
                     </div>

@@ -17,7 +17,6 @@ return new class () extends Migration {
             $table->renameColumn('url', 'from_url');
             $table->renameColumn('path', 'from_path');
             $table->renameColumn('webpage_id', 'from_webpage_id');
-
         });
 
         Schema::table('redirects', function (Blueprint $table) {
@@ -25,7 +24,6 @@ return new class () extends Migration {
             $table->unsignedInteger('to_webpage_id')->index()->comment('webpage where it going to be redirected to');
             $table->index('from_webpage_id');
         });
-
     }
 
 
@@ -40,7 +38,6 @@ return new class () extends Migration {
         Schema::table('redirects', function (Blueprint $table) {
             $table->string('path')->comment('path to redirect from');
             $table->unsignedInteger('webpage_id')->index()->comment('webpage where it going to be redirected to');
-
         });
     }
 };

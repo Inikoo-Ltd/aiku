@@ -62,7 +62,9 @@ trait WithRetinaOrderPlacedRedirection
                             'currency'          => $arr['order']->shop->currency->code,
                         ]
                     ]
-                ]);
+                ])->with('confetti', [
+                    'key' => 'ecom_order_placed' . $arr['order']->id,
+                ]);;
             }
         } elseif ($arr['reason'] == 'Insufficient balance') {
             return Redirect::back()->with('notification', [

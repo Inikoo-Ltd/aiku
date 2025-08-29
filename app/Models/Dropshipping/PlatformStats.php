@@ -11,8 +11,6 @@ namespace App\Models\Dropshipping;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- *
- *
  * @property int $id
  * @property int $platform_id
  * @property int $number_customers

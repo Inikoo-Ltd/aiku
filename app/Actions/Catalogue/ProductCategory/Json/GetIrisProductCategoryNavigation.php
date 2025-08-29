@@ -21,7 +21,7 @@ class GetIrisProductCategoryNavigation extends IrisAction
         $shop = $website->shop;
         $domain = $website->domain;
         $data = [];
-        
+
         $departments = DB::table('product_categories')
             ->where('type', 'department')
             ->where('shop_id', $shop->id)
@@ -32,7 +32,7 @@ class GetIrisProductCategoryNavigation extends IrisAction
 
         foreach ($departments as $department) {
             $departmentUrl = $domain . '/' . $department->url;
-            
+
             $departmentData = [
                 'name' => $department->name,
                 'url' => $departmentUrl,
@@ -50,7 +50,7 @@ class GetIrisProductCategoryNavigation extends IrisAction
 
             foreach ($subDepartments as $subDepartment) {
                 $subDepartmentUrl = $departmentUrl . '/' . $subDepartment->url;
-                
+
                 $subDepartmentData = [
                     'name' => $subDepartment->name,
                     'url' => $subDepartmentUrl,
@@ -68,7 +68,7 @@ class GetIrisProductCategoryNavigation extends IrisAction
 
                 foreach ($families as $family) {
                     $familyUrl = $subDepartmentUrl . '/' . $family->url;
-                    
+
                     $subDepartmentData['families'][] = [
                         'name' => $family->name,
                         'url' => $familyUrl

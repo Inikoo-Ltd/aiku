@@ -97,6 +97,8 @@ const shootMultipleConfetti = () => {
         setTimeout(() => shootConfetti(), 300)
     }, 500);
 }
+
+// Flash: Confetti
 watch(() => usePage().props?.flash?.confetti, (newVal) => {
     // console.log('confettixx ret', newVal)
     if (!newVal) return
@@ -136,6 +138,23 @@ watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
 
     selectedModal.value = modal
     isModalOpen.value = true
+}, {
+    deep: true,
+    immediate: true
+})
+
+// Flash: Notification
+watch(() => usePage().props?.flash?.notification, (notification: Modal) => {
+    console.log('ret', notification)
+    if (!notification) return
+
+    setTimeout(() => {
+        notify({
+            title: notification.title ?? trans("Something went wrong"),
+            text: notification.description || notification.message || trans("Please try again later or contact administrator."),
+            type: notification.type || notification.status,
+        })
+    }, 500);
 }, {
     deep: true,
     immediate: true
@@ -208,7 +227,7 @@ const getBgColorDependsOnStatus = (status: string) => {
 <template>
     <!-- Retina: Ds -->
     <RetinaLayoutDs
-        v-if="layout.retina?.type === 'dropshipping' || layout.retina?.type === 'b2b'"
+        v-if="layout.retina?.type === 'dropshipping'"
     >
         <template #default>
             <slot />
@@ -216,13 +235,13 @@ const getBgColorDependsOnStatus = (status: string) => {
     </RetinaLayoutDs>
 
     <!-- Retina: Ecom -->
-    <!-- <RetinaLayoutEcom
+    <RetinaLayoutEcom
         v-else-if="layout.retina?.type === 'b2b'"
     >
         <template #default>
             <slot />
         </template>
-    </RetinaLayoutEcom> -->
+    </RetinaLayoutEcom>
 
     <!-- Retina: Fulfilment -->
     <template v-else-if="layout.retina?.type === 'fulfilment'">
@@ -293,7 +312,7 @@ const getBgColorDependsOnStatus = (status: string) => {
                 <div class="mt-5 sm:mt-6">
                     <Button
                         @click="() => isModalOpen = false"
-                        :label="trans('Ok, Get it')"
+                        :label="trans('Okay')"
                         full
                     />
                 </div>
@@ -342,6 +361,9 @@ const getBgColorDependsOnStatus = (status: string) => {
         @apply bg-gray-100 border-l-8 border border-slate-500  text-slate-500
     }
     &.error {
+        @apply bg-red-400 border-l-8 border border-red-600 text-white
+    }
+    &.failure {
         @apply bg-red-400 border-l-8 border border-red-600 text-white
     }
 }

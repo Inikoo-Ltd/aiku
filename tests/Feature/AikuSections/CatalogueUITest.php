@@ -428,6 +428,7 @@ test('UI show sub department in department', function () {
 });
 
 test('UI edit sub department in department', function () {
+    $this->withoutExceptionHandling();
     $response = get(route('grp.org.shops.show.catalogue.departments.show.sub_departments.edit', [$this->organisation->slug, $this->shop->slug, $this->department->slug, $this->subDepartment->slug]));
     $response->assertInertia(function (AssertableInertia $page) {
         $page

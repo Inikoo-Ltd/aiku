@@ -31,13 +31,15 @@ const showExtra = ref(false);
 <template>
     <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200">
         <div class="bg-white rounded-lg shadow mb-4 overflow-hidden">
-            <div class="w-full aspect-square">
-                <Image v-if="data?.image" :src="data?.image"
-                    class="w-full h-full object-cover object-center rounded-t-lg" />
-                <div v-else class="flex justify-center items-center bg-gray-100 w-full h-full">
-                    <FontAwesomeIcon :icon="faImage" class="w-8 h-8 text-gray-400" />
+            <slot name="image">
+                <div class="w-full aspect-square" :class="data?.image ? '' : 'h-32'" >
+                    <Image v-if="data?.image" :src="data?.image"
+                        class="w-full h-full object-cover object-center rounded-t-lg" />
+                    <div v-else class="flex justify-center items-center bg-gray-100 w-full h-full">
+                        <FontAwesomeIcon :icon="faImage" class="w-8 h-8 text-gray-400" />
+                    </div>
                 </div>
-            </div>
+            </slot>
         </div>
 
 

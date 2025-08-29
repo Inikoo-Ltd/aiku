@@ -10,10 +10,8 @@
 
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
-use App\Actions\Masters\MasterShop\UI\IndexMasterShops;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
-use App\Enums\UI\SupplyChain\MasterSubDepartmentTabsEnum;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
@@ -154,8 +152,8 @@ class EditMasterFamily extends OrgAction
                             ]
                         ],
                         [
-                            'label'  => __('Master Department'),
-                            'icon'   => 'fa-light fa-box',
+                            'label'  => __('Parent').' ('.__('Department/Sub-Department').')',
+                            'icon'   => 'fa-light fa-folder-tree',
                             'fields' => [
                                 'department_id'  =>  [
                                     'type'    => 'select_infinite',
@@ -196,7 +194,7 @@ class EditMasterFamily extends OrgAction
     }
 
 
-    public function getBreadcrumbs(MasterShop|Group|MasterProductCategory $parent, MasterProductCategory $masterFamily,  string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(MasterShop|Group|MasterProductCategory $parent, MasterProductCategory $masterFamily, string $routeName, array $routeParameters): array
     {
         return ShowMasterFamily::make()->getBreadcrumbs(
             masterFamily: $masterFamily,

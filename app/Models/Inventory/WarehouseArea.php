@@ -58,7 +58,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|WarehouseArea newQuery()
  * @method static Builder<static>|WarehouseArea onlyTrashed()
  * @method static Builder<static>|WarehouseArea query()
- * @method static Builder<static>|WarehouseArea withTrashed()
+ * @method static Builder<static>|WarehouseArea withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|WarehouseArea withoutTrashed()
  * @mixin Eloquent
  */

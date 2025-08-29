@@ -80,7 +80,7 @@ const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false));
 
             <!-- All categories -->
             <div v-if="layout.retina?.type !== 'fulfilment'" class="relative">
-                <div @click="() => isOpenMenuMobile = true" class="flex items-center gap-x-2 h-fit px-5 py-1  text-sm rounded-full hover:bg-gray-100 border border-gray-300 w-fit cursor-pointer whitespace-nowrap ">
+                <div @click="() => {isOpenMenuMobile = true}" class="flex items-center gap-x-2 h-fit px-5 py-1  text-sm rounded-full hover:bg-gray-100 border border-gray-300 w-fit cursor-pointer whitespace-nowrap ">
                     <FontAwesomeIcon icon="fal fa-bars" class="text-gray-400" fixed-width aria-hidden="true" :class="'text-[10px]'" />
                     <span class="font-medium text-gray-600">{{ trans("All Categories") }}</span>
                 </div>
@@ -140,17 +140,17 @@ const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false));
             </nav>
 
             <Collapse v-if="hoveredNavigation?.subnavs" :when="isCollapsedOpen" as="div"
-                class="absolute left-0 top-full bg-white border border-gray-300 w-full shadow-lg"
-                :class="isCollapsedOpen ? 'z-50' : 'border-t-0 z-50'"
+                class="z-[49] absolute left-0 top-full bg-white border border-gray-300 w-full shadow-lg"
+                :class="isCollapsedOpen ? '' : 'border-t-0'"
                 :style="getStyles(fieldValue?.container?.properties, screenType)" >
                 <div class="grid grid-cols-4 gap-3 p-6">
                     <div v-for="subnav in hoveredNavigation?.subnavs" :key="subnav.title" class="space-y-4">
                         <div v-if="!subnav?.link?.href && subnav.title"
-                            :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin : 0, padding : 0, ...getStyles(fieldValue?.sub_navigation?.properties, screenType) }"
-                            class="font-semibold text-gray-700">{{ subnav.title }}</div>
+                            :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin : 0, padding : 0, fontWeight : 600, ...getStyles(fieldValue?.sub_navigation?.properties, screenType) }"
+                            class="text-gray-700">{{ subnav.title }}</div>
                         <a v-if="subnav?.link?.href && subnav.title" :href="subnav?.link?.href"
                             :target="subnav?.link?.target"
-                            :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin : 0, padding : 0, ...getStyles(fieldValue?.sub_navigation?.properties, screenType)}"
+                            :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin : 0, padding : 0, fontWeight : 600, ...getStyles(fieldValue?.sub_navigation?.properties, screenType)}"
                             class="font-semibold text-gray-700">{{ subnav.title }}</a>
                         <!-- Sub-navigation Links -->
                         <div class="flex flex-col gap-y-3">
@@ -186,4 +186,13 @@ const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false));
     -ms-overflow-style: none;
     scrollbar-width: none;
 }
+
+.editor-class a  {
+   font-weight: 400;
+}
+
+.sub-nav-title  {
+    .editor-class a {
+        font-weight: 600;
+    }}
 </style>

@@ -54,7 +54,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|PaymentServiceProvider newQuery()
  * @method static Builder<static>|PaymentServiceProvider onlyTrashed()
  * @method static Builder<static>|PaymentServiceProvider query()
- * @method static Builder<static>|PaymentServiceProvider withTrashed()
+ * @method static Builder<static>|PaymentServiceProvider withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|PaymentServiceProvider withoutTrashed()
  * @mixin Eloquent
  */

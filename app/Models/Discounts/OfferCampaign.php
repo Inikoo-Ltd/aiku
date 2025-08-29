@@ -26,8 +26,6 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id
@@ -63,7 +61,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OfferCampaign newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OfferCampaign onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OfferCampaign query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OfferCampaign withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OfferCampaign withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OfferCampaign withoutTrashed()
  * @mixin \Eloquent
  */

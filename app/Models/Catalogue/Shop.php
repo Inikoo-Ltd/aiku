@@ -135,6 +135,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $colour
  * @property bool $registration_needs_approval
  * @property array<array-key, mixed>|null $extra_languages
+ * @property bool $is_aiku
  * @property-read \App\Models\Catalogue\ShopAccountingStats|null $accountingStats
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses
@@ -226,7 +227,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Shop newQuery()
  * @method static Builder<static>|Shop onlyTrashed()
  * @method static Builder<static>|Shop query()
- * @method static Builder<static>|Shop withTrashed()
+ * @method static Builder<static>|Shop withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Shop withoutTrashed()
  * @mixin Eloquent
  */

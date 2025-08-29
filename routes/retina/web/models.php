@@ -50,6 +50,7 @@ use App\Actions\Retina\Dropshipping\Orders\StoreRetinaOrder;
 use App\Actions\Retina\Dropshipping\Orders\StoreRetinaPlatformOrder;
 use App\Actions\Retina\Dropshipping\Orders\SubmitRetinaOrder;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\DeleteRetinaTransaction;
+use App\Actions\Retina\Dropshipping\Orders\Transaction\StoreRetinaEcomBasketTransaction;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\StoreRetinaTransaction;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\UpdateRetinaTransaction;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrder;
@@ -331,6 +332,7 @@ Route::name('mit_saved_card.')->prefix('mit-saved-card')->group(function () {
 Route::name('product.')->prefix('product')->group(function () {
     Route::post('{product:id}/favourite', StoreRetinaFavourite::class)->name('favourite');
     Route::delete('{product:id}/unfavourite', DeleteRetinaFavourite::class)->name('unfavourite');
+    Route::post('{product:id}/add-to-basket', StoreRetinaEcomBasketTransaction::class)->name('add-to-basket');
 });
 
 Route::patch('/locale/{locale}', UpdateIrisLocale::class)->name('locale.update');

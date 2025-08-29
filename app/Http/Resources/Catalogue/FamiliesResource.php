@@ -83,7 +83,7 @@ class FamiliesResource extends JsonResource
             'number_current_products'  => $this->number_current_products,
             'collections'       => $collections,
             'sales_all'                    => $this->sales_all,
-            'invoices'                 => $this->invoices_all,
+            'invoices_all'                 => $this->invoices_all,
             'organisation_name' => $this->organisation_name,
             'organisation_slug' => $this->organisation_slug,
             'master_product_category_id'     => $this->master_product_category_id

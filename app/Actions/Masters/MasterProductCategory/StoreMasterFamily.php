@@ -101,7 +101,7 @@ class StoreMasterFamily extends OrgAction
             'masterShop' => $masterProductCategory->masterShop->slug,
             'masterFamily' => $masterProductCategory->slug,
         ]);
-        
+
     }
 
 

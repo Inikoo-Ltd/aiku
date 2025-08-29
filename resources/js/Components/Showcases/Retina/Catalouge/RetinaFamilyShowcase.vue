@@ -9,6 +9,7 @@ import ButtonAddCategoryToPortfolio from "@/Components/Iris/Products/ButtonAddCa
 import { trans } from 'laravel-vue-i18n'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import CopyButton from '@/Components/Utils/CopyButton.vue'
+import BoxApiUrl from './BoxApiUrl.vue'
 
 library.add(faAlbumCollection);
 
@@ -32,30 +33,10 @@ const routeAPI = window.location.origin + `/${props.data?.family?.data?.slug}/da
 
 <template>
   <div class="px-4 pb-8 m-5">
-    
-        <div class="py-2 w-fit">
-            <div>
-                API Url (download all products in this Department)
-                <InformationIcon
-                    :information="trans('Can be use to integrate with 3rd party app')"
-                />
-                :
-            </div>
-            
-            <div xhref="props.data.url" target="_blank" xv-tooltip="trans('Go To Website')"
-                class="xhover:bg-gray-50 ring-1 ring-gray-300 rounded overflow-hidden flex text-xxs md:text-base text-gray-500">
-                <div v-tooltip="trans('Copy url')" class="flex items-center">
-                    <CopyButton
-                        :text="routeAPI"
-                        class="text-3xl px-3 py-1.5"
-                    />
-                </div>
-
-                <div class="bg-gray-200 py-2 px-2 w-full">
-                    {{ routeAPI }}
-                </div>
-            </div>
-        </div>
+        <!-- Box: API URL -->
+        <BoxApiUrl
+            :routeApi="routeAPI"
+        />
 
     <div class="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-6 mt-4 ">
       <div>
