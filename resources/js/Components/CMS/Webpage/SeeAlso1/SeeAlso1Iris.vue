@@ -61,6 +61,8 @@ const compSwiperOptions = computed(() => {
         return props.fieldValue?.settings?.products_data?.top_sellers || []
     }
 })
+
+console.log('see also',props)
 </script>
 
 <template>
