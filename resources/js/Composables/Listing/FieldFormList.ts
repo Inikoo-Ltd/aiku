@@ -1,7 +1,5 @@
 import type { Component } from 'vue'
 import { defineAsyncComponent } from 'vue'
-
-
 import Input from '@/Components/Forms/Fields/Input.vue'
 import Select from '@/Components/Forms/Fields/Select.vue'
 import SelectBillingCycle from '@/Components/Forms/Fields/SelectBillingCycle.vue'
@@ -15,7 +13,6 @@ import Currency from "@/Components/Forms/Fields/Currency.vue"
 import InputWithAddOn from '@/Components/Forms/Fields/InputWithAddOn.vue'
 import Password from "@/Components/Forms/Fields/Password.vue"
 import Toggle from '@/Components/Forms/Fields/Toggle.vue'
-// import Rental from '@/Components/Rental/Rental.vue'
 import Textarea from "@/Components/Forms/Fields/Textarea.vue"
 import TextEditor from "@/Components/Forms/Fields/TextEditor.vue"
 import ImageCropSquare from '@/Components/Forms/Fields/ImageCropSquare.vue'
@@ -36,7 +33,6 @@ import ButtonForm from '@/Components/Forms/Fields/ButtonForm.vue'
 import cropImageFull from '@/Components/Forms/Fields/CropImageFull.vue'
 
 
-const GoogleSearch = defineAsyncComponent(() => import('@/Components/Forms/Fields/GoogleSearch.vue'))
 const ProductParts = defineAsyncComponent(() => import('@/Components/Forms/Fields/ProductParts.vue'))
 const PollTypeSelect = defineAsyncComponent(() => import('@/Components/Forms/Fields/PollTypeSelect.vue'))
 const EmployeeState = defineAsyncComponent(() => import('@/Components/Forms/Fields/Employee/EmployeeState.vue'))
@@ -97,7 +93,6 @@ export const componentsList: {[key: string]: Component} = {
     'checkbox': Checkbox,
     'app_login': AppLogin,
     'app_theme': AppTheme,
-    'googleSearch': GoogleSearch,
     'product_parts': ProductParts,
     'employeeState': EmployeeState,
     'pin' : Pin,

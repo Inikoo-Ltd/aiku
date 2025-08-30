@@ -54,15 +54,7 @@ class UpdateWebpage extends OrgAction
         $oldUrl     = $webpage->url;
 
         if ($currentSeoData) {
-            $isUseCanonicalUrl = Arr::pull($currentSeoData, 'is_use_canonical_url');
-            if ($isUseCanonicalUrl) {
-                data_set($modelData, 'is_use_canonical_url', $isUseCanonicalUrl);
-            }
 
-            $canonicalUrl = Arr::pull($currentSeoData, 'canonical_url');
-            if ($canonicalUrl) {
-                data_set($modelData, 'canonical_url', $canonicalUrl);
-            }
 
             $newData = [];
             data_set($newData, 'structured_data', Arr::pull($currentSeoData, 'structured_data', Arr::get($oldSeoData, 'structured_data')));
@@ -88,7 +80,7 @@ class UpdateWebpage extends OrgAction
                 data_set($modelData, 'seo_data.image', $source);
             }
         }
-        // dd($modelData);
+
         if (Arr::has($modelData, 'state_data')) {
             if (Arr::has($modelData, 'state_data.state')) {
                 data_set($modelData, 'state', Arr::get($modelData, 'state_data.state'));
@@ -246,8 +238,6 @@ class UpdateWebpage extends OrgAction
 
     public function asController(Webpage $webpage, ActionRequest $request): Webpage
     {
-
-        // dd($request->all());
 
         $this->webpage = $webpage;
         $this->initialisationFromShop($webpage->shop, $request);
