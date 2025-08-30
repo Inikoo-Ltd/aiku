@@ -225,6 +225,7 @@ class IndexOrders extends OrgAction
                 'orders.net_amount',
                 'orders.total_amount',
                 'orders.payment_amount',
+                'orders.pay_detailed_status',
                 'customers.name as customer_name',
                 'customers.slug as customer_slug',
                 'customer_clients.name as client_name',
@@ -239,7 +240,7 @@ class IndexOrders extends OrgAction
                 'customers.name as customer_name',
             ])
             ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
-            ->allowedSorts(['id', 'reference', 'date', 'net_amount', 'customer_name', 'pay_status']) // Ensure `id` is the first sort column
+            ->allowedSorts(['id', 'reference', 'date', 'net_amount', 'customer_name', 'pay_detailed_status']) // Ensure `id` is the first sort column
             ->withBetweenDates(['date'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -298,7 +299,7 @@ class IndexOrders extends OrgAction
             if ($parent instanceof Shop) {
                 $table->column(key: 'customer_name', label: __('customer'), sortable: true);
             }
-            $table->column(key: 'pay_status', label: __('payment'), sortable: true);
+            $table->column(key: 'pay_detailed_status', label: __('payment'), sortable: true);
             $table->column(key: 'net_amount', label: __('net'), sortable: true, type: 'currency');
         };
     }
