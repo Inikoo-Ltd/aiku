@@ -30,8 +30,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id
@@ -89,7 +87,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static Builder<static>|InvoiceTransaction newQuery()
  * @method static Builder<static>|InvoiceTransaction onlyTrashed()
  * @method static Builder<static>|InvoiceTransaction query()
- * @method static Builder<static>|InvoiceTransaction withTrashed()
+ * @method static Builder<static>|InvoiceTransaction withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|InvoiceTransaction withoutTrashed()
  * @mixin Eloquent
  */

@@ -8,11 +8,17 @@
 import { Link } from "@inertiajs/vue3";
 import Table from "@/Components/Table/Table.vue";
 import { Stock } from "@/types/stock";
+import { inject } from "vue";
+import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 
 defineProps<{
   data: object
   tab?: string
 }>();
+
+const locale = inject('locale', aikuLocaleStructure)
+const layout = inject('layout', {})
+console.log(layout)
 
 function stockRoute(stock: Stock) {
   console.log(route().current());
@@ -98,7 +104,7 @@ function stockFamilyRoute(stock: Stock) {
     </template>
 
     <template #cell(value)="{ item: stock }">
-      {{ stock.value ?? 'no data' }}
+      {{ locale.currencyFormat(layout.group.currency.code, stock.value)   }} 
     </template>
 
     <template #cell(dropshipping_pipe)="{ item: stock }">

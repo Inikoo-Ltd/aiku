@@ -80,7 +80,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property array<array-key, mixed> $migration_data
  * @property string|null $canonical_url
- * @property bool $is_use_canonical_url
  * @property array<array-key, mixed> $seo_data
  * @property bool $allow_fetch If false changes in Aurora webpages are not fetched
  * @property bool|null $show_in_parent
@@ -125,7 +124,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Webpage newQuery()
  * @method static Builder<static>|Webpage onlyTrashed()
  * @method static Builder<static>|Webpage query()
- * @method static Builder<static>|Webpage withTrashed()
+ * @method static Builder<static>|Webpage withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Webpage withoutTrashed()
  * @mixin Eloquent
  */

@@ -51,7 +51,8 @@ class IndexShippingZoneSchemas extends OrgAction
 
         $queryBuilder = QueryBuilder::for(ShippingZoneSchema::class)
             ->leftJoin('organisations', 'shipping_zone_schemas.organisation_id', '=', 'organisations.id')
-            ->leftJoin('shops', 'shipping_zone_schemas.shop_id', '=', 'shops.id');
+            ->leftJoin('shops', 'shipping_zone_schemas.shop_id', '=', 'shops.id')
+            ->leftJoin('currencies', 'shops.currency_id', '=', 'currencies.id');
 
         if ($parent instanceof Group) {
             $queryBuilder->where('shipping_zone_schemas.group_id', $parent->id);
@@ -70,6 +71,7 @@ class IndexShippingZoneSchemas extends OrgAction
                 'shipping_zone_schemas.slug',
                 'shipping_zone_schemas.name',
                 'shipping_zone_schemas.created_at',
+                'shipping_zone_schemas.state',
                 'shipping_zone_schema_stats.number_customers',
                 'shipping_zone_schema_stats.number_orders',
                 'shipping_zone_schema_stats.number_shipping_zones',
@@ -78,6 +80,7 @@ class IndexShippingZoneSchemas extends OrgAction
                 'shipping_zone_schema_stats.last_used_at',
                 'shops.name as shop_name',
                 'shops.slug as shop_slug',
+                'currencies.code as currency_code',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
             ]);
@@ -125,6 +128,7 @@ class IndexShippingZoneSchemas extends OrgAction
                         ] : null
                     ]*/
                 );
+            $table->column(key: 'state_icon', label: '', canBeHidden: false, sortable: false, searchable: false, type: 'icon');
             $table->column(key: 'slug', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
@@ -136,7 +140,7 @@ class IndexShippingZoneSchemas extends OrgAction
             $table->column(key: 'last_used', label: __('last used'), canBeHidden: false, sortable: false, searchable: false);
             $table->column(key: 'number_customers', label: __('customers'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'number_orders', label: __('orders'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'amount', label: __('amount'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'amount', label: __('amount'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
         };
     }
 

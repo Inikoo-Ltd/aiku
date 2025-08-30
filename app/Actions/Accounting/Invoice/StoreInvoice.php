@@ -10,7 +10,7 @@ namespace App\Actions\Accounting\Invoice;
 
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateOrderingIntervals;
-use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSales;
+use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSalesIntervals;
 use App\Actions\Comms\Email\SendInvoiceToFulfilmentCustomerEmail;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateInvoices;
@@ -99,8 +99,9 @@ class StoreInvoice extends OrgAction
 
         $billingAddressData = Arr::pull($modelData, 'billing_address');
 
-        $modelData['shop_id']     = $this->shop->id;
-        $modelData['currency_id'] = $this->shop->currency_id;
+        $modelData['shop_id']        = $this->shop->id;
+        $modelData['master_shop_id'] = $this->shop->master_shop_id;
+        $modelData['currency_id']    = $this->shop->currency_id;
 
         data_set($modelData, 'group_id', $parent->group_id);
         data_set($modelData, 'organisation_id', $parent->organisation_id);
@@ -156,7 +157,7 @@ class StoreInvoice extends OrgAction
             CategoriseInvoice::run($invoice);
         } elseif ($invoice->invoiceCategory) { // run hydrators when category from fetch
             InvoiceCategoryHydrateInvoices::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
-            InvoiceCategoryHydrateSales::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
+            InvoiceCategoryHydrateSalesIntervals::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
             InvoiceCategoryHydrateOrderingIntervals::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
         }
 
@@ -241,7 +242,7 @@ class StoreInvoice extends OrgAction
                 'nullable',
                 'exists:customer_sales_channels,id',
             ],
-            'platform_id' => [
+            'platform_id'               => [
                 'sometimes',
                 'nullable',
                 'exists:platforms,id',

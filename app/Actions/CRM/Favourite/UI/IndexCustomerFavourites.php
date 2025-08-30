@@ -58,7 +58,8 @@ class IndexCustomerFavourites extends OrgAction
                 'products.description',
                 'products.price',
                 'products.image_id',
-                'webpages.url as webpage_url'
+                'webpages.url as webpage_url',
+                'webpages.id as webpage_id',
             ])
             ->allowedSorts(['code', 'name'])
             ->allowedFilters([$globalSearch])

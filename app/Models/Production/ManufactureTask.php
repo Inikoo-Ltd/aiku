@@ -59,7 +59,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ManufactureTask newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ManufactureTask onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ManufactureTask query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|ManufactureTask withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ManufactureTask withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ManufactureTask withoutTrashed()
  * @mixin \Eloquent
  */

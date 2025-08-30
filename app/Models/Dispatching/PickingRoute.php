@@ -20,8 +20,6 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id
@@ -42,7 +40,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|PickingRoute newQuery()
  * @method static Builder<static>|PickingRoute onlyTrashed()
  * @method static Builder<static>|PickingRoute query()
- * @method static Builder<static>|PickingRoute withTrashed()
+ * @method static Builder<static>|PickingRoute withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|PickingRoute withoutTrashed()
  * @mixin Eloquent
  */

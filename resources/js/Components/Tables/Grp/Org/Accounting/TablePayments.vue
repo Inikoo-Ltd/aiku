@@ -24,7 +24,7 @@ defineProps<{
 
 function paymentsRoute(payment: Payment) {
 	return route(payment.route.name, payment.route.params )
-	
+
 }
 </script>
 

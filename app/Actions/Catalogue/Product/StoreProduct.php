@@ -228,7 +228,8 @@ class StoreProduct extends OrgAction
                 'nullable',
                 'integer',
                 Rule::exists('customers', 'id')->where('shop__id', $this->shop->id)
-            ]
+            ],
+            'master_product_id' => ['sometimes']
         ];
 
         if ($this->state == ProductStateEnum::DISCONTINUED) {

@@ -18,7 +18,7 @@ return new class () extends Migration {
             $table->smallIncrements('id');
             $table->string('code')->unique()->collation('und_ci');
             $table->string('name')->nullable()->index()->collation('und_ci');
-            $table->string('original_name')->nullable()->collation('und_ci');
+            $table->string('native_name')->nullable()->collation('und_ci');
             $table->string('status')->default(false)->nullable()->index();
             $table->jsonb('data');
             $table->timestampsTz();

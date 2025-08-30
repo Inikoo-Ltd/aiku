@@ -72,7 +72,7 @@ const responsiveGridClass = computed(() => {
       </transition>
 
       <main class="flex-1 mt-4">
-        <div class="px-4 xpt-4 mb-2 text-base font-normal">
+        <!-- <div class="px-4 xpt-4 mb-2 text-base font-normal">
             <div
                 v-tooltip="trans('This is not work in workshop, try in website.')"
                 xhref="route().has('iris.catalogue.feeds.product_category.download') ? route('iris.catalogue.feeds.product_category.download', { productCategory: props.modelValue.model_slug }) : '#'"
@@ -81,7 +81,7 @@ const responsiveGridClass = computed(() => {
                 <FontAwesomeIcon icon="fas fa-file-download" class="text-sm opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />
                 <span class="text-sm font-normal opacity-70 group-hover:opacity-100">Download products (csv)</span>
             </div>
-        </div>
+        </div> -->
 
         <div class="px-4 xpt-4 mb-2 flex flex-col md:flex-row justify-between items-center gap-4">
           <div class="flex items-center w-full md:w-1/3 gap-2">

@@ -134,6 +134,21 @@ onMounted(() => {
             showButton.value = true
         }
     })
+
+    // Luigi: last_seen recommendations
+    console.log('iden', props.fieldValue.product.luigi_identity)
+    if (props.fieldValue?.product?.luigi_identity) {
+        window?.dataLayer?.push({
+            event: "view_item",
+            ecommerce: {
+                items: [
+                    {
+                        item_id: props.fieldValue?.product?.luigi_identity,
+                    }
+                ]
+            }
+        })
+    }
 })
 
 const toggleExpanded = () => {

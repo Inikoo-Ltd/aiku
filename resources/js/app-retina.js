@@ -71,9 +71,8 @@ createInertiaApp(
   {
     resolve: async name => {
       const pages = import.meta.glob("./Pages/Retina/**/*.vue");
-      if (!pages) console.error(
-        `File './Pages/Retina/${name}.vue' is not exist`);
-      let page = await pages[`./Pages/Retina/${name}.vue`]();
+      let page = await pages?.[`./Pages/Retina/${name}.vue`]?.();
+      if (!page) console.error(`File './Pages/Retina/${name}.vue' is not exist`);
       page.default.layout = page.default?.layout || Layout;
       return page;
     },

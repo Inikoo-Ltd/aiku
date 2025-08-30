@@ -164,7 +164,8 @@ class GetOrderActions
                 array_unshift($actions, [
                     'type'  => 'button',
                     'style' => 'cancel',
-                    'key'   => 'action',
+                    'key'   => 'cancel',
+                    'label'   => __('Cancel'),
                     'route' => [
                         'method'     => 'patch',
                         'name'       => 'grp.models.order.state.cancelled',

@@ -11,8 +11,6 @@ namespace App\Models\SysAdmin;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $number_customer_clients

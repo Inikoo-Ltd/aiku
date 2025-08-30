@@ -195,76 +195,76 @@ export default {
 				// },
 			],
 		},
-		{
-			name: "Cart",
-            key: ["cart"],
-			icon: {
-				icon: "fal fa-shopping-cart",
-				tooltip: "Cart",
-			},
-			replaceForm: [
-				// {
-				// 	key: ["visible"],
-				// 	type: "VisibleLoggedIn",
-				// 	label :'Visibility',
-				// 	props_data: {
-				// 		defaultValue: 'login',
-				// 	},
-				// },
-				// {
-				// 	key: ["link"],
-				// 	type: "link",
-				// 	label :'Link',
-				// 	props_data: {
-				// 		defaultValue: {
-				// 			type : "external",
-				// 			url: "",
-				// 			id: null,
-				// 			workshop_route : ""
-				// 		},
-				// 	},
-				// },
-				// {
-				// 	key: ['container', 'properties'],
-				// 	type: "button",
-				// 	label :'Button',
-				// },
-				// {
-				// 	key: ['text'],
-				// 	type: "editorhtml",
-				// 	label :'Text',
-				// 	props_data: {
-				// 		defaultValue: '{{ cart_count }}',
-				// 	},
-				// },
-				{
-					key: ['text'],
-					label: "Text",
-					// useIn : ["desktop", "tablet", "mobile"],
-					type: "select",
-					props_data: {
-						placeholder: "Select Text",
-						by: "value",
-						required: true,
-						options: [
-							{
-								label: "£999.99",
-								value: "{{ cart_amount }}",
-							},
-							{
-								label: "95 items",
-								value: "{{ cart_count }} items",
-							},
-							{
-								label: "£999.99 (95 items)",
-								value: "{{ cart_amount }} ({{ cart_count }} items)",
-							},
-						],
-						defaultValue: '{{ cart_amount }}',
-					},
-				},
-			],
-		},
+		// {
+		// 	name: "Cart",
+        //     key: ["cart"],
+		// 	icon: {
+		// 		icon: "fal fa-shopping-cart",
+		// 		tooltip: "Cart",
+		// 	},
+		// 	replaceForm: [
+		// 		// {
+		// 		// 	key: ["visible"],
+		// 		// 	type: "VisibleLoggedIn",
+		// 		// 	label :'Visibility',
+		// 		// 	props_data: {
+		// 		// 		defaultValue: 'login',
+		// 		// 	},
+		// 		// },
+		// 		// {
+		// 		// 	key: ["link"],
+		// 		// 	type: "link",
+		// 		// 	label :'Link',
+		// 		// 	props_data: {
+		// 		// 		defaultValue: {
+		// 		// 			type : "external",
+		// 		// 			url: "",
+		// 		// 			id: null,
+		// 		// 			workshop_route : ""
+		// 		// 		},
+		// 		// 	},
+		// 		// },
+		// 		// {
+		// 		// 	key: ['container', 'properties'],
+		// 		// 	type: "button",
+		// 		// 	label :'Button',
+		// 		// },
+		// 		// {
+		// 		// 	key: ['text'],
+		// 		// 	type: "editorhtml",
+		// 		// 	label :'Text',
+		// 		// 	props_data: {
+		// 		// 		defaultValue: '{{ cart_count }}',
+		// 		// 	},
+		// 		// },
+		// 		{
+		// 			key: ['text'],
+		// 			label: "Text",
+		// 			// useIn : ["desktop", "tablet", "mobile"],
+		// 			type: "select",
+		// 			props_data: {
+		// 				placeholder: "Select Text",
+		// 				by: "value",
+		// 				required: true,
+		// 				options: [
+		// 					{
+		// 						label: "£999.99",
+		// 						value: "{{ cart_amount }}",
+		// 					},
+		// 					{
+		// 						label: "95 items",
+		// 						value: "{{ cart_count }} items",
+		// 					},
+		// 					{
+		// 						label: "£999.99 (95 items)",
+		// 						value: "{{ cart_amount }} ({{ cart_count }} items)",
+		// 					},
+		// 				],
+		// 				defaultValue: '{{ cart_amount }}',
+		// 			},
+		// 		},
+		// 	],
+		// },
 		{
 			name: "Favourite",
             key: ["favourite"],

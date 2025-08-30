@@ -23,6 +23,7 @@ const props = defineProps<{
         current: string
         navigation: {}
     }
+    currency: {}
     category?: {}
     product?: {}
     website_layout: {}
@@ -108,6 +109,10 @@ provide('reload', router.reload())
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <KeepAlive>
-        <component :is="component" :data="props[currentTab]" />
+        <component
+          :is="component"
+          :data="props[currentTab]"
+          :currency="props.currency"
+        />
     </KeepAlive>
 </template>

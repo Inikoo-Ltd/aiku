@@ -15,8 +15,6 @@ use Illuminate\Database\Query\Builder;
 use Spatie\MediaLibrary\MediaCollections\Models\Media as BaseMedia;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property string $slug

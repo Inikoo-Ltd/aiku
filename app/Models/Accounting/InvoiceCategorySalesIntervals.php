@@ -18,8 +18,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 /**
- *
- *
  * @property int $id
  * @property int $invoice_category_id
  * @property string $sales_all

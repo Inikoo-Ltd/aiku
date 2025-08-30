@@ -75,7 +75,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Agent newQuery()
  * @method static Builder<static>|Agent onlyTrashed()
  * @method static Builder<static>|Agent query()
- * @method static Builder<static>|Agent withTrashed()
+ * @method static Builder<static>|Agent withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Agent withoutTrashed()
  * @mixin Eloquent
  */

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {Head, router} from "@inertiajs/vue3";
+import {Head, router,usePage} from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import {capitalize} from "@/Composables/capitalize";
 import {inject, ref, watch, onMounted } from "vue";
@@ -14,16 +14,14 @@ import Modal from "@/Components/Utils/Modal.vue";
 import PureInputWithAddOn from "@/Components/Pure/PureInputWithAddOn.vue";
 import PureInput from "@/Components/Pure/PureInput.vue";
 import {notify} from "@kyvg/vue3-notification";
-import { usePage  } from "@inertiajs/vue3"
 
 import {layoutStructure} from "@/Composables/useLayoutStructure";
-import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import axios from "axios";
 import {ChannelLogo} from "@/Composables/Icon/ChannelLogoSvg"
 import PurePassword from "@/Components/Pure/PurePassword.vue";
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import {faInfoCircle, faGlobe, faExternalLinkAlt, faUnlink, faUsers, faWindow} from "@fal";
+import {faInfoCircle, faGlobe, faExternalLinkAlt, faUnlink, faUsers} from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core"
 library.add(faInfoCircle)
 
@@ -95,7 +93,6 @@ const onCreateStoreShopify = async () => {
                 name: websiteInput.value
             }
         )
-        // console.log("dazzta", data)
         isModalOpen.value = false;
         websiteInput.value = null;
         router.reload({
@@ -139,7 +136,6 @@ const onSubmitWoocommerce = async () => {
             type: "error"
         });
     }
-    ;
 }
 
 // Section: Manual
@@ -147,7 +143,6 @@ const isModalManual = ref(false)
 const errManual = ref('')
 const manualInput = ref({
     name: null as null | string,
-    // url: null as null | string
 });
 const onSubmitManual = async () => {
     isLoading.value = true;
@@ -158,8 +153,7 @@ const onSubmitManual = async () => {
         isModalManual.value = false;
         manualInput.value.name = null;
 
-        // console.log("response", response.data.slug);
-        // window.location.href = response.data.slug;
+
         notify({
             title: trans("Success!"),
             text: trans("Your Manual store has been created."),
@@ -178,7 +172,6 @@ const onSubmitManual = async () => {
             type: "error"
         });
     }
-    ;
     isLoading.value = false;
 }
 
@@ -217,8 +210,6 @@ watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
     console.log('modal ret', modal)
     if (!modal) return
 
-    // selectedModal.value = modal
-    // isModalOpen.value = true
 })
 
 const onSubmitMagento = async () => {
@@ -286,7 +277,7 @@ const isModalEbayDuplicate = ref(false)
             <!-- Section: Manual -->
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                    class="mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <img src="https://aw.aurora.systems/art/aurora_log_v2_orange.png" alt="" class="h-12">
                     <div class="flex flex-col">
                         <div class="font-semibold">{{ trans("Web") }}/API</div>
@@ -322,7 +313,7 @@ const isModalEbayDuplicate = ref(false)
             <!-- Section: Tiktok -->
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                    class="mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <div v-html="ChannelLogo('tiktok')" class="h-12"
                          :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"></div>
                     <div class="flex flex-col">
@@ -350,9 +341,7 @@ const isModalEbayDuplicate = ref(false)
             <!-- Section: Woocommerce -->
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="truncate xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
-                    <!-- <img src="https://cdn-icons-png.flaticon.com/512/15466/15466279.png"
-                         alt="" class="h-12"> -->
+                    class="truncate mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <div v-html="ChannelLogo('woocommerce')" class="h-12"></div>
 
                     <div class="flex flex-col">
@@ -365,19 +354,17 @@ const isModalEbayDuplicate = ref(false)
 
                 <div class="w-full flex justify-end">
                     <Button
-                        v-if="layout?.app?.environment === 'local'"
                         :label="trans('Connect')"
                         type="primary"
                         full
                         @click="() => isModalWooCommerce = true"
                     />
-                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
                 </div>
             </div>
             <!-- Section: Ebay -->
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                    class="mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                     <img src="https://cdn-icons-png.flaticon.com/512/888/888848.png"
                          alt="" class="h-12"
                     >
@@ -409,11 +396,8 @@ const isModalEbayDuplicate = ref(false)
             <!-- Section: Amazon -->
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
-                    <!-- <img src="https://cdn-icons-png.flaticon.com/512/14079/14079391.png"
-                        alt="" class="h-12 filter"
-                        :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"
-                    > -->
+                    class="mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+
                     <div v-html="ChannelLogo('amazon_simple')" class="h-12"
                          :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"></div>
 
@@ -443,7 +427,7 @@ const isModalEbayDuplicate = ref(false)
             <!-- Section: Magento -->
             <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                    class="mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
                      <img src="https://cdn-icons-png.flaticon.com/512/825/825535.png"
                         alt="" class="h-12 filter"
                     >
@@ -546,11 +530,11 @@ const isModalEbayDuplicate = ref(false)
         <div class="">
             <div class="mb-4">
                 <div class="text-center font-semibold text-xl">
-                    {{ trans("WooCommerce store detail") }}
+                    {{ trans("WooCommerce store Url") }}
                 </div>
 
                 <div class="text-center text-xs text-gray-500">
-                    {{ trans("Enter your Woocommerce store detail") }}
+                    {{ trans("Enter your Woocommerce store url") }}
                 </div>
             </div>
 

@@ -51,17 +51,17 @@ uses(TestCase::class)->group('integration')->in('Integration');
 
 function loadDB(): void
 {
-    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__.'/../', '.env.testing');
+    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../', '.env.testing');
     $dotenv->load();
 
     shell_exec(
-        './devops/devel/reset_test_database.sh '.
-        env('DB_DATABASE_TEST', 'aiku_testing').' '.
-        env('DB_PORT').' '.
-        env('DB_USERNAME').' '.
-        env('DB_PASSWORD').' '.
-        env('DB_HOST').
-        ' tests/datasets/db_dumps/aiku.dump'
+        './devops/devel/reset_test_database.sh ' .
+            env('DB_DATABASE_TEST', 'aiku_testing') . ' ' .
+            env('DB_PORT') . ' ' .
+            env('DB_USERNAME') . ' ' .
+            env('DB_PASSWORD') . ' ' .
+            env('DB_HOST') .
+            ' tests/datasets/db_dumps/aiku.dump'
     );
 }
 
@@ -121,7 +121,7 @@ function createAdminGuest(Group $group): Guest
                         ]
                     )
                 );
-        } catch (Exception|Throwable) {
+        } catch (Exception | Throwable) {
             //
         }
     }

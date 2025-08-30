@@ -59,6 +59,15 @@ class EditFamily extends OrgAction
         return $this->handle($family);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, ProductCategory $family, ActionRequest $request): ProductCategory
+    {
+
+        $this->initialisationFromShop($shop, $request)->withTab(DepartmentTabsEnum::values());
+
+        return $this->handle($family);
+    }
+
     public function htmlResponse(ProductCategory $family, ActionRequest $request): Response
     {
         $departmentIdFormData = [];
@@ -137,14 +146,17 @@ class EditFamily extends OrgAction
                             ]
                         ],
                         [
-                            'label'  => __('Properties'),
-                            'icon'   => 'fa-light fa-fingerprint',
-                            'title'  => __('id'),
+                            'label'  => __('Image'),
+                            'icon'   => 'fa-light fa-image',
+                            'title'  => __('Media'),
                             'fields' => [
                                 "image"         => [
-                                    "type"    => "image_crop_square",
+                                    "type"    => "crop-image-full",
                                     "label"   => __("Image"),
                                     "value"   => $family->imageSources(720, 480),
+                                    "required" => false,
+                                    'noSaveButton' => true,
+                                    "full"         => true
                                 ],
                                 ...$departmentIdFormData
                             ]

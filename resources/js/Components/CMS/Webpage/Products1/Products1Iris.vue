@@ -451,7 +451,7 @@ const responsiveGridClass = computed(() => {
 
             <!-- Main Content -->
             <main class="flex-1 mt-4">
-                <div class="px-4 xpt-4 mb-2 text-base font-normal flex items-center gap-x-2">
+                <!-- <div class="px-4 xpt-4 mb-2 text-base font-normal flex items-center gap-x-2">
                     <div class="hidden">
                         {{ fieldValue.model_type }}
                     </div>
@@ -467,7 +467,7 @@ const responsiveGridClass = computed(() => {
                     <CopyButton
                         :text="route('iris.product_category.data_feed', { productCategory: fieldValue.model_slug })"
                     />
-                </div>
+                </div> -->
 
                 <!-- Search & Sort -->
                 <div class="px-4 xpt-4 mb-2 flex flex-col md:flex-row justify-between items-center gap-4">

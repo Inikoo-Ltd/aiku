@@ -16,6 +16,7 @@ use App\Actions\Accounting\WithCheckoutCom;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateTopUps;
 use App\Actions\RetinaWebhookAction;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
+use App\Enums\Accounting\Payment\PaymentClassEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
@@ -60,7 +61,7 @@ class TopUpPaymentSuccess extends RetinaWebhookAction
             'payment_account_shop_id' => $paymentAccountShop->id,
             'api_point_type'          => class_basename($topUpPaymentApiPoint),
             'api_point_id'            => $topUpPaymentApiPoint->id,
-
+            'class'                   => PaymentClassEnum::TOPUP
         ];
 
 

@@ -12,8 +12,6 @@ use App\Enums\SysAdmin\GroupSetUpKey\GroupSetUpKeyStateEnum;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- *
- *
  * @property int $id
  * @property string $key
  * @property GroupSetUpKeyStateEnum $state

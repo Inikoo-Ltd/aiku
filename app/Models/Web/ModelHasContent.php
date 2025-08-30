@@ -17,8 +17,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Spatie\MediaLibrary\HasMedia;
 
 /**
- *
- *
  * @property int $id
  * @property ModelHasContentTypeEnum $type
  * @property string $model_type

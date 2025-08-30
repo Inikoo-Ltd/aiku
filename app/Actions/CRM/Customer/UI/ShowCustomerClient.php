@@ -136,11 +136,11 @@ class ShowCustomerClient extends OrgAction
                             'key'   => 'add_order',
                             'route'       => [
                                 'method'     => 'post',
-                                'name'       => 'grp.models.customer_client.order',
+                                'name'       => 'grp.models.customer_client.order.store',
                                 'parameters' => [
-                                    'customerClient' => $customerClient->id,
+                                    'customerClient' => $this->parent->id
                                 ]
-                            ]
+                            ],
                         ],
                     ],
                     'subNavigation' => $subNavigation,

@@ -23,7 +23,7 @@ enum CreditTransactionTypeEnum: string
     case ADD_FUNDS_OTHER    = 'add_funds_other';
     case COMPENSATION       = 'compensation';
     case TRANSFER_IN        = 'transfer_in';
-    case FROM_EXCESS        = 'from_excess';  // when a payment exceed the total amount of the invoice/order, remaining amount is added as credit
+    case FROM_EXCESS        = 'from_excess';  // when a payment exceeds the total amount of the invoice/order, the remaining amount is added as credit
     case MONEY_BACK         = 'money_back';
     case TRANSFER_OUT       = 'transfer_out';
     case REMOVE_FUNDS_OTHER = 'remove_funds_other';

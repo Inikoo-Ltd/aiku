@@ -107,6 +107,7 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $description_extra_i8n
  * @property string|null $description_title
  * @property string|null $description_extra
+ * @property string $cost_price
  * @property-read MediaCollection<int, Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Media|null $backImage
@@ -141,7 +142,7 @@ use Spatie\Translatable\HasTranslations;
  * @method static Builder<static>|TradeUnit whereJsonContainsLocales(string $column, array $locales, ?mixed $value, string $operand = '=')
  * @method static Builder<static>|TradeUnit whereLocale(string $column, string $locale)
  * @method static Builder<static>|TradeUnit whereLocales(string $column, array $locales)
- * @method static Builder<static>|TradeUnit withTrashed()
+ * @method static Builder<static>|TradeUnit withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|TradeUnit withoutTrashed()
  * @mixin Eloquent
  */
@@ -209,7 +210,7 @@ class TradeUnit extends Model implements HasMedia, Auditable
 
     public function stocks(): MorphToMany
     {
-        return $this->morphedByMany(Stock::class, 'model', 'model_has_trade_units');
+        return $this->morphedByMany(Stock::class, 'model', 'model_has_trade_units')->withPivot(['quantity']);
     }
 
     public function products(): MorphToMany

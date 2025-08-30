@@ -24,6 +24,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
 use App\Http\Resources\Inventory\OrgStocksResource;
+use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 
 class EditProduct extends OrgAction
 {
@@ -54,6 +55,15 @@ class EditProduct extends OrgAction
         return $this->handle($product);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, Product $product, ActionRequest $request): Product
+    {
+        $this->parent = $subDepartment;
+        $this->initialisationFromShop($shop, $request)->withTab(ProductTabsEnum::values());
+
+        return $this->handle($product);
+    }
+
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inFamily(Organisation $organisation, Shop $shop, ProductCategory $family, Product $product, ActionRequest $request): Product
@@ -66,6 +76,15 @@ class EditProduct extends OrgAction
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inFamilyInDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $family, Product $product, ActionRequest $request): Product
+    {
+        $this->parent = $family;
+        $this->initialisationFromShop($shop, $request)->withTab(ProductTabsEnum::values());
+
+        return $this->handle($product);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inFamilyInSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, ProductCategory $family, Product $product, ActionRequest $request): Product
     {
         $this->parent = $family;
         $this->initialisationFromShop($shop, $request)->withTab(ProductTabsEnum::values());
@@ -109,13 +128,7 @@ class EditProduct extends OrgAction
                         ]
                     ]
                 ],
-                // 'off_product_route' => [
-                //     'name'       => 'grp.models.product.offline',
-                //     'parameters' => [
-                //         'product' => $product->id
-                //     ],
-                //     'method'    => 'patch'
-                // ],
+
                 'formData'    => [
                     'blueprint' => $this->getBlueprint($product),
                     'args'      => [
@@ -133,10 +146,35 @@ class EditProduct extends OrgAction
         );
     }
 
+
     /**
      * @throws \Exception
      */
     public function getBlueprint(Product $product): array
+    {
+
+
+        return [
+            [
+                'label'  => __('Price'),
+                'title'  => __('id'),
+                'icon'   => 'fa-light fa-dollar',
+                'fields' => [
+                    'price'       => [
+                        'type'     => 'input',
+                        'label'    => __('price'),
+                        'required' => true,
+                        'value'    => $product->price
+                    ],
+                ]
+            ],
+        ];
+    }
+
+    /**
+     * @throws \Exception
+     */
+    public function getBlueprintold(Product $product): array
     {
         $value = OrgStocksInProductResource::collection(GetOrgStocksInProduct::run($product))->resolve();
 
@@ -170,6 +208,8 @@ class EditProduct extends OrgAction
 
         $barcodes = $product->tradeUnits->pluck('barcode')->filter()->unique();
 
+
+
         return [
             [
                 'label'  => __('Name/Description'),
@@ -180,61 +220,70 @@ class EditProduct extends OrgAction
                         'label' => __('code'),
                         'value' => $product->code
                     ],
-                    'name' => [
+                    /* 'name' => [
                         'type'  => 'input',
                         'label' => __('name'),
                         'value' => $product->name
-                    ],
-
+                    ], */
                     //translation input raul request 7/24/25
-                  /*   'name' => [
+                    'name' => [
                         'type'  => 'input_translation',
                         'label' => __('name'),
+                        'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($product->shop->extra_languages),
                         'value' => [
-                            "en" => [
+                            "master" => [
                                 'value' => $product->name,
-                                'default' => true,
                             ],
-                            "hr" => [
-                                'value' => '',
-                            ],
-                            'zh-Hans' => [
-                                'value' => '',
+                            "translate" => [
+                                'value'  => $product->getTranslations('name_i8n'),
                             ]
                         ]
-                    ], */
-                    'description_title' => [
-                        'type'  => 'input',
-                        'label' => __('description title'),
-                        'value' => $product->description_title
                     ],
-                    'description' => [
+                    'description_title' => [
+                        'type'  => 'input_translation',
+                        'label' => __('description title'),
+                        'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($product->shop->extra_languages),
+                        'value' => [
+                            "master" => [
+                                'value' => $product->description_title,
+                            ],
+                            "translate" => [
+                                'value'  => $product->getTranslations('description_title_i8n'),
+                            ]
+                        ]
+                    ],
+                    /* 'description' => [
                         'type'  => 'textEditor',
                         'label' => __('description'),
                         'value' => $product->description
-                    ],
+                    ], */
 
                     //textEditor_translation
-                    /* 'description' => [
+                    'description' => [
                         'type'  => 'textEditor_translation',
                         'label' => __('description'),
+                        'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($product->shop->extra_languages),
                         'value' => [
-                            "en" => [
-                                'value' =>  $product->description_title,
-                                'default' => true,
+                            "master" => [
+                                'value' => $product->description,
                             ],
-                            "hr" => [
-                                'value' => '',
-                            ],
-                            'zh-Hans' => [
-                                'value' => '',
+                            "translate" => [
+                                'value'  => $product->getTranslations('description_i8n'),
                             ]
                         ]
-                    ], */
+                    ],
                     'description_extra' => [
-                        'type'  => 'textEditor',
+                        'type'  => 'textEditor_translation',
                         'label' => __('description extra'),
-                        'value' => $product->description_extra
+                        'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($product->shop->extra_languages),
+                        'value' => [
+                            "master" => [
+                                'value' => $product->description_extra,
+                            ],
+                            "translate" => [
+                                'value'  => $product->getTranslations('description_extra_i8n'),
+                            ]
+                        ]
                     ],
                 ]
             ],
@@ -295,11 +344,11 @@ class EditProduct extends OrgAction
             ],
             [
                 'label'  => __('Parts'),
+                'icon' => 'fal fa-boxes',
                 'fields' => [
                     'org_stocks' => [
                         'type'         => 'product_parts',
                         'label'        => __('Parts'),
-                        // 'readonly' => true,
                         'full'         => true,
                         'fetch_route'  => [
                             'name'       => 'grp.json.org_stocks.index',
@@ -311,6 +360,30 @@ class EditProduct extends OrgAction
                         'value'        => $value
                     ],
                 ]
+            ],
+            [
+                'label'  => __('Trade unit'),
+                'icon'   => 'fa-light fa-atom',
+                'fields' => [
+                    'family_id' => [
+                        'type'       => 'select_infinite',
+                        'label'      => __('Family'),
+                        'options'    => [
+                            $familyOptions
+                        ],
+                        'fetchRoute' => [
+                            'name'       => 'grp.json.shop.families',
+                            'parameters' => [
+                                'shop' => $product->shop->id
+                            ]
+                        ],
+                        'valueProp'  => 'id',
+                        'labelProp'  => 'code',
+                        'required'   => true,
+                        'value'      => $product->family->id ?? null,
+                        'type_label' => 'families'
+                    ]
+                ],
             ],
             [
                 'label'  => __('Family'),
@@ -336,7 +409,6 @@ class EditProduct extends OrgAction
                     ]
                 ],
             ],
-
         ];
     }
 

@@ -4,7 +4,7 @@ import LoginPassword from '@/Components/Auth/LoginPassword.vue'
 import Checkbox from '@/Components/Checkbox.vue'
 import ValidationErrors from '@/Components/ValidationErrors.vue'
 import { trans } from 'laravel-vue-i18n'
-import { onMounted, ref, nextTick } from 'vue'
+import { onMounted, ref, nextTick, provide } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import RetinaShowIris from '@/Layouts/RetinaShowIris.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
@@ -28,6 +28,8 @@ const form = useForm({
     remember: false,
 })
 
+const isOpenMenuMobile = ref(false)
+provide('isOpenMenuMobile', isOpenMenuMobile)
 
 const isLoading = ref(false)
 

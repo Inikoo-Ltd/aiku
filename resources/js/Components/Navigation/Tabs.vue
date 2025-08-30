@@ -11,7 +11,7 @@
 import { inject, ref, watch } from "vue"
 import { capitalize } from "@/Composables/capitalize"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faInfoCircle, faPallet, faCircle } from "@fas"
+import { faInfoCircle, faPallet, faCircle, faUndo } from "@fas"
 import { faSpinnerThird } from "@fad"
 import {
 	faRoad,
@@ -30,7 +30,7 @@ import {
 	faTransporter,
 	faDotCircle,
 	faFolderTree,
-	faAlbumCollection,
+	faAlbumCollection
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
@@ -57,7 +57,8 @@ library.add(
 	faTransporter,
 	faDotCircle,
 	faFolderTree,
-	faAlbumCollection
+	faAlbumCollection,
+	faUndo
 )
 
 const layoutStore = inject("layout", layoutStructure)

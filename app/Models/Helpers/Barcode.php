@@ -50,7 +50,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Barcode newQuery()
  * @method static Builder<static>|Barcode onlyTrashed()
  * @method static Builder<static>|Barcode query()
- * @method static Builder<static>|Barcode withTrashed()
+ * @method static Builder<static>|Barcode withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Barcode withoutTrashed()
  * @mixin Eloquent
  */

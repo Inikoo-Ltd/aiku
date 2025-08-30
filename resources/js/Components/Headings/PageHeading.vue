@@ -127,10 +127,13 @@ const setError = (e) => {
                          class="w-6 h-6" />
 
                     <div class="flex flex-col sm:flex-row gap-y-1.5 gap-x-3 sm:items-center ">
-                        <h2 :class="data.noCapitalise ? '' : 'capitalize'" class="space-x-2">
-                            <span v-if="data.model" class="text-gray-400 font-medium">{{ data.model }}</span>
-                            <span class="">{{ useTruncate(data.title, 30) }}</span>
-                        </h2>
+                        <div :class="data.noCapitalise ? '' : 'capitalize'" class="xspace-x-2">
+                            <template v-if="data.model">
+                                <span class="text-gray-400 font-medium">{{ data.model }}</span>
+                                <span>&nbsp;</span>
+                            </template>
+                            <span class="inline-block">{{ useTruncate(data.title, 30) }}</span>
+                        </div>
                         <!-- Section: After Title -->
                         <slot name="afterTitle">
                             <div v-if="data.iconRight || data.titleRight || data.afterTitle" class="flex gap-x-2 items-center">

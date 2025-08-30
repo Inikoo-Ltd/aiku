@@ -8,7 +8,7 @@ import axios from "axios";
 import MobileHeader from "@/Components/CMS/Website/Headers/MobileHeader.vue";
 import { getStyles } from "@/Composables/styles";
 
-defineProps<{
+const props = defineProps<{
   data: {
     key: string,
     data: object,
@@ -47,7 +47,7 @@ const onLogoutAuth = async () => {
 
 
 provide("onLogout", onLogoutAuth);
-
+console.log('plm',props)
 </script>
 
 <template>
@@ -65,7 +65,7 @@ provide("onLogout", onLogoutAuth);
 
   <!-- Section: Mobile Header -->
   <div :style="getStyles(data.header.data.fieldValue.container.properties, screenType)">
-      <MobileHeader :header-data="data.header.data.fieldValue" :menu-data="menu?.data?.fieldValue" :screenType="screenType" />
+      <MobileHeader :header-data="data.header.data.fieldValue" :menu-data="menu?.data?.fieldValue" :productCategories="menu.product_categories" :screenType="screenType" />
   </div>
 
 </template>

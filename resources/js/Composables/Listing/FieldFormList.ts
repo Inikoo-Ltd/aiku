@@ -1,7 +1,5 @@
 import type { Component } from 'vue'
 import { defineAsyncComponent } from 'vue'
-
-
 import Input from '@/Components/Forms/Fields/Input.vue'
 import Select from '@/Components/Forms/Fields/Select.vue'
 import SelectBillingCycle from '@/Components/Forms/Fields/SelectBillingCycle.vue'
@@ -15,7 +13,6 @@ import Currency from "@/Components/Forms/Fields/Currency.vue"
 import InputWithAddOn from '@/Components/Forms/Fields/InputWithAddOn.vue'
 import Password from "@/Components/Forms/Fields/Password.vue"
 import Toggle from '@/Components/Forms/Fields/Toggle.vue'
-// import Rental from '@/Components/Rental/Rental.vue'
 import Textarea from "@/Components/Forms/Fields/Textarea.vue"
 import TextEditor from "@/Components/Forms/Fields/TextEditor.vue"
 import ImageCropSquare from '@/Components/Forms/Fields/ImageCropSquare.vue'
@@ -33,9 +30,9 @@ import EditorHtml from '@/Components/Forms/Fields/EditorHtml.vue'
 import StructureDataWebsite from '@/Components/Forms/Fields/StructureDataWebsite.vue'
 import SelectInfiniteScroll from '@/Components/Forms/Fields/SelectInfiniteScroll.vue'
 import ButtonForm from '@/Components/Forms/Fields/ButtonForm.vue'
+import cropImageFull from '@/Components/Forms/Fields/CropImageFull.vue'
 
 
-const GoogleSearch = defineAsyncComponent(() => import('@/Components/Forms/Fields/GoogleSearch.vue'))
 const ProductParts = defineAsyncComponent(() => import('@/Components/Forms/Fields/ProductParts.vue'))
 const PollTypeSelect = defineAsyncComponent(() => import('@/Components/Forms/Fields/PollTypeSelect.vue'))
 const EmployeeState = defineAsyncComponent(() => import('@/Components/Forms/Fields/Employee/EmployeeState.vue'))
@@ -56,6 +53,7 @@ import TextEditorTranslation from '@/Components/Forms/Fields/TextEditorTranslati
 import Pricing_zone from '@/Components/Forms/Fields/Pricing_zone.vue'
 import Teritory_zone from '@/Components/Forms/Fields/Teritory_zone.vue'
 import SelectPrinter from '@/Components/Forms/Fields/SelectPrinter.vue'
+import ListSelectorFrom from '@/Components/Forms/Fields/ListSelectorFrom.vue'
 
 
 export const componentsList: {[key: string]: Component} = {
@@ -95,7 +93,6 @@ export const componentsList: {[key: string]: Component} = {
     'checkbox': Checkbox,
     'app_login': AppLogin,
     'app_theme': AppTheme,
-    'googleSearch': GoogleSearch,
     'product_parts': ProductParts,
     'employeeState': EmployeeState,
     'pin' : Pin,
@@ -110,7 +107,9 @@ export const componentsList: {[key: string]: Component} = {
     'select_infinite': SelectInfiniteScroll,
     'textEditor_translation' : TextEditorTranslation,
     'pricing_zone': Pricing_zone,
-    'teritory_zone': Teritory_zone
+    'teritory_zone': Teritory_zone,
+    'crop-image-full' : cropImageFull,
+    'list-selector' : ListSelectorFrom
 }
 
 export const getComponent = (componentName: string) => {

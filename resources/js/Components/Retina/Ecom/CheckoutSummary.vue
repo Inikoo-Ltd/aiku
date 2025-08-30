@@ -46,10 +46,13 @@ const locale = inject('locale', {})
             <div class="">
                 <div class="font-semibold">
                     <FontAwesomeIcon :icon="faDollarSign" class="" fixed-width aria-hidden="true" />
-                    {{ trans("Invoice Address") }}
+                    {{ trans("Billing Address") }}
                 </div>
-                <div class="pl-6 pr-3" v-html="summary?.customer?.addresses?.billing?.formatted_address">
+                <div v-if="summary?.customer?.addresses?.billing?.formatted_address" class="pl-6 pr-3" v-html="summary?.customer?.addresses?.billing?.formatted_address">
             
+                </div>
+                <div v-else class="text-gray-400 italic pl-6 pr-3">
+                    {{ trans("No billing address") }}
                 </div>
             </div>
         </div>
@@ -61,8 +64,10 @@ const locale = inject('locale', {})
                     <FontAwesomeIcon :icon="faClipboard" class="" fixed-width aria-hidden="true" />
                     {{ trans("Delivery Address") }}
                 </div>
-                <div class="pl-6 pr-3" v-html="summary?.customer?.addresses?.delivery?.formatted_address">
-            
+                <div v-if="summary?.customer?.addresses?.delivery?.formatted_address" class="pl-6 pr-3" v-html="summary?.customer?.addresses?.delivery?.formatted_address">
+                </div>
+                <div v-else class="text-gray-400 italic pl-6 pr-3">
+                    {{ trans("No delivery address") }}
                 </div>
             </div>
         </div>
