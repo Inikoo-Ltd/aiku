@@ -42,6 +42,7 @@ class CustomerFavouritesResource extends JsonResource
         return [
             'image'         => $this->image_id ? ImageResource::make($media)->getArray() : null,
             'id'                     => $this->id,
+            'favourite_id'           => $this->favourite_id,
             'code'                   => $this->code,
             'slug'                   => $this->slug,
             'name'                   => $this->name,
