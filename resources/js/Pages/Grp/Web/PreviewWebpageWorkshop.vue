@@ -14,6 +14,8 @@ import { getStyles } from "@/Composables/styles"
 
 import { Root as RootWebpage } from "@/types/webpageTypes"
 import "@/../css/Iris/editor.css"
+import { ulid } from "ulid"
+import { keyBy } from "lodash"
 
 defineOptions({ layout: WebPreview })
 
@@ -27,7 +29,6 @@ const props = defineProps<{
 
 const layout: any = inject("layout", {});
 const data = shallowRef<RootWebpage | undefined>(toRaw(props.webpage))
-
 const filterBlock = ref<'all' | 'logged-in' | 'logged-out'>('all')
 const isPreviewMode = ref(false)
 const activeBlock = ref<number | null>(null)
@@ -88,11 +89,13 @@ const handleMessage = (event: MessageEvent) => {
   // ✅ Accept new webpage from iframe message
   if (key === "setWebpage") {
     data.value = value
+    reloadPage(true)
   }
 }
-
-const reloadPage = () => {
+const key = ref(ulid())
+const reloadPage = (withkey = false) => {
   router.reload({ only: ["webpage"] })
+  if(withkey) key.value = ulid()
 }
 
 provide("reloadPage", reloadPage)
@@ -160,6 +163,7 @@ watch(filterBlock, () => {
                   :webpageData="data" 
                   :blockData="block"
                   :index-block="idx"
+                  :key="key"
                   v-model="block.web_block.layout.data.fieldValue" :screenType="screenType"
                   @autoSave="() => updateData(block)" />
               </section>
