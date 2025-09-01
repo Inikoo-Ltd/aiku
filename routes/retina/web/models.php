@@ -331,7 +331,7 @@ Route::name('mit_saved_card.')->prefix('mit-saved-card')->group(function () {
 
 Route::name('product.')->prefix('product')->group(function () {
     Route::post('{product:id}/favourite', StoreRetinaFavourite::class)->name('favourite');
-    Route::delete('{product:id}/unfavourite', DeleteRetinaFavourite::class)->name('unfavourite');
+    Route::delete('{favourite:id}/unfavourite', DeleteRetinaFavourite::class)->name('unfavourite');
     Route::post('{product:id}/add-to-basket', StoreRetinaEcomBasketTransaction::class)->name('add-to-basket');
 });
 

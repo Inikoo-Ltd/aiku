@@ -42,6 +42,7 @@ class IndexCustomerFavourites extends OrgAction
         $query = QueryBuilder::for(Favourite::class);
 
         $query->where('favourites.customer_id', $parent->id);
+        $query->whereNull('favourites.unfavourited_at');
 
         $query->leftJoin('products', 'favourites.product_id', '=', 'products.id');
         $query->leftJoin('webpages', function ($join) {
@@ -51,6 +52,7 @@ class IndexCustomerFavourites extends OrgAction
 
         return $query->defaultSort('products.code')
             ->select([
+                'favourites.id as favourite_id',
                 'products.id',
                 'products.slug',
                 'products.code',

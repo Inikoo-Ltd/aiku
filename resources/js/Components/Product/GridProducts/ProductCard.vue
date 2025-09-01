@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * ProductCard Component
- * 
+ *
  * Displays individual product information in a card format with:
  * - Product image with lazy loading
  * - Favorite toggle functionality
@@ -10,26 +10,25 @@
  * - Accessibility features
  */
 
-import { ref, inject } from 'vue'
-import { trans } from 'laravel-vue-i18n'
-import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import type { Product } from './types'
+import {ref, inject} from 'vue'
+import {trans} from 'laravel-vue-i18n'
+import {aikuLocaleStructure} from '@/Composables/useLocaleStructure'
+import type {Product} from './types'
 import Image from '@/Components/Image.vue'
-import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faHeart } from "@fal"
-import { faHeart as fasHeart } from "@fas"
-import { library } from "@fortawesome/fontawesome-svg-core"
-import { notify } from '@kyvg/vue3-notification'
+import {retinaLayoutStructure} from '@/Composables/useRetinaLayoutStructure'
+import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
+import {faHeart} from "@fal"
+import {faHeart as fasHeart} from "@fas"
+import {library} from "@fortawesome/fontawesome-svg-core"
+import {notify} from '@kyvg/vue3-notification'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import axios from 'axios'
+
 library.add(faHeart, fasHeart)
 
 const props = defineProps<{
     product: Product
 }>()
-
-
 
 // Inject locale
 const locale = inject('locale', aikuLocaleStructure)
@@ -45,11 +44,11 @@ const toggleFavorite = async (product: Product) => {
             isLoading.value = true
 
             const response = await axios.delete(
-                route('retina.models.product.unfavourite', { product: product.id }),
+                route('retina.models.product.unfavourite', {favourite: product.favourite_id}),
             )
 
             if (response.status !== 200) {
-                
+
             }
             console.log('Response axios:', response.data)
             product.is_not_favourite = true
@@ -69,45 +68,45 @@ const toggleFavorite = async (product: Product) => {
         isLoading.value = false
     }
 
-        // router.delete(
-        //     route('retina.models.product.unfavourite', { product: product.id }),
-        //     {
-        //         preserveScroll: true,
-        //         preserveState: true,
-        //         onStart: () => { 
-        //             isLoading.value = true
-        //         },
-        //         onSuccess: () => {
-        //             product.is_not_favourite = true
-        //             notify({
-        //                 title: trans("Removed from favorites"),
-        //                 text: `${product.name || 'Product'} ${trans('has been removed from your favorites')}`,
-        //                 type: "info",
-        //                 duration: 3000
-        //             })
-        //         },
-        //         onError: (errors) => {
-        //             // Revert on error
-        //             // product.is_favourite = originalState
-        //             notify({
-        //                 title: trans("Something went wrong"),
-        //                 text: trans("Failed to remove from favorites"),
-        //                 type: "error",
-        //                 duration: 3000
-        //             })
-        //             console.error('Failed to unfavorite:', errors)
-        //         },
-        //         onFinish: () => {
-        //             isLoading.value = false
-        //         },
-        //     }
-        // )
-    // } 
+    // router.delete(
+    //     route('retina.models.product.unfavourite', { product: product.id }),
+    //     {
+    //         preserveScroll: true,
+    //         preserveState: true,
+    //         onStart: () => {
+    //             isLoading.value = true
+    //         },
+    //         onSuccess: () => {
+    //             product.is_not_favourite = true
+    //             notify({
+    //                 title: trans("Removed from favorites"),
+    //                 text: `${product.name || 'Product'} ${trans('has been removed from your favorites')}`,
+    //                 type: "info",
+    //                 duration: 3000
+    //             })
+    //         },
+    //         onError: (errors) => {
+    //             // Revert on error
+    //             // product.is_favourite = originalState
+    //             notify({
+    //                 title: trans("Something went wrong"),
+    //                 text: trans("Failed to remove from favorites"),
+    //                 type: "error",
+    //                 duration: 3000
+    //             })
+    //             console.error('Failed to unfavorite:', errors)
+    //         },
+    //         onFinish: () => {
+    //             isLoading.value = false
+    //         },
+    //     }
+    // )
+    // }
 }
 </script>
 
 <template>
-    <article 
+    <article
         class="bg-white py-2 px-4 border rounded hover:shadow transition-shadow relative cursor-pointer"
     >
         <!-- Favorite Button -->
@@ -131,16 +130,17 @@ const toggleFavorite = async (product: Product) => {
                     fixed-width
                 />
             </div>
-            <FontAwesomeIcon 
+            <FontAwesomeIcon
                 v-else
-                :icon="fasHeart" 
-                fixed-width 
-                class="h-5 w-5 text-pink-500 group-hover:text-pink-600" 
+                :icon="fasHeart"
+                fixed-width
+                class="h-5 w-5 text-pink-500 group-hover:text-pink-600"
             />
         </button>
 
         <!-- Product Image Container -->
-        <div class="relative h-[100px] md:h-[150px] lg:h-[200px] aspect-square w-full rounded-lg overflow-hidden bg-gray-100 mb-4">
+        <div
+            class="relative h-[100px] md:h-[150px] lg:h-[200px] aspect-square w-full rounded-lg overflow-hidden bg-gray-100 mb-4">
 
             <!-- Product Image with Picture Element for Format Support -->
             <Image
@@ -149,12 +149,12 @@ const toggleFavorite = async (product: Product) => {
             />
 
             <!-- Placeholder when no image -->
-            <div 
-                v-else 
+            <div
+                v-else
                 class="w-full h-full flex items-center justify-center bg-gray-200"
             >
-                <FontAwesomeIcon 
-                    icon="fal fa-image" 
+                <FontAwesomeIcon
+                    icon="fal fa-image"
                     class="text-gray-400 text-3xl"
                     :aria-hidden="true"
                 />
@@ -165,21 +165,21 @@ const toggleFavorite = async (product: Product) => {
         <!-- Product Information -->
         <div class="space-y-1">
             <!-- Product Name -->
-            <h3 
+            <h3
                 class="text-base font-medium line-clamp-2 min-h-[2.5rem]"
                 :title="props.product.name || trans('No name')"
             >
                 {{ props.product.name || '-' }}
             </h3>
-            
+
             <!-- Product Code -->
-            <p 
+            <p
                 class="text-xs text-gray-400"
                 :title="`${trans('Code')}: ${product.code}`"
             >
                 {{ product.code }}
             </p>
-            
+
             <!-- Price Display -->
             <div v-if="props.product?.price" class="mt-2">
                 <span class="xtext-sm font-semibold">
