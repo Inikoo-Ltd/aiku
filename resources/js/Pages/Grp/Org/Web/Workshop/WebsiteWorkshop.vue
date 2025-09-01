@@ -37,7 +37,7 @@ const props = defineProps<{
 
 
 let currentTab = ref(props.tabs?.current)
-const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const loadingPublish = ref(false)
 
 const component = computed(() => {

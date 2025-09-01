@@ -119,47 +119,50 @@ const onPickTemplate = (template: any) => {
 </script>
 
 <template>
-  <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
-    <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
-      <SideMenuDepartementWorkshop :data="props.data.layout" :webBlockTypes="props.data.web_block_types"
-        :dataList="props.data.departments" @auto-save="debouncedAutosave" @set-up-template="onPickTemplate" />
+  
+  <div class="pt-4">
+    <div class="mx-6 italic text-amber-700 bg-amber-200 py-1 px-2 border-l-4 border-amber-400 w-fit">
+      *This block usually showed in Department page
     </div>
 
-    <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-auto border">
-      <div class="flex justify-between items-center px-4 py-2 bg-gray-100 border-b">
-        <div class="py-1 px-2 cursor-pointer lg:block hidden" v-tooltip="'Desktop view'">
-          <ScreenView @screenView="(e) => { currentView = e }" v-model="currentView" />
-        </div>
-
-        <div class="text-sm text-gray-600 italic mr-3 cursor-pointer" @click="visibleDrawer = true">
-          <span v-if="props.data.layout?.data?.fieldValue?.departement?.name">
-            Preview: <strong>{{ props.data.layout.data.fieldValue.departement?.name }}</strong>
-          </span>
-          <span v-else>Pick The department</span>
-        </div>
+    <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
+      <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
+        <SideMenuDepartementWorkshop :data="props.data.layout" :webBlockTypes="props.data.web_block_types"
+          :dataList="props.data.departments" @auto-save="debouncedAutosave" @set-up-template="onPickTemplate" />
       </div>
-
-      <div v-if="props.data.layout?.code" :class="['border-2 border-t-0', iframeClass]">
-        <component class="flex-1 overflow-auto active-block" :is="getComponent(props.data.layout.code)"
-          :screenType="currentView" 
-          :modelValue="{
-            ...props.data.layout.data.fieldValue,
-            departement: dataPicked.departement || null,
-            sub_departments: dataPicked.sub_departments || []
-          }"
-          :routeEditSubDepartement="props.data.update_sub_department_route" />
-      </div>
-
-      <div v-else class="flex flex-col items-center justify-center gap-3 text-center text-gray-500 flex-1 min-h-[300px]"
-        style="height: 100%;">
-        <div class="flex flex-col items-center gap-2">
-          <FontAwesomeIcon :icon="faInfoCircle" class="text-4xl" />
-          <h3 class="text-lg font-semibold">No department selected</h3>
-          <p class="text-sm max-w-xs">
-            Please pick a department to preview its data here.
-          </p>
+      <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-auto border">
+        <div class="flex justify-between items-center px-4 py-2 bg-gray-100 border-b">
+          <div class="py-1 px-2 cursor-pointer lg:block hidden" v-tooltip="'Desktop view'">
+            <ScreenView @screenView="(e) => { currentView = e }" v-model="currentView" />
+          </div>
+          <div class="text-sm text-gray-600 italic mr-3 cursor-pointer" @click="visibleDrawer = true">
+            <span v-if="props.data.layout?.data?.fieldValue?.departement?.name">
+              Preview: <strong>{{ props.data.layout.data.fieldValue.departement?.name }}</strong>
+            </span>
+            <span v-else>Pick The department</span>
+          </div>
         </div>
-        <Button :label="'Pick a department as a data preview'" @click="visibleDrawer = true" />
+        <div v-if="props.data.layout?.code" :class="['border-2 border-t-0', iframeClass]">
+          <component class="flex-1 overflow-auto active-block" :is="getComponent(props.data.layout.code)"
+            :screenType="currentView"
+            :modelValue="{
+              ...props.data.layout.data.fieldValue,
+              departement: dataPicked.departement || null,
+              sub_departments: dataPicked.sub_departments || []
+            }"
+            :routeEditSubDepartement="props.data.update_sub_department_route" />
+        </div>
+        <div v-else class="flex flex-col items-center justify-center gap-3 text-center text-gray-500 flex-1 min-h-[300px]"
+          style="height: 100%;">
+          <div class="flex flex-col items-center gap-2">
+            <FontAwesomeIcon :icon="faInfoCircle" class="text-4xl" />
+            <h3 class="text-lg font-semibold">No department selected</h3>
+            <p class="text-sm max-w-xs">
+              Please pick a department to preview its data here.
+            </p>
+          </div>
+          <Button :label="'Pick a department as a data preview'" @click="visibleDrawer = true" />
+        </div>
       </div>
     </div>
   </div>
