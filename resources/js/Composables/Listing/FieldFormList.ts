@@ -31,6 +31,7 @@ import StructureDataWebsite from '@/Components/Forms/Fields/StructureDataWebsite
 import SelectInfiniteScroll from '@/Components/Forms/Fields/SelectInfiniteScroll.vue'
 import ButtonForm from '@/Components/Forms/Fields/ButtonForm.vue'
 import cropImageFull from '@/Components/Forms/Fields/CropImageFull.vue'
+import FormEditTradeUnit from '@/Components/Forms/Fields/FormEditTradeUnit.vue'
 
 
 const ProductParts = defineAsyncComponent(() => import('@/Components/Forms/Fields/ProductParts.vue'))
@@ -109,7 +110,8 @@ export const componentsList: {[key: string]: Component} = {
     'pricing_zone': Pricing_zone,
     'teritory_zone': Teritory_zone,
     'crop-image-full' : cropImageFull,
-    'list-selector' : ListSelectorFrom
+    'list-selector' : ListSelectorFrom,
+    'edit-trade-unit' : FormEditTradeUnit
 }
 
 export const getComponent = (componentName: string) => {

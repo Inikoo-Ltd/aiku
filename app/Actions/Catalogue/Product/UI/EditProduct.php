@@ -257,7 +257,7 @@ class EditProduct extends OrgAction
                     ],
                     'description_extra' => [
                         'type'  => 'textEditor',
-                        'label' => __('translate description extra'),
+                        'label' => __('description extra'),
                         'value' => $product->description_extra
                     ],
                     'description_extra_i8n' => [
@@ -347,8 +347,10 @@ class EditProduct extends OrgAction
                 'icon' => 'fa-light fa-atom',
                 'fields' => [
                     'trade_units' => [
-                        'type' => 'input',
+                        'label'      => __('Trade Units'),
+                        'type' => 'edit-trade-unit',
                         'value' => null,
+                        'noSaveButton' => true,
                         'trade_units' => $product->tradeUnits ? $this->getDataTradeUnit($product->tradeUnits) : []
                     ]
                 ],
