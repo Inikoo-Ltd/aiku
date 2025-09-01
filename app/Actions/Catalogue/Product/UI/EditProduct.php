@@ -229,7 +229,7 @@ class EditProduct extends OrgAction
                     ],
                     'name_i8n' => [
                         'type'  => 'input_translation',
-                        'label' => __('translete name'),
+                        'label' => __('translate name'),
                         'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($product->shop->extra_languages),
                         'value' => $product->getTranslations('name_i8n')
                     ],
@@ -240,7 +240,7 @@ class EditProduct extends OrgAction
                     ],
                     'description_title_i8n' => [
                         'type'  => 'input_translation',
-                        'label' => __('translete description title'),
+                        'label' => __('translate description title'),
                         'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($product->shop->extra_languages),
                         'value' => $product->getTranslations('description_title_i8n')
                     ],
@@ -251,18 +251,18 @@ class EditProduct extends OrgAction
                     ],
                     'description_i8n' => [
                         'type'  => 'textEditor_translation',
-                        'label' => __('translete description'),
+                        'label' => __('translate description'),
                         'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($product->shop->extra_languages),
                         'value' => $product->getTranslations('description_i8n')
                     ],
                     'description_extra' => [
                         'type'  => 'textEditor',
-                        'label' => __('translete description extra'),
+                        'label' => __('translate description extra'),
                         'value' => $product->description_extra
                     ],
-                    'description_extra__i8n' => [
+                    'description_extra_i8n' => [
                         'type'  => 'textEditor_translation',
-                        'label' => __('translete description extra'),
+                        'label' => __('translate description extra'),
                         'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($product->shop->extra_languages),
                         'value' => $product->getTranslations('description_extra_i8n')
                     ],

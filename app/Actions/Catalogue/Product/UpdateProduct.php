@@ -67,6 +67,38 @@ class UpdateProduct extends OrgAction
             data_set($assetData, 'follow_master', Arr::pull($modelData, 'follow_master'));
         }
 
+        if(Arr::has($modelData, 'name_i8n')) {
+            UpdateProductTranslations::make()->action($product, [
+                'translations' => [
+                    'name' => Arr::pull($modelData, 'name_i8n')
+                ]
+            ]);
+        }
+
+        if(Arr::has($modelData, 'description_title_i8n')) {
+            UpdateProductTranslations::make()->action($product, [
+                'translations' => [
+                    'description_title' => Arr::pull($modelData, 'description_title_i8n')
+                ]
+            ]);
+        }
+
+        if(Arr::has($modelData, 'description_i8n')) {
+            UpdateProductTranslations::make()->action($product, [
+                'translations' => [
+                    'description' => Arr::pull($modelData, 'description_i8n')
+                ]
+            ]);
+        }
+
+        if(Arr::has($modelData, 'description_extra_i8n')) {
+            UpdateProductTranslations::make()->action($product, [
+                'translations' => [
+                    'description_extra' => Arr::pull($modelData, 'description_extra_i8n')
+                ]
+            ]);
+        }
+
         $product = $this->update($product, $modelData);
         $changed = Arr::except($product->getChanges(), ['updated_at', 'last_fetched_at']);
 
@@ -197,7 +229,11 @@ class UpdateProduct extends OrgAction
                 Rule::exists('customers', 'id')->where('shop__id', $this->shop->id)
             ],
 
-            'org_stocks' => ['sometimes', 'present', 'array']
+            'org_stocks' => ['sometimes', 'present', 'array'],
+            'name_i8n' => ['sometimes', 'array'],
+            'description_title_i8n' => ['sometimes', 'array'],
+            'description_i8n' => ['sometimes', 'array'],
+            'description_extra_i8n' => ['sometimes', 'array'],
         ];
 
 
