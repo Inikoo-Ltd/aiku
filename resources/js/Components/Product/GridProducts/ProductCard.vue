@@ -38,7 +38,32 @@ const layout = inject('layout', retinaLayoutStructure)
 const isLoading = ref(false)
 const toggleFavorite = async (product: Product) => {
     if (product.is_not_favourite) {
+        try {
+            isLoading.value = true
 
+            const response = await axios.post(
+                route('retina.models.product.favourite', {product: product.id}),
+            )
+
+            if (response.status !== 200) {
+
+            }
+            // console.log('Response axios:', response.data)
+            product.is_not_favourite = false
+            notify({
+                title: trans("Added to favourites!"),
+                text: trans(':product has been added to favorites', { product: product.name}),
+                type: "success",
+                duration: 3000
+            })
+        } catch (error: any) {
+            notify({
+                title: trans("Something went wrong"),
+                text: error.message || trans("Please try again or contact administrator"),
+                type: 'error'
+            })
+        }
+        isLoading.value = false
     } else {
         try {
             isLoading.value = true
@@ -50,7 +75,7 @@ const toggleFavorite = async (product: Product) => {
             if (response.status !== 200) {
 
             }
-            console.log('Response axios:', response.data)
+            // console.log('Response axios:', response.data)
             product.is_not_favourite = true
             notify({
                 title: trans("Removed from favorites"),
