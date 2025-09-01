@@ -182,9 +182,9 @@ watch(() => props.productHasPortfolio, (newVal) => {
                 <div class="w-full flex flex-nowrap relative">
 
                     <Button v-if="isInAllChannels"
-                        :label="CheckChannels ? 'Exist on all channels' : 'Exist on some channels'" type="tertiary" disabled
+                        :label="CheckChannels ? trans('Exist on all channels') : trans('Exist on some channels')" type="tertiary" disabled
                         class="border-none border-transparent" :class="!CheckChannels ? 'rounded-r-none' : ''" full />
-                    <Button v-else @click="() => onAddToAllPortfolios(product)" label="Add to all Portfolios"
+                    <Button v-else @click="() => onAddToAllPortfolios(product)" :label="trans('Add to all channels')"
                         :loading="isLoadingAllPortfolios" :icon="faPlus" :class="!CheckChannels ? 'rounded-r-none' : ''"
                         class="border-none border-transparent" full xsize="l" xstyle="border: 0px" />
 
