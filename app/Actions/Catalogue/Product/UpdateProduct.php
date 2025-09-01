@@ -62,6 +62,54 @@ class UpdateProduct extends OrgAction
             //todo  after updating orgStock need a new method to update Trade Units
         }
 
+        if(Arr::has($modelData, 'name')) {
+            $name = Arr::get($modelData, 'name.master.value');
+            UpdateProductTranslations::make()->action($product, [
+                'translations' => [
+                    'name' => Arr::get($modelData, 'name.translate.value')
+                ]
+            ]);
+            data_forget($modelData, 'name');
+
+            data_set($modelData, 'name', $name);
+        }
+
+        if(Arr::has($modelData, 'description_title')) {
+            $descriptionTitle = Arr::get($modelData, 'description_title.master.value');
+            UpdateProductTranslations::make()->action($product, [
+                'translations' => [
+                    'description_title' => Arr::get($modelData, 'description_title.translate.value')
+                ]
+            ]);
+            data_forget($modelData, 'description_title');
+
+            data_set($modelData, 'description_title', $descriptionTitle);
+        }
+
+        if(Arr::has($modelData, 'description')) {
+            $description = Arr::get($modelData, 'description.master.value');
+            UpdateProductTranslations::make()->action($product, [
+                'translations' => [
+                    'description' => Arr::get($modelData, 'description.translate.value')
+                ]
+            ]);
+            data_forget($modelData, 'description');
+
+            data_set($modelData, 'description', $description);
+        }
+
+        if(Arr::has($modelData, 'description_extra')) {
+            $descriptionExtra = Arr::get($modelData, 'description_extra.master.value');
+            UpdateProductTranslations::make()->action($product, [
+                'translations' => [
+                    'description_extra' => Arr::get($modelData, 'description_extra.translate.value')
+                ]
+            ]);
+            data_forget($modelData, 'description_extra');
+
+            data_set($modelData, 'description_extra', $descriptionExtra);
+        }
+
 
         $assetData = [];
         if (Arr::has($modelData, 'follow_master')) {
@@ -164,12 +212,16 @@ class UpdateProduct extends OrgAction
                     ]
                 ),
             ],
-            'name'              => ['sometimes', 'required', 'max:250', 'string'],
+            'name'              => ['sometimes', 'required'],
+            'name.master.value' => ['sometimes', 'required', 'max:250', 'string'],
             'price'             => ['sometimes', 'required', 'numeric', 'min:0'],
             'unit_price'        => ['sometimes', 'required', 'numeric', 'min:0'],
-            'description'       => ['sometimes', 'required', 'max:1500'],
-            'description_title' => ['sometimes', 'nullable', 'max:255'],
-            'description_extra' => ['sometimes', 'nullable', 'max:65500'],
+            'description'       => ['sometimes', 'required'],
+            'description_title' => ['sometimes', 'nullable'],
+            'description_extra' => ['sometimes', 'nullable'],
+            'description.master.value'       => ['sometimes', 'required', 'max:1500'],
+            'description_title.master.value' => ['sometimes', 'nullable', 'max:255'],
+            'description_extra.master.value' => ['sometimes', 'nullable', 'max:65500'],
             'rrp'               => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'data'              => ['sometimes', 'array'],
             'settings'          => ['sometimes', 'array'],
