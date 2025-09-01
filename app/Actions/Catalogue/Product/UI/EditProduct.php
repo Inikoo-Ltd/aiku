@@ -150,7 +150,7 @@ class EditProduct extends OrgAction
     /**
      * @throws \Exception
      */
-    public function getBlueprint(Product $product): array
+    public function getBlueprintX(Product $product): array
     {
 
 
@@ -174,7 +174,7 @@ class EditProduct extends OrgAction
     /**
      * @throws \Exception
      */
-    public function getBlueprintold(Product $product): array
+    public function getBlueprint(Product $product): array
     {
         $value = OrgStocksInProductResource::collection(GetOrgStocksInProduct::run($product))->resolve();
 
