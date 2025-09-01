@@ -13,6 +13,7 @@ import { notify } from "@kyvg/vue3-notification"
 import Drawer from 'primevue/drawer'
 import SubDepartementListTree from "./SubDepartementListTree.vue"
 import ScreenView from "@/Components/ScreenView.vue"
+import { trans } from "laravel-vue-i18n"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronLeft, faChevronRight, faDesktop)
 
@@ -30,6 +31,7 @@ const layoutTheme = inject('layout', layoutStructure)
 const isModalOpen = ref(false)
 const isLoadingSave = ref(false)
 const visibleDrawer = ref(false)
+provide("visibleDrawer", visibleDrawer)
 
 const currentView = ref("desktop")
 provide("currentView", currentView)
@@ -114,59 +116,66 @@ function debounce(fn: Function, delay = 800) {
   }
 }
 const debouncedAutosave = debounce(autosave)
+
 </script>
 
 <template>
-  <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
-    <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-auto border">
-      <SideMenuSubDepartementWorkshop
-        :data="data.layout"
-        :webBlockTypes="data.web_block_types"
-        @auto-save="debouncedAutosave"
-        @set-up-template="onPickTemplate"
-        :dataList="data.sub_departements"
-        @onChangeDepartment="onChangeDepartment"
-      />
+  <div class="pt-4">
+    <div class="mx-6 italic text-amber-700 bg-amber-200 py-1 px-2 border-l-4 border-amber-400 w-fit">
+      *This block usually showed in Sub Department page
     </div>
 
-    <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-auto border">
-      <div class="flex justify-between items-center px-4 py-2 bg-gray-100 border-b">
-        <div class="py-1 px-2 cursor-pointer lg:block hidden" v-tooltip="'Desktop view'">
-          <ScreenView @screenView="(e) => { currentView = e }" v-model="currentView" />
-        </div>
-
-        <div class="text-sm text-gray-600 italic mr-3 cursor-pointer" @click="visibleDrawer = true">
-          <span v-if="data.layout?.data?.fieldValue?.sub_departement?.name">
-            Preview: <strong>{{ data.layout.data.fieldValue.sub_departement?.name }}</strong>
-          </span>
-          <span v-else>Pick the sub-departement</span>
-        </div>
-      </div>
-
-      <div v-if="data.layout?.code" :class="['border-2 border-t-0 overflow-auto', iframeClass]">
-        <component
-          class="flex-1 active-block"
-          :is="getComponent(data.layout.code)"
-          :screenType="currentView"
-          :modelValue="{
-            ...data.layout.data.fieldValue,
-            sub_departement: dataPicked.sub_departement,
-            families: dataPicked.families
-          }"
-          :routeEditfamily="data.update_family_route"
+    <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
+      <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-auto border">
+        <SideMenuSubDepartementWorkshop
+          :data="data.layout"
+          :webBlockTypes="data.web_block_types"
+          @auto-save="debouncedAutosave"
+          @set-up-template="onPickTemplate"
+          :dataList="data.sub_departements"
+          @onChangeDepartment="onChangeDepartment"
         />
       </div>
-
-      <div v-else class="flex flex-col items-center justify-center gap-3 text-center text-gray-500 flex-1 min-h-[300px]" style="height: 100%;">
-        <div class="flex flex-col items-center gap-2">
-          <FontAwesomeIcon :icon="faInfoCircle" class="text-4xl" />
-          <h3 class="text-lg font-semibold">No sub-department selected</h3>
-          <p class="text-sm max-w-xs">
-            Please pick a sub-department to preview its data here.
-          </p>
+      
+      <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-auto border">
+        <!-- Header: screen preview -->
+        <div class="flex justify-between items-center px-4 py-2 bg-gray-100 border-b">
+          <div class="py-1 px-2 cursor-pointer lg:block hidden" v-tooltip="'Desktop view'">
+            <ScreenView @screenView="(e) => { currentView = e }" v-model="currentView" />
+          </div>
+          <div @click="visibleDrawer = true" class="text-sm text-gray-600 italic mr-3 cursor-pointer underline">
+            <span v-if="dataPicked.sub_departement?.name" xv-if="data.layout?.data?.fieldValue?.sub_departement?.name">
+                <!-- Preview: <strong>{{ data.layout.data.fieldValue.sub_departement?.name }}</strong> -->
+                Preview: <strong>{{ dataPicked.sub_departement?.name }}</strong>
+            </span>
+            <span v-else class="">{{ trans("Pick the sub-departement") }}</span>
+          </div>
         </div>
 
-        <Button :label="'Pick a sub-department as a data preview'" @click="visibleDrawer = true" />
+        <div v-if="data.layout?.code" :class="['border-2 border-t-0 overflow-auto', iframeClass]">
+          <component
+            class="flex-1 active-block"
+            :is="getComponent(data.layout.code)"
+            :screenType="currentView"
+            :modelValue="{
+              ...data.layout.data.fieldValue,
+              sub_departement: dataPicked.sub_departement,
+              families: dataPicked.families
+            }"
+            :routeEditfamily="data.update_family_route"
+          />
+        </div>
+        
+        <div v-else class="flex flex-col items-center justify-center gap-3 text-center text-gray-500 flex-1 min-h-[300px]" style="height: 100%;">
+          <div class="flex flex-col items-center gap-2">
+            <FontAwesomeIcon :icon="faInfoCircle" class="text-4xl" />
+            <h3 class="text-lg font-semibold">No sub-department selected</h3>
+            <p class="text-sm max-w-xs">
+              Please pick a sub-department to preview its data here.
+            </p>
+          </div>
+          <Button :label="'Pick a sub-department as a data preview'" @click="visibleDrawer = true" />
+        </div>
       </div>
     </div>
   </div>
