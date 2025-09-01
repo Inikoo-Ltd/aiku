@@ -1,21 +1,141 @@
+<script setup lang="ts">
+/**
+ * ProductCard Component
+ * 
+ * Displays individual product information in a card format with:
+ * - Product image with lazy loading
+ * - Favorite toggle functionality
+ * - Price display with locale formatting
+ * - Stock status indication
+ * - Accessibility features
+ */
+
+import { ref, inject } from 'vue'
+import { trans } from 'laravel-vue-i18n'
+import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
+import type { Product } from './types'
+import Image from '@/Components/Image.vue'
+import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faHeart } from "@fal"
+import { faHeart as fasHeart } from "@fas"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { notify } from '@kyvg/vue3-notification'
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
+import axios from 'axios'
+library.add(faHeart, fasHeart)
+
+const props = defineProps<{
+    product: Product
+}>()
+
+
+
+// Inject locale
+const locale = inject('locale', aikuLocaleStructure)
+const layout = inject('layout', retinaLayoutStructure)
+
+
+const isLoading = ref(false)
+const toggleFavorite = async (product: Product) => {
+    if (product.is_not_favourite) {
+
+    } else {
+        try {
+            isLoading.value = true
+
+            const response = await axios.delete(
+                route('retina.models.product.unfavourite', { product: product.id }),
+            )
+
+            if (response.status !== 200) {
+                
+            }
+            console.log('Response axios:', response.data)
+            product.is_not_favourite = true
+            notify({
+                title: trans("Removed from favorites"),
+                text: `${product.name || 'Product'} ${trans('has been removed from your favorites')}`,
+                type: "info",
+                duration: 3000
+            })
+        } catch (error: any) {
+            notify({
+                title: trans("Something went wrong"),
+                text: error.message || trans("Please try again or contact administrator"),
+                type: 'error'
+            })
+        }
+        isLoading.value = false
+    }
+
+        // router.delete(
+        //     route('retina.models.product.unfavourite', { product: product.id }),
+        //     {
+        //         preserveScroll: true,
+        //         preserveState: true,
+        //         onStart: () => { 
+        //             isLoading.value = true
+        //         },
+        //         onSuccess: () => {
+        //             product.is_not_favourite = true
+        //             notify({
+        //                 title: trans("Removed from favorites"),
+        //                 text: `${product.name || 'Product'} ${trans('has been removed from your favorites')}`,
+        //                 type: "info",
+        //                 duration: 3000
+        //             })
+        //         },
+        //         onError: (errors) => {
+        //             // Revert on error
+        //             // product.is_favourite = originalState
+        //             notify({
+        //                 title: trans("Something went wrong"),
+        //                 text: trans("Failed to remove from favorites"),
+        //                 type: "error",
+        //                 duration: 3000
+        //             })
+        //             console.error('Failed to unfavorite:', errors)
+        //         },
+        //         onFinish: () => {
+        //             isLoading.value = false
+        //         },
+        //     }
+        // )
+    // } 
+}
+</script>
+
 <template>
     <article 
-        class="bg-white p-2 border rounded-xl hover:shadow-md transition-shadow relative cursor-pointer group"
-        :aria-label="`Product: ${productName}`"
+        class="bg-white py-2 px-4 border rounded hover:shadow transition-shadow relative cursor-pointer"
     >
         <!-- Favorite Button -->
         <button
-            @click.stop="handleToggleFavorite"
-            class="absolute top-3 right-3 z-10 p-2 backdrop-blur-sm rounded-full shadow-md hover:shadow-lg transition-all hover:scale-110 flex items-center justify-center"
-            :class="favoriteButtonClass"
-            :aria-label="favoriteButtonLabel"
-            :aria-pressed="isFavorite"
+            @click.stop="() => toggleFavorite(product)"
+            class="group absolute top-3 right-3 z-10 p-2 backdrop-blur-sm rounded-full shadow-md hover:shadow-lg transition-all xhover:scale-110 flex items-center justify-center"
             type="button"
         >
+            <!-- <FontAwesomeIcon icon="fal fa-heart" class="w-5 h-5 bg-white text-red-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon icon="fas fa-heart" class="w-5 h-5 bg-white/90 text-gray-400 hover:text-red-500" fixed-width aria-hidden="true" /> -->
+            <LoadingIcon v-if="isLoading" class="h-5 w-5"/>
+            <div v-else-if="product.is_not_favourite" class="relative">
+                <FontAwesomeIcon
+                    :icon="fasHeart"
+                    class="h-5 w-5 hidden group-hover:inline text-pink-300"
+                    fixed-width
+                />
+                <FontAwesomeIcon
+                    :icon="faHeart"
+                    class="h-5 w-5 inline group-hover:hidden text-pink-500"
+                    fixed-width
+                />
+            </div>
             <FontAwesomeIcon 
-                :icon="favoriteIcon" 
-                class="w-5 h-5"
-                :aria-hidden="true"
+                v-else
+                :icon="fasHeart" 
+                fixed-width 
+                class="h-5 w-5 text-pink-500 group-hover:text-pink-600" 
             />
         </button>
 
@@ -54,7 +174,7 @@
             
             <!-- Product Code -->
             <p 
-                class="text-xs text-gray-600"
+                class="text-xs text-gray-400"
                 :title="`${trans('Code')}: ${product.code}`"
             >
                 {{ product.code }}
@@ -62,7 +182,7 @@
             
             <!-- Price Display -->
             <div v-if="props.product?.price" class="mt-2">
-                <span class="text-sm font-semibold">
+                <span class="xtext-sm font-semibold">
                     {{ locale.currencyFormat(layout?.retina?.currency?.code, props.product.price) }}
                 </span>
             </div>
@@ -71,78 +191,3 @@
     </article>
 </template>
 
-<script setup lang="ts">
-/**
- * ProductCard Component
- * 
- * Displays individual product information in a card format with:
- * - Product image with lazy loading
- * - Favorite toggle functionality
- * - Price display with locale formatting
- * - Stock status indication
- * - Accessibility features
- */
-
-import { ref, computed, inject } from 'vue'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { trans } from 'laravel-vue-i18n'
-import type { IconProp } from '@fortawesome/fontawesome-svg-core'
-import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import type { Product, ImageSource } from './types'
-import Image from '@/Components/Image.vue'
-import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
-
-// Props definition
-interface Props {
-    product: Product
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  
-})
-
-// Emits
-const emit = defineEmits<{
-    'toggle-favorite': [product: Product]
-    'click': [product: Product]
-}>()
-
-// Inject locale
-const locale = inject('locale', aikuLocaleStructure)
-const layout = inject('layout', retinaLayoutStructure)
-
-// const imageError = ref(false)
-
-// Computed properties
-const productName = computed(() => {
-    return props.product.name || trans('Unnamed Product')
-})
-
-// Default is_favourite to true if undefined
-const isFavorite = computed(() => {
-    return props.product.is_favourite !== undefined ? props.product.is_favourite : true
-})
-
-const favoriteIcon = computed<IconProp>(() => {
-    return props.product.is_favourite 
-        ? 'fas fa-heart' as IconProp
-        : 'fal fa-heart' as IconProp
-})
-
-const favoriteButtonClass = computed(() => {
-    return props.product.is_favourite 
-        ? 'bg-white text-red-500' 
-        : 'bg-white/90 text-gray-400 hover:text-red-500'
-})
-
-const favoriteButtonLabel = computed(() => {
-    return props.product.is_favourite 
-        ? trans('Remove from favorites') 
-        : trans('Add to favorites')
-})
-
-// Methods
-const handleToggleFavorite = () => {
-    emit('toggle-favorite', props.product)
-}
-</script>

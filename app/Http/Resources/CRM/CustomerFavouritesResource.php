@@ -47,7 +47,6 @@ class CustomerFavouritesResource extends JsonResource
             'name'                   => $this->name,
             'description'            => $this->description,
             'price'                  => $this->price,
-            'is_favourite'           => $this->favourite,  // TODO: make this works
             'url'                    => $webpage ? $webpage->getUrl() : null  // This not correct yet
         ];
     }
