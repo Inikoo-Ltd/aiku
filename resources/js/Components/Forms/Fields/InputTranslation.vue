@@ -20,15 +20,12 @@ if (!Object.values(props.fieldData.languages).some(l => l.code === selectedLang.
   selectedLang.value = Object.values(props.fieldData.languages)[0]?.code || "en"
 }
 
-// Ensure translate object exists
+// Ensure form field exists
 if (!props.form[props.fieldName]) {
   props.form[props.fieldName] = {}
 }
-if (!props.form[props.fieldName]) {
-  props.form[props.fieldName]= {}
-}
 
-// Local buffer
+// Local buffer (copy all existing translations)
 const langBuffers = ref<Record<string, string>>({
   ...props.form[props.fieldName]
 })
@@ -41,11 +38,11 @@ const langLabel = (code: string) => {
   return langObj?.name ?? code
 }
 
-// Sync buffer → form
+// Sync buffer → form (always push updated values back)
 watch(
   langBuffers,
   (newVal) => {
-    props.form[props.fieldName]= { ...newVal }
+    props.form[props.fieldName] = { ...newVal }
     emits("update:form", { ...props.form })
   },
   { deep: true }
@@ -56,7 +53,6 @@ watch(
   selectedLang,
   (newLang) => {
     localStorage.setItem("translation_box", newLang)
-    // 🔥 Custom event for same-tab sync
     window.dispatchEvent(new CustomEvent("translation_box_updated", { detail: newLang }))
   },
   { immediate: true }
@@ -74,8 +70,8 @@ onMounted(() => {
     selectedLang.value = e.detail
   }
 
-  window.addEventListener("storage", handleStorage) // cross-tab
-  window.addEventListener("translation_box_updated", handleCustom as EventListener) // same-tab
+  window.addEventListener("storage", handleStorage)
+  window.addEventListener("translation_box_updated", handleCustom as EventListener)
 
   onBeforeUnmount(() => {
     window.removeEventListener("storage", handleStorage)
