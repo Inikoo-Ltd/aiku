@@ -51,7 +51,6 @@ class WebpageResource extends JsonResource
             'type'                => $webpage->type,
             'typeIcon'            => match ($webpage->type) {
                 WebpageTypeEnum::STOREFRONT => ['fal', 'fa-home'],
-                WebpageTypeEnum::OPERATIONS => ['fal', 'fa-ufo-beam'],
                 WebpageTypeEnum::BLOG       => ['fal', 'fa-newspaper'],
                 default                     => ['fal', 'fa-browser']
             },
