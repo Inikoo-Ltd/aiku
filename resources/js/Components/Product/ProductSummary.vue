@@ -78,16 +78,19 @@ interface PropsData {
 	warnings: string | null
 	stats: Stats[] | null
 	trade_units: TradeUnit[]
-	gpsr: Gpsr
+}
+
+const props = defineProps<{ 
+	data: PropsData 
+	gpsr?: Gpsr
 	parts?: { id: number; name: string }[]
 	properties?: {
 		country_of_origin?: { code: string; name: string }
 		tariff_code?: string
 		duty_rate?: string
 	}
-}
 
-const props = defineProps<{ data: PropsData }>()
+}>()
 
 library.add(
 	faCircle,
@@ -153,6 +156,8 @@ const getActiveHazards = () => {
 		}
 	})
 }
+
+console.log('product summary : ', props)
 </script>
 
 
@@ -246,7 +251,7 @@ const getActiveHazards = () => {
 								</div>
 							</AccordionContent>
 						</AccordionPanel>
-						<AccordionPanel value="1">
+						<AccordionPanel value="1" v-if="parts">
 							<AccordionHeader>
 								<div class="flex items-center gap-2">
 									<span class="font-medium text-base">{{ trans("Parts") }}</span>
@@ -257,7 +262,7 @@ const getActiveHazards = () => {
 								<div class="py-2">
 									<dt class="text-gray-500">{{ trans("Parts") }}</dt>
 									<ul class="list-disc list-inside text-gray-700 mt-1 space-y-1">
-										<li v-for="part in data?.parts" :key="part.id">
+										<li v-for="part in parts" :key="part.id">
 											{{ part.name }}
 										</li>
 									</ul>
@@ -315,11 +320,11 @@ const getActiveHazards = () => {
 									<div class="flex justify-between">
 										<dt class="text-gray-500">{{ trans("Country of origin") }}</dt>
 										<dd class="font-medium">
-											<div v-if="data?.properties?.country_of_origin.code">
+											<div v-if="properties?.country_of_origin.code">
 												<img class="inline-block h-[14px] w-[20px] object-cover rounded-sm"
-													:src="'/flags/' + data?.properties?.country_of_origin.code.toLowerCase() + '.png'"
+													:src="'/flags/' + properties?.country_of_origin.code.toLowerCase() + '.png'"
 													:alt="`Bendera ${'us'}`" loading="lazy" />
-												<span class="ml-2">{{ data?.properties.country_of_origin.name
+												<span class="ml-2">{{ properties.country_of_origin.name
 												}}</span>
 											</div>
 											<span v-else>-</span>
@@ -328,13 +333,13 @@ const getActiveHazards = () => {
 									<div class="flex justify-between">
 										<dt class="text-gray-500">{{ trans("Tariff code") }}</dt>
 										<dd class="font-medium">
-											{{ data?.properties?.tariff_code || '-' }}
+											{{ properties?.tariff_code || '-' }}
 										</dd>
 									</div>
 									<div class="flex justify-between">
 										<dt class="text-gray-500">{{ trans("Duty rate") }}</dt>
 										<dd class="font-medium">
-											{{ data?.properties?.duty_rate }}
+											{{ properties?.duty_rate }}
 										</dd>
 									</div>
 									<div class="flex justify-between">
@@ -393,7 +398,7 @@ const getActiveHazards = () => {
 								</div>
 							</AccordionContent>
 						</AccordionPanel>
-						<AccordionPanel value="5" v-if="data.gpsr">
+						<AccordionPanel value="5" v-if="gpsr">
 							<AccordionHeader>
 								<div class="flex items-center gap-2">
 									<span class="font-medium text-base">{{ trans("GPSR (if empty will use Part GPSR)")
@@ -409,8 +414,8 @@ const getActiveHazards = () => {
 											<div class="flex justify-between items-start">
 												<dt class="text-gray-500 text-sm">{{ trans("Manufacturer") }}</dt>
 												<dd class="font-medium text-sm text-right flex-1 ml-2">
-													<span v-if="data?.gpsr?.manufacturer">{{
-														data?.gpsr?.manufacturer}}</span>
+													<span v-if="gpsr?.manufacturer">{{
+														gpsr?.manufacturer}}</span>
 													<FontAwesomeIcon v-else icon="fal fa-info-circle"
 														class="text-gray-400"
 														v-tooltip="trans('No manufacturer specified')" />
@@ -420,8 +425,8 @@ const getActiveHazards = () => {
 											<div class="flex justify-between items-start">
 												<dt class="text-gray-500 text-sm">{{ trans("EU responsible") }}</dt>
 												<dd class="font-medium text-sm text-right flex-1 ml-2">
-													<span v-if="data?.gpsr?.eu_responsible">{{
-														data?.gpsr?.eu_responsible }}</span>
+													<span v-if="gpsr?.eu_responsible">{{
+														gpsr?.eu_responsible }}</span>
 													<FontAwesomeIcon v-else icon="fal fa-info-circle"
 														class="text-gray-400"
 														v-tooltip="trans('No EU responsible specified')" />
@@ -432,8 +437,8 @@ const getActiveHazards = () => {
 												<dt class="text-gray-500 text-sm">{{ trans("Class & category of danger")
 												}}</dt>
 												<dd class="font-medium text-sm text-right flex-1 ml-2">
-													<span v-if="data?.gpsr?.gpsr_class_category_danger">{{
-														data?.gpsr?.gpsr_class_category_danger }}</span>
+													<span v-if="gpsr?.gpsr_class_category_danger">{{
+														gpsr?.gpsr_class_category_danger }}</span>
 													<FontAwesomeIcon v-else icon="fal fa-info-circle"
 														class="text-gray-400"
 														v-tooltip="trans('No danger class specified')" />
@@ -444,8 +449,8 @@ const getActiveHazards = () => {
 												<dt class="text-gray-500 text-sm">{{ trans("Product GPSR Languages")
 												}}</dt>
 												<dd class="font-medium text-sm text-right flex-1 ml-2">
-													<span v-if="data?.gpsr?.product_languages">{{
-														data?.gpsr?.product_languages }}</span>
+													<span v-if="gpsr?.product_languages">{{
+														gpsr?.product_languages }}</span>
 													<FontAwesomeIcon v-else icon="fal fa-info-circle"
 														class="text-gray-400"
 														v-tooltip="trans('No languages specified')" />
@@ -477,12 +482,12 @@ const getActiveHazards = () => {
 									<div class="border-t pt-4">
 										<h5 class="text-sm font-medium text-gray-700 mb-2">{{ trans("Warnings") }}
 										</h5>
-										<div v-if="data?.gpsr?.warnings">
+										<div v-if="gpsr?.warnings">
 											<div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-												<div v-if="!showFullWarnings && data?.gpsr?.warnings.length > 200"
+												<div v-if="!showFullWarnings && gpsr?.warnings.length > 200"
 													class="space-y-2">
 													<p class="text-sm text-gray-700 leading-relaxed">
-														{{ data?.gpsr?.warnings.substring(0, 200) }}...
+														{{ gpsr?.warnings.substring(0, 200) }}...
 													</p>
 													<button @click="showFullWarnings = true"
 														class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1">
@@ -493,8 +498,8 @@ const getActiveHazards = () => {
 												<div v-else class="space-y-2">
 													<p
 														class="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-														{{ data?.gpsr?.warnings }}</p>
-													<button v-if="data?.gpsr?.warnings.length > 200"
+														{{ gpsr?.warnings }}</p>
+													<button v-if="gpsr?.warnings.length > 200"
 														@click="showFullWarnings = false"
 														class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1">
 														<FontAwesomeIcon icon="fal fa-chevron-up" />
@@ -513,12 +518,12 @@ const getActiveHazards = () => {
 									<div class="border-t pt-4">
 										<h5 class="text-sm font-medium text-gray-700 mb-2">{{ trans("How to use") }}
 										</h5>
-										<div v-if="data?.gpsr?.how_to_use">
+										<div v-if="gpsr?.how_to_use">
 											<div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
-												<div v-if="!showFullInstructions && data?.gpsr?.how_to_use.length > 200"
+												<div v-if="!showFullInstructions && gpsr?.how_to_use.length > 200"
 													class="space-y-2">
 													<p class="text-sm text-gray-700 leading-relaxed">
-														{{ data?.gpsr?.how_to_use.substring(0, 200) }}...
+														{{ gpsr?.how_to_use.substring(0, 200) }}...
 													</p>
 													<button @click="showFullInstructions = true"
 														class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1">
@@ -529,8 +534,8 @@ const getActiveHazards = () => {
 												<div v-else class="space-y-2">
 													<p
 														class="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-														{{ data?.gpsr?.how_to_use }}</p>
-													<button v-if="data?.gpsr?.how_to_use.length > 200"
+														{{ gpsr?.how_to_use }}</p>
+													<button v-if="gpsr?.how_to_use.length > 200"
 														@click="showFullInstructions = false"
 														class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1">
 														<FontAwesomeIcon icon="fal fa-chevron-up" />

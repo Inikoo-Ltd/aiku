@@ -222,70 +222,49 @@ class EditProduct extends OrgAction
                         'label' => __('code'),
                         'value' => $product->code
                     ],
-                    /* 'name' => [
+                    'name' => [
                         'type'  => 'input',
                         'label' => __('name'),
                         'value' => $product->name
-                    ], */
-                    //translation input raul request 7/24/25
-                    'name' => [
+                    ],
+                    'name_i8n' => [
                         'type'  => 'input_translation',
-                        'label' => __('name'),
+                        'label' => __('translete name'),
                         'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($product->shop->extra_languages),
-                        'value' => [
-                            "master" => [
-                                'value' => $product->name,
-                            ],
-                            "translate" => [
-                                'value'  => $product->getTranslations('name_i8n'),
-                            ]
-                        ]
+                        'value' => $product->getTranslations('name_i8n')
                     ],
                     'description_title' => [
-                        'type'  => 'input_translation',
+                        'type'  => 'input',
                         'label' => __('description title'),
-                        'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($product->shop->extra_languages),
-                        'value' => [
-                            "master" => [
-                                'value' => $product->description_title,
-                            ],
-                            "translate" => [
-                                'value'  => $product->getTranslations('description_title_i8n'),
-                            ]
-                        ]
+                        'value' => $product->description_title
                     ],
-                    /* 'description' => [
+                    'description_title_i8n' => [
+                        'type'  => 'input_translation',
+                        'label' => __('translete description title'),
+                        'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($product->shop->extra_languages),
+                        'value' => $product->getTranslations('description_title_i8n')
+                    ],
+                    'description' => [
                         'type'  => 'textEditor',
                         'label' => __('description'),
                         'value' => $product->description
-                    ], */
-
-                    //textEditor_translation
-                    'description' => [
+                    ],
+                    'description_i8n' => [
                         'type'  => 'textEditor_translation',
-                        'label' => __('description'),
+                        'label' => __('translete description'),
                         'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($product->shop->extra_languages),
-                        'value' => [
-                            "master" => [
-                                'value' => $product->description,
-                            ],
-                            "translate" => [
-                                'value'  => $product->getTranslations('description_i8n'),
-                            ]
-                        ]
+                        'value' => $product->getTranslations('description_i8n')
                     ],
                     'description_extra' => [
+                        'type'  => 'textEditor',
+                        'label' => __('translete description extra'),
+                        'value' => $product->description_extra
+                    ],
+                    'description_extra__i8n' => [
                         'type'  => 'textEditor_translation',
-                        'label' => __('description extra'),
+                        'label' => __('translete description extra'),
                         'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($product->shop->extra_languages),
-                        'value' => [
-                            "master" => [
-                                'value' => $product->description_extra,
-                            ],
-                            "translate" => [
-                                'value'  => $product->getTranslations('description_extra_i8n'),
-                            ]
-                        ]
+                        'value' => $product->getTranslations('description_extra_i8n')
                     ],
                 ]
             ],
@@ -364,10 +343,14 @@ class EditProduct extends OrgAction
                 ]
             ],
             [
-                'label'  => __('Trade unit'),
-                'icon'   => 'fa-light fa-atom',
+                'label' => __('Trade unit'),
+                'icon' => 'fa-light fa-atom',
                 'fields' => [
-                    'trade_units' => $product->tradeUnits ? $this->getDataTradeUnit($product->tradeUnits) : []
+                    'trade_units' => [
+                        'type' => 'input',
+                        'value' => null,
+                        'trade_units' => $product->tradeUnits ? $this->getDataTradeUnit($product->tradeUnits) : []
+                    ]
                 ],
             ],
             [

@@ -4,19 +4,13 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { notify } from "@kyvg/vue3-notification"
 import Image from "@/Components/Image.vue"
-// import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/vue"
-import { inject, ref, computed, watch } from "vue"
-// import EmptyState from "@/Components/Utils/EmptyState.vue"
-import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { ref, computed, watch } from "vue"
 import { faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
-// import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import { useFormatTime } from "@/Composables/useFormatTime"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { Images } from "@/types/Images"
 import { Link, router } from "@inertiajs/vue3"
-// import { useLocaleStore } from "@/Stores/locale"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Dialog from 'primevue/dialog'
@@ -24,9 +18,7 @@ import { faImage } from "@far"
 import EditTradeUnit from "@/Components/Goods/EditTradeUnit.vue"
 import { Fieldset, Select } from "primevue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
-import { Accordion, AccordionPanel, AccordionHeader, AccordionContent } from 'primevue'
 import ProductSummary from "@/Components/Product/ProductSummary.vue"
-// import TranslationBox from '@/Components/TranslationBox.vue';
 
 
 library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus, faBarcode, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo)
@@ -105,60 +97,17 @@ const props = defineProps<{
 		}
 	}
 }>()
-console.log('qqq', props.data.trade_units)
 
-console.log(props.data)
-
-const locale = inject("locale", aikuLocaleStructure)
 const selectedImage = ref(0)
-const isLoading = ref<string[] | number[]>([])
-const showAllImages = ref(false)
-const showAllStats = ref(false)
 const isModalGallery = ref(false)
-const showFullWarnings = ref(false)
-const showFullInstructions = ref(false)
 
 const images = computed(() => props.data?.product?.data?.images ?? [])
-
-const displayedImages = computed(() =>
-	showAllImages.value ? images.value : images.value.slice(0, 6)
-)
-
-const displayedStats = computed(() => {
-	if (!props.data.stats) return []
-	const filtered = props.data.stats.filter(item => !item.name.toLowerCase().includes("all"))
-	return showAllStats.value ? filtered : filtered.slice(0, 6)
-})
-
-function changeSelectedImage(index: number) {
-	selectedImage.value = index
-}
 
 watch(images, (newVal) => {
 	if (!newVal?.length || selectedImage.value > newVal.length - 1) {
 		selectedImage.value = 0
 	}
 }, { immediate: true })
-
-const deleteImage = async (image, index: number) => {
-	router.delete(
-		route(props.data.deleteImageRoute.name, {
-			...props.data.deleteImageRoute.parameters,
-			media: image.id,
-		}),
-		{
-			onStart: () => isLoading.value.push(image.id),
-			onFinish: () =>
-				notify({ title: trans("Success"), text: trans("Image deleted"), type: "success" }),
-			onError: () =>
-				notify({
-					title: trans("Failed"),
-					text: trans("Cannot delete image"),
-					type: "error",
-				}),
-		}
-	)
-}
 
 
 const onSubmitUpload = async (files: File[], refData = null) => {
@@ -204,39 +153,6 @@ const compSelectedTradeUnit = computed(() => {
 	return props.data.trade_units.find((unit) => unit.tradeUnit.code === selectedTradeUnit.value)
 })
 
-const hazardDefinitions = ref([
-	{ key: 'acuteToxicity', name: 'Acute Toxicity', icon: 'toxic-icon.png' },
-	{ key: 'corrosive', name: 'Corrosive', icon: 'corrosive-icon.png' },
-	{ key: 'explosive', name: 'Explosive', icon: 'explosive.jpg' },
-	{ key: 'flammable', name: 'Flammable', icon: 'flammable.png' },
-	{ key: 'gasUnderPressure', name: 'Gas under pressure', icon: 'gas.png' },
-	{ key: 'environmentHazard', name: 'Hazards to the environment', icon: 'hazard-env.png' },
-	{ key: 'healthHazard', name: 'Health hazard', icon: 'health-hazard.png' },
-	{ key: 'oxidising', name: 'Oxidising', icon: 'oxidising.png' },
-	{ key: 'seriousHealthHazard', name: 'Serious Health hazard', icon: 'serious-health-hazard.png' }
-])
-
-const getHazardIconPath = (iconName) => {
-	return `/hazardIcon/${iconName}`
-}
-
-const getActiveHazards = () => {
-	return hazardDefinitions.value.filter(hazard => {
-		switch (hazard.key) {
-			case 'acuteToxicity': return props.data.gpsr.acute_toxicity
-			case 'corrosive': return props.data.gpsr.corrosive
-			case 'explosive': return props.data.gpsr.explosive
-			case 'flammable': return props.data.gpsr.flammable
-			case 'gasUnderPressure': return props.data.gpsr.gas_under_pressure
-			case 'environmentHazard': return props.data.gpsr.hazard_environment
-			case 'healthHazard': return props.data.gpsr.health_hazard
-			case 'oxidising': return props.data.gpsr.oxidising
-			default: return false
-		}
-	})
-}
-
-// console.log(props)
 </script>
 
 <template>
@@ -330,16 +246,21 @@ const getActiveHazards = () => {
 		</div>
 
 		<!-- Product Summary -->
-		<ProductSummary :data="{...data.product.data, gpsr : data.gpsr}" />
+		<ProductSummary :data="data.product.data" :gpsr="data.gpsr" :properties="data.properties"  :part="data.part"/>
 	</div>
 
 	<!-- Gallery Dialog -->
 	<Dialog v-model:visible="isModalGallery" modal closable dismissableMask header="Gallery Management"
 		:style="{ width: '95vw', maxWidth: '900px' }" :pt="{ root: { class: 'rounded-xl shadow-xl' } }">
-		<GalleryManagement :multiple="true" :uploadRoute="data.uploadImageRoute"
+		<GalleryManagement 
+			:multiple="true" 
+			:uploadRoute="data.uploadImageRoute"
 			:submitUpload="(file, refDAta) => onSubmitUpload(file, refDAta)"
-			:imagesUploadedRoutes="data.imagesUploadedRoutes" :attachImageRoute="data.attachImageRoute"
-			:stockImagesRoute="data.stockImagesRoute" @selectImage="(image) => console.log('Selected:', image)" />
+			:imagesUploadedRoutes="data.imagesUploadedRoutes" 
+			:attachImageRoute="data.attachImageRoute"
+			:stockImagesRoute="data.stockImagesRoute" 
+			@selectImage="(image) => console.log('Selected:', image)" 
+		/>
 	</Dialog>
 </template>
 
