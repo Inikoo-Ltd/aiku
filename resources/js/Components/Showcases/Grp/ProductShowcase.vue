@@ -15,8 +15,6 @@ import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Dialog from 'primevue/dialog'
 import { faImage } from "@far"
-import EditTradeUnit from "@/Components/Goods/EditTradeUnit.vue"
-import { Fieldset, Select } from "primevue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import ProductSummary from "@/Components/Product/ProductSummary.vue"
 
@@ -148,11 +146,7 @@ const onSubmitUpload = async (files: File[], refData = null) => {
 	)
 }
 
-const selectedTradeUnit = ref(props.data.trade_units.length > 0 ? props.data.trade_units[0].tradeUnit.code : null)
-const compSelectedTradeUnit = computed(() => {
-	return props.data.trade_units.find((unit) => unit.tradeUnit.code === selectedTradeUnit.value)
-})
-
+console.log('sss',props)
 </script>
 
 <template>
@@ -162,11 +156,11 @@ const compSelectedTradeUnit = computed(() => {
 			<!-- Image Preview & Thumbnails -->
 			<div class="bg-white rounded-xl shadow-sm  p-4 lg:p-5">
 				<ImageProducts v-if="data.product.data.images?.length" :images="data.product.data.images" :breakpoints="{
-						0: { slidesPerView: 3 },
-						480: { slidesPerView: 4 },
-						640: { slidesPerView: 5 },
-						1024: { slidesPerView: 6 }
-					}" class="overflow-x-auto">
+					0: { slidesPerView: 3 },
+					480: { slidesPerView: 4 },
+					640: { slidesPerView: 5 },
+					1024: { slidesPerView: 6 }
+				}" class="overflow-x-auto">
 					<template #image-thumbnail="{ image, index }">
 						<div
 							class="aspect-square w-full overflow-hidden group relative rounded-lg border border-gray-200">
@@ -174,12 +168,12 @@ const compSelectedTradeUnit = computed(() => {
 								class="block w-full h-full object-cover" />
 							<!-- Delete Icon -->
 							<ModalConfirmationDelete :routeDelete="{
-									name: props.data.deleteImageRoute.name,
-									parameters: {
-										...props.data.deleteImageRoute.parameters,
-										media: image.id,
-									}
-								}" :title="trans('Are you sure you want to delete the image?')"
+								name: props.data.deleteImageRoute.name,
+								parameters: {
+									...props.data.deleteImageRoute.parameters,
+									media: image.id,
+								}
+							}" :title="trans('Are you sure you want to delete the image?')"
 								:description="trans('This action cannot be undone.')" isFullLoading noLabel="Delete"
 								noIcon="fal fa-times">
 								<template #default="{ changeModel }">
@@ -207,60 +201,17 @@ const compSelectedTradeUnit = computed(() => {
 			</div>
 		</div>
 
-		<!-- Right Section -->
-		<div class="space-y-4 lg:space-y-6">
-			<div>
-				<Fieldset class="bg-white rounded-xl shadow-sm w-full md:w-auto" legend="Trade units">
-					<template #legend>
-						<div class="flex items-center gap-2 font-bold">
-							<FontAwesomeIcon icon="fal fa-atom" class="text-gray-400" fixed-width />
-							Trade units
-						</div>
-					</template>
-
-					<template #default>
-						<div>
-							<template v-if="props.data.trade_units.length">
-								<div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-4">
-									<Select v-model="selectedTradeUnit" :options="props.data.trade_units"
-										optionLabel="tradeUnit.name" optionValue="tradeUnit.code"
-										placeholder="Select a City" class="w-full sm:w-80" />
-									<Link v-if="compSelectedTradeUnit?.tradeUnit?.slug"
-										:href="route('grp.goods.trade-units.show', compSelectedTradeUnit?.tradeUnit.slug)"
-										v-tooltip="trans('Open trade unit')"
-										class="text-gray-400 hover:text-gray-600 text-center sm:text-left">
-									<FontAwesomeIcon icon="fal fa-external-link" fixed-width />
-									</Link>
-								</div>
-								<EditTradeUnit v-if="compSelectedTradeUnit" v-bind="compSelectedTradeUnit" />
-							</template>
-							<div v-else class="text-gray-500 text-center py-4">
-								{{ trans("No trade units for this product") }}
-							</div>
-						</div>
-					</template>
-				</Fieldset>
-			</div>
-
-			<!-- <TranslationBox v-bind="data.translation_box" :master="data.product.data" :needTranslation="data.product.data" /> -->
-		</div>
-
 		<!-- Product Summary -->
-		<ProductSummary :data="data.product.data" :gpsr="data.gpsr" :properties="data.properties"  :part="data.part"/>
+		<ProductSummary :data="data.product.data" :gpsr="data.gpsr" :properties="data.properties" :parts="data.parts" />
 	</div>
 
 	<!-- Gallery Dialog -->
 	<Dialog v-model:visible="isModalGallery" modal closable dismissableMask header="Gallery Management"
 		:style="{ width: '95vw', maxWidth: '900px' }" :pt="{ root: { class: 'rounded-xl shadow-xl' } }">
-		<GalleryManagement 
-			:multiple="true" 
-			:uploadRoute="data.uploadImageRoute"
+		<GalleryManagement :multiple="true" :uploadRoute="data.uploadImageRoute"
 			:submitUpload="(file, refDAta) => onSubmitUpload(file, refDAta)"
-			:imagesUploadedRoutes="data.imagesUploadedRoutes" 
-			:attachImageRoute="data.attachImageRoute"
-			:stockImagesRoute="data.stockImagesRoute" 
-			@selectImage="(image) => console.log('Selected:', image)" 
-		/>
+			:imagesUploadedRoutes="data.imagesUploadedRoutes" :attachImageRoute="data.attachImageRoute"
+			:stockImagesRoute="data.stockImagesRoute" @selectImage="(image) => console.log('Selected:', image)" />
 	</Dialog>
 </template>
 
