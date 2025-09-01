@@ -14,6 +14,7 @@ use App\Models\Goods\TradeUnit;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 
 class EditTradeUnit extends OrgAction
 {
@@ -67,7 +68,8 @@ class EditTradeUnit extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('edit sku'),
+                            'label'  => __('Name/Description'),
+                            'icon'   => 'fa-light fa-tag',
                             'fields' => [
                                 'code' => [
                                     'type'  => 'input',
@@ -79,10 +81,44 @@ class EditTradeUnit extends OrgAction
                                     'label' => __('name'),
                                     'value' => $tradeUnit->name
                                 ],
+                                'name_i8n' => [
+                                    'type'  => 'input_translation',
+                                    'label' => __('translate name'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($tradeUnit->group->extra_languages),
+                                    'value' => $tradeUnit->getTranslations('name_i8n')
+                                ],
+                                'description_title' => [
+                                    'type'  => 'input',
+                                    'label' => __('description title'),
+                                    'value' => $tradeUnit->description_title
+                                ],
+                                'description_title_i8n' => [
+                                    'type'  => 'input_translation',
+                                    'label' => __('translate description title'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($tradeUnit->group->extra_languages),
+                                    'value' => $tradeUnit->getTranslations('description_title_i8n')
+                                ],
                                 'description' => [
                                     'type'  => 'textarea',
                                     'label' => __('description'),
                                     'value' => $tradeUnit->description
+                                ],
+                                'description_i8n' => [
+                                    'type'  => 'textEditor_translation',
+                                    'label' => __('translate description'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($tradeUnit->group->extra_languages),
+                                    'value' => $tradeUnit->getTranslations('description_i8n')
+                                ],
+                                'description_extra' => [
+                                    'type'  => 'textEditor',
+                                    'label' => __('description extra'),
+                                    'value' => $tradeUnit->description_extra
+                                ],
+                                'description_extra_i8n' => [
+                                    'type'  => 'textEditor_translation',
+                                    'label' => __('translate description extra'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($tradeUnit->group->extra_languages),
+                                    'value' => $tradeUnit->getTranslations('description_extra_i8n')
                                 ],
                                 'gross_weight' => [
                                     'type'  => 'input',
