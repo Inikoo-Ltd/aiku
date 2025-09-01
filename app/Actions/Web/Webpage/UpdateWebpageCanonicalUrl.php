@@ -10,6 +10,8 @@ namespace App\Actions\Web\Webpage;
 
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Enums\Web\Webpage\WebpageTypeEnum;
+use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
@@ -28,14 +30,14 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
 
     public function handle(Webpage $webpage): void
     {
-        $canonicalUrl = $webpage->url ?? '';
-        if ($webpage->model_type) {
-            if ($webpage->model_type == 'ProductCategory') {
-                $canonicalUrl = $this->getProductCategoryCanonicalUrl($webpage);
-            } elseif ($webpage->model_type == 'Product') {
-                $canonicalUrl = $this->getProductCanonicalUrl($webpage);
-            }
-        }
+
+
+        $canonicalUrl = match ($webpage->type) {
+            WebpageTypeEnum::CATALOGUE => $this->getWebpageTypeCatalogue($webpage),
+            WebpageTypeEnum::STOREFRONT => '',
+            WebpageTypeEnum::BLOG => 'blog/'.$webpage->url,
+            default => $webpage->url
+        };
 
         $canonicalUrl = 'https://'.$webpage->website->domain.'/'.$canonicalUrl;
 
@@ -44,13 +46,64 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         ]);
     }
 
+
+    protected function getWebpageTypeCatalogue(Webpage $webpage): string
+    {
+        $canonicalUrl = $webpage->url ?? '';
+        if ($webpage->model_type) {
+            if ($webpage->model_type == 'ProductCategory') {
+                $canonicalUrl = $this->getProductCategoryCanonicalUrl($webpage);
+            } elseif ($webpage->model_type == 'Product') {
+                $canonicalUrl = $this->getProductCanonicalUrl($webpage);
+            } elseif ($webpage->model_type == 'Collection') {
+                $canonicalUrl = $this->getCollectionCanonicalUrl($webpage);
+            }
+        }
+
+        return $canonicalUrl;
+    }
+
+    protected function getCollectionCanonicalUrl(Webpage $webpage): string
+    {
+        /** @var Collection $collection */
+        $collection = $webpage->model;
+
+        $done = false;
+        $url  = '';
+
+
+
+        foreach ($collection->subDepartments as $subDepartment) {
+            if ($subDepartment->webpage && $subDepartment->webpage->state != WebpageStateEnum::CLOSED) {
+                $url = $this->getProductCategoryCanonicalUrl($subDepartment->webpage);
+
+                $done = true;
+                break;
+            }
+        }
+
+        if (!$done) {
+            foreach ($collection->departments as $department) {
+                if ($department->webpage && $department->webpage->state != WebpageStateEnum::CLOSED) {
+                    $url = $this->getProductCategoryCanonicalUrl($department->webpage);
+
+                    $done = true;
+                    break;
+                }
+            }
+        }
+
+        $url .= '/'.$webpage->url;
+
+        return $this->trimTrailingSlash($url);
+    }
+
     protected function getProductCanonicalUrl(Webpage $webpage): string
     {
         /** @var Product $product */
         $product = $webpage->model;
 
         $url = '';
-        // If product belongs to a family with a live webpage, base URL on that
         if ($product->family && $product->family->webpage && $product->family->webpage->state != WebpageStateEnum::CLOSED) {
             $url = $this->getProductCategoryCanonicalUrl($product->family->webpage);
         } elseif ($product->subDepartment && $product->subDepartment->webpage && $product->subDepartment->webpage->state != WebpageStateEnum::CLOSED) {
@@ -137,16 +190,12 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         $processed = 0;
 
         // Determine total for the progress bar
-        $total = Webpage::count();
+        $total       = Webpage::count();
         $progressBar = $command->getOutput()->createProgressBar($total);
         $progressBar->setRedrawFrequency(100);
         $progressBar->start();
 
         Webpage::query()
-            ->with(['website', 'model' => function ($m) {
-                // We will lazily touch nested relations in helpers; eager-load direct model to reduce N+1
-            }])
-            ->select(['id','website_id','model_type','model_id','slug','url'])
             ->orderBy('id')
             ->chunkById(500, function ($webpages) use (&$processed, $progressBar) {
                 foreach ($webpages as $webpage) {
@@ -160,7 +209,7 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         $command->newLine(2);
 
         $duration = microtime(true) - $startTime;
-        $human = gmdate('H:i:s', (int) $duration);
+        $human    = gmdate('H:i:s', (int)$duration);
         $command->info("Processed $processed webpages in $human.");
     }
 
