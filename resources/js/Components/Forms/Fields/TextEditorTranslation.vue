@@ -22,15 +22,12 @@ if (!Object.values(props.fieldData.languages).some(l => l.code === selectedLang.
   selectedLang.value = Object.values(props.fieldData.languages)[0]?.code || "en"
 }
 
-// Ensure translate object exists
-if (!props.form[props.fieldName]) {
-  props.form[props.fieldName] = {}
-}
+// Ensure form field exists
 if (!props.form[props.fieldName]) {
   props.form[props.fieldName] = {}
 }
 
-// Local buffer
+// Local buffer (copy all existing translations)
 const langBuffers = ref<Record<string, string>>({
   ...props.form[props.fieldName]
 })
@@ -43,7 +40,7 @@ const langLabel = (code: string) => {
   return langObj?.name ?? code
 }
 
-// Sync buffer → form
+// Sync buffer → form (always push updated values back)
 watch(
   langBuffers,
   (newVal) => {
@@ -58,7 +55,6 @@ watch(
   selectedLang,
   (newLang) => {
     localStorage.setItem("translation_box", newLang)
-    // 🔥 Custom event for same-tab sync
     window.dispatchEvent(new CustomEvent("translation_box_updated", { detail: newLang }))
   },
   { immediate: true }
@@ -76,8 +72,8 @@ onMounted(() => {
     selectedLang.value = e.detail
   }
 
-  window.addEventListener("storage", handleStorage) // cross-tab
-  window.addEventListener("translation_box_updated", handleCustom as EventListener) // same-tab
+  window.addEventListener("storage", handleStorage)
+  window.addEventListener("translation_box_updated", handleCustom as EventListener)
 
   onBeforeUnmount(() => {
     window.removeEventListener("storage", handleStorage)
@@ -106,12 +102,12 @@ onMounted(() => {
         Translation to {{ langLabel(selectedLang) }}
       </label>
 
-      <EditorV2 v-model="langBuffers[selectedLang]">
+      <EditorV2 v-model="langBuffers[selectedLang]" :key="selectedLang">
         <template #editor-content="{ editor }">
           <div
             class="editor-wrapper border border-gray-300 rounded-md bg-white p-3 focus-within:border-blue-400 transition-all"
           >
-            <EditorContent :editor="editor" class="editor-content focus:outline-none" />
+            <EditorContent :editor="editor"  class="editor-content focus:outline-none leading-6 min-h-[6rem]" />
           </div>
         </template>
       </EditorV2>
