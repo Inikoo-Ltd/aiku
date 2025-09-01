@@ -57,6 +57,7 @@ const props = defineProps<{
     dataPalletReturn?: {
         is_collection: boolean
     }
+    isOrder?: boolean
     boxStats?: {
         fulfilment_customer?: {
             address?: {
@@ -194,16 +195,16 @@ onMounted(() => {
             </div> -->
 
             <!-- Collection Toggle -->
-            <div class="mt-2 pl-1 flex items w-full flex-none gap-x-2">
+            <div class="mt-2 pl-1 flex items w-full flex-none gap-x-2" v-if="!isOrder || isCollection">
                 <FontAwesomeIcon icon='fal fa-map-pin' class='text-gray-400' fixed-width aria-hidden='true'/>
-                <ToggleSwitch @change="updateCollection"
+                <ToggleSwitch v-if="!isOrder" @change="updateCollection"
                               v-model="isCollection"/>
                 <span class="text-sm text-gray-500">Collection</span>
             </div>
 
             <!-- Collection Options -->
             <div class="mt-2 pl-1 flex items w-full flex-none gap-x-2">
-                <div v-if="isCollection" class="w-full">
+                <div v-if="isCollection && !isOrder" class="w-full">
                     <span class="block mb-1">{{ trans("Collection by:") }}</span>
                     <div class="flex space-x-4">
                         <label class="inline-flex items-center">
@@ -225,12 +226,12 @@ onMounted(() => {
                     </div>
                 </div>
 
-                <div v-else class="w-full text-xs text-gray-500"
+                <div v-else-if="!isCollection" class="w-full text-xs text-gray-500"
                      :class="listError?.box_stats_delivery_address ? 'errorShake' : ''">
                     <dd
                         class="w-full text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
                         <div v-html="summary?.customer?.addresses?.delivery?.formatted_address"></div>
-                        <div v-if="address_management" @click="isModalShippingAddress = true"
+                        <div v-if="address_management?.updateRoute" @click="isModalShippingAddress = true"
                              class="underline cursor-pointer hover:text-gray-700">
                             {{ trans("Edit") }}
                             <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true"/>
