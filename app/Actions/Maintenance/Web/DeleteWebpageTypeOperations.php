@@ -38,7 +38,7 @@ class DeleteWebpageTypeOperations
     public function asCommand(Command $command): void
     {
 
-        Webpage::where('type', 'operations')->orderBy('id')
+        Webpage::withTrashed()->where('type', 'operations')->orderBy('id')
             ->chunk(
                 100,
                 function (Collection $models) use ($command) {
