@@ -72,15 +72,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $launched_at
  * @property \Illuminate\Support\Carbon|null $closed_at
  * @property int|null $storefront_id
- * @property int|null $catalogue_id
- * @property int|null $products_id
- * @property int|null $login_id
- * @property int|null $register_id
- * @property int|null $basket_id
- * @property int|null $checkout_id
- * @property int|null $call_back_id
- * @property int|null $appointment_id
- * @property int|null $pricing_id
  * @property string|null $cloudflare_id
  * @property WebsiteCloudflareStatusEnum|null $cloudflare_status
  * @property \Illuminate\Support\Carbon|null $created_at
