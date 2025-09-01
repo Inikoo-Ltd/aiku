@@ -29,10 +29,8 @@ class GetWebpagesInCollection extends OrgAction
 {
     use WithCatalogueAuthorisation;
 
-    private Shop $parent;
     private mixed $bucket;
 
-    /** @noinspection PhpUnusedParameterInspection */
     public function inShop(Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'all';
@@ -41,7 +39,6 @@ class GetWebpagesInCollection extends OrgAction
 
         return $this->handle($shop->website);
     }
-    /** @noinspection PhpUnusedParameterInspection */
     public function inShopActive(Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'live';
@@ -80,8 +77,6 @@ class GetWebpagesInCollection extends OrgAction
             $queryBuilder->where('webpages.type', WebpageTypeEnum::CATALOGUE);
         } elseif ($this->bucket == 'content') {
             $queryBuilder->where('webpages.type', WebpageTypeEnum::CONTENT);
-        } elseif ($this->bucket == 'info') {
-            $queryBuilder->where('webpages.type', WebpageTypeEnum::INFO);
         } elseif ($this->bucket == 'operations') {
             $queryBuilder->where('webpages.type', WebpageTypeEnum::OPERATIONS);
         } elseif ($this->bucket == 'blog') {
@@ -91,7 +86,7 @@ class GetWebpagesInCollection extends OrgAction
         }
 
         if (isset(request()->query()['json']) && request()->query()['json'] === 'true' || (function_exists('request') && request() && request()->expectsJson())) {
-            $queryBuilder->orderByRaw("CASE 
+            $queryBuilder->orderByRaw("CASE
             WHEN webpages.sub_type = 'storefront' THEN 1
             WHEN webpages.sub_type = 'department' THEN 2
             WHEN webpages.sub_type = 'sub_department' THEN 3
