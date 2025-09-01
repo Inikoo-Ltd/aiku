@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Product\UI;
 
+use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
@@ -25,6 +26,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
 use App\Http\Resources\Inventory\OrgStocksResource;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
+use App\Models\Goods\TradeUnit;
 
 class EditProduct extends OrgAction
 {
@@ -365,24 +367,7 @@ class EditProduct extends OrgAction
                 'label'  => __('Trade unit'),
                 'icon'   => 'fa-light fa-atom',
                 'fields' => [
-                    'family_id' => [
-                        'type'       => 'select_infinite',
-                        'label'      => __('Family'),
-                        'options'    => [
-                            $familyOptions
-                        ],
-                        'fetchRoute' => [
-                            'name'       => 'grp.json.shop.families',
-                            'parameters' => [
-                                'shop' => $product->shop->id
-                            ]
-                        ],
-                        'valueProp'  => 'id',
-                        'labelProp'  => 'code',
-                        'required'   => true,
-                        'value'      => $product->family->id ?? null,
-                        'type_label' => 'families'
-                    ]
+                    'trade_units' => $product->tradeUnits ? $this->getDataTradeUnit($product->tradeUnits) : []
                 ],
             ],
             [
@@ -410,6 +395,13 @@ class EditProduct extends OrgAction
                 ],
             ],
         ];
+    }
+
+    private function getDataTradeUnit($tradeUnits): array
+    {
+        return $tradeUnits->map(function (TradeUnit $tradeUnit) {
+            return GetTradeUnitShowcase::run($tradeUnit);
+        })->toArray();
     }
 
     public function getBreadcrumbs(Product $product, string $routeName, array $routeParameters): array
