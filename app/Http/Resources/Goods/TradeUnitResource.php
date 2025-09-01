@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Goods;
 
+use App\Actions\Api\Retina\Dropshipping\Resource\ImageResource;
 use App\Models\Goods\TradeUnit;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -32,7 +33,8 @@ class TradeUnitResource extends JsonResource
             'volume'               => $tradeUnit->volume,
             'type'                 => $tradeUnit->type,
             'image_id'             => $tradeUnit->image_id,
-
+            'images'          => ImageResource::collection($tradeUnit->images),
+            'image_thumbnail' => $tradeUnit->imageSources(720, 480),
             'name'                  => $tradeUnit->name,
             'description'           => $tradeUnit->description,
             'description_title'     => $tradeUnit->description_title,

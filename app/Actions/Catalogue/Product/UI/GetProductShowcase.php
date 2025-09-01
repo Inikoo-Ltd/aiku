@@ -54,7 +54,7 @@ class GetProductShowcase
             'flammable' => $product->pictogram_flammable,
             'gas_under_pressure' => $product->pictogram_gas,
             'hazard_environment' => $product->pictogram_environment,
-            'health_hazard' => $product->pictogram_,
+            'health_hazard' => $product->pictogram_health,
             'oxidising' => $product->pictogram_oxidising,
 
         ];
