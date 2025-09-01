@@ -21,16 +21,16 @@ if (!Object.values(props.fieldData.languages).some(l => l.code === selectedLang.
 }
 
 // Ensure translate object exists
-if (!props.form[props.fieldName].translate) {
-  props.form[props.fieldName].translate = { value: {} }
+if (!props.form[props.fieldName]) {
+  props.form[props.fieldName] = {}
 }
-if (!props.form[props.fieldName].translate.value) {
-  props.form[props.fieldName].translate.value = {}
+if (!props.form[props.fieldName]) {
+  props.form[props.fieldName]= {}
 }
 
 // Local buffer
 const langBuffers = ref<Record<string, string>>({
-  ...props.form[props.fieldName].translate.value
+  ...props.form[props.fieldName]
 })
 
 // Helper
@@ -45,7 +45,7 @@ const langLabel = (code: string) => {
 watch(
   langBuffers,
   (newVal) => {
-    props.form[props.fieldName].translate.value = { ...newVal }
+    props.form[props.fieldName]= { ...newVal }
     emits("update:form", { ...props.form })
   },
   { deep: true }
@@ -86,18 +86,6 @@ onMounted(() => {
 
 <template>
   <div class="space-y-4">
-    <!-- Master Field -->
-    <div>
-      <label class="block mb-1 font-medium text-sm">
-        {{ fieldData.label }} (Master)
-      </label>
-      <input
-        type="text"
-        v-model="form[fieldName].master.value"
-        class="w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-      />
-    </div>
-
     <!-- Language Selector -->
     <div class="flex flex-wrap gap-2">
       <Button

@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue"
+import { ref, watch, onMounted, onBeforeUnmount } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { camelCase } from "lodash-es"
 import EditorV2 from "./BubleTextEditor/EditorV2.vue";
 import { EditorContent } from '@tiptap/vue-3'
 
@@ -24,16 +23,16 @@ if (!Object.values(props.fieldData.languages).some(l => l.code === selectedLang.
 }
 
 // Ensure translate object exists
-if (!props.form[props.fieldName].translate) {
-  props.form[props.fieldName].translate = { value: {} }
+if (!props.form[props.fieldName]) {
+  props.form[props.fieldName] = {}
 }
-if (!props.form[props.fieldName].translate.value) {
-  props.form[props.fieldName].translate.value = {}
+if (!props.form[props.fieldName]) {
+  props.form[props.fieldName] = {}
 }
 
 // Local buffer
 const langBuffers = ref<Record<string, string>>({
-  ...props.form[props.fieldName].translate.value
+  ...props.form[props.fieldName]
 })
 
 // Helper
@@ -48,7 +47,7 @@ const langLabel = (code: string) => {
 watch(
   langBuffers,
   (newVal) => {
-    props.form[props.fieldName].translate.value = { ...newVal }
+    props.form[props.fieldName] = { ...newVal }
     emits("update:form", { ...props.form })
   },
   { deep: true }
@@ -89,25 +88,16 @@ onMounted(() => {
 
 <template>
   <div class="space-y-4">
-    <!-- Master Field -->
-    <div>
-      <label class="block mb-1 font-medium text-sm">
-        {{ fieldData.label }} (Master)
-      </label>
-      <EditorV2 v-model="form[fieldName].master.value">
-        <template #editor-content="{ editor }">
-          <div
-            class="editor-wrapper border border-gray-300 rounded-md bg-white p-3 focus-within:border-blue-400 transition-all">
-            <EditorContent :editor="editor" class="editor-content focus:outline-none" />
-          </div>
-        </template>
-      </EditorV2>
-    </div>
-
     <!-- Language Selector -->
     <div class="flex flex-wrap gap-2">
-      <Button v-for="lang in Object.values(fieldData.languages)" :key="lang.code + selectedLang" :label="lang.name"
-        size="xxs" :type="selectedLang === lang.code ? 'primary' : 'tertiary'" @click="selectedLang = lang.code" />
+      <Button
+        v-for="lang in Object.values(fieldData.languages)"
+        :key="lang.code + selectedLang"
+        :label="lang.name"
+        size="xxs"
+        :type="selectedLang === lang.code ? 'primary' : 'tertiary'"
+        @click="selectedLang = lang.code"
+      />
     </div>
 
     <!-- Translation Input -->
@@ -116,11 +106,11 @@ onMounted(() => {
         Translation to {{ langLabel(selectedLang) }}
       </label>
 
-
       <EditorV2 v-model="langBuffers[selectedLang]">
         <template #editor-content="{ editor }">
           <div
-            class="editor-wrapper border border-gray-300 rounded-md bg-white p-3 focus-within:border-blue-400 transition-all">
+            class="editor-wrapper border border-gray-300 rounded-md bg-white p-3 focus-within:border-blue-400 transition-all"
+          >
             <EditorContent :editor="editor" class="editor-content focus:outline-none" />
           </div>
         </template>

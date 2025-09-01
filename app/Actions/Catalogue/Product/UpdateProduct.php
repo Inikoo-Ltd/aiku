@@ -62,7 +62,6 @@ class UpdateProduct extends OrgAction
             //todo  after updating orgStock need a new method to update Trade Units
         }
 
-
         $assetData = [];
         if (Arr::has($modelData, 'follow_master')) {
             data_set($assetData, 'follow_master', Arr::pull($modelData, 'follow_master'));

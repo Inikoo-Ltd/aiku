@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Product\UI;
 
+use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
@@ -25,6 +26,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
 use App\Http\Resources\Inventory\OrgStocksResource;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
+use App\Models\Goods\TradeUnit;
 
 class EditProduct extends OrgAction
 {
@@ -150,7 +152,7 @@ class EditProduct extends OrgAction
     /**
      * @throws \Exception
      */
-    public function getBlueprint(Product $product): array
+    public function getBlueprintX(Product $product): array
     {
 
 
@@ -174,7 +176,7 @@ class EditProduct extends OrgAction
     /**
      * @throws \Exception
      */
-    public function getBlueprintold(Product $product): array
+    public function getBlueprint(Product $product): array
     {
         $value = OrgStocksInProductResource::collection(GetOrgStocksInProduct::run($product))->resolve();
 
@@ -220,70 +222,49 @@ class EditProduct extends OrgAction
                         'label' => __('code'),
                         'value' => $product->code
                     ],
-                    /* 'name' => [
+                    'name' => [
                         'type'  => 'input',
                         'label' => __('name'),
                         'value' => $product->name
-                    ], */
-                    //translation input raul request 7/24/25
-                    'name' => [
+                    ],
+                    'name_i8n' => [
                         'type'  => 'input_translation',
-                        'label' => __('name'),
+                        'label' => __('translete name'),
                         'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($product->shop->extra_languages),
-                        'value' => [
-                            "master" => [
-                                'value' => $product->name,
-                            ],
-                            "translate" => [
-                                'value'  => $product->getTranslations('name_i8n'),
-                            ]
-                        ]
+                        'value' => $product->getTranslations('name_i8n')
                     ],
                     'description_title' => [
-                        'type'  => 'input_translation',
+                        'type'  => 'input',
                         'label' => __('description title'),
-                        'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($product->shop->extra_languages),
-                        'value' => [
-                            "master" => [
-                                'value' => $product->description_title,
-                            ],
-                            "translate" => [
-                                'value'  => $product->getTranslations('description_title_i8n'),
-                            ]
-                        ]
+                        'value' => $product->description_title
                     ],
-                    /* 'description' => [
+                    'description_title_i8n' => [
+                        'type'  => 'input_translation',
+                        'label' => __('translete description title'),
+                        'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($product->shop->extra_languages),
+                        'value' => $product->getTranslations('description_title_i8n')
+                    ],
+                    'description' => [
                         'type'  => 'textEditor',
                         'label' => __('description'),
                         'value' => $product->description
-                    ], */
-
-                    //textEditor_translation
-                    'description' => [
+                    ],
+                    'description_i8n' => [
                         'type'  => 'textEditor_translation',
-                        'label' => __('description'),
+                        'label' => __('translete description'),
                         'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($product->shop->extra_languages),
-                        'value' => [
-                            "master" => [
-                                'value' => $product->description,
-                            ],
-                            "translate" => [
-                                'value'  => $product->getTranslations('description_i8n'),
-                            ]
-                        ]
+                        'value' => $product->getTranslations('description_i8n')
                     ],
                     'description_extra' => [
+                        'type'  => 'textEditor',
+                        'label' => __('translete description extra'),
+                        'value' => $product->description_extra
+                    ],
+                    'description_extra__i8n' => [
                         'type'  => 'textEditor_translation',
-                        'label' => __('description extra'),
+                        'label' => __('translete description extra'),
                         'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($product->shop->extra_languages),
-                        'value' => [
-                            "master" => [
-                                'value' => $product->description_extra,
-                            ],
-                            "translate" => [
-                                'value'  => $product->getTranslations('description_extra_i8n'),
-                            ]
-                        ]
+                        'value' => $product->getTranslations('description_extra_i8n')
                     ],
                 ]
             ],
@@ -362,26 +343,13 @@ class EditProduct extends OrgAction
                 ]
             ],
             [
-                'label'  => __('Trade unit'),
-                'icon'   => 'fa-light fa-atom',
+                'label' => __('Trade unit'),
+                'icon' => 'fa-light fa-atom',
                 'fields' => [
-                    'family_id' => [
-                        'type'       => 'select_infinite',
-                        'label'      => __('Family'),
-                        'options'    => [
-                            $familyOptions
-                        ],
-                        'fetchRoute' => [
-                            'name'       => 'grp.json.shop.families',
-                            'parameters' => [
-                                'shop' => $product->shop->id
-                            ]
-                        ],
-                        'valueProp'  => 'id',
-                        'labelProp'  => 'code',
-                        'required'   => true,
-                        'value'      => $product->family->id ?? null,
-                        'type_label' => 'families'
+                    'trade_units' => [
+                        'type' => 'input',
+                        'value' => null,
+                        'trade_units' => $product->tradeUnits ? $this->getDataTradeUnit($product->tradeUnits) : []
                     ]
                 ],
             ],
@@ -410,6 +378,13 @@ class EditProduct extends OrgAction
                 ],
             ],
         ];
+    }
+
+    private function getDataTradeUnit($tradeUnits): array
+    {
+        return $tradeUnits->map(function (TradeUnit $tradeUnit) {
+            return GetTradeUnitShowcase::run($tradeUnit);
+        })->toArray();
     }
 
     public function getBreadcrumbs(Product $product, string $routeName, array $routeParameters): array

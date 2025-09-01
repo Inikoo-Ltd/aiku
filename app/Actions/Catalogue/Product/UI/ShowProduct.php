@@ -192,6 +192,9 @@ class ShowProduct extends OrgAction
 
     public function htmlResponse(Product $product, ActionRequest $request): Response
     {
+
+        $hasMaster = $product->master_product_id;
+
         return Inertia::render(
             'Org/Catalogue/Product',
             [
@@ -249,7 +252,7 @@ class ShowProduct extends OrgAction
                             ]
 
                         ],
-                        $this->canEdit ? [
+                        $this->canEdit && !$hasMaster ? [
                             'type'  => 'button',
                             'style' => 'edit',
                             'label'   => __('Edit'),

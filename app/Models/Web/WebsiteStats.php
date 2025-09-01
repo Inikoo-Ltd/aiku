@@ -32,7 +32,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_webpages_type_storefront
  * @property int $number_webpages_type_catalogue
  * @property int $number_webpages_type_content
- * @property int $number_webpages_type_operations
  * @property int $number_webpages_type_blog
  * @property int $number_webpages_sub_type_storefront
  * @property int $number_webpages_sub_type_catalogue

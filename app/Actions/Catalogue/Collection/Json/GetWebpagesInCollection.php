@@ -77,8 +77,6 @@ class GetWebpagesInCollection extends OrgAction
             $queryBuilder->where('webpages.type', WebpageTypeEnum::CATALOGUE);
         } elseif ($this->bucket == 'content') {
             $queryBuilder->where('webpages.type', WebpageTypeEnum::CONTENT);
-        } elseif ($this->bucket == 'operations') {
-            $queryBuilder->where('webpages.type', WebpageTypeEnum::OPERATIONS);
         } elseif ($this->bucket == 'blog') {
             $queryBuilder->where('webpages.type', WebpageTypeEnum::BLOG);
         } elseif ($this->bucket == 'storefront') {
