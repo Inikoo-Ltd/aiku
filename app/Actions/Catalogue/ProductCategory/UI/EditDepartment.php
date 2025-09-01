@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
+use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -108,20 +109,44 @@ class EditDepartment extends OrgAction
                                     'label' => __('name'),
                                     'value' => $department->name
                                 ],
+                                'name_i8n' => [
+                                    'type'  => 'input_translation',
+                                    'label' => __('translate name'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($department->shop->extra_languages),
+                                    'value' => $department->getTranslations('name_i8n')
+                                ],
                                 'description_title' => [
                                     'type'  => 'input',
                                     'label' => __('description title'),
                                     'value' => $department->description_title
+                                ],
+                                'description_title_i8n' => [
+                                    'type'  => 'input_translation',
+                                    'label' => __('translate description title'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($department->shop->extra_languages),
+                                    'value' => $department->getTranslations('description_title_i8n')
                                 ],
                                 'description' => [
                                     'type'  => 'textEditor',
                                     'label' => __('description'),
                                     'value' => $department->description
                                 ],
+                                'description_i8n' => [
+                                    'type'  => 'textEditor_translation',
+                                    'label' => __('translate description'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($department->shop->extra_languages),
+                                    'value' => $department->getTranslations('description_i8n')
+                                ],
                                 'description_extra' => [
                                     'type'  => 'textEditor',
                                     'label' => __('description extra'),
                                     'value' => $department->description_extra
+                                ],
+                                'description_extra_i8n' => [
+                                    'type'  => 'textEditor_translation',
+                                    'label' => __('translate description extra'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($department->shop->extra_languages),
+                                    'value' => $department->getTranslations('description_extra_i8n')
                                 ],
                             ]
                         ],

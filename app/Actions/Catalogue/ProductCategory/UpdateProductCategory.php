@@ -78,6 +78,39 @@ class UpdateProductCategory extends OrgAction
             $originalMasterProductCategory = $productCategory->masterProductCategory;
         }
 
+        if(Arr::has($modelData, 'name_i8n')) {
+            UpdateProductCategoryTranslationsFromUpdate::make()->action($productCategory, [
+                'translations' => [
+                    'name' => Arr::pull($modelData, 'name_i8n')
+                ]
+            ]);
+        }
+
+        if(Arr::has($modelData, 'description_title_i8n')) {
+            UpdateProductCategoryTranslationsFromUpdate::make()->action($productCategory, [
+                'translations' => [
+                    'description_title' => Arr::pull($modelData, 'description_title_i8n')
+                ]
+            ]);
+        }
+
+        if(Arr::has($modelData, 'description_i8n')) {
+            UpdateProductCategoryTranslationsFromUpdate::make()->action($productCategory, [
+                'translations' => [
+                    'description' => Arr::pull($modelData, 'description_i8n')
+                ]
+            ]);
+        }
+
+        if(Arr::has($modelData, 'description_extra_i8n')) {
+            UpdateProductCategoryTranslationsFromUpdate::make()->action($productCategory, [
+                'translations' => [
+                    'description_extra' => Arr::pull($modelData, 'description_extra_i8n')
+                ]
+            ]);
+        }
+
+
         $productCategory = $this->update($productCategory, $modelData, ['data']);
         $productCategory->refresh();
 
@@ -181,6 +214,10 @@ class UpdateProductCategory extends OrgAction
             'url'                        => ['sometimes', 'nullable', 'string', 'max:250'],
             'images'                     => ['sometimes', 'array'],
             'master_product_category_id' => ['sometimes', 'integer', 'nullable', Rule::exists('master_product_categories', 'id')->where('master_shop_id', $this->shop->master_shop_id)],
+            'name_i8n' => ['sometimes', 'array'],
+            'description_title_i8n' => ['sometimes', 'array'],
+            'description_i8n' => ['sometimes', 'array'],
+            'description_extra_i8n' => ['sometimes', 'array'],
 
         ];
 
