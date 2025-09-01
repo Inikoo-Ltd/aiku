@@ -39,11 +39,10 @@ class ShowMasterFamily extends GrpAction
     }
 
 
-
     public function asController(MasterShop $masterShop, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
     {
         $this->parent = $masterShop;
-        $group = group();
+        $group        = group();
 
         $this->initialisation($group, $request)->withTab(MasterFamilyTabsEnum::values());
 
@@ -68,6 +67,7 @@ class ShowMasterFamily extends GrpAction
         return $this->handle($masterFamily);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
     {
         $group        = group();
@@ -77,7 +77,8 @@ class ShowMasterFamily extends GrpAction
         return $this->handle($masterFamily);
     }
 
-    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
     {
         $group        = group();
         $this->parent = $masterSubDepartment;
@@ -86,7 +87,8 @@ class ShowMasterFamily extends GrpAction
         return $this->handle($masterFamily);
     }
 
-    public function inMasterSubDepartmentInMasterDepartment(MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inMasterSubDepartmentInMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): MasterProductCategory
     {
         $group        = group();
         $this->parent = $masterSubDepartment;
@@ -110,23 +112,30 @@ class ShowMasterFamily extends GrpAction
                     'previous' => $this->getPrevious($masterFamily, $request),
                     'next'     => $this->getNext($masterFamily, $request),
                 ],
+                'familyId'      => $masterFamily->id,
+                'currency' => $masterFamily->group->currency->code,
+                'storeProductRoute' => [
+                        'name'       => 'grp.models.master_family.store-assets',
+                        'parameters' => [
+                            'masterFamily' => $masterFamily->id,
+                        ]
+                ],
                 'pageHead'    => [
-                    'title'   => $masterFamily->name,
-                    'model'   => __('Master Family'),
-                    'icon'    => [
+                    'title'         => $masterFamily->name,
+                    'model'         => __('Master Family'),
+                    'icon'          => [
                         'icon'  => ['fal', 'fa-folder'],
                         'title' => __('department')
                     ],
-                    'actions' => [
-                        [
+                    'actions'       => [
+                        $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
-                            'label' => 'blueprint',
                             'route' => [
-                                'name'       => preg_replace('/show$/', 'blueprint', $request->route()->getName()),
+                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
                             ]
-                        ],
+                        ] : false,
                         $this->canDelete ? [
                             'type'  => 'button',
                             'style' => 'delete',
@@ -134,9 +143,15 @@ class ShowMasterFamily extends GrpAction
                                 'name'       => 'shops.show.families.remove',
                                 'parameters' => $request->route()->originalParameters()
                             ]
-                        ] : false
+                        ] : false,
+                        [
+                            'type'    => 'button',
+                            'style'   => 'create',
+                            'tooltip' => __('Add a master product to this family'),
+                            'label'   => __('master product'),
+                        ],
                     ],
-                     'subNavigation' => $this->getMasterFamilySubNavigation($masterFamily)
+                    'subNavigation' => $this->getMasterFamilySubNavigation($masterFamily)
 
                 ],
                 'tabs'        => [
@@ -158,9 +173,8 @@ class ShowMasterFamily extends GrpAction
 
             ]
         )
-        // ->table(IndexCustomers::make()->tableStructure(parent: $masterFamily->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
+            // ->table(IndexCustomers::make()->tableStructure(parent: $masterFamily->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
             ->table(IndexMailshots::make()->tableStructure($masterFamily));
-
     }
 
 
@@ -198,7 +212,8 @@ class ShowMasterFamily extends GrpAction
             'grp.masters.master_shops.show.master_families.show',
             'grp.masters.master_shops.show.master_families.edit',
             'grp.masters.master_shops.show.master_families.create',
-            'grp.masters.master_shops.show.master_families.master_products.index' =>
+            'grp.masters.master_shops.show.master_families.master_products.index',
+            'grp.masters.master_shops.show.master_families.master_products.show' =>
             array_merge(
                 ShowMasterShop::make()->getBreadcrumbs($masterFamily->masterShop, $routeParameters),
                 $headCrumb(
@@ -257,7 +272,8 @@ class ShowMasterFamily extends GrpAction
                     $suffix
                 )
             ),
-            'grp.masters.master_shops.show.master_departments.show.master_families.show' =>
+            'grp.masters.master_shops.show.master_departments.show.master_families.show',
+            'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index' =>
             array_merge(
                 ShowMasterDepartment::make()->getBreadcrumbs($masterFamily->masterShop, $masterFamily->masterDepartment, $routeName, $routeParameters, $suffix),
                 $headCrumb(
@@ -269,6 +285,25 @@ class ShowMasterFamily extends GrpAction
                         ],
                         'model' => [
                             'name'       => 'grp.masters.master_shops.show.master_departments.show.master_families.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.masters.master_shops.show.master_sub_departments.master_families.show',
+            'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.index' =>
+            array_merge(
+                ShowMasterSubDepartment::make()->getBreadcrumbs($masterFamily->masterSubDepartment, $routeName, $routeParameters, $suffix),
+                $headCrumb(
+                    $masterFamily,
+                    [
+                        'index' => [
+                            'name'       => 'grp.masters.master_shops.show.master_sub_departments.master_families.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.masters.master_shops.show.master_sub_departments.master_families.show',
                             'parameters' => $routeParameters
                         ]
                     ],

@@ -22,10 +22,6 @@ enum MasterSubDepartmentTabsEnum: string
     case SHOWCASE = 'showcase';
     case HISTORY  = 'history';
 
-
-
-
-
     public function blueprint(): array
     {
         return match ($this) {

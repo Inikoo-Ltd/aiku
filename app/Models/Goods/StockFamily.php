@@ -68,7 +68,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|StockFamily newQuery()
  * @method static Builder<static>|StockFamily onlyTrashed()
  * @method static Builder<static>|StockFamily query()
- * @method static Builder<static>|StockFamily withTrashed()
+ * @method static Builder<static>|StockFamily withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|StockFamily withoutTrashed()
  * @mixin Eloquent
  */

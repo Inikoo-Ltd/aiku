@@ -66,10 +66,12 @@ class EditWebpage extends OrgAction
      */
     public function htmlResponse(Webpage $webpage, ActionRequest $request): Response
     {
+        $isBlog = $webpage->type == WebpageTypeEnum::BLOG;
+
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __("Webpage's settings"),
+                'title'       => $isBlog ? __("Blog's Settings") : __("Webpage's settings"),
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
 
                 'pageHead' => [
@@ -78,7 +80,7 @@ class EditWebpage extends OrgAction
                         'icon'  => ['fal', 'sliders-h'],
                         'title' => __("Webpage settings")
                     ],
-                    'model' => __('Webpage'),
+                    'model' => $isBlog ? __('Blog') : __('Webpage'),
                     'iconRight' => WebpageStateEnum::stateIcon()[$webpage->state->value],
                     'afterTitle' => [
                         'label' => $webpage->getUrl(),
@@ -99,7 +101,7 @@ class EditWebpage extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'label'  => __('Webpage'),
+                            'label'  => $isBlog ? __('Blog') : __('Webpage'),
                             'icon'   => 'fal fa-browser',
                             'fields' => [
                                 "seo_image"         => [
@@ -130,7 +132,7 @@ class EditWebpage extends OrgAction
                                     'label'     => __('URL'),
                                     'label_no_capitalize' => true,
                                     'leftAddOn' => [
-                                        'label' => 'https://' . $webpage->website->domain . '/'
+                                        'label' => $isBlog ? 'https://' . $webpage->website->domain . '/blog' : 'https://' . $webpage->website->domain . '/'
                                     ],
                                     'value'     => $webpage->url,
                                     'required'  => true,
@@ -233,7 +235,7 @@ class EditWebpage extends OrgAction
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
-        if($routeName == 'grp.org.shops.show.web.blogs.edit') {
+        if ($routeName == 'grp.org.shops.show.web.blogs.edit') {
             return ShowBlogWebpage::make()->getBreadcrumbs(
                 $routeName,
                 $routeParameters,

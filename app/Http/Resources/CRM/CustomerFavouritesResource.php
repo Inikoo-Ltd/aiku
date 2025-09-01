@@ -12,6 +12,7 @@ namespace App\Http\Resources\CRM;
 use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Helpers\Media;
+use App\Models\Web\Webpage;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -32,8 +33,12 @@ class CustomerFavouritesResource extends JsonResource
         if ($this->image_id) {
             $media = Media::find($this->image_id);
         }
-        
-        // dd($this);
+
+        $webpage = null;
+        if ($this->webpage_id) {
+            $webpage = Webpage::find($this->webpage_id);
+        }
+
         return [
             'image'         => $this->image_id ? ImageResource::make($media)->getArray() : null,
             'id'                     => $this->id,
@@ -42,7 +47,8 @@ class CustomerFavouritesResource extends JsonResource
             'name'                   => $this->name,
             'description'            => $this->description,
             'price'                  => $this->price,
-            'url'                    => $this->webpage_url  // This not correct yet
+            'is_favourite'           => $this->favourite,  // TODO: make this works
+            'url'                    => $webpage ? $webpage->getUrl() : null  // This not correct yet
         ];
     }
 }

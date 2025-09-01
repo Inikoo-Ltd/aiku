@@ -14,8 +14,6 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 /**
- *
- *
  * @property int $id
  * @property TaxCategoryTypeEnum $type
  * @property string $type_name

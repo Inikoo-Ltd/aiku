@@ -45,8 +45,26 @@ class IndexSnapshots extends OrgAction
         return true;
     }
 
+    public function inBannerWorkshop(Banner $banner, ActionRequest $request): LengthAwarePaginator
+    {
+        return $this->handleBanner($banner);
+    }
 
-    public function handle(Website|Webpage|EmailTemplate $parent, $prefix = null, $scope = null, $withLabel = false): LengthAwarePaginator
+    public function handleBanner(Banner $banner): LengthAwarePaginator
+    {
+        $queryBuilder = QueryBuilder::for(Snapshot::class)
+            ->where('state', '!=', SnapshotStateEnum::UNPUBLISHED->value)
+            ->where('parent_id', $banner->id)
+            ->where('parent_type', 'Banner');
+
+        return $queryBuilder
+            ->defaultSort('-published_at')
+            ->allowedSorts(['published_at', 'published_until'])
+            ->withPaginator(tableName: request()->route()->getName())
+            ->withQueryString();
+    }
+
+    public function handle(Website|Webpage|EmailTemplate|Banner $parent, $prefix = null, $scope = null, $withLabel = false)
     {
         $queryBuilder = QueryBuilder::for(Snapshot::class);
         $queryBuilder->where('state', '!=', SnapshotStateEnum::UNPUBLISHED->value);
@@ -65,14 +83,14 @@ class IndexSnapshots extends OrgAction
 
         if (class_basename($parent) === 'Website') {
             $queryBuilder->where('parent_id', $parent->id)
-                            ->where('parent_type', 'Website');
+                ->where('parent_type', 'Website');
 
             if (in_array($scope, ['header', 'footer', 'menu'], true)) {
                 $queryBuilder->where('scope', $scope);
             }
         }
 
-        if($withLabel) {
+        if ($withLabel) {
             $queryBuilder->whereNotNull('label');
         }
 
@@ -148,7 +166,7 @@ class IndexSnapshots extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
 
             $table
@@ -166,7 +184,7 @@ class IndexSnapshots extends OrgAction
 
 
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
-            if($withLabel) {
+            if ($withLabel) {
                 $table->column(key: 'label', label: __('label'));
             }
             $table->column(key: 'publisher', label: __('publisher'), sortable: true)

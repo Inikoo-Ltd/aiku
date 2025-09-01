@@ -115,7 +115,7 @@ const onUnselectFavourite = (product: ProductResource) => {
 
 
 
-const xxxxxxx = Math.random() > 0.5
+// const xxxxxxx = Math.random() > 0.5
 
 </script>
 
@@ -235,7 +235,7 @@ const xxxxxxx = Math.random() > 0.5
                 </div>
 
                 <!-- Section: Price & RRP -->
-                <div v-if="layout?.iris?.is_logged_in" class="mb-3">
+                <!-- <div v-if="layout?.iris?.is_logged_in" class="mb-3">
                     <div class="flex justify-between text-sm items-center">
                         <div>
                             {{ trans('Price') }}: <span class="" :class="xxxxxxx ? 'line-through text-gray-400' : 'font-semibold'">{{ locale.currencyFormat(currency.code,product.price) }}</span>
@@ -245,10 +245,10 @@ const xxxxxxx = Math.random() > 0.5
                             <span v-tooltip="trans('Recommended retail price')" >{{trans('RRP')}}</span>:  <span class="font-semibold">{{ locale.currencyFormat(currency.code,product.rrp) }}</span>
                         </div>
                     </div>
-                </div>
+                </div> -->
 
                 <!-- Section: Coupon -->
-                <div class="mb-2">
+                <!-- <div class="mb-2">
                     <div v-if="!xxxxxxx" class="cursor-pointer rounded py-1 px-3 bg-gray-100 border border-gray-300 w-fit text-xs" >
                         <FontAwesomeIcon icon="fas fa-star-half-alt" class="" fixed-width aria-hidden="true" />
                         <span class="">↓5%</span>
@@ -259,7 +259,7 @@ const xxxxxxx = Math.random() > 0.5
                         <span class="">↓5%</span>
                         <InformationIcon :information="trans('Information')" />
                     </div>
-                </div>
+                </div> -->
             </div>
         </div>
 
@@ -277,7 +277,7 @@ const xxxxxxx = Math.random() > 0.5
                 </div>
             </div>
 
-            <Link v-else href="/app/login" class="text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
+            <Link v-else href="/app/login" class="block text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
                 {{ trans("Login to add to your basket") }}
             </Link>
         </div>

@@ -19,13 +19,12 @@ class GetOrderStats
 
     public function handle(Shop|Customer $parent): array
     {
-        if($parent instanceof Shop) {
+        if ($parent instanceof Shop) {
             $total = DB::table('orders')->where('shop_id', $parent->id)->sum('net_amount');
-        } elseif($parent instanceof Customer) {
+        } else {
             $total = DB::table('orders')->where('customer_id', $parent->id)->sum('net_amount');
         }
-        // dd('qwew', $orders);
-        // $total  = $orders->sum('net_amount');
+
         return [
             'number_orders' => $parent instanceof Shop ? $parent->orderingStats->number_orders : $parent->stats->number_orders,
             'total'         => $total

@@ -91,7 +91,7 @@ console.log(props.fieldValue)
 </script>
 
 <template>
-  <div class="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-12 max-w-7xl mx-auto px-4 py-10 text-gray-800">
+  <div class="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-12 max-w-7xl mx-auto px-4 py-10 text-gray-800"   :style="{fontFamily: 'Raleway, sans-serif'}">
     <!-- Sidebar -->
     <aside class="lg:sticky lg:top-10 max-h-[80vh] overflow-y-auto hidden lg:block border-r border-gray-100 pr-6">
       <div class="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">
@@ -141,7 +141,7 @@ console.log(props.fieldValue)
         {{ fieldValue.title }}
       </h1> -->
 
-      <div v-html="fieldValue.title" :style="getStyles(fieldValue.properties, screenType)" class="text-4xl font-bold tracking-tight mb-3 leading-snug text-gray-900"/>
+      <div v-html="fieldValue.title" :style="{fontFamily: 'Raleway, sans-serif', ...getStyles(fieldValue.properties, screenType)}" class="text-4xl font-bold tracking-tight mb-3 leading-snug text-gray-900"/>
 
       <div class="text-sm text-gray-500 mb-6">
         {{ useFormatTime(displayDate) }}
@@ -155,7 +155,7 @@ console.log(props.fieldValue)
       </div>
 
       <!-- Article Content -->
-      <div :style="getStyles(fieldValue.properties, screenType)">
+      <div :style="{fontFamily: 'Raleway, sans-serif', fontSize: '1.1250rem', ...getStyles(fieldValue.properties, screenType)}">
         <div class="prose prose-blue max-w-none scroll-smooth mb-10" ref="contentRef" v-html="fieldValue.content" />
       </div>
 
@@ -163,37 +163,37 @@ console.log(props.fieldValue)
       <!-- Share Buttons Section -->
 
       <div class="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">Share : </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+      <div class="flex gap-4">
         <a :href="`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`" target="_blank" rel="noopener"
-          class="flex items-center justify-center gap-2 w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
+          class="flex items-center justify-center gap-2 w-full py-2 px-4 text-blue-600 rounded-md text-3xl hover:bg-blue-600 hover:text-gray-100 transition">
           <FontAwesomeIcon :icon="['fab', 'facebook']" />
-          Facebook
+          
         </a>
 
         <a :href="`https://twitter.com/intent/tweet?url=${shareUrl}&text=${encodeURIComponent(fieldValue.title)}`"
           target="_blank" rel="noopener"
-          class="flex items-center justify-center gap-2 w-full py-2 px-4 bg-gray-800 text-white rounded-md hover:bg-sky-600 transition">
+          class="flex items-center justify-center gap-2 w-full py-2 px-4 text-gray-800  text-3xl rounded-md hover:bg-gray-800  hover:text-gray-100 transition">
           <FontAwesomeIcon :icon="faXTwitter" />
-          Twitter
+          
         </a>
 
         <a :href="`https://www.linkedin.com/shareArticle?url=${shareUrl}&title=${encodeURIComponent(fieldValue.title)}`"
           target="_blank" rel="noopener"
-          class="flex items-center justify-center gap-2 w-full py-2 px-4 bg-blue-800 text-white rounded-md hover:bg-blue-900 transition">
+          class="flex items-center justify-center gap-2 w-full py-2 px-4 text-blue-800 text-3xl rounded-md hover:bg-blue-800 hover:text-gray-100 transition">
           <FontAwesomeIcon :icon="['fab', 'linkedin']" />
-          LinkedIn
+          
         </a>
 
         <a :href="`https://www.instagram.com/YOUR_INSTAGRAM_USERNAME/`" target="_blank" rel="noopener"
-          class="flex items-center justify-center gap-2 w-full py-3 px-4 bg-pink-500 text-white rounded-md hover:bg-pink-600 transition">
+          class="flex  items-center justify-center gap-2 w-full py-3 px-4 text-pink-500 text-3xl rounded-md hover:bg-pink-500 hover:text-gray-100 transition">
           <FontAwesomeIcon :icon="faInstagram" />
-          Instagram
+          
         </a>
 
         <a :href="`mailto:?subject=${encodeURIComponent(fieldValue.title)}&body=${shareUrl}`"
-          class="flex items-center justify-center gap-2 w-full py-2 px-4 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition">
+          class="flex items-center justify-center gap-2 w-full py-2 px-4 text-gray-600 rounded-md  text-3xl hover:bg-gray-600  hover:text-gray-100 transition">
           <FontAwesomeIcon :icon="['fas', 'envelope']" />
-          Email
+          
         </a>
       </div>
     </article>

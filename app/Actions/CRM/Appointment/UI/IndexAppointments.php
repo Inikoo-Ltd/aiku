@@ -8,7 +8,6 @@
 
 namespace App\Actions\CRM\Appointment\UI;
 
-use App\Actions\InertiaAction;
 use App\Actions\OrgAction;
 use App\Http\Resources\CRM\AppointmentResource;
 use App\InertiaTable\InertiaTable;
@@ -112,7 +111,7 @@ class IndexAppointments extends OrgAction
 
     public function inShop(Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
-        $this->initialisationFromShop($shop,$request);
+        $this->initialisationFromShop($shop, $request);
 
         return $this->handle($shop);
     }

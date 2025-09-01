@@ -24,6 +24,7 @@ const props = defineProps<{
   layout: {
     color: string[]
   }
+  luigisbox_tracker_id?: string
 }>()
 
 const layout: any = inject("layout", {});
@@ -44,6 +45,7 @@ const updateIrisLayout = () => {
   layout.iris = {
     currency: defaultCurrency,
     is_logged_in: isLoggedIn,
+    luigisbox_tracker_id: props.luigisbox_tracker_id
   }
 }
 

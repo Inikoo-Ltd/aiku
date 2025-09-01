@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Route;
 
 /**
  * Common trade units routes used in multiple route files
- * 
+ *
  * @param string $prefix Optional prefix for the routes (default: 'trade-units')
  * @param string $as Optional name prefix for the routes (default: 'trade-units.')
  * @return void

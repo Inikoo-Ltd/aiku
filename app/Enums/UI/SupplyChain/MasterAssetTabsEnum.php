@@ -20,6 +20,7 @@ enum MasterAssetTabsEnum: string
 
 
     case SHOWCASE = 'showcase';
+    case LANGUAGE = 'language';
     case HISTORY  = 'history';
 
 
@@ -40,6 +41,10 @@ enum MasterAssetTabsEnum: string
             MasterAssetTabsEnum::SHOWCASE => [
                 'title' => __('overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
+            ],
+            MasterAssetTabsEnum::LANGUAGE => [
+                'title' => __('language'),
+                'icon'  => 'fal fa-language',
             ],
         };
     }

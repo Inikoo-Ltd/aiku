@@ -210,73 +210,41 @@ Route::name("collections.")->prefix('collections')
 
 Route::name("sub_departments.")->prefix('sub-departments')
     ->group(function () {
-        Route::get('', IndexDepartments::class)->name('index');
-        Route::get('/blueprints', IndexBlueprintDepartment::class)->name('index.blueprints');
-        Route::get('create', CreateDepartment::class)->name('create');
-
-
-        Route::get('{department}/edit', [EditDepartment::class, 'inShop'])->name('edit');
-        Route::prefix('{department}')->name('show')->group(function () {
-            Route::get('', ShowDepartment::class);
+        Route::get('', [IndexSubDepartments::class, 'inShop'])->name('index');
+        Route::get('{subDepartment}/edit', [EditSubDepartment::class, 'inShop'])->name('edit');
+        Route::prefix('{subDepartment}')->name('show')->group(function () {
+            Route::get('', [ShowSubDepartment::class, 'inShop']);
             Route::prefix('collection')->name('.collection.')->group(function () {
-                Route::get('index', [IndexCollectionsInProductCategory::class, 'inDepartment'])->name('index');
-                Route::get('create', [CreateCollection::class, 'inDepartment'])->name('create');
+                Route::get('index', [IndexCollectionsInProductCategory::class, 'inSubDepartmentInShop'])->name('index');
+                Route::get('create', [CreateCollection::class, 'inSubDepartmentInShop'])->name('create');
                 Route::prefix('{collection}')->group(function () {
-                    Route::get('', [ShowCollection::class, 'inDepartment'])->name('show');
-                    Route::get('edit', [EditCollection::class, 'inDepartment'])->name('edit');
+                    Route::get('', [ShowCollection::class, 'inSubDepartmentInShop'])->name('show');
+                    Route::get('edit', [EditCollection::class, 'inSubDepartmentInShop'])->name('edit');
                 });
             });
             Route::prefix('families')->name('.families.')->group(function () {
-                Route::get('', [IndexFamilies::class, 'inDepartment'])->name('index');
-                Route::get('create', [CreateFamily::class, 'inDepartment'])->name('create');
+                Route::get('', [IndexFamilies::class, 'inSubDepartmentInShop'])->name('index');
+                Route::get('create', [CreateFamily::class, 'inSubDepartmentInShop'])->name('create');
 
                 Route::prefix('{family}')->group(function () {
-                    Route::get('edit', [EditFamily::class, 'inDepartment'])->name('edit');
-                    Route::get('', ShowFamily::class)->name('show');
+                    Route::get('edit', [EditFamily::class, 'inSubDepartmentInShop'])->name('edit');
+                    Route::get('', [ShowFamily::class, 'inSubDepartmentInShop'])->name('show');
                     Route::name("show.products.")->prefix('products')
                         ->group(function () {
-                            Route::get('', [IndexProductsInProductCategory::class, 'inFamilyInDepartment'])->name('index');
-                            Route::get('create', [CreateProduct::class, 'inFamilyInDepartment'])->name('create');
+                            Route::get('', [IndexProductsInProductCategory::class, 'inFamilyInSubDepartmentInShop'])->name('index');
+                            Route::get('create', [CreateProduct::class, 'inFamilyInSubDepartmentInShop'])->name('create');
 
                             Route::prefix('{product}')->group(function () {
-                                Route::get('', [ShowProduct::class, 'inFamilyInDepartment'])->name('show');
-                                Route::get('edit', [EditProduct::class, 'inFamilyInDepartment'])->name('edit');
+                                Route::get('', [ShowProduct::class, 'inFamilyInSubDepartmentInShop'])->name('show');
+                                Route::get('edit', [EditProduct::class, 'inFamilyInSubDepartmentInShop'])->name('edit');
                             });
                         });
                 });
             });
             Route::prefix('products')->name('.products.')->group(function () {
-                Route::get('', [IndexProductsInProductCategory::class, 'inDepartment'])->name('index');
-                Route::get('{product}', [ShowProduct::class, 'inDepartment'])->name('show');
-                Route::get('edit/{product}', [EditProduct::class, 'inDepartment'])->name('edit');
-            });
-            Route::prefix('sub-departments')->name('.sub_departments.')->group(function () {
-                Route::get('', IndexSubDepartments::class)->name('index');
-                Route::get('create', CreateSubDepartment::class)->name('create');
-                Route::get('edit/{subDepartment}', [EditSubDepartment::class, 'inDepartment'])->name('edit');
-                Route::prefix('{subDepartment}')->name('show')->group(function () {
-                    Route::get('', ShowSubDepartment::class);
-                    Route::prefix('collection')->name('.collection.')->group(function () {
-                        Route::get('index', [IndexCollectionsInProductCategory::class, 'inSubDepartment'])->name('index');
-                        Route::get('create', [CreateCollection::class, 'inSubDepartment'])->name('create');
-                        Route::prefix('{collection}')->group(function () {
-                            Route::get('', [ShowCollection::class, 'inSubDepartment'])->name('show');
-                            Route::get('edit', [EditCollection::class, 'inSubDepartment'])->name('edit');
-                        });
-                    });
-                    Route::prefix('family')->name('.family.')->group(function () {
-                        Route::get('index', [IndexFamilies::class, 'inSubDepartmentInDepartment'])->name('index');
-                        Route::get('create', [CreateFamily::class, 'inSubDepartmentInDepartment'])->name('create');
-                        Route::get('{family}/edit', [EditFamily::class, 'inSubDepartment'])->name('edit');
-                        Route::prefix('{family}')->name('show')->group(function () {
-                            Route::get('', [ShowFamily::class, 'inSubDepartment']);
-                            Route::prefix('products')->name('.products.')->group(function () {
-                                Route::get('', [IndexProductsInProductCategory::class, 'inFamilyInSubDepartmentInDepartment'])->name('index');
-                                Route::get('create', [CreateProduct::class, 'inFamilyInSubDepartmentInDepartment'])->name('create');
-                            });
-                        });
-                    });
-                });
+                Route::get('', [IndexProductsInProductCategory::class, 'inSubDepartmentInShop'])->name('index');
+                Route::get('{product}', [ShowProduct::class, 'inSubDepartmentInShop'])->name('show');
+                Route::get('edit/{product}', [EditProduct::class, 'inSubDepartmentInShop'])->name('edit');
             });
         });
     });

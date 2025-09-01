@@ -58,6 +58,7 @@ const props = defineProps<{
   webpage: RootWebpage,
   webBlockTypes: Root
   url: string
+  luigi_tracker_id: string
 }>();
 console.log('ss', props.webpage)
 provide('isInWorkshop', true);
@@ -90,6 +91,7 @@ const filterBlock = ref('all');
 const history = ref<any[]>([]);
 const future = ref<any[]>([]);
 
+provide('webpage_luigi_tracker_id', props.luigi_tracker_id)
 provide('currentView', currentView);
 provide('openedBlockSideEditor', openedBlockSideEditor);
 provide('openedChildSideEditor', openedChildSideEditor);
@@ -533,7 +535,7 @@ onUnmounted(() => {
 window.addEventListener('beforeunload', () => {
   clearHistory();
 });
-
+*/
 
 onMounted(() => {
   window.addEventListener("message", (event) => {

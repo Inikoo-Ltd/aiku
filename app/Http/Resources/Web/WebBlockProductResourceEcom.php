@@ -53,7 +53,7 @@ class WebBlockProductResourceEcom extends JsonResource
         $transactionId = null;
         if ($request->user()) {
             $customer = $request->user()->customer;
-            if($customer) {
+            if ($customer) {
                 $favourite = $customer->favourites()->where('product_id', $product->id)->first();
 
                 $basket = $customer->orderInBasket;
@@ -72,7 +72,10 @@ class WebBlockProductResourceEcom extends JsonResource
             }
         }
 
+        $luigi_identity = $product->group_id . ':' . $product->organisation_id . ':' . $product->shop_id . ':' . $product->webpage->website->id . ':' . $product->webpage->id;
+
         return [
+            'luigi_identity'    => $luigi_identity,
             'slug'              => $product->slug,
             'code'              => $product->code,
             'name'              => $product->name,

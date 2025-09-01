@@ -8,42 +8,33 @@
 
 namespace App\Models\Web;
 
-use App\Models\Catalogue\Collection;
-use App\Models\Catalogue\Product;
-use App\Models\Catalogue\ProductCategory;
-use App\Models\Helpers\Media;
 use App\Models\Traits\InShop;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
-use Spatie\MediaLibrary\HasMedia;
-use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
+ * @property int $website_id
+ * @property int $webpage_id
+ * @property int|null $web_block_id
  * @property int $web_block_type_id
  * @property string|null $checksum
  * @property object $layout
  * @property object $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property string|null $migration_checksum
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Collection> $collections
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Web\ExternalLink> $externalLinks
- * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
- * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
- * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductCategory> $productCategories
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Product> $products
+ * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \App\Models\SysAdmin\Organisation|null $organisation
+ * @property-read \App\Models\Catalogue\Shop|null $shop
+ * @property-read \App\Models\Web\WebBlock|null $webBlock
  * @property-read \App\Models\Web\WebBlockType $webBlockType
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Web\Webpage> $webpages
- * @method static Builder<static>|WebBlock newModelQuery()
- * @method static Builder<static>|WebBlock newQuery()
- * @method static Builder<static>|WebBlock query()
+ * @property-read \App\Models\Web\Webpage $webpage
+ * @property-read \App\Models\Web\Website $website
+ * @method static Builder<static>|WebBlockHistory newModelQuery()
+ * @method static Builder<static>|WebBlockHistory newQuery()
+ * @method static Builder<static>|WebBlockHistory query()
  * @mixin \Eloquent
  */
 class WebBlockHistory extends Model

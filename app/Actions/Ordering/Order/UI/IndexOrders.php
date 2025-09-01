@@ -103,13 +103,6 @@ class IndexOrders extends OrgAction
 
         $query->leftJoin('customers', 'orders.customer_id', '=', 'customers.id');
         $query->leftJoin('customer_clients', 'orders.customer_client_id', '=', 'customer_clients.id');
-
-        //        $query->leftJoin('model_has_payments', function ($join) {
-        //            $join->on('orders.id', '=', 'model_has_payments.model_id')
-        //                ->where('model_has_payments.model_type', '=', 'Order');
-        //        })
-        //  $query->leftJoin('payments', 'model_has_payments.payment_id', '=', 'payments.id');
-
         $query->leftJoin('currencies', 'orders.currency_id', '=', 'currencies.id');
         $query->leftJoin('organisations', 'orders.organisation_id', '=', 'organisations.id');
         $query->leftJoin('shops', 'orders.shop_id', '=', 'shops.id');
@@ -126,7 +119,7 @@ class IndexOrders extends OrgAction
 
 
             $query->where('orders.state', OrderStateEnum::SUBMITTED->value)
-               ->where('orders.pay_status', OrderPayStatusEnum::PAID);
+                ->where('orders.pay_status', OrderPayStatusEnum::PAID);
         } elseif ($this->bucket == OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value) {
             if ($shop->type == ShopTypeEnum::DROPSHIPPING) { // tmp stuff until we migrate from aurora
                 $query->whereNull('orders.source_id');
@@ -220,35 +213,34 @@ class IndexOrders extends OrgAction
 
 
         return $query->defaultSort('-orders.date')
-        ->select([
-            'orders.id',
-            'orders.slug',
-            'orders.reference',
-            'orders.date',
-            'orders.state',
-            'orders.created_at',
-            'orders.updated_at',
-            'orders.slug',
-            'orders.net_amount',
-            'orders.total_amount',
-            'orders.payment_amount',
-            'customers.name as customer_name',
-            'customers.slug as customer_slug',
-            'customer_clients.name as client_name',
-            'customer_clients.ulid as client_ulid',
-            //'payments.state as payment_state',
-            //'payments.status as payment_status',
-            'currencies.code as currency_code',
-            'currencies.id as currency_id',
-            'shops.name as shop_name',
-            'shops.slug as shop_slug',
-            'organisations.name as organisation_name',
-            'organisations.slug as organisation_slug',
-            'customers.slug as customer_slug',
-            'customers.name as customer_name',
-        ])
+            ->select([
+                'orders.id',
+                'orders.slug',
+                'orders.reference',
+                'orders.date',
+                'orders.state',
+                'orders.created_at',
+                'orders.updated_at',
+                'orders.slug',
+                'orders.net_amount',
+                'orders.total_amount',
+                'orders.payment_amount',
+                'orders.pay_detailed_status',
+                'customers.name as customer_name',
+                'customers.slug as customer_slug',
+                'customer_clients.name as client_name',
+                'customer_clients.ulid as client_ulid',
+                'currencies.code as currency_code',
+                'currencies.id as currency_id',
+                'shops.name as shop_name',
+                'shops.slug as shop_slug',
+                'organisations.name as organisation_name',
+                'organisations.slug as organisation_slug',
+                'customers.slug as customer_slug',
+                'customers.name as customer_name',
+            ])
             ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
-            ->allowedSorts(['id', 'reference', 'date', 'net_amount']) // Ensure `id` is the first sort column
+            ->allowedSorts(['id', 'reference', 'date', 'net_amount', 'customer_name', 'pay_detailed_status']) // Ensure `id` is the first sort column
             ->withBetweenDates(['date'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -301,33 +293,20 @@ class IndexOrders extends OrgAction
                 }
             }
 
-            $table->column(key: 'state', label: '', canBeHidden: false, searchable: true, type: 'icon');
-            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'date', label: __('Created date'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
+            $table->column(key: 'state', label: '', type: 'icon');
+            $table->column(key: 'reference', label: __('reference'), sortable: true);
+            $table->column(key: 'date', label: __('Created date'), sortable: true, type: 'date');
             if ($parent instanceof Shop) {
-                $table->column(key: 'customer_name', label: __('customer'), canBeHidden: false, searchable: true);
+                $table->column(key: 'customer_name', label: __('customer'), sortable: true);
             }
-            $table->column(key: 'pay_status', label: __('payment'), canBeHidden: false, searchable: true);
-            $table->column(key: 'net_amount', label: __('net'), canBeHidden: false, searchable: true, sortable:true, type: 'currency');
+            $table->column(key: 'pay_detailed_status', label: __('payment'), sortable: true);
+            $table->column(key: 'net_amount', label: __('net'), sortable: true, type: 'currency');
         };
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->parent instanceof Customer || $this->parent instanceof CustomerClient) {
-            $this->canEdit = $request->user()->authTo("crm.{$this->shop->id}.view");
-
-            return $request->user()->authTo(["crm.{$this->shop->id}.view", "accounting.{$this->shop->organisation_id}.view"]);
-        }
-
-        $this->canEdit = $request->user()->authTo("orders.{$this->shop->id}.edit");
-
-        return $request->user()->authTo(["orders.{$this->shop->id}.view", "accounting.{$this->shop->organisation_id}.view"]);
     }
 
     public function jsonResponse(LengthAwarePaginator $orders): AnonymousResourceCollection
     {
-        return OrderResource::collection($orders);
+        return OrdersResource::collection($orders);
     }
 
     public function htmlResponse(LengthAwarePaginator $orders, ActionRequest $request): Response
@@ -460,8 +439,14 @@ class IndexOrders extends OrgAction
                 OrdersTabsEnum::LAST_ORDERS->value => $this->tab == OrdersTabsEnum::LAST_ORDERS->value ?
                     fn () => GetLastOrders::run($shop)
                     : Inertia::lazy(fn () => GetLastOrders::run($shop)),
+
+                OrdersTabsEnum::EXCESS_ORDERS->value => $this->tab == OrdersTabsEnum::EXCESS_ORDERS->value ?
+                    fn () => OrdersResource::collection(IndexOrdersExcessPayment::run($shop, OrdersTabsEnum::EXCESS_ORDERS->value))
+                    : Inertia::lazy(fn () => OrdersResource::collection(IndexOrdersExcessPayment::run($shop, OrdersTabsEnum::EXCESS_ORDERS->value))),
             ]
-        )->table($this->tableStructure($this->parent, OrdersTabsEnum::ORDERS->value, $this->bucket));
+        )->table(
+            $this->tableStructure($this->parent, OrdersTabsEnum::ORDERS->value, $this->bucket)
+        )->table(IndexOrdersExcessPayment::make()->tableStructure($this->parent, OrdersTabsEnum::EXCESS_ORDERS->value));
     }
 
 

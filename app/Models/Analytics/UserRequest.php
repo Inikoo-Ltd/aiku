@@ -13,8 +13,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int|null $aiku_scoped_section_id

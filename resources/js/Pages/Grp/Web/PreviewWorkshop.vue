@@ -43,6 +43,7 @@ const { mode } = route().params;
 const isPreviewMode = ref(mode != 'iris' ? false : true)
 const isInWorkshop = route().params.isInWorkshop || false
 const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
+const active_language = ref<string|null>(null)
 const defaultCurrency = {
   code: "GBP",
   symbol: "£",
@@ -77,6 +78,7 @@ onMounted(() => {
     window.addEventListener('message', (event) => {
         if (event.data.key === 'isPreviewLoggedIn') isPreviewLoggedIn.value = event.data.value
         if (event.data.key === 'isPreviewMode') isPreviewMode.value = event.data.value
+        if (event.data.key === 'active_language') active_language.value = event.data.value
         if (event.data.key === 'reload') {
             router.reload({
                 only: ['footer', 'header', 'webpage', 'navigation'],
@@ -111,7 +113,7 @@ watch(isPreviewLoggedIn, (value) => {
      updateIrisLayout(isPreviewLoggedIn.value)
 }, { immediate: true });
 
-console.log('aaa',props)
+
 </script>
 
 
@@ -146,6 +148,7 @@ console.log('aaa',props)
 
             <!-- Footer -->
             <component v-if="footer?.data?.data"
+
                 :is="isPreviewMode || route().current() == 'grp.websites.preview' || route().current() == 'grp.org.shops.show.web.webpages.snapshot.preview' ? getIrisComponent(footer.data.code) : getComponent(footer.data.code)"
                 v-model="footer.data.data.fieldValue" @update:model-value="updateData(footer.data)" />
         </div>

@@ -37,10 +37,14 @@ use App\Actions\Accounting\PaymentAccount\UI\IndexPaymentAccounts;
 use App\Actions\Accounting\PaymentAccount\UI\ShowPaymentAccount;
 use App\Actions\Accounting\PaymentAccountShop\UI\IndexPaymentAccountShops;
 use App\Actions\Accounting\UI\IndexCustomerBalances;
+use App\Actions\Accounting\UI\IndexInvoicesPerShop;
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowAccountingDashboard::class)->name('dashboard');
+
+Route::get('/per-store', IndexInvoicesPerShop::class)->name('invoices-shop');
+
 
 Route::get('/providers/{orgPaymentServiceProvider}/accounts/{paymentAccount}/payments/create', [IndexPayments::class, 'inPaymentAccountInPaymentServiceProvider'])->name('org_payment_service_providers.show.payment-accounts.show.payments.create');
 Route::get('/providers/{orgPaymentServiceProvider}/payments/create', [IndexPayments::class, 'inPaymentServiceProvider'])->name('org_payment_service_providers.show.payments.create');

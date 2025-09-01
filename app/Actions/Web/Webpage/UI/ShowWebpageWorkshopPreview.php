@@ -60,6 +60,7 @@ class ShowWebpageWorkshopPreview extends OrgAction
                 'footer' => GetWebsiteWorkshopFooter::run($website),
                 'navigation' => GetWebsiteWorkshopMenu::run($website),
                 'layout' => Arr::get($website->published_layout, 'theme'),
+                'luigisbox_tracker_id' => Arr::get($website->settings, 'luigisbox.tracker_id'),
             ]
         );
     }

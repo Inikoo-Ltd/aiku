@@ -36,7 +36,6 @@ class AttachMasterFamiliesToMasterDepartment extends OrgAction
         }
     }
 
-
     public function rules(): array
     {
         return [

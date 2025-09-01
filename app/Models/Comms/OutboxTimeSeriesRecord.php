@@ -11,8 +11,6 @@ namespace App\Models\Comms;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- *
- *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OutboxTimeSeriesRecord newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OutboxTimeSeriesRecord newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OutboxTimeSeriesRecord query()

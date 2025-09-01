@@ -30,6 +30,7 @@ import { faCodeCommit, faUsers, faGlobe, faGraduationCap, faMoneyBill, faPapercl
 import { routeType } from "@/types/route";
 import { AddressManagement } from "@/types/PureComponent/Address";
 import TableCreditTransactions from "@/Components/Tables/Grp/Org/Accounting/TableCreditTransactions.vue";
+import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.vue"; 
 
 library.add(faStickyNote, faUsers, faGlobe, faMoneyBill, faGraduationCap, faTags, faCodeCommit, faPaperclip, faPaperPlane, faCube, faCodeBranch, faShoppingCart, faHeart);
 const ModelChangelog = defineAsyncComponent(() => import("@/Components/ModelChangelog.vue"));
@@ -60,6 +61,7 @@ const props = defineProps<{
   reminders?: {}
   history?: {}
   credit_transactions?: {}
+  payments?: {}
 }>();
 
 let currentTab = ref(props.tabs.current);
@@ -78,7 +80,8 @@ const component = computed(() => {
     favourites: TableCustomerFavourites,
     reminders: TableCustomerBackInStockReminders,
     attachments: TableAttachments,
-    credit_transactions: TableCreditTransactions
+    credit_transactions: TableCreditTransactions,
+    payments: TablePayments,
   };
 
   return components[currentTab.value];

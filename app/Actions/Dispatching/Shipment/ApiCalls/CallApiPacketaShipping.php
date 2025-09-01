@@ -185,8 +185,8 @@ class CallApiPacketaShipping extends OrgAction
         if (empty($labelID)) {
             return 'Label ID is empty';
         }
-        $creds = $this->getAccessToken($shipper);
-        $apiPassword = Arr::get($creds, 'api_password');
+        $accessToken = $this->getAccessToken($shipper);
+        $apiPassword = Arr::get($accessToken, 'api_password');
         $url = $this->getBaseUrl() . '/api/soap.wsdl';
         $format = 'A6 on A6';
         $offset = 0;

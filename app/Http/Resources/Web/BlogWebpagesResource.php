@@ -50,18 +50,17 @@ class BlogWebpagesResource extends JsonResource
             }
         } else {
             $website = $request->get('website') ?? Website::find($this->website_id);
-            if($website == WebsiteTypeEnum::DROPSHIPPING) {
+            if ($website == WebsiteTypeEnum::DROPSHIPPING) {
                 $href = 'https://ds.test';
-            }
-            elseif ($website->type == WebsiteTypeEnum::FULFILMENT) {
+            } elseif ($website->type == WebsiteTypeEnum::FULFILMENT) {
                 $href = 'https://fulfilment.test';
             }
         }
 
         $href .= '/blog/' . $this->url;
 
-        $publishedLayout = is_array($this->published_layout) 
-        ? $this->published_layout 
+        $publishedLayout = is_array($this->published_layout)
+        ? $this->published_layout
         : json_decode($this->published_layout);
 
         return [

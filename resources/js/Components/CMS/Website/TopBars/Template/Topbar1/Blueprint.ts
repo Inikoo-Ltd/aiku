@@ -85,41 +85,41 @@ export default {
 		// 		},
 		// 	],
 		// },
-		{
-			name: "Cart",
-            key: ["cart"],
-			icon: {
-				icon: "fal fa-shopping-cart",
-				tooltip: "Cart",
-			},
-			replaceForm: [
-				{
-					key: ['text'],
-					label: "Text",
-					type: "select",
-					props_data: {
-						placeholder: "Select Text",
-						by: "value",
-						required: true,
-						options: [
-							{
-								label: "£999.99",
-								value: "{{ cart_amount }}",
-							},
-							{
-								label: "95 items",
-								value: "{{ cart_count }} items",
-							},
-							{
-								label: "£999.99 (95 items)",
-								value: "{{ cart_amount }} ({{ cart_count }} items)",
-							},
-						],
-						defaultValue: '{{ cart_amount }}',
-					},
-				},
-			],
-		},
+		// {
+		// 	name: "Cart",
+        //     key: ["cart"],
+		// 	icon: {
+		// 		icon: "fal fa-shopping-cart",
+		// 		tooltip: "Cart",
+		// 	},
+		// 	replaceForm: [
+		// 		{
+		// 			key: ['text'],
+		// 			label: "Text",
+		// 			type: "select",
+		// 			props_data: {
+		// 				placeholder: "Select Text",
+		// 				by: "value",
+		// 				required: true,
+		// 				options: [
+		// 					{
+		// 						label: "£999.99",
+		// 						value: "{{ cart_amount }}",
+		// 					},
+		// 					{
+		// 						label: "95 items",
+		// 						value: "{{ cart_count }} items",
+		// 					},
+		// 					{
+		// 						label: "£999.99 (95 items)",
+		// 						value: "{{ cart_amount }} ({{ cart_count }} items)",
+		// 					},
+		// 				],
+		// 				defaultValue: '{{ cart_amount }}',
+		// 			},
+		// 		},
+		// 	],
+		// },
 		{
 			name: "Favourite",
 			accordion_key: 'favourite',

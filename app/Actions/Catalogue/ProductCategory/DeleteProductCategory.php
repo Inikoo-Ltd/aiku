@@ -18,7 +18,6 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
-use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Validation\Validator;
 
@@ -89,7 +88,7 @@ class DeleteProductCategory extends OrgAction
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
         if ($this->productCategory->getProducts()->count() > 0) {
-              request()->session()->flash('modal', [
+            request()->session()->flash('modal', [
             'status'  => 'error',
             'title'   => __('Failed!'),
             'description' => __('This category has products associated with it.'),
@@ -98,12 +97,12 @@ class DeleteProductCategory extends OrgAction
         }
 
         if ($this->productCategory->children()->exists()) {
-          request()->session()->flash('modal', [
-            'status'  => 'error',
-            'title'   => __('Failed!'),
-            'description' => __('This category has children associated with it.'),
+            request()->session()->flash('modal', [
+              'status'  => 'error',
+              'title'   => __('Failed!'),
+              'description' => __('This category has children associated with it.'),
         ]);
-         $validator->errors()->add('children', 'This category has children associated with it.');
+            $validator->errors()->add('children', 'This category has children associated with it.');
         }
     }
 

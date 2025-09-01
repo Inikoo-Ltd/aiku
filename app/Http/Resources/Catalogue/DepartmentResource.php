@@ -40,6 +40,7 @@ class DepartmentResource extends JsonResource
             ];
         }
 
+
         return [
             'slug' => $department->slug,
             'id' => $department->id,
@@ -62,6 +63,10 @@ class DepartmentResource extends JsonResource
             'description'   => $department->description,
             'description_title' => $department->description_title,
             'description_extra' => $department->description_extra,
+            'name_i8n'              => $this->getTranslations('name_i8n'),
+            'description_i8n'       => $this->getTranslations('description_i8n'),
+            'description_title_i8n' => $this->getTranslations('description_title_i8n'),
+            'description_extra_i8n' => $this->getTranslations('description_extra_i8n'),
 
         ];
     }

@@ -39,8 +39,6 @@ use Spatie\Sluggable\SlugOptions;
 use Spatie\Translatable\HasTranslations;
 
 /**
- *
- *
  * @property int $id
  * @property ProductCategoryTypeEnum $type
  * @property ProductCategoryStateEnum $state
@@ -113,7 +111,7 @@ use Spatie\Translatable\HasTranslations;
  * @method static Builder<static>|ProductCategory whereJsonContainsLocales(string $column, array $locales, ?mixed $value, string $operand = '=')
  * @method static Builder<static>|ProductCategory whereLocale(string $column, string $locale)
  * @method static Builder<static>|ProductCategory whereLocales(string $column, array $locales)
- * @method static Builder<static>|ProductCategory withTrashed()
+ * @method static Builder<static>|ProductCategory withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|ProductCategory withoutTrashed()
  * @mixin Eloquent
  */

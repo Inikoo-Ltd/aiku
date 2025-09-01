@@ -33,7 +33,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Admin newQuery()
  * @method static Builder<static>|Admin onlyTrashed()
  * @method static Builder<static>|Admin query()
- * @method static Builder<static>|Admin withTrashed()
+ * @method static Builder<static>|Admin withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Admin withoutTrashed()
  * @mixin Eloquent
  */

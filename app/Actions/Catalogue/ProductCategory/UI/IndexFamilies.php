@@ -84,6 +84,14 @@ class IndexFamilies extends OrgAction
         return $this->handle(parent: $subDepartment, prefix: ProductCategoryTabsEnum::INDEX->value);
     }
 
+    public function inSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $subDepartment;
+        $this->initialisationFromShop($shop, $request)->withTab(ProductCategoryTabsEnum::values());
+
+        return $this->handle(parent: $subDepartment, prefix: ProductCategoryTabsEnum::INDEX->value);
+    }
+
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $shop;
@@ -190,6 +198,8 @@ class IndexFamilies extends OrgAction
                 'number_current_products',
                 'sub_department_name',
                 'department_name',
+                'sales_all',
+                'invoices_all',
                 AllowedSort::custom(
                     'collections',
                     new class () implements Sort {
@@ -272,8 +282,8 @@ class IndexFamilies extends OrgAction
 
             if ($sales) {
                 $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'sales', label: __('sales'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'invoices', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true);
+                    ->column(key: 'sales_all', label: __('sales'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'invoices_all', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true);
             } else {
                 if ($parent instanceof Organisation) {
                     $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
@@ -321,16 +331,18 @@ class IndexFamilies extends OrgAction
                 $createRoute = "grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.create";
             }
 
-            $actions[] = [
-                'type'    => 'button',
-                'style'   => 'create',
-                'tooltip' => __('new family'),
-                'label'   => __('family'),
-                'route'   => [
-                    'name'       => $createRoute,
-                    'parameters' => $request->route()->originalParameters()
-                ]
-            ];
+            if (is_null($this->parent->masterProductCategory)) {
+                $actions[] = [
+                    'type'    => 'button',
+                    'style'   => 'create',
+                    'tooltip' => __('new family'),
+                    'label'   => __('family'),
+                    'route'   => [
+                        'name'       => $createRoute,
+                        'parameters' => $request->route()->originalParameters()
+                    ]
+                ];
+            }
         }
 
 
@@ -368,7 +380,6 @@ class IndexFamilies extends OrgAction
         if ($this->parent instanceof ProductCategory) {
             if ($this->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
                 $title      = $this->parent->name;
-                $model      = '';
                 $icon       = [
                     'icon'  => ['fal', 'fa-folder-tree'],
                     'title' => __('department')
@@ -380,7 +391,6 @@ class IndexFamilies extends OrgAction
                 ];
             } elseif ($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
                 $title      = $this->parent->name;
-                $model      = '';
                 $icon       = [
                     'icon'  => ['fal', 'fa-dot-circle'],
                     'title' => __('sub department')
@@ -449,11 +459,11 @@ class IndexFamilies extends OrgAction
                     : Inertia::lazy(fn () => FamiliesResource::collection($families)),
 
                 ProductCategoryTabsEnum::SALES->value => $this->tab == ProductCategoryTabsEnum::SALES->value ?
-                    fn () => FamiliesResource::collection($families)
-                    : Inertia::lazy(fn () => FamiliesResource::collection($families)),
+                    fn () => FamiliesResource::collection(IndexFamilies::run($this->parent, prefix: ProductCategoryTabsEnum::SALES->value))
+                    : Inertia::lazy(fn () => FamiliesResource::collection(IndexFamilies::run($this->parent, prefix: ProductCategoryTabsEnum::SALES->value))),
             ]
-        )->table($this->tableStructure(parent: $this->parent, modelOperations: null, canEdit: false, prefix: ProductCategoryTabsEnum::INDEX->value, sales: false))
-            ->table($this->tableStructure(parent: $this->parent, modelOperations: null, canEdit: false, prefix: ProductCategoryTabsEnum::SALES->value, sales: $this->sales));
+        )->table($this->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::INDEX->value, sales: false))
+            ->table($this->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::SALES->value, sales: $this->sales));
     }
 
     public function getBreadcrumbs(Group|Shop|ProductCategory|Organisation|Collection $parent, string $routeName, array $routeParameters, string $suffix = null): array
@@ -497,17 +507,13 @@ class IndexFamilies extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index' => array_merge(
-                ShowSubDepartment::make()->getBreadcrumbs($parent, $routeParameters),
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index',
+            'grp.org.shops.show.catalogue.sub_departments.show.families.index' => array_merge(
+                ShowSubDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
                 $headCrumb(
                     [
-                        'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index',
-                        'parameters' => [
-                            $routeParameters['organisation'],
-                            $routeParameters['shop'],
-                            $routeParameters['department'],
-                            $routeParameters['subDepartment']
-                        ]
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
                     ],
                     $suffix
                 )

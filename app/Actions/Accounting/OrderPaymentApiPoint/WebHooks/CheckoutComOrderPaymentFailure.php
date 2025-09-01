@@ -93,7 +93,7 @@ class CheckoutComOrderPaymentFailure extends RetinaWebhookAction
             );
         } else {
             return Redirect::route('retina.ecom.checkout.show')->with(
-                'notification',
+                'modal',
                 $notification
             );
         }

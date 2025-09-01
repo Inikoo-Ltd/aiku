@@ -113,6 +113,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $live_collection_snapshot_id
  * @property string|null $published_collection_checksum
  * @property bool $is_migrating
+ * @property bool $migrated
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, Deployment> $deployments
  * @property-read Collection<int, \App\Models\Web\ExternalLink> $externalLinks
@@ -147,7 +148,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Website newQuery()
  * @method static Builder<static>|Website onlyTrashed()
  * @method static Builder<static>|Website query()
- * @method static Builder<static>|Website withTrashed()
+ * @method static Builder<static>|Website withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Website withoutTrashed()
  * @mixin Eloquent
  */

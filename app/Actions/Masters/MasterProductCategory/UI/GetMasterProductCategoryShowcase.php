@@ -28,13 +28,40 @@ class GetMasterProductCategoryShowcase
             MasterProductCategoryTypeEnum::DEPARTMENT => [
                 'department' => MasterProductCategoryResource::make($productCategory)->resolve(),
                 'families' => MasterProductCategoryResource::collection($productCategory->masterFamilies()),
+                'translation_box' => [
+                'title' => __('Multi-language Translations'),
+                'save_route' => [
+                     'method' => 'patch',
+                     'name'       => 'grp.models.master_product_categories.translations.update',
+                     'parameters' => [
+                         'masterProductCategory' => $productCategory->id
+                     ]
+                ],
+            ],
             ],
             MasterProductCategoryTypeEnum::SUB_DEPARTMENT => [
                 'subDepartment' => MasterSubDepartmentsResource::make($productCategory)->resolve(),
                 'families' => MasterFamiliesResource::collection($productCategory->masterFamilies()),
+                'translation_box' => [
+                'title'      => __('Multi-language Translations'),
+                'save_route' => [
+                    'method' => 'patch',
+                    'name'       => 'grp.models.master_product_categories.translations.update',
+                    'parameters' => [
+                        'masterProductCategory' => $productCategory->id
+                    ]
+                ],
+            ],
             ],
             default => [
                 'family' => MasterProductCategoryResource::make($productCategory),
+                'save_route' => [
+                    'method' => 'patch',
+                    'name'       => 'grp.models.master_product_categories.translations.update',
+                    'parameters' => [
+                        'masterProductCategory' => $productCategory->id
+                    ]
+                ],
             ],
         };
     }

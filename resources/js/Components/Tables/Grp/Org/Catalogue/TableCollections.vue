@@ -5,51 +5,48 @@
   -->
 
 <script setup lang="ts">
-import { Link, router } from "@inertiajs/vue3";
-import Table from "@/Components/Table/Table.vue";
-import { routeType } from "@/types/route";
-import { remove as loRemove } from "lodash-es";
-import { ref, watch, nextTick } from "vue";
-import Button from "@/Components/Elements/Buttons/Button.vue";
-import Icon from "@/Components/Icon.vue";
-import { faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faPowerOff, faExclamationTriangle, faTrashAlt, faFolders, faFolderTree, faGameConsoleHandheld } from "@fal";
-import { faPlay } from "@fas";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import Dialog from "primevue/dialog";
-import ConfirmPopup from "primevue/confirmpopup";
-import { useConfirm } from "primevue/useconfirm";
-import PureInput from "@/Components/Pure/PureInput.vue";
-import { notify } from "@kyvg/vue3-notification";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { RouteParams } from "@/types/route-params";
-import { Collection } from "@/types/collection";
-import collection from "@/Pages/Grp/Org/Catalogue/Collection.vue";
-import { trans } from "laravel-vue-i18n";
-import SelectQuery from "@/Components/SelectQuery.vue";
+import { Link, router } from "@inertiajs/vue3"
+import Table from "@/Components/Table/Table.vue"
+import { routeType } from "@/types/route"
+import { remove as loRemove } from "lodash-es"
+import { ref } from "vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import Icon from "@/Components/Icon.vue"
+import { faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faPowerOff, faExclamationTriangle, faTrashAlt, faFolders, faFolderTree } from "@fal"
+import { faPlay } from "@fas"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import Dialog from "primevue/dialog"
+import ConfirmPopup from "primevue/confirmpopup"
+import { useConfirm } from "primevue/useconfirm"
+import { notify } from "@kyvg/vue3-notification"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { RouteParams } from "@/types/route-params"
+import { Collection } from "@/types/collection"
+import { trans } from "laravel-vue-i18n"
+import SelectQuery from "@/Components/SelectQuery.vue"
 
 
-library.add(faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay, faFolders, faFolderTree);
+library.add(faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay, faFolders, faFolderTree)
 
-const props = defineProps<{
+defineProps<{
     data: {}
     tab?: string
     routes: {
-        indexWebpage : routeType
+        indexWebpage: routeType
         dataList: routeType
         submitAttach: routeType
         detach: routeType
     }
     website_domain?: string
-}>();
-console.log('props',props)
-const confirm = useConfirm();
-const showOfflineModal = ref(false);
-const selectedCollection = ref<any | null>(null);
+}>()
+const confirm = useConfirm()
+const showOfflineModal = ref(false)
+const selectedCollection = ref<any | null>(null)
 
 function openOfflineModal(event: MouseEvent, item: any) {
-    const target = event.currentTarget as HTMLElement;
+    const target = event.currentTarget as HTMLElement
 
-    isConfirmOpen.value = true;
+    isConfirmOpen.value = true
 
     confirm.require({
         target,
@@ -67,24 +64,24 @@ function openOfflineModal(event: MouseEvent, item: any) {
             severity: "danger"
         },
         accept: () => {
-            selectedCollection.value = item;
-            showOfflineModal.value = true;
-            isConfirmOpen.value = false;
+            selectedCollection.value = item
+            showOfflineModal.value = true
+            isConfirmOpen.value = false
         },
         reject: () => {
-            isConfirmOpen.value = false;
+            isConfirmOpen.value = false
         },
         onHide: () => {
-            isConfirmOpen.value = false;
+            isConfirmOpen.value = false
         }
-    });
+    })
 }
 
 
 function openOnlineModal(event: MouseEvent, item: any) {
-    const target = event.currentTarget as HTMLElement;
+    const target = event.currentTarget as HTMLElement
 
-    isConfirmOpen.value = true;
+    isConfirmOpen.value = true
 
     confirm.require({
         target,
@@ -102,38 +99,41 @@ function openOnlineModal(event: MouseEvent, item: any) {
             severity: "success"
         },
         accept: () => {
-            selectedCollection.value = item;
-            isConfirmOpen.value = false;
+            selectedCollection.value = item
+            isConfirmOpen.value = false
             SetOnline()
         },
         reject: () => {
-            isConfirmOpen.value = false;
+            isConfirmOpen.value = false
         },
         onHide: () => {
-            isConfirmOpen.value = false;
+            isConfirmOpen.value = false
         }
-    });
+    })
 }
 
 
-// TODO: FIX TS
-function collectionRoute(collection: {}) {
-    const currentRoute = route().current();
+function collectionRoute(collection: Collection) {
+    const currentRoute = route().current()
+
+    console.log(currentRoute)
 
     if (currentRoute === "grp.org.shops.show.catalogue.collections.show" ||
         currentRoute === "grp.org.shops.show.catalogue.collections.index" ||
-        currentRoute === "grp.org.shops.show.catalogue.dashboard") {
+        currentRoute === "grp.org.shops.show.catalogue.dashboard" ||
+        currentRoute === "grp.org.shops.show.catalogue.collections.active.index"
+    ) {
         return route(
             "grp.org.shops.show.catalogue.collections.show",
             [
                 (route().params as RouteParams).organisation,
                 (route().params as RouteParams).shop,
                 collection.slug
-            ]);
+            ])
     } else if (currentRoute === "grp.overview.catalogue.collections.index") {
         return route(
             "grp.org.shops.show.catalogue.collections.show",
-            [collection.organisation_slug, collection.shop_slug, collection.slug]);
+            [collection.organisation_slug, collection.shop_slug, collection.slug])
     } else if (currentRoute === "grp.org.shops.show.catalogue.departments.show.collection.index") {
         return route(
             "grp.org.shops.show.catalogue.departments.show.collection.show",
@@ -141,7 +141,15 @@ function collectionRoute(collection: {}) {
                 (route().params as RouteParams).organisation,
                 (route().params as RouteParams).shop,
                 (route().params as RouteParams).department,
-                collection.slug]);
+                collection.slug])
+    } else if (currentRoute === "grp.org.shops.show.catalogue.sub_departments.show.collection.index") {
+        return route(
+            "grp.org.shops.show.catalogue.sub_departments.show.collection.show",
+            [
+                (route().params as RouteParams).organisation,
+                (route().params as RouteParams).shop,
+                (route().params as RouteParams).subDepartment,
+                collection.slug])
     } else if (currentRoute === "grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index") {
         return route(
             "grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.show",
@@ -150,35 +158,21 @@ function collectionRoute(collection: {}) {
                 (route().params as RouteParams).shop,
                 (route().params as RouteParams).department,
                 (route().params as RouteParams).subDepartment,
-                collection.slug]);
-    } else if (currentRoute === "grp.masters.master_shops.show.master_departments.show.master_collections.index") {
-        return route(
-            "grp.masters.master_shops.show.master_departments.show.master_collections.show",
-            [
-                (route().params as RouteParams).masterShop,
-                (route().params as RouteParams).masterDepartment,
-                collection.slug]);
-    } else if (currentRoute === "grp.masters.master_shops.show.master_collections.show") {
-        return route(
-            "grp.masters.master_shops.show.master_collections.show",
-            [
-                (route().params as RouteParams).masterShop,
-                collection.slug]);
+                collection.slug])
     }
-    // The empty case for "grp.org.shops.show.catalogue.families.show.collection.index" is omitted as it had no implementation
 }
 
 function shopRoute(collection: Collection) {
-        return route(
-            "grp.org.shops.show.catalogue.collections.index",
-            [collection.organisation_slug, collection.shop_slug]);
+    return route(
+        "grp.org.shops.show.catalogue.collections.index",
+        [collection.organisation_slug, collection.shop_slug])
 
 }
 
 function organisationRoute(collection: Collection) {
     return route(
         "grp.org.overview.collections.index",
-        [collection.organisation_slug]);
+        [collection.organisation_slug])
 
 }
 
@@ -192,7 +186,7 @@ function webpageRoute(collection: Collection) {
             collection.webpage_slug
 
         ]
-    );
+    )
 
 }
 
@@ -203,36 +197,36 @@ function parentRoute(slug: string) {
         [
             slug
         ]
-    );
+    )
 
 }
 
 
-function departmentRoute(family: Collection) {
+function departmentRoute(collection: Collection) {
     if (route().current() === "grp.org.shops.index") {
         return route(
             "grp.org.shops.show.catalogue.departments.index",
-            [(route().params as RouteParams).organisation, collection.shop_slug, collection.department_slug]);
+            [(route().params as RouteParams).organisation, collection.shop_slug, collection.department_slug])
     }
 }
 
-const isLoadingDetach = ref<string[]>([]);
-const reroute = ref<{ url: string | null }>({ url: null });
+const isLoadingDetach = ref<string[]>([])
+const reroute = ref<{ url: string | null }>({ url: null })
 
 function resetModalState() {
-    selectedCollection.value = null;
-    reroute.value = { url: null };
-    showOfflineModal.value = false;
+    selectedCollection.value = null
+    reroute.value = { url: null }
+    showOfflineModal.value = false
 }
 
 const SetOffline = () => {
-    if (!selectedCollection.value) return;
+    if (!selectedCollection.value) return
 
-    const routeInfo = selectedCollection.value.route_disable_webpage;
-    if (!routeInfo) return;
+    const routeInfo = selectedCollection.value.route_disable_webpage
+    if (!routeInfo) return
 
-    const raw = reroute.value.url?.trim();
-    const payload = raw && raw !== "" ? raw : "/";
+    const raw = reroute.value.url?.trim()
+    const payload = raw && raw !== "" ? raw : "/"
 
     router.patch(
         route(routeInfo.name, routeInfo.parameters),
@@ -242,31 +236,31 @@ const SetOffline = () => {
         {
             preserveScroll: true,
             onSuccess: () => {
-                resetModalState();
+                resetModalState()
                 notify({
                     title: "Success",
                     text: "Webpage rerouted successfully.",
                     type: "success"
-                });
+                })
             },
             onError: (errors) => {
-                console.error("Save failed:", errors);
+                console.error("Save failed:", errors)
                 notify({
                     title: "Failed to Save",
                     text: "Please check your input and try again.",
                     type: "error"
-                });
+                })
             }
         }
-    );
-};
+    )
+}
 
 
 const SetOnline = () => {
-    if (!selectedCollection.value) return;
+    if (!selectedCollection.value) return
 
-    const routeInfo = selectedCollection.value.route_enable_webpage;
-    if (!routeInfo) return;
+    const routeInfo = selectedCollection.value.route_enable_webpage
+    if (!routeInfo) return
 
     router.patch(
         route(routeInfo.name, routeInfo.parameters),
@@ -274,40 +268,40 @@ const SetOnline = () => {
         {
             preserveScroll: true,
             onSuccess: () => {
-                resetModalState();
+                resetModalState()
                 notify({
                     title: "Success",
                     text: "Webpage back to Online",
                     type: "success"
-                });
+                })
             },
             onError: (errors) => {
-                console.error("Save failed:", errors);
+                console.error("Save failed:", errors)
                 notify({
                     title: "Failed",
                     text: "failed to set online",
                     type: "error"
-                });
+                })
             }
         }
-    );
-};
+    )
+}
 
 
 const onErrorDeleteCollection = (error) => {
-    console.log(error);
+    console.log(error)
     notify({
         title: "Failed to Delete",
         text: error.webpage ? error.webpage : "Please check your Collection.",
         type: "error"
-    });
-};
+    })
+}
 
-const isConfirmOpen = ref(false);
+const isConfirmOpen = ref(false)
 
 function handleUrlChange(e: string | null) {
-  const raw = e?.trim() ?? "";
-  reroute.value.url = raw ? raw : "/"; // always updates url, never overwrites reroute
+    const raw = e?.trim() ?? ""
+    reroute.value.url = raw ? raw : "/" // always updates url, never overwrites reroute
 }
 
 </script>
@@ -329,7 +323,7 @@ function handleUrlChange(e: string | null) {
             <Icon :data="collection.state_icon" />
         </template>
         <template #cell(code)="{ item: collection }">
-             <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2">
                 <Link :href="collectionRoute(collection) as string" class="primaryLink">
                     {{ collection["code"] }}
                 </Link>
@@ -393,41 +387,41 @@ function handleUrlChange(e: string | null) {
 
 
         <template #cell(actions)="{ item }">
-        <div class="flex gap-x-2 gap-y-2">
-            <div v-if="!item.webpage_state && item.webpage_state != 'live' && item.webpage_state != 'closed' || item.state == 'inactive' || item.state == 'in_process'">
-                <Link v-if="item.route_delete_collection " as="button"
-                      :href="route(item.route_delete_collection.name, item.route_delete_collection.parameters)"
-                      :method="item.route_delete_collection.method" preserve-scroll
-                      @start="() => isLoadingDetach.push('detach' + item.id)" @Error="(e)=>onErrorDeleteCollection(e)"
+            <div class="flex gap-x-2 gap-y-2">
+                <div v-if="!item.webpage_state && item.webpage_state != 'live' && item.webpage_state != 'closed' || item.state == 'inactive' || item.state == 'in_process'">
+                    <Link v-if="item.route_delete_collection " as="button"
+                          :href="route(item.route_delete_collection.name, item.route_delete_collection.parameters)"
+                          :method="item.route_delete_collection.method" preserve-scroll
+                          @start="() => isLoadingDetach.push('detach' + item.id)" @Error="(e)=>onErrorDeleteCollection(e)"
+                          @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)">
+                        <Button :icon="faTrashAlt" type="negative" size="xs" v-tooltip="'Delete collection'"
+                                :loading="isLoadingDetach.includes('detach' + item.id)" />
+                    </Link>
+                </div>
+                <ConfirmPopup>
+                    <template #icon>
+                        <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
+                    </template>
+                </ConfirmPopup>
+                <div v-if="item.webpage_state == 'live'">
+                    <Button :icon="faPowerOff" size="xs" :key="item.webpage_state"
+                            @click="(e) => openOfflineModal(e, item)" :type="'negative'"
+                            v-tooltip="isConfirmOpen ? '' : 'Set collection as inactive'" />
+                </div>
+                <div v-if="item.webpage_state == 'closed'">
+                    <Button :icon="faPowerOff" size="xs" :key="item.webpage_state"
+                            @click="(e) => openOnlineModal(e, item)" :type="'positive'"
+                            v-tooltip="isConfirmOpen ? '' : 'Set collection as active'" />
+                </div>
+                <Link v-if="routes?.detach?.name" as="button" :href="route(routes.detach.name, routes.detach.parameters)"
+                      :method="routes.detach.method" :data="{
+                    collection: item.id
+                }" preserve-scroll @start="() => isLoadingDetach.push('detach' + item.id)"
                       @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)">
-                    <Button :icon="faTrashAlt" type="negative" size="xs" v-tooltip="'Delete collection'"
+                    <Button icon="fal fa-times" type="negative" size="xs" v-tooltip="'Delete collection'"
                             :loading="isLoadingDetach.includes('detach' + item.id)" />
                 </Link>
             </div>
-            <ConfirmPopup>
-                <template #icon>
-                    <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
-                </template>
-            </ConfirmPopup>
-            <div v-if="item.webpage_state == 'live'">
-                <Button :icon="faPowerOff"  size="xs" :key="item.webpage_state"
-                        @click="(e) => openOfflineModal(e, item)" :type="'negative'"
-                        v-tooltip="isConfirmOpen ? '' : 'Set collection as inactive'" />
-            </div>
-            <div v-if="item.webpage_state == 'closed'">
-                <Button :icon="faPowerOff"  size="xs" :key="item.webpage_state"
-                        @click="(e) => openOnlineModal(e, item)" :type="'positive'"
-                        v-tooltip="isConfirmOpen ? '' : 'Set collection as active'" />
-            </div>
-            <Link v-if="routes?.detach?.name" as="button" :href="route(routes.detach.name, routes.detach.parameters)"
-                  :method="routes.detach.method" :data="{
-                    collection: item.id
-                }" preserve-scroll @start="() => isLoadingDetach.push('detach' + item.id)"
-                  @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)">
-                <Button icon="fal fa-times" type="negative" size="xs" v-tooltip="'Delete collection'"
-                        :loading="isLoadingDetach.includes('detach' + item.id)" />
-            </Link>
-        </div>
         </template>
     </Table>
 
@@ -438,8 +432,6 @@ function handleUrlChange(e: string | null) {
             Please confirm where it should redirect to.
         </div>
 
-        <!-- <PureInput tabindex="0" ref="rerouteInputRef" :prefix="{label : `${website_domain}/`, icon : null}" v-model="reroute" class="w-full">
-        </PureInput> -->
 
         <SelectQuery
             :urlRoute="route(routes?.indexWebpage?.name, routes?.indexWebpage?.parameters)"
@@ -452,12 +444,12 @@ function handleUrlChange(e: string | null) {
             :closeOnSelect="true"
             :clearOnSearch="false"
             :fieldName="'url'"
-           :onChange="handleUrlChange"
+            :onChange="handleUrlChange"
         />
 
         <div class="flex justify-end mt-4 mb-2 gap-2">
             <Button type="secondary" label="Cancel" @click="resetModalState" />
-            <Button type="save" label="Save" @click="SetOffline"  />
+            <Button type="save" label="Save" @click="SetOffline" />
         </div>
     </Dialog>
 

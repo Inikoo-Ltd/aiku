@@ -21,6 +21,7 @@ enum CustomerDropshippingTabsEnum: string
     case TIMELINE            = 'timeline';
     case ATTACHMENTS         = 'attachments';
     // case DISPATCHED_EMAILS   = 'dispatched_emails';
+    case PAYMENTS = 'payments';
     case CREDIT_TRANSACTIONS = 'credit_transactions';
     case FAVOURITES          = 'favourites';
     case REMINDERS           = 'reminders';
@@ -48,6 +49,12 @@ enum CustomerDropshippingTabsEnum: string
                 'align' => 'right',
                 'title' => __('dispatched emails'),
                 'icon'  => 'fal fa-paper-plane',
+                'type'  => 'icon',
+            ],
+            CustomerDropshippingTabsEnum::PAYMENTS => [
+                'align' => 'right',
+                'title' => __('payments'),
+                'icon'  => 'fal fa-money-bill',
                 'type'  => 'icon',
             ],
             CustomerDropshippingTabsEnum::CREDIT_TRANSACTIONS => [

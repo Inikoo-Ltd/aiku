@@ -89,7 +89,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|OrgStock newQuery()
  * @method static Builder<static>|OrgStock onlyTrashed()
  * @method static Builder<static>|OrgStock query()
- * @method static Builder<static>|OrgStock withTrashed()
+ * @method static Builder<static>|OrgStock withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|OrgStock withoutTrashed()
  * @mixin \Eloquent
  */

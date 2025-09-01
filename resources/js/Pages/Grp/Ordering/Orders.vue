@@ -33,6 +33,7 @@ const props = defineProps<{
     },
     backlog?: {}
     orders?: {}
+    excess_orders?: {}
     invoices?: {}
     delivery_notes?: {}
     mailshots?: {}
@@ -53,6 +54,7 @@ const component = computed(() => {
     const components: any = {
         stats: OrdersStats,
         orders: TableOrders,
+        excess_orders: TableOrders,
         last_orders: TableLastOrders,
         invoices: TableInvoices,
         delivery_notes: TableDeliveryNotes,

@@ -14,7 +14,6 @@ use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Http\Resources\Web\WebpageWorkshopResource;
 use App\Models\Catalogue\Shop;
-use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
