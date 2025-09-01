@@ -89,7 +89,7 @@ class FetchAuroraWebpage extends FetchAurora
 
 
 
-        if ($website->shop->type == ShopTypeEnum::FULFILMENT and
+        if ($website->shop->type == ShopTypeEnum::FULFILMENT &&
             $parsedData['webpage']['code'] == 'shipping.sys') {
             $parsedData['webpage']['code'] = 'shipping';
         }
@@ -154,7 +154,6 @@ class FetchAuroraWebpage extends FetchAurora
             'Homepage', 'HomepageLogout', 'HomepageToLaunch' => WebpageTypeEnum::STOREFRONT,
             'Product', 'Category Categories', 'Category Products' => WebpageTypeEnum::CATALOGUE,
             'Register', 'Login', 'ResetPwd', 'Basket', 'Top_Up', 'Checkout' => WebpageTypeEnum::OPERATIONS,
-            'TandC' => WebpageTypeEnum::INFO,
             default => WebpageTypeEnum::CONTENT,
         };
 

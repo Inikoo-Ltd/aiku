@@ -19,42 +19,47 @@ use Illuminate\Support\Facades\Redirect;
 
 class StoreCollectionWebpage extends OrgAction
 {
+    /**
+     * @throws \Throwable
+     */
     public function handle(Collection $collection): Webpage
     {
         $webpageData = [
-            'code'  => $collection->code,
-            'title'  => $collection->name,
-            'url'   => strtolower($collection->code),
+            'code'       => $collection->code,
+            'title'      => $collection->name,
+            'url'        => strtolower($collection->code),
             'sub_type'   => WebpageSubTypeEnum::COLLECTION,
-            'type'      => WebpageTypeEnum::CATALOGUE,
-            'model_type'    => class_basename($collection),
-            'model_id'     => $collection->id
-            ];
+            'type'       => WebpageTypeEnum::CATALOGUE,
+            'model_type' => class_basename($collection),
+            'model_id'   => $collection->id
+        ];
 
-        $webpage = StoreWebpage::make()->action(
+        return StoreWebpage::make()->action(
             $collection->shop->website,
             $webpageData
         );
-
-        return $webpage;
     }
 
-    public function htmlResponse(Webpage $webpage)
+    public function htmlResponse(Webpage $webpage): \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
     {
         return Redirect::route(
             'grp.org.shops.show.web.webpages.show',
             [
-            'organisation' => $webpage->organisation->slug,
-            'shop'         => $webpage->shop->slug,
-            'website'      => $webpage->website->slug,
-            'webpage'      => $webpage->slug,
-        ]
+                'organisation' => $webpage->organisation->slug,
+                'shop'         => $webpage->shop->slug,
+                'website'      => $webpage->website->slug,
+                'webpage'      => $webpage->slug,
+            ]
         );
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(Collection $collection): Webpage
     {
         $this->initialisationFromShop($collection->shop, []);
+
         return $this->handle($collection);
     }
 }

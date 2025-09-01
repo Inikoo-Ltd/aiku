@@ -93,8 +93,6 @@ class IndexChangesWebpages extends OrgAction
             $queryBuilder->where('webpages.type', WebpageTypeEnum::CATALOGUE);
         } elseif ($bucket == 'content') {
             $queryBuilder->where('webpages.type', WebpageTypeEnum::CONTENT);
-        } elseif ($bucket == 'info') {
-            $queryBuilder->where('webpages.type', WebpageTypeEnum::INFO);
         } elseif ($bucket == 'operations') {
             $queryBuilder->where('webpages.type', WebpageTypeEnum::OPERATIONS);
         } elseif ($bucket == 'blog') {
