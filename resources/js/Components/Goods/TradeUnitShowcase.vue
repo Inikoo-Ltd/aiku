@@ -27,6 +27,7 @@ import Dialog from "primevue/dialog"
 import { faImage } from "@far"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import ProductSummary from "@/Components/Product/ProductSummary.vue"
+import EditTradeUnit from "./EditTradeUnit.vue"
 
 library.add(
 	faCircle,
@@ -138,6 +139,22 @@ const onSubmitUpload = async (files: File[], refData = null) => {
 </script>
 
 <template>
+  <div>
+   <EditTradeUnit
+      :tags_selected_id="props.data.tags_selected_id"
+      :brand="props.data.brand"
+      :brand_routes="props.data.brand_routes"
+      :tags="props.data.tags"
+      :tag_routes="props.data.tag_routes"
+    />
+  </div>
+
+   <TranslationBox
+        v-bind="data.translation_box" 
+        :master="data.tradeUnit" 
+        :needTranslation="data.tradeUnit" 
+        
+    />
 	<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mx-3 lg:mx-0 mt-2">
 		<!-- Sidebar -->
 		<div class="space-y-4 lg:space-y-6">
@@ -205,7 +222,7 @@ const onSubmitUpload = async (files: File[], refData = null) => {
 			</div>
 		</div>
 		<!-- tradeUnit Summary -->
-		<ProductSummary :data="{...data.tradeUnit, gpsr : data.gpsr}"/>
+		<ProductSummary :data="data.tradeUnit" :gpsr="data.gpsr" />
 	</div>
 
 	<!-- Gallery Dialog -->
