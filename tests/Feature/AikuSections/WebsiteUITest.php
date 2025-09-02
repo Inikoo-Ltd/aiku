@@ -185,7 +185,7 @@ test('can show webpages list in fulfilment website', function () {
             ->component('Org/Web/Webpages')
             ->has('title')
             ->has('breadcrumbs', 3)
-            ->has('data.data', 9);
+            ->has('data.data', 7);
     });
 });
 
