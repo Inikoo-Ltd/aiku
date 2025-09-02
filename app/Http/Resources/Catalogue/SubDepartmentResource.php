@@ -24,7 +24,7 @@ class SubDepartmentResource extends JsonResource
 {
     public function toArray($request): array
     {
-         $urlMaster                              = null;
+        $urlMaster                              = null;
         if ($this->master_product_category_id) {
             $urlMaster = [
                 'name'       => 'grp.helpers.redirect_master_product_category',

@@ -73,7 +73,7 @@ class StoreProductFromMasterProduct extends GrpAction
                     $tradeUnitsData[$tradeUnit->id] = ['quantity' => $tradeUnit->pivot->quantity];
                 }
                 $product->tradeUnits()->syncWithoutDetaching($tradeUnitsData);
-                
+
             }
         }
     }

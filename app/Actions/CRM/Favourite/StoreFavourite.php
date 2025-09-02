@@ -26,9 +26,8 @@ class StoreFavourite extends OrgAction
     public function handle(Customer $customer, Product $product, array $modelData): Favourite
     {
         $favourite = $customer->favourites()->where('product_id', $product->id)->first();
-        if ($favourite)
-        {
-            if(!$favourite->unfavourited_at) {
+        if ($favourite) {
+            if (!$favourite->unfavourited_at) {
                 throw ValidationException::withMessages(
                     [
                         'message' => [
@@ -39,7 +38,7 @@ class StoreFavourite extends OrgAction
             } else {
                 $this->update($favourite, ['unfavourited_at' => null, 'current_favourite_id' => $favourite->id]);
             }
-            
+
         } else {
             data_set($modelData, 'group_id', $customer->group_id);
             data_set($modelData, 'organisation_id', $customer->organisation_id);
@@ -48,11 +47,11 @@ class StoreFavourite extends OrgAction
             data_set($modelData, 'department_id', $product->department_id);
             data_set($modelData, 'sub_department_id', $product->sub_department_id);
             data_set($modelData, 'family_id', $product->family_id);
-    
-    
+
+
             /** @var Favourite $favourite */
             $favourite = $customer->favourites()->create($modelData);
-    
+
             CustomerHydrateFavourites::run($customer);
             ProductHydrateCustomersWhoFavourited::dispatch($product);
             ProductHydrateCustomersWhoFavouritedInCategories::dispatch($product);

@@ -8,7 +8,6 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
-use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Enums\UI\Catalogue\DepartmentTabsEnum;
