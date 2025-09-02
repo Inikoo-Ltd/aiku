@@ -4,8 +4,8 @@ import { trans } from 'laravel-vue-i18n'
 import { inject } from 'vue'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faForklift, faClipboardCheck, faQuestionSquare } from "@fal"
-import { faShoppingBasket, faStickyNote } from "@fas"
+import { faForklift, faInventory, faClipboardCheck, faQuestionSquare, faDotCircle } from "@fal"
+import { faShoppingBasket, faStickyNote, faShoppingCart } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { ref, nextTick } from 'vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
@@ -15,10 +15,18 @@ import { InputNumber, Popover } from 'primevue'
 import StockCheck from './StockCheck.vue'
 import MoveStock from './MoveStock.vue'
 import EditLocations from './EditLocations.vue'
-library.add(faForklift, faClipboardCheck, faQuestionSquare, faShoppingBasket, faStickyNote)
+import { Icon as IconTS } from '@/types/Utils/Icon'
+import Icon from '@/Components/Icon.vue'
+library.add(faForklift, faInventory, faClipboardCheck, faQuestionSquare, faDotCircle, faShoppingBasket, faStickyNote, faShoppingCart)
 
 const props = defineProps<{
     stocks_management: {
+        summary: {
+            [key: string]: {
+                icon_state: IconTS
+                value: number
+            }
+        }
         part_locations: {
             id: number
             name: string
@@ -210,37 +218,13 @@ const getQuestionTooltip = (locationId: number) => {
 
         <!-- Section: Summary Stats -->
         <div class="grid grid-cols-4 gap-2 text-center">
-            <div class="bg-gray-100 p-2 rounded">
-                <span v-tooltip="trans('Stock in locations')">
-                    <FontAwesomeIcon icon="fal fa-inventory" class="text-gray-500" fixed-width aria-hidden="true" />
+            <div v-for="(item, key) in stocks_management.summary" class="bg-gray-100 p-2 rounded">
+                <span>
+                    <!-- <FontAwesomeIcon :icon="item.icon_state" class="text-gray-500" fixed-width aria-hidden="true" /> -->
+                    <Icon :data="item.icon_state" />
                 </span>
                 <span class="ml-2 text-lg font-bold">
-                    {{ locale.number(21233 ?? 0) }}
-                </span>
-            </div>
-
-            <div class="bg-gray-100 p-2 rounded">
-                <span v-tooltip="trans('Reserved paid parts in process by customer services')">
-                    <FontAwesomeIcon icon="fal fa-shopping-cart" class="text-gray-500" fixed-width aria-hidden="true" />
-                </span>
-                <span class="ml-2 text-lg font-bold">
-                    {{ locale.number(43 ?? 0) }}
-                </span>
-            </div>
-
-            <div class="bg-gray-100 p-2 rounded">
-                <span v-tooltip="trans('Parts been picked')">
-                    <FontAwesomeIcon icon="fal fa-shopping-basket" class="text-gray-500" fixed-width
-                        aria-hidden="true" />
-                </span>
-                <span class="ml-2 text-lg font-bold">
-                    {{ locale.number(1112 ?? 0) }}
-                </span>
-            </div>
-
-            <div class="bg-gray-100 p-2 rounded text-red-600">
-                <span v-tooltip="trans('Stock available for sale')" class="ml-2 text-lg font-bold">
-                    {{ locale.number(4444 ?? 0) }}
+                    {{ locale.number(item.value ?? 0) }}
                 </span>
             </div>
         </div>

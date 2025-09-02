@@ -24,6 +24,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTrash as falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus } from "@fas"
 import StocksManagement from "@/Components/Warehouse/Inventory/StocksManagement/StocksManagement.vue"
+import { Icon } from "@/types/Utils/Icon"
 library.add(faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus)
 
 const props = defineProps<{
@@ -77,6 +78,12 @@ const props = defineProps<{
             tags_selected_id: number[]
         }[]
         stocks_management: {
+            summary: {
+                [key: string]: {
+                    icon_state: Icon
+                    value: number
+                }
+            }
             part_locations: {
                 id: number
                 name: string
@@ -121,7 +128,7 @@ const compSelectedTradeUnit = computed(() => {
 
 
 <template>
-    <div class="grid md:grid-cols-4 gap-x-1 gap-y-4">
+    <div class="grid md:grid-cols-4 gap-x-1 gap-y-4 p-6">
         <!-- Sidebar -->
        <!--  <div class="p-5 space-y-5 grid grid-cols-1 max-w-[500px]">
             <div class="relative">
@@ -166,7 +173,7 @@ const compSelectedTradeUnit = computed(() => {
             </section>
         </div> -->
 
-        <div></div>
+        <div class="bg-gray-200"></div>
         <div class="md:col-span-3">
             <StocksManagement
                 :stocks_management="data.stocks_management"
@@ -263,6 +270,7 @@ const compSelectedTradeUnit = computed(() => {
                 <span class="text-sm font-medium">{{ trans("Show more") }}</span>
             </div>
         </div>
-        <pre>{{ data }}</pre>
+        
+        <pre>{{ data.stocks_management }}</pre>
     </div>
 </template>
