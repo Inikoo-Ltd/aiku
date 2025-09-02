@@ -58,10 +58,10 @@ class UpdateProductCategoryTranslationsFromUpdate extends OrgAction
 
     public function updateMaster(MasterProductCategory $masterProductCategory, array $name_i8n, array $description_i8n, array $description_title_i8n, array $description_extra_i8n) 
     {
-        $masterNameI8n = is_array($masterProductCategory->name_i8n) ? $masterProductCategory->name_i8n : [];
-        $masterDescriptionI8n = is_array($masterProductCategory->description_i8n) ? $masterProductCategory->description_i8n : [];
-        $masterDescriptionTitleI8n = is_array($masterProductCategory->description_title_i8n) ? $masterProductCategory->description_title_i8n : [];
-        $masterDescriptionExtraI8n = is_array($masterProductCategory->description_extra_i8n) ? $masterProductCategory->description_extra_i8n : [];
+        $masterNameI8n = $masterProductCategory->getTranslations('name_i8n');
+        $masterDescriptionI8n =  $masterProductCategory->getTranslations('description_i8n');
+        $masterDescriptionTitleI8n =  $masterProductCategory->getTranslations('description_title_i8n');
+        $masterDescriptionExtraI8n = $masterProductCategory->getTranslations('description_extra_i8n');
         
         $updateMaster = false;
         
