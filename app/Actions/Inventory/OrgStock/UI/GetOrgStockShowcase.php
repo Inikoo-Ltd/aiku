@@ -57,6 +57,11 @@ class GetOrgStockShowcase
                     'name'      => 'grp.models.location_org_stock.move',
                 ],
                 'stocks_management' => [
+                    'routes'    => [
+                        'fetch_locations'               => [],  // TODO: Artha, fetch locations list in the warehouse
+                        'submit_audit_stocks'           => [],  // TODO: Artha, submit audit stocks
+                        'update_stocks_locations'      => [],  // TODO: Artha, attach and detach the stocks to locations
+                    ],
                     'summary' => [
                         'current_on_hand_stock' => [
                             'icon_state'    => [
@@ -102,27 +107,6 @@ class GetOrgStockShowcase
                             'last_audit' => now(),
                             'stock' => 30,
                             'isAudited' => false
-                        ],
-                        [
-                            'id' => 3,
-                            'name' => 'E3',
-                            'last_audit' => now(),
-                            'stock' => 60,
-                            'isAudited' => true
-                        ],
-                        [
-                            'id' => 4,
-                            'name' => 'E4',
-                            'last_audit' => now(),
-                            'stock' => 20,
-                            'isAudited' => false
-                        ],
-                        [
-                            'id' => 5,
-                            'name' => 'E5',
-                            'last_audit' => now(),
-                            'stock' => 80,
-                            'isAudited' => true
                         ]
                     ]
                 ]
