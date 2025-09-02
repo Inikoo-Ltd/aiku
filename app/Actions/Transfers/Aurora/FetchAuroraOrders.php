@@ -12,7 +12,7 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBasket;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
-use App\Actions\Ordering\Order\SetOrderPayments;
+use App\Actions\Ordering\Order\UpdateOrderPaymentsStatus;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\UpdateOrderFixedAddress;
@@ -279,7 +279,7 @@ class FetchAuroraOrders extends FetchAuroraAction
         }
 
         $order->payments()->sync($modelHasPayments);
-        SetOrderPayments::run($order);
+        UpdateOrderPaymentsStatus::run($order);
     }
 
     private function fetchTransactions($organisationSource, Order $order): void

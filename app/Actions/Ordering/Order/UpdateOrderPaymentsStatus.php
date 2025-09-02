@@ -18,7 +18,7 @@ use App\Models\Ordering\Order;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
 
-class SetOrderPayments extends OrgAction
+class UpdateOrderPaymentsStatus extends OrgAction
 {
     use WithHydrateCommand;
 
