@@ -81,7 +81,7 @@ class UpdateProductCategory extends OrgAction
         if (Arr::has($modelData, 'name_i8n')) {
             UpdateProductCategoryTranslationsFromUpdate::make()->action($productCategory, [
                 'translations' => [
-                    'name' => Arr::pull($modelData, 'name_i8n')
+                    'name' => [$productCategory->shop->language->code => Arr::pull($modelData, 'name_i8n')]
                 ]
             ]);
         }
@@ -89,7 +89,7 @@ class UpdateProductCategory extends OrgAction
         if (Arr::has($modelData, 'description_title_i8n')) {
             UpdateProductCategoryTranslationsFromUpdate::make()->action($productCategory, [
                 'translations' => [
-                    'description_title' => Arr::pull($modelData, 'description_title_i8n')
+                    'description_title' => [$productCategory->shop->language->code => Arr::pull($modelData, 'description_title_i8n')]
                 ]
             ]);
         }
@@ -97,7 +97,7 @@ class UpdateProductCategory extends OrgAction
         if (Arr::has($modelData, 'description_i8n')) {
             UpdateProductCategoryTranslationsFromUpdate::make()->action($productCategory, [
                 'translations' => [
-                    'description' => Arr::pull($modelData, 'description_i8n')
+                    'description' => [$productCategory->shop->language->code => Arr::pull($modelData, 'description_i8n')]
                 ]
             ]);
         }
@@ -105,7 +105,7 @@ class UpdateProductCategory extends OrgAction
         if (Arr::has($modelData, 'description_extra_i8n')) {
             UpdateProductCategoryTranslationsFromUpdate::make()->action($productCategory, [
                 'translations' => [
-                    'description_extra' => Arr::pull($modelData, 'description_extra_i8n')
+                    'description_extra' => [$productCategory->shop->language->code => Arr::pull($modelData, 'description_extra_i8n')]
                 ]
             ]);
         }
@@ -214,10 +214,10 @@ class UpdateProductCategory extends OrgAction
             'url'                        => ['sometimes', 'nullable', 'string', 'max:250'],
             'images'                     => ['sometimes', 'array'],
             'master_product_category_id' => ['sometimes', 'integer', 'nullable', Rule::exists('master_product_categories', 'id')->where('master_shop_id', $this->shop->master_shop_id)],
-            'name_i8n' => ['sometimes', 'array'],
-            'description_title_i8n' => ['sometimes', 'array'],
-            'description_i8n' => ['sometimes', 'array'],
-            'description_extra_i8n' => ['sometimes', 'array'],
+            'name_i8n' =>               ['sometimes'],
+            'description_title_i8n' =>  ['sometimes'],
+            'description_i8n' =>        ['sometimes'],
+            'description_extra_i8n' =>  ['sometimes'],
 
         ];
 
