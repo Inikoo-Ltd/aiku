@@ -10,6 +10,7 @@ namespace App\Actions\Accounting\Invoice\UI;
 
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Accounting\InvoicesTabsEnum;
 use App\Models\Accounting\Invoice;
 use Illuminate\Http\RedirectResponse;
@@ -41,11 +42,18 @@ class ForceDeleteRefund extends OrgAction
 
     public function htmlResponse(Invoice $refund): RedirectResponse
     {
-        return Redirect::route('grp.org.fulfilments.show.crm.customers.show.invoices.index', [
+        if($refund->shop->type == ShopTypeEnum::FULFILMENT) {
+            return Redirect::route('grp.org.fulfilments.show.crm.customers.show.invoices.index', [
+                $refund->organisation->slug,
+                $refund->customer->fulfilmentCustomer->fulfilment->slug,
+                $refund->customer->fulfilmentCustomer->slug,
+                'tab' => InvoicesTabsEnum::REFUNDS->value
+            ]);
+        }
+
+        return Redirect::route('grp.org.shops.show.dashboard.invoices.refunds.index', [
             $refund->organisation->slug,
-            $refund->customer->fulfilmentCustomer->fulfilment->slug,
-            $refund->customer->fulfilmentCustomer->slug,
-            'tab' => InvoicesTabsEnum::REFUNDS->value
+            $refund->shop->slug
         ]);
     }
 
