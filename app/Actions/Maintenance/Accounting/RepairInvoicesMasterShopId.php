@@ -2,11 +2,11 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sun, 24 Aug 2025 08:25:38 Central Standard Time, Mexico City, Mexico
+ * Created: Tue, 02 Sept 2025 10:00:03 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Accounting\Invoice;
+namespace App\Actions\Maintenance\Accounting;
 
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\Invoice;

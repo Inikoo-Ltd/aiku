@@ -8,7 +8,7 @@
 
 namespace App\Actions\Transfers\Aurora;
 
-use App\Actions\Accounting\Invoice\SetInvoicePaymentState;
+use App\Actions\Accounting\Invoice\UpdateInvoicePaymentState;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\Accounting\Invoice\UpdateInvoice;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
@@ -141,7 +141,7 @@ class FetchAuroraInvoices extends FetchAuroraAction
         }
 
 
-        SetInvoicePaymentState::run($invoice);
+        UpdateInvoicePaymentState::run($invoice);
     }
 
     private function fetchInvoiceTransactions($organisationSource, Invoice $invoice): void

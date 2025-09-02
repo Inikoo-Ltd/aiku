@@ -69,6 +69,6 @@ console.log(props)
         </div>
     </div>
 
-    <TranslationBox :master="data.department" :needTranslation="data.department"
-        v-bind="data.translation_box" />
+   <!--  <TranslationBox :master="data.department" :needTranslation="data.department"
+        v-bind="data.translation_box" /> -->
 </template>
