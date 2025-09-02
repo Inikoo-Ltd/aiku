@@ -17,6 +17,8 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTra
 use App\Actions\Goods\Stock\Hydrators\StockHydrateGrossWeightFromTradeUnits;
 use App\Stubs\Migrations\HasDangerousGoodsFields;
 use App\Actions\GrpAction;
+use App\Actions\Helpers\Brand\AttachBrandToModel;
+use App\Actions\Helpers\Tag\AttachTagsToModel;
 use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -70,6 +72,18 @@ class UpdateTradeUnit extends GrpAction
                 'translations' => [
                     'description_extra' => Arr::pull($modelData, 'description_extra_i8n')
                 ]
+            ]);
+        }
+
+        if (Arr::has($modelData, 'tags')) {
+            AttachTagsToModel::make()->action($tradeUnit, [
+                'tags_id' => Arr::pull($modelData, 'tags')
+            ]);
+        }
+
+        if (Arr::has($modelData, 'brands')) {
+            AttachBrandToModel::make()->action($tradeUnit, [
+                'brand_id' => Arr::pull($modelData, 'brands')
             ]);
         }
 
@@ -196,6 +210,9 @@ class UpdateTradeUnit extends GrpAction
             'description_title_i8n'        => ['sometimes', 'array'],
             'description_i8n'              => ['sometimes', 'array'],
             'description_extra_i8n'        => ['sometimes', 'array'],
+            'tags'                         => ['sometimes', 'array'],
+            'brands'                       => ['sometimes'],
+
         ];
 
         if (!$this->strict) {

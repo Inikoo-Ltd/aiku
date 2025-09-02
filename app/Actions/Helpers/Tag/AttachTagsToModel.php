@@ -74,5 +74,13 @@ class AttachTagsToModel extends OrgAction
         $this->handle($tradeUnit, $this->validatedData, true);
     }
 
+    public function action(TradeUnit $tradeUnit, array $modelData)
+    {
+        $this->parent = $tradeUnit;
+        $this->initialisationFromGroup($tradeUnit->group, $modelData);
+
+        $this->handle($tradeUnit, $this->validatedData, true);
+    }
+
 
 }
