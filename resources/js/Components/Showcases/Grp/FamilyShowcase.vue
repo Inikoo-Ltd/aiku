@@ -53,6 +53,6 @@ console.log(props)
 
 
 
-        <TranslationBox :master="data.family.data" :needTranslation="data.family.data" v-bind="data.translation_box" />
+     <!--    <TranslationBox :master="data.family.data" :needTranslation="data.family.data" v-bind="data.translation_box" /> -->
     </div>
 </template>

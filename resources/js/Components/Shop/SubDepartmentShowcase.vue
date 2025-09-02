@@ -77,6 +77,6 @@ provide('isModalOpen', isModalOpen)
         </div>
     </div>
 
-    <TranslationBox :master="data.subDepartment" :needTranslation="data.subDepartment"
-        v-bind="data.translation_box" />
+    <!-- <TranslationBox :master="data.subDepartment" :needTranslation="data.subDepartment"
+        v-bind="data.translation_box" /> -->
 </template>
