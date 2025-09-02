@@ -37,7 +37,7 @@ class StoreFavourite extends OrgAction
                     ]
                 );
             } else {
-                $this->update($favourite, ['unfavourited_at' => null]);
+                $this->update($favourite, ['unfavourited_at' => null, 'current_favourite_id' => $favourite->id]);
             }
             
         } else {
