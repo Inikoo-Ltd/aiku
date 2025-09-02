@@ -24,6 +24,7 @@ use App\Models\Goods\TradeUnit;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use App\Stubs\Migrations\HasProductInformation;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -40,6 +41,38 @@ class UpdateTradeUnit extends GrpAction
 
     public function handle(TradeUnit $tradeUnit, array $modelData): TradeUnit
     {
+        if(Arr::has($modelData, 'name_i8n')) {
+            UpdateTradeUnitTranslationsFromUpdate::make()->action($tradeUnit, [
+                'translations' => [
+                    'name' => Arr::pull($modelData, 'name_i8n')
+                ]
+            ]);
+        }
+
+        if(Arr::has($modelData, 'description_title_i8n')) {
+            UpdateTradeUnitTranslationsFromUpdate::make()->action($tradeUnit, [
+                'translations' => [
+                    'description_title' => Arr::pull($modelData, 'description_title_i8n')
+                ]
+            ]);
+        }
+
+        if(Arr::has($modelData, 'description_i8n')) {
+            UpdateTradeUnitTranslationsFromUpdate::make()->action($tradeUnit, [
+                'translations' => [
+                    'description' => Arr::pull($modelData, 'description_i8n')
+                ]
+            ]);
+        }
+
+        if(Arr::has($modelData, 'description_extra_i8n')) {
+            UpdateTradeUnitTranslationsFromUpdate::make()->action($tradeUnit, [
+                'translations' => [
+                    'description_extra' => Arr::pull($modelData, 'description_extra_i8n')
+                ]
+            ]);
+        }
+        
         $tradeUnit = $this->update($tradeUnit, $modelData, ['data', 'marketing_dimensions']);
 
 
@@ -159,6 +192,10 @@ class UpdateTradeUnit extends GrpAction
             'duty_rate'                    => ['sometimes', 'nullable', 'string'],
             'hts_us'                       => ['sometimes', 'nullable', 'string'],
             'marketing_ingredients'        => ['sometimes', 'nullable', 'string'],
+            'name_i8n'                     => ['sometimes', 'array'],
+            'description_title_i8n'        => ['sometimes', 'array'],
+            'description_i8n'              => ['sometimes', 'array'],
+            'description_extra_i8n'        => ['sometimes', 'array'],
         ];
 
         if (!$this->strict) {

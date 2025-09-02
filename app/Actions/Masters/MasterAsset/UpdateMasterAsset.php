@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterAsset;
 
+use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterAssets;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateMasterAssets;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
@@ -48,8 +49,20 @@ class UpdateMasterAsset extends OrgAction
             }
             data_set($modelData, 'master_department_id', $masterDepartmentID);
         }
-
         $masterAsset = $this->update($masterAsset, $modelData);
+        $changed = Arr::except($masterAsset->getChanges(), ['updated_at']);
+
+        if (Arr::hasAny($changed, ['code', 'name', 'description', 'rrp'])) {
+            foreach($masterAsset->products as $product) {
+                UpdateProduct::make()->action($product, [
+                    'code' => $masterAsset->code,
+                    'name' => $masterAsset->name,
+                    'description' => $masterAsset->description,
+                    'rrp' => $masterAsset->rrp
+                ]);
+            }
+        }
+
         if ($masterAsset->wasChanged('status')) {
             GroupHydrateMasterAssets::dispatch($masterAsset->group)->delay($this->hydratorsDelay);
             MasterShopHydrateMasterAssets::dispatch($masterAsset->masterShop)->delay($this->hydratorsDelay);

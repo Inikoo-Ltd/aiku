@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
+use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\DepartmentTabsEnum;
@@ -123,25 +124,49 @@ class EditFamily extends OrgAction
                                     'label' => __('code'),
                                     'value' => $family->code
                                 ],
-                                'name' => [
+                                 'name' => [
                                     'type'  => 'input',
                                     'label' => __('name'),
                                     'value' => $family->name
+                                ],
+                                'name_i8n' => [
+                                    'type'  => 'input_translation',
+                                    'label' => __('translate name'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($family->shop->extra_languages),
+                                    'value' => $family->getTranslations('name_i8n')
                                 ],
                                 'description_title' => [
                                     'type'  => 'input',
                                     'label' => __('description title'),
                                     'value' => $family->description_title
                                 ],
+                                'description_title_i8n' => [
+                                    'type'  => 'input_translation',
+                                    'label' => __('translate description title'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($family->shop->extra_languages),
+                                    'value' => $family->getTranslations('description_title_i8n')
+                                ],
                                 'description' => [
                                     'type'  => 'textEditor',
                                     'label' => __('description'),
                                     'value' => $family->description
                                 ],
+                                'description_i8n' => [
+                                    'type'  => 'textEditor_translation',
+                                    'label' => __('translate description'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($family->shop->extra_languages),
+                                    'value' => $family->getTranslations('description_i8n')
+                                ],
                                 'description_extra' => [
                                     'type'  => 'textEditor',
                                     'label' => __('description extra'),
                                     'value' => $family->description_extra
+                                ],
+                                'description_extra_i8n' => [
+                                    'type'  => 'textEditor_translation',
+                                    'label' => __('translate description extra'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($family->shop->extra_languages),
+                                    'value' => $family->getTranslations('description_extra_i8n')
                                 ],
                             ]
                         ],
