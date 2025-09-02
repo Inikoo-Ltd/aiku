@@ -12,30 +12,52 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoFavourited
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoFavourited;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateFavourites;
 use App\Actions\OrgAction;
+use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Favourite;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreFavourite extends OrgAction
 {
+    use WithActionUpdate;
+
     public function handle(Customer $customer, Product $product, array $modelData): Favourite
     {
-        data_set($modelData, 'group_id', $customer->group_id);
-        data_set($modelData, 'organisation_id', $customer->organisation_id);
-        data_set($modelData, 'shop_id', $customer->shop_id);
-        data_set($modelData, 'product_id', $product->id);
-        data_set($modelData, 'department_id', $product->department_id);
-        data_set($modelData, 'sub_department_id', $product->sub_department_id);
-        data_set($modelData, 'family_id', $product->family_id);
+        $favourite = $customer->favourites()->where('product_id', $product->id)->first();
+        if ($favourite)
+        {
+            if(!$favourite->unfavourited_at) {
+                throw ValidationException::withMessages(
+                    [
+                        'message' => [
+                            'favourite' => 'Product already favourited',
+                        ]
+                    ]
+                );
+            } else {
+                $this->update($favourite, ['unfavourited_at' => null]);
+            }
+            
+        } else {
+            data_set($modelData, 'group_id', $customer->group_id);
+            data_set($modelData, 'organisation_id', $customer->organisation_id);
+            data_set($modelData, 'shop_id', $customer->shop_id);
+            data_set($modelData, 'product_id', $product->id);
+            data_set($modelData, 'department_id', $product->department_id);
+            data_set($modelData, 'sub_department_id', $product->sub_department_id);
+            data_set($modelData, 'family_id', $product->family_id);
+    
+    
+            /** @var Favourite $favourite */
+            $favourite = $customer->favourites()->create($modelData);
+    
+            CustomerHydrateFavourites::run($customer);
+            ProductHydrateCustomersWhoFavourited::dispatch($product);
+            ProductHydrateCustomersWhoFavouritedInCategories::dispatch($product);
+        }
 
-
-        /** @var Favourite $favourite */
-        $favourite = $customer->favourites()->create($modelData);
-
-        CustomerHydrateFavourites::run($customer);
-        ProductHydrateCustomersWhoFavourited::dispatch($product);
-        ProductHydrateCustomersWhoFavouritedInCategories::dispatch($product);
 
         return $favourite;
     }
