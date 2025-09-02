@@ -135,7 +135,7 @@ class ShowRefund extends OrgAction
                 ]
             ]
         ];
-        
+
         if ($refund->in_process) {
 
             $actions[] = [

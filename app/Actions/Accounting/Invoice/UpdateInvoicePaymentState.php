@@ -14,17 +14,16 @@ use App\Enums\Accounting\Invoice\InvoicePayDetailedStatusEnum;
 use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
-use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\Payment;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
 
-class SetInvoicePaymentState extends OrgAction
+class UpdateInvoicePaymentState extends OrgAction
 {
     use WithHydrateCommand;
 
-    public string $commandSignature = 'invoices:set_payment_state {organisations?*} {--S|shop= shop slug} {--s|slug=}';
+    public string $commandSignature = 'invoices:update_payment_state {organisations?*} {--S|shop= shop slug} {--s|slug=}';
 
 
     public function __construct()
@@ -42,7 +41,6 @@ class SetInvoicePaymentState extends OrgAction
 
         $payments = $invoice->payments()
             ->where('payments.status', PaymentStatusEnum::SUCCESS)
-            ->where('payments.type', '=', PaymentTypeEnum::PAYMENT)
             ->orderBy('payments.date')
             ->get();
 
@@ -59,16 +57,22 @@ class SetInvoicePaymentState extends OrgAction
         if ($invoice->type == InvoiceTypeEnum::INVOICE) {
             if ($runningPaymentsAmount > $invoice->total_amount) {
                 $payDetailedStatus = InvoicePayDetailedStatusEnum::OVERPAID;
+                $payStatus = InvoicePayStatusEnum::PAID;
             } elseif ($runningPaymentsAmount == $invoice->total_amount) {
                 $payDetailedStatus = InvoicePayDetailedStatusEnum::PAID;
+                $payStatus = InvoicePayStatusEnum::PAID;
             } elseif ($runningPaymentsAmount > 0) {
                 $payDetailedStatus = InvoicePayDetailedStatusEnum::PARTIALLY_PAID;
+
             }
         } else {
+
             if ($runningPaymentsAmount < $invoice->total_amount) {
                 $payDetailedStatus = InvoicePayDetailedStatusEnum::OVERPAID;
+                $payStatus = InvoicePayStatusEnum::PAID;
             } elseif ($runningPaymentsAmount == $invoice->total_amount) {
                 $payDetailedStatus = InvoicePayDetailedStatusEnum::PAID;
+                $payStatus = InvoicePayStatusEnum::PAID;
             } elseif ($runningPaymentsAmount < 0) {
                 $payDetailedStatus = InvoicePayDetailedStatusEnum::PARTIALLY_PAID;
             }

@@ -67,7 +67,7 @@ class UpdateProduct extends OrgAction
             data_set($assetData, 'follow_master', Arr::pull($modelData, 'follow_master'));
         }
 
-        if(Arr::has($modelData, 'name_i8n')) {
+        if (Arr::has($modelData, 'name_i8n')) {
             UpdateProductTranslations::make()->action($product, [
                 'translations' => [
                     'name' => Arr::pull($modelData, 'name_i8n')
@@ -75,7 +75,7 @@ class UpdateProduct extends OrgAction
             ]);
         }
 
-        if(Arr::has($modelData, 'description_title_i8n')) {
+        if (Arr::has($modelData, 'description_title_i8n')) {
             UpdateProductTranslations::make()->action($product, [
                 'translations' => [
                     'description_title' => Arr::pull($modelData, 'description_title_i8n')
@@ -83,7 +83,7 @@ class UpdateProduct extends OrgAction
             ]);
         }
 
-        if(Arr::has($modelData, 'description_i8n')) {
+        if (Arr::has($modelData, 'description_i8n')) {
             UpdateProductTranslations::make()->action($product, [
                 'translations' => [
                     'description' => Arr::pull($modelData, 'description_i8n')
@@ -91,7 +91,7 @@ class UpdateProduct extends OrgAction
             ]);
         }
 
-        if(Arr::has($modelData, 'description_extra_i8n')) {
+        if (Arr::has($modelData, 'description_extra_i8n')) {
             UpdateProductTranslations::make()->action($product, [
                 'translations' => [
                     'description_extra' => Arr::pull($modelData, 'description_extra_i8n')

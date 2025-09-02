@@ -20,6 +20,8 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithOrderExchanges;
+use App\Enums\Accounting\Invoice\InvoicePayDetailedStatusEnum;
+use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Models\Accounting\Invoice;
@@ -50,6 +52,9 @@ class StoreInvoice extends OrgAction
     {
         data_set($modelData, 'uuid', Str::uuid());
         data_set($modelData, 'ulid', Str::ulid());
+
+        data_set($modelData, 'pay_status', InvoicePayStatusEnum::UNPAID);
+        data_set($modelData, 'pay_detailed_status', InvoicePayDetailedStatusEnum::UNPAID);
 
 
         if (!Arr::has($modelData, 'footer')) {
