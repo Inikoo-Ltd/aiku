@@ -47,14 +47,9 @@ console.log(props)
                 </Link>
             </span>
         </Message>
-
-
         <div class="px-5 grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-6 mt-4 mb-4 ">
             <ProductCategoryCard :data="data.family.data" />
         </div>
-
-
-
      <!--    <TranslationBox :master="data.family.data" :needTranslation="data.family.data" v-bind="data.translation_box" /> -->
     </div>
 </template>

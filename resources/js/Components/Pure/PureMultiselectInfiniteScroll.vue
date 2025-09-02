@@ -102,6 +102,7 @@ const onFetchNext = () => {
 }
 
 onMounted(() => {
+    fetchProductList(getUrlFetch({'filter[global]': ''}))
     const dropdown = document.querySelector('.multiselect-dropdown')
     // console.log('bb', dropdown, dropdown?.scrollTop)
     if (dropdown) {
