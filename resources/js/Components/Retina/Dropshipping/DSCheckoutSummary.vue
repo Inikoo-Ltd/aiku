@@ -3,7 +3,7 @@
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import {trans} from "laravel-vue-i18n"
 import {inject, onMounted, ref} from "vue"
-import {Link} from "@inertiajs/vue3"
+import {Link, router} from "@inertiajs/vue3"
 import {AddressManagement} from "@/types/PureComponent/Address"
 import Modal from "@/Components/Utils/Modal.vue"
 import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
@@ -53,7 +53,7 @@ const props = defineProps<{
         }
     }
     balance?: string
-    address_management?: AddressManagement
+    address_management: AddressManagement
     dataPalletReturn?: {
         is_collection: boolean
     }
@@ -80,24 +80,18 @@ const isModalShippingAddress = ref(false)
 const isDeliveryAddressManagementModal = ref(false)
 const isCollection = ref(false)
 const collectionBy = ref('myself')
-const textValue = ref('')
+const textValue = ref<string | null>('')
 
 // Collection feature methods
-const updateCollectionType = () => {
-    console.log('Collection type updated:', collectionBy.value)
-}
-
-const updateCollectionNotes = () => {
-    console.log('Collection notes updated:', textValue.value)
-}
-
-const updateCollection = async (e: any) => {
+const updateCollection = async (e: Event) => {
+    const target = e.target as HTMLInputElement
+    const payload = {
+        collection_address_id: target.checked ? props.address_management.addresses.current_selected_address_id : null
+    }
     try {
-        const xxx = await axios.patch(
-            route(props.address_management.updateRoute.name, props.address_management.updateRoute.parameters), {
-                collection_address_id: e.target.checked ? props.address_management.addresses.current_selected_address_id : null
-            })
-        isCollection.value = Boolean(xxx.data.collection_address_id)
+        router.patch(route(props.address_management.updateRoute.name, props.address_management.updateRoute.parameters), {
+            ...payload
+        })
     } catch (error) {
         console.error(error)
         notify({
@@ -106,6 +100,64 @@ const updateCollection = async (e: any) => {
             type: "error",
         })
     }
+}
+
+
+const updateCollectionType = () => {
+    const payload: Record<string, any> = {
+        collection_by: collectionBy.value,
+    }
+
+    if (collectionBy.value === 'myself') {
+        payload.collection_notes = null
+        textValue.value = null // also clear in frontend
+    }
+
+    router.patch(
+        route(props.address_management.updateRoute.name, props.address_management.updateRoute.parameters),
+        payload,
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Collection type updated successfully"),
+                    type: "success",
+                })
+            },
+            onError: () => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to update collection type"),
+                    type: "error",
+                })
+            },
+        }
+    )
+}
+
+const updateCollectionNotes = () => {
+    router.patch(
+        route(props.address_management.updateRoute.name, props.address_management.updateRoute.parameters),
+        { collection_notes: textValue.value },
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Text updated successfully"),
+                    type: "success",
+                })
+            },
+            onError: () => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to update text"),
+                    type: "error",
+                })
+            },
+        }
+    )
 }
 
 onMounted(() => {
@@ -177,22 +229,6 @@ onMounted(() => {
                 <a :href="`tel:${summary?.customer_client.phone}`" v-tooltip="'Click to make a phone call'"
                    class="text-sm text-gray-500 hover:text-gray-700">{{ summary?.customer_client.phone }}</a>
             </div>
-
-            <!-- Field: Shipping Address -->
-            <!-- <div v-if="summary?.customer?.addresses?.delivery?.formatted_address"
-                class="mt-2 pl-1 flex items w-full flex-none gap-x-2" v-tooltip="trans('Shipping address')">
-                <div class="flex-none">
-                    <FontAwesomeIcon icon='fal fa-shipping-fast' class='text-gray-400' fixed-width aria-hidden='true' />
-                </div>
-                <dd class="w-full text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
-                    <div v-html="summary?.customer?.addresses?.delivery?.formatted_address"></div>
-                    <div v-if="address_management" @click="isModalShippingAddress = true"
-                        class="underline cursor-pointer hover:text-gray-700">
-                        {{ trans("Edit") }}
-                        <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true" />
-                    </div>
-                </dd>
-            </div> -->
 
             <!-- Collection Toggle -->
             <div class="mt-2 pl-1 flex items w-full flex-none gap-x-2" v-if="!isOrder || isCollection">
