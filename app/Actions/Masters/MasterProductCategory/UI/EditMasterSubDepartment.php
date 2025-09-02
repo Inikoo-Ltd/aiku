@@ -18,6 +18,7 @@ use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 
 class EditMasterSubDepartment extends OrgAction
 {
@@ -86,20 +87,44 @@ class EditMasterSubDepartment extends OrgAction
                                     'label' => __('name'),
                                     'value' => $masterProductCategory->name
                                 ],
+                                'name_i8n' => [
+                                    'type'  => 'input_translation',
+                                    'label' => __('translate name'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
+                                    'value' => $masterProductCategory->getTranslations('name_i8n')
+                                ],
                                 'description_title' => [
                                     'type'  => 'input',
                                     'label' => __('description title'),
                                     'value' => $masterProductCategory->description_title
+                                ],
+                                'description_title_i8n' => [
+                                    'type'  => 'input_translation',
+                                    'label' => __('translate description title'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
+                                    'value' => $masterProductCategory->getTranslations('description_title_i8n')
                                 ],
                                 'description' => [
                                     'type'  => 'textEditor',
                                     'label' => __('description'),
                                     'value' => $masterProductCategory->description
                                 ],
+                                'description_i8n' => [
+                                    'type'  => 'textEditor_translation',
+                                    'label' => __('translate description'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
+                                    'value' => $masterProductCategory->getTranslations('description_i8n')
+                                ],
                                 'description_extra' => [
                                     'type'  => 'textEditor',
                                     'label' => __('description extra'),
                                     'value' => $masterProductCategory->description_extra
+                                ],
+                                'description_extra_i8n' => [
+                                    'type'  => 'textEditor_translation',
+                                    'label' => __('translate description extra'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
+                                    'value' => $masterProductCategory->getTranslations('description_extra_i8n')
                                 ],
                             ]
                         ],
