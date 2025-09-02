@@ -1,29 +1,29 @@
 <script setup lang="ts">
-import {aikuLocaleStructure} from "@/Composables/useLocaleStructure";
-import {trans} from "laravel-vue-i18n";
-import {inject, computed, watch, ref} from "vue";
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
+import { trans } from "laravel-vue-i18n";
+import { inject, computed, watch, ref } from "vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue";
 import PureInput from "@/Components/Pure/PureInput.vue";
-import {notify} from "@kyvg/vue3-notification";
+import { notify } from "@kyvg/vue3-notification";
 import axios from "axios";
-import {routeType} from "@/types/route";
-import {Link, router} from "@inertiajs/vue3";
+import { routeType } from "@/types/route";
+import { Link, router } from "@inertiajs/vue3";
 import InputNumber from "primevue/inputnumber";
-import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome";
-import {faCheck, faSave} from "@far";
-import {faPlus, faMinus} from "@fal";
-import {library} from "@fortawesome/fontawesome-svg-core";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faCheck, faSave } from "@far";
+import { faPlus, faMinus, faArrowRight } from "@fal";
+import { library } from "@fortawesome/fontawesome-svg-core";
 import BluePrintTableRefund from "@/Components/Segmented/InvoiceRefund/BlueprintTableRefund";
 import PureTable from "@/Components/Pure/PureTable/PureTable.vue";
 import Dialog from "primevue/dialog";
 import ColumnGroup from "primevue/columngroup";
 import Row from "primevue/row";
 import Column from "primevue/column";
-import {useLocaleStore} from "@/Stores/locale";
+import { useLocaleStore } from "@/Stores/locale";
 import ActionCell from "./ActionCell.vue";
 
-library.add(faCheck, faSave, faPlus, faMinus);
+library.add(faCheck, faSave, faPlus, faMinus, faArrowRight);
 
 
 const props = defineProps<{
@@ -271,10 +271,19 @@ const generateInvoiceRoute = () => {
             invoice: props.invoice_pay.invoice_slug
         });
     } else {
-        return route("grp.org.accounting.invoices.show", {
-            organisation: route().params?.organisation,
-            invoice: props.invoice_pay.invoice_slug
-        });
+        switch (route().current()) {
+            case 'grp.org.shops.show.dashboard.invoices.refunds.show':
+                return route("grp.org.shops.show.dashboard.invoices.show", {
+                    organisation: route().params?.organisation,
+                    shop: route().params?.shop,
+                    invoice: props.invoice_pay.invoice_slug
+                });
+            default:
+                return route("grp.org.accounting.invoices.show", {
+                    organisation: route().params?.organisation,
+                    invoice: props.invoice_pay.invoice_slug
+                });
+        }
     }
 };
 
@@ -334,7 +343,8 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
     <dd class="relative w-full flex flex-col border rounded-md border-gray-400 overflow-hidden">
         <dl class="">
 
-            <div v-if="invoice_pay.order_reference"  class="border-b border-gray-400 px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
+            <div v-if="invoice_pay.order_reference"
+                 class="border-b border-gray-400 px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                 <dt class="text-sm/6 font-medium ">
                     <FontAwesomeIcon v-tooltip="trans('Invoice')" icon="fal fa-shopping-cart"
                                      class="text-gray-400" fixed-width aria-hidden="true"/>
@@ -350,17 +360,33 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
             </div>
 
             <!-- Refunds -->
+            <!--            <div v-if="Number(invoice_pay.total_refunds) < 0" class="border-b border-gray-400">
+                            <div v-for="refund in invoice_pay.list_refunds.data"
+                                 class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
+                                <dt class="text-sm/6 font-medium ">
+                                    <FontAwesomeIcon v-tooltip="trans('Refund')" icon="fal fa-arrow-circle-left"
+                                                     class="text-gray-400" fixed-width aria-hidden="true"/>
+                                    <Link :href="generateRefundRoute(refund.slug)" class="secondaryLink">{{ refund.reference }}
+                                    </Link>
+                                </dt>
+                                <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
+                                    {{ locale.currencyFormat(invoice_pay.currency_code, Number(refund.total_amount)) }}
+                                </dd>
+                            </div>
+                        </div>-->
+
             <div v-if="Number(invoice_pay.total_refunds) < 0" class="border-b border-gray-400">
-                <div v-for="refund in invoice_pay.list_refunds.data"
-                     class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
+                <div
+                    class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                     <dt class="text-sm/6 font-medium ">
-                        <FontAwesomeIcon v-tooltip="trans('Refund')" icon="fal fa-arrow-circle-left"
+                        <FontAwesomeIcon v-tooltip="trans('Refund')" icon="fal fa-arrow-right"
                                          class="text-gray-400" fixed-width aria-hidden="true"/>
-                        <Link :href="generateRefundRoute(refund.slug)" class="secondaryLink">{{ refund.reference }}
+                        <Link :href="generateInvoiceRoute(invoice_pay.invoice_slug)" class="secondaryLink">
+                            {{ invoice_pay.invoice_reference }}
                         </Link>
                     </dt>
                     <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
-                        {{ locale.currencyFormat(invoice_pay.currency_code, Number(refund.total_amount)) }}
+                        {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_invoice)) }}
                     </dd>
                 </div>
             </div>
