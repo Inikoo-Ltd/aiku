@@ -280,7 +280,7 @@ console.log(props.pageHead);
     <!-- Button: delete Refund -->
     <template #button-delete-refund="{ action }">
       <div>
-        <ModalConfirmationDelete :routeDelete="action.route" isFullLoading>
+        <ModalConfirmationDelete :routeDelete="action.route" isFullLoading isWithMessage keyMessage="deleted_note">
           <template #default="{ isOpenModal, changeModel, isLoadingdelete }">
             <Button @click="() => changeModel()" :style="'negative'" :icon="faTrashAlt"
                     :loading="isLoadingdelete" :iconRight="action.iconRight" :label="''"

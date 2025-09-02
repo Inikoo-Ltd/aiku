@@ -128,8 +128,8 @@ class ShowRefund extends OrgAction
             'label' => __('Delete'),
             'key'   => 'delete_refund',
             'route' => [
-                'method'     => 'delete',
-                'name'       => 'grp.models.refund.force_delete',
+                'method'     => 'patch',
+                'name'       => 'grp.models.refund.delete',
                 'parameters' => [
                     'refund' => $refund->id,
                 ]

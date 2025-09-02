@@ -61,53 +61,44 @@ class UpdateMasterProductCategoryTranslationsFromUpdate extends GrpAction
 
     public function updateChildren(ProductCategory $productCategory, array $name_i8n, array $description_i8n, array $description_title_i8n, array $description_extra_i8n) 
     {
-        $childNameI8n = is_array($productCategory->name_i8n) ? $productCategory->name_i8n : [];
-        $childDescriptionI8n = is_array($productCategory->description_i8n) ? $productCategory->description_i8n : [];
-        $childDescriptionTitleI8n = is_array($productCategory->description_title_i8n) ? $productCategory->description_title_i8n : [];
-        $childDescriptionExtraI8n = is_array($productCategory->description_extra_i8n) ? $productCategory->description_extra_i8n : [];
-        
+        $childNameI8n = $productCategory->getTranslations('name_i8n');
+        $childDescriptionI8n = $productCategory->getTranslations('description_i8n');
+        $childDescriptionTitleI8n = $productCategory->getTranslations('description_title_i8n');
+        $childDescriptionExtraI8n =  $productCategory->getTranslations('description_extra_i8n');
+
         $updateChild = false;
-        
         if (!empty($name_i8n)) {
             foreach ($name_i8n as $locale => $translation) {
-                if (array_key_exists($locale, $childNameI8n)) {
-                    $childNameI8n[$locale] = $translation;
-                    $productCategory->name_i8n = $childNameI8n;
-                    $updateChild = true;
-                }
+                $childNameI8n[$locale] = $translation;
             }
+            $productCategory->name_i8n = $childNameI8n;
+            $updateChild = true;
         }
-        
+
         if (!empty($description_i8n)) {
             foreach ($description_i8n as $locale => $translation) {
-                if (array_key_exists($locale, $childDescriptionI8n)) {
-                    $childDescriptionI8n[$locale] = $translation;
-                    $productCategory->description_i8n = $childDescriptionI8n;
-                    $updateChild = true;
-                }
+                $childDescriptionI8n[$locale] = $translation;
             }
+            $productCategory->description_i8n = $childDescriptionI8n;
+            $updateChild = true;
         }
         
         if (!empty($description_title_i8n)) {
             foreach ($description_title_i8n as $locale => $translation) {
-                if (array_key_exists($locale, $childDescriptionTitleI8n)) {
-                    $childDescriptionTitleI8n[$locale] = $translation;
-                    $productCategory->description_title_i8n = $childDescriptionTitleI8n;
-                    $updateChild = true;
-                }
+                $childDescriptionTitleI8n[$locale] = $translation;
             }
+            $productCategory->description_title_i8n = $childDescriptionTitleI8n;
+            $updateChild = true;
         }
         
         if (!empty($description_extra_i8n)) {
             foreach ($description_extra_i8n as $locale => $translation) {
-                if (array_key_exists($locale, $childDescriptionExtraI8n)) {
-                    $childDescriptionExtraI8n[$locale] = $translation;
-                    $productCategory->description_extra_i8n = $childDescriptionExtraI8n;
-                    $updateChild = true;
-                }
+                $childDescriptionExtraI8n[$locale] = $translation;
             }
+            $productCategory->description_extra_i8n = $childDescriptionExtraI8n;
+            $updateChild = true;
         }
-        
+
         if ($updateChild) {
             $productCategory->save();
         }
