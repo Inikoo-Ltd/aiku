@@ -42,7 +42,7 @@ class ForceDeleteRefund extends OrgAction
 
     public function htmlResponse(Invoice $refund): RedirectResponse
     {
-        if($refund->shop->type == ShopTypeEnum::FULFILMENT) {
+        if ($refund->shop->type == ShopTypeEnum::FULFILMENT) {
             return Redirect::route('grp.org.fulfilments.show.crm.customers.show.invoices.index', [
                 $refund->organisation->slug,
                 $refund->customer->fulfilmentCustomer->fulfilment->slug,

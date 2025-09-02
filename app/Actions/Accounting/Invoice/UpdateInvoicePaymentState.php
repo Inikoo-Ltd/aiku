@@ -14,7 +14,6 @@ use App\Enums\Accounting\Invoice\InvoicePayDetailedStatusEnum;
 use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
-use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\Payment;
 use Carbon\Carbon;
@@ -58,10 +57,10 @@ class UpdateInvoicePaymentState extends OrgAction
         if ($invoice->type == InvoiceTypeEnum::INVOICE) {
             if ($runningPaymentsAmount > $invoice->total_amount) {
                 $payDetailedStatus = InvoicePayDetailedStatusEnum::OVERPAID;
-                $payStatus=InvoicePayStatusEnum::PAID;
+                $payStatus = InvoicePayStatusEnum::PAID;
             } elseif ($runningPaymentsAmount == $invoice->total_amount) {
                 $payDetailedStatus = InvoicePayDetailedStatusEnum::PAID;
-                $payStatus=InvoicePayStatusEnum::PAID;
+                $payStatus = InvoicePayStatusEnum::PAID;
             } elseif ($runningPaymentsAmount > 0) {
                 $payDetailedStatus = InvoicePayDetailedStatusEnum::PARTIALLY_PAID;
 
@@ -70,10 +69,10 @@ class UpdateInvoicePaymentState extends OrgAction
 
             if ($runningPaymentsAmount < $invoice->total_amount) {
                 $payDetailedStatus = InvoicePayDetailedStatusEnum::OVERPAID;
-                $payStatus=InvoicePayStatusEnum::PAID;
+                $payStatus = InvoicePayStatusEnum::PAID;
             } elseif ($runningPaymentsAmount == $invoice->total_amount) {
                 $payDetailedStatus = InvoicePayDetailedStatusEnum::PAID;
-                $payStatus=InvoicePayStatusEnum::PAID;
+                $payStatus = InvoicePayStatusEnum::PAID;
             } elseif ($runningPaymentsAmount < 0) {
                 $payDetailedStatus = InvoicePayDetailedStatusEnum::PARTIALLY_PAID;
             }

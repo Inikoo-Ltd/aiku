@@ -53,7 +53,7 @@ class UpdateMasterAsset extends OrgAction
         $changed = Arr::except($masterAsset->getChanges(), ['updated_at']);
 
         if (Arr::hasAny($changed, ['code', 'name', 'description', 'rrp'])) {
-            foreach($masterAsset->products as $product) {
+            foreach ($masterAsset->products as $product) {
                 UpdateProduct::make()->action($product, [
                     'code' => $masterAsset->code,
                     'name' => $masterAsset->name,

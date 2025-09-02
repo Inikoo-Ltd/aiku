@@ -41,7 +41,7 @@ class UpdateTradeUnit extends GrpAction
 
     public function handle(TradeUnit $tradeUnit, array $modelData): TradeUnit
     {
-        if(Arr::has($modelData, 'name_i8n')) {
+        if (Arr::has($modelData, 'name_i8n')) {
             UpdateTradeUnitTranslationsFromUpdate::make()->action($tradeUnit, [
                 'translations' => [
                     'name' => Arr::pull($modelData, 'name_i8n')
@@ -49,7 +49,7 @@ class UpdateTradeUnit extends GrpAction
             ]);
         }
 
-        if(Arr::has($modelData, 'description_title_i8n')) {
+        if (Arr::has($modelData, 'description_title_i8n')) {
             UpdateTradeUnitTranslationsFromUpdate::make()->action($tradeUnit, [
                 'translations' => [
                     'description_title' => Arr::pull($modelData, 'description_title_i8n')
@@ -57,7 +57,7 @@ class UpdateTradeUnit extends GrpAction
             ]);
         }
 
-        if(Arr::has($modelData, 'description_i8n')) {
+        if (Arr::has($modelData, 'description_i8n')) {
             UpdateTradeUnitTranslationsFromUpdate::make()->action($tradeUnit, [
                 'translations' => [
                     'description' => Arr::pull($modelData, 'description_i8n')
@@ -65,14 +65,14 @@ class UpdateTradeUnit extends GrpAction
             ]);
         }
 
-        if(Arr::has($modelData, 'description_extra_i8n')) {
+        if (Arr::has($modelData, 'description_extra_i8n')) {
             UpdateTradeUnitTranslationsFromUpdate::make()->action($tradeUnit, [
                 'translations' => [
                     'description_extra' => Arr::pull($modelData, 'description_extra_i8n')
                 ]
             ]);
         }
-        
+
         $tradeUnit = $this->update($tradeUnit, $modelData, ['data', 'marketing_dimensions']);
 
 

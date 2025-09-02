@@ -78,7 +78,7 @@ class UpdateProductCategory extends OrgAction
             $originalMasterProductCategory = $productCategory->masterProductCategory;
         }
 
-        if(Arr::has($modelData, 'name_i8n')) {
+        if (Arr::has($modelData, 'name_i8n')) {
             UpdateProductCategoryTranslationsFromUpdate::make()->action($productCategory, [
                 'translations' => [
                     'name' => Arr::pull($modelData, 'name_i8n')
@@ -86,7 +86,7 @@ class UpdateProductCategory extends OrgAction
             ]);
         }
 
-        if(Arr::has($modelData, 'description_title_i8n')) {
+        if (Arr::has($modelData, 'description_title_i8n')) {
             UpdateProductCategoryTranslationsFromUpdate::make()->action($productCategory, [
                 'translations' => [
                     'description_title' => Arr::pull($modelData, 'description_title_i8n')
@@ -94,7 +94,7 @@ class UpdateProductCategory extends OrgAction
             ]);
         }
 
-        if(Arr::has($modelData, 'description_i8n')) {
+        if (Arr::has($modelData, 'description_i8n')) {
             UpdateProductCategoryTranslationsFromUpdate::make()->action($productCategory, [
                 'translations' => [
                     'description' => Arr::pull($modelData, 'description_i8n')
@@ -102,7 +102,7 @@ class UpdateProductCategory extends OrgAction
             ]);
         }
 
-        if(Arr::has($modelData, 'description_extra_i8n')) {
+        if (Arr::has($modelData, 'description_extra_i8n')) {
             UpdateProductCategoryTranslationsFromUpdate::make()->action($productCategory, [
                 'translations' => [
                     'description_extra' => Arr::pull($modelData, 'description_extra_i8n')
