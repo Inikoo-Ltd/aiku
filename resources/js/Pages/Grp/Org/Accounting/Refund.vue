@@ -391,11 +391,17 @@ console.log(props.pageHead);
           </dd>
         </dl>
 
-        <InvoiceRefundPay v-if="!invoice_refund?.in_process && invoice_pay " :invoice_pay :routes="{
-          submit_route: invoice_pay.routes.submit_payment,
-          fetch_payment_accounts_route: invoice_pay.routes.fetch_payment_accounts,
-          payments : invoice_pay.routes.payments
-        }" @onPayInOnClick="onPayInOnClick" />
+        <InvoiceRefundPay
+          v-if="!invoice_refund?.in_process && invoice_pay "
+          :invoice_pay
+          :routes="{
+            submit_route: invoice_pay.routes.submit_payment,
+            fetch_payment_accounts_route: invoice_pay.routes.fetch_payment_accounts,
+            payments : invoice_pay.routes.payments
+          }"
+          @onPayInOnClick="onPayInOnClick"
+          :is_in_refund="true"
+        />
       </div>
     </BoxStatPallet>
 
