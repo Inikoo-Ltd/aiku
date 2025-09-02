@@ -36,6 +36,8 @@ class GetIrisProductsInProductCategory extends IrisAction
         $baseUrl = $productCategory?->url ?? '';
         $queryBuilder->selectRaw('\'' . $baseUrl . '\' as parent_url');
 
+        $queryBuilder->groupBy('products.id', 'webpages.id', 'webpages.url');
+
         // Section: Sort
         $orderBy = request()->query('order_by');
         if ($orderBy) {
