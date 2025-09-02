@@ -348,7 +348,7 @@ class EditProduct extends OrgAction
                 'fields' => [
                     'trade_units' => [
                         'label'      => __('Trade Units'),
-                        'type' => 'edit-trade-unit',
+                        'type' => 'edit-trade-unit-shop',
                         'value' => null,
                         'noSaveButton' => true,
                         'trade_units' => $product->tradeUnits ? $this->getDataTradeUnit($product->tradeUnits) : []

@@ -32,6 +32,7 @@ import SelectInfiniteScroll from '@/Components/Forms/Fields/SelectInfiniteScroll
 import ButtonForm from '@/Components/Forms/Fields/ButtonForm.vue'
 import cropImageFull from '@/Components/Forms/Fields/CropImageFull.vue'
 import FormEditTradeUnit from '@/Components/Forms/Fields/FormEditTradeUnit.vue'
+import TagsTradeUnits from '@/Components/Forms/Fields/TagsTradeUnits.vue'
 
 
 const ProductParts = defineAsyncComponent(() => import('@/Components/Forms/Fields/ProductParts.vue'))
@@ -55,6 +56,7 @@ import Pricing_zone from '@/Components/Forms/Fields/Pricing_zone.vue'
 import Teritory_zone from '@/Components/Forms/Fields/Teritory_zone.vue'
 import SelectPrinter from '@/Components/Forms/Fields/SelectPrinter.vue'
 import ListSelectorFrom from '@/Components/Forms/Fields/ListSelectorFrom.vue'
+import BrandsTradeUnit from '@/Components/Forms/Fields/BrandsTradeUnit.vue'
 
 
 export const componentsList: {[key: string]: Component} = {
@@ -111,7 +113,9 @@ export const componentsList: {[key: string]: Component} = {
     'teritory_zone': Teritory_zone,
     'crop-image-full' : cropImageFull,
     'list-selector' : ListSelectorFrom,
-    'edit-trade-unit' : FormEditTradeUnit
+    'edit-trade-unit-shop' : FormEditTradeUnit,
+    'tags-trade-unit' : TagsTradeUnits,
+    'brands-trade-unit' : BrandsTradeUnit
 }
 
 export const getComponent = (componentName: string) => {

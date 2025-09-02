@@ -85,25 +85,6 @@ watch(
 	{ immediate: true }
 )
 
-const deleteImage = async (image, index: number) => {
-	router.delete(
-		route(props.data.deleteImageRoute.name, {
-			...props.data.deleteImageRoute.parameters,
-			media: image.id,
-		}),
-		{
-			onStart: () => isLoading.value.push(image.id),
-			onFinish: () =>
-				notify({ title: trans("Success"), text: trans("Image deleted"), type: "success" }),
-			onError: () =>
-				notify({
-					title: trans("Failed"),
-					text: trans("Cannot delete image"),
-					type: "error",
-				}),
-		}
-	)
-}
 
 const onSubmitUpload = async (files: File[], refData = null) => {
 	const formData = new FormData()
@@ -154,7 +135,7 @@ const onSubmitUpload = async (files: File[], refData = null) => {
 
 				<!-- Empty State -->
 				<div v-else
-					class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg">
+					class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg h-80" >
 					<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
 					<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
 				</div>
@@ -164,8 +145,13 @@ const onSubmitUpload = async (files: File[], refData = null) => {
 		<ProductSummary :data="data.tradeUnit" :gpsr="data.gpsr" />
 
 		<div class="p-4">
-			<EditTradeUnit :tags_selected_id="props.data.tags_selected_id" :brand="props.data.brand"
-				:brand_routes="props.data.brand_routes" :tags="props.data.tags" :tag_routes="props.data.tag_routes" />
+			<EditTradeUnit 
+				:tags_selected_id="props.data.tags_selected_id" 
+				:brand="props.data.brand"
+				:brand_routes="props.data.brand_routes" 
+				:tags="props.data.tags" 
+				:tag_routes="props.data.tag_routes" 
+			/>
 		</div>
 
 	</div>
