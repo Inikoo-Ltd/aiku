@@ -16,6 +16,7 @@ use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithOrderExchanges;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Accounting\Invoice;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Str;
 
@@ -71,6 +72,7 @@ class StoreRefund extends OrgAction
         data_set($modelData, 'group_id', $invoice->group_id);
         data_set($modelData, 'organisation_id', $invoice->organisation_id);
         data_set($modelData, 'shop_id', $invoice->shop_id);
+        data_set($modelData, 'effective_total', Arr::get($modelData,'total_amount',0));
 
         return DB::transaction(function () use ($invoice, $modelData) {
             /** @var Invoice $refund */
