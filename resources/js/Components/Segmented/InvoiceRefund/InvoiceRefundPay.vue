@@ -345,7 +345,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                     </Link>
                 </dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
-                    {{ locale.currencyFormat(invoice_pay.currency_code || "usd", Number(invoice_pay.total_invoice)) }}
+                    {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_invoice)) }}
                 </dd>
             </div>
 
@@ -360,7 +360,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                         </Link>
                     </dt>
                     <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
-                        {{ locale.currencyFormat(invoice_pay.currency_code || "usd", Number(refund.total_amount)) }}
+                        {{ locale.currencyFormat(invoice_pay.currency_code, Number(refund.total_amount)) }}
                     </dd>
                 </div>
             </div>
@@ -371,7 +371,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                 <dt class="text-sm/6 font-medium ">I+R total</dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right"
                     :class="Number(invoice_pay.total_balance) > 0 ? '' : Number(invoice_pay.total_balance) < 0 ? '' : ''">
-                    {{ locale.currencyFormat(invoice_pay.currency_code || "usd", Number(invoice_pay.total_balance)) }}
+                    {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_balance)) }}
                 </dd>
             </div>
             <!-- addition excess payment -->
@@ -380,7 +380,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                     <dt class="text-sm/6 font-medium" v-tooltip="'auto add to customer balance'">Excess Payment</dt>
                     <dd class="mt-1 text-sm/6 sm:mt-0 text-right text-gray-700">
                         {{
-                            locale.currencyFormat(invoice_pay.currency_code || "usd",
+                            locale.currencyFormat(invoice_pay.currency_code,
                                 Number(invoice_pay.total_excess_payment))
                         }}
                     </dd>
@@ -396,7 +396,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                     </dt>
                     <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
                         {{
-                            locale.currencyFormat(invoice_pay.currency_code || "usd", Number(invoice_pay.total_paid_in))
+                            locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_paid_in))
                         }}
                     </dd>
                 </div>
@@ -406,7 +406,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                     <dt class="text-sm/6 font-medium">Payed back</dt>
                     <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
                         {{
-                            locale.currencyFormat(invoice_pay.currency_code || "usd", Number(invoice_pay.total_paid_out))
+                            locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_paid_out))
                         }}
                     </dd>
                 </div>
@@ -435,7 +435,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                                      class="text-green-500"
                                      fixed-width aria-hidden="true"/>
                     <span :class="[Number(invoice_pay.total_need_to_pay) < 0 ? 'text-red-500' : '', 'ml-2']">{{
-                            locale.currencyFormat(invoice_pay.currency_code || "usd", Number(invoice_pay.total_need_to_pay))
+                            locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_need_to_pay))
                         }}</span>
                 </dd>
             </div>
@@ -499,7 +499,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
 
                         <div class="space-x-1">
                             <span class="text-xxs text-gray-500">{{ trans("Need to pay") }}: {{
-                                    locale.currencyFormat(invoice_pay.currency_code || "usd",
+                                    locale.currencyFormat(invoice_pay.currency_code,
                                         Number(invoice_pay.total_need_to_pay))
                                 }}</span>
                             <Button @click="() => paymentData.payment_amount = invoice_pay.total_need_to_pay"
@@ -609,7 +609,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                                     :class="[props.invoice_pay.total_need_to_refund_in_payment_method < 0 ? 'text-red-500' : 'text-green-600',
                                     'ml-2 font-semibold tracking-wide']">
                                     {{
-                                        locale.currencyFormat(invoice_pay.currency_code || "usd", props.invoice_pay.total_need_to_refund_in_payment_method)
+                                        locale.currencyFormat(invoice_pay.currency_code, props.invoice_pay.total_need_to_refund_in_payment_method)
                                     }}
                                 </span>
                             </div>
@@ -638,7 +638,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                                         :disabled="false"
                                         class="px-2 py-1 text-xs bg-gray-300 rounded disabled:bg-gray-300 disabled:cursor-not-allowed hover:text-blue-500 disabled:hover:bg-gray-300 transition">
                                         Pay {{
-                                            locale.currencyFormat(invoice_pay.currency_code || "usd", props.invoice_pay.total_need_to_refund_in_payment_method)
+                                            locale.currencyFormat(invoice_pay.currency_code, props.invoice_pay.total_need_to_refund_in_payment_method)
                                         }}
                                     </button>
                                 </template>
