@@ -144,7 +144,8 @@ class UpdateProductCategory extends OrgAction
             'code',
             'name',
             'type',
-            'state'
+            'state',
+            'name_i8n'
         ])) {
             $this->productCategoryHydrators($productCategory);
             if ($productCategory->webpage_id) {
