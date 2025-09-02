@@ -54,7 +54,7 @@ class WebBlockProductResourceEcom extends JsonResource
         if ($request->user()) {
             $customer = $request->user()->customer;
             if ($customer) {
-                $favourite = $customer->favourites()->where('product_id', $product->id)->first();
+                $favourite = $customer->favourites()->where('product_id', $product->id)->whereNull('unfavourited_at')->first();
 
                 $basket = $customer->orderInBasket;
                 if ($basket) {
