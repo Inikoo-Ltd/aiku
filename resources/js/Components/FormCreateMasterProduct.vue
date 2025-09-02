@@ -58,7 +58,7 @@ const emits = defineEmits(["update:showDialog"]);
 // dialog state
 const detailsVisible = ref(false)
 const layout = inject('layout', {})
-const currency = props.masterCurrency ? props.masterCurrency : layout.group.currency.code
+const currency = props.masterCurrency ? props.masterCurrency : layout.group.currency
 
 // Inertia form
 const form = useForm({
@@ -211,12 +211,12 @@ const dialogVisible = computed({
                 <!-- Label -->
                 <label class="font-semibold text-gray-700 text-sm flex items-center gap-2">
                     <FontAwesomeIcon :icon="faTags" class="text-blue-500" />
-                    Price
+                    Price  {{ currency.symbol }}
                 </label>
 
                 <!-- Price Input -->
                 <InputNumber v-model="form.price" inputId="horizontal-buttons" showButtons buttonLayout="horizontal"
-                    :step="0.25" mode="currency" :currency="currency" fluid :min="0" :allowEmpty="true"
+                    :step="0.25" mode="currency" :currency="currency.code" fluid :min="0" :allowEmpty="true"
                     class="w-full rounded-lg border border-gray-300 shadow-sm">
                     <template #incrementbuttonicon>
                         <FontAwesomeIcon :icon="faPlus" />

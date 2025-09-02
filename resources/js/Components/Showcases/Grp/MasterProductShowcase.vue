@@ -213,6 +213,7 @@ console.log(props)
                   size="sm"
                   label="Save"
                   class="!px-3"
+                  :loading="forms[item.product_id].processing"
                   :disabled="
                     forms[item.product_id].processing ||
                     !forms[item.product_id].isDirty

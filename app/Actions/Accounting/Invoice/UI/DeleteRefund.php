@@ -35,6 +35,7 @@ class DeleteRefund extends OrgAction
         return [
             'deleted_note' => ['sometimes', 'string', 'max:4000'],
             'deleted_by'   => ['sometimes', 'nullable', 'integer', Rule::exists('users', 'id')->where('group_id', $this->group->id)],
+            'source'       => ['sometimes', 'string', Rule::in('customer', 'dashboard', '')],
         ];
     }
 

@@ -113,7 +113,7 @@ class ShowMasterFamily extends GrpAction
                     'next'     => $this->getNext($masterFamily, $request),
                 ],
                 'familyId'      => $masterFamily->id,
-                'currency' => $masterFamily->group->currency->code,
+                'currency' => $masterFamily->group->currency,
                 'storeProductRoute' => [
                         'name'       => 'grp.models.master_family.store-assets',
                         'parameters' => [
