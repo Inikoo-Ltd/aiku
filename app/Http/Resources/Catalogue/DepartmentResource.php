@@ -33,9 +33,9 @@ class DepartmentResource extends JsonResource
         $urlMaster                              = null;
         if ($department->master_product_category_id) {
             $urlMaster = [
-                'name'       => 'grp.masters.master_departments.show',
+                'name'       => 'grp.helpers.redirect_master_product_category',
                 'parameters' => [
-                    $department->masterProductCategory->slug
+                    $department->masterProductCategory->id
                 ]
             ];
         }

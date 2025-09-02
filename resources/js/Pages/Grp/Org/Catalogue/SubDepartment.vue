@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3'
+import { Head, router, Link} from '@inertiajs/vue3'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import {
     faBullhorn,
@@ -36,6 +36,9 @@ import Image from '@/Components/Image.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { routeType } from '@/types/route'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { faOctopusDeploy } from '@fortawesome/free-brands-svg-icons'
+
 
 library.add(
     faFolder,
@@ -65,7 +68,7 @@ const props = defineProps<{
         attach_families: routeType
         detach_families: routeType
     }
-
+    url_master : routeType
     showcase: {
 
     }
@@ -128,6 +131,17 @@ const onSubmitAddItem = async (idProduct: number[]) => {
     <PageHeading :data="pageHead">
         <template #other>
             <Button @click="() => isOpenModalPortfolios = true" :label="trans('Add families')" icon="fas fa-plus" />
+        </template>
+
+        <template #afterTitle>
+           <div class="whitespace-nowrap">
+            <Link v-if="url_master"  :href="route(url_master.name,url_master.parameters)"  v-tooltip="'Go to Master'" class="mr-1"  :class="'opacity-70 hover:opacity-100'">
+                <FontAwesomeIcon
+                    :icon="faOctopusDeploy"
+                    color="#4B0082"
+                />
+            </Link>
+            </div>
         </template>
     </PageHeading>
 

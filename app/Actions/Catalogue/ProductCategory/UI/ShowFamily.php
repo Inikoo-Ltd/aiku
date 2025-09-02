@@ -145,6 +145,16 @@ class ShowFamily extends OrgAction
             }
         }
 
+        $urlMaster                              = null;
+        if ($family->master_product_category_id) {
+            $urlMaster = [
+                'name'       => 'grp.helpers.redirect_master_product_category',
+                'parameters' => [
+                    $family->masterProductCategory->id
+                ]
+            ];
+        }
+
         return Inertia::render(
             'Org/Catalogue/Family',
             [
@@ -172,6 +182,7 @@ class ShowFamily extends OrgAction
                     'subNavigation' => $this->getFamilySubNavigation($family, $this->parent, $request)
 
                 ],
+                'url_master'       => $urlMaster,
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => FamilyTabsEnum::navigation()

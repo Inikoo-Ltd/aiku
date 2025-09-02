@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head } from "@inertiajs/vue3";
+import { Head, Link } from "@inertiajs/vue3";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import {
     faBullhorn,
@@ -31,6 +31,9 @@ import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 import { trans } from "laravel-vue-i18n"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import { routeType } from "@/types/route";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons";
 
 library.add(
     faFolder,
@@ -61,6 +64,7 @@ const props = defineProps<{
     mailshots?: object;
     history?: object;
     showcase?: object
+    url_master?:routeType
 }>();
 
 let currentTab = ref(props.tabs.current);
@@ -79,6 +83,17 @@ const component = computed(() => {
     return components[currentTab.value];
 
 });
+
+
+function masterDepartmentRoute(department: Department) {
+    if(!department.master_product_category_id){
+        return '';
+    }
+
+    return route(
+        "grp.helpers.redirect_master_product_category",
+        [department.master_product_category_id]);
+}
 
 
 </script>
@@ -102,6 +117,17 @@ const component = computed(() => {
                     </div>
                 </template>
             </ModalConfirmationDelete>
+        </template>
+
+         <template #afterTitle>
+           <div class="whitespace-nowrap">
+            <Link v-if="url_master"  :href="route(url_master.name,url_master.parameters)"  v-tooltip="'Go to Master'" class="mr-1"  :class="'opacity-70 hover:opacity-100'">
+                <FontAwesomeIcon
+                    :icon="faOctopusDeploy"
+                    color="#4B0082"
+                />
+            </Link>
+            </div>
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />

@@ -76,6 +76,18 @@ class ShowSubDepartment extends OrgAction
                         'icon'  => 'fal fa-folder-tree'
                     ]
                 ];
+
+
+            $urlMaster                              = null;
+        if ($subDepartment->master_product_category_id) {
+            $urlMaster = [
+                'name'       => 'grp.helpers.redirect_master_product_category',
+                'parameters' => [
+                    $subDepartment->masterProductCategory->id
+                ]
+            ];
+        }
+
         return Inertia::render(
             'Org/Catalogue/SubDepartment',
             [
@@ -152,7 +164,7 @@ class ShowSubDepartment extends OrgAction
                     ],
                     'method' => 'get'
                 ],
-
+                'url_master'       => $urlMaster,
                 'attach_collections_route' => $subDepartment->webpage ? [
                     'name'       => 'grp.models.webpage.attach_collection',
                     'parameters' => [

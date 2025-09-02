@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head } from "@inertiajs/vue3"
+import { Head, Link } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
     faBullhorn,
@@ -30,6 +30,7 @@ import { trans } from "laravel-vue-i18n"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import { routeType } from "@/types/route";
 import FormCreateMasterProduct from "@/Components/FormCreateMasterProduct.vue"
+import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 
 
 library.add(
@@ -61,6 +62,7 @@ const props = defineProps<{
     history?: object;
     is_orphan?: boolean
     currency?:Object
+    url_master?:routeType
 }>()
 console.log(props)
 const currentTab = ref(props.tabs.current)
@@ -94,6 +96,17 @@ const showDialog = ref(false);
     <PageHeading :data="pageHead">
         <template #button-master-product="{ action }">
             <Button :icon="action.icon" :label="action.label" @click="showDialog = true" :style="action.style" />
+        </template>
+
+        <template #afterTitle>
+           <div class="whitespace-nowrap">
+            <Link v-if="url_master"  :href="route(url_master.name,url_master.parameters)"  v-tooltip="'Go to Master'" class="mr-1"  :class="'opacity-70 hover:opacity-100'">
+                <FontAwesomeIcon
+                    :icon="faOctopusDeploy"
+                    color="#4B0082"
+                />
+            </Link>
+            </div>
         </template>
     </PageHeading>
 

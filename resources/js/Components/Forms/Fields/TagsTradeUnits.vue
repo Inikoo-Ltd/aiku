@@ -174,8 +174,6 @@ onMounted(() => {
 
 <template>
     <div class="w-full max-w-md py-4">
-        <div>Tags:</div>
-
         <!-- Tags list (sync with form value) -->
         <div v-if="formSelectedTags.length" class="flex flex-wrap mb-2 gap-x-2 gap-y-1">
             <Tag v-for="tagId in formSelectedTags" :key="tagId" :label="findTagById(tagId)?.name" @click.self="() => {

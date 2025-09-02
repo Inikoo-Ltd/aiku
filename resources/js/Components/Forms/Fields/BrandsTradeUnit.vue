@@ -118,10 +118,6 @@ const onEditBrand = () => {
 
 <template>
     <div v-if="props.fieldData?.brand_routes?.index_brand" class="w-full max-w-md py-4 gap-x-3 ">
-        <div>
-            {{ trans("Brand") }}:
-        </div>
-
         <div class="w-full">
             <PureMultiselectInfiniteScroll
                 :modelValue="form[fieldName]"

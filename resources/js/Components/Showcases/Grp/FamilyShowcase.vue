@@ -8,6 +8,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faAlbumCollection } from "@fal";
 import TranslationBox from '@/Components/TranslationBox.vue';
 import ProductCategoryCard from '@/Components/ProductCategoryCard.vue';
+import { trans } from 'laravel-vue-i18n';
 
 library.add(faAlbumCollection);
 
@@ -34,14 +35,15 @@ console.log(props)
 
 <template>
     <div class="pb-8 m-5">
-        <Message v-if="data.department?.url_master" severity="success" closable>
+         <Message v-if="data.family?.data.url_master" severity="success" closable>
             <template #icon>
                 <FontAwesomeIcon :icon="faInfoCircle" />
             </template>
-            <span class="ml-2">Right Now you follow
-                <Link :href="route(data.department.url_master.name, data.department.url_master.parameters)"
+            <span class="ml-2">
+                {{ trans("Right now you follow") }}
+                <Link :href="route(data.family.data.url_master.name, data.family.data.url_master.parameters)"
                     class="underline font-bold">
-                the master data
+                {{ trans("the master data") }}
                 </Link>
             </span>
         </Message>
