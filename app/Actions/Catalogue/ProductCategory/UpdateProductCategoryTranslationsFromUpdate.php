@@ -4,6 +4,7 @@ namespace App\Actions\Catalogue\ProductCategory;
 
 use App\Actions\OrgAction;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Masters\MasterProductCategory;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -45,10 +46,60 @@ class UpdateProductCategoryTranslationsFromUpdate extends OrgAction
 
         $productCategory->save();
 
+        if($productCategory->masterProductCategory) {
+            $this->updateMaster($productCategory->masterProductCategory, $name_i8n, $description_i8n, $description_title_i8n, $description_extra_i8n);
+        }
+
 
         return $productCategory;
 
 
+    }
+
+    public function updateMaster(MasterProductCategory $masterProductCategory, array $name_i8n, array $description_i8n, array $description_title_i8n, array $description_extra_i8n) 
+    {
+        $masterNameI8n = is_array($masterProductCategory->name_i8n) ? $masterProductCategory->name_i8n : [];
+        $masterDescriptionI8n = is_array($masterProductCategory->description_i8n) ? $masterProductCategory->description_i8n : [];
+        $masterDescriptionTitleI8n = is_array($masterProductCategory->description_title_i8n) ? $masterProductCategory->description_title_i8n : [];
+        $masterDescriptionExtraI8n = is_array($masterProductCategory->description_extra_i8n) ? $masterProductCategory->description_extra_i8n : [];
+        
+        $updateMaster = false;
+        
+        if (!empty($name_i8n)) {
+            foreach ($name_i8n as $locale => $translation) {
+                $masterNameI8n[$locale] = $translation;
+            }
+            $masterProductCategory->name_i8n = $masterNameI8n;
+            $updateMaster = true;
+        }
+        
+        if (!empty($description_i8n)) {
+            foreach ($description_i8n as $locale => $translation) {
+                $masterDescriptionI8n[$locale] = $translation;
+            }
+            $masterProductCategory->description_i8n = $masterDescriptionI8n;
+            $updateMaster = true;
+        }
+        
+        if (!empty($description_title_i8n)) {
+            foreach ($description_title_i8n as $locale => $translation) {
+                $masterDescriptionTitleI8n[$locale] = $translation;
+            }
+            $masterProductCategory->description_title_i8n = $masterDescriptionTitleI8n;
+            $updateMaster = true;
+        }
+        
+        if (!empty($description_extra_i8n)) {
+            foreach ($description_extra_i8n as $locale => $translation) {
+                $masterDescriptionExtraI8n[$locale] = $translation;
+            }
+            $masterProductCategory->description_extra_i8n = $masterDescriptionExtraI8n;
+            $updateMaster = true;
+        }
+        
+        if ($updateMaster) {
+            $masterProductCategory->save();
+        }
     }
 
     public function rules(): array
