@@ -17,6 +17,7 @@ use App\Actions\Traits\WithOrderExchanges;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Accounting\Invoice;
 use Illuminate\Support\Facades\DB;
+use Str;
 
 class StoreRefund extends OrgAction
 {
@@ -46,6 +47,16 @@ class StoreRefund extends OrgAction
         data_set($modelData, 'customer_id', $invoice->customer_id);
         data_set($modelData, 'currency_id', $invoice->currency_id);
         data_set($modelData, 'tax_category_id', $invoice->tax_category_id);
+
+        data_set($modelData, 'uuid', Str::uuid());
+        data_set($modelData, 'invoice_category_id', $invoice->invoice_category_id);
+        data_set($modelData, 'platform_id', $invoice->platform_id);
+        data_set($modelData, 'customer_sales_channel_id', $invoice->customer_sales_channel_id);
+        data_set($modelData, 'master_shop_id', $invoice->master_shop_id);
+        data_set($modelData, 'address_id', $invoice->address_id);
+        data_set($modelData, 'billing_country_id', $invoice->billing_country_id);
+        data_set($modelData, 'tax_liability_at', $invoice->tax_liability_at);
+
 
         $date = now();
         data_set($modelData, 'date', $date, overwrite: false);
