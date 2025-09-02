@@ -144,7 +144,7 @@ const onSubmitUpload = async (files: File[], refData = null) => {
 		<!-- tradeUnit Summary -->
 		<ProductSummary :data="data.tradeUnit" :gpsr="data.gpsr" />
 
-		<div class="p-4">
+	<!-- 	<div class="p-4">
 			<EditTradeUnit 
 				:tags_selected_id="props.data.tags_selected_id" 
 				:brand="props.data.brand"
@@ -152,7 +152,7 @@ const onSubmitUpload = async (files: File[], refData = null) => {
 				:tags="props.data.tags" 
 				:tag_routes="props.data.tag_routes" 
 			/>
-		</div>
+		</div> -->
 
 	</div>
 
