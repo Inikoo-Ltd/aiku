@@ -122,20 +122,21 @@ class ShowRefund extends OrgAction
 
         $actions = [];
 
-        if ($refund->in_process) {
-            $actions[] = [
-                'type'  => 'button',
-                'style' => 'delete',
-                'label' => __('Delete'),
-                'key'   => 'delete_refund',
-                'route' => [
-                    'method'     => 'delete',
-                    'name'       => 'grp.models.refund.force_delete',
-                    'parameters' => [
-                        'refund' => $refund->id,
-                    ]
+        $actions[] = [
+            'type'  => 'button',
+            'style' => 'delete',
+            'label' => __('Delete'),
+            'key'   => 'delete_refund',
+            'route' => [
+                'method'     => 'delete',
+                'name'       => 'grp.models.refund.force_delete',
+                'parameters' => [
+                    'refund' => $refund->id,
                 ]
-            ];
+            ]
+        ];
+        
+        if ($refund->in_process) {
 
             $actions[] = [
                 'type'  => 'button',
