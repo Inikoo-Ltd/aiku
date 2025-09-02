@@ -22,7 +22,7 @@ import {faHeart as fasHeart} from "@fas"
 import {library} from "@fortawesome/fontawesome-svg-core"
 import {notify} from '@kyvg/vue3-notification'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
-import axios from 'axios'
+import {router} from '@inertiajs/vue3'
 
 library.add(faHeart, fasHeart)
 
@@ -36,97 +36,75 @@ const layout = inject('layout', retinaLayoutStructure)
 
 
 const isLoading = ref(false)
-const toggleFavorite = async (product: Product) => {
+const toggleFavorite = (product: Product) => {
     if (product.is_not_favourite) {
-        try {
-            isLoading.value = true
-
-            const response = await axios.post(
-                route('retina.models.product.favourite', {product: product.id}),
-            )
-
-            if (response.status !== 200) {
-
+        // Add to favorites
+        router.post(
+            route('retina.models.product.favourite', {product: product.id}),
+            {},
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onStart: () => {
+                    isLoading.value = true
+                },
+                onSuccess: () => {
+                    product.is_not_favourite = false
+                    notify({
+                        title: trans("Added to favourites!"),
+                        text: trans(':product has been added to favorites', { product: product.name}),
+                        type: "success",
+                        duration: 3000
+                    })
+                },
+                onError: (errors) => {
+                    notify({
+                        title: trans("Something went wrong"),
+                        text: trans("Failed to add to favorites"),
+                        type: "error",
+                        duration: 3000
+                    })
+                    console.error('Failed to favorite:', errors)
+                },
+                onFinish: () => {
+                    isLoading.value = false
+                },
             }
-            // console.log('Response axios:', response.data)
-            product.is_not_favourite = false
-            notify({
-                title: trans("Added to favourites!"),
-                text: trans(':product has been added to favorites', { product: product.name}),
-                type: "success",
-                duration: 3000
-            })
-        } catch (error: any) {
-            notify({
-                title: trans("Something went wrong"),
-                text: error.message || trans("Please try again or contact administrator"),
-                type: 'error'
-            })
-        }
-        isLoading.value = false
+        )
     } else {
-        try {
-            isLoading.value = true
-
-            const response = await axios.delete(
-                route('retina.models.product.unfavourite', {favourite: product.favourite_id}),
-            )
-
-            if (response.status !== 200) {
-
+        // Remove from favorites
+        router.delete(
+            route('retina.models.product.unfavourite', {favourite: product.favourite_id}),
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onStart: () => {
+                    isLoading.value = true
+                },
+                onSuccess: () => {
+                    product.is_not_favourite = true
+                    notify({
+                        title: trans("Removed from favorites"),
+                        text: `${product.name || 'Product'} ${trans('has been removed from your favorites')}`,
+                        type: "info",
+                        duration: 3000
+                    })
+                },
+                onError: (errors) => {
+                    notify({
+                        title: trans("Something went wrong"),
+                        text: trans("Failed to remove from favorites"),
+                        type: "error",
+                        duration: 3000
+                    })
+                    console.error('Failed to unfavorite:', errors)
+                },
+                onFinish: () => {
+                    isLoading.value = false
+                },
             }
-            // console.log('Response axios:', response.data)
-            product.is_not_favourite = true
-            notify({
-                title: trans("Removed from favorites"),
-                text: `${product.name || 'Product'} ${trans('has been removed from your favorites')}`,
-                type: "info",
-                duration: 3000
-            })
-        } catch (error: any) {
-            notify({
-                title: trans("Something went wrong"),
-                text: error.message || trans("Please try again or contact administrator"),
-                type: 'error'
-            })
-        }
-        isLoading.value = false
+        )
     }
-
-    // router.delete(
-    //     route('retina.models.product.unfavourite', { product: product.id }),
-    //     {
-    //         preserveScroll: true,
-    //         preserveState: true,
-    //         onStart: () => {
-    //             isLoading.value = true
-    //         },
-    //         onSuccess: () => {
-    //             product.is_not_favourite = true
-    //             notify({
-    //                 title: trans("Removed from favorites"),
-    //                 text: `${product.name || 'Product'} ${trans('has been removed from your favorites')}`,
-    //                 type: "info",
-    //                 duration: 3000
-    //             })
-    //         },
-    //         onError: (errors) => {
-    //             // Revert on error
-    //             // product.is_favourite = originalState
-    //             notify({
-    //                 title: trans("Something went wrong"),
-    //                 text: trans("Failed to remove from favorites"),
-    //                 type: "error",
-    //                 duration: 3000
-    //             })
-    //             console.error('Failed to unfavorite:', errors)
-    //         },
-    //         onFinish: () => {
-    //             isLoading.value = false
-    //         },
-    //     }
-    // )
-    // }
 }
 </script>
 
@@ -135,7 +113,7 @@ const toggleFavorite = async (product: Product) => {
         class="bg-white py-2 px-4 border rounded hover:shadow transition-shadow relative cursor-pointer"
     >
         <!-- Favorite Button -->
-        <button
+        <button :disabled="isLoading"
             @click.stop="() => toggleFavorite(product)"
             class="group absolute top-3 right-3 z-10 p-2 backdrop-blur-sm rounded-full shadow-md hover:shadow-lg transition-all xhover:scale-110 flex items-center justify-center"
             type="button"
