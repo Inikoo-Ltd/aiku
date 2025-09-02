@@ -120,12 +120,12 @@ const onEditBrand = () => {
     <div v-if="props.fieldData?.brand_routes?.index_brand" class="w-full max-w-md py-4 gap-x-3 ">
         <div class="w-full">
             <PureMultiselectInfiniteScroll
-                :modelValue="form[fieldName]"
+                v-model="form[fieldName]"
                 @update:modelValue="(e) => set(form, [fieldName], e)"
-                :fetchRoute="props.fieldData?.brand_routes.index_brand"
+                :fetchRoute="props.fieldData.brand_routes.index_brand"
                 :placeholder="trans('Select brand')"
                 valueProp="id"
-                :initOptions="form[fieldName] ? [form[fieldName]] : undefined"
+                :initOptions="form[fieldName] ? form[fieldName] : undefined"
             >
                 <template #singlelabel="{ value }">
                     <div class="w-full text-left pl-4">{{ value.name }}</div>
