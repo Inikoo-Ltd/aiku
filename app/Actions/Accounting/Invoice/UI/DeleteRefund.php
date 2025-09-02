@@ -52,7 +52,14 @@ class DeleteRefund extends OrgAction
         return Redirect::route('grp.org.shops.show.dashboard.invoices.refunds.index', [
             $refund->organisation->slug,
             $refund->shop->slug
-        ]);
+        ])->with(
+            'notification',
+            [
+                'status' => 'success',
+                'title' => __('Refund was successfully deleted!'),
+                'message' => __('Refund was successfully deleted')
+            ]
+        );
     }
 
     public function asController(Invoice $refund, ActionRequest $request): Invoice
