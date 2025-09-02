@@ -193,8 +193,8 @@ const debounceSaveWorkshop = (block) => {
     const source = axios.CancelToken.source();
     cancelTokens.value[block.id] = source.cancel;
 
-    isLoadingBlock.value = block.id;
-    isSavingBlock.value = true;
+    isLoadingBlock.value = block.id;  // This made the state inside in the field will changes (like opened Select will closed)
+    isSavingBlock.value = true;  // This made the state inside in the field will changes (like opened Select will closed)
     //pushToHistory();
     try {
     const response =  await axios.patch(
@@ -252,6 +252,7 @@ const debouncedSaveSiteSettings = debounce(block => {
     { web_blocks: block },
     {
       preserveScroll: true,
+      preserveState: true,
       onStart: () => isSavingBlock.value = true,
       onFinish: () => isSavingBlock.value = false,
       onSuccess: () => {

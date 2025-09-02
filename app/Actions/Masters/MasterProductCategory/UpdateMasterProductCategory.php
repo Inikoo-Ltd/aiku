@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterProductCategory;
 
+use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterSubDepartments;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamilies;
@@ -63,7 +64,53 @@ class UpdateMasterProductCategory extends OrgAction
             }
         }
 
+        if (Arr::has($modelData, 'name_i8n')) {
+            UpdateMasterProductCategoryTranslationsFromUpdate::make()->action($masterProductCategory, [
+                'translations' => [
+                    'name' => Arr::pull($modelData, 'name_i8n')
+                ]
+            ]);
+        }
+
+        if (Arr::has($modelData, 'description_title_i8n')) {
+            UpdateMasterProductCategoryTranslationsFromUpdate::make()->action($masterProductCategory, [
+                'translations' => [
+                    'description_title' => Arr::pull($modelData, 'description_title_i8n')
+                ]
+            ]);
+        }
+
+        if (Arr::has($modelData, 'description_i8n')) {
+            UpdateMasterProductCategoryTranslationsFromUpdate::make()->action($masterProductCategory, [
+                'translations' => [
+                    'description' => Arr::pull($modelData, 'description_i8n')
+                ]
+            ]);
+        }
+
+        if (Arr::has($modelData, 'description_extra_i8n')) {
+            UpdateMasterProductCategoryTranslationsFromUpdate::make()->action($masterProductCategory, [
+                'translations' => [
+                    'description_extra' => Arr::pull($modelData, 'description_extra_i8n')
+                ]
+            ]);
+        }
+
         $masterProductCategory = $this->update($masterProductCategory, $modelData, ['data']);
+
+         $changed = Arr::except($masterProductCategory->getChanges(), ['updated_at']);
+
+        if (Arr::hasAny($changed, ['code', 'name', 'description', 'rrp'])) {
+            foreach ($masterProductCategory->productCategories as $productCategory) {
+                UpdateProductCategory::make()->action($productCategory, [
+                    'code' => $masterProductCategory->code,
+                    'name' => $masterProductCategory->name,
+                    'description' => $masterProductCategory->description,
+                    'rrp' => $masterProductCategory->rrp
+                ]);
+            }
+        }
+        
         $masterProductCategory->refresh();
 
         if (!$masterProductCategory->image_id && $originalImageId) {
@@ -118,6 +165,10 @@ class UpdateMasterProductCategory extends OrgAction
                 File::image()
                     ->max(12 * 1024)
             ],
+            'name_i8n' => ['sometimes', 'array'],
+            'description_title_i8n' => ['sometimes', 'array'],
+            'description_i8n' => ['sometimes', 'array'],
+            'description_extra_i8n' => ['sometimes', 'array'],
         ];
 
         if (!$this->strict) {
