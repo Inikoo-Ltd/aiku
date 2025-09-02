@@ -497,7 +497,7 @@ const listType = [
                 >
                     <div class=" h-fit shadow">
                         <Image
-                            :src="product.web_images.main.thumbnail"
+                            :src="product.web_images?.main?.thumbnail"
                             xclass=" object-cover rounded"
                             imageCover
                             :alt="product.name"
