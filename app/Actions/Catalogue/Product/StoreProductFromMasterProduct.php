@@ -10,6 +10,9 @@ namespace App\Actions\Catalogue\Product;
 
 use App\Actions\GrpAction;
 use App\Actions\Inventory\OrgStock\StoreOrgStock;
+use App\Actions\Web\Webpage\PublishWebpage;
+use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterAsset;
 
@@ -53,15 +56,24 @@ class StoreProductFromMasterProduct extends GrpAction
                     'unit'    => $masterAsset->unit,
                     'is_main' => true,
                     'org_stocks'  => $orgStocks,
-                    'master_product_id' => $masterAsset->id
+                    'master_product_id' => $masterAsset->id,
+                    'state' => ProductStateEnum::ACTIVE,
+                    'status' => ProductStatusEnum::FOR_SALE,
+                    'is_for_sale' => true
                 ];
+
                 $product = StoreProduct::run($productCategory, $data);
                 $product->refresh();
+                $webpage = StoreProductWebpage::run($product);
+                PublishWebpage::make()->action($webpage, [
+                    'comment' => 'first publish'
+                ]);
                 $tradeUnitsData = [];
                 foreach ($masterAsset->tradeUnits as $tradeUnit) {
                     $tradeUnitsData[$tradeUnit->id] = ['quantity' => $tradeUnit->pivot->quantity];
                 }
                 $product->tradeUnits()->syncWithoutDetaching($tradeUnitsData);
+                
             }
         }
     }
