@@ -25,15 +25,17 @@ class RepairTradeUnitsInOrgStocks extends OrgAction
     {
         $stock = $orgStock->stock;
 
-        $tradeUnits = [];
-        $tradeUnitsInStock = $stock->tradeUnits;
-        foreach ($tradeUnitsInStock as $tradeUnitInStock) {
-            $tradeUnits[$tradeUnitInStock->id] = [
-                'quantity' => $tradeUnitInStock->pivot->quantity,
-            ];
+        if($stock) {
+            $tradeUnits        = [];
+            $tradeUnitsInStock = $stock->tradeUnits;
+            foreach ($tradeUnitsInStock as $tradeUnitInStock) {
+                $tradeUnits[$tradeUnitInStock->id] = [
+                    'quantity' => $tradeUnitInStock->pivot->quantity,
+                ];
+            }
+
+            $orgStock->tradeUnits()->sync($tradeUnits);
         }
-        
-        $orgStock->tradeUnits()->sync($tradeUnits);
 
         return $orgStock;
     }
@@ -58,7 +60,7 @@ class RepairTradeUnitsInOrgStocks extends OrgAction
         $bar->start();
 
 
-        OrgStock::where('id', 11242)->chunk(
+        OrgStock::chunk(
             $chunkSize,
             function ($orgStocks) use (&$count, &$matchedCount, $bar, $command) {
                 foreach ($orgStocks as $orgStock) {
