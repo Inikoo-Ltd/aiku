@@ -2,54 +2,56 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Thu, 07 Aug 2025 17:55:46 Central European Summer Time, Plane Vienna-Malaga
+ * Created: Wed, 03 Sept 2025 10:24:16 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Masters\MasterAsset;
+namespace App\Actions\Maintenance\Masters;
 
-use App\Actions\Catalogue\Asset\UpdateAsset;
-use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\OrgAction;
-use App\Enums\Catalogue\Asset\AssetTypeEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
-use App\Models\Catalogue\Asset;
-use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
 use Exception;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class MatchTradeUnitsToMasterAssets extends OrgAction
+class RepairTradeUnitsInMasterProducts extends OrgAction
 {
     use AsAction;
 
 
     public function handle(MasterAsset $masterAsset): MasterAsset
     {
-        $masterShop = $masterAsset->masterShop;
-
-        if (!$masterShop) {
+        if ($masterAsset->type != MasterAssetTypeEnum::PRODUCT) {
             return $masterAsset;
         }
 
-        $tradeUnit = TradeUnit::where('group_id', $masterShop->group_id)->whereRaw('LOWER(code) = LOWER(?)', [$masterAsset->code])->first();
+        $stocks = $masterAsset->stocks;
 
-        if(!$tradeUnit){
-            return $masterAsset;
+
+        $tradeUnits = [];
+        foreach ($stocks as $stock) {
+            $quantity = $stock->pivot->quantity;
+
+            $tradeUnitsInStock = $stock->tradeUnits;
+
+            foreach ($tradeUnitsInStock as $tradeUnitInStock) {
+                $tradeUnits[$tradeUnitInStock->id] = [
+                    'quantity' => $tradeUnitInStock->pivot->quantity * $quantity,
+                ];
+            }
         }
 
-        if ($masterAsset->type == MasterAssetTypeEnum::PRODUCT) {
-            $masterAsset->tradeUnits()->syncWithoutDetaching([$tradeUnit->id]);
-        }
 
+
+        $masterAsset->tradeUnits()->sync($tradeUnits);
 
         return $masterAsset;
     }
 
     public function getCommandSignature(): string
     {
-        return 'trade_units:match_to_master';
+        return 'repair:master_products_trade_units';
     }
 
     public function asCommand(Command $command): int
