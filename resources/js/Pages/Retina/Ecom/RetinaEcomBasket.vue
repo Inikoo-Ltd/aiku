@@ -451,7 +451,7 @@ const blackListProductIds = computed(() => {
                     <ButtonWithLink
                         v-else
                         iconRight="fas fa-arrow-right"
-                        :label="trans('Pay with Checkout')"
+                        :label="trans('Go to checkout')"
                         :routeTarget="{
                             name: 'retina.ecom.checkout.show',
                             parameters: {
