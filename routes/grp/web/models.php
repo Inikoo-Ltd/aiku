@@ -201,6 +201,7 @@ use App\Actions\HumanResources\JobPosition\UpdateJobPosition;
 use App\Actions\HumanResources\Workplace\DeleteWorkplace;
 use App\Actions\HumanResources\Workplace\StoreWorkplace;
 use App\Actions\HumanResources\Workplace\UpdateWorkplace;
+use App\Actions\Masters\MasterAsset\Json\GetTradeUnitDataForMasterProductCreation;
 use App\Actions\Masters\MasterAsset\StoreMasterProductFromTradeUnits;
 use App\Actions\Masters\MasterCollection\AttachMasterCollectionToModel;
 use App\Actions\Masters\MasterCollection\AttachModelsToMasterCollection;
@@ -930,6 +931,8 @@ Route::post('website/{website:id}/reindex-luigi', ReindexWebsiteLuigiAsync::clas
 
 Route::delete('/shipment/{shipment:id}', DeleteShipment::class)->name('shipment.delete');
 Route::patch('snapshot/{snapshot:id}/update', UpdateSnapshot::class)->name('snapshot.update');
+
+Route::post('master-product-category/{masterProductCategory:id}/trade-units-for-creation', GetTradeUnitDataForMasterProductCreation::class)->name('master-product-category.trade-units-for-creation')->withoutScopedBindings();
 
 require __DIR__ . "/models/inventory/warehouse.php";
 require __DIR__ . "/models/inventory/location_org_stock.php";
