@@ -154,7 +154,7 @@ const isLoadingDetach = ref<string[]>([]);
         </template>
 
         <template #cell(state)="{ item: department }">
-            <Icon :data="department.state">
+            <Icon :data="department.state" :title="department.state?.label">
             </Icon>
         </template>
         <template #cell(code)="{ item: department }">
