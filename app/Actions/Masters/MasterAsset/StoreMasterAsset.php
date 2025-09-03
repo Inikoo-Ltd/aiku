@@ -42,6 +42,7 @@ class StoreMasterAsset extends OrgAction
     public function handle(MasterShop|MasterProductCategory $parent, array $modelData): MasterAsset
     {
         $tradeUnits = Arr::pull($modelData, 'trade_units', []);
+        $shopProducts = Arr::pull($modelData, 'shop_products', []);
 
         if (count($tradeUnits) == 1) {
             $units = $tradeUnits[array_key_first($tradeUnits)]['quantity'];
@@ -69,7 +70,7 @@ class StoreMasterAsset extends OrgAction
             }
         }
 
-        $masterAsset = DB::transaction(function () use ($parent, $modelData, $tradeUnits) {
+        $masterAsset = DB::transaction(function () use ($parent, $modelData, $tradeUnits, $shopProducts) {
             /** @var MasterAsset $masterAsset */
             $masterAsset = $parent->masterAssets()->create($modelData);
             $masterAsset->stats()->create();
@@ -83,7 +84,9 @@ class StoreMasterAsset extends OrgAction
             $masterAsset->refresh();
 
             if ($masterAsset->type == MasterAssetTypeEnum::PRODUCT) {
-                StoreProductFromMasterProduct::make()->action($masterAsset);
+                StoreProductFromMasterProduct::make()->action($masterAsset, [
+                    'shop_products' => $shopProducts
+                ]);
             }
 
             return ModelHydrateSingleTradeUnits::run($masterAsset);
@@ -167,7 +170,8 @@ class StoreMasterAsset extends OrgAction
             'variant_ratio'            => ['sometimes', 'required', 'numeric', 'gt:0'],
             'variant_is_visible'       => ['sometimes', 'required', 'boolean'],
             'trade_units'              => ['sometimes', 'array', 'nullable'],
-            'type'                     => ['required', Rule::enum(MasterAssetTypeEnum::class)]
+            'type'                     => ['required', Rule::enum(MasterAssetTypeEnum::class)],
+            'shop_products'            => ['sometimes', 'array']
 
         ];
 
