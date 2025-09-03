@@ -107,7 +107,7 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
 
         return [
             'stock'          => $stock,
-            'cost'           => $cost,
+            'cost_price'     => $cost,
             'has_org_stocks' => $organisationHasOrgStocks,
         ];
     }
