@@ -134,16 +134,16 @@ const debAddAndUpdateProduct = debounce(() => {
         onUpdateQuantity(props.product)
     }
 }, 900)
-watch(() => get(props.product, ['quantity_ordered_new'], null), () => {
-    debAddAndUpdateProduct()
-})
+// watch(() => get(props.product, ['quantity_ordered_new'], null), () => {
+//     debAddAndUpdateProduct()
+// })
 </script>
 
 <template>
     <div class="xw-full flex flex-col items-center gap-2 xmt-2 relative max-w-36">
         <InputNumber
             :modelValue="get(product, ['quantity_ordered_new'], null) === null ? product.quantity_ordered : get(product, ['quantity_ordered_new'], 0) "
-            @input="(e) => (e.value ? set(product, ['quantity_ordered_new'], e.value) : set(product, ['quantity_ordered_new'], 0))"
+            @input="(e) => (e.value ? set(product, ['quantity_ordered_new'], e.value) : set(product, ['quantity_ordered_new'], 0), debAddAndUpdateProduct())"
             inputId="integeronly"
             fluid
             showButtons
