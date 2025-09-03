@@ -127,6 +127,7 @@ class UpdateOrder extends OrgAction
             'customer_notes'      => ['sometimes', 'nullable', 'string', 'max:4000'],
             'public_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
             'internal_notes'      => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'collection_notes'    => ['sometimes', 'nullable', 'string', 'max:4000'],
             'state'               => ['sometimes', Rule::enum(OrderStateEnum::class)],
             'sales_channel_id'    => [
                 'sometimes',
