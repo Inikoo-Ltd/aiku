@@ -50,6 +50,12 @@ const props = defineProps<{
 
 const locale = inject("locale", {});
 
+// helper to calculate profit margin %
+function getMargin(price: number | string) {
+    const p = Number(price);
+    if (!p || !props.master_price) return null;
+    return ((p - props.master_price) / props.master_price) * 100;
+}
 </script>
 
 <template>
@@ -86,22 +92,27 @@ const locale = inject("locale", {});
                             {{ item.name }}
                         </td>
                         <td class="px-2 py-1 border-b border-gray-100 font-medium text-gray-700">
-                            {{ item.product.stock }}
+                            {{ item.stock }}
                         </td>
                         <td class="px-2 py-1 border-b border-gray-100">
                             <div class="flex justify-center items-center">
-                                <input type="checkbox" v-model="item.product.create_webpage" />
+                                <input type="checkbox" v-model="item.create_webpage" />
                             </div>
                         </td>
-                        <td class="px-2 py-1 border-b w-32">
-                            <InputNumber
-                                v-model="item.product.price"
-                                mode="currency"
-                                :currency="item.currency"
-                                :step="0.25"
-                                :showButtons="true"
-                                inputClass="w-full text-xs"
-                            />
+                        <td class="px-2 py-1 border-b w-40">
+                            <InputNumber v-model="item.price" mode="currency" :currency="item.currency" :step="0.25"
+                                :showButtons="true" inputClass="w-full text-xs" />
+                            <div class="flex justify-end pt-1">
+                                <span :class="{
+                                    'text-green-600 font-medium': getMargin(item.price) > 0,
+                                    'text-red-600 font-medium': getMargin(item.price) < 0,
+                                    'text-gray-500': getMargin(item.price) === 0
+                                }">
+                                    {{ getMargin(item.price) ? getMargin(item.price).toFixed(1) + '%' : '' }}
+                                </span>
+
+                            </div>
+
                         </td>
                     </tr>
                 </tbody>
