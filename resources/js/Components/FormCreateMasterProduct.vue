@@ -5,7 +5,7 @@
 
 <script setup lang="ts">
 import { router, useForm } from "@inertiajs/vue3";
-import { ref, computed, inject } from "vue";
+import { ref, computed, inject, toRaw } from "vue";
 import Drawer from "primevue/drawer";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import PureInput from "@/Components/Pure/PureInput.vue";
@@ -60,7 +60,7 @@ const props = defineProps<{
 }>();
 
 const emits = defineEmits(["update:showDialog"]);
-
+const tableData = ref(toRaw(props.shopsData))
 const detailsVisible = ref(true);
 const tableVisible = ref(true);
 const isFull = ref(false); // <-- state untuk toggle full screen
@@ -76,7 +76,8 @@ const form = useForm({
     name: "",
     unit: 0,
     trade_units: [],
-    price: null
+    price: null,
+    shop_product : null
 });
 
 const getTableData = () => {
@@ -137,6 +138,18 @@ const ListSelectorChange = (value) => {
 const submitForm = async (redirect = true) => {
     form.processing = true
     form.errors = {}
+     
+     const finalDataTable: Record<number, { price: number | string }> = {}
+
+    for (const tableDataItem of tableData.value.data) {
+        finalDataTable[tableDataItem.id] = {
+            price: tableDataItem.product.price,
+            create_webpage : tableDataItem.product.create_webpage
+        }
+    }
+
+    form.shop_product = finalDataTable
+
 
     try {
         const response = await axios.post(
@@ -152,6 +165,7 @@ const submitForm = async (redirect = true) => {
             // router.visit(route('grp.masters.master_shops.show.master_families.master_products.show', {...}))
         } else {
             form.reset()
+            tableData.value = props.shopsData
             key.value = ulid()
         }
     } catch (error: any) {
@@ -284,7 +298,7 @@ console.log(props)
                             class="w-full" />
                         <small v-if="form.errors.code" class="text-red-500 text-xs flex items-center gap-1 mt-1">
                             <FontAwesomeIcon :icon="faCircleExclamation" />
-                            {{ form.errors.code }}
+                            {{ form.errors.code.join(", ") }}
                         </small>
                     </div>
 
@@ -295,7 +309,7 @@ console.log(props)
                             class="w-full" />
                         <small v-if="form.errors.name" class="text-red-500 text-xs flex items-center gap-1 mt-1">
                             <FontAwesomeIcon :icon="faCircleExclamation" />
-                            {{ form.errors.name }}
+                             {{ form.errors.name.join(", ") }}
                         </small>
                     </div>
 
@@ -306,7 +320,7 @@ console.log(props)
                             class="w-full" />
                         <small v-if="form.errors.unit" class="text-red-500 text-xs flex items-center gap-1 mt-1">
                             <FontAwesomeIcon :icon="faCircleExclamation" />
-                            {{ form.errors.unit }}
+                            {{ form.errors.unit.join(", ") }}
                         </small>
                     </div>
 
@@ -366,7 +380,7 @@ console.log(props)
 
                 <!-- Table -->
                 <div v-if="tableVisible" class="mt-4">
-                    <TableSetPriceProduct :data="shopsData" :master_price="form.price"/>
+                    <TableSetPriceProduct  :key="key" :data="tableData" :master_price="form.price"/>
                 </div>
             </div>
         </div>
@@ -374,7 +388,7 @@ console.log(props)
         <!-- Footer -->
         <template #footer>
             <div class="flex justify-end gap-3 border-t pt-3">
-                <Button label="Cancel" type="secondary" class="!px-5" @click="emits('update:showDialog', false)" />
+                <Button label="Cancel" type="negative" class="!px-5" @click="emits('update:showDialog', false)" />
                 <Button
                     type="create"
                     :loading="form.processing"
