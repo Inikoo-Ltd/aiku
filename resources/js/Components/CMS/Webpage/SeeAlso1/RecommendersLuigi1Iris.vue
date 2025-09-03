@@ -55,7 +55,7 @@ const fetchRecommenders = async () => {
                     "recommendation_type": props.recommendation_type || "test_reco",
                     "recommender_client_identifier": props.recommendation_type || "test_reco",
                     "size": 7,
-                    "user_id": layout.user?.customer_id,
+                    "user_id": layout.user?.customer_id.toString(),
                     "recommendation_context":  {},
                     // "hit_fields": ["url", "title"]
                 }

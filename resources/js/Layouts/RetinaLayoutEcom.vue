@@ -97,7 +97,7 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 				/>
 
 				<!-- RetinaLayoutDS -->
-				<div class="flex-1 flex flex-col pb-6 text-gray-700 relative">
+				<div id="retina-right-section" class="flex-1 flex flex-col pb-6 text-gray-700 relative">
 					<div class="flex justify-between items-end absolute bottom-full w-full border-b-0 mx-auto transition-all mb-1">
 						<Breadcrumbs
 							class=""

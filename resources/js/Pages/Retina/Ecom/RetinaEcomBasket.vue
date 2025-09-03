@@ -3,7 +3,7 @@ import { trans } from 'laravel-vue-i18n'
 import CheckoutSummary from "@/Components/Retina/Ecom/CheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { Head, Link, router } from "@inertiajs/vue3"
-import { inject, ref } from "vue"
+import { inject, ref, onMounted, nextTick, onBeforeUnmount } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import { routeType } from "@/types/route"
@@ -22,6 +22,7 @@ import EmptyState from '@/Components/Utils/EmptyState.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
+import RecommendersLuigi1Iris from '@/Components/CMS/Webpage/SeeAlso1/RecommendersLuigi1Iris.vue'
 library.add(faTag)
 
 const props = defineProps<{
@@ -95,6 +96,97 @@ const listLoadingProducts = ref({
 
 })
 const isLoadingSubmit = ref(false)
+
+// Teleport control with key for rerender
+const isTeleportReady = ref(false)
+const teleportKey = ref(0)
+
+// Responsive slides per view
+const slidesPerView = ref(4)
+
+const updateSlidesPerView = () => {
+    const width = window.innerWidth
+    if (width < 640) {
+        slidesPerView.value = 2 // mobile
+    } else if (width < 768) {
+        slidesPerView.value = 2 // small tablet
+    } else if (width < 1024) {
+        slidesPerView.value = 3 // tablet
+    } else if (width < 1280) {
+        slidesPerView.value = 4 // desktop
+    } else {
+        slidesPerView.value = 4 // large desktop
+    }
+}
+
+const checkTeleportTarget = () => {
+    try {
+        const targetElement = document.getElementById('retina-right-section')
+        if (targetElement && targetElement.parentNode) {
+            const rect = targetElement.getBoundingClientRect()
+            if (rect.width > 0 || rect.height > 0 || targetElement.offsetParent !== null) {
+                isTeleportReady.value = true
+                teleportKey.value += 1 // Force rerender
+                return true
+            }
+        }
+    } catch (error) {
+        console.warn('Error checking teleport target:', error)
+    }
+    return false
+}
+
+onMounted(async () => {
+    await nextTick()
+    
+    // Set initial slides per view
+    updateSlidesPerView()
+    
+    // Add resize listener
+    window.addEventListener('resize', updateSlidesPerView)
+    
+    // Wait a bit for layout to stabilize
+    setTimeout(async () => {
+        await nextTick()
+        
+        // Check immediately if target exists and is ready
+        if (checkTeleportTarget()) {
+            return
+        }
+        
+        // If not found, use MutationObserver to watch for the element
+        const observer = new MutationObserver(() => {
+            if (checkTeleportTarget()) {
+                observer.disconnect()
+            }
+        })
+        
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        })
+        
+        // Fallback timeout
+        setTimeout(() => {
+            observer.disconnect()
+            try {
+                const targetElement = document.getElementById('retina-right-section')
+                if (targetElement) {
+                    isTeleportReady.value = true
+                    teleportKey.value += 1 // Force rerender
+                }
+            } catch (error) {
+                console.warn('Final teleport check failed:', error)
+                isTeleportReady.value = false
+            }
+        }, 2000)
+    }, 100)
+})
+
+// Cleanup resize listener
+onBeforeUnmount(() => {
+    window.removeEventListener('resize', updateSlidesPerView)
+})
 
 // Section: Submit Note
 const noteToSubmit = ref(props?.order?.customer_notes || '')
@@ -322,6 +414,13 @@ const onAddProducts = async (product: Product) => {
             }"
         />
     </div>
+
+    <Teleport to="#retina-right-section" :disabled="!isTeleportReady" :key="teleportKey">
+        <div class="max-w-[calc(1280px-200px)] mt-8 p-4 bg-white rounded-md shadow-lg">
+            <h2 class="text-2xl font-bold text-center mb-4">{{ trans('You might also like') }}</h2>
+            <RecommendersLuigi1Iris recommendation_type="test_reco" :slidesPerView="slidesPerView" />
+        </div>
+    </Teleport>
 
       <!-- Modal: add products to Order -->
     <Modal :isOpen="isModalProductListOpen" @onClose="isModalProductListOpen = false" width="w-full max-w-6xl" key="">
