@@ -3,7 +3,6 @@
 namespace App\Actions\Masters\MasterProductCategory;
 
 use App\Actions\GrpAction;
-use App\Actions\OrgAction;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Support\Arr;
@@ -47,7 +46,7 @@ class UpdateMasterProductCategoryTranslationsFromUpdate extends GrpAction
 
         $masterProductCategory->save();
 
-        if($masterProductCategory->productCategories) {
+        if ($masterProductCategory->productCategories) {
             foreach ($masterProductCategory->productCategories as $productCategory) {
                 $this->updateChildren($productCategory, $name_i8n, $description_i8n, $description_title_i8n, $description_extra_i8n);
             }
@@ -59,7 +58,7 @@ class UpdateMasterProductCategoryTranslationsFromUpdate extends GrpAction
 
     }
 
-    public function updateChildren(ProductCategory $productCategory, array $name_i8n, array $description_i8n, array $description_title_i8n, array $description_extra_i8n) 
+    public function updateChildren(ProductCategory $productCategory, array $name_i8n, array $description_i8n, array $description_title_i8n, array $description_extra_i8n)
     {
         $childNameI8n = $productCategory->getTranslations('name_i8n');
         $childDescriptionI8n = $productCategory->getTranslations('description_i8n');
@@ -82,7 +81,7 @@ class UpdateMasterProductCategoryTranslationsFromUpdate extends GrpAction
             $productCategory->description_i8n = $childDescriptionI8n;
             $updateChild = true;
         }
-        
+
         if (!empty($description_title_i8n)) {
             foreach ($description_title_i8n as $locale => $translation) {
                 $childDescriptionTitleI8n[$locale] = $translation;
@@ -90,7 +89,7 @@ class UpdateMasterProductCategoryTranslationsFromUpdate extends GrpAction
             $productCategory->description_title_i8n = $childDescriptionTitleI8n;
             $updateChild = true;
         }
-        
+
         if (!empty($description_extra_i8n)) {
             foreach ($description_extra_i8n as $locale => $translation) {
                 $childDescriptionExtraI8n[$locale] = $translation;

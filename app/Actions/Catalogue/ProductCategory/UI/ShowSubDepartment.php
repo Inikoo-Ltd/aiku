@@ -78,7 +78,7 @@ class ShowSubDepartment extends OrgAction
                 ];
 
 
-            $urlMaster                              = null;
+        $urlMaster                              = null;
         if ($subDepartment->master_product_category_id) {
             $urlMaster = [
                 'name'       => 'grp.helpers.redirect_master_product_category',

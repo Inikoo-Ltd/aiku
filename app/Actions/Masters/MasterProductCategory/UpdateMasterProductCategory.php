@@ -98,7 +98,7 @@ class UpdateMasterProductCategory extends OrgAction
 
         $masterProductCategory = $this->update($masterProductCategory, $modelData, ['data']);
 
-         $changed = Arr::except($masterProductCategory->getChanges(), ['updated_at']);
+        $changed = Arr::except($masterProductCategory->getChanges(), ['updated_at']);
 
         if (Arr::hasAny($changed, ['code', 'name', 'description', 'rrp'])) {
             foreach ($masterProductCategory->productCategories as $productCategory) {
@@ -110,7 +110,7 @@ class UpdateMasterProductCategory extends OrgAction
                 ]);
             }
         }
-        
+
         $masterProductCategory->refresh();
 
         if (!$masterProductCategory->image_id && $originalImageId) {
