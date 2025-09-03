@@ -15,6 +15,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { routeType } from "@/types/route";
 import { InputNumber } from "primevue";
 import TableSetPriceProduct from "@/Components/TableSetPriceProduct.vue";
+import axios from "axios";
 
 // FontAwesome
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -99,7 +100,7 @@ const getTableData = () => {
                 route("grp.models.master-product-category.trade-units-for-creation", {
                     masterProductCategory: props.masterProductCategory,
                 }),
-                {},
+                { trade_units : form.trade_units},
                 {
                     signal: abortController.signal, // attach abort signal
                 }
