@@ -63,8 +63,9 @@ const props = defineProps<{
     is_orphan?: boolean
     currency?:Object
     url_master?:routeType
+    shopsData? :any
 }>()
-console.log(props)
+console.log('family',props)
 const currentTab = ref(props.tabs.current)
 const isOpenModal = ref(false) // ✅ Added missing ref
 
@@ -124,6 +125,7 @@ const showDialog = ref(false);
         :storeProductRoute="storeProductRoute" 
         @update:show-dialog="(value) => showDialog = value"
         :master-currency="currency"
+        :shopsData="shopsData"
     />
 
 </template>
