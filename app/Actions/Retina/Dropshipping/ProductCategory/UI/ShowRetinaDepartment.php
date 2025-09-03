@@ -43,7 +43,7 @@ class ShowRetinaDepartment extends RetinaAction
     public function htmlResponse(ProductCategory $department, ActionRequest $request): Response
     {
         return Inertia::render(
-            'Catalogue/RetinaDepartement',
+            'Catalogue/RetinaDepartment',
             [
                 'title'       => __('department'),
                 'breadcrumbs' => $this->getBreadcrumbs(
@@ -175,7 +175,6 @@ class ShowRetinaDepartment extends RetinaAction
             ]
         )->table(
             IndexRetinaSubDepartments::make()->tableStructure(
-                parent: $department,
                 prefix: RetinaDepartmentTabsEnum::SUB_DEPARTMENTS->value
             )
         )->table(

@@ -5,7 +5,7 @@ import EmptyState from "@/Components/Utils/EmptyState.vue";
 import Image from "@/Components/Image.vue";
 import { getStyles } from "@/Composables/styles";
 import { routeType } from "@/types/route";
-import FormEditProductCategory from "@/Components/Departement&Family/FormEditProductCategory.vue";
+import FormEditProductCategory from "@/Components/DepartmentAndFamily/FormEditProductCategory.vue";
 import Dialog from "primevue/dialog";
 import { trans } from "laravel-vue-i18n";
 
@@ -20,7 +20,7 @@ const props = defineProps<{
   webpageData?: any;
   blockData?: object;
   screenType: "mobile" | "tablet" | "desktop";
-  routeEditSubDepartement?: routeType;
+  routeEditSubDepartment?: routeType;
 }>();
 
 const selectedSubDepartment = ref<null | {
@@ -33,7 +33,7 @@ const selectedSubDepartment = ref<null | {
 const showDialog = ref(false);
 
 function openModal(subDept: any) {
-  if (props.routeEditSubDepartement) {
+  if (props.routeEditSubDepartment) {
     selectedSubDepartment.value = {
       id: subDept.id,
       name: subDept.name,
@@ -157,7 +157,7 @@ const mergedItems = computed(() => {
         v-if="selectedSubDepartment"
         :key="selectedSubDepartment.id"
         :data="selectedSubDepartment"
-        :saveRoute="routeEditSubDepartement"
+        :saveRoute="routeEditSubDepartment"
         @saved="handleSaved"
       />
     </Dialog>

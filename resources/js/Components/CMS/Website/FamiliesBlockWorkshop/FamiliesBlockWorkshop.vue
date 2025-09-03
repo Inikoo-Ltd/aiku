@@ -8,10 +8,10 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { router } from "@inertiajs/vue3"
 import { routeType } from "@/types/route"
-import SideMenuSubDepartementWorkshop from "./SideMenuFamiliesBlockWorkshop.vue"
+import SideMenuSubDepartmentWorkshop from "./SideMenuFamiliesBlockWorkshop.vue"
 import { notify } from "@kyvg/vue3-notification"
 import Drawer from 'primevue/drawer'
-import SubDepartementListTree from "./SubDepartementListTree.vue"
+import SubDepartmentListTree from "./SubDepartmentListTree.vue"
 import ScreenView from "@/Components/ScreenView.vue"
 import { trans } from "laravel-vue-i18n"
 
@@ -22,7 +22,7 @@ const props = defineProps<{
     web_block_types: any;
     autosaveRoute: routeType;
     layout: any;
-    sub_departements: any[];
+    sub_departments: any[];
     update_family_route: routeType;
   }
 }>()
@@ -71,12 +71,12 @@ const onPickTemplate = (template: any) => {
 }
 
 const dataPicked = ref({
-  sub_departement : null,
+  sub_department : null,
   families : []
 })
-// === Handle change sub-departement ===
+// === Handle change sub-department ===
 const onChangeDepartment = (value: any) => {
-    dataPicked.value.sub_departement = value.sub_departement
+    dataPicked.value.sub_department = value.sub_department
     dataPicked.value.families = value.families || []
 }
 
@@ -86,7 +86,7 @@ const autosave = () => {
 
   if (payload.data?.fieldValue) {
     delete payload.data.fieldValue.families
-    delete payload.data.fieldValue.sub_departement
+    delete payload.data.fieldValue.sub_department
   }
 
   router.patch(
@@ -127,12 +127,12 @@ const debouncedAutosave = debounce(autosave)
 
     <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
       <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-auto border">
-        <SideMenuSubDepartementWorkshop
+        <SideMenuSubDepartmentWorkshop
           :data="data.layout"
           :webBlockTypes="data.web_block_types"
           @auto-save="debouncedAutosave"
           @set-up-template="onPickTemplate"
-          :dataList="data.sub_departements"
+          :dataList="data.sub_departments"
           @onChangeDepartment="onChangeDepartment"
         />
       </div>
@@ -144,9 +144,8 @@ const debouncedAutosave = debounce(autosave)
             <ScreenView @screenView="(e) => { currentView = e }" v-model="currentView" />
           </div>
           <div @click="visibleDrawer = true" class="text-sm text-gray-600 italic mr-3 cursor-pointer underline">
-            <span v-if="dataPicked.sub_departement?.name" xv-if="data.layout?.data?.fieldValue?.sub_departement?.name">
-                <!-- Preview: <strong>{{ data.layout.data.fieldValue.sub_departement?.name }}</strong> -->
-                Preview: <strong>{{ dataPicked.sub_departement?.name }}</strong>
+            <span v-if="dataPicked.sub_department?.name" xv-if="data.layout?.data?.fieldValue?.sub_department?.name">
+                Preview: <strong>{{ dataPicked.sub_department?.name }}</strong>
             </span>
             <span v-else class="">{{ trans("Pick the sub-departement") }}</span>
           </div>
@@ -159,7 +158,7 @@ const debouncedAutosave = debounce(autosave)
             :screenType="currentView"
             :modelValue="{
               ...data.layout.data.fieldValue,
-              sub_departement: dataPicked.sub_departement,
+              sub_department: dataPicked.sub_department,
               families: dataPicked.families
             }"
             :routeEditfamily="data.update_family_route"
@@ -188,10 +187,10 @@ const debouncedAutosave = debounce(autosave)
       </div>
     </template>
 
-    <SubDepartementListTree
-      :dataList="data.sub_departements"
+    <SubDepartmentListTree
+      :dataList="data.sub_departments"
       @changeDepartment="onChangeDepartment"
-      :active="data.layout?.data?.fieldValue?.sub_departement?.slug"
+      :active="data.layout?.data?.fieldValue?.sub_department?.slug"
     />
   </Drawer>
 </template>

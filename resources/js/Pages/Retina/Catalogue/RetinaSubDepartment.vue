@@ -21,7 +21,7 @@ import { useTabChange } from "@/Composables/tab-change"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { faDiagramNext } from "@fortawesome/free-solid-svg-icons"
 import { capitalize } from "@/Composables/capitalize"
-import RetinaSubDepartementShowcase from '@/Components/Showcases/Retina/Catalouge/RetinaSubDepartementShowcase.vue'
+import RetinaSubDepartmentShowcase from '@/Components/Showcases/Retina/Catalouge/RetinaSubDepartmentShowcase.vue'
 import RetinaTableProducts from '@/Components/Tables/Retina/RetinaTableProducts.vue'
 import RetinaTableFamilies from '@/Components/Tables/Retina/RetinaTableFamilies.vue'
 import RetinaTableCollections from '@/Components/Tables/Retina/RetinaTableCollections.vue'
@@ -63,7 +63,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const component: Component = computed(() => {
     const components = {
-        showcase: RetinaSubDepartementShowcase,
+        showcase: RetinaSubDepartmentShowcase,
         products: RetinaTableProducts,
         families: RetinaTableFamilies,
         collections: RetinaTableCollections,

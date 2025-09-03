@@ -16,7 +16,7 @@ import {
 
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import { computed, ref } from "vue";
-import DepartmentShowcase from "@/Components/Showcases/Grp/DepartementShowcase.vue";
+import DepartmentShowcase from "@/Components/Showcases/Grp/DepartmentShowcase.vue";
 import { useTabChange } from "@/Composables/tab-change";
 import ModelDetails from "@/Components/ModelDetails.vue";
 import TableCustomers from "@/Components/Tables/Grp/Org/CRM/TableCustomers.vue";
