@@ -22,7 +22,7 @@ import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 import { InputNumber } from 'primevue'
 import { get, set } from 'lodash-es'
-import ButtonAddToBasketAuto from '@/Components/Iris/Products/ButtonAddToBasketAuto.vue'
+import ButtonAddToBasketVertical from '@/Components/Iris/Products/ButtonAddToBasketVertical.vue'
 import { ProductResource } from '@/types/Iris/Products'
 library.add(faStarHalfAlt, faQuestionCircle)
 
@@ -130,7 +130,7 @@ const urlLoginWithRedirect = () => {
     <div class="pb-3 relative flex flex-col justify-between h-full" comp="product-render-ecom">
 
         <!-- Top Section: Stock, Images, Title, Code, Price -->
-        <div class="">
+        <div class=" text-gray-800">
             <div v-if="product?.top_seller"
                 class="absolute top-2 left-2 border border-black/50 text-xs font-bold px-2 py-0.5 rounded"
                 :class="{
@@ -180,10 +180,10 @@ const urlLoginWithRedirect = () => {
             <div class="px-3">
                 <!-- Title -->
                 <Link v-if="product.url" :href="product.url"
-                    class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
+                    class="hover:text-gray-500 font-bold text-sm mb-1">
                 {{ product.name }}
                 </Link>
-                <div v-else class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
+                <div v-else class="hover:text-gray-500 font-bold text-sm mb-1">
                     {{ product.name }}
                 </div>
 
@@ -240,19 +240,25 @@ const urlLoginWithRedirect = () => {
                         </div>
                     </div>
                 </div>
+                
 
-                <!-- Section: Price & RRP -->
-                <!-- <div v-if="layout?.iris?.is_logged_in" class="mb-3">
-                    <div class="flex justify-between text-sm items-center">
+                <div v-if="layout?.iris?.is_logged_in" class="text-sm flex flex-wrap items-center justify-between gap-x-2 mb-3 tabular-nums">
+                    <div class="">
+                        <div>{{ trans('Price') }}: <span class="font-semibold">{{ locale.currencyFormat(currency?.code, product.price || 0) }}</span></div>
                         <div>
-                            {{ trans('Price') }}: <span class="" :class="xxxxxxx ? 'line-through text-gray-400' : 'font-semibold'">{{ locale.currencyFormat(currency.code,product.price) }}</span>
-                            <span v-if="xxxxxxx" class="ml-1 font-semibold text-green-600">{{ locale.currencyFormat(currency.code,product.price) }}</span>
-                        </div>
-                        <div class="opacity-70 text-xs">
-                            <span v-tooltip="trans('Recommended retail price')" >{{trans('RRP')}}</span>:  <span class="font-semibold">{{ locale.currencyFormat(currency.code,product.rrp) }}</span>
+                            <span class="text-sm text-gray-400 xtext-base font-normal">
+                                ({{ locale.currencyFormat(currency?.code, (product.price/product.units).toFixed(2)) }}/{{ product.unit }})
+                            </span>
                         </div>
                     </div>
-                </div> -->
+                    
+                    <div v-if="product.rrp" class="text-xs xmt-1 text-right">
+                        <div>RRP: {{ locale.currencyFormat(currency?.code, product.rrp || 0) }}</div>
+                        <div class="text-gray-400 xtext-base font-normal">
+                            ({{ locale.currencyFormat(currency?.code, (product.rrp/product.units).toFixed(2)) }}/{{ product.unit }})
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Section: Coupon -->
                 <!-- <div class="mb-2">
@@ -274,7 +280,7 @@ const urlLoginWithRedirect = () => {
         <div class="px-3">
             <div v-if="layout?.iris?.is_logged_in" class="w-full">
 
-                <ButtonAddToBasketAuto
+                <ButtonAddToBasketVertical
                     v-if="product.stock > 0"
                     :product
                 />
