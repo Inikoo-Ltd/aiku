@@ -21,12 +21,21 @@ class StoreProductFromMasterProduct extends GrpAction
     /**
      * @throws \Throwable
      */
-    public function handle(MasterAsset $masterAsset)
+    public function handle(MasterAsset $masterAsset, array $modelData)
     {
         $productCategories = $masterAsset->masterFamily->productCategories;
 
         if ($productCategories) {
             foreach ($productCategories as $productCategory) {
+                $shop = $productCategory->shop;
+                if (isset($modelData['shop_products']) && !array_key_exists($shop->id, $modelData['shop_products'])) {
+                    continue;
+                }
+            
+                $shopProductData = isset($modelData['shop_products'][$shop->id]) ? $modelData['shop_products'][$shop->id] : [];
+                $customPrice = isset($shopProductData['price']) ? $shopProductData['price'] : null;
+                $createWebpage = isset($shopProductData['create_webpage']) ? $shopProductData['create_webpage'] : true;
+
                 $orgStocks = [];
                 foreach ($masterAsset->stocks as $stock) {
                     $stockOrgStocks = $stock->orgStocks()->where('organisation_id', $productCategory->organisation_id)->get();
@@ -52,7 +61,7 @@ class StoreProductFromMasterProduct extends GrpAction
                 $data = [
                     'code' => $masterAsset->code,
                     'name' => $masterAsset->name,
-                    'price' => $masterAsset->price,
+                    'price' => $customPrice ?? $masterAsset->price,
                     'unit'    => $masterAsset->unit,
                     'is_main' => true,
                     'org_stocks'  => $orgStocks,
@@ -61,13 +70,16 @@ class StoreProductFromMasterProduct extends GrpAction
                     'status' => ProductStatusEnum::FOR_SALE,
                     'is_for_sale' => true
                 ];
-
+                
                 $product = StoreProduct::run($productCategory, $data);
                 $product->refresh();
-                $webpage = StoreProductWebpage::run($product);
-                PublishWebpage::make()->action($webpage, [
-                    'comment' => 'first publish'
-                ]);
+                
+                if ($createWebpage) {
+                    $webpage = StoreProductWebpage::run($product);
+                    PublishWebpage::make()->action($webpage, [
+                        'comment' => 'first publish'
+                    ]);
+                }
                 $tradeUnitsData = [];
                 foreach ($masterAsset->tradeUnits as $tradeUnit) {
                     $tradeUnitsData[$tradeUnit->id] = ['quantity' => $tradeUnit->pivot->quantity];
@@ -78,10 +90,17 @@ class StoreProductFromMasterProduct extends GrpAction
         }
     }
 
+    public function rules() : array 
+    {
+        return [
+            'shop_products'            => ['sometimes', 'array']
+        ];
+    }
+
     /**
      * @throws \Throwable
      */
-    public function action(MasterAsset $masterAsset, int $hydratorsDelay = 0, $strict = true, $audit = true)
+    public function action(MasterAsset $masterAsset, array $modelData, int $hydratorsDelay = 0, $strict = true, $audit = true)
     {
         if (!$audit) {
             Product::disableAuditing();
@@ -93,9 +112,9 @@ class StoreProductFromMasterProduct extends GrpAction
 
         $group = $masterAsset->group;
 
-        $this->initialisation($group, []);
+        $this->initialisation($group, $modelData);
 
-        return $this->handle($masterAsset);
+        return $this->handle($masterAsset, $this->validatedData);
     }
 
 }

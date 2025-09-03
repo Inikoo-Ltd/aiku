@@ -34,13 +34,14 @@ class StoreMasterProductFromTradeUnits extends GrpAction
     public function handle(MasterProductCategory $parent, array $modelData): MasterAsset
     {
         $tradeUnits = Arr::pull($modelData, 'trade_units', []);
+        $shopProducts = Arr::pull($modelData, 'shop_products', []);
 
         if (!Arr::has($modelData, 'unit') && count($tradeUnits) == 1) {
             data_set($modelData, 'unit', Arr::get($tradeUnits, '0.type'));
         }
 
 
-        $masterAsset = DB::transaction(function () use ($parent, $modelData, $tradeUnits) {
+        $masterAsset = DB::transaction(function () use ($parent, $modelData, $tradeUnits, $shopProducts) {
             $data        = [
                 'code'    => Arr::get($modelData, 'code'),
                 'name'    => Arr::get($modelData, 'name'),
@@ -48,7 +49,8 @@ class StoreMasterProductFromTradeUnits extends GrpAction
                 'unit'    => Arr::get($modelData, 'unit'),
                 'is_main' => true,
                 'type'    => MasterAssetTypeEnum::PRODUCT,
-                'trade_units'  => $tradeUnits
+                'trade_units'  => $tradeUnits,
+                'shop_products' => $shopProducts
             ];
 
             $masterAsset = StoreMasterAsset::make()->action($parent, $data);
@@ -95,6 +97,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
                 'numeric',
                 'min:1'
             ],
+            'shop_products' => ['sometimes', 'array']
         ];
     }
 

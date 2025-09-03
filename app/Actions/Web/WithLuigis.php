@@ -367,6 +367,8 @@ trait WithLuigis
                     "formatted_price" => $model->currency->symbol . $model->price . '/' . $model->unit,
                     "image_link" => Arr::get($model->imageSources(200, 200), 'original'),
                     "product_code" => $model->code,
+                    "product_id" => $model->id,
+                    "xxxxxx"    => 'yyyyyyyy',
                     "introduced_at" => $model?->created_at ? $model->created_at->format('c') : null,
                     "description" => $model->description,
                 ]),
