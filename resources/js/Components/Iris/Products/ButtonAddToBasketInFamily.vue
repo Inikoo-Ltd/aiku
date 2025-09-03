@@ -154,42 +154,51 @@ const compIsValueDirty = computed(() => {
 </script>
 
 <template>
-    <div class="">
-        <div class="xw-full flex items-center gap-2 xmt-2 relative w-36">
-            <InputNumber
-                :modelValue="get(product, ['quantity_ordered_new'], null) === null ? product.quantity_ordered : get(product, ['quantity_ordered_new'], 0) "
-                @input="(e) => (e.value ? set(product, ['quantity_ordered_new'], e.value) : set(product, ['quantity_ordered_new'], 0), `debAddAndUpdateProduct()`)"
-                inputId="integeronly"
-                fluid
-                showButtons
-                :disabled="isLoadingSubmitQuantityProduct"
-                :min="0"
-                :max="product.stock"
-                buttonLayout="horizontal"
-                :inputStyle="{
-                    textAlign: 'center',
-                    minWidth: '4rem'
-                }"
-            >
-                <template #incrementbuttonicon>
-                    <FontAwesomeIcon icon="fas fa-plus" class="" fixed-width aria-hidden="true" />
-                </template>
-                <template #decrementbuttonicon>
-                    <FontAwesomeIcon icon="fas fa-minus" class="" fixed-width aria-hidden="true" />
-                </template>
-            </InputNumber>
-            
-            <!-- <ConditionIcon :state="status" class="absolute top-1/2 -translate-y-1/2 -right-7"/> -->
+    <div class="xw-full flex flex-col md:flex-row items-center gap-2 xmt-2 relative w-full">
+        <InputNumber
+            :modelValue="get(product, ['quantity_ordered_new'], null) === null ? product.quantity_ordered : get(product, ['quantity_ordered_new'], 0) "
+            @input="(e) => (e.value ? set(product, ['quantity_ordered_new'], e.value) : set(product, ['quantity_ordered_new'], 0), `debAddAndUpdateProduct()`)"
+            inputId="integeronly"
+            fluid
+            showButtons
+            :disabled="isLoadingSubmitQuantityProduct"
+            :min="0"
+            :max="product.stock"
+            buttonLayout="horizontal"
+            inputClass="text-center !py-0.5 md:!py-1 !px-0 !w-[20px]"
+            size="small"
+        >
+            <template #incrementbuttonicon>
+                <FontAwesomeIcon icon="fas fa-plus" class="" fixed-width aria-hidden="true" />
+            </template>
+            <template #decrementbuttonicon>
+                <FontAwesomeIcon icon="fas fa-minus" class="" fixed-width aria-hidden="true" />
+            </template>
+        </InputNumber>
+        
+        <!-- <ConditionIcon :state="status" class="absolute top-1/2 -translate-y-1/2 -right-7"/> -->
 
-            <Button
-                @click="() => addAndUpdateProduct()"
-                :icon="props.product.quantity_ordered_new === 0 ? 'fal fa-cart-arrow-down' : 'fal fa-cart-plus'"
-                label="Add to basket"
-                type="primary"
-                size="lg"
-                :disabled="!compIsValueDirty"
-                :loading="isLoadingSubmitQuantityProduct"
-            />
-        </div>
+        <Button
+            @click="() => addAndUpdateProduct()"
+            :icon="props.product.quantity_ordered_new === 0 ? 'fal fa-cart-arrow-down' : 'fal fa-cart-plus'"
+            type="primary"
+            size="sm"
+            key="1"
+            full
+            :disabled="!compIsValueDirty"
+            :loading="isLoadingSubmitQuantityProduct"
+        >
+            <template #label>
+                <span class="whitespace-nowrap">
+                    {{ trans('Add to basket') }}
+                </span>
+            </template>
+        </Button>
     </div>
 </template>
+
+<style lang="scss" scoped>
+:deep(.p-inputnumber-button) {
+    width: 1.5rem !important;
+}
+</style>

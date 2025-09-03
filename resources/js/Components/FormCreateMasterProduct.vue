@@ -5,7 +5,7 @@
 
 <script setup lang="ts">
 import { router, useForm } from "@inertiajs/vue3";
-import { ref, computed, inject } from "vue";
+import { ref, computed, inject, toRaw } from "vue";
 import Drawer from "primevue/drawer";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import PureInput from "@/Components/Pure/PureInput.vue";
@@ -35,6 +35,8 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { faChevronUp, faChevronDown } from "@far";
 import { ulid } from "ulid";
+import { notify } from "@kyvg/vue3-notification";
+import { cloneDeep } from "lodash";
 
 library.add(
     faShapes,
@@ -55,12 +57,12 @@ const props = defineProps<{
     storeProductRoute: routeType
     showDialog: boolean,
     masterCurrency?: string
-    shopsData? :any
-    masterProductCategory : string|number
+    shopsData?: any
+    masterProductCategory: string | number
 }>();
 
 const emits = defineEmits(["update:showDialog"]);
-
+const tableData = ref(cloneDeep(props.shopsData));
 const detailsVisible = ref(true);
 const tableVisible = ref(true);
 const isFull = ref(false); // <-- state untuk toggle full screen
@@ -76,7 +78,8 @@ const form = useForm({
     name: "",
     unit: 0,
     trade_units: [],
-    price: null
+    price: null,
+    shop_products: null
 });
 
 const getTableData = () => {
@@ -101,13 +104,13 @@ const getTableData = () => {
                 route("grp.models.master_product_category.product_creation_data", {
                     masterProductCategory: props.masterProductCategory,
                 }),
-                { trade_units : form.trade_units},
+                { trade_units: form.trade_units },
                 {
                     signal: abortController.signal, // attach abort signal
                 }
             )
 
-           
+
             console.log("Data berhasil diambil:", response)
         } catch (error: any) {
             if (axios.isCancel(error)) {
@@ -124,7 +127,6 @@ const getTableData = () => {
 }
 
 const ListSelectorChange = (value) => {
-    getTableData()
     if (value.length >= 1) {
         form.name = value[0].name;
         form.code = value[0].code;
@@ -138,21 +140,45 @@ const submitForm = async (redirect = true) => {
     form.processing = true
     form.errors = {}
 
+    const finalDataTable: Record<number, { price: number | string }> = {}
+    console.log(tableData.value)
+    for (const tableDataItem of tableData.value.data) {
+        finalDataTable[tableDataItem.id] = {
+            price: tableDataItem.product.price,
+            create_webpage: tableDataItem.product.create_webpage
+        }
+    }
+
+    form.shop_products = finalDataTable
+
+
     try {
         const response = await axios.post(
             route(props.storeProductRoute.name, props.storeProductRoute.parameters),
             form.data(), // <-- same as inertia form payload
         )
 
-        console.log("pppp", response.data)
+        console.log("pppp", response.data,route().params)
 
         if (redirect) {
-            emits("update:showDialog", false)
             // If you need redirect, you can call router.visit() here
-            // router.visit(route('grp.masters.master_shops.show.master_families.master_products.show', {...}))
+            router.visit(route('grp.masters.master_shops.show.master_families.master_products.show', {
+                masterShop :  route().params['masterShop'],
+                masterFamily :  route().params['masterFamily'],
+                masterProduct :  response.data.slug
+
+            }))
         } else {
+            console.log(props.shopsData)
+            tableData.value.data = cloneDeep(props.shopsData.data);
             form.reset()
             key.value = ulid()
+            notify({
+                title: trans("success"),
+                text: "success to create product",
+                type: "success"
+            })
+
         }
     } catch (error: any) {
         if (error.response && error.response.status === 422) {
@@ -163,6 +189,11 @@ const submitForm = async (redirect = true) => {
             }
         } else {
             console.error("Unexpected error:", error)
+            notify({
+                title: trans("Something went wrong"),
+                text: error.message || trans("Please try again"),
+                type: 'error'
+            })
         }
     } finally {
         form.processing = false
@@ -218,21 +249,14 @@ console.log(props)
 </script>
 
 <template>
-    <Drawer 
-        v-model:visible="drawerVisible" 
-        position="right" 
-        :class="[isFull ? '!w-full' : '!w-full md:!w-1/2']"
-    >
+    <Drawer v-model:visible="drawerVisible" position="right" :class="[isFull ? '!w-full' : '!w-full md:!w-1/2']">
         <!-- Header -->
         <template #header>
             <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2 flex-1">
                 {{ trans("Create Product") }}
             </h2>
             <!-- Tombol Toggle Fullscreen -->
-            <button
-                @click="toggleFull"
-                class="text-gray-500 hover:text-gray-700 mx-3"
-            >
+            <button @click="toggleFull" class="text-gray-500 hover:text-gray-700 mx-3">
                 <FontAwesomeIcon :icon="isFull ? faMinimize : faExpand" />
             </button>
         </template>
@@ -241,19 +265,12 @@ console.log(props)
         <div class="p-4 pt-0 space-y-6 overflow-y-auto">
             <!-- Trade Unit Selector -->
             <div>
-                <ListSelector
-                    :key="key"
-                    v-model="form.trade_units"
-                    :withQuantity="true"
-                    :tabs="selectorTab"
-                    head_label="Select Trade Units"
-                    @update:model-value="ListSelectorChange"
-                    key_quantity="quantity"
+                <ListSelector :key="key" v-model="form.trade_units" :withQuantity="true" :tabs="selectorTab" @after-delete="()=>getTableData()" @on-select="()=>getTableData()"
+                    head_label="Select Trade Units" @update:model-value="ListSelectorChange" key_quantity="quantity"
                     :routeFetch="{
                         name: 'grp.json.master-product-category.recommended-trade-units',
                         parameters: { masterProductCategory: route().params['masterFamily'] }
-                    }"
-                />
+                    }" />
                 <small v-if="form.errors.trade_units" class="text-red-500 text-xs mt-1 flex items-center gap-1">
                     <FontAwesomeIcon :icon="faCircleExclamation" />
                     {{ form.errors.trade_units }}
@@ -273,10 +290,8 @@ console.log(props)
                 </button>
 
                 <!-- Details Form -->
-                <div
-                    v-if="detailsVisible"
-                    class="grid grid-cols-2 gap-6 mt-4 p-4 rounded-xl border border-gray-200 bg-white shadow-sm"
-                >
+                <div v-if="detailsVisible"
+                    class="grid grid-cols-2 gap-6 mt-4 p-4 rounded-xl border border-gray-200 bg-white shadow-sm">
                     <!-- Code -->
                     <div>
                         <label class="font-medium block mb-1 text-sm">Code</label>
@@ -284,7 +299,7 @@ console.log(props)
                             class="w-full" />
                         <small v-if="form.errors.code" class="text-red-500 text-xs flex items-center gap-1 mt-1">
                             <FontAwesomeIcon :icon="faCircleExclamation" />
-                            {{ form.errors.code }}
+                            {{ form.errors.code.join(", ") }}
                         </small>
                     </div>
 
@@ -295,18 +310,17 @@ console.log(props)
                             class="w-full" />
                         <small v-if="form.errors.name" class="text-red-500 text-xs flex items-center gap-1 mt-1">
                             <FontAwesomeIcon :icon="faCircleExclamation" />
-                            {{ form.errors.name }}
+                            {{ form.errors.name.join(", ") }}
                         </small>
                     </div>
 
                     <!-- Unit -->
                     <div>
                         <label class="font-medium block mb-1 text-sm">Unit</label>
-                        <PureInput v-model="form.unit" @update:model-value="form.errors.unit = null"
-                            class="w-full" />
+                        <PureInput v-model="form.unit" @update:model-value="form.errors.unit = null" class="w-full" />
                         <small v-if="form.errors.unit" class="text-red-500 text-xs flex items-center gap-1 mt-1">
                             <FontAwesomeIcon :icon="faCircleExclamation" />
-                            {{ form.errors.unit }}
+                            {{ form.errors.unit.join(", ") }}
                         </small>
                     </div>
 
@@ -316,18 +330,9 @@ console.log(props)
                             <FontAwesomeIcon :icon="faTags" class="text-blue-500" />
                             Price ({{ currency.symbol }})
                         </label>
-                        <InputNumber
-                            v-model="form.price"
-                            showButtons
-                            buttonLayout="horizontal"
-                            :step="0.25"
-                            mode="currency"
-                            :currency="currency.code"
-                            fluid
-                            :min="0"
-                            :allowEmpty="true"
-                            class="w-full rounded-lg border border-gray-300 shadow-sm"
-                        >
+                        <InputNumber v-model="form.price" showButtons buttonLayout="horizontal" :step="0.25"
+                            mode="currency" :currency="currency.code" fluid :min="0" :allowEmpty="true"
+                            class="w-full rounded-lg border border-gray-300 shadow-sm">
                             <template #incrementbuttonicon>
                                 <FontAwesomeIcon :icon="faPlus" />
                             </template>
@@ -338,7 +343,7 @@ console.log(props)
 
                         <div class="flex justify-between items-center text-xs mt-2">
                             <small v-if="form.errors.price" class="text-red-500 flex items-center gap-1">
-                                {{ form.errors.price }}
+                                {{ form.errors.price.join(", ") }}
                             </small>
                             <span v-if="profitMargin !== null" :class="[
                                 profitMargin > 0 ? 'text-green-600' : profitMargin < 0 ? 'text-red-600' : 'text-gray-500',
@@ -366,7 +371,10 @@ console.log(props)
 
                 <!-- Table -->
                 <div v-if="tableVisible" class="mt-4">
-                    <TableSetPriceProduct :data="shopsData" :master_price="form.price"/>
+                    <TableSetPriceProduct v-model="tableData" :master_price="form.price" :key="key" />
+                    <small v-if="form.errors.shop_products" class="text-red-500 flex items-center gap-1">
+                        {{ form.errors.shop_products.join(", ") }}
+                    </small>
                 </div>
             </div>
         </div>
@@ -374,22 +382,11 @@ console.log(props)
         <!-- Footer -->
         <template #footer>
             <div class="flex justify-end gap-3 border-t pt-3">
-                <Button label="Cancel" type="secondary" class="!px-5" @click="emits('update:showDialog', false)" />
-                <Button
-                    type="create"
-                    :loading="form.processing"
-                    :disabled="form.trade_units.length < 1"
-                    class="!px-6"
-                    :label="'save & create'"
-                    @click="submitForm(false)"
-                />
-                <Button
-                    type="save"
-                    :loading="form.processing"
-                    :disabled="form.trade_units.length < 1"
-                    class="!px-6"
-                    @click="submitForm"
-                />
+                <Button label="Cancel" type="negative" class="!px-5" @click="emits('update:showDialog', false)" />
+                <Button type="create" :loading="form.processing" :disabled="form.trade_units.length < 1" class="!px-6"
+                    :label="'save & create'" @click="submitForm(false)" />
+                <Button type="save" :loading="form.processing" :disabled="form.trade_units.length < 1" class="!px-6"
+                    @click="submitForm" />
             </div>
         </template>
     </Drawer>
