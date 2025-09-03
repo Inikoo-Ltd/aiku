@@ -22,7 +22,7 @@ import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 import { InputNumber } from 'primevue'
 import { get, set } from 'lodash-es'
-import ButtonAddToBasket from '@/Components/Iris/Products/ButtonAddToBasket.vue'
+import ButtonAddToBasketAuto from '@/Components/Iris/Products/ButtonAddToBasketAuto.vue'
 import { ProductResource } from '@/types/Iris/Products'
 library.add(faStarHalfAlt, faQuestionCircle)
 
@@ -267,7 +267,7 @@ const onUnselectFavourite = (product: ProductResource) => {
         <div class="px-3">
             <div v-if="layout?.iris?.is_logged_in" class="w-full">
 
-                <ButtonAddToBasket
+                <ButtonAddToBasketAuto
                     v-if="product.stock > 0"
                     :product
                 />
