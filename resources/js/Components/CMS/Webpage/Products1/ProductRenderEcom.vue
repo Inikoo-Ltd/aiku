@@ -278,7 +278,7 @@ const onUnselectFavourite = (product: ProductResource) => {
             </div>
 
             <Link v-else href="/app/login" class="block text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
-                {{ trans("Login to add to your basket") }}
+                {{ trans("Login or Register for Wholesale Prices") }}
             </Link>
         </div>
     </div>
