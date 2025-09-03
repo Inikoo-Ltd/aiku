@@ -46,7 +46,7 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-    'add-to-basket': [productId: string]
+    'add-to-basket': [productId: string, productCode: string]
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -57,7 +57,7 @@ const isLoadingFetch = ref(false)
 
 const handleProductClick = (product: ProductHits) => {
     if (props.isAddToBasket && product.attributes.product_id?.[0]) {
-        emit('add-to-basket', product.attributes.product_id[0])
+        emit('add-to-basket', product.attributes.product_id[0], product.attributes.product_code[0])
     }
 }
 

@@ -86,12 +86,10 @@ const props = defineProps<{
     is_in_basket: boolean
 }>()
 
-// console.log(props)
+console.log(props.transactions)
 
 const layout = inject('layout', retinaLayoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
-
-console.log(layout)
 
 const isModalProductListOpen = ref(false)
 const listLoadingProducts = ref({
@@ -291,7 +289,12 @@ const onAddProducts = async (product: Product) => {
         })
 }
 
-const onAddProductFromRecommender = async (productId: string) => {
+const onAddProductFromRecommender = async (productId: string, productCode: string) => {
+    // Check if product already exists in transactions
+    const existingTransaction = props.transactions?.data?.find(transaction => 
+        transaction.asset_code === productCode
+    )
+
     const storeRoute = {
         route_post: route('retina.models.product.add-to-basket', {
             product: productId
@@ -301,12 +304,25 @@ const onAddProductFromRecommender = async (productId: string) => {
             quantity: 1,
         }
     }
+    
+    const routePost = existingTransaction ? {
+        route_post: route('retina.models.transaction.update', {
+            transaction: existingTransaction.id
+        }),
+        method: 'patch',
+        body: {
+            quantity_ordered: (parseInt(existingTransaction.quantity_ordered) + 1).toString(),
+        }
+    } : storeRoute
 
-    router.post(
-        storeRoute.route_post,
-        storeRoute.body,
+    const onlyProps = existingTransaction ? ['transactions', 'box_stats', 'total_products', 'balance', 'total_to_pay'] : {}
+
+    router[routePost.method](
+        routePost.route_post,
+        routePost.body,
         {
             preserveScroll: true,
+            ...onlyProps,
             onStart: () => {
                 listLoadingProducts.value[`recommender-${productId}`] = 'loading'
             },
@@ -477,7 +493,7 @@ const blackListProductIds = computed(() => {
     <Teleport v-if="layout.app.environment !== 'production'" to="#retina-right-section" :disabled="!isTeleportReady" :key="teleportKey">
         <div class="max-w-[calc(1280px-200px)] mt-8 p-4 bg-white rounded-md shadow-lg">
             <h2 class="text-2xl font-bold text-center mb-4">{{ trans('You might also like') }}</h2>
-            <RecommendersLuigi1Iris @add-to-basket="(productId: number | string) => onAddProductFromRecommender(productId)" :is-add-to-basket="true" recommendation_type="test_reco" :slidesPerView="slidesPerView"  :listLoadingProducts :blacklistItems="blackListProductIds" />
+            <RecommendersLuigi1Iris @add-to-basket="(productId: string, productCode: string) => onAddProductFromRecommender(productId, productCode)" :is-add-to-basket="true" recommendation_type="test_reco" :slidesPerView="slidesPerView"  :listLoadingProducts :blacklistItems="blackListProductIds" />
         </div>
     </Teleport>
 
