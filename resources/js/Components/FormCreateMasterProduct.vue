@@ -1,12 +1,12 @@
 <!--
   - Author: Raul Perusquia <raul@inikoo.com>
-  - Updated & Optimized by ChatGPT
+  - Cleaned & Optimized by ChatGPT
 -->
 
 <script setup lang="ts">
 import { useForm } from "@inertiajs/vue3";
 import { ref, computed, inject } from "vue";
-import Dialog from "primevue/dialog";
+import Drawer from "primevue/drawer";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import PureInput from "@/Components/Pure/PureInput.vue";
 import ListSelector from "@/Components/ListSelector.vue";
@@ -14,6 +14,7 @@ import { trans } from "laravel-vue-i18n";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { routeType } from "@/types/route";
 import { InputNumber } from "primevue";
+import TableSetPriceProduct from "@/Components/TableSetPriceProduct.vue";
 
 // FontAwesome
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -31,6 +32,7 @@ import {
     faMinimize,
     faExpand
 } from "@fortawesome/free-solid-svg-icons";
+import { faChevronUp, faChevronDown } from "@far";
 
 library.add(
     faShapes,
@@ -50,15 +52,18 @@ library.add(
 const props = defineProps<{
     storeProductRoute: routeType
     showDialog: boolean,
-    masterCurrency? : string
+    masterCurrency?: string
+    shopsData? :any
 }>();
 
 const emits = defineEmits(["update:showDialog"]);
 
-// dialog state
-const detailsVisible = ref(false)
-const layout = inject('layout', {})
-const currency = props.masterCurrency ? props.masterCurrency : layout.group.currency
+const detailsVisible = ref(true);
+const tableVisible = ref(true);
+const isFull = ref(false); // <-- state untuk toggle full screen
+
+const layout = inject('layout', {});
+const currency = props.masterCurrency ? props.masterCurrency : layout.group.currency;
 
 // Inertia form
 const form = useForm({
@@ -71,11 +76,11 @@ const form = useForm({
 
 const ListSelectorChange = (value) => {
     if (value.length >= 1) {
-        form.name = value[0].name
-        form.code = value[0].code
-        form.unit = value[0].type
+        form.name = value[0].name;
+        form.code = value[0].code;
+        form.unit = value[0].type;
     }
-}
+};
 
 // Submit handler
 const submitForm = () => {
@@ -84,176 +89,229 @@ const submitForm = () => {
             emits("update:showDialog", false);
             form.reset();
         },
-        onStart: () => console.log('Starting...'),
-        onError: (errors) => {
+        onError: () => {
             if (form.errors.code || form.errors.unit || form.errors.name) {
-                detailsVisible.value = true
+                detailsVisible.value = true;
             }
         },
-        onFinish: () => console.log('🏁 Finished'),
     });
 };
 
-// ListSelector Tabs
+// Tabs
 const selectorTab = [
     {
         label: "Recommended",
         routeFetch: {
             name: "grp.json.master-product-category.recommended-trade-units",
-            parameters: {
-                masterProductCategory: route().params["masterFamily"],
-            },
+            parameters: { masterProductCategory: route().params["masterFamily"] },
         },
     },
     {
         label: "Taken",
         routeFetch: {
             name: "grp.json.master-product-category.taken-trade-units",
-            parameters: {
-                masterProductCategory: route().params["masterFamily"],
-            },
+            parameters: { masterProductCategory: route().params["masterFamily"] },
         },
     },
     {
         label: "All",
         routeFetch: {
             name: "grp.json.master-product-category.all-trade-units",
-            parameters: {
-                masterProductCategory: route().params["masterFamily"],
-            },
+            parameters: { masterProductCategory: route().params["masterFamily"] },
         },
     },
 ];
 
 const profitMargin = computed(() => {
-    if (!form.price || !form.trade_units.length) return null
-
+    if (!form.price || !form.trade_units.length) return null;
     const totalCost = form.trade_units.reduce((sum, unit) => {
-        const unitPrice = Number(unit.cost_price) || 0
-        const unitQty = Number(unit.quantity) || 0
-        return sum + (unitPrice * unitQty)
-    }, 0)
+        const unitPrice = Number(unit.cost_price) || 0;
+        const unitQty = Number(unit.quantity) || 0;
+        return sum + (unitPrice * unitQty);
+    }, 0);
+    if (totalCost <= 0) return 0;
+    return ((form.price - totalCost) / totalCost) * 100;
+});
 
-    if (totalCost <= 0) return 0
-
-    return ((form.price - totalCost) / totalCost) * 100
-})
-const dialogVisible = computed({
+const drawerVisible = computed({
     get: () => props.showDialog,
     set: (val: boolean) => emits("update:showDialog", val),
-})
+});
+
+const toggleFull = () => {
+    isFull.value = !isFull.value;
+};
+
+console.log(props)
 </script>
 
 <template>
-    <Dialog v-model:visible="dialogVisible" modal header="Create Product" :style="{ width: '42rem' }"
-        :content-style="{ padding: '1rem 1.5rem' }">
-        <div class="p-fluid space-y-5">
+    <Drawer 
+        v-model:visible="drawerVisible" 
+        position="right" 
+        :class="[isFull ? '!w-full' : '!w-full md:!w-1/2']"
+    >
+        <!-- Header -->
+        <template #header>
+            <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2 flex-1">
+                {{ trans("Create Product") }}
+            </h2>
+            <!-- Tombol Toggle Fullscreen -->
+            <button
+                @click="toggleFull"
+                class="text-gray-500 hover:text-gray-700 mx-3"
+            >
+                <FontAwesomeIcon :icon="isFull ? faMinimize : faExpand" />
+            </button>
+        </template>
 
+        <!-- Content -->
+        <div class="p-4 pt-0 space-y-6 overflow-y-auto">
             <!-- Trade Unit Selector -->
             <div>
-                <ListSelector v-model="form.trade_units" :withQuantity="true" :tabs="selectorTab"
-                    head_label="Select Trade Units" @update:model-value="ListSelectorChange" key_quantity="quantity"
+                <ListSelector
+                    v-model="form.trade_units"
+                    :withQuantity="true"
+                    :tabs="selectorTab"
+                    head_label="Select Trade Units"
+                    @update:model-value="ListSelectorChange"
+                    key_quantity="quantity"
                     :routeFetch="{
                         name: 'grp.json.master-product-category.recommended-trade-units',
                         parameters: { masterProductCategory: route().params['masterFamily'] }
-                    }" />
-                <small v-if="form.errors.trade_units" class="text-red-500 text-xs">
-                    <FontAwesomeIcon :icon="faCircleExclamation" class="mr-1" />
+                    }"
+                />
+                <small v-if="form.errors.trade_units" class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    <FontAwesomeIcon :icon="faCircleExclamation" />
                     {{ form.errors.trade_units }}
                 </small>
             </div>
 
-            <!-- Product Details Toggle -->
-            <div v-if="form.trade_units.length" class="pt-2">
-                <button class="text-sm font-semibold flex items-center gap-2 transition-colors duration-200"
-                    :class="'text-gray-500 hover:text-gray-700'" @click="detailsVisible = !detailsVisible">
-                    <FontAwesomeIcon :icon="detailsVisible ? faMinimize : faExpand" />
+            <!-- Product Details & Price -->
+            <div v-if="form.trade_units.length" class="pt-4">
+                <!-- Toggle -->
+                <button
+                    class="w-full flex items-center justify-between border-b pb-2 text-sm font-semibold text-gray-600 hover:text-gray-800"
+                    @click="detailsVisible = !detailsVisible">
                     <span>
-                        {{ detailsVisible ? trans('Close Product Details') : trans('Edit Product Details') }}
+                        {{ trans("Product Details") }}
                     </span>
+                    <FontAwesomeIcon :icon="detailsVisible ? faChevronUp : faChevronDown" class="text-xs" />
                 </button>
 
-                <transition name="fade">
-                    <div v-if="detailsVisible"
-                        class="space-y-4 mt-4 p-4 rounded-xl border border-gray-200 bg-gray-50 shadow-sm">
-                        <div>
-                            <label class="font-medium block mb-1 text-sm">Code</label>
-                            <PureInput type="text" v-model="form.code" @update:model-value="form.errors.code = null" />
-                            <small v-if="form.errors.code" class="text-red-500 text-xs">
-                                <FontAwesomeIcon :icon="faCircleExclamation" class="mr-1" />
-                                {{ form.errors.code }}
-                            </small>
-                        </div>
+                <!-- Details Form -->
+                <div
+                    v-if="detailsVisible"
+                    class="grid grid-cols-2 gap-6 mt-4 p-4 rounded-xl border border-gray-200 bg-white shadow-sm"
+                >
+                    <!-- Code -->
+                    <div>
+                        <label class="font-medium block mb-1 text-sm">Code</label>
+                        <PureInput type="text" v-model="form.code" @update:model-value="form.errors.code = null"
+                            class="w-full" />
+                        <small v-if="form.errors.code" class="text-red-500 text-xs flex items-center gap-1 mt-1">
+                            <FontAwesomeIcon :icon="faCircleExclamation" />
+                            {{ form.errors.code }}
+                        </small>
+                    </div>
 
-                        <div>
-                            <label class="font-medium block mb-1 text-sm">Name</label>
-                            <PureInput type="text" v-model="form.name" @update:model-value="form.errors.name = null" />
-                            <small v-if="form.errors.name" class="text-red-500 text-xs">
-                                <FontAwesomeIcon :icon="faCircleExclamation" class="mr-1" />
-                                {{ form.errors.name }}
-                            </small>
-                        </div>
+                    <!-- Name -->
+                    <div>
+                        <label class="font-medium block mb-1 text-sm">Name</label>
+                        <PureInput type="text" v-model="form.name" @update:model-value="form.errors.name = null"
+                            class="w-full" />
+                        <small v-if="form.errors.name" class="text-red-500 text-xs flex items-center gap-1 mt-1">
+                            <FontAwesomeIcon :icon="faCircleExclamation" />
+                            {{ form.errors.name }}
+                        </small>
+                    </div>
 
-                        <div>
-                            <label class="font-medium block mb-1 text-sm">Unit</label>
-                            <PureInput v-model="form.unit" @update:model-value="form.errors.unit = null" />
-                            <small v-if="form.errors.unit" class="text-red-500 text-xs">
-                                <FontAwesomeIcon :icon="faCircleExclamation" class="mr-1" />
-                                {{ form.errors.unit }}
+                    <!-- Unit -->
+                    <div>
+                        <label class="font-medium block mb-1 text-sm">Unit</label>
+                        <PureInput v-model="form.unit" @update:model-value="form.errors.unit = null"
+                            class="w-full" />
+                        <small v-if="form.errors.unit" class="text-red-500 text-xs flex items-center gap-1 mt-1">
+                            <FontAwesomeIcon :icon="faCircleExclamation" />
+                            {{ form.errors.unit }}
+                        </small>
+                    </div>
+
+                    <!-- Price -->
+                    <div>
+                        <label class="font-semibold text-gray-700 text-sm flex items-center gap-2">
+                            <FontAwesomeIcon :icon="faTags" class="text-blue-500" />
+                            Price ({{ currency.symbol }})
+                        </label>
+                        <InputNumber
+                            v-model="form.price"
+                            showButtons
+                            buttonLayout="horizontal"
+                            :step="0.25"
+                            mode="currency"
+                            :currency="currency.code"
+                            fluid
+                            :min="0"
+                            :allowEmpty="true"
+                            class="w-full rounded-lg border border-gray-300 shadow-sm"
+                        >
+                            <template #incrementbuttonicon>
+                                <FontAwesomeIcon :icon="faPlus" />
+                            </template>
+                            <template #decrementbuttonicon>
+                                <FontAwesomeIcon :icon="faMinus" />
+                            </template>
+                        </InputNumber>
+
+                        <div class="flex justify-between items-center text-xs mt-2">
+                            <small v-if="form.errors.price" class="text-red-500 flex items-center gap-1">
+                                {{ form.errors.price }}
                             </small>
+                            <span v-if="profitMargin !== null" :class="[
+                                profitMargin > 0 ? 'text-green-600' : profitMargin < 0 ? 'text-red-600' : 'text-gray-500',
+                                'font-medium flex items-center gap-1'
+                            ]">
+                                <FontAwesomeIcon :icon="profitMargin > 0 ? faArrowTrendUp : faArrowTrendDown" />
+                                Profit Margin: {{ profitMargin.toFixed(2) }}%
+                            </span>
                         </div>
                     </div>
-                </transition>
+                </div>
             </div>
 
-            <!-- Price Input -->
-            <div v-if="form.trade_units.length" class="space-y-2">
-                <!-- Label -->
-                <label class="font-semibold text-gray-700 text-sm flex items-center gap-2">
-                    <FontAwesomeIcon :icon="faTags" class="text-blue-500" />
-                    Price  {{ currency.symbol }}
-                </label>
-
-                <!-- Price Input -->
-                <InputNumber v-model="form.price" inputId="horizontal-buttons" showButtons buttonLayout="horizontal"
-                    :step="0.25" mode="currency" :currency="currency.code" fluid :min="0" :allowEmpty="true"
-                    class="w-full rounded-lg border border-gray-300 shadow-sm">
-                    <template #incrementbuttonicon>
-                        <FontAwesomeIcon :icon="faPlus" />
-                    </template>
-                    <template #decrementbuttonicon>
-                        <FontAwesomeIcon :icon="faMinus" />
-                    </template>
-                </InputNumber>
-
-                <!-- Errors & Profit Margin -->
-                <div class="flex justify-between items-center text-xs mt-1">
-                    <!-- Error Message -->
-                    <small v-if="form.errors.price" class="text-red-500 flex items-center gap-1">
-                        {{ form.errors.price }}
-                    </small>
-
-                    <!-- Profit Margin -->
-                    <span v-if="profitMargin !== null" :class="[
-                        profitMargin > 0 ? 'text-green-600' : profitMargin < 0 ? 'text-red-600' : 'text-gray-500',
-                        'font-medium flex items-center gap-1'
-                    ]">
-                        <FontAwesomeIcon :icon="profitMargin > 0 ? faArrowTrendUp : faArrowTrendDown" />
-                        Profit Margin: {{ profitMargin.toFixed(2) }}%
+            <!-- Table Product Section -->
+            <div v-if="form.trade_units.length" class="">
+                <!-- Toggle -->
+                <button
+                    class="w-full flex items-center justify-between border-b pb-2 text-sm font-semibold text-gray-600 hover:text-gray-800"
+                    @click="tableVisible = !tableVisible">
+                    <span>
+                        {{ trans("Shop Product") }}
                     </span>
+                    <FontAwesomeIcon :icon="tableVisible ? faChevronUp : faChevronDown" class="text-xs" />
+                </button>
+
+                <!-- Table -->
+                <div v-if="tableVisible" class="mt-4">
+                    <TableSetPriceProduct :data="shopsData" :master_price="form.price"/>
                 </div>
             </div>
         </div>
 
-        <!-- Dialog Footer -->
+        <!-- Footer -->
         <template #footer>
-            <div class="flex justify-end gap-3">
+            <div class="flex justify-end gap-3 border-t pt-3">
                 <Button label="Cancel" type="secondary" class="!px-5" @click="emits('update:showDialog', false)" />
-                <Button type="save" :loading="form.processing" :disabled="form.trade_units.length < 1" class="!px-6"
-                    @click="submitForm" />
+                <Button
+                    type="save"
+                    :loading="form.processing"
+                    :disabled="form.trade_units.length < 1"
+                    class="!px-6"
+                    @click="submitForm"
+                />
             </div>
         </template>
-    </Dialog>
+    </Drawer>
 </template>
 
 <style scoped>
