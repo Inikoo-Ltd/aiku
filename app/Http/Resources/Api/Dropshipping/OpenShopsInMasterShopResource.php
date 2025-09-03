@@ -31,8 +31,13 @@ class OpenShopsInMasterShopResource extends JsonResource
             'type'            => $this->type->labels()[$this->type->value],
             'currency'        => $this->currency_code,
             'organisation_id' => $this->organisation_id,
-
-
+            'product' => [
+                'stock' => 0,
+                'cost_price' => 0,
+                'margin' => 0,
+                'create_webpage' => false,
+                'price' => 0
+            ]
         ];
     }
 }
