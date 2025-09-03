@@ -22,7 +22,7 @@ import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 import { InputNumber } from 'primevue'
 import { get, set } from 'lodash-es'
-import ButtonAddToBasketVertical from '@/Components/Iris/Products/ButtonAddToBasketVertical.vue'
+import ButtonAddToBasketInFamily from '@/Components/Iris/Products/ButtonAddToBasketInFamily.vue'
 import { ProductResource } from '@/types/Iris/Products'
 library.add(faStarHalfAlt, faQuestionCircle)
 
@@ -280,7 +280,7 @@ const urlLoginWithRedirect = () => {
         <div class="px-3">
             <div v-if="layout?.iris?.is_logged_in" class="w-full">
 
-                <ButtonAddToBasketVertical
+                <ButtonAddToBasketInFamily
                     v-if="product.stock > 0"
                     :product
                 />
