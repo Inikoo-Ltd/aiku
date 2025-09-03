@@ -24,6 +24,8 @@ const props = defineProps<{
   data: {};
   familyId: number;
   storeProductRoute: routeType
+  shopsData? :any
+  masterProductCategory?:number
 }>();
 
 // dialog state
@@ -50,6 +52,8 @@ const showDialog = ref(false);
     :showDialog="showDialog" 
     :storeProductRoute="storeProductRoute" 
     @update:show-dialog="(value) => showDialog = value"
+    :shopsData="shopsData"
+    :masterProductCategory="masterProductCategory"
   />
 </template>
 
