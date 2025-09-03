@@ -97,7 +97,7 @@ const getTableData = () => {
         try {
             console.log("Loading mulai…")
             const response = await axios.post(
-                route("grp.models.master-product-category.trade-units-for-creation", {
+                route("grp.models.master_product_category.product_creation_data", {
                     masterProductCategory: props.masterProductCategory,
                 }),
                 { trade_units : form.trade_units},
@@ -131,20 +131,43 @@ const ListSelectorChange = (value) => {
     }
 };
 
-// Submit handler
-const submitForm = () => {
-    form.post(route(props.storeProductRoute.name, props.storeProductRoute.parameters), {
-        onSuccess: () => {
-            emits("update:showDialog", false);
-            form.reset();
-        },
-        onError: () => {
+
+
+const submitForm = async (redirect = true) => {
+    form.processing = true
+    form.errors = {}
+
+    try {
+        const response = await axios.post(
+            route(props.storeProductRoute.name, props.storeProductRoute.parameters),
+            form.data(), // <-- same as inertia form payload
+        )
+
+        console.log("pppp", response.data)
+
+        if (redirect) {
+            emits("update:showDialog", false)
+            // If you need redirect, you can call router.visit() here
+            // router.visit(route('grp.masters.master_shops.show.master_families.master_products.show', {...}))
+        } else {
+            form.reset()
+        }
+    } catch (error: any) {
+        if (error.response && error.response.status === 422) {
+            // Laravel validation errors → hydrate into inertia form
+            form.errors = error.response.data.errors || {}
             if (form.errors.code || form.errors.unit || form.errors.name) {
-                detailsVisible.value = true;
+                detailsVisible.value = true
             }
-        },
-    });
-};
+        } else {
+            console.error("Unexpected error:", error)
+        }
+    } finally {
+        form.processing = false
+    }
+}
+
+
 
 // Tabs
 const selectorTab = [
@@ -351,6 +374,14 @@ console.log(props)
         <template #footer>
             <div class="flex justify-end gap-3 border-t pt-3">
                 <Button label="Cancel" type="secondary" class="!px-5" @click="emits('update:showDialog', false)" />
+                <Button
+                    type="create"
+                    :loading="form.processing"
+                    :disabled="form.trade_units.length < 1"
+                    class="!px-6"
+                    :label="'save & create'"
+                    @click="submitForm"
+                />
                 <Button
                     type="save"
                     :loading="form.processing"
