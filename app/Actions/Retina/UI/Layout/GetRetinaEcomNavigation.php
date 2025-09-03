@@ -33,12 +33,62 @@ class GetRetinaEcomNavigation
         $groupNavigation['catalogue'] = [
             'label' => __('Catalogue'),
             'icon' => ['fal', 'fa-books'],
-            'root' => 'retina.ecom.catalogue.',
+            'root' => 'retina.catalogue.',
             'route' => [
-                'name' => 'retina.ecom.basket.show'
+                'name' => 'retina.catalogue.dashboard'
             ],
             'topMenu' => [
-
+                'subSections' =>
+                    [
+                        [
+                            'label' => __(''),
+                            'icon'  => ['far', 'fa-books'],
+                            'root'  => 'retina.catalogue.',
+                            'route' => [
+                                'name' => 'retina.catalogue.dashboard'
+                            ]
+                        ],
+                        [
+                            'label' => __('Departments'),
+                            'icon'  => ['far', 'fa-folder-tree'],
+                            'root'  => 'retina.catalogue.departments.',
+                            'route' => [
+                                'name' => 'retina.catalogue.departments.index'
+                            ]
+                        ],
+                        [
+                            'label' => __('Sub Departments'),
+                            'icon'  => ['far', 'fa-dot-circle'],
+                            'root'  => 'retina.catalogue.sub_departments.',
+                            'route' => [
+                                'name' => 'retina.catalogue.sub_departments.index'
+                            ]
+                        ],
+                        [
+                            'label' => __('Collections'),
+                            'icon'  => ['far', 'fa-album-collection'],
+                            'root'  => 'retina.catalogue.collections.',
+                            'route' => [
+                                'name' => 'retina.catalogue.collections.index'
+                            ]
+                        ],
+                        [
+                            'label' => __('Families'),
+                            'icon'  => ['far', 'fa-folder'],
+                            'root'  => 'retina.catalogue.families.',
+                            'route' => [
+                                'name' => 'retina.catalogue.families.index'
+                            ]
+                        ],
+                        [
+                            'label' => __('Products'),
+                            'icon'  => ['far', 'fa-cube'],
+                            'root'  => 'retina.catalogue.products.',
+                            'route' => [
+                                'name' => 'retina.catalogue.products.index'
+                            ]
+                        ],
+                    ]
             ]
         ];
 
