@@ -115,8 +115,15 @@ const onUnselectFavourite = (product: ProductResource) => {
 
 
 
-// const xxxxxxx = Math.random() > 0.5
-
+// Method: generate url for Login
+const urlLoginWithRedirect = () => {
+    if (route()?.current() !== "retina.login.show" && route()?.current() !== "retina.register") {
+        return `/app/login?ref=${encodeURIComponent(window?.location.pathname)}${window?.location.search ? encodeURIComponent(window?.location.search) : ""
+            }`
+    } else {
+        return "/app/login"
+    }
+}
 </script>
 
 <template>
@@ -277,7 +284,7 @@ const onUnselectFavourite = (product: ProductResource) => {
                 </div>
             </div>
 
-            <Link v-else href="/app/login" class="block text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
+            <Link v-else :href="urlLoginWithRedirect()" class="block text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
                 {{ trans("Login or Register for Wholesale Prices") }}
             </Link>
         </div>
