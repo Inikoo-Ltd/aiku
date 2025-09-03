@@ -137,7 +137,11 @@ const urlLoginWithRedirect = () => {
             <!-- Section: Basket (cart) -->
             <ButtonWithLink
                 v-if="checkVisible(model?.cart?.visible || null, isLoggedIn) && layout.retina?.type == 'b2b'"
-                url="/app/basket" icon="fal fa-shopping-cart" :noHover="true">
+                url="/app/basket" :noHover="true" type="transparent">
+                <template #icon>
+                    <FontAwesomeIcon icon="fal fa-shopping-cart" :style="{ color: 'white' }" fixed-width
+                        aria-hidden="true" />
+                </template>
                 <template #label>
                     <span
                         class="text-white"

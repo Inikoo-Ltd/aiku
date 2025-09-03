@@ -97,10 +97,6 @@ const component = computed(() => {
         :data="pageHead"
     />
 
-    <div class="qwezxc hidden">
-        <pre>{{ paymentMethods }}</pre>
-    </div>
-
     <div v-if="!summary" class="text-center text-gray-500 text-2xl pt-6">
         {{ trans("Your basket is empty") }}
     </div>

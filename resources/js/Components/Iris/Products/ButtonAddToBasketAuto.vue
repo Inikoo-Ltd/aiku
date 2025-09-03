@@ -4,18 +4,17 @@ import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import { InputNumber } from 'primevue'
 import { router } from '@inertiajs/vue3'
-import { inject, ref, watch, computed } from 'vue'
+import { inject, ref, watch } from 'vue'
 import { debounce, get, set } from 'lodash-es'
 import { ProductResource } from '@/types/Iris/Products'
 import axios from 'axios'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faTrashAlt, faShoppingCart, faTimes, faCartArrowDown } from "@fal"
-import { faCartPlus } from "@fal"
+import { faTrashAlt, faShoppingCart, faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import ConditionIcon from '@/Components/Utils/ConditionIcon.vue'
-library.add(faTrashAlt, faShoppingCart, faTimes, faCartArrowDown, faCartPlus)
+library.add(faTrashAlt, faShoppingCart, faTimes)
 
 const props = defineProps<{
     product: ProductResource
@@ -126,15 +125,6 @@ const onUpdateQuantity = (product: ProductResource) => {
 }
 
 
-const addAndUpdateProduct = () => {
-    if (!props.product.quantity_ordered) {
-        onAddToBasket(props.product)
-    } else if (props.product.quantity_ordered_new === 0) {
-        onUpdateQuantity(props.product)
-    } else {
-        onUpdateQuantity(props.product)
-    }
-}
 const debAddAndUpdateProduct = debounce(() => {
     if (!props.product.quantity_ordered) {
         onAddToBasket(props.product)
@@ -144,52 +134,68 @@ const debAddAndUpdateProduct = debounce(() => {
         onUpdateQuantity(props.product)
     }
 }, 900)
-
-const compIsValueDirty = computed(() => {
-    return get(props.product, ['quantity_ordered_new'], null) !== get(props.product, ['quantity_ordered'], null)
-})
 // watch(() => get(props.product, ['quantity_ordered_new'], null), () => {
 //     debAddAndUpdateProduct()
 // })
 </script>
 
 <template>
-    <div class="">
-        <div class="xw-full flex items-center gap-2 xmt-2 relative w-36">
-            <InputNumber
-                :modelValue="get(product, ['quantity_ordered_new'], null) === null ? product.quantity_ordered : get(product, ['quantity_ordered_new'], 0) "
-                @input="(e) => (e.value ? set(product, ['quantity_ordered_new'], e.value) : set(product, ['quantity_ordered_new'], 0), `debAddAndUpdateProduct()`)"
-                inputId="integeronly"
-                fluid
-                showButtons
-                :disabled="isLoadingSubmitQuantityProduct"
-                :min="0"
-                :max="product.stock"
-                buttonLayout="horizontal"
-                :inputStyle="{
-                    textAlign: 'center',
-                    minWidth: '4rem'
-                }"
-            >
-                <template #incrementbuttonicon>
-                    <FontAwesomeIcon icon="fas fa-plus" class="" fixed-width aria-hidden="true" />
-                </template>
-                <template #decrementbuttonicon>
-                    <FontAwesomeIcon icon="fas fa-minus" class="" fixed-width aria-hidden="true" />
-                </template>
-            </InputNumber>
-            
-            <!-- <ConditionIcon :state="status" class="absolute top-1/2 -translate-y-1/2 -right-7"/> -->
+    <div class="w-full flex flex-col items-center gap-2 xmt-2 relative xmax-w-36">
+        <InputNumber
+            :modelValue="get(product, ['quantity_ordered_new'], null) === null ? product.quantity_ordered : get(product, ['quantity_ordered_new'], 0) "
+            @input="(e) => (e.value ? set(product, ['quantity_ordered_new'], e.value) : set(product, ['quantity_ordered_new'], 0), debAddAndUpdateProduct())"
+            inputId="integeronly"
+            fluid
+            showButtons
+            :disabled="isLoadingSubmitQuantityProduct"
+            :min="0"
+            :max="product.stock"
+            buttonLayout="horizontal"
+            :inputStyle="{
+                textAlign: 'center'
+            }"
+        >
+            <template #incrementbuttonicon>
+                <!-- <span class="pi pi-plus" /> -->
+                <FontAwesomeIcon icon="fas fa-plus" class="" fixed-width aria-hidden="true" />
+            </template>
+            <template #decrementbuttonicon>
+                <!-- <span class="pi pi-minus" /> -->
+                <FontAwesomeIcon icon="fas fa-minus" class="" fixed-width aria-hidden="true" />
+            </template>
+        </InputNumber>
 
-            <Button
-                @click="() => addAndUpdateProduct()"
-                :icon="props.product.quantity_ordered_new === 0 ? 'fal fa-cart-arrow-down' : 'fal fa-cart-plus'"
-                label="Add to basket"
-                type="primary"
-                size="lg"
-                :disabled="!compIsValueDirty"
-                :loading="isLoadingSubmitQuantityProduct"
-            />
-        </div>
+        <ConditionIcon :state="status" class="absolute top-1/2 -translate-y-1/2 right-12"/>
+        
+        <!-- <Button
+            v-if="!product.quantity_ordered"
+            @click="() => onAddToBasket(product)"
+            icon="fal fa-shopping-cart"
+            :label="trans('Add to basket')"
+            type="secondary"
+            full
+            :loading="isLoadingSubmitQuantityProduct"
+            :disabled="product.quantity_ordered_new === product.quantity_ordered"
+        />
+        <Button
+            v-else-if="product.quantity_ordered_new === 0"
+            @click="() => onUpdateQuantity(product)"
+            icon="fal fa-trash-alt"
+            :label="trans('Remove from basket')"
+            type="negative"
+            full
+            :loading="isLoadingSubmitQuantityProduct"
+            :disabled="product.quantity_ordered_new === product.quantity_ordered"
+        />
+        <Button
+            v-else
+            @click="() => onUpdateQuantity(product)"
+            icon="fal fa-plus"
+            :label="trans('Update quantity in basket')"
+            type="tertiary"
+            full
+            :loading="isLoadingSubmitQuantityProduct"
+            :disabled="product.quantity_ordered_new === product.quantity_ordered"
+        /> -->
     </div>
 </template>
