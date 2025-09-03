@@ -36,6 +36,7 @@ import {
 import { faChevronUp, faChevronDown } from "@far";
 import { ulid } from "ulid";
 import { notify } from "@kyvg/vue3-notification";
+import { cloneDeep } from "lodash";
 
 library.add(
     faShapes,
@@ -61,7 +62,7 @@ const props = defineProps<{
 }>();
 
 const emits = defineEmits(["update:showDialog"]);
-const tableData = ref(toRaw(props.shopsData))
+const tableData = ref(cloneDeep(props.shopsData));
 const detailsVisible = ref(true);
 const tableVisible = ref(true);
 const isFull = ref(false); // <-- state untuk toggle full screen
@@ -126,7 +127,6 @@ const getTableData = () => {
 }
 
 const ListSelectorChange = (value) => {
-    getTableData()
     if (value.length >= 1) {
         form.name = value[0].name;
         form.code = value[0].code;
@@ -141,7 +141,7 @@ const submitForm = async (redirect = true) => {
     form.errors = {}
 
     const finalDataTable: Record<number, { price: number | string }> = {}
-
+    console.log(tableData.value)
     for (const tableDataItem of tableData.value.data) {
         finalDataTable[tableDataItem.id] = {
             price: tableDataItem.product.price,
@@ -169,9 +169,16 @@ const submitForm = async (redirect = true) => {
 
             }))
         } else {
+            console.log(props.shopsData)
+            tableData.value.data = cloneDeep(props.shopsData.data);
             form.reset()
-            tableData.value = { ...props.shopsData }
             key.value = ulid()
+            notify({
+                title: trans("success"),
+                text: "success to create product",
+                type: "success"
+            })
+
         }
     } catch (error: any) {
         if (error.response && error.response.status === 422) {
@@ -258,7 +265,7 @@ console.log(props)
         <div class="p-4 pt-0 space-y-6 overflow-y-auto">
             <!-- Trade Unit Selector -->
             <div>
-                <ListSelector :key="key" v-model="form.trade_units" :withQuantity="true" :tabs="selectorTab"
+                <ListSelector :key="key" v-model="form.trade_units" :withQuantity="true" :tabs="selectorTab" @after-delete="()=>getTableData()" @on-select="()=>getTableData()"
                     head_label="Select Trade Units" @update:model-value="ListSelectorChange" key_quantity="quantity"
                     :routeFetch="{
                         name: 'grp.json.master-product-category.recommended-trade-units',
@@ -364,7 +371,7 @@ console.log(props)
 
                 <!-- Table -->
                 <div v-if="tableVisible" class="mt-4">
-                    <TableSetPriceProduct :key="key" :data="tableData" :master_price="form.price" />
+                    <TableSetPriceProduct v-model="tableData" :master_price="form.price" :key="key" />
                     <small v-if="form.errors.shop_products" class="text-red-500 flex items-center gap-1">
                         {{ form.errors.shop_products.join(", ") }}
                     </small>
