@@ -49,6 +49,7 @@ const props = defineProps<{
 }>();
 
 const locale = inject("locale", {});
+
 </script>
 
 <template>
