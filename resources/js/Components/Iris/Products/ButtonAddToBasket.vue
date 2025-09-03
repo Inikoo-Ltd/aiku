@@ -57,6 +57,7 @@ const onAddToBasket = async (product: ProductResource) => {
 
         product.transaction_id = response.data?.transaction_id
         product.quantity_ordered = response.data?.quantity_ordered
+        setStatus('success')
 
         // Luigi: event add to cart
         window?.dataLayer?.push({
@@ -71,7 +72,6 @@ const onAddToBasket = async (product: ProductResource) => {
                 ]
             }
         })
-        setStatus('success')
 
     } catch (error: any) {
         setStatus('error')
@@ -133,14 +133,14 @@ const debAddAndUpdateProduct = debounce(() => {
     } else {
         onUpdateQuantity(props.product)
     }
-}, 700)
+}, 900)
 watch(() => get(props.product, ['quantity_ordered_new'], null), () => {
     debAddAndUpdateProduct()
 })
 </script>
 
 <template>
-    <div class="w-full flex flex-col items-center gap-2 xmt-2 relative">
+    <div class="xw-full flex flex-col items-center gap-2 xmt-2 relative max-w-36">
         <InputNumber
             :modelValue="get(product, ['quantity_ordered_new'], null) === null ? product.quantity_ordered : get(product, ['quantity_ordered_new'], 0) "
             @input="(e) => (e.value ? set(product, ['quantity_ordered_new'], e.value) : set(product, ['quantity_ordered_new'], 0))"
@@ -150,8 +150,22 @@ watch(() => get(props.product, ['quantity_ordered_new'], null), () => {
             :disabled="isLoadingSubmitQuantityProduct"
             :min="0"
             :max="product.stock"
-        />
-        <ConditionIcon :state="status" class="absolute top-1/2 -translate-y-1/2 right-10"/>
+            buttonLayout="horizontal"
+            :inputStyle="{
+                textAlign: 'center'
+            }"
+        >
+            <template #incrementbuttonicon>
+                <!-- <span class="pi pi-plus" /> -->
+                <FontAwesomeIcon icon="fas fa-plus" class="" fixed-width aria-hidden="true" />
+            </template>
+            <template #decrementbuttonicon>
+                <!-- <span class="pi pi-minus" /> -->
+                <FontAwesomeIcon icon="fas fa-minus" class="" fixed-width aria-hidden="true" />
+            </template>
+        </InputNumber>
+
+        <ConditionIcon :state="status" class="absolute top-1/2 -translate-y-1/2 -right-7"/>
         
         <!-- <Button
             v-if="!product.quantity_ordered"
