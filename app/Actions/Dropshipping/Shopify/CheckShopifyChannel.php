@@ -10,7 +10,9 @@ namespace App\Actions\Dropshipping\Shopify;
 
 use App\Actions\Dropshipping\Shopify\FulfilmentService\GetFulfilmentServiceName;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
@@ -83,7 +85,10 @@ class CheckShopifyChannel
             'can_connect_to_platform' => $canConnectToPlatform,
             'exist_in_platform'       => $existInPlatform,
         ]);
-        $this->update($customerSalesChannel->user, $updateData);
+        if ($customerSalesChannel->user) {
+            $this->update($customerSalesChannel->user, $updateData);
+        }
+
 
 
         return $customerSalesChannel;
@@ -91,14 +96,65 @@ class CheckShopifyChannel
 
     public function getCommandSignature(): string
     {
-        return 'shopify:check {customerSalesChannel}';
+        return 'shopify:check {customerSalesChannel? : The slug of the customer sales channel to check (optional, processes all channels with platform_id=1 if not provided)}';
     }
 
     public function asCommand(Command $command): void
     {
-        $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->firstOrFail();
-        $customerSalesChannel = $this->handle($customerSalesChannel);
+        $customerSalesChannelSlug = $command->argument('customerSalesChannel');
 
+        if ($customerSalesChannelSlug) {
+            // Process a single customer sales channel
+            $customerSalesChannel = CustomerSalesChannel::where('slug', $customerSalesChannelSlug)->firstOrFail();
+            $customerSalesChannel = $this->handle($customerSalesChannel);
+
+            // Display CustomerSalesChannel status information
+            $this->displayChannelInfo($command, $customerSalesChannel);
+        } else {
+
+            $shopifyPlatform = Platform::where('type', PlatformTypeEnum::SHOPIFY)->firstOrFail();
+
+            $customerSalesChannels = CustomerSalesChannel::where('platform_id', $shopifyPlatform->id)->get();
+
+            if ($customerSalesChannels->isEmpty()) {
+                $command->info('No customer sales channels found with platform_id=1.');
+                return;
+            }
+
+            $command->info("Processing {$customerSalesChannels->count()} customer sales channels with platform_id=1...");
+
+            // Create a progress bar
+            $bar = $command->getOutput()->createProgressBar($customerSalesChannels->count());
+            $bar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
+            $bar->start();
+
+            $successCount = 0;
+            $failCount = 0;
+
+            /** @var CustomerSalesChannel $customerSalesChannel */
+            foreach ($customerSalesChannels as $customerSalesChannel) {
+                try {
+                    $this->handle($customerSalesChannel);
+                    $successCount++;
+                } catch (\Exception $e) {
+                    $failCount++;
+                    $command->error("Error processing $customerSalesChannel->slug: {$e->getMessage()}");
+                }
+
+                $bar->advance();
+            }
+
+            $bar->finish();
+            $command->newLine(2);
+            $command->info("Processed {$customerSalesChannels->count()} customer sales channels: $successCount successful, $failCount failed.");
+        }
+    }
+
+    /**
+     * Display detailed information about a customer sales channel
+     */
+    private function displayChannelInfo(Command $command, CustomerSalesChannel $customerSalesChannel): void
+    {
         // Display CustomerSalesChannel status information
         $statusData = [
             ['Customer Sales Channel', $customerSalesChannel->slug],
@@ -107,17 +163,12 @@ class CheckShopifyChannel
             ['Exist in Platform', $customerSalesChannel->exist_in_platform ? 'Yes' : 'No']
         ];
 
-
-
         $shopData = $customerSalesChannel->user->data['shop'] ?? [];
-
 
         if (empty($shopData)) {
             $command->info("No shop data found.");
-
             return;
         }
-
 
         // Basic shop information
         $tableData = [
@@ -136,7 +187,7 @@ class CheckShopifyChannel
         // Billing address information if available
         if (!empty($shopData['billingAddress'])) {
             $billingAddress = $shopData['billingAddress'];
-            $addressData    = [
+            $addressData = [
                 ['Address Line 1', $billingAddress['address_line_1'] ?? 'N/A'],
                 ['Address Line 2', $billingAddress['address_line_2'] ?? 'N/A'],
                 ['City', $billingAddress['locality'] ?? 'N/A'],
@@ -168,7 +219,7 @@ class CheckShopifyChannel
 
                 // Location information if available
                 if (!empty($service['location'])) {
-                    $location     = $service['location'];
+                    $location = $service['location'];
                     $locationData = [
                         ['ID', $location['id'] ?? 'N/A'],
                         ['Name', $location['name'] ?? 'N/A'],
@@ -182,7 +233,7 @@ class CheckShopifyChannel
 
                     // Location address if available
                     if (!empty($location['address'])) {
-                        $address     = $location['address'];
+                        $address = $location['address'];
                         $addressData = [
                             ['Phone', $address['phone'] ?? 'N/A'],
                             ['Address Line 1', $address['address_line_1'] ?? 'N/A'],

@@ -8,16 +8,19 @@
 import { Link } from "@inertiajs/vue3";
 import Table from "@/Components/Table/Table.vue";
 import { Stock } from "@/types/stock";
+import { inject } from "vue";
+import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 
 defineProps<{
   data: object
   tab?: string
 }>();
 
+const locale = inject('locale', aikuLocaleStructure)
+const layout = inject('layout', {})
+console.log(layout)
 
 function stockRoute(stock: Stock) {
-
-
   console.log(route().current());
   switch (route().current()) {
     case "grp.org.warehouses.show.inventory.org_stock_families.show":
@@ -61,13 +64,11 @@ function stockRoute(stock: Stock) {
           route().params["warehouse"],
           stock.slug
         ]);
-
   }
 }
 
 function stockFamilyRoute(stock: Stock) {
   switch (route().current()) {
-
 
     default:
       return route(
@@ -79,12 +80,9 @@ function stockFamilyRoute(stock: Stock) {
         ]);
   }
 }
-
-
 </script>
 
 <template>
-
   <Table :resource="data" :name="tab" class="mt-5">
     <template #cell(code)="{ item: stock }">
       <Link :href="stockRoute(stock)" class="primaryLink">
@@ -97,12 +95,30 @@ function stockFamilyRoute(stock: Stock) {
         {{ stock["family_code"] }}
       </Link>
     </template>
-    <template #cell(description)="{ item: stock }">
-      {{ stock["description"] }}
+    <template #cell(type)="{ item: stock }">
+      {{ stock.type ?? 'no data' }}
     </template>
-    <template #cell(unit_value)="{ item: stock }">
-      {{ stock["unit_value"] }}
+
+    <template #cell(picking_priority)="{ item: stock }">
+      {{ stock.picking_priority ?? 'no data'}}
     </template>
+
+    <template #cell(value)="{ item: stock }">
+      {{ locale.currencyFormat(layout.group.currency.code, stock.value)   }} 
+    </template>
+
+    <template #cell(dropshipping_pipe)="{ item: stock }">
+      {{ stock.dropshipping_pipe ?? 'no data'}}
+    </template>
+
+    <template #cell(quantity)="{ item: stock }">
+      {{ stock.quantity ?? 'no data'}}
+    </template>
+
+    <template #cell(notes)="{ item: stock }">
+      {{ stock.notes ?? 'no data'}}
+    </template>
+
   </Table>
 </template>
 

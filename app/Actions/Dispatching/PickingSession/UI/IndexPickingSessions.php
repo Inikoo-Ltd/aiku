@@ -61,7 +61,7 @@ class IndexPickingSessions extends OrgAction
                 'users.contact_name as user_name'
                 ])
                 ->defaultSort('picking_sessions.id')
-                ->allowedSorts(['reference', 'number_delivery_notes', 'number_picking_session_items'])
+                ->allowedSorts(['reference', 'number_delivery_notes', 'number_picking_session_items', 'number_items', 'picking_percentage', 'packing_percentage', 'user_name', 'start_at', 'end_at'])
                 ->allowedFilters([$globalSearch])
                 ->withPaginator($prefix, tableName: request()->route()->getName())
                 ->withQueryString();

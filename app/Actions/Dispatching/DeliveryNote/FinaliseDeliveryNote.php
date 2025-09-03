@@ -16,6 +16,7 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class FinaliseDeliveryNote extends OrgAction
@@ -27,6 +28,14 @@ class FinaliseDeliveryNote extends OrgAction
      */
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
+        if ($deliveryNote->shipments->isEmpty()) {
+            throw ValidationException::withMessages([
+                  'message' => [
+                            'delivery_note' => 'Shipment should be set before finalizing.',
+                        ]
+            ]);
+        }
+
         $deliveryNote = DB::transaction(function () use ($deliveryNote) {
             data_set($modelData, 'finalised_at', now());
             data_set($modelData, 'state', DeliveryNoteStateEnum::FINALISED->value);
@@ -42,6 +51,7 @@ class FinaliseDeliveryNote extends OrgAction
             return $this->update($deliveryNote, $modelData);
 
         });
+
 
         OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
             ->delay($this->hydratorsDelay);

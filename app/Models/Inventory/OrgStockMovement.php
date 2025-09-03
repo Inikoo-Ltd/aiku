@@ -17,8 +17,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id
@@ -61,14 +59,14 @@ class OrgStockMovement extends Model
     use InWarehouse;
 
     protected $casts = [
-        'data'         => 'array',
-        'type'         => OrgStockMovementTypeEnum::class,
-        'flow'         => OrgStockMovementFlowEnum::class,
-        'date'         => 'datetime',
-        'quantity'     => 'decimal:3',
-        'amount'       => 'decimal:3',
+        'data'       => 'array',
+        'type'       => OrgStockMovementTypeEnum::class,
+        'flow'       => OrgStockMovementFlowEnum::class,
+        'date'       => 'datetime',
+        'quantity'   => 'decimal:3',
+        'amount'     => 'decimal:3',
         'grp_amount' => 'decimal:3',
-        'org_amount'   => 'decimal:3',
+        'org_amount' => 'decimal:3',
     ];
 
     protected $attributes = [

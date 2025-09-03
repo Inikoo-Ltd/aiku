@@ -64,4 +64,28 @@ trait WithAuroraImages
             return [];
         }
     }
+
+    public function fetchImageLight($auroraImageData): array
+    {
+        $image_path = sprintf(
+            config('app.aurora_image_path'),
+            Arr::get($this->organisation->source, 'account_code')
+        );
+
+        $image_path .= preg_replace('/^img\/db/', '', $auroraImageData->{'Image Path'});
+
+        if (file_exists($image_path)) {
+            return [
+                'image_path' => $image_path,
+                'filename'   => $auroraImageData->{'Image Filename'},
+
+
+            ];
+        } else {
+            print "Image not found: $image_path\n";
+
+            return [];
+        }
+    }
+
 }

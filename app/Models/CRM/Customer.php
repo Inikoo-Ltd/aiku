@@ -126,8 +126,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $current_order_in_basket_id
  * @property int $number_exclusive_products
  * @property array<array-key, mixed>|null $contact_name_components
- * @property int|null $traffic_source_id
  * @property string|null $traffic_sources
+ * @property int|null $master_shop_id
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, AmazonUser> $amazonUsers
@@ -184,7 +184,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Customer newQuery()
  * @method static Builder<static>|Customer onlyTrashed()
  * @method static Builder<static>|Customer query()
- * @method static Builder<static>|Customer withTrashed()
+ * @method static Builder<static>|Customer withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Customer withoutTrashed()
  * @mixin \Eloquent
  */

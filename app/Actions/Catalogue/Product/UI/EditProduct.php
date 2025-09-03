@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Product\UI;
 
+use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
@@ -24,6 +25,8 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
 use App\Http\Resources\Inventory\OrgStocksResource;
+use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
+use App\Models\Goods\TradeUnit;
 
 class EditProduct extends OrgAction
 {
@@ -54,6 +57,15 @@ class EditProduct extends OrgAction
         return $this->handle($product);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, Product $product, ActionRequest $request): Product
+    {
+        $this->parent = $subDepartment;
+        $this->initialisationFromShop($shop, $request)->withTab(ProductTabsEnum::values());
+
+        return $this->handle($product);
+    }
+
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inFamily(Organisation $organisation, Shop $shop, ProductCategory $family, Product $product, ActionRequest $request): Product
@@ -66,6 +78,15 @@ class EditProduct extends OrgAction
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inFamilyInDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $family, Product $product, ActionRequest $request): Product
+    {
+        $this->parent = $family;
+        $this->initialisationFromShop($shop, $request)->withTab(ProductTabsEnum::values());
+
+        return $this->handle($product);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inFamilyInSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, ProductCategory $family, Product $product, ActionRequest $request): Product
     {
         $this->parent = $family;
         $this->initialisationFromShop($shop, $request)->withTab(ProductTabsEnum::values());
@@ -109,13 +130,7 @@ class EditProduct extends OrgAction
                         ]
                     ]
                 ],
-                'off_product_route' => [
-                    'name'       => 'grp.models.product.offline',
-                    'parameters' => [
-                        'product' => $product->id
-                    ],
-                    'method'    => 'patch'
-                ],
+
                 'formData'    => [
                     'blueprint' => $this->getBlueprint($product),
                     'args'      => [
@@ -131,6 +146,31 @@ class EditProduct extends OrgAction
 
             ]
         );
+    }
+
+
+    /**
+     * @throws \Exception
+     */
+    public function getBlueprintX(Product $product): array
+    {
+
+
+        return [
+            [
+                'label'  => __('Price'),
+                'title'  => __('id'),
+                'icon'   => 'fa-light fa-dollar',
+                'fields' => [
+                    'price'       => [
+                        'type'     => 'input',
+                        'label'    => __('price'),
+                        'required' => true,
+                        'value'    => $product->price
+                    ],
+                ]
+            ],
+        ];
     }
 
     /**
@@ -170,6 +210,8 @@ class EditProduct extends OrgAction
 
         $barcodes = $product->tradeUnits->pluck('barcode')->filter()->unique();
 
+
+
         return [
             [
                 'label'  => __('Name/Description'),
@@ -185,56 +227,44 @@ class EditProduct extends OrgAction
                         'label' => __('name'),
                         'value' => $product->name
                     ],
-
-                    //translation input raul request 7/24/25
-                  /*   'name' => [
+                    'name_i8n' => [
                         'type'  => 'input_translation',
-                        'label' => __('name'),
-                        'value' => [
-                            "en" => [
-                                'value' => $product->name,
-                                'default' => true,
-                            ],
-                            "hr" => [
-                                'value' => '',
-                            ],
-                            'zh-Hans' => [
-                                'value' => '',
-                            ]
-                        ]
-                    ], */
+                        'label' => __('translate name'),
+                        'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($product->shop->extra_languages),
+                        'value' => $product->getTranslations('name_i8n')
+                    ],
                     'description_title' => [
                         'type'  => 'input',
                         'label' => __('description title'),
                         'value' => $product->description_title
+                    ],
+                    'description_title_i8n' => [
+                        'type'  => 'input_translation',
+                        'label' => __('translate description title'),
+                        'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($product->shop->extra_languages),
+                        'value' => $product->getTranslations('description_title_i8n')
                     ],
                     'description' => [
                         'type'  => 'textEditor',
                         'label' => __('description'),
                         'value' => $product->description
                     ],
-
-                    //textEditor_translation
-                    /* 'description' => [
+                    'description_i8n' => [
                         'type'  => 'textEditor_translation',
-                        'label' => __('description'),
-                        'value' => [
-                            "en" => [
-                                'value' =>  $product->description_title,
-                                'default' => true,
-                            ],
-                            "hr" => [
-                                'value' => '',
-                            ],
-                            'zh-Hans' => [
-                                'value' => '',
-                            ]
-                        ]
-                    ], */
+                        'label' => __('translate description'),
+                        'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($product->shop->extra_languages),
+                        'value' => $product->getTranslations('description_i8n')
+                    ],
                     'description_extra' => [
                         'type'  => 'textEditor',
                         'label' => __('description extra'),
                         'value' => $product->description_extra
+                    ],
+                    'description_extra_i8n' => [
+                        'type'  => 'textEditor_translation',
+                        'label' => __('translate description extra'),
+                        'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($product->shop->extra_languages),
+                        'value' => $product->getTranslations('description_extra_i8n')
                     ],
                 ]
             ],
@@ -275,31 +305,31 @@ class EditProduct extends OrgAction
                         'value'    => $product->state,
                         'options'  => Options::forEnum(AssetStateEnum::class)
                     ],
-                     'button'       => [
-                        'type'     => 'button',
-                        'label'    => __('off product'),
-                         'noSaveButton'          => true,
-                        'value'    => null,
-                        'icon'    => ['far', 'fa-power-off'],
-                        'type_button'   => 'negative',
-                        'label_button'    => __('off product'),
-                        'route'    => [
-                            'name'       => 'grp.models.product.offline',
-                            'parameters' => [
-                                'product' => $product->id
-                            ],
-                            'method'    => 'patch'
-                        ]
-                    ],
+                    //  'button'       => [
+                    //     'type'     => 'button',
+                    //     'label'    => __('off product'),
+                    //      'noSaveButton'          => true,
+                    //     'value'    => null,
+                    //     'icon'    => ['far', 'fa-power-off'],
+                    //     'type_button'   => 'negative',
+                    //     'label_button'    => __('off product'),
+                    //     'route'    => [
+                    //         'name'       => 'grp.models.product.offline',
+                    //         'parameters' => [
+                    //             'product' => $product->id
+                    //         ],
+                    //         'method'    => 'patch'
+                    //     ]
+                    // ],
                 ]
             ],
             [
                 'label'  => __('Parts'),
+                'icon' => 'fal fa-boxes',
                 'fields' => [
                     'org_stocks' => [
                         'type'         => 'product_parts',
                         'label'        => __('Parts'),
-                        // 'readonly' => true,
                         'full'         => true,
                         'fetch_route'  => [
                             'name'       => 'grp.json.org_stocks.index',
@@ -311,6 +341,19 @@ class EditProduct extends OrgAction
                         'value'        => $value
                     ],
                 ]
+            ],
+            [
+                'label' => __('Trade unit'),
+                'icon' => 'fa-light fa-atom',
+                'fields' => [
+                    'trade_units' => [
+                        'label'      => __('Trade Units'),
+                        'type' => 'edit-trade-unit-shop',
+                        'value' => null,
+                        'noSaveButton' => true,
+                        'trade_units' => $product->tradeUnits ? $this->getDataTradeUnit($product->tradeUnits) : []
+                    ]
+                ],
             ],
             [
                 'label'  => __('Family'),
@@ -336,8 +379,14 @@ class EditProduct extends OrgAction
                     ]
                 ],
             ],
-
         ];
+    }
+
+    private function getDataTradeUnit($tradeUnits): array
+    {
+        return $tradeUnits->map(function (TradeUnit $tradeUnit) {
+            return GetTradeUnitShowcase::run($tradeUnit);
+        })->toArray();
     }
 
     public function getBreadcrumbs(Product $product, string $routeName, array $routeParameters): array

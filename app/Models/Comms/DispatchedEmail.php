@@ -21,8 +21,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Facades\Auth;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id

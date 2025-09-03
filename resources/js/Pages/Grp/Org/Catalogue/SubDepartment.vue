@@ -5,17 +5,17 @@
   -->
 
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3'
+import { Head, router, Link} from '@inertiajs/vue3'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import {
     faBullhorn,
     faCameraRetro,
     faCube,
-    faFolder, faMoneyBillWave, faProjectDiagram, faTag, faUser
+    faFolder, faMoneyBillWave, faProjectDiagram, faTag, faUser, faBrowser
 } from '@fal'
 
 import PageHeading from '@/Components/Headings/PageHeading.vue'
-import { computed, defineAsyncComponent, ref } from "vue"
+import { computed, ref,inject } from "vue"
 import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import ModelDetails from "@/Components/ModelDetails.vue"
@@ -30,12 +30,14 @@ import { trans } from 'laravel-vue-i18n'
 import ProductsSelector from '@/Components/Dropshipping/ProductsSelector.vue'
 import { notify } from '@kyvg/vue3-notification'
 import SubDepartmentShowcase from "@/Components/Shop/SubDepartmentShowcase.vue"
-import { inject } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Image from '@/Components/Image.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { routeType } from '@/types/route'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { faOctopusDeploy } from '@fortawesome/free-brands-svg-icons'
+
 
 library.add(
     faFolder,
@@ -46,11 +48,10 @@ library.add(
     faProjectDiagram,
     faUser,
     faMoneyBillWave,
-    faDiagramNext,
+    faDiagramNext,faBrowser
 )
 
 const locale = inject('locale', aikuLocaleStructure)
-const ModelChangelog = defineAsyncComponent(() => import('@/Components/ModelChangelog.vue'))
 
 const props = defineProps<{
     title: string,
@@ -65,7 +66,7 @@ const props = defineProps<{
         attach_families: routeType
         detach_families: routeType
     }
-
+    url_master : routeType
     showcase: {
 
     }
@@ -129,6 +130,17 @@ const onSubmitAddItem = async (idProduct: number[]) => {
         <template #other>
             <Button @click="() => isOpenModalPortfolios = true" :label="trans('Add families')" icon="fas fa-plus" />
         </template>
+
+        <template #afterTitle>
+           <div class="whitespace-nowrap">
+            <Link v-if="url_master"  :href="route(url_master.name,url_master.parameters)"  v-tooltip="'Go to Master'" class="mr-1"  :class="'opacity-70 hover:opacity-100'">
+                <FontAwesomeIcon
+                    :icon="faOctopusDeploy"
+                    color="#4B0082"
+                />
+            </Link>
+            </div>
+        </template>
     </PageHeading>
 
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
@@ -144,7 +156,7 @@ const onSubmitAddItem = async (idProduct: number[]) => {
             <template #product="{ item }">
                 <Image v-if="item.image" :src="item.image" class="w-16 h-16 overflow-hidden" imageCover :alt="item.name" />
                 <div class="flex flex-col justify-between">
-                    <div class="w-fit" xclick="() => selectProduct(item)">
+                    <div class="w-fit">
                         <div v-tooltip="trans('Name')" class="w-fit font-semibold leading-none mb-1">{{ item.name || 'no name' }}</div>
                         <div v-if="!item.no_code" v-tooltip="trans('Code')" class="w-fit text-xs text-gray-400 italic">{{ item.code || 'no code' }}</div>
                         <div v-if="item.reference" v-tooltip="trans('Reference')" class="w-fit text-xs text-gray-400 italic">{{ item.reference || 'no reference' }}</div>

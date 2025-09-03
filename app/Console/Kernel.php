@@ -5,6 +5,7 @@ namespace App\Console;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\Dropshipping\Ebay\Orders\FetchEbayOrders;
 use App\Actions\Dropshipping\Ebay\Orders\FetchWooOrders;
+use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolios;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomersHydrateStatus;
 use App\Actions\Fulfilment\UpdateCurrentRecurringBillsTemporalAggregates;
 use App\Actions\Helpers\Intervals\ResetDailyIntervals;
@@ -26,7 +27,6 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('cloudflare:reload')->daily();
         $schedule->command('domain:check-cloudflare-status')->hourly();
-
 
 
         $schedule->job(FulfilmentCustomersHydrateStatus::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
@@ -62,7 +62,7 @@ class Kernel extends ConsoleKernel
         );
 
 
-        $schedule->command('data_feeds:save')->everyTwoHours()->timezone('UTC')->sentryMonitor(
+        $schedule->command('data_feeds:save')->hourly()->timezone('UTC')->sentryMonitor(
             monitorSlug: 'SaveDataFeeds',
         );
 
@@ -89,6 +89,9 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'FetchWooOrders',
         );
 
+        $schedule->job(CheckShopifyPortfolios::makeJob())->dailyAt('03:00')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'CheckShopifyPortfolios',
+        );
 
 
         (new Schedule())->command('hydrate -s ful')->everyFourHours('23:00')->timezone('UTC');
@@ -105,7 +108,6 @@ class Kernel extends ConsoleKernel
         );
 
         $schedule->command('schedule:platform-orders')->everyMinute()->timezone('UTC')->sentryMonitor('GetPlatformOrders');
-
     }
 
 

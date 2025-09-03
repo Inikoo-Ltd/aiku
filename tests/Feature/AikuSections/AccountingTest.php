@@ -404,7 +404,7 @@ test('create and set success 1st top up', function ($payment) {
 
     expect($topUp->creditTransaction->amount)->toBe('100.00')
         ->and($topUp->creditTransaction->running_amount)->toBe('100.00')
-        ->and($topUp->creditTransaction->type)->toBe(CreditTransactionTypeEnum::TOP_UP->value);
+        ->and($topUp->creditTransaction->type)->toBe(CreditTransactionTypeEnum::TOP_UP);
 
     return $topUp;
 })->depends('create payment');
@@ -471,7 +471,7 @@ test('create and set success 2nd top up', function ($payment) {
 
     expect($topUp->creditTransaction->amount)->toBe('150.00')
         ->and($topUp->creditTransaction->running_amount)->toBe('250.00')
-        ->and($topUp->creditTransaction->type)->toBe(CreditTransactionTypeEnum::TOP_UP->value);
+        ->and($topUp->creditTransaction->type)->toBe(CreditTransactionTypeEnum::TOP_UP);
 
     return $topUp;
 })->depends('create payment');
@@ -1235,6 +1235,7 @@ test('UI show invoice in Organisation', function () {
             ->has(
                 'box_stats',
                 fn (AssertableInertia $page) => $page
+                    ->has('delivery_notes')
                     ->has(
                         'customer',
                         fn (AssertableInertia $page) => $page
@@ -1292,6 +1293,7 @@ test('UI show invoice in Shop', function () {
             ->has(
                 'box_stats',
                 fn (AssertableInertia $page) => $page
+                    ->has('delivery_notes')
                     ->has(
                         'customer',
                         fn (AssertableInertia $page) => $page

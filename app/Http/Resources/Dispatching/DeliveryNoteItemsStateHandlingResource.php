@@ -28,6 +28,8 @@ use Illuminate\Support\Facades\DB;
  * @property mixed $quantity_dispatched
  * @property mixed $org_stock_slug
  * @property mixed $packed_in
+ * @property mixed $warehouse_area_picking_position
+ * @property mixed $warehouse_area_code
  */
 class DeliveryNoteItemsStateHandlingResource extends JsonResource
 {
@@ -80,7 +82,9 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             ->orderBy('picking_priority')->get();
 
 
-        $quantityToPick = max(0, $this->quantity_required - $this->quantity_picked);
+        $quantityToPick = max(0, $this->quantity_required - $this->quantity_picked - $this->quantity_not_picked);
+
+
 
 
         $isPicked = $quantityToPick == 0;
@@ -90,6 +94,17 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
         $pickings = Picking::where('delivery_note_item_id', $this->id)->get();
 
 
+        $warehouseArea = '';
+        if ($this->warehouse_area_picking_position) {
+            $warehouseArea = __('Sort:').': '.$this->warehouse_area_picking_position.' ';
+        }
+
+        if ($this->warehouse_area_code) {
+            $warehouseArea .= __('Area').': '.$this->warehouse_area_code;
+        }
+        if ($warehouseArea == '') {
+            $warehouseArea = __('No Area');
+        }
 
         return [
             'id'                           => $this->id,
@@ -113,6 +128,8 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             'is_handled'                   => $this->is_handled,
             'is_packed'                    => $isPacked,
             'quantity_required_fractional' => $requiredFactionalData,
+            'warehouse_area'                  => $warehouseArea,
+
 
             'upsert_picking_route' => [
                 'name'       => 'grp.models.delivery_note_item.picking.upsert',

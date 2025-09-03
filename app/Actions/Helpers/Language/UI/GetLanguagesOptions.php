@@ -22,9 +22,11 @@ class GetLanguagesOptions
         foreach ($languages as $language) {
             $selectOptions[$language->id] =
                 [
-                    'name'  => $language->name,
-                    'id'    => $language->id,
-                    'code'  => $language->code
+                    'name'        => $language->name,
+                    'id'          => $language->id,
+                    'code'        => $language->code,
+                    'flag'        => $language->flag,
+                    'native_name' => $language->native_name,
                 ];
         }
 
@@ -34,6 +36,24 @@ class GetLanguagesOptions
     public function all(): array
     {
         return $this->handle(Language::all());
+    }
+
+    public function getExtraGroupLanguages(?array $languages): array
+    {
+        if (!$languages) {
+            return [];
+        }
+
+        return $this->handle(Language::whereIn('id', $languages)->get());
+    }
+
+    public function getExtraShopLanguages(?array $languages): array
+    {
+        if (!$languages) {
+            return [];
+        }
+
+        return $this->handle(Language::whereIn('id', $languages)->get());
     }
 
     public function translated(): array

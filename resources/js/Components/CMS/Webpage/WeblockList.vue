@@ -23,7 +23,7 @@ const layout = useLayoutStore()
 
 onMounted(() => {
 	const rawData = props.webBlockTypes.data.filter(item =>
-		['block', 'element'].includes(item.category)
+		['block', 'element','column'].includes(item.category)
 	)
 
 	allData.value = [...rawData].sort((a, b) => a.name.localeCompare(b.name))

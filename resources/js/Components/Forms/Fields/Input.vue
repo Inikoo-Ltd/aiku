@@ -30,7 +30,7 @@ const props = defineProps<{
 
 const emits = defineEmits()
 
-
+console.log("Input.vue", props)
 const setFormValue = (data: Object, fieldName: String) => {
     if (Array.isArray(fieldName)) {
         return getNestedValue(data, fieldName)

@@ -28,6 +28,7 @@ use App\Actions\Retina\Billing\UI\ShowRetinaDropshippingInvoice;
 use App\Actions\Retina\Dropshipping\ApiToken\UI\ShowRetinaApiDropshippingDashboard;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaDropshippingProductsForBasket;
+use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaDropshippingProductsForEmptyBasket;
 use App\Actions\Retina\Dropshipping\Checkout\UI\ShowRetinaDropshippingCheckout;
 use App\Actions\Retina\Dropshipping\Client\FetchRetinaCustomerClientFromShopify;
 use App\Actions\Retina\Dropshipping\Client\UI\CreateRetinaCustomerClient;
@@ -40,7 +41,7 @@ use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshipp
 use App\Actions\Retina\Dropshipping\Orders\IndexRetinaDropshippingOrders;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingBasket;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingOrder;
-use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfolios;
+use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfoliosCSV;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
 use App\Actions\Retina\Dropshipping\Portfolio\ShowRetinaDropshippingPortfolio;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaFilteredProducts;
@@ -48,6 +49,7 @@ use App\Actions\Retina\Platform\EditRetinaCustomerSalesChannel;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use Illuminate\Support\Facades\Route;
 
+Route::get('select-products-for-empty-basket', IndexRetinaDropshippingProductsForEmptyBasket::class)->name('select_products_for_empty_basket');
 Route::get('select-products-for-basket/{order:id}', IndexRetinaDropshippingProductsForBasket::class)->name('select_products_for_basket');
 
 
@@ -97,7 +99,7 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
 
     Route::prefix('my-products')->as('portfolios.')->group(function () {
         Route::get('', IndexRetinaPortfolios::class)->name('index');
-        Route::get('download', DownloadPortfolios::class)->name('download');
+        Route::get('download', DownloadPortfoliosCSV::class)->name('download');
         Route::get('{portfolio}', ShowRetinaDropshippingPortfolio::class)->name('show');
     });
 

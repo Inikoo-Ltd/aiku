@@ -12,8 +12,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- *
- *
  * @property int $id
  * @property int $customer_id
  * @property bool $is_suspended Suspend communication with customer because of spam or bounces
@@ -69,6 +67,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $basket_reminder_3_unsubscribed_origin_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_traffic_sources
  * @property-read \App\Models\CRM\Customer $customer
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerComms newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerComms newQuery()

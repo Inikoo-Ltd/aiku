@@ -67,6 +67,15 @@ class SubmitOrder extends OrgAction
 
         $this->update($order, $modelData);
 
+        if ($order->shop->masterShop) {
+            $order->shop->masterShop->orderingStats->update(
+                [
+                    'last_order_submitted_at' => now()
+                ]
+            );
+        }
+
+
         if ($order->customer_client_id) {
             CustomerClientHydrateBasket::run($order->customerClient);
         } else {
@@ -74,8 +83,8 @@ class SubmitOrder extends OrgAction
         }
 
         $this->orderHydrators($order);
-        SendNewOrderEmailToSubscribers::dispatch($order);
-        SendNewOrderEmailToCustomer::dispatch($order);
+        SendNewOrderEmailToSubscribers::dispatch($order->id);
+        SendNewOrderEmailToCustomer::dispatch($order->id);
 
         if ($order->pay_status == OrderPayStatusEnum::PAID) {
             SendOrderToWarehouse::make()->action($order, []);

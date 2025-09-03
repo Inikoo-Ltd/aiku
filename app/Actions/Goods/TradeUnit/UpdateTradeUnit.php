@@ -9,6 +9,7 @@
 namespace App\Actions\Goods\TradeUnit;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingIngredientsFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTradeUnitsFields;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
@@ -16,6 +17,8 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTra
 use App\Actions\Goods\Stock\Hydrators\StockHydrateGrossWeightFromTradeUnits;
 use App\Stubs\Migrations\HasDangerousGoodsFields;
 use App\Actions\GrpAction;
+use App\Actions\Helpers\Brand\AttachBrandToModel;
+use App\Actions\Helpers\Tag\AttachTagsToModel;
 use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -23,6 +26,7 @@ use App\Models\Goods\TradeUnit;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use App\Stubs\Migrations\HasProductInformation;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -39,6 +43,50 @@ class UpdateTradeUnit extends GrpAction
 
     public function handle(TradeUnit $tradeUnit, array $modelData): TradeUnit
     {
+        if (Arr::has($modelData, 'name_i8n')) {
+            UpdateTradeUnitTranslationsFromUpdate::make()->action($tradeUnit, [
+                'translations' => [
+                    'name' => Arr::pull($modelData, 'name_i8n')
+                ]
+            ]);
+        }
+
+        if (Arr::has($modelData, 'description_title_i8n')) {
+            UpdateTradeUnitTranslationsFromUpdate::make()->action($tradeUnit, [
+                'translations' => [
+                    'description_title' => Arr::pull($modelData, 'description_title_i8n')
+                ]
+            ]);
+        }
+
+        if (Arr::has($modelData, 'description_i8n')) {
+            UpdateTradeUnitTranslationsFromUpdate::make()->action($tradeUnit, [
+                'translations' => [
+                    'description' => Arr::pull($modelData, 'description_i8n')
+                ]
+            ]);
+        }
+
+        if (Arr::has($modelData, 'description_extra_i8n')) {
+            UpdateTradeUnitTranslationsFromUpdate::make()->action($tradeUnit, [
+                'translations' => [
+                    'description_extra' => Arr::pull($modelData, 'description_extra_i8n')
+                ]
+            ]);
+        }
+
+        if (Arr::has($modelData, 'tags')) {
+            AttachTagsToModel::make()->action($tradeUnit, [
+                'tags_id' => Arr::pull($modelData, 'tags')
+            ]);
+        }
+
+        if (Arr::has($modelData, 'brands')) {
+            AttachBrandToModel::make()->action($tradeUnit, [
+                'brand_id' => Arr::pull($modelData, 'brands')
+            ]);
+        }
+
         $tradeUnit = $this->update($tradeUnit, $modelData, ['data', 'marketing_dimensions']);
 
 
@@ -54,6 +102,12 @@ class UpdateTradeUnit extends GrpAction
         if ($tradeUnit->wasChanged('marketing_weight')) {
             foreach ($tradeUnit->products as $product) {
                 ProductHydrateMarketingWeightFromTradeUnits::dispatch($product);
+            }
+        }
+
+        if ($tradeUnit->wasChanged('marketing_ingredients')) {
+            foreach ($tradeUnit->products as $product) {
+                ProductHydrateMarketingIngredientsFromTradeUnits::dispatch($product);
             }
         }
 
@@ -152,6 +206,13 @@ class UpdateTradeUnit extends GrpAction
             'duty_rate'                    => ['sometimes', 'nullable', 'string'],
             'hts_us'                       => ['sometimes', 'nullable', 'string'],
             'marketing_ingredients'        => ['sometimes', 'nullable', 'string'],
+            'name_i8n'                     => ['sometimes', 'array'],
+            'description_title_i8n'        => ['sometimes', 'array'],
+            'description_i8n'              => ['sometimes', 'array'],
+            'description_extra_i8n'        => ['sometimes', 'array'],
+            'tags'                         => ['sometimes', 'array'],
+            'brands'                       => ['sometimes'],
+
         ];
 
         if (!$this->strict) {

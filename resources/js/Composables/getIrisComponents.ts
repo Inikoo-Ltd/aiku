@@ -35,13 +35,16 @@ import Step2Iris from '@/Components/CMS/Webpage/Step1/Step1Iris.vue'
 import NotFoundComponent from "@/Components/CMS/Webpage/NotFoundComponent.vue"
 import FamilyIris1 from '@/Components/CMS/Webpage/Family-1/family1Iris.vue'
 import ProductIris1 from '@/Components/CMS/Webpage/Product1/ProductIris1.vue'
+import ProductIris1Ecom from '@/Components/CMS/Webpage/Product1/ProductIris1Ecom.vue'
 import Carousel1Iris from '@/Components/CMS/Webpage/Carousel-1/Carousel1Iris.vue'
 import Products1Iris from '@/Components/CMS/Webpage/Products1/Products1Iris.vue'
+import Products1IrisEcom from '@/Components/CMS/Webpage/Products1/Products1IrisEcom.vue'
 import SubDepartments1Iris from '@/Components/CMS/Webpage/SubDepartement1/SubDepartementIris.vue'
 import Collections1Iris from '@/Components/CMS/Webpage/Collections1/Collections1Iris.vue'
 import CTAVideo1Iris from '@/Components/CMS/Webpage/CtaVideo1/CtaVideo1Iris.vue'
 import Video1Iris from '@/Components/CMS/Webpage/Video/Video1Iris.vue'
 import families1Iris from '@/Components/CMS/Webpage/Families1/FamiliesIris1.vue'
+import BlogIris from '@/Components/CMS/Webpage/Blog/BlogIris.vue'
 
 import Cta4 from '@/Components/CMS/Webpage/Cta4/Cta4Iris.vue'
 
@@ -51,80 +54,84 @@ import SeeAlso1WorkshopIris from '@/Components/CMS/Webpage/SeeAlso1/SeeAlso1Iris
 import UserSubscribeIris from '@/Components/CMS/Webpage/UserSubscribe/UserSubscribeIris.vue'
 
 
-const components: Record<string, Component> = {
-    //topBar
-    'top-bar-1': Topbar1Iris,
-    'top-bar-2': Topbar2Iris,
-    'top-bar-3': Topbar3Iris,
-    'top-bar-1-fulfilment': Topbar1FulfilmentIris,
-    'top-bar-2-fulfilment': Topbar2FulfilmentIris,
-    'top-bar-3-fulfilment': Topbar3FulfilmentIris,
+const components = (shop_type?: string): Record<string, Component> => {
+    return {
+        //topBar
+        'top-bar-1': Topbar1Iris,
+        'top-bar-2': Topbar2Iris,
+        'top-bar-3': Topbar3Iris,
+        'top-bar-1-fulfilment': Topbar1FulfilmentIris,
+        'top-bar-2-fulfilment': Topbar2FulfilmentIris,
+        'top-bar-3-fulfilment': Topbar3FulfilmentIris,
 
 
-    //header
-    'header-1': Header1Iris,
-    'header-2': Header2Iris,
+        //header
+        'header-1': Header1Iris,
+        'header-2': Header2Iris,
 
-    //menu
-    'menu-1': Menu1Workshop,
+        //menu
+        'menu-1': Menu1Workshop,
 
-    //footer
-    'footer-1': Footer1Iris,
+        //footer
+        'footer-1': Footer1Iris,
 
-    
-    
-     //departement
-    'department' : Department1Iris,
-    'department-1' : Department1Iris,
 
-    //sub-departement
-    'sub-departments-1' : SubDepartments1Iris,
 
-    //family
-    'family-1' : FamilyIris1,
-    'families-1' : families1Iris,
+        //departement
+        'department' : Department1Iris,
+        'department-1' : Department1Iris,
 
-    //product
-    'product-1' : ProductIris1,
-    
+        //sub-departement
+        'sub-departments-1' : SubDepartments1Iris,
 
-    //product list
-    'products-1' : Products1Iris,
+        //family
+        'family-1' : FamilyIris1,
+        'families-1' : families1Iris,
 
-    //see-also
-    'see-also-1' : SeeAlso1WorkshopIris,
-    
-    
-    'banner': WowsbarBannerIris,
-    'bento-grid-1': BentoGridIris,
-    'bricks': GalleryIris,
-    'cta1': CTAIris,
-    'cta2': CTA2Iris,
-    'cta3': CTA3Iris,
-    'iframe': IframeIris,
-    'images': ImageIris,
-    'overview_aurora': OverviewIris,
-    'script': ScriptIris,
-    'text': TextContentIris,
-    'cta_aurora_1': CtaAurora1Iris,
-    'overview_2': Overview2Iris,
-    'text-column': TextColumnIris,
-    'pricing': Pricing,
-    'button' : ButtonIris,
-    'column-layout-2': ColumnIris,
-    'disclosure': DisclosureIris,
-    'timeline': Timeline,
-    'step-1' : Step2Iris,
-    'carousel-1' : Carousel1Iris,
-    'collections-1': Collections1Iris,
-    'cta-video-1' : CTAVideo1Iris,
-    'video-1'  : Video1Iris,
-    "user-subscribe": UserSubscribeIris,
-    "cta4" : Cta4
+        //product
+        'product-1': shop_type === 'b2b' ? ProductIris1Ecom : ProductIris1,
 
+
+        //product list
+        'products-1' : shop_type === 'b2b' ? Products1IrisEcom : Products1Iris,
+
+        //see-also
+        'see-also-1' : SeeAlso1WorkshopIris,
+
+
+        'banner': WowsbarBannerIris,
+        'bento-grid-1': BentoGridIris,
+        'bricks': GalleryIris,
+        'cta1': CTAIris,
+        'cta2': CTA2Iris,
+        'cta3': CTA3Iris,
+        'iframe': IframeIris,
+        'images': ImageIris,
+        'overview_aurora': OverviewIris,
+        'script': ScriptIris,
+        'text': TextContentIris,
+        'cta_aurora_1': CtaAurora1Iris,
+        'overview_2': Overview2Iris,
+        'text-column': TextColumnIris,
+        'pricing': Pricing,
+        'button' : ButtonIris,
+        'column-layout-2': ColumnIris,
+        'disclosure': DisclosureIris,
+        'timeline': Timeline,
+        'step-1' : Step2Iris,
+        'carousel-1' : Carousel1Iris,
+        'collections-1': Collections1Iris,
+        'cta-video-1' : CTAVideo1Iris,
+        'video-1'  : Video1Iris,
+        "user-subscribe": UserSubscribeIris,
+        "cta4" : Cta4,
+        "blog" : BlogIris
+    }
 }
 
 
-export const getIrisComponent = (componentName: string) => {
-    return components[componentName] ?? NotFoundComponent
+export const getIrisComponent = (componentName: string, options?: {
+    shop_type?: string // 'b2b' | 'dropshipping'
+}) => {
+    return components(options?.shop_type)[componentName] ?? NotFoundComponent
 }

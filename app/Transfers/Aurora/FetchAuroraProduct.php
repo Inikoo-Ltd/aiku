@@ -71,24 +71,16 @@ class FetchAuroraProduct extends FetchAurora
             default => ProductStateEnum::ACTIVE
         };
 
+        $status = ProductStatusEnum::FOR_SALE;
 
         if ($this->auroraModelData->{'Product Status'} == 'InProcess') {
             $status = ProductStatusEnum::IN_PROCESS;
         } elseif ($this->auroraModelData->{'Product Status'} == 'Discontinued') {
             $status = ProductStatusEnum::DISCONTINUED;
-        } elseif ($this->auroraModelData->{'Product Web Configuration'} == 'Offline') {
+        } elseif ($this->auroraModelData->{'Product Status'} == 'Suspended' || $this->auroraModelData->{'Product Web Configuration'} == 'Offline') {
             $status = ProductStatusEnum::NOT_FOR_SALE;
         } elseif ($this->auroraModelData->{'Product Web Configuration'} == 'Online Force Out of Stock') {
             $status = ProductStatusEnum::OUT_OF_STOCK;
-        } elseif ($this->auroraModelData->{'Product Web Configuration'} == 'Online Force For Sale') {
-            $status = ProductStatusEnum::FOR_SALE;
-        } else {
-            $status = match ($this->auroraModelData->{'Product Web State'}) {
-                'Discontinued' => ProductStatusEnum::DISCONTINUED,
-                'Offline' => ProductStatusEnum::NOT_FOR_SALE,
-                'Out of Stock' => ProductStatusEnum::OUT_OF_STOCK,
-                default => ProductStatusEnum::FOR_SALE
-            };
         }
 
         $tradeConfig = match ($this->auroraModelData->{'Product Web Configuration'}) {

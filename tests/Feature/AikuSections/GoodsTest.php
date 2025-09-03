@@ -8,16 +8,16 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
-use App\Actions\Goods\HydrateTradeUnits;
 use App\Actions\Goods\Ingredient\StoreIngredient;
 use App\Actions\Goods\Ingredient\UpdateIngredient;
-use App\Actions\Goods\Stock\HydrateStock;
+use App\Actions\Goods\Stock\HydrateStocks;
 use App\Actions\Goods\Stock\StoreStock;
 use App\Actions\Goods\Stock\UpdateStock;
 use App\Actions\Goods\StockFamily\DeleteStockFamily;
 use App\Actions\Goods\StockFamily\HydrateStockFamily;
 use App\Actions\Goods\StockFamily\StoreStockFamily;
 use App\Actions\Goods\StockFamily\UpdateStockFamily;
+use App\Actions\Goods\TradeUnit\HydrateTradeUnits;
 use App\Enums\Goods\Stock\StockStateEnum;
 use App\Enums\Goods\StockFamily\StockFamilyStateEnum;
 use App\Models\Goods\Ingredient;
@@ -405,7 +405,7 @@ test("UI Create Stock in Stock Family Group", function () {
 
 
 test('Hydrate stocks', function () {
-    HydrateStock::run(Stock::first());
+    HydrateStocks::run(Stock::first());
     $this->artisan('hydrate:stocks')->assertSuccessful();
 });
 

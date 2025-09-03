@@ -27,6 +27,7 @@ import LoadingIcon from "../Utils/LoadingIcon.vue"
 import Icon from "../Icon.vue"
 import { ChannelLogo } from "@/Composables/Icon/ChannelLogoSvg"
 import ButtonExport from "@/Components/ButtonExport.vue"
+import { notify } from "@kyvg/vue3-notification"
 
 library.add(faTruckCouch, faUpload, faFilePdf, faMapSigns, faNarwhal, faReceipt, faLayerPlus, faPallet, faWarehouse, faEmptySet, faMoneyBillWave)
 
@@ -47,6 +48,15 @@ const originUrl = location.origin
 const layout = inject("layout", layoutStructure)
 
 const isShowDummySlotName = false
+
+const setError = (e) => {
+    console.error("Error", e)
+    notify({
+        title: trans("Something went wrong"),
+        text: e.message || "failed.",
+        type: "error",
+    })
+}
 </script>
 
 
@@ -66,7 +76,7 @@ const isShowDummySlotName = false
             <div :class="Object.keys(data?.parentTag || {}).length || data?.parentTag?.length ? '-mt-1.5' : ''">
                 <template v-if="Object.keys(data?.parentTag || {}).length || data?.parentTag?.length">
                     <div v-if="data?.parentTag?.length" class="flex gap-x-2">
-                        <ButtonWithLink v-for="tag in data?.parentTag" :routeTarget="tag.route">
+                        <ButtonWithLink v-for="tag in data?.parentTag" :routeTarget="tag.route" @error="setError">
                             <template #default="{ isLoadingVisit }">
                                 <div class="cursor-pointer inline-flex items-center gap-x-1 rounded-sm select-none px-1 py-0.5 text-xxs w-fit font-medium border"
                                      :class="`bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-500`"
@@ -80,6 +90,7 @@ const isShowDummySlotName = false
                     </div>
                 </template>
 
+                <!-- Section: Main title group -->
                 <div class="flex leading-none py-1.5 items-center gap-x-2 font-bold text-gray-700 text-2xl tracking-tight ">
                     <div v-if="data.container" class="text-slate-500 text-lg">
                         <Link v-if="data.container.href"
@@ -116,10 +127,13 @@ const isShowDummySlotName = false
                          class="w-6 h-6" />
 
                     <div class="flex flex-col sm:flex-row gap-y-1.5 gap-x-3 sm:items-center ">
-                        <h2 :class="data.noCapitalise ? '' : 'capitalize'" class="space-x-2">
-                            <span v-if="data.model" class="text-gray-400 font-medium">{{ data.model }}</span>
-                            <span class="">{{ useTruncate(data.title, 30) }}</span>
-                        </h2>
+                        <div :class="data.noCapitalise ? '' : 'capitalize'" class="xspace-x-2">
+                            <template v-if="data.model">
+                                <span class="text-gray-400 font-medium">{{ data.model }}</span>
+                                <span>&nbsp;</span>
+                            </template>
+                            <span class="inline-block">{{ useTruncate(data.title, 30) }}</span>
+                        </div>
                         <!-- Section: After Title -->
                         <slot name="afterTitle">
                             <div v-if="data.iconRight || data.titleRight || data.afterTitle" class="flex gap-x-2 items-center">

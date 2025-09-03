@@ -31,6 +31,14 @@ export const initialiseApp = () => {
         echoPersonal.subscribe(usePage().props.auth.user.id)
 
         router.on('navigate', (event) => {
+            
+            // To see Vue filename in console (component.vue)
+            if (import.meta.env.VITE_APP_ENV === 'local' && usePage().component) {
+                window.component = {
+                    vue: usePage().component
+                }
+            }
+
             // console.log('layout env', layout.app.environment)
             layout.currentParams = route().v().params  // current params
             layout.currentQuery = route().v().query  // current query

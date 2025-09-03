@@ -20,8 +20,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\MediaLibrary\HasMedia;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id
@@ -59,7 +57,7 @@ use Spatie\MediaLibrary\HasMedia;
  * @method static Builder<static>|Clocking newQuery()
  * @method static Builder<static>|Clocking onlyTrashed()
  * @method static Builder<static>|Clocking query()
- * @method static Builder<static>|Clocking withTrashed()
+ * @method static Builder<static>|Clocking withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Clocking withoutTrashed()
  * @mixin Eloquent
  */

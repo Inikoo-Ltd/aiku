@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { getIrisComponent } from "@/Composables/getIrisComponents";
 import { routeType } from "@/types/route";
-import { ref, inject, provide, computed } from "vue";
+import { inject, provide, computed } from "vue";
 import { notify } from "@kyvg/vue3-notification";
 import { trans } from "laravel-vue-i18n";
 import axios from "axios";
 import MobileHeader from "@/Components/CMS/Website/Headers/MobileHeader.vue";
 import { getStyles } from "@/Composables/styles";
 
-defineProps<{
+const props = defineProps<{
   data: {
     key: string,
     data: object,
@@ -47,7 +47,7 @@ const onLogoutAuth = async () => {
 
 
 provide("onLogout", onLogoutAuth);
-
+console.log('plm',props)
 </script>
 
 <template>
@@ -56,7 +56,7 @@ provide("onLogout", onLogoutAuth);
              :fieldValue="data.topBar.data.fieldValue" v-model="data.topBar.data.fieldValue" />
 
   <!-- Section: Header (logo, search, Title) -->
-  <component :is="getIrisComponent(data?.header?.code)" :fieldValue="data.header.data.fieldValue"
+  <component v-if="data?.header" :is="getIrisComponent(data?.header?.code)" :fieldValue="data.header.data.fieldValue"
              class="hidden md:block" />
 
   <!-- Section: Menu desktop -->
@@ -65,7 +65,7 @@ provide("onLogout", onLogoutAuth);
 
   <!-- Section: Mobile Header -->
   <div :style="getStyles(data.header.data.fieldValue.container.properties, screenType)">
-      <MobileHeader :header-data="data.header.data.fieldValue" :menu-data="menu?.data?.fieldValue" :screenType="screenType" />
+      <MobileHeader :header-data="data.header.data.fieldValue" :menu-data="menu?.data?.fieldValue" :productCategories="menu.product_categories" :screenType="screenType" />
   </div>
 
 </template>

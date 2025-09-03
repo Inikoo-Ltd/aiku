@@ -110,7 +110,8 @@ class StoreProductCategory extends OrgAction
                     ->max(12 * 1024)
             ],
             'state'       => ['sometimes', Rule::enum(ProductCategoryStateEnum::class)],
-            'description' => ['sometimes', 'max:1500'],
+            'description' => ['sometimes', 'max:65500'],
+            'master_product_category_id' => ['sometimes', Rule::exists('master_product_categories', 'id')->where('group_id', $this->organisation->group_id)]
 
         ];
 
@@ -202,6 +203,4 @@ class StoreProductCategory extends OrgAction
             ]);
         }
     }
-
-
 }

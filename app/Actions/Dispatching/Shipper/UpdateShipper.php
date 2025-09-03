@@ -35,12 +35,11 @@ class UpdateShipper extends OrgAction
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        if ($this->has('website') and $this->get('website') != null) {
-            if (!Str::startsWith($this->get('website'), 'http')) {
-                $this->fill(['website' => 'https://'.$this->get('website')]);
-            }
+        if ($this->has('website') && $this->get('website') != null && !Str::startsWith($this->get('website'), 'http')) {
+            $this->fill(['website' => 'https://'.$this->get('website')]);
         }
-        if (!$this->has('code') and $this->get('code') == null) {
+
+        if (!$this->has('code') && $this->get('code') == null) {
             $this->set('code', $this->shipper->code);
         }
     }
@@ -93,8 +92,8 @@ class UpdateShipper extends OrgAction
         if (!$audit) {
             Shipper::disableAuditing();
         }
-        $this->asAction = true;
-        $this->shipper  = $shipper;
+        $this->asAction       = true;
+        $this->shipper        = $shipper;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisation($shipper->organisation, $modelData);
 
@@ -103,7 +102,6 @@ class UpdateShipper extends OrgAction
 
     public function asController(Organisation $organisation, Shipper $shipper, ActionRequest $request): Shipper
     {
-
         $this->shipper = $shipper;
         $this->initialisation($organisation, $request);
 

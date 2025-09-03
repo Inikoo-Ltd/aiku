@@ -55,7 +55,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|ShippingZoneSchema newQuery()
  * @method static Builder<static>|ShippingZoneSchema onlyTrashed()
  * @method static Builder<static>|ShippingZoneSchema query()
- * @method static Builder<static>|ShippingZoneSchema withTrashed()
+ * @method static Builder<static>|ShippingZoneSchema withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|ShippingZoneSchema withoutTrashed()
  * @mixin Eloquent
  */

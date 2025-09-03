@@ -28,8 +28,6 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int|null $organisation_id
@@ -87,7 +85,7 @@ use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel withoutTrashed()
  * @mixin \Eloquent
  */

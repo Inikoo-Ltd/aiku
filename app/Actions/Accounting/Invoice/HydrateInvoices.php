@@ -25,7 +25,7 @@ class HydrateInvoices
     public function handle(Invoice $invoice): void
     {
         InvoiceHydrateOffers::run($invoice);
-        SetInvoicePaymentState::run($invoice);
+        UpdateInvoicePaymentState::run($invoice);
     }
 
 

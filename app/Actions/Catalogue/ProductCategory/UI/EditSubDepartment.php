@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Enums\UI\Catalogue\DepartmentTabsEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
@@ -19,32 +20,14 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditSubDepartment extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
+
     public function handle(ProductCategory $subDepartment): ProductCategory
     {
         return $subDepartment;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->parent instanceof Organisation) {
-            $this->canEdit = $request->user()->authTo(
-                [
-                    'org-supervisor.'.$this->organisation->id,
-                ]
-            );
 
-            return $request->user()->authTo(
-                [
-                    'org-supervisor.'.$this->organisation->id,
-                    'shops-view'.$this->organisation->id,
-                ]
-            );
-        } else {
-            $this->canEdit = $request->user()->authTo("products.{$this->shop->id}.edit");
-
-            return $request->user()->authTo("products.{$this->shop->id}.view");
-        }
-    }
 
     public function inOrganisation(Organisation $organisation, ProductCategory $subDepartment, ActionRequest $request): ProductCategory
     {
@@ -76,6 +59,7 @@ class EditSubDepartment extends OrgAction
                 'title'       => __('Sub-department'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $subDepartment,
+                    $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
                 'navigation'  => [
@@ -108,25 +92,25 @@ class EditSubDepartment extends OrgAction
                                     'label' => __('code'),
                                     'value' => $subDepartment->code
                                 ],
-                                'name' => [
+                                'name_i8n' => [
                                     'type'  => 'input',
                                     'label' => __('name'),
-                                    'value' => $subDepartment->name
+                                    'value' => $subDepartment->getTranslation('name_i8n', $subDepartment->shop->language->code) ?: $subDepartment->name
                                 ],
-                                'description' => [
-                                    'type'  => 'textEditor',
-                                    'label' => __('description'),
-                                    'value' => $subDepartment->description
-                                ],
-                                'description_title' => [
+                                'description_title_i8n' => [
                                     'type'  => 'input',
                                     'label' => __('description title'),
-                                    'value' => $subDepartment->description_title
+                                    'value' => $subDepartment->getTranslation('description_title_i8n', $subDepartment->shop->language->code) ?: $subDepartment->description_title
                                 ],
-                                'description_extra' => [
+                                'description_i8n' => [
+                                    'type'  => 'textEditor',
+                                    'label' => __('description'),
+                                    'value' => $subDepartment->getTranslation('description_i8n', $subDepartment->shop->language->code) ?: $subDepartment->description
+                                ],
+                                'description_extra_i8n' => [
                                     'type'  => 'textEditor',
                                     'label' => __('description extra'),
-                                    'value' => $subDepartment->description_extra
+                                    'value' => $subDepartment->getTranslation('description_extra_i8n', $subDepartment->shop->language->code) ?: $subDepartment->description_extra
                                 ],
                             ]
                         ],
@@ -135,9 +119,12 @@ class EditSubDepartment extends OrgAction
                             'icon'   => 'fa-light fa-fingerprint',
                             'fields' => [
                                 "image"         => [
-                                    "type"    => "image_crop_square",
+                                    "type"    => "crop-image-full",
                                     "label"   => __("Image"),
                                     "value"   => $subDepartment->imageSources(720, 480),
+                                    "required" => false,
+                                    'noSaveButton' => true,
+                                    "full"         => true
                                 ],
                             ]
                         ],
@@ -186,10 +173,11 @@ class EditSubDepartment extends OrgAction
     }
 
 
-    public function getBreadcrumbs(ProductCategory $subDepartment, array $routeParameters): array
+    public function getBreadcrumbs(ProductCategory $subDepartment, string $routeName, array $routeParameters): array
     {
         return ShowSubDepartment::make()->getBreadcrumbs(
             subDepartment: $subDepartment,
+            routeName: preg_replace('/edit$/', 'show', $routeName),
             routeParameters: $routeParameters,
             suffix: '('.__('Editing').')'
         );

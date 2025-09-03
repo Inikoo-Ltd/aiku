@@ -22,6 +22,7 @@ const props = defineProps<{
   layout: {
     color: string[]
   }
+  luigisbox_tracker_id?: string
 }>()
 
 const layout: any = inject("layout", {});
@@ -43,6 +44,7 @@ const updateIrisLayout = () => {
   layout.iris = {
     currency: defaultCurrency,
     is_logged_in: isLoggedIn,
+    luigisbox_tracker_id: props.luigisbox_tracker_id
   }
 }
 
@@ -114,6 +116,7 @@ watch(() => props.webpage, (val) => {
 watch(filterBlock, () => {
   updateIrisLayout()
 }, { immediate: true });
+
 </script>
 
 <template>
@@ -173,7 +176,7 @@ watch(filterBlock, () => {
   </div>
 </template>
 
-<style lang="scss" scoped>
+<style lang="scss">
 
 .trapezoid-button {
   @apply absolute z-[99] top-[-37px] left-1/2 px-5 py-1 text-white text-xs font-bold transition;
@@ -186,5 +189,9 @@ watch(filterBlock, () => {
   &:hover {
     background-color: v-bind('layout?.app?.theme[0]') !important;
   }
+}
+
+#jsd-widget{
+    display: none !important;
 }
 </style>

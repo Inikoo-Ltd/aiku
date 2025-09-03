@@ -69,7 +69,7 @@ class IndexStoredItemsInReturn extends OrgAction
                     '(SELECT COALESCE(SUM(quantity_ordered), 0) 
                 FROM pallet_return_items pri 
                 WHERE pri.stored_item_id = stored_items.id 
-                AND pri.pallet_return_id = '.$parent->id.') AS total_quantity_ordered'
+                AND pri.pallet_return_id = ' . $parent->id . ') AS total_quantity_ordered'
                 ),
             ])
             ->groupBy([
@@ -81,7 +81,7 @@ class IndexStoredItemsInReturn extends OrgAction
                 'pallet_returns.id'
             ]);
 
-        return $queryBuilder->allowedSorts(['reference', 'code', 'price', 'name', 'state'])
+        return $queryBuilder->allowedSorts(['reference', 'code', 'price', 'name', 'state', 'total_quantity', 'total_quantity_ordered'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -93,28 +93,20 @@ class IndexStoredItemsInReturn extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
 
-            $emptyStateData = [
-
-            ];
-
-
+            $emptyStateData = [];
 
             $table->withGlobalSearch();
-
 
             $table->withEmptyState($emptyStateData)
                 ->withModelOperations($modelOperations);
 
-
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
-
             $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'total_quantity', label: __('Current stock'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'pallet_stored_items', label: __('Pallets [location]'), canBeHidden: false, sortable: true, searchable: true);
-
             $table->column(key: 'total_quantity_ordered', label: __('requested quantity'), canBeHidden: false, sortable: true, searchable: true);
             if ($palletReturn->state === PalletReturnStateEnum::PICKING) {
                 $table->column(key: 'actions', label: __('action'), canBeHidden: false, sortable: true, searchable: true);
@@ -123,7 +115,4 @@ class IndexStoredItemsInReturn extends OrgAction
             $table->defaultSort('reference');
         };
     }
-
-
-
 }

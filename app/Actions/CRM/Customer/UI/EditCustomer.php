@@ -12,6 +12,7 @@ use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
+use App\Http\Resources\Helpers\TaxNumberResource;
 use App\Models\CRM\Customer;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -48,6 +49,8 @@ class EditCustomer extends OrgAction
             $firstName = $parts[0];
             $lastName = $parts[1] ?? ''; // in case there's no last name
         }
+
+
         return Inertia::render(
             'EditModel',
             [
@@ -103,10 +106,10 @@ class EditCustomer extends OrgAction
                                         'countriesAddressData' => GetAddressData::run()
                                     ]
                                 ],
-                                    'vat'      => [
+                                'vat'      => [
                                     'type'    => 'tax_number',
-                                    'label'   => __('vat'),
-                                    'value'   => null,
+                                    'label'   => __('Tax number'),
+                                    'value'   => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : null,
                                     'country' => $customer->address->country_code,
                                 ]
                             ]
@@ -132,7 +135,7 @@ class EditCustomer extends OrgAction
         return ShowCustomer::make()->getBreadcrumbs(
             routeName: preg_replace('/edit$/', 'show', $routeName),
             routeParameters: $routeParameters,
-            suffix: '('.__('Editing').')'
+            suffix: '(' . __('Editing') . ')'
         );
     }
 
@@ -146,7 +149,6 @@ class EditCustomer extends OrgAction
         })->orderBy('slug', 'desc')->first();
 
         return $this->getNavigation($previous, $request->route()->getName());
-
     }
 
     public function getNext(Customer $customer, ActionRequest $request): ?array

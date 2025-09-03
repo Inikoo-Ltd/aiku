@@ -22,6 +22,7 @@ enum CustomerTabsEnum: string
     case ATTACHMENTS         = 'attachments';
     // case DISPATCHED_EMAILS   = 'dispatched_emails';
     case CREDIT_TRANSACTIONS = 'credit_transactions';
+    case PAYMENTS            = 'payments';
     case FAVOURITES          = 'favourites';
     case REMINDERS           = 'reminders';
     case DISPATCHED_EMAILS   = 'dispatched_emails';
@@ -30,6 +31,12 @@ enum CustomerTabsEnum: string
     public function blueprint(): array
     {
         return match ($this) {
+            CustomerTabsEnum::PAYMENTS => [
+                'align' => 'right',
+                'title' => __('payments'),
+                'icon'  => 'fal fa-money-bill',
+                'type'  => 'icon',
+            ],
             CustomerTabsEnum::SHOWCASE => [
                 'title' => __('overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
@@ -38,7 +45,6 @@ enum CustomerTabsEnum: string
                 'title' => __('timeline'),
                 'icon'  => 'fal fa-code-branch',
             ],
-
             CustomerTabsEnum::ATTACHMENTS => [
                 'align' => 'right',
                 'title' => __('attachments'),

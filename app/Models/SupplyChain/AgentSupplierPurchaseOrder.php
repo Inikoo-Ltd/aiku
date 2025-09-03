@@ -34,8 +34,6 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property string $reference
@@ -99,7 +97,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|AgentSupplierPurchaseOrder newQuery()
  * @method static Builder<static>|AgentSupplierPurchaseOrder onlyTrashed()
  * @method static Builder<static>|AgentSupplierPurchaseOrder query()
- * @method static Builder<static>|AgentSupplierPurchaseOrder withTrashed()
+ * @method static Builder<static>|AgentSupplierPurchaseOrder withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|AgentSupplierPurchaseOrder withoutTrashed()
  * @mixin Eloquent
  */

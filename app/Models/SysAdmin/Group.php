@@ -8,6 +8,7 @@
 
 namespace App\Models\SysAdmin;
 
+use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\Accounting\Invoice;
@@ -111,8 +112,6 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 /**
- *
- *
  * @property int $id
  * @property string $ulid
  * @property string $slug
@@ -131,6 +130,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property array<array-key, mixed>|null $extra_languages
  * @property-read \App\Models\SysAdmin\GroupAccountingStats|null $accountingStats
  * @property-read LaravelCollection<int, Adjustment> $adjustments
  * @property-read LaravelCollection<int, Agent> $agents
@@ -262,7 +262,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Group newQuery()
  * @method static Builder<static>|Group onlyTrashed()
  * @method static Builder<static>|Group query()
- * @method static Builder<static>|Group withTrashed()
+ * @method static Builder<static>|Group withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Group withoutTrashed()
  * @mixin Eloquent
  */
@@ -284,6 +284,7 @@ class Group extends Authenticatable implements Auditable, HasMedia
             'limits'   => 'array',
             'data'     => 'array',
             'settings' => 'array',
+            'extra_languages' => 'array'
         ];
     }
 
@@ -291,6 +292,7 @@ class Group extends Authenticatable implements Auditable, HasMedia
         'limits'   => '{}',
         'data'     => '{}',
         'settings' => '{}',
+        'extra_languages' => '{}'
     ];
 
     public function getSlugOptions(): SlugOptions
@@ -943,5 +945,11 @@ class Group extends Authenticatable implements Auditable, HasMedia
     {
         return $this->hasMany(WebUserRequest::class);
     }
+
+    public function getMasterFamilies(): LaravelCollection
+    {
+        return $this->masterProductCategories()->where('type', MasterProductCategoryTypeEnum::FAMILY)->get();
+    }
+
 
 }

@@ -16,7 +16,10 @@ import "@/../css/Iris/editor.css"
 import { getStyles } from "@/Composables/styles";
 import { Root as RootWebpage } from '@/types/webpageTypes'
 import ButtonPreviewLogin from '@/Components/Workshop/Tools/ButtonPreviewLogin.vue';
-
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faTimes } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faTimes)
 
 defineOptions({ layout: WebPreview })
 const props = defineProps<{
@@ -40,6 +43,7 @@ const { mode } = route().params;
 const isPreviewMode = ref(mode != 'iris' ? false : true)
 const isInWorkshop = route().params.isInWorkshop || false
 const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
+const active_language = ref<string|null>(null)
 const defaultCurrency = {
   code: "GBP",
   symbol: "£",
@@ -74,6 +78,7 @@ onMounted(() => {
     window.addEventListener('message', (event) => {
         if (event.data.key === 'isPreviewLoggedIn') isPreviewLoggedIn.value = event.data.value
         if (event.data.key === 'isPreviewMode') isPreviewMode.value = event.data.value
+        if (event.data.key === 'active_language') active_language.value = event.data.value
         if (event.data.key === 'reload') {
             router.reload({
                 only: ['footer', 'header', 'webpage', 'navigation'],
@@ -113,7 +118,7 @@ watch(isPreviewLoggedIn, (value) => {
 
 
 <template>
-    <div class="editor-class">
+    <div class="editor-class" :class="route().params?.mode !== 'iris' ? 'is-not-mode-iris' : ''">
         <div v-if="isInWorkshop" class="bg-gray-200 shadow-xl px-8 py-4 flex justify-center items-center gap-x-2">
             <ButtonPreviewLogin v-model="isPreviewLoggedIn" />
         </div>
@@ -143,7 +148,8 @@ watch(isPreviewLoggedIn, (value) => {
 
             <!-- Footer -->
             <component v-if="footer?.data?.data"
-                :is="isPreviewMode || route().current() == 'grp.websites.preview' ? getIrisComponent(footer.data.code) : getComponent(footer.data.code)"
+
+                :is="isPreviewMode || route().current() == 'grp.websites.preview' || route().current() == 'grp.org.shops.show.web.webpages.snapshot.preview' ? getIrisComponent(footer.data.code) : getComponent(footer.data.code)"
                 v-model="footer.data.data.fieldValue" @update:model-value="updateData(footer.data)" />
         </div>
     </div>
@@ -152,22 +158,24 @@ watch(isPreviewLoggedIn, (value) => {
 
 
 
-<style  lang="scss">
-:deep(.hover-dashed) {
-    @apply relative;
-
-    &::after {
-        content: "";
-        @apply absolute inset-0 hover:bg-gray-200/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
+<style lang="scss">
+.is-not-mode-iris {
+    .hover-dashed {
+        @apply relative;
+    
+        &::after {
+            content: "";
+            @apply absolute inset-0 hover:bg-gray-200/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
+        }
     }
-}
-
-:deep(.hover-text-input) {
-    @apply relative isolate;
-
-    &::after {
-        content: "";
-        @apply -z-10 absolute inset-0 hover:bg-yellow-500/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
+    
+    .hover-text-input {
+        @apply relative isolate;
+    
+        &::after {
+            content: "";
+            @apply -z-10 absolute inset-0 hover:bg-yellow-500/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
+        }
     }
 }
 

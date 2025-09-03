@@ -9,9 +9,11 @@
 namespace App\Actions\Dropshipping\Portfolio;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePortfolios;
+use App\Actions\Catalogue\ShopPlatformStats\ShopPlatformStatsHydratePortfolios;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydratePortfolios;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
 use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolio;
+use App\Actions\Dropshipping\WooCommerce\Product\CheckWooPortfolio;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePortfolios;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePortfolios;
@@ -81,6 +83,8 @@ class StorePortfolio extends OrgAction
 
         if ($customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
             $portfolio = CheckShopifyPortfolio::run($portfolio);
+        } elseif ($customerSalesChannel->platform->type == PlatformTypeEnum::WOOCOMMERCE) {
+            $portfolio = CheckWooPortfolio::run($portfolio);
         }
 
 
@@ -90,6 +94,7 @@ class StorePortfolio extends OrgAction
         ShopHydratePortfolios::dispatch($customerSalesChannel->shop)->delay($this->hydratorsDelay);
         CustomerHydratePortfolios::dispatch($customerSalesChannel->customer)->delay($this->hydratorsDelay);
         CustomerSalesChannelsHydratePortfolios::run($customerSalesChannel);
+        ShopPlatformStatsHydratePortfolios::dispatch($portfolio->shop, $portfolio->platform)->delay($this->hydratorsDelay);
 
         return $portfolio;
     }

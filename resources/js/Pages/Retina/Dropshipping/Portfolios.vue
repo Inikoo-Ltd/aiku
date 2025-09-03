@@ -2,7 +2,7 @@
 import {Head, router} from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import {capitalize} from "@/Composables/capitalize";
-import {computed, reactive, ref, provide} from "vue";
+import {computed, reactive, ref} from "vue";
 import {PageHeading as PageHeadingTypes} from "@/types/PageHeading";
 import {Tabs as TSTabs} from "@/types/Tabs";
 import RetinaTablePortfoliosManual from "@/Components/Tables/Retina/RetinaTablePortfoliosManual.vue";
@@ -18,6 +18,7 @@ import AddPortfolios from "@/Components/Dropshipping/AddPortfolios.vue";
 import {Message, Popover} from "primevue"
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
 import {faSyncAlt, faHandPointer} from "@fas";
+
 import {
     faBracketsCurly, faPawClaws,
     faFileExcel,
@@ -31,10 +32,11 @@ import {
 } from "@fal";
 import axios from "axios"
 import {Table as TableTS} from "@/types/Table"
-import { CustomerSalesChannel } from "@/types/customer-sales-channel"
+import {CustomerSalesChannel} from "@/types/customer-sales-channel"
 import RetinaTablePortfoliosPlatform from "@/Components/Tables/Retina/RetinaTablePortfoliosPlatform.vue"
 import RetinaTablePortfoliosShopify from "@/Components/Tables/Retina/RetinaTablePortfoliosShopify.vue"
-import { ulid } from "ulid";
+import {ulid} from "ulid";
+
 
 library.add(faFileExcel, faBracketsCurly, faSyncAlt, faHandPointer, faPawClaws, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
 
@@ -55,6 +57,9 @@ const props = defineProps<{
     }
     products: TableTS
     routes: {
+        batch_upload: routeType
+        batch_all: routeType
+        match_match: routeType
         syncAllRoute: routeType
         batch_sync: routeType
         duplicate: routeType
@@ -84,7 +89,7 @@ const props = defineProps<{
     manual_channels: object
     count_product_not_synced: number
 
-   // inactive: {}
+    // inactive: {}
     product_count: number
 }>();
 
@@ -243,7 +248,11 @@ const bulkUpload = () => {
 
 const progressToUploadToShopify = ref<{ [key: number]: string }>({})
 const selectedProducts = ref<number[]>([])
-const loadingAction= ref([])
+
+const loadingAction = ref([])
+const modalAddproductBluk = ref(false)
+const modalMatchproductBluk = ref(false)
+
 
 const progessbar = ref({
     data: {
@@ -261,39 +270,43 @@ const debReloadPage = () => {
 }
 
 
-
 const onSuccessEditCheckmark = (key) => {
-  progessbar.value = {...progessbar.value , done : false, total : selectedProducts.value.length}
+
+    if (key == 'Match With Existing Product') modalMatchproductBluk.value = true
+    else modalAddproductBluk.value = true
+    selectedProducts.value = []
+
+    progessbar.value = {...progessbar.value, done: false, total: selectedProducts.value.length}
 }
 
 const onFailedEditCheckmark = (error: any) => {
-  notify({
-    title: "Something went wrong.",
-    text: error?.response?.data?.products || "An error occurred.",
-    type: "error",
-  })
+    notify({
+        title: "Something went wrong.",
+        text: error?.response?.data?.products || "An error occurred.",
+        type: "error",
+    })
 }
 
 const submitPortfolioAction = async (action: any) => {
-  loadingAction.value.push(action.label)
-  try {
-    const method = action?.method?.toLowerCase() || "get"
-    const url = route(action.name, action?.parameters)
-    const data = { portfolios: selectedProducts.value }
+    loadingAction.value.push(action.label)
+    try {
+        const method = action?.method?.toLowerCase() || "get"
+        const url = route(action.name, action?.parameters)
+        const data = {portfolios: selectedProducts.value}
 
-    const response = await axios({
-      method,
-      url,
-      data: method === "get" ? undefined : data,
-      params: method === "get" ? data : undefined
-    })
+        const response = await axios({
+            method,
+            url,
+            data: method === "get" ? undefined : data,
+            params: method === "get" ? data : undefined
+        })
 
-    onSuccessEditCheckmark(action.label)
-  } catch (error: any) {
-    onFailedEditCheckmark(error)
-  } finally {
-    loadingAction.value = []
-  }
+        onSuccessEditCheckmark(action.label)
+    } catch (error: any) {
+        onFailedEditCheckmark(error)
+    } finally {
+        loadingAction.value = []
+    }
 }
 
 const key = ulid()
@@ -302,60 +315,35 @@ const key = ulid()
 
 <template>
 
-    <Head :title="capitalize(title)" />
+    <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead">
 
         <template #button-upload-to-shopify="{ action }">
             <Button @click="onUploadToShopify()" :style="action.style" :label="action.label" :loading="isLoadingUpload"
-                :disabled="!selectedData.products.length"
-                v-tooltip="!selectedData.products.length ? trans('Select at least one product to upload') : ''" />
+                    :disabled="!selectedData.products.length"
+                    v-tooltip="!selectedData.products.length ? trans('Select at least one product to upload') : ''"/>
         </template>
 
         <template v-if="props.product_count" #other>
             <div class="rounded-md ">
                 <a :href="downloadUrl('csv') as string" target="_blank" rel="noopener">
-                    <Button :icon="faDownload" label="CSV" type="tertiary" class="rounded-r-none" />
+                    <Button :icon="faDownload" label="CSV" type="tertiary" class="rounded-r-none"/>
                 </a>
 
                 <a :href="downloadUrl('images') as string" target="_blank" rel="noopener">
-                    <Button :icon="faImage" label="Images" type="tertiary" class="border-l-0 border-r-0 rounded-none" />
+                    <Button :icon="faImage" label="Images" type="tertiary" class="border-l-0  rounded-l-none"/>
                 </a>
 
-                <!-- Section: Download button -->
-                <Button @click="(e) => _popover?.toggle(e)" v-tooltip="trans('Open another options')"
-                    :icon="faEllipsisV" xloading="!!isLoadingSpecificChannel.length"
-                    class="!px-2 border-l-0 rounded-l-none h-full" type="tertiary" key="" />
-
-                <Popover ref="_popover">
-                    <div class="w-64 relative">
-                        <div class="text-sm mb-2">
-                            {{ trans("Select another download file type") }}:
-                        </div>
-
-                        <div class="flex flex-col gap-y-2">
-                            <a :href="downloadUrl('xlsx') as string" target="_blank" rel="noopener">
-                                <Button :icon="faFileExcel" label="Excel" full :style="'tertiary'" />
-                            </a>
-                            <a :href="downloadUrl('json') as string" target="_blank" rel="noopener">
-                                <Button :icon="faBracketsCurly" label="JSON" full :style="'tertiary'" />
-                            </a>
-                            <a :href="downloadUrl('images') as string" target="_blank" rel="noopener">
-                                <Button :icon="faImage" :label="trans('Images')" full :style="'tertiary'" />
-                            </a>
-                        </div>
-
-                    </div>
-                </Popover>
             </div>
 
             <Button @click="() => (isOpenModalPortfolios = true)" :label="trans('Add products')"
-                :icon="'fas fa-plus'" />
+                    :icon="'fas fa-plus'"/>
 
             <div class="rounded-md" v-if="manual_channels?.data?.length">
                 <!-- Section: Download button -->
                 <Button @click="(e) => _clone_popover?.toggle(e)" v-tooltip="trans('Open another options')"
-                    :icon="faEllipsisV" xloading="!!isLoadingSpecificChannel.length" class="!px-2 h-full"
-                    type="tertiary" key="" />
+                        :icon="faEllipsisV" xloading="!!isLoadingSpecificChannel.length" class="!px-2 h-full"
+                        type="tertiary" key=""/>
 
                 <Popover ref="_clone_popover">
                     <div class="w-64 relative">
@@ -365,8 +353,8 @@ const key = ulid()
 
                         <div class="flex flex-col gap-y-2" v-for="manual_channel in manual_channels?.data">
                             <Button :loading="isLoadingClone" @click="() => onCloneManualPortfolio(manual_channel.id)"
-                                :label="manual_channel.name + ' ('+manual_channel.number_portfolios+')'" full
-                                :style="'tertiary'" />
+                                    :label="manual_channel.name + ' ('+manual_channel.number_portfolios+')'" full
+                                    :style="'tertiary'"/>
                         </div>
 
                     </div>
@@ -379,28 +367,28 @@ const key = ulid()
     <Message v-if="!is_platform_connected && !isPlatformManual" severity="error" class="m-4 ">
         <div class="ml-2 font-normal flex flex-col items-center sm:flex-row justify-between w-full">
             <div>
-                <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true"/>
                 <div class="inline items-center gap-x-2">
                     {{
-                    trans("Your channel is not connected yet to the platform. Please connect it to be able to synchronize your products.")
+                        trans("Your channel is not connected yet to the platform. Please connect it to be able to synchronize your products.")
                     }}
                 </div>
             </div>
 
             <div class="w-full sm:w-fit h-fit">
                 <Button v-if="customer_sales_channel?.reconnect_route?.name"
-                    @click="() => onClickReconnect(customer_sales_channel)" iconRight="fal fa-external-link"
-                    :label="trans('Connect')" zsize="xxs" type="secondary" full />
+                        @click="() => onClickReconnect(customer_sales_channel)" iconRight="fal fa-external-link"
+                        :label="trans('Connect')" zsize="xxs" type="secondary" full/>
             </div>
         </div>
     </Message>
 
     <!-- Section: Alert if there is product not synced -->
     <Message v-if="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual" severity="warn"
-        class="m-4 ">
+             class="m-4 ">
         <div class="ml-2 font-normal flex flex-col items-center sm:flex-row justify-between w-full">
             <div>
-                <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true"/>
                 <div class="inline items-center gap-x-2">
                     {{ trans("You have :products products not synced yet", {products: `${count_product_not_synced}`}) }}
                 </div>
@@ -408,25 +396,24 @@ const key = ulid()
 
             <div class="w-full sm:w-fit h-fit space-x-2 flex justify-end">
                 <ButtonWithLink v-if="routes.duplicate?.name" :routeTarget="routes.duplicate"
-                    v-tooltip="trans('This will only create new products to the :platform that not exist in :platform', { platform: props.platform_data.name })"
-                    aclick="() => onClickReconnect(customer_sales_channel)" icon="far fa-plus"
-                    :label="trans('Create new')" type="tertiary" />
+                                v-tooltip="trans('This will only create new products to the :platform that not exist in :platform', { platform: props.platform_data.name })"
+                                aclick="() => onClickReconnect(customer_sales_channel)" icon="far fa-plus"
+                                :label="trans('Create new')" type="tertiary"/>
 
                 <ButtonWithLink v-if="routes.batch_sync?.name" :routeTarget="routes.batch_sync"
-                    v-tooltip="trans('This will only sync existing products to the :platform (will not create new)', { platform: props.platform_data.name })"
-                    icon="fas fa-sync-alt" :label="trans('Use existing')" type="tertiary" />
-
+                                v-tooltip="trans('This will only sync existing products to the :platform (will not create new)', { platform: props.platform_data.name })"
+                                icon="fas fa-sync-alt" :label="trans('Use existing')" type="tertiary"/>
 
 
                 <div v-if="selectedProducts.length > 0" class="space-x-2 border-r border-gray-400 pr-2">
-                  <!--   <Button v-if="selectedProducts.length > 0" type="green" icon="fas fa-hand-pointer"
-                        :label="trans('Match With Existing Product (:count)', { count: selectedProducts?.length })"
-                        :loading="loadingAction.includes('bulk-match')" @click="() => submitPortfolioAction({
-                            label : 'bulk-match',
-                            name : 'retina.models.dropshipping.shopify.batch_match',
-                            parameters: { customerSalesChannel: customer_sales_channel.id },
-                            method: 'post',
-                        })" size="xs" /> -->
+                    <!--   <Button v-if="selectedProducts.length > 0" type="green" icon="fas fa-hand-pointer"
+                          :label="trans('Match With Existing Product (:count)', { count: selectedProducts?.length })"
+                          :loading="loadingAction.includes('bulk-match')" @click="() => submitPortfolioAction({
+                              label : 'bulk-match',
+                              name : 'retina.models.dropshipping.shopify.batch_match',
+                              parameters: { customerSalesChannel: customer_sales_channel.id },
+                              method: 'post',
+                          })" size="xs" /> -->
 
                     <Button
                         v-if="selectedProducts.length > 0"
@@ -436,7 +423,7 @@ const key = ulid()
                         :loading="loadingAction.includes('bulk-create')"
                         @click="() => submitPortfolioAction({
                             label : 'bulk-create',
-                            name : 'retina.models.dropshipping.shopify.batch_upload',
+                            name : props.routes.bulk_upload.name,
                             parameters: { customerSalesChannel: customer_sales_channel.id },
                             method: 'post',
                         })"
@@ -449,7 +436,7 @@ const key = ulid()
                         label="Upload all as new product"
                         size="xs"
                         :routeTarget="{
-                            name: 'retina.models.dropshipping.shopify.batch_all',
+                            name: props.routes.batch_all.name,
                             parameters: { customerSalesChannel: customer_sales_channel.id },
                             method: 'post'
                         }"
@@ -462,47 +449,58 @@ const key = ulid()
 
     <!-- retina.models.dropshipping.ebay.batch_upload -->
     <div v-if="props.product_count < 1"
-        class="relative mx-auto flex max-w-3xl flex-col items-center px-6 text-center pt-20 lg:px-0">
+         class="relative mx-auto flex max-w-3xl flex-col items-center px-6 text-center pt-20 lg:px-0">
         <h1 class="text-4xl font-bold tracking-tight lg:text-6xl">
             {{ content?.portfolio_empty?.title || trans(`You don't have a single portfolios`) }}
         </h1>
         <p class="mt-4 text-xl">
             {{
-            content?.portfolio_empty?.description || trans("To get started, add products to your shop. You can sync from your inventory or create a new one.")
+                content?.portfolio_empty?.description || trans("To get started, add products to your shop. You can sync from your inventory or create a new one.")
             }}
         </p>
         <div class="mt-6 space-y-4">
             <ButtonWithLink v-if="routes?.syncAllRoute" :routeTarget="routes?.syncAllRoute" isWithError
-                :label="content?.portfolio_empty?.sync_button" icon="fas fa-sync-alt" xtype="tertiary" size="xl" />
+                            :label="content?.portfolio_empty?.sync_button" icon="fas fa-sync-alt" xtype="tertiary"
+                            size="xl"/>
             <div v-if="routes?.syncAllRoute && routes?.addPortfolioRoute" class="text-gray-500">
                 {{ content?.portfolio_empty?.separation || trans("or") }}
             </div>
             <Button v-if="routes?.addPortfolioRoute" @click="isOpenModalPortfolios = true"
-                :label="content?.portfolio_empty?.add_button || trans('Add products')" icon="fas fa-plus" size="xl" />
+                    :label="content?.portfolio_empty?.add_button || trans('Add products')" icon="fas fa-plus"
+                    size="xl"/>
         </div>
     </div>
     <div v-else class="overflow-x-auto">
         <RetinaTablePortfoliosManual v-if="isPlatformManual" :data="props.products" :tab="'products'" :selectedData
-            :platform_data :platform_user_id :is_platform_connected :progressToUploadToShopify :isPlatformManual
-            :useCheckBox="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual" />
+                                     :platform_data :platform_user_id :is_platform_connected :progressToUploadToShopify
+                                     :isPlatformManual
+                                     :useCheckBox="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual"/>
 
         <RetinaTablePortfoliosShopify v-else-if="platform_data.type === 'shopify'" :data="props.products"
-            :tab="'products'" :selectedData :platform_data :platform_user_id :is_platform_connected
-            :progressToUploadToShopifyAll="progessbar" :progressToUploadToShopify :customerSalesChannel="customer_sales_channel"
-            v-model:selectedProducts="selectedProducts" :key="key" :count_product_not_synced="count_product_not_synced"/>
+                                      :tab="'products'" :selectedData :platform_data :platform_user_id
+                                      :is_platform_connected
+                                      :progressToUploadToShopifyAll="progessbar" :progressToUploadToShopify
+                                      :customerSalesChannel="customer_sales_channel"
+                                      v-model:selectedProducts="selectedProducts" :key="key"
+                                      :count_product_not_synced="count_product_not_synced"/>
+
 
         <RetinaTablePortfoliosPlatform v-else :data="props.products" :tab="'products'" :selectedData :platform_data
-            :platform_user_id :is_platform_connected :progressToUploadToShopify />
+                                       :platform_user_id :is_platform_connected :progressToUploadToShopify
+                                       :customerSalesChannel="customer_sales_channel"
+                                       v-model:selectedProducts="selectedProducts" :key="tableKey"
+                                       :routes="props.routes"/>
     </div>
 
     <Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false"
-        width="w-full max-w-7xl max-h-[600px] md:max-h-[85vh] overflow-y-auto">
+           width="w-full max-w-7xl max-h-[600px] md:max-h-[85vh] overflow-y-auto">
         <AddPortfolios v-if="platform_data?.type === 'manual'" :step="step" :routes="props.routes" :platform_data
-            @onDone="isOpenModalPortfolios = false" :platform_user_id />
+                       @onDone="isOpenModalPortfolios = false" :platform_user_id/>
 
         <AddPortfoliosWithUpload v-else :step="step" :routes="props.routes" :platform_data
-            @onDone="()=>{isOpenModalPortfolios = false, key = ulid()}" :platform_user_id :is_platform_connected
-            :customerSalesChannel="customer_sales_channel" :onClickReconnect />
-    </Modal>
 
+                                 @onDone="()=>{isOpenModalPortfolios = false, key = ulid()}" :platform_user_id
+                                 :is_platform_connected
+                                 :customerSalesChannel="customer_sales_channel" :onClickReconnect/>
+    </Modal>
 </template>

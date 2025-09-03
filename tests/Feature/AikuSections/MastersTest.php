@@ -6,8 +6,6 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-
-
 /** @noinspection PhpUnhandledExceptionInspection */
 
 use App\Actions\Catalogue\Shop\UpdateShop;
@@ -20,6 +18,7 @@ use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\HydrateMasterShop;
 use App\Actions\Masters\MasterShop\StoreMasterShop;
 use App\Actions\Masters\MasterShop\UpdateMasterShop;
+use App\Actions\Masters\MasterAsset\HydrateMasterAssets;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
@@ -60,8 +59,6 @@ beforeEach(function () {
     actingAs($this->adminGuest->getUser());
 });
 
-
-
 test("UI Index Master Shops", function () {
     $response = get(
         route("grp.masters.master_shops.index")
@@ -74,7 +71,6 @@ test("UI Index Master Shops", function () {
             ->has("data");
     });
 });
-
 
 test('create master shop', function () {
     $masterShop = StoreMasterShop::make()->action(
@@ -116,13 +112,13 @@ test("UI Show master shop", function (MasterShop $masterShop) {
         $page
             ->component("Masters/MasterShop")
             ->has("title")
-            ->has("breadcrumbs", 4)
+            ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) =>
                 $page->where("title", $masterShop->name)
-                        ->has('subNavigation')
-                        ->etc()
+                    ->has('subNavigation')
+                    ->etc()
             )
             ->has("tabs");
     });
@@ -193,12 +189,12 @@ test("UI Index Master Departments", function (MasterShop $masterShop) {
         $page
             ->component("Masters/MasterDepartments")
             ->has("title")
-            ->has("breadcrumbs", 5)
+            ->has("breadcrumbs", 4)
             ->has("data")
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) =>
-                    $page->has('subNavigation')->etc()
+                $page->has('subNavigation')->etc()
             );
     });
 })->depends('create master shop');
@@ -215,7 +211,7 @@ test("UI Master Dashboard", function () {
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) =>
-                    $page->has('title')->etc()
+                $page->has('title')->etc()
             );
     });
 });
@@ -228,12 +224,12 @@ test("UI Index Master Families", function (MasterShop $masterShop) {
         $page
             ->component("Masters/MasterFamilies")
             ->has("title")
-            ->has("breadcrumbs", 5)
+            ->has("breadcrumbs", 4)
             ->has("data")
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) =>
-                    $page->has('subNavigation')->etc()
+                $page->has('subNavigation')->etc()
             );
     });
 })->depends('create master shop');
@@ -251,7 +247,7 @@ test("UI Index Master SubDepartments", function (MasterShop $masterShop) {
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) =>
-                    $page->has('subNavigation')->etc()
+                $page->has('subNavigation')->etc()
             );
     });
 })->depends('create master shop')->todo();
@@ -404,7 +400,7 @@ test("UI Index Master SubDepartments in Department", function (MasterProductCate
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) =>
-                    $page->has('subNavigation')->etc()
+                $page->has('subNavigation')->etc()
             );
     });
 })->depends('create master product category');
@@ -425,7 +421,7 @@ test("UI Show Master SubDepartment", function (MasterProductCategory $masterSubD
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) =>
-                    $page->has('subNavigation')->etc()
+                $page->has('subNavigation')->etc()
             )
             ->has("tabs");
     });
@@ -443,3 +439,9 @@ test('Hydrate master departments', function (MasterShop $masterShop) {
 test('master hydrator', function () {
     $this->artisan('hydrate -s masters')->assertExitCode(0);
 });
+
+test('Hydrate master assets', function (MasterAsset $masterAsset) {
+    HydrateMasterAssets::run($masterAsset);
+    $masterAsset->refresh();
+    expect($masterAsset)->toBeInstanceOf(MasterAsset::class);
+})->depends('update master asset');

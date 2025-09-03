@@ -10,6 +10,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExclamationCircle, faCheckCircle } from '@fas'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { onMounted } from "vue"
+import Tag from '@/Components/Tag.vue'
 library.add(faExclamationCircle, faCheckCircle)
 
 const props = defineProps<{
@@ -33,6 +34,8 @@ onMounted(() => {
         props.form[props.fieldName] = props.options?.[0]?.value
     }
 })
+
+console.log(props)
 </script>
 
 <template>
@@ -56,7 +59,16 @@ onMounted(() => {
 				:searchable="!!props.fieldData.searchable" 
 				:label="fieldData.labelProp || 'label'"
 				:valueProp="fieldData.valueProp || 'value'"
-				/>
+				>
+				<template
+					#tag="{ option, handleTagRemove, disabled }: { option: tag, handleTagRemove: Function, disabled: boolean }">
+					<div class="px-0.5 py-[3px]">
+						<Tag :theme="option.id" :label="option[fieldData.labelProp][fieldData.labelProp]" :closeButton="true"
+							:stringToColor="true" size="sm"
+							@onClose="(event) => handleTagRemove(option, event)" />
+					</div>
+				</template>
+			</Multiselect>
 			<div
 				v-if="form.errors[fieldName] || form.recentlySuccessful"
 				class="absolute inset-y-2/4 right-0 pr-3 flex items-center pointer-events-none bg-red-500">

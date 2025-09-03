@@ -20,6 +20,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeletedInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Accounting\Invoice;
 use Exception;
 use Illuminate\Console\Command;
@@ -37,16 +38,20 @@ class DeleteInvoice extends OrgAction
         try {
             $invoice = DB::transaction(function () use ($invoice, $modelData) {
                 $invoice = $this->update($invoice, $modelData);
-                $invoice->delete();
                 foreach ($invoice->invoiceTransactions as $invoiceTransaction) {
                     DeleteInvoiceTransaction::make()->action($invoiceTransaction);
                 }
 
+                $invoice->delete();
+
                 return $invoice;
             });
-            StoreDeletedInvoiceHistory::run(invoice: $invoice);
-            SendInvoiceDeletedNotification::dispatch($invoice);
-            $this->postDeleteInvoiceHydrators($invoice);
+
+            if ($invoice->type === InvoiceTypeEnum::INVOICE) {
+                StoreDeletedInvoiceHistory::run(invoice: $invoice);
+                SendInvoiceDeletedNotification::dispatch($invoice);
+                $this->postDeleteInvoiceHydrators($invoice);
+            }
         } catch (Throwable) {
             //
         }

@@ -22,8 +22,6 @@ use Illuminate\Support\Arr;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
- *
- *
  * @property int $id
  * @property int $shop_id
  * @property int $payment_account_id

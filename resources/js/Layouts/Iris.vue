@@ -19,6 +19,7 @@ import { faHome } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Breadcrumbs from '@/Components/Navigation/Breadcrumbs.vue'
+import { irisStyleVariables } from '@/Composables/Workshop'
 library.add(faHome, faExclamationTriangle, faWhatsapp)
 
 initialiseIrisApp()
@@ -79,11 +80,16 @@ onMounted(() => {
     if (layout.app.environment === 'local') {
         console.log('Iris Layout', layout)
     }
+
+    irisStyleVariables(theme?.color)
+    
 })
 
 onBeforeUnmount(() => {
     window.removeEventListener('resize', checkScreenType)
 })
+
+console.log('handle', usePage().props)
 
 </script>
 
@@ -118,7 +124,7 @@ onBeforeUnmount(() => {
 
         <div :class="[(theme.layout === 'blog' || !theme.layout) ? 'container max-w-7xl mx-auto shadow-xl' : '']">
 
-            <IrisHeader v-if="header.header" :data="header" :colorThemed="theme" :menu="navigation"
+            <IrisHeader v-if="header?.header" :data="header" :colorThemed="theme" :menu="navigation"
                 :screen-type="screenType" />
 
             <Breadcrumbs v-if="usePage().props.breadcrumbs?.length" id="iris_breadcrumbs"

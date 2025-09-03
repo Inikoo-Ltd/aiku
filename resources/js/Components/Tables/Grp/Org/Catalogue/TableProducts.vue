@@ -130,6 +130,29 @@ function productRoute(product: Product) {
                     (route().params as RouteParams).family,
                     product.slug
                 ]);
+        case "grp.org.shops.show.catalogue.sub_departments.show.products.index":
+            return route(
+                "grp.org.shops.show.catalogue.sub_departments.show.products.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    (route().params as RouteParams).subDepartment,
+                    product.slug
+                ]);
+        case "grp.org.shops.show.catalogue.sub_departments.show.families.show.products.index":
+            return route(
+                "grp.org.shops.show.catalogue.sub_departments.show.families.show.products.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    (route().params as RouteParams).subDepartment,
+                    (route().params as RouteParams).family,
+                    product.slug
+                ]);
+        case "grp.masters.master_shops.show.master_collections.show":
+            return route(
+                "grp.masters.master_shops.show.master_products.show",
+                [(route().params as RouteParams).masterShop, product.slug])
 
         case "retina.dropshipping.products.index":
             return route(
@@ -164,7 +187,7 @@ function shopRoute(invoice: Invoice) {
         return ''
     }
     if (route().current() == "grp.goods.trade-units.show") {
-        
+
         return route(
             "grp.org.shops.show.catalogue.products.all_products.index",
             [
@@ -203,24 +226,23 @@ const locale = inject("locale", aikuLocaleStructure);
 </script>
 
 <template>
-    <Table
-        :resource="data"
-        :name="tab"
-        class="mt-5"
-        :isCheckBox="isCheckboxProducts"
-        @onSelectRow="(item) => emits('selectedRow', item)"
-    >
+    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="isCheckboxProducts"
+        @onSelectRow="(item) => emits('selectedRow', item)">
         <template #cell(organisation_code)="{ item: refund }">
             <Link v-tooltip='refund["organisation_name"]' :href="organisationRoute(refund)" class="secondaryLink">
-                {{ refund["organisation_code"] }}
+            {{ refund["organisation_code"] }}
             </Link>
         </template>
         <template #cell(state)="{ item: product }">
             <Icon :data="product.state"></Icon>
         </template>
-        
+
         <template #cell(price)="{ item: product }">
             {{ locale.currencyFormat(product.currency_code, product.price) }}
+        </template>
+
+        <template #cell(rrp)="{ item: product }">
+            {{ locale.currencyFormat(product.currency_code, product.rrp) }}
         </template>
 
         <template #cell(sales_all)="{ item: product }">
@@ -229,13 +251,13 @@ const locale = inject("locale", aikuLocaleStructure);
 
         <template #cell(code)="{ item: product }">
             <Link :href="productRoute(product)" class="primaryLink">
-                {{ product["code"] }}
+            {{ product["code"] }}
             </Link>
         </template>
 
         <template #cell(shop_code)="{ item: product }">
             <Link v-if="product['shop_slug']" :href="(shopRoute(product) as string)" class="secondaryLink">
-                {{ product["shop_slug"] }}
+            {{ product["shop_slug"] }}
             </Link>
         </template>
 
@@ -245,47 +267,25 @@ const locale = inject("locale", aikuLocaleStructure);
         </template>
 
         <template #cell(actions)="{ item }">
-            <Link
-                v-if="routes?.detach?.name"
-                as="button"
-                :href="route(routes.detach.name, routes.detach.parameters)"
-                :method="routes?.detach?.method"
-                :data="{
+            <Link v-if="routes?.detach?.name" as="button" :href="route(routes.detach.name, routes.detach.parameters)"
+                :method="routes?.detach?.method" :data="{
                     product: item.id
-                }"
-                preserve-scroll
-                @start="() => isLoadingDetach.push('detach' + item.id)"
-                @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)"
-            >
-                <Button
-                    icon="fal fa-times"
-                    type="negative"
-                    size="xs"
-                    :loading="isLoadingDetach.includes('detach' + item.id)"
-                />
+                }" preserve-scroll @start="() => isLoadingDetach.push('detach' + item.id)"
+                @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)">
+            <Button icon="fal fa-times" type="negative" size="xs"
+                :loading="isLoadingDetach.includes('detach' + item.id)" />
             </Link>
-            <Link
-                v-else="item?.delete_product?.name"
-                as="button"
+            <Link v-else="item?.delete_product?.name" as="button"
                 :href="route(item.delete_product.name, item.delete_product.parameters)"
-                :method="item?.delete_product?.method"
-                :data="{
+                :method="item?.delete_product?.method" :data="{
                     product: item.id
-                }"
-                preserve-scroll
-                @start="() => isLoadingDetach.push('detach' + item.id)"
-                @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)"
-            >
-                <Button
-                    icon="fal fa-times"
-                    type="negative"
-                    size="xs"
-                    :loading="isLoadingDetach.includes('detach' + item.id)"
-                />
+                }" preserve-scroll @start="() => isLoadingDetach.push('detach' + item.id)"
+                @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)">
+            <Button icon="fal fa-times" type="negative" size="xs"
+                :loading="isLoadingDetach.includes('detach' + item.id)" />
             </Link>
         </template>
 
 
     </Table>
 </template>
-

@@ -97,13 +97,12 @@ const layout: any = inject("layout", {})
 				<div class="max-w-xl mx-auto w-full">
 					<div v-html="fieldValue.text" class="mb-6"></div>
 
-					<div class="flex justify-center">
+					<div v-if="fieldValue?.button?.show !== false" class="flex justify-center">
 						<a :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.taget"
 							typeof="button">
 							<Button :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
 								:label="fieldValue?.button?.text" />
 						</a>
-
 					</div>
 				</div>
 			</div>

@@ -71,7 +71,7 @@ const isModalShippingAddress = ref(false)
 
             <!-- Field: Reference Number -->
 
-            <Link v-if="summary?.customer_client.ulid" as="a" v-tooltip="trans('Client')"
+            <Link v-if="summary?.customer_client?.ulid" as="a" v-tooltip="trans('Client')"
                   :href="route('retina.dropshipping.customer_sales_channels.client.show', [summary.customer_channel?.slug, summary?.customer_client.ulid])"
                   class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
                 <div class="flex-none">
@@ -83,7 +83,7 @@ const isModalShippingAddress = ref(false)
             </Link>
 
             <!-- Field: Contact name -->
-            <div v-if="summary?.customer_client.contact_name" v-tooltip="trans('Contact name')"
+            <div v-if="summary?.customer_client?.contact_name" v-tooltip="trans('Contact name')"
                  class="pl-1 flex items-center w-fit flex-none gap-x-2">
                 <div class="flex-none">
                     <FontAwesomeIcon icon='fal fa-id-card-alt' class='text-gray-400' fixed-width aria-hidden='true'/>
@@ -92,7 +92,7 @@ const isModalShippingAddress = ref(false)
             </div>
 
             <!-- Field: Company name -->
-            <div v-if="summary?.customer_client.company_name" v-tooltip="trans('Company name')"
+            <div v-if="summary?.customer_client?.company_name" v-tooltip="trans('Company name')"
                  class="pl-1 flex items-center w-full flex-none gap-x-2">
                 <div class="flex-none">
                     <FontAwesomeIcon icon='fal fa-building' class='text-gray-400' fixed-width aria-hidden='true'/>
@@ -101,7 +101,7 @@ const isModalShippingAddress = ref(false)
             </div>
 
             <!-- Field: Email -->
-            <div v-if="summary?.customer_client.email" class="pl-1 flex items-center w-full flex-none gap-x-2">
+            <div v-if="summary?.customer_client?.email" class="pl-1 flex items-center w-full flex-none gap-x-2">
                 <div v-tooltip="trans('Email')" class="flex-none">
                     <FontAwesomeIcon icon='fal fa-envelope' class='text-gray-400' fixed-width aria-hidden='true'/>
                 </div>
@@ -110,7 +110,7 @@ const isModalShippingAddress = ref(false)
             </div>
 
             <!-- Field: Phone -->
-            <div v-if="summary?.customer_client.phone" class="pl-1 flex items-center w-full flex-none gap-x-2">
+            <div v-if="summary?.customer_client?.phone" class="pl-1 flex items-center w-full flex-none gap-x-2">
                 <div v-tooltip="trans('Phone')" class="flex-none">
                     <FontAwesomeIcon icon='fal fa-phone' class='text-gray-400' fixed-width aria-hidden='true'/>
                 </div>
@@ -145,15 +145,15 @@ const isModalShippingAddress = ref(false)
 
             </dl>
 
-            <div class="mt-1 flex items-center w-full flex-none gap-x-1.5">
+            <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
                 <dt v-tooltip="trans('Weight')" class="flex-none">
                     <FontAwesomeIcon icon='fal fa-weight' fixed-width aria-hidden='true' class="text-gray-400"/>
                 </dt>
 
-                <dd class="xtext-gray-500" v-tooltip="trans('Estimated weight of all products (in kilograms)')">
-                    {{ summary.order_properties?.weight }}
+                <dd class="xtext-gray-500" v-tooltip="trans('Estimated weight of all products')">
+                    {{ summary.order_properties?.weight ?? '-' }}
                 </dd>
-            </div>
+            </dl>
 
             <div v-if="summary?.delivery_notes?.length" class="mt-4 border rounded-lg p-4 pt-3 bg-white shadow-sm">
                 <!-- Section Title -->

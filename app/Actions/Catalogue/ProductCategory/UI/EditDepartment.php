@@ -103,25 +103,25 @@ class EditDepartment extends OrgAction
                                     'label' => __('code'),
                                     'value' => $department->code
                                 ],
-                                'name' => [
+                                'name_i8n' => [
                                     'type'  => 'input',
                                     'label' => __('name'),
-                                    'value' => $department->name
+                                    'value' => $department->getTranslation('name_i8n', $department->shop->language->code) ?: $department->name
                                 ],
-                                'description_title' => [
+                                'description_title_i8n' => [
                                     'type'  => 'input',
                                     'label' => __('description title'),
-                                    'value' => $department->description_title
+                                    'value' => $department->getTranslation('description_title_i8n', $department->shop->language->code) ?: $department->description_title
                                 ],
-                                'description' => [
+                                'description_i8n' => [
                                     'type'  => 'textEditor',
                                     'label' => __('description'),
-                                    'value' => $department->description
+                                    'value' => $department->getTranslation('description_i8n', $department->shop->language->code) ?: $department->description
                                 ],
-                                'description_extra' => [
+                                'description_extra_i8n' => [
                                     'type'  => 'textEditor',
                                     'label' => __('description extra'),
-                                    'value' => $department->description_extra
+                                    'value' => $department->getTranslation('description_extra_i8n', $department->shop->language->code) ?: $department->description_extra
                                 ],
                             ]
                         ],
@@ -135,9 +135,12 @@ class EditDepartment extends OrgAction
                                     'value' => $department->follow_master
                                 ],
                                 "image"         => [
-                                    "type"    => "image_crop_square",
+                                    "type"    => "crop-image-full",
                                     "label"   => __("Image"),
                                     "value"   => $department->imageSources(720, 480),
+                                    "required" => false,
+                                    'noSaveButton' => true,
+                                    "full"         => true
                                 ],
                             ]
                         ]

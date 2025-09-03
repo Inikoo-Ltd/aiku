@@ -53,7 +53,7 @@ if (props.type == "primary" || props.type == "create" || props.type == "save" ||
 }
 else if (props.type == "secondary" || props.style == "secondary") { styleClass = "buttonSecondary"; }
 else if (props.type == "tertiary" || props.style == "tertiary") styleClass = "bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70";
-else if (props.type == "transparent" || props.style == "transparent") styleClass = "bg-transparent text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70";
+else if (props.type == "transparent" || props.style == "transparent") styleClass = `bg-transparent ${ props.noHover ? "" : "hover:bg-gray-200/70" } text-gray-700  disabled:bg-gray-200/70`;
 else if (props.type == "exit" || props.style == "exit" || props.style == "exitEdit" || props.type == "edit" || props.style == "edit") styleClass = "buttonEdit";
 else if (props.type == "dashed" || props.style == "dashed") styleClass = "bg-transparent border border-dashed border-gray-400 text-gray-700 hover:bg-black/10";
 else if (props.type == "rainbow" || props.style == "rainbow") styleClass = "bg-indigo-500 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2";
@@ -171,7 +171,7 @@ const getActionIcon = (icon: any) => {
   >
     <slot>
       <slot name="loading">
-        <FontAwesomeIcon v-if="loading" icon="fad fa-spinner-third" class="animate-spin" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-if="!(!icon && iconRight) && loading" icon="fad fa-spinner-third" class="animate-spin" fixed-width aria-hidden="true" />
       </slot>
       <slot name="icon" v-if="!loading">
         <FontAwesomeIcon v-if="getActionIcon(icon)" :icon="getActionIcon(icon)" :rotation="iconRotation" fixed-width class="" aria-hidden="true" />
@@ -179,7 +179,8 @@ const getActionIcon = (icon: any) => {
       <slot name="label"></slot>
       <span v-if="getActionLabel(label)" class="leading-none tabular-nums" :class="{'capitalize': capitalize}">{{ getActionLabel(label) }}</span>
       <slot name="iconRight">
-        <FontAwesomeIcon v-if="iconRight" :icon="getActionIcon(iconRight)" :rotation="iconRightRotation" fixed-width class="" aria-hidden="true" />
+        <FontAwesomeIcon v-if="!getActionIcon(icon) && loading && iconRight" icon="fad fa-spinner-third" class="animate-spin" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-else-if="iconRight" :icon="getActionIcon(iconRight)" :rotation="iconRightRotation" fixed-width class="" aria-hidden="true" />
       </slot>
     </slot>
   </button>

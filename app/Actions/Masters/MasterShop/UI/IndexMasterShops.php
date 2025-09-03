@@ -58,12 +58,13 @@ class IndexMasterShops extends GrpAction
                     'master_shops.slug',
                     'master_shops.type',
                     'master_shop_stats.number_current_shops as used_in',
+                    'master_shop_stats.number_current_master_product_categories_type_sub_department as sub_departments',
                     'master_shop_stats.number_current_master_product_categories_type_department as departments',
                     'master_shop_stats.number_current_master_product_categories_type_family as families',
                     'master_shop_stats.number_current_master_assets_type_product as products',
                 ]
             )
-            ->allowedSorts(['code', 'name', 'departments', 'families', 'products', 'used_in'])
+            ->allowedSorts(['code', 'name', 'departments', 'sub_departments', 'families', 'products', 'used_in'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -89,6 +90,7 @@ class IndexMasterShops extends GrpAction
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current shops with this master'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'departments', label: __('departments'), tooltip: __('current master departments'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'sub_departments', label: __('Sub departments'), tooltip: __('current master sub departments'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'families', label: __('families'), tooltip: __('current master families'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'products', label: __('products'), tooltip: __('current master products'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('code');

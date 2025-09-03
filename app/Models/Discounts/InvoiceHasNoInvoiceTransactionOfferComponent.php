@@ -13,8 +13,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- *
- *
  * @property int $id
  * @property int $invoice_id
  * @property string|null $model_type

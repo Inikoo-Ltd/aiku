@@ -10,13 +10,11 @@ namespace App\Actions\Comms\Traits;
 
 use App\Actions\Comms\EmailCopy\StoreEmailCopy;
 use App\Actions\Comms\Ses\SendSesEmail;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\OutBoxHasSubscriber;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
 use App\Models\CRM\WebUser;
-use App\Models\Ordering\Order;
 use App\Models\SysAdmin\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -116,7 +114,8 @@ trait WithSendBulkEmails
             'customer-note' => Arr::get($additionalData, 'customer_note'),
             'order' => Arr::get($additionalData, 'order'),
             'pay-info' => Arr::get($additionalData, 'pay_info'),
-
+            'platform' => Arr::get($additionalData, 'platform'),
+            'balance' => Arr::get($additionalData, 'balance'),
 
             default => $originalPlaceholder,
         };

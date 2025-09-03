@@ -9,6 +9,7 @@ import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { getStyles } from '@/Composables/styles'
 import { checkVisible, textReplaceVariables } from '@/Composables/Workshop'
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
+import SwitchLanguage from '@/Components/Iris/SwitchLanguage.vue'
 
 library.add(faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus)
 
@@ -61,7 +62,7 @@ const urlLoginWithRedirect = () => {
 
 <template>
     <div></div>
-    <div id="top_bar_3_iris" class="py-2 px-4 justify-between hidden md:flex"
+    <div id="top_bar_3_iris" class="py-2 px-4 justify-between flex flex-col md:flex-row"
         :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
 			  margin : 0,
@@ -69,7 +70,8 @@ const urlLoginWithRedirect = () => {
 		}"
     >
 
-        <div class="flex gap-x-2">
+        <!-- 1: Profile, Logout -->
+        <div class="flex gap-x-2 flex-wrap justify-between items-center md:justify-normal">
             <!-- Section: Profile -->
             <!-- <a v-if="checkVisible(model?.profile?.visible || null, isLoggedIn)"
                 id="profile_button"
@@ -94,6 +96,22 @@ const urlLoginWithRedirect = () => {
                     <span v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" />
                 </template>
             </ButtonWithLink>
+
+            
+            <ButtonWithLink
+                v-if="checkVisible(model?.login?.visible || null, isLoggedIn)"
+                :url="urlLoginWithRedirect()"
+                icon="fal fa-sign-in"
+                type="tertiary"
+            >
+                <template #label>
+                    <span v-html="textReplaceVariables(model?.login?.text, layout.iris_variables)" />
+                </template>
+            </ButtonWithLink>
+
+            <SwitchLanguage
+                class="md:hidden"
+            />
 
             <!-- Section: LogoutRetina -->
             <!-- <a v-if="checkVisible(model?.logout?.visible || null, isLoggedIn)"
@@ -136,31 +154,7 @@ const urlLoginWithRedirect = () => {
                 </a>
             </span> -->
 
-            <ButtonWithLink
-                v-if="checkVisible(model?.login?.visible || null, isLoggedIn)"
-                :url="urlLoginWithRedirect()"
-                icon="fal fa-sign-in"
-                type="tertiary"
-            >
-                <template #label>
-                    <span v-html="textReplaceVariables(model?.login?.text, layout.iris_variables)" />
-                </template>
-            </ButtonWithLink>
 
-            <!-- Register -->
-            <!-- <span class="">
-            <a v-if="checkVisible(model?.register.visible || null, isLoggedIn)"
-                :href="model?.register?.link.href"
-                :target="model?.register?.link.target"
-                class="space-x-1.5 cursor-pointer "
-                id=""
-                :style="getStyles(model?.register.container.properties)"
-
-            >
-                <FontAwesomeIcon icon='fal fa-user-plus' class='' fixed-width aria-hidden='true' />
-                <span v-html="textReplaceVariables(model?.register?.text, layout.iris_variables)" />
-            </a>
-            </span> -->
             <ButtonWithLink
                 v-if="checkVisible(model?.register?.visible || null, isLoggedIn)"
                 url="/app/register"
@@ -175,13 +169,11 @@ const urlLoginWithRedirect = () => {
                     <span v-html="textReplaceVariables(model?.register.text, layout.iris_variables)" class="" />
                 </template>
             </ButtonWithLink>
+            
 
         </div>
-
-        <!-- Section: Main title -->
-        <!-- <div @click="()=> emits('setPanelActive', 'title')" v-if="checkVisible(model?.main_title.visible || null, isLoggedIn)" class="text-center flex items-center " v-html="model.main_title.text">
-        </div> -->
         
+        <!-- 2: Main text -->
         <div
             v-if="checkVisible(model?.main_title?.visible || null, isLoggedIn) && textReplaceVariables(model?.main_title?.text, layout.iris_variables)"
             class="text-center flex items-center"
@@ -189,19 +181,9 @@ const urlLoginWithRedirect = () => {
         />
 
         <div class="action_buttons" style="display: flex; justify-content: flex-end; column-gap: 5px; grid-column: span 5 / span 5">
-
-            <!-- Section: Favourites -->
-            <!-- <a v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn)"
-                id="favorites_button"
-                :href="model?.favourite?.link.href"
-                :target="model?.favourite?.link.target"
-                class="mx-0 space-x-1.5 "
-                :style="getStyles(model?.favourite.container.properties)"
-
-            >
-                <FontAwesomeIcon icon='fal fa-heart' class='' fixed-width aria-hidden='true' />
-                <span v-html="textReplaceVariables(model?.favourite?.text, layout.iris_variables)"></span>
-            </a> -->
+            <SwitchLanguage
+                class="hidden md:block"
+            />
 
             <ButtonWithLink
                 v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping'"
@@ -235,15 +217,17 @@ const urlLoginWithRedirect = () => {
                 type="transparent"
             >
                 <template #label>
-                    <span v-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)" />
+                    <!-- <span v-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)" /> -->
+                    <span
+                        xclass="text-white"
+                        xv-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)"
+                        v-html="textReplaceVariables('{{ items_count }} items ({{ cart_amount }})', layout.iris_variables)"
+                    >
+                    </span>
                 </template>
             </ButtonWithLink>
 
 
-            <!-- <div @click="() => onClickRegister()" href="/register.sys" class="space-x-1.5">
-                <FontAwesomeIcon icon='fal fa-user-plus' class='' fixed-width aria-hidden='true' />
-                <span>Register</span>
-            </div> -->
 
         </div>
     </div>

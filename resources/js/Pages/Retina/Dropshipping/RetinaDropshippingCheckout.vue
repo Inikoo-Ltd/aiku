@@ -159,6 +159,7 @@ const component = computed(() => {
                         :data="paymentMethods[currentTab.index]"
                         :needToPay="to_pay_data.by_other"
                         :currency_code
+                        :order="order"
                     />
                 </KeepAlive>
             </div>

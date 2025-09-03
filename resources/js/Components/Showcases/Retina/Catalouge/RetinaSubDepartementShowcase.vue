@@ -5,6 +5,10 @@ import { faAlbumCollection, faGameConsoleHandheld } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 
 import Image from "@/Components/Image.vue";
+import { trans } from "laravel-vue-i18n"
+import CopyButton from "@/Components/Utils/CopyButton.vue"
+import InformationIcon from "@/Components/Utils/InformationIcon.vue"
+import BoxApiUrl from "./BoxApiUrl.vue"
 
 library.add(faAlbumCollection);
 
@@ -37,12 +41,18 @@ const props = defineProps<{
     };
 }>();
 
-console.log(props)
 
+const routeAPI = window.location.origin + `/${props.data?.subDepartment?.slug}/data-feed.csv`
 </script>
 
 <template>
-    <div class="px-4 pb-8 m-5">
+    <div class="p-6">
+        <!-- Box: API URL -->
+        <BoxApiUrl
+            :routeApi="routeAPI"
+        />
+
+
         <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-8 gap-4 mt-4">
             <!-- Sidebar -->
             <div class="col-span-1 md:col-span-1 lg:col-span-2">

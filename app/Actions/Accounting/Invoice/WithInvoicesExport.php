@@ -51,6 +51,24 @@ trait WithInvoicesExport
                 return $transaction;
             });
 
+            $refund = $invoice->payment_amount > $invoice->total_amount;
+            $refundData = [];
+            if ($refund) {
+                foreach ($invoice->invoiceTransactions->where('model_type', 'Product') as $invoiceTransaction) {
+                    $refunded = $invoiceTransaction->quantity < $invoiceTransaction->transaction->quantity_ordered;
+                    if ($refunded) {
+                        $quantityRefunded = $invoiceTransaction->transaction->quantity_ordered - $invoiceTransaction->quantity;
+                        $totalRefunded = $invoiceTransaction->historicAsset->price * $quantityRefunded;
+                        $refundData[] = [
+                            'code' => $invoiceTransaction->historicAsset->code,
+                            'description' => $invoiceTransaction->historicAsset->name,
+                            'price' =>  $invoiceTransaction->historicAsset->price,
+                            'quantity' => $quantityRefunded,
+                            'total' => $totalRefunded
+                        ];
+                    }
+                }
+            }
 
             $config = [
                 'title'                  => $invoice->reference,
@@ -62,13 +80,17 @@ trait WithInvoicesExport
                 'auto_page_break_margin' => 10,
             ];
 
+            $deliveryNote = $invoice->order?->deliveryNotes?->first();
             $filename = $invoice->slug . '-' . now()->format('Y-m-d');
             $pdf      = PDF::loadView('invoices.templates.pdf.invoice', [
                 'shop'          => $invoice->shop,
                 'invoice'       => $invoice,
+                'deliveryNote'  => $deliveryNote,
+                'deliveryAddress'  => $deliveryNote?->deliveryAddress,
                 'context'       => $invoice->original_invoice_id ? 'Refund' : 'Invoice',
                 'transactions'  => $transactions,
                 'totalNet'      => number_format($totalNet, 2, '.', ''),
+                'refunds'       => $refundData
             ], [], $config);
 
             $isAttachIsdocToPdf = Arr::get($invoice->organisation->settings, "invoice_export.attach_isdoc_to_pdf", false);

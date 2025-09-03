@@ -166,7 +166,7 @@ const onSubmitCreateOrder = () => {
                     <div v-if="data.shortcut.order.is_show_button ||
                     data.shortcut?.create_customer_sales_channel?.route_create?.name" class="max-w-64 w-full">
                         <Fieldset :legend="trans('Quick links (Shortcuts)')">
-                            <div class="flex flex-col">
+                            <div class="flex flex-col gap-y-2">
                                 <Button
                                     v-if="data.shortcut.order.is_show_button"
                                     @click="isModalCreateOrder = true"

@@ -421,7 +421,7 @@ test('update order state to Handling', function (Order $order) {
 })->depends('update order state to in warehouse');
 
 test('update order state to Packed ', function (Order $order) {
-    $order = UpdateOrderStateToPacked::make()->action($order);
+    $order = UpdateOrderStateToPacked::make()->action($order, false);
     $order->refresh();
     expect($order)->toBeInstanceOf(Order::class)
         ->and($order->state)->toEqual(OrderStateEnum::PACKED);

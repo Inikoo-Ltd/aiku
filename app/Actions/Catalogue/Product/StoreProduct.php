@@ -15,6 +15,7 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateProductVariants;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\OrgAction;
+use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Catalogue\Asset\AssetStateEnum;
 use App\Enums\Catalogue\Asset\AssetTypeEnum;
@@ -85,6 +86,10 @@ class StoreProduct extends OrgAction
         $product = DB::transaction(function () use ($shop, $modelData, $orgStocks) {
             /** @var Product $product */
             $product = $shop->products()->create($modelData);
+            $product = $this->syncOrgStocks($product, $orgStocks);
+            $product = $this->associateTradeUnits($product);
+            $product = ModelHydrateSingleTradeUnits::run($product);
+
             $product = ProductHydrateForSale::run($product);
 
             if ($product->is_main) {
@@ -97,10 +102,7 @@ class StoreProduct extends OrgAction
             $product->refresh();
 
 
-            $product = $this->createAsset($product);
-
-            $product = $this->syncOrgStocks($product, $orgStocks);
-            return $this->associateTradeUnits($product);
+            return $this->createAsset($product);
         });
 
         ProductHydrateProductVariants::dispatch($product->mainProduct)->delay($this->hydratorsDelay);
@@ -114,7 +116,6 @@ class StoreProduct extends OrgAction
 
         return $product;
     }
-
 
 
     private function createAsset(Product $product): Product
@@ -227,7 +228,8 @@ class StoreProduct extends OrgAction
                 'nullable',
                 'integer',
                 Rule::exists('customers', 'id')->where('shop__id', $this->shop->id)
-            ]
+            ],
+            'master_product_id' => ['sometimes']
         ];
 
         if ($this->state == ProductStateEnum::DISCONTINUED) {
