@@ -58,7 +58,7 @@ class RepairTradeUnitsInOrgStocks extends OrgAction
         $bar->start();
 
 
-        OrgStock::where('id', 11242)->chunk(
+        OrgStock::chunk(
             $chunkSize,
             function ($orgStocks) use (&$count, &$matchedCount, $bar, $command) {
                 foreach ($orgStocks as $orgStock) {
