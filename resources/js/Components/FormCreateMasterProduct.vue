@@ -165,7 +165,7 @@ const submitForm = async (redirect = true) => {
             // router.visit(route('grp.masters.master_shops.show.master_families.master_products.show', {...}))
         } else {
             form.reset()
-            tableData.value = props.shopsData
+            tableData.value = {...props.shopsData}
             key.value = ulid()
         }
     } catch (error: any) {
@@ -352,7 +352,7 @@ console.log(props)
 
                         <div class="flex justify-between items-center text-xs mt-2">
                             <small v-if="form.errors.price" class="text-red-500 flex items-center gap-1">
-                                {{ form.errors.price }}
+                                {{ form.errors.price.join(", ")  }}
                             </small>
                             <span v-if="profitMargin !== null" :class="[
                                 profitMargin > 0 ? 'text-green-600' : profitMargin < 0 ? 'text-red-600' : 'text-gray-500',
