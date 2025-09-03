@@ -46,7 +46,7 @@ class GetRetinaDropshippingNavigation
                     'subSections' =>
                     [
                         [
-                            'label' => __(''),
+                            'label' => __('Catalogue'),
                             'icon'  => ['far', 'fa-books'],
                             'root'  => 'retina.catalogue.',
                             'route' => [

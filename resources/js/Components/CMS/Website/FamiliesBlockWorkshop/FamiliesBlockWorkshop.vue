@@ -147,7 +147,7 @@ const debouncedAutosave = debounce(autosave)
             <span v-if="dataPicked.sub_department?.name" xv-if="data.layout?.data?.fieldValue?.sub_department?.name">
                 Preview: <strong>{{ dataPicked.sub_department?.name }}</strong>
             </span>
-            <span v-else class="">{{ trans("Pick the sub-departement") }}</span>
+            <span v-else class="">{{ trans("Pick the sub-department") }}</span>
           </div>
         </div>
 
