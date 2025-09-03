@@ -111,7 +111,16 @@ const getTableData = () => {
             )
 
 
-            console.log("Data berhasil diambil:", response)
+            console.log("Success:", response)
+            for (const item of response.data) {
+                const index = tableData.value.data.findIndex((row: any) => row.id === item.id)
+                if (index !== -1) {
+                    tableData.value.data[index].product = {
+                        ...tableData.value.data[index].product,
+                        ...item.org_stocks_data
+                    }
+                }
+            }
         } catch (error: any) {
             if (axios.isCancel(error)) {
                 console.log("Request dibatalkan")
@@ -158,14 +167,14 @@ const submitForm = async (redirect = true) => {
             form.data(), // <-- same as inertia form payload
         )
 
-        console.log("pppp", response.data,route().params)
+        console.log("pppp", response.data, route().params)
 
         if (redirect) {
             // If you need redirect, you can call router.visit() here
             router.visit(route('grp.masters.master_shops.show.master_families.master_products.show', {
-                masterShop :  route().params['masterShop'],
-                masterFamily :  route().params['masterFamily'],
-                masterProduct :  response.data.slug
+                masterShop: route().params['masterShop'],
+                masterFamily: route().params['masterFamily'],
+                masterProduct: response.data.slug
 
             }))
         } else {
@@ -265,9 +274,9 @@ console.log(props)
         <div class="p-4 pt-0 space-y-6 overflow-y-auto">
             <!-- Trade Unit Selector -->
             <div>
-                <ListSelector :key="key" v-model="form.trade_units" :withQuantity="true" :tabs="selectorTab" @after-delete="()=>getTableData()" @on-select="()=>getTableData()"
-                    head_label="Select Trade Units" @update:model-value="ListSelectorChange" key_quantity="quantity"
-                    :routeFetch="{
+                <ListSelector :key="key" v-model="form.trade_units" :withQuantity="true" :tabs="selectorTab"
+                    @after-delete="() => getTableData()" @on-select="() => getTableData()" head_label="Select Trade Units"
+                    @update:model-value="ListSelectorChange" key_quantity="quantity" :routeFetch="{
                         name: 'grp.json.master-product-category.recommended-trade-units',
                         parameters: { masterProductCategory: route().params['masterFamily'] }
                     }" />

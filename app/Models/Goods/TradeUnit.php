@@ -215,17 +215,17 @@ class TradeUnit extends Model implements HasMedia, Auditable
 
     public function products(): MorphToMany
     {
-        return $this->morphedByMany(Product::class, 'model', 'model_has_trade_units');
+        return $this->morphedByMany(Product::class, 'model', 'model_has_trade_units')->withPivot(['quantity']);
     }
 
     public function orgStocks(): MorphToMany
     {
-        return $this->morphedByMany(OrgStock::class, 'model', 'model_has_trade_units');
+        return $this->morphedByMany(OrgStock::class, 'model', 'model_has_trade_units')->withPivot(['quantity']);
     }
 
     public function supplierProducts(): MorphToMany
     {
-        return $this->morphedByMany(SupplierProduct::class, 'model', 'model_has_trade_units');
+        return $this->morphedByMany(SupplierProduct::class, 'model', 'model_has_trade_units')->withPivot(['quantity']);
     }
 
     public function barcode(): BelongsTo
