@@ -33,7 +33,7 @@ class GetRetinaEcomNavigation
         $groupNavigation['catalogue'] = [
             'label' => __('Catalogue'),
             'icon' => ['fal', 'fa-books'],
-            'root' => 'retina.ecom.catalogue.',
+            'root' => 'retina.catalogue.',
             'route' => [
                 'name' => 'retina.catalogue.dashboard'
             ],
