@@ -50,14 +50,14 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
 
         $openShops = $masterShop->shops()->where('state', ShopStateEnum::OPEN)->get();
 
-        $organisations = [];
+        $organisationsData = [];
         /** @var Shop $shop */
         foreach ($openShops as $shop) {
-            $organisations[$shop->organisation_id]['org_stocks_data'] =
+            $organisationsData[$shop->organisation_id]['org_stocks_data'] =
                 $this->getOrgStockData($shop->organisation, $tradeUnits);
         }
 
-        dd($organisations);
+
 
         $finalData = [];
 
@@ -65,8 +65,10 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
         foreach ($openShops as $shop) {
             $finalData[] = [
                 'id' => $shop->id,
-
+                'org_stocks_data' => $organisationsData[$shop->organisation_id]['org_stocks_data']
             ];
+
+
         }
 
         return $finalData;
@@ -74,30 +76,40 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
 
     public function getOrgStockData(Organisation $organisation, array $tradeUnitsDatum): array
     {
-        $orgStocksData = [];
-
+        $stock                    = null;
+        $cost                     = null;
+        $organisationHasOrgStocks = false;
         foreach ($tradeUnitsDatum as $tradeUnitData) {
             $tradeUnit = $tradeUnitData['model'];
 
+
             foreach ($tradeUnit->orgStocks as $orgStock) {
-                if($orgStock->organisation_id == $organisation->id){
-                    $qty             = $orgStock->pivot->quantity * $tradeUnitData['quantity'];
-                    $orgStocksData[] = [
-                        'org_stock_id' => $orgStock->id,
-                        'qty'          => $orgStock->pivot->quantity,
-                        'id'           => $orgStock->id,
-                        'stock'        => $orgStock->$qty,
-                        'cost'         => $orgStock->cost * $qty,
-                    ];
+                if ($orgStock->organisation_id == $organisation->id) {
+                    $qty = $tradeUnitData['quantity'];
+
+                    $localStock = floor($orgStock->quantity_in_locations * $orgStock->pivot->quantity / $qty);
+                    if ($stock == null || $localStock < $stock) {
+                        $stock = $localStock;
+                    }
+
+                    $localCost = floor($orgStock->unit_cost * $qty);
+                    if ($cost == null) {
+                        $cost = $localCost;
+                    } else {
+                        $cost += $localCost;
+                    }
+
+                    $organisationHasOrgStocks = true;
                 }
-
-
             }
         }
 
-        dd($orgStocksData);
 
-        return $orgStocksData;
+        return [
+            'stock'          => $stock,
+            'cost'           => $cost,
+            'has_org_stocks' => $organisationHasOrgStocks,
+        ];
     }
 
 
