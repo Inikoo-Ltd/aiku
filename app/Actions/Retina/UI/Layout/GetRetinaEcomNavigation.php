@@ -30,6 +30,18 @@ class GetRetinaEcomNavigation
             ]
         ];
 
+        $groupNavigation['catalogue'] = [
+            'label' => __('Catalogue'),
+            'icon' => ['fal', 'fa-books'],
+            'root' => 'retina.ecom.catalogue.',
+            'route' => [
+                'name' => 'retina.ecom.basket.show'
+            ],
+            'topMenu' => [
+
+            ]
+        ];
+
         $groupNavigation['basket'] = [
             'label' => __('Basket'),
             'icon' => ['fal', 'fa-shopping-cart'],
