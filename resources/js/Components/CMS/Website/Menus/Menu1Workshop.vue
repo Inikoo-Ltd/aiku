@@ -114,7 +114,7 @@ const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false));
 
 
             <nav ref="_scrollContainer" @scroll="() => checkScroll()"
-                class="relative flex text-sm text-gray-600 w-full overflow-x-auto scrollbar-hide">
+                class="relative flex text-sm text-gray-600 w-full overflow-x-auto scrollbar-hide ml-5">
 
                 <template v-for="(navigation, idxNavigation) in fieldValue?.navigation" :key="idxNavigation">
                     <a :href="navigation?.link?.href" :target="navigation?.link?.target"
