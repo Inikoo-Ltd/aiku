@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\OrgStock;
 
+use App\Actions\Catalogue\Product\AttachTradeUnitToProduct;
 use App\Actions\Inventory\OrgStock\Search\OrgStockRecordSearch;
 use App\Actions\Inventory\OrgStockFamily\Hydrators\OrgStockFamilyHydrateOrgStocks;
 use App\Actions\OrgAction;
@@ -17,11 +18,14 @@ use App\Enums\Goods\Stock\StockStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Inventory\OrgStock\OrgStockQuantityStatusEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Goods\Stock;
+use App\Models\Goods\TradeUnit;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\OrgStockFamily;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
@@ -54,6 +58,7 @@ class StoreOrgStock extends OrgAction
         $orgStock = DB::transaction(function () use ($stock, $modelData, $parent) {
             /** @var OrgStock $orgStock */
             $orgStock = $stock->orgStocks()->create($modelData);
+            $orgStock = $this->associateTradeUnits($orgStock);
             $orgStock->stats()->create();
             $orgStock->intervals()->create();
             $orgStock->salesIntervals()->create();
@@ -85,6 +90,24 @@ class StoreOrgStock extends OrgAction
         return $orgStock;
     }
 
+
+    protected function associateTradeUnits(OrgStock $orgStock): OrgStock
+    {
+        $tradeUnits = [];
+        foreach ($orgStock->stock->tradeUnits as $tradeUnit) {
+
+                $tradeUnits[$tradeUnit->id] = [
+                    'quantity' => $tradeUnit->pivot->quantity
+                ];
+
+        }
+
+        $orgStock->tradeUnits()->sync($tradeUnits);
+
+
+
+        return $orgStock;
+    }
 
     public function rules(ActionRequest $request): array
     {
