@@ -48,7 +48,7 @@ class FetchAuroraStock extends FetchAurora
             $this->auroraModelData->{'Part SKU'}
         );
 
-        $code = $this->cleanTradeUnitReference($this->auroraModelData->{'Part Reference'});
+        $code       = $this->cleanTradeUnitReference($this->auroraModelData->{'Part Reference'});
         $sourceSlug = Str::kebab(strtolower($code));
 
         $name = $this->auroraModelData->{'Part Recommended Product Unit Name'};
@@ -107,7 +107,7 @@ class FetchAuroraStock extends FetchAurora
 
         $this->parsedData['supplier_products']     = $supplierProducts;
         $this->parsedData['org_supplier_products'] = $orgSupplierProducts;
-        $this->parsedData['stock_family'] = $this->parseStockFamily($this->auroraModelData->{'Part SKU'});
+        $this->parsedData['stock_family']          = $this->parseStockFamily($this->auroraModelData->{'Part SKU'});
 
         $createdAt = $this->parseDateTime($this->auroraModelData->{'Part Valid From'});
 
@@ -160,6 +160,7 @@ class FetchAuroraStock extends FetchAurora
             'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Part SKU'},
             'source_slug'     => $sourceSlug,
             'images'          => $this->parseImages(),
+            'unit_cost'       => $this->auroraModelData->{'Part Cost'} / $this->auroraModelData->{'Part Units Per Package'},
             'fetched_at'      => now(),
             'last_fetched_at' => now(),
         ];

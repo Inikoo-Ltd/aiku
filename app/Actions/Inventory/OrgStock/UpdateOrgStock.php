@@ -64,7 +64,9 @@ class UpdateOrgStock extends OrgAction
 
     public function rules(): array
     {
-        $rules = [];
+        $rules = [
+            'unit_cost'           => ['sometimes','numeric','min:0'],
+        ];
         if (!$this->strict) {
             $rules['discontinued_in_organisation_at'] = ['sometimes', 'nullable', 'date'];
             $rules                                    = $this->noStrictUpdateRules($rules);
