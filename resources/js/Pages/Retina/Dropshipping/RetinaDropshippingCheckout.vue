@@ -78,6 +78,10 @@ const component = computed(() => {
     <Head :title />
 
     <PageHeading :data="pageHead"> </PageHeading>
+    
+    <div class="qwezxc hidden">
+        <pre>{{ paymentMethods }}</pre>
+    </div>
 
     <div class="xflex xjustify-end gap-x-4 mt-4 px-4">
         <ButtonWithLink
