@@ -12,7 +12,7 @@ import Image from "@/Components/Image.vue"
 import { notify } from "@kyvg/vue3-notification"
 import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
 import { trans } from "laravel-vue-i18n"
-import { router } from "@inertiajs/vue3"
+import { router, Link } from "@inertiajs/vue3"
 import { Image as ImageTS } from '@/types/Image'
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { set } from "lodash-es"
@@ -155,6 +155,15 @@ const toggleExpanded = () => {
   expanded.value = !expanded.value
 }
 
+// Method: generate url for Login
+const urlLoginWithRedirect = () => {
+    if (route()?.current() !== "retina.login.show" && route()?.current() !== "retina.register") {
+        return `/app/login?ref=${encodeURIComponent(window?.location.pathname)}${window?.location.search ? encodeURIComponent(window?.location.search) : ""
+            }`
+    } else {
+        return "/app/login"
+    }
+}
 </script>
 
 <template>
@@ -255,9 +264,20 @@ const toggleExpanded = () => {
 
                 <!-- Section: Button add to cart -->
                 <div class="relative flex gap-2 mb-6">
-                    <ButtonAddToBasket
-                        :product="fieldValue.product"
-                    />
+                    <div v-if="layout?.iris?.is_logged_in" class="w-full">
+                        <ButtonAddToBasket
+                            v-if="fieldValue.product.stock > 0"
+                            :product="fieldValue.product"
+                        />
+
+                        <div v-else>
+                            <Button :label="trans('Out of stock')" type="tertiary" disabled full />
+                        </div>
+                    </div>
+
+                    <Link v-else :href="urlLoginWithRedirect()" class="block text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
+                        {{ trans("Login or Register for Wholesale Prices") }}
+                    </Link>
                 </div>
 
                 <div class="text-sm" :style="getStyles(fieldValue?.description?.description_title, screenType)">
