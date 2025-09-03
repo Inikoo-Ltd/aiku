@@ -113,12 +113,14 @@ class StoreMasterAsset extends OrgAction
                 'quantity' => Arr::get($item, 'quantity')
             ]);
 
-            foreach ($tradeUnit->stocks as $stock) {
-                $stocks[$stock->id] = [
-                    'quantity' => $stock->pivot->quantity,
-                ];
+            if (!empty($tradeUnit->stock)) { //TODO: Need to know what to do if trade unit has no stock
+                foreach ($tradeUnit->stocks as $stock) {
+                    $stocks[$stock->id] = [
+                        'quantity' => $stock->pivot->quantity,
+                    ];
+                }
+                $masterAsset->stocks()->sync($stocks);
             }
-            $masterAsset->stocks()->sync($stocks);
 
             $masterAsset->refresh();
         }

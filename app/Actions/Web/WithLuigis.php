@@ -356,21 +356,20 @@ trait WithLuigis
             }
 
             $object =  [
-                "identity" => $identity,
-                "type" => "item",
-                "fields" => array_filter([
-                    "title" => $webpage->title,
-                    "web_url" => $this->getWebpageUrl($webpage),
-                    "availability" => intval($model->state == ProductStateEnum::ACTIVE),
-                    "stock_qty" => $model->available_quantity ?? 0,
-                    "price" => $model->price ?? 0,
-                    "formatted_price" => $model->currency->symbol . $model->price . '/' . $model->unit,
-                    "image_link" => Arr::get($model->imageSources(200, 200), 'original'),
-                    "product_code" => $model->code,
-                    "product_id" => $model->id,
-                    "xxxxxx"    => 'yyyyyyyy',
-                    "introduced_at" => $model?->created_at ? $model->created_at->format('c') : null,
-                    "description" => $model->description,
+                "identity"  => $identity,
+                "type"      => "item",
+                "fields"    => array_filter([
+                    "title"             => $webpage->title,
+                    "web_url"           => $this->getWebpageUrl($webpage),
+                    "availability"      => intval($model->state == ProductStateEnum::ACTIVE),
+                    "stock_qty"         => $model->available_quantity ?? 0,
+                    "price"             => $model->price ?? 0,
+                    "formatted_price"   => $model->currency->symbol . $model->price . '/' . $model->unit,
+                    "image_link"        => Arr::get($model->imageSources(200, 200), 'original'),
+                    "product_code"      => $model->code,
+                    "product_id"        => $model->id,
+                    "introduced_at"     => $model?->created_at ? $model->created_at->format('c') : null,
+                    "description"       => $model->description,
                 ]),
                 ...($family || $department || $subDepartment || $brandObject || $tagsObject ? [
                     "nested" => array_values(array_filter([
@@ -379,36 +378,36 @@ trait WithLuigis
                         (
                             $family && $family?->webpage ?
                             [
-                                "type" => "category",
-                                "identity" => $this->getWebpageUrl($family?->webpage),
-                                "fields" => array_filter([
-                                    "title" => $family?->webpage?->title,
-                                    "web_url" => $this->getWebpageUrl($family?->webpage),
-                                    "description" => $family?->webpage?->description,
-                                    "image_link" => Arr::get($family?->imageSources(200, 200), 'original'),
+                                "type"          => "category",
+                                "identity"      => $this->getWebpageUrl($family?->webpage),
+                                "fields"        => array_filter([
+                                    "title"         => $family?->webpage?->title,
+                                    "web_url"       => $this->getWebpageUrl($family?->webpage),
+                                    "description"   => $family?->webpage?->description,
+                                    "image_link"    => Arr::get($family?->imageSources(200, 200), 'original'),
                                 ])
                             ] : []
                         ),
                         ($subDepartment && $subDepartment?->webpage ?
                             [
-                                "type" => "sub_department",
-                                "identity" => $this->getWebpageUrl($subDepartment?->webpage),
-                                "fields" => array_filter([
-                                    "title" => $subDepartment?->webpage?->title,
-                                    "web_url" => $this->getWebpageUrl($subDepartment?->webpage),
-                                    "description" => $subDepartment?->webpage?->description,
-                                    "image_link" => Arr::get($subDepartment?->imageSources(200, 200), 'original'),
+                                "type"          => "sub_department",
+                                "identity"      => $this->getWebpageUrl($subDepartment?->webpage),
+                                "fields"        => array_filter([
+                                    "title"         => $subDepartment?->webpage?->title,
+                                    "web_url"       => $this->getWebpageUrl($subDepartment?->webpage),
+                                    "description"   => $subDepartment?->webpage?->description,
+                                    "image_link"    => Arr::get($subDepartment?->imageSources(200, 200), 'original'),
                                 ]),
                             ] : []),
                         ($department && $department?->webpage ?
                             [
-                                "type" => "department",
-                                "identity" => $this->getWebpageUrl($department?->webpage),
-                                "fields" => array_filter([
-                                    "title" => $department?->webpage?->title,
-                                    "web_url" => $this->getWebpageUrl($department?->webpage),
-                                    "description" => $department?->webpage?->description,
-                                    "image_link" => Arr::get($department?->imageSources(200, 200), 'original'),
+                                "type"          => "department",
+                                "identity"      => $this->getWebpageUrl($department?->webpage),
+                                "fields"        => array_filter([
+                                    "title"         => $department?->webpage?->title,
+                                    "web_url"       => $this->getWebpageUrl($department?->webpage),
+                                    "description"   => $department?->webpage?->description,
+                                    "image_link"    => Arr::get($department?->imageSources(200, 200), 'original'),
                                 ]),
                             ]
                             : []),

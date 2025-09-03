@@ -3,7 +3,7 @@ import { trans } from 'laravel-vue-i18n'
 import CheckoutSummary from "@/Components/Retina/Ecom/CheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { Head, Link, router } from "@inertiajs/vue3"
-import { inject, ref, onMounted, nextTick, onBeforeUnmount } from "vue"
+import { inject, ref, onMounted, nextTick, onBeforeUnmount, computed } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import { routeType } from "@/types/route"
@@ -86,10 +86,12 @@ const props = defineProps<{
     is_in_basket: boolean
 }>()
 
-console.log(props)
+// console.log(props)
 
 const layout = inject('layout', retinaLayoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
+
+console.log(layout)
 
 const isModalProductListOpen = ref(false)
 const listLoadingProducts = ref({
@@ -288,6 +290,63 @@ const onAddProducts = async (product: Product) => {
             }
         })
 }
+
+const onAddProductFromRecommender = async (productId: string) => {
+    const storeRoute = {
+        route_post: route('retina.models.product.add-to-basket', {
+            product: productId
+        }),
+        method: 'post',
+        body: {
+            quantity: 1,
+        }
+    }
+
+    router.post(
+        storeRoute.route_post,
+        storeRoute.body,
+        {
+            preserveScroll: true,
+            onStart: () => {
+                listLoadingProducts.value[`recommender-${productId}`] = 'loading'
+            },
+            onBefore: () => {
+                isLoadingSubmit.value = true
+            },
+            onError: (error) => {
+                notify({
+                    title: trans("Something went wrong."),
+                    text: error.products || undefined,
+                    type: "error"
+                })
+                listLoadingProducts.value[`recommender-${productId}`] = 'error'
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success!"),
+                    text: trans("Product added to basket"),
+                    type: "success"
+                })
+                listLoadingProducts.value[`recommender-${productId}`] = 'success'
+            },
+            onFinish: () => {
+                isLoadingSubmit.value = false
+                setTimeout(() => {
+                    listLoadingProducts.value[`recommender-${productId}`] = null
+                }, 3000)
+            }
+        })
+}
+
+const blackListProductIds = computed(() => {
+    if (!props.transactions?.data) return []
+
+    return props.transactions.data
+        .map(transaction => {
+            return transaction.id.toString()
+        })
+        .filter(Boolean)
+})
 </script>
 
 <template>
@@ -415,10 +474,10 @@ const onAddProducts = async (product: Product) => {
         />
     </div>
 
-    <Teleport to="#retina-right-section" :disabled="!isTeleportReady" :key="teleportKey">
+    <Teleport v-if="layout.app.environment !== 'production'" to="#retina-right-section" :disabled="!isTeleportReady" :key="teleportKey">
         <div class="max-w-[calc(1280px-200px)] mt-8 p-4 bg-white rounded-md shadow-lg">
             <h2 class="text-2xl font-bold text-center mb-4">{{ trans('You might also like') }}</h2>
-            <RecommendersLuigi1Iris recommendation_type="test_reco" :slidesPerView="slidesPerView" />
+            <RecommendersLuigi1Iris @add-to-basket="(productId: number | string) => onAddProductFromRecommender(productId)" :is-add-to-basket="true" recommendation_type="test_reco" :slidesPerView="slidesPerView"  :listLoadingProducts :blacklistItems="blackListProductIds" />
         </div>
     </Teleport>
 
