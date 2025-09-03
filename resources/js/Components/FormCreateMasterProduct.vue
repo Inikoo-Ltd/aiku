@@ -77,7 +77,7 @@ const form = useForm({
     unit: 0,
     trade_units: [],
     price: null,
-    shop_product : null
+    shop_products : null
 });
 
 const getTableData = () => {
@@ -148,7 +148,7 @@ const submitForm = async (redirect = true) => {
         }
     }
 
-    form.shop_product = finalDataTable
+    form.shop_products = finalDataTable
 
 
     try {
