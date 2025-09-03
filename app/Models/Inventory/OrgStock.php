@@ -196,11 +196,7 @@ class OrgStock extends Model implements Auditable
 
     public function tradeUnits(): MorphToMany
     {
-        if ($this->stock_id) {
-            return $this->stock->tradeUnits();
-        }
 
-        // Used in private stocks (stock_id=null)
         return $this->morphToMany(
             TradeUnit::class,
             'model',
