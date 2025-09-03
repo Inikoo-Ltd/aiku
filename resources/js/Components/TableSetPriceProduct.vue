@@ -90,8 +90,10 @@ console.log(props)
           <tr class="bg-gray-50 text-left font-medium text-gray-600 border-b border-gray-200">
             <th class="px-2 py-1">Code</th>
             <th class="px-2 py-1">Name</th>
+            <th class="px-2 py-1">Stock</th>
+            <th class="px-2 py-1">Set Webpage</th>
             <th class="px-2 py-1">Price</th>
-            <th class="px-2 py-1 text-center">Action</th>
+            <!-- <th class="px-2 py-1 text-center">Action</th> -->
           </tr>
         </thead>
         <tbody>
@@ -109,13 +111,19 @@ console.log(props)
             <td class="px-2 py-1 border-b border-gray-100 font-medium text-gray-700">
               {{ item.name }}
             </td>
+            <td class="px-2 py-1 border-b border-gray-100 font-medium text-gray-700">
+              {{ item.stock }}
+            </td>
+            <td class="px-2 py-1 border-b border-gray-100 font-medium text-gray-700">
+              {{ item.create_webpage }}
+            </td>
             <td class="px-2 py-1 border-b  w-32">
               <InputNumber
                 v-model="forms[item.product_id].price"
                 mode="currency"
                 :currency="item.currency"
                 :step="0.25"
-                showButtons
+                :showButtons="true"
                 inputClass="w-full text-xs"
               />
               <div
@@ -125,8 +133,8 @@ console.log(props)
                 {{ forms[item.product_id].errors.price }}
               </div>
             </td>
-            <td class="px-2 py-1 border-b border-gray-100 text-center">
-            <!--   <Button
+            <!-- <td class="px-2 py-1 border-b border-gray-100 text-center">
+              <Button
                 type="save"
                 size="xs"
                 label="Save"
@@ -137,8 +145,8 @@ console.log(props)
                   !forms[item.product_id].isDirty
                 "
                 @click="saveForm(item)"
-              /> -->
-            </td>
+              />
+            </td> -->
           </tr>
         </tbody>
       </table>

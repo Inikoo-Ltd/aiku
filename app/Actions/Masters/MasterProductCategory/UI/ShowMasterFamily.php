@@ -160,7 +160,7 @@ class ShowMasterFamily extends GrpAction
                     'current'    => $this->tab,
                     'navigation' => MasterFamilyTabsEnum::navigation()
                 ],
-
+                'masterProductCategory' => $masterFamily->id,
                 'shopsData' => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterFamily->masterShop, 'shops')),
 
                 MasterFamilyTabsEnum::SHOWCASE->value => $this->tab == MasterFamilyTabsEnum::SHOWCASE->value ?

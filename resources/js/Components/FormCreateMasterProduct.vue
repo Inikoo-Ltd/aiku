@@ -4,7 +4,7 @@
 -->
 
 <script setup lang="ts">
-import { useForm } from "@inertiajs/vue3";
+import { router, useForm } from "@inertiajs/vue3";
 import { ref, computed, inject } from "vue";
 import Drawer from "primevue/drawer";
 import Button from "@/Components/Elements/Buttons/Button.vue";
@@ -54,6 +54,7 @@ const props = defineProps<{
     showDialog: boolean,
     masterCurrency?: string
     shopsData? :any
+    masterProductCategory : string|number
 }>();
 
 const emits = defineEmits(["update:showDialog"]);
@@ -61,6 +62,8 @@ const emits = defineEmits(["update:showDialog"]);
 const detailsVisible = ref(true);
 const tableVisible = ref(true);
 const isFull = ref(false); // <-- state untuk toggle full screen
+let abortController: AbortController | null = null
+let debounceTimer: any = null
 
 const layout = inject('layout', {});
 const currency = props.masterCurrency ? props.masterCurrency : layout.group.currency;
@@ -74,7 +77,52 @@ const form = useForm({
     price: null
 });
 
+const getTableData = () => {
+    // clear debounce kalau ada
+    if (debounceTimer) {
+        clearTimeout(debounceTimer)
+    }
+
+    // set debounce 500ms
+    debounceTimer = setTimeout(async () => {
+        // cancel request sebelumnya kalau masih jalan
+        if (abortController) {
+            abortController.abort()
+        }
+
+        // bikin abortController baru
+        abortController = new AbortController()
+
+        try {
+            console.log("Loading mulai…")
+            const response = await axios.post(
+                route("grp.models.master-product-category.trade-units-for-creation", {
+                    masterProductCategory: props.masterProductCategory,
+                }),
+                {},
+                {
+                    signal: abortController.signal, // attach abort signal
+                }
+            )
+
+           
+            console.log("Data berhasil diambil:", response)
+        } catch (error: any) {
+            if (axios.isCancel(error)) {
+                console.log("Request dibatalkan")
+            } else if (error.name === "CanceledError") {
+                console.log("Request dibatalkan (AbortController)")
+            } else {
+                console.error("Terjadi error:", error)
+            }
+        } finally {
+            console.log("Loading selesai.")
+        }
+    }, 500) // delay debounce
+}
+
 const ListSelectorChange = (value) => {
+    getTableData()
     if (value.length >= 1) {
         form.name = value[0].name;
         form.code = value[0].code;
