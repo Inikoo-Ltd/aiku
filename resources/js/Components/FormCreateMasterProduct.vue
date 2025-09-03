@@ -34,6 +34,7 @@ import {
     faExpand
 } from "@fortawesome/free-solid-svg-icons";
 import { faChevronUp, faChevronDown } from "@far";
+import { ulid } from "ulid";
 
 library.add(
     faShapes,
@@ -65,7 +66,7 @@ const tableVisible = ref(true);
 const isFull = ref(false); // <-- state untuk toggle full screen
 let abortController: AbortController | null = null
 let debounceTimer: any = null
-
+const key = ref(ulid())
 const layout = inject('layout', {});
 const currency = props.masterCurrency ? props.masterCurrency : layout.group.currency;
 
@@ -151,6 +152,7 @@ const submitForm = async (redirect = true) => {
             // router.visit(route('grp.masters.master_shops.show.master_families.master_products.show', {...}))
         } else {
             form.reset()
+            key.value = ulid()
         }
     } catch (error: any) {
         if (error.response && error.response.status === 422) {
@@ -166,8 +168,6 @@ const submitForm = async (redirect = true) => {
         form.processing = false
     }
 }
-
-
 
 // Tabs
 const selectorTab = [
@@ -242,6 +242,7 @@ console.log(props)
             <!-- Trade Unit Selector -->
             <div>
                 <ListSelector
+                    :key="key"
                     v-model="form.trade_units"
                     :withQuantity="true"
                     :tabs="selectorTab"
@@ -380,7 +381,7 @@ console.log(props)
                     :disabled="form.trade_units.length < 1"
                     class="!px-6"
                     :label="'save & create'"
-                    @click="submitForm"
+                    @click="submitForm(false)"
                 />
                 <Button
                     type="save"
