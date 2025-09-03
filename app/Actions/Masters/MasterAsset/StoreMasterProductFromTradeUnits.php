@@ -121,13 +121,4 @@ class StoreMasterProductFromTradeUnits extends GrpAction
         $this->initialisation($masterFamily->group, $request);
         return $this->handle($masterFamily, $this->validatedData);
     }
-
-    public function htmlResponse(MasterAsset $masterAsset): \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
-    {
-        return Redirect::route('grp.masters.master_shops.show.master_families.master_products.show', [
-            'masterShop'    => $masterAsset->masterShop->slug,
-            'masterFamily' => $masterAsset->masterFamily->slug,
-            'masterProduct' => $masterAsset->slug
-        ]);
-    }
 }
