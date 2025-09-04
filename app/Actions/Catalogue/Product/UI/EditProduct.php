@@ -305,6 +305,14 @@ class EditProduct extends OrgAction
                         'value'    => $product->state,
                         'options'  => Options::forEnum(AssetStateEnum::class)
                     ],
+                    'cost_price_ratio' => [
+                        'type'          => 'input',
+                        'label'         => __('pricing'),
+                        'placeholder'   => __('Cost price ratio'),
+                        'required'      => true,
+                        'value'         => $product->cost_price_ratio,
+                        'min'           => 0
+                    ],
                     //  'button'       => [
                     //     'type'     => 'button',
                     //     'label'    => __('off product'),

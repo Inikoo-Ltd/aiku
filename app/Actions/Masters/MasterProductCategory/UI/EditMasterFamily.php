@@ -161,6 +161,21 @@ class EditMasterFamily extends OrgAction
                             ]
                         ],
                         [
+                            'label'  => __('Properties'),
+                            'title'  => __('id'),
+                            'icon'   => 'fa-light fa-fingerprint',
+                            'fields' => [
+                                'cost_price_ratio' => [
+                                    'type'          => 'input_number',
+                                    'label'         => __('pricing'),
+                                    'placeholder'   => __('Cost price ratio'),
+                                    'required'      => true,
+                                    'value'         => $masterProductCategory->cost_price_ratio,
+                                    'min'           => 0
+                                ]
+                            ]
+                        ],
+                        [
                             'label'  => __('Image'),
                             'icon'   => 'fa-light fa-image',
                             'title'  => __('Media'),

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { inject, ref, computed } from 'vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faPlus, faMinus } from "@fas"
+import { faPlus, faMinus, faCartPlus } from "@fas"
 import { router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
@@ -12,7 +12,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import axios from 'axios'
 import { library } from "@fortawesome/fontawesome-svg-core"
 
-library.add(faPlus, faMinus)
+library.add(faPlus, faMinus, faCartPlus)
 
 const props = defineProps<{
     product: ProductResource
@@ -183,23 +183,30 @@ const decrement = () => {
 const handleInitialAdd = () => {
     updateQuantity(1)
 }
+
+const instantAddToBasket = () => {
+    set(props.product, ['quantity_ordered_new'], 1)
+    onAddToBasket(props.product)
+}
 </script>
 
 <template>
     <div class="group relative">
         <!-- State awal: qty 0, tampilkan icon + -->
-        <button v-if="currentQuantity === 0" @click.stop.prevent="handleInitialAdd"
+        <button v-if="get(props.product, ['quantity_ordered'], 0) === 0 && currentQuantity === 0"
+            @click.stop.prevent="instantAddToBasket"
             :disabled="isLoadingSubmitQuantityProduct || props.product.stock === 0"
-            class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg" v-tooltip="trans('Add to basket')">
+            class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg" v-tooltip="trans('Add to basket')">
             <LoadingIcon v-if="isLoadingSubmitQuantityProduct" class="text-gray-600" />
-            <FontAwesomeIcon v-else :icon="faPlus" class="text-gray-600 text-sm" />
+            <FontAwesomeIcon v-else :icon="faCartPlus" fixed-width class="text-gray-600" />
+            
         </button>
 
         <!-- State: qty > 0, tampilkan quantity dan expand saat hover -->
         <div v-else @click.stop
-            class="rounded-full bg-gray-200 h-10 transition-all duration-200 flex items-center justify-center group-hover:justify-between  group-hover:bg-gray-300 overflow-hidden relative shadow-lg"
+            class="rounded-full bg-gray-200 h-10 transition-all flex items-center justify-center group-hover:justify-between  group-hover:bg-gray-300 overflow-hidden relative shadow-lg"
             :class="[
-                'group-hover:w-20 w-10',
+                'group-hover:w-24 w-10',
                 { 'opacity-50': isLoadingSubmitQuantityProduct }
             ]">
 
@@ -211,20 +218,20 @@ const handleInitialAdd = () => {
 
             <!-- Minus button (visible on hover) -->
             <button @click.stop.prevent="decrement" :disabled="isLoadingSubmitQuantityProduct || currentQuantity <= 0"
-                class="hidden group-hover:flex transition-all duration-200 w-6 h-6  items-center justify-center hover:bg-gray-100 rounded-full disabled:opacity-30 disabled:cursor-not-allowed absolute left-1 z-20">
+                class="hidden group-hover:flex w-6 h-6  items-center justify-center hover:bg-gray-100 rounded-full disabled:opacity-30 disabled:cursor-not-allowed absolute left-1 z-20">
                 <FontAwesomeIcon :icon="faMinus" class="text-gray-600 text-xs" />
             </button>
 
             <!-- Quantity display (always visible) -->
             <span @click.stop.prevent
-                class="text-sm font-medium text-gray-700 min-w-[1rem] text-center relative z-10 px-1 text-center self-center">
+                class="text-sm font-medium text-gray-700 min-w-[1rem] cursor-default relative z-10 px-1 text-center self-center">
                 {{ currentQuantity }}
             </span>
 
             <!-- Plus button (visible on hover) -->
             <button @click.stop.prevent="increment"
                 :disabled="isLoadingSubmitQuantityProduct || currentQuantity >= props.product.stock"
-                class="hidden group-hover:flex transition-all duration-200 w-6 h-6  items-center justify-center hover:bg-gray-100 rounded-full disabled:opacity-30 disabled:cursor-not-allowed absolute right-1 z-20">
+                class="hidden group-hover:flex w-6 h-6  items-center justify-center hover:bg-gray-100 rounded-full disabled:opacity-30 disabled:cursor-not-allowed absolute right-1 z-20">
                 <FontAwesomeIcon :icon="faPlus" class="text-gray-600 text-xs" />
             </button>
         </div>
