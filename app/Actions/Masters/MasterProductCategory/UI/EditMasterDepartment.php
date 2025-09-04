@@ -119,6 +119,23 @@ class EditMasterDepartment extends OrgAction
                             ]
                         ],
                         [
+                            'label'  => __('Pricing'),
+                            'icon'   => 'fa-light fa-money-bill',
+                            'fields' => [
+                                'cost_price_ratio' => [
+                                    'type'          => 'input_number',
+                                    'bind' => [
+                                        'maxFractionDigits' => 3
+                                    ],
+                                    'label'         => __('pricing ratio'),
+                                    'placeholder'   => __('Cost price ratio'),
+                                    'required'      => true,
+                                    'value'         => $masterProductCategory->cost_price_ratio,
+                                    'min'           => 0
+                                ],
+                            ]
+                        ],
+                        [
                             'label'  => __('Properties'),
                             'icon'   => 'fa-light fa-fingerprint',
                             'fields' => [
@@ -129,14 +146,6 @@ class EditMasterDepartment extends OrgAction
                                     "required" => false,
                                     'noSaveButton' => true,
                                     "full"         => true
-                                ],
-                                'cost_price_ratio' => [
-                                    'type'          => 'input_number',
-                                    'label'         => __('pricing'),
-                                    'placeholder'   => __('Cost price ratio'),
-                                    'required'      => true,
-                                    'value'         => $masterProductCategory->cost_price_ratio,
-                                    'min'           => 0
                                 ],
                             ]
                         ]
