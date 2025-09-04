@@ -18,6 +18,7 @@ use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
@@ -31,16 +32,17 @@ class StoreMasterFamily extends OrgAction
 
     public function handle(MasterProductCategory|MasterShop $parent, array $modelData): MasterProductCategory
     {
-        $shops = Arr::pull($modelData, 'shops', []);
+        return DB::transaction(function () use ($parent, $modelData) {
+            $shops = Arr::pull($modelData, 'shop_family', []);
+            data_set($modelData, 'type', MasterProductCategoryTypeEnum::FAMILY);
 
-        data_set($modelData, 'type', MasterProductCategoryTypeEnum::FAMILY);
-
-        $masterFamily = StoreMasterProductCategory::run($parent, $modelData);
-        StoreFamilyFromMasterFamily::make()->action($masterFamily, [
-            'shops' => $shops
-        ]);
-        
-        return $masterFamily;
+            $masterFamily = StoreMasterProductCategory::run($parent, $modelData);
+            StoreFamilyFromMasterFamily::make()->action($masterFamily, [
+                'shop_family' => $shops
+            ]);
+            
+            return $masterFamily;
+        });
     }
 
     public function rules(): array
@@ -66,7 +68,7 @@ class StoreMasterFamily extends OrgAction
                 File::image()
                     ->max(12 * 1024)
             ],
-            'shops' => ['sometimes', 'array']
+            'shop_family' => ['sometimes', 'array']
         ];
     }
 
