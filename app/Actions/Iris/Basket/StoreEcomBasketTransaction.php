@@ -15,6 +15,7 @@ use App\Models\CRM\Customer;
 use App\Models\Ordering\Transaction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreEcomBasketTransaction extends IrisAction
@@ -28,6 +29,20 @@ class StoreEcomBasketTransaction extends IrisAction
         }
 
         $historicAsset = $product->currentHistoricProduct;
+
+        if($order) {
+            $existingTransaction = $order->transactions()->where('historic_asset_id', $historicAsset->id)->first();
+            if($existingTransaction) {
+                 throw ValidationException::withMessages(
+                    [
+                        'message' => [
+                            'transaction' => 'Product already exist in basket',
+                        ]
+                    ]
+                );
+            }
+            
+        }
 
         $transaction = StoreTransaction::make()->action($order, $historicAsset, [
             'quantity_ordered' => Arr::get($modelData, 'quantity')
