@@ -92,7 +92,7 @@ function getMargin(price: number | string) {
                             {{ item.name }}
                         </td>
                         <td class="px-2 py-1 border-b border-gray-100 font-medium text-gray-700">
-                            {{ item.stock }}
+                            {{ item.product.stock }}
                         </td>
                         <td class="px-2 py-1 border-b border-gray-100">
                             <div class="flex justify-center items-center">
