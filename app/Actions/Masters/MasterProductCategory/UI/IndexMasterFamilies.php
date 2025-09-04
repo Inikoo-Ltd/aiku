@@ -321,6 +321,7 @@ class IndexMasterFamilies extends OrgAction
 
         $actions[] = [
             'type'    => 'button',
+            'key'     => 'add-master-family',
             'style'   => 'create',
             'tooltip' => __('master new family'),
             'label'   => __('master family'),
