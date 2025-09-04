@@ -45,7 +45,6 @@ class StoreMasterProductFromTradeUnits extends GrpAction
             $data        = [
                 'code'    => Arr::get($modelData, 'code'),
                 'name'    => Arr::get($modelData, 'name'),
-                'price'   => Arr::get($modelData, 'price'),
                 'unit'    => Arr::get($modelData, 'unit'),
                 'is_main' => true,
                 'type'    => MasterAssetTypeEnum::PRODUCT,
@@ -82,7 +81,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
             ],
             'name'                   => ['required', 'string'],
             'unit'                   => ['sometimes', 'string'],
-            'price'                  => ['required', 'numeric', 'min:0'],
+            'price'                  => ['sometimes', 'numeric', 'min:0'],
             'trade_units'            => [
                 'required',
                 'array'
