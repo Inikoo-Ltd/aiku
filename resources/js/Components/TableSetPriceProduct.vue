@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { trans } from "laravel-vue-i18n";
 import { InputNumber } from "primevue";
-import { inject } from "vue";
+import { inject, computed } from "vue";
 
 // Interfaces
 interface TradeUnit {
@@ -32,6 +32,8 @@ interface ProductItem {
         org_cost?: number;
         org_currency?: string;
         stock?: number;
+        price?: number;
+        has_org_stocks?: boolean; // keep consistent with your v-model usage
     };
 }
 
@@ -60,7 +62,7 @@ const locale = inject("locale", {});
 
 // helper to calculate profit margin %
 function getMargin(item: ProductItem) {
-    const p = Number(item.product.price);
+    const p = Number(item.product?.price);
     const cost = Number(item.product?.org_cost);
 
     if (isNaN(p) || p === 0) return 0.000;
@@ -70,6 +72,21 @@ function getMargin(item: ProductItem) {
     return Number((((p - cost) / cost) * 100).toFixed());
 }
 
+// computed for "check all"
+const allChecked = computed({
+    get() {
+        return modelValue.value.data.length > 0 &&
+            modelValue.value.data.every((item) => item.product?.has_org_stocks);
+    },
+    set(val: boolean) {
+        modelValue.value.data.forEach((item) => {
+            if (item.product) {
+                item.product.has_org_stocks = val;
+            }
+        });
+        emits("change", modelValue.value);
+    }
+});
 </script>
 
 <template>
@@ -88,8 +105,11 @@ function getMargin(item: ProductItem) {
                         <th class="px-2 py-1">Name</th>
                         <th class="px-2 py-1">Stock</th>
                         <th class="px-2 py-1 text-center">
-                            Create Webpage?
-                            <InformationIcon :information="trans('If checked, will create the product webpage')" />
+                            <div class="flex items-center justify-center gap-1">
+                                <input type="checkbox" v-model="allChecked" />
+                                <span>Create Webpage?</span>
+                                <InformationIcon :information="trans('If checked, will create the product webpage')" />
+                            </div>
                         </th>
                         <th class="px-2 py-1">
                             <div class="flex justify-center items-center">Org cost</div>
@@ -137,7 +157,6 @@ function getMargin(item: ProductItem) {
                                 </span>
                             </div>
                         </td>
-
                     </tr>
                 </tbody>
             </table>
