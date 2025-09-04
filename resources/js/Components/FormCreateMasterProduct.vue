@@ -78,7 +78,7 @@ const form = useForm({
     name: "",
     unit: 0,
     trade_units: [],
-    price: null,
+    /* price: null, */
     shop_products: null
 });
 
@@ -98,13 +98,24 @@ const getTableData = () => {
         // bikin abortController baru
         abortController = new AbortController()
 
+        const finalDataTable: Record<number, { price: number | string }> = {}
+        for (const tableDataItem of tableData.value.data) {
+            finalDataTable[tableDataItem.id] = {
+                price: tableDataItem.product.price,
+                create_webpage: tableDataItem.product.create_webpage
+            }
+        }
+
+        form.shop_products = finalDataTable
+
+
         try {
             console.log("Loading mulai…")
             const response = await axios.post(
                 route("grp.models.master_product_category.product_creation_data", {
                     masterProductCategory: props.masterProductCategory,
                 }),
-                { trade_units: form.trade_units },
+                { trade_units: form.trade_units, products : form.shop_products },
                 {
                     signal: abortController.signal, // attach abort signal
                 }
@@ -150,7 +161,6 @@ const submitForm = async (redirect = true) => {
     form.errors = {}
 
     const finalDataTable: Record<number, { price: number | string }> = {}
-    console.log(tableData.value)
     for (const tableDataItem of tableData.value.data) {
         finalDataTable[tableDataItem.id] = {
             price: tableDataItem.product.price,
@@ -234,7 +244,7 @@ const selectorTab = [
     },
 ];
 
-const profitMargin = computed(() => {
+/* const profitMargin = computed(() => {
     if (!form.price || !form.trade_units.length) return null;
     const totalCost = form.trade_units.reduce((sum, unit) => {
         const unitPrice = Number(unit.cost_price) || 0;
@@ -244,7 +254,7 @@ const profitMargin = computed(() => {
     if (totalCost <= 0) return 0;
     return ((form.price - totalCost) / totalCost) * 100;
 });
-
+ */
 const drawerVisible = computed({
     get: () => props.showDialog,
     set: (val: boolean) => emits("update:showDialog", val),
@@ -253,6 +263,8 @@ const drawerVisible = computed({
 const toggleFull = () => {
     isFull.value = !isFull.value;
 };
+
+
 
 console.log(props)
 </script>
@@ -334,7 +346,7 @@ console.log(props)
                     </div>
 
                     <!-- Price -->
-                    <div>
+                    <!-- <div>
                         <label class="font-semibold text-gray-700 text-sm flex items-center gap-2">
                             <FontAwesomeIcon :icon="faTags" class="text-blue-500" />
                             Price ({{ currency.symbol }})
@@ -362,7 +374,7 @@ console.log(props)
                                 Profit Margin: {{ profitMargin.toFixed(2) }}%
                             </span>
                         </div>
-                    </div>
+                    </div> -->
                 </div>
             </div>
 
@@ -380,7 +392,7 @@ console.log(props)
 
                 <!-- Table -->
                 <div v-if="tableVisible" class="mt-4">
-                    <TableSetPriceProduct v-model="tableData" :master_price="form.price" :key="key" :currency="currency.code" />
+                    <TableSetPriceProduct v-model="tableData"  :key="key" :currency="currency.code" @change="()=>getTableData()" />
                     <small v-if="form.errors.shop_products" class="text-red-500 flex items-center gap-1">
                         {{ form.errors.shop_products.join(", ") }}
                     </small>
