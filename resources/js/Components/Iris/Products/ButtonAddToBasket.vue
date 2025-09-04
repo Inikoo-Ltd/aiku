@@ -15,12 +15,14 @@ import { faCartPlus } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import ConditionIcon from '@/Components/Utils/ConditionIcon.vue'
+import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 library.add(faTrashAlt, faShoppingCart, faTimes, faCartArrowDown, faCartPlus)
 
 const props = defineProps<{
     product: ProductResource
 }>()
 const layout = inject('layout', retinaLayoutStructure)
+const locale = inject('locale', aikuLocaleStructure)
 
 const status = ref<null | 'loading' | 'success' | 'error'>(null)
 let statusTimeout: ReturnType<typeof setTimeout> | null = null
@@ -91,12 +93,13 @@ const onAddToBasket = async (product: ProductResource) => {
 const onUpdateQuantity = (product: ProductResource) => {
 
     // Section: Submit
+    const stockInBasket = product.quantity_ordered ? product.quantity_ordered + get(product, ['quantity_ordered_new'], product.quantity_ordered) : product.quantity_ordered
     router.post(
         route('iris.models.transaction.update', {
             transaction: product.transaction_id
         }),
         {
-            quantity: get(product, ['quantity_ordered_new'], product.quantity_ordered)
+            quantity: stockInBasket
         },
         {
             preserveScroll: true,
@@ -108,7 +111,8 @@ const onUpdateQuantity = (product: ProductResource) => {
             },
             onSuccess: () => {
                 setStatus('success')
-                product.quantity_ordered = product.quantity_ordered_new
+                // product.quantity_ordered = product.quantity_ordered_new
+                set(props, ['product', 'quantity_ordered'], stockInBasket)
             },
             onError: errors => {
                 setStatus('error')
@@ -163,7 +167,7 @@ const compIsValueDirty = computed(() => {
                 fluid
                 showButtons
                 :disabled="isLoadingSubmitQuantityProduct"
-                :min="0"
+                :min="1"
                 :max="product.stock"
                 buttonLayout="horizontal"
                 :inputStyle="{
@@ -183,13 +187,19 @@ const compIsValueDirty = computed(() => {
 
             <Button
                 @click="() => addAndUpdateProduct()"
-                :icon="props.product.quantity_ordered_new === 0 ? 'fal fa-cart-arrow-down' : 'fal fa-cart-plus'"
-                label="Add to basket"
+                xicon="props.product.quantity_ordered_new === 0 ? 'fal fa-cart-arrow-down' : 'fal fa-cart-plus'"
+                :label="trans(`Add to basket . :estimated`, { estimated: locale.currencyFormat(layout?.iris?.currency?.code, (props.product.price * product.quantity_ordered_new))  })"
                 type="primary"
                 size="lg"
-                :disabled="!compIsValueDirty"
+                xdisabled="!compIsValueDirty"
+                :disabled="product.quantity_ordered > product.stock"
+                v-tooltip="product.quantity_ordered > product.stock ? trans('Quantity in basket exceeds stock') : ''"
                 :loading="isLoadingSubmitQuantityProduct"
             />
+        </div>
+        
+        <div v-if="product.quantity_ordered" class="mt-1 italic text-gray-400 text-sm">
+            {{ trans("Quantity in basket") }}: {{ product.quantity_ordered }}
         </div>
     </div>
 </template>
