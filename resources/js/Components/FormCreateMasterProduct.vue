@@ -103,7 +103,7 @@ const getTableData = (data) => {
         for (const tableDataItem of data.data) {
             finalDataTable[tableDataItem.id] = {
                 price: tableDataItem.product.price || 0,
-                create_webpage: tableDataItem.product.create_webpage
+                has_org_stocks: tableDataItem.product.has_org_stocks
             }
         }
 
@@ -152,6 +152,7 @@ const ListSelectorChange = (value) => {
         form.code = value[0].code;
         form.unit = value[0].type;
     }
+    getTableData(tableData.value)
 };
 
 
@@ -164,7 +165,7 @@ const submitForm = async (redirect = true) => {
     for (const tableDataItem of tableData.value.data) {
         finalDataTable[tableDataItem.id] = {
             price: tableDataItem.product.price,
-            create_webpage: tableDataItem.product.create_webpage
+            create_webpage: tableDataItem.product.has_org_stocks
         }
     }
 
@@ -287,7 +288,7 @@ console.log(props)
             <!-- Trade Unit Selector -->
             <div>
                 <ListSelector :key="key" v-model="form.trade_units" :withQuantity="true" :tabs="selectorTab"
-                    @after-delete="() => getTableData(tableData)" @on-select="() => getTableData(tableData)" head_label="Select Trade Units"
+                     head_label="Select Trade Units"
                     @update:model-value="ListSelectorChange" key_quantity="quantity" :routeFetch="{
                         name: 'grp.json.master-product-category.recommended-trade-units',
                         parameters: { masterProductCategory: route().params['masterFamily'] }
@@ -404,8 +405,7 @@ console.log(props)
         <template #footer>
             <div class="flex justify-end gap-3 border-t pt-3">
                 <Button label="Cancel" type="negative" class="!px-5" @click="emits('update:showDialog', false)" />
-                <Button type="create" :loading="form.processing" :disabled="form.trade_units.length < 1" class="!px-6"
-                    :label="'save & create'" @click="submitForm(false)" />
+                <Button type="create" :label="'save & create another one'" :loading="form.processing" :disabled="form.trade_units.length < 1" class="!px-6"  @click="submitForm(false)" />
                 <Button type="save" :loading="form.processing" :disabled="form.trade_units.length < 1" class="!px-6"
                     @click="submitForm" />
             </div>
