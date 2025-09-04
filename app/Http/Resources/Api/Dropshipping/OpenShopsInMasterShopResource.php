@@ -31,7 +31,6 @@ class OpenShopsInMasterShopResource extends JsonResource
             'type'            => $this->type->labels()[$this->type->value],
             'currency'        => $this->currency_code,
             'organisation_id' => $this->organisation_id,
-            'price'           => 0,
             'product' => [
                 'stock' => 0,
                 'cost_price' => 0,
@@ -39,7 +38,8 @@ class OpenShopsInMasterShopResource extends JsonResource
                 'create_webpage' => false,
                 'org_cost' => 0,
                 'grp_cost' => 0,
-                'has_org_stocks' => false
+                'has_org_stocks' => false,
+                'price'           => 0,
             ]
         ];
     }

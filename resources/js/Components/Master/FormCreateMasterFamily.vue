@@ -228,7 +228,7 @@ console.log(props)
                     :loading="form.processing"
                     class="!px-6"
                     icon="fas fa-plus"
-                    :label="'save & create new'"
+                    :label="'save & create another one'"
                     @click="submitForm(false)"
                 />
 

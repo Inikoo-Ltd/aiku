@@ -60,7 +60,7 @@ const locale = inject("locale", {});
 
 // helper to calculate profit margin %
 function getMargin(item: ProductItem) {
-    const p = Number(item.price);
+    const p = Number(item.product.price);
     const cost = Number(item.product?.org_cost);
 
     if (isNaN(p) || p === 0) return 0;
@@ -125,7 +125,7 @@ function getMargin(item: ProductItem) {
                         <td class="px-2 py-1 border-b w-48">
                             <div class="flex items-center gap-2">
                                 <InputNumber 
-                                    v-model="item.price" 
+                                    v-model="item.product.price" 
                                     mode="currency"
                                     :currency="item?.product?.org_currency ? item.product.org_currency : item.currency"
                                     :step="0.25" 
