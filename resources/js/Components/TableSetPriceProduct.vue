@@ -28,6 +28,11 @@ interface ProductItem {
     stock?: number;
     create_webpage?: boolean;
     currency?: string;
+    product?: {
+        org_cost?: number;
+        org_currency?: string;
+        stock?: number;
+    };
 }
 
 interface ProductData {
@@ -40,21 +45,29 @@ interface ProductData {
     data: ProductItem[];
 }
 
-// 👇 defineModel makes `v-model:data` available
+// v-model:data
 const modelValue = defineModel<ProductData>();
+
+const emits = defineEmits<{
+    (e: "change", payload: { tableData: ProductItem[]; data: ProductData }): void;
+}>();
 
 const props = defineProps<{
     currency: string;
-    master_price: number;
 }>();
 
 const locale = inject("locale", {});
 
 // helper to calculate profit margin %
-function getMargin(price: number | string) {
-    const p = Number(price);
-    if (!p || !props.master_price) return null;
-    return ((p - props.master_price) / props.master_price) * 100;
+function getMargin(item: ProductItem) {
+    const p = Number(item.price);
+    const cost = Number(item.product?.org_cost);
+
+    if (isNaN(p) || p === 0) return 0;
+    if (isNaN(cost) || cost === 0) {
+        return p > 0 ? 100 : 0;
+    }
+    return ((p - cost) / cost) * 100;
 }
 </script>
 
@@ -64,10 +77,6 @@ function getMargin(price: number | string) {
             <h3 class="text-base font-semibold text-gray-800 flex items-center gap-2">
                 Products ({{ modelValue.data.length }})
             </h3>
-            <span class="px-2 py-0.5 text-[11px] rounded bg-gray-100 text-gray-600 border border-gray-200">
-                Master Price:
-                {{ locale.currencyFormat(currency || "usd", props.master_price) }}
-            </span>
         </div>
 
         <div v-if="modelValue.data.length" class="overflow-x-auto">
@@ -80,6 +89,7 @@ function getMargin(price: number | string) {
                         <th class="px-2 py-1">
                             <div class="flex justify-center items-center">Set Webpage</div>
                         </th>
+                        <th class="px-2 py-1">Org Cost</th>
                         <th class="px-2 py-1">Price</th>
                     </tr>
                 </thead>
@@ -92,27 +102,44 @@ function getMargin(price: number | string) {
                             {{ item.name }}
                         </td>
                         <td class="px-2 py-1 border-b border-gray-100 font-medium text-gray-700">
-                            {{ item.product.stock }}
+                            {{ item.product?.stock }}
                         </td>
                         <td class="px-2 py-1 border-b border-gray-100">
                             <div class="flex justify-center items-center">
-                                <input type="checkbox" v-model="item.create_webpage" />
+                                <input 
+                                    type="checkbox" 
+                                    v-model="item.create_webpage"
+                                    @change="emits('change', modelValue )"
+                                />
                             </div>
                         </td>
-                        <td class="px-2 py-1 border-b w-40">
-                            <InputNumber v-model="item.price" mode="currency" :currency="item?.product?.org_currency ? item.product.org_currency : item.currency" :step="0.25"
-                                :showButtons="true" inputClass="w-full text-xs" :min="0" />
-                            <div class="flex justify-end pt-1">
-                                <span :class="{
-                                    'text-green-600 font-medium': getMargin(item.price) > 0,
-                                    'text-red-600 font-medium': getMargin(item.price) < 0,
-                                    'text-gray-500': getMargin(item.price) === 0
-                                }">
-                                    {{ getMargin(item.price) ? getMargin(item.price).toFixed(1) + '%' : '' }}
+                        <td class="px-2 py-1 border-b border-gray-100">
+                            {{ locale.currencyFormat(item.product?.org_currency || currency, item.product?.org_cost) }}
+                        </td>
+                        <td class="px-2 py-1 border-b w-48">
+                            <div class="flex items-center gap-2">
+                                <InputNumber 
+                                    v-model="item.price" 
+                                    mode="currency"
+                                    :currency="item?.product?.org_currency ? item.product.org_currency : item.currency"
+                                    :step="0.25" 
+                                    :showButtons="true" 
+                                    inputClass="w-full text-xs" 
+                                    :min="0"
+                                    @input="emits('change',modelValue)"
+                                />
+                                <span 
+                                    :class="{
+                                        'text-green-600 font-medium': item?.product.margin  > 0,
+                                        'text-red-600 font-medium':item?.product.margin  < 0,
+                                        'text-gray-500': item?.product.margin === 0
+                                    }" 
+                                    class="whitespace-nowrap text-xs"
+                                >
+                                    {{ item?.product.margin + '%' }} 
+                                    <!-- {{ getMargin(item) }}% -->
                                 </span>
-
                             </div>
-
                         </td>
                     </tr>
                 </tbody>
