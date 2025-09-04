@@ -40,7 +40,7 @@ class StoreMasterFamily extends OrgAction
             StoreFamilyFromMasterFamily::make()->action($masterFamily, [
                 'shop_family' => $shops
             ]);
-            
+
             return $masterFamily;
         });
     }
