@@ -8,7 +8,7 @@ import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { faHeart } from '@far'
-import { faCircle, faStar, faHeart as fasHeart, faEllipsisV, faMedal} from '@fas'
+import { faCircle, faStar, faHeart as fasHeart, faEllipsisV, faMedal } from '@fas'
 import { Image as ImageTS } from '@/types/Image'
 import ButtonAddPortfolio from '@/Components/Iris/Products/ButtonAddPortfolio.vue'
 import { getStyles } from "@/Composables/styles";
@@ -24,6 +24,7 @@ import { InputNumber } from 'primevue'
 import { get, set } from 'lodash-es'
 import ButtonAddToBasketInFamily from '@/Components/Iris/Products/ButtonAddToBasketInFamily.vue'
 import { ProductResource } from '@/types/Iris/Products'
+import NewAddToCartButton from './NewAddToCartButton.vue' // Import button baru
 library.add(faStarHalfAlt, faQuestionCircle)
 
 const layout = inject('layout', retinaLayoutStructure)
@@ -34,11 +35,11 @@ const locale = useLocaleStore()
 const props = defineProps<{
     product: ProductResource
     productHasPortfolio: number[]
-    style?: Object|null
+    style?: Object | null
 }>()
 
 
-const currency = layout?.iris?.currency 
+const currency = layout?.iris?.currency
 
 // Section: Add to Favourites
 const isLoadingFavourite = ref(false)
@@ -56,7 +57,7 @@ const onAddFavourite = (product: ProductResource) => {
             preserveScroll: true,
             only: ['iris'],
             preserveState: true,
-            onStart: () => { 
+            onStart: () => {
                 isLoadingFavourite.value = true
             },
             onSuccess: () => {
@@ -86,7 +87,7 @@ const onUnselectFavourite = (product: ProductResource) => {
             preserveScroll: true,
             preserveState: true,
             only: ['iris'],
-            onStart: () => { 
+            onStart: () => {
                 isLoadingFavourite.value = true
             },
             onSuccess: () => {
@@ -132,19 +133,17 @@ const urlLoginWithRedirect = () => {
         <!-- Top Section: Stock, Images, Title, Code, Price -->
         <div class=" text-gray-800">
             <div v-if="product?.top_seller"
-                class="absolute top-2 left-2 border border-black/50 text-xs font-bold px-2 py-0.5 rounded"
-                :class="{
+                class="absolute top-2 left-2 border border-black/50 text-xs font-bold px-2 py-0.5 rounded" :class="{
                     'text-[#FFD700] bg-[#FFD70011] border-[#FFD700]': product.top_seller === 1, // Gold
                     'text-[#C0C0C0] bg-[#C0C0C033] border-[#C0C0C0]': product.top_seller === 2, // Silver
                     'text-[#CD7F32] bg-[#CD7F3211] border-[#CD7F32]': product.top_seller === 3  // Bronze
-                }"
-            >
-                <FontAwesomeIcon :icon="faMedal" class=" mr-0 md:mr-2"  />
+                }">
+                <FontAwesomeIcon :icon="faMedal" class=" mr-0 md:mr-2" />
 
                 <span class="hidden md:inline">{{ trans("BESTSELLER") }}</span>
             </div>
 
-            
+
 
 
             <!-- Icon: status (stocks) -->
@@ -172,15 +171,20 @@ const urlLoginWithRedirect = () => {
 
 
             <!-- Product Image -->
-            <component :is="product.url ? Link : 'div'" :href="product.url" class="block w-full mb-1 rounded sm:h-[305px] h-[180px]">
-                <Image :src="product?.web_images?.main?.gallery" alt="product image" 
+            <component :is="product.url ? Link : 'div'" :href="product.url"
+                class="block w-full mb-1 rounded sm:h-[305px] h-[180px] relative">
+                <Image :src="product?.web_images?.main?.gallery" alt="product image"
                     :style="{ objectFit: 'contain' }" />
+
+                <!-- New Add to Cart Button - hanya tampil jika user sudah login -->
+                <div v-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">
+                    <NewAddToCartButton :product="product" :key="product" />
+                </div>
             </component>
 
             <div class="px-3">
                 <!-- Title -->
-                <Link v-if="product.url" :href="product.url"
-                    class="hover:text-gray-500 font-bold text-sm mb-1">
+                <Link v-if="product.url" :href="product.url" class="hover:text-gray-500 font-bold text-sm mb-1">
                 {{ product.name }}
                 </Link>
                 <div v-else class="hover:text-gray-500 font-bold text-sm mb-1">
@@ -196,13 +200,14 @@ const urlLoginWithRedirect = () => {
                                 RRP: {{ locale.currencyFormat(currency.code,product.rrp) }}/ {{ product.unit }}
                             </span> -->
                         </div>
-                        
+
                         <!-- Rating and Stock -->
                         <div class="flex justify-between items-center text-xs mb-2">
                             <div v-if="layout?.iris?.is_logged_in" class="flex items-center gap-1"
                                 :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'">
-                                <FontAwesomeIcon :icon="faCircle" class="text-[8px]" :class="product.stock > 0 ? 'animate-pulse' : ''" />
-                                <span>({{ product.stock > 0 ? product.stock : 0 }} {{trans('available')}})</span>
+                                <FontAwesomeIcon :icon="faCircle" class="text-[8px]"
+                                    :class="product.stock > 0 ? 'animate-pulse' : ''" />
+                                <span>({{ product.stock > 0 ? product.stock : 0 }} {{ trans('available') }})</span>
                             </div>
                             <div class="flex items-center space-x-[1px] text-gray-500">
                             </div>
@@ -215,47 +220,43 @@ const urlLoginWithRedirect = () => {
                         <div v-if="isLoadingFavourite" class="xabsolute top-2 right-2 text-gray-500 text-xl px-2 -mr-2">
                             <LoadingIcon />
                         </div>
-                        <div v-else @click="() => product.is_favourite ? onUnselectFavourite(product) : onAddFavourite(product)"
+                        <div v-else
+                            @click="() => product.is_favourite ? onUnselectFavourite(product) : onAddFavourite(product)"
                             class="cursor-pointer xabsolute top-2 right-2 group text-xl px-2 -mr-2">
 
-                            <FontAwesomeIcon 
-                                v-if="product.is_favourite" 
-                                :icon="fasHeart" 
-                                fixed-width 
-                                class="text-pink-500" 
-                            />
+                            <FontAwesomeIcon v-if="product.is_favourite" :icon="fasHeart" fixed-width
+                                class="text-pink-500" />
                             <div v-else class="relative">
-                                <FontAwesomeIcon
-                                    :icon="fasHeart"
-                                    class="hidden group-hover:inline text-pink-400"
-                                    fixed-width
-                                />
-                                <FontAwesomeIcon
-                                    :icon="faHeart"
-                                    class="inline group-hover:hidden text-pink-300"
-                                    fixed-width
-                                />
+                                <FontAwesomeIcon :icon="fasHeart" class="hidden group-hover:inline text-pink-400"
+                                    fixed-width />
+                                <FontAwesomeIcon :icon="faHeart" class="inline group-hover:hidden text-pink-300"
+                                    fixed-width />
                             </div>
 
                         </div>
                     </div>
                 </div>
-                
 
-                <div v-if="layout?.iris?.is_logged_in" class="text-sm flex flex-wrap items-center justify-between gap-x-2 mb-3 tabular-nums">
+
+                <div v-if="layout?.iris?.is_logged_in"
+                    class="text-sm flex flex-wrap items-center justify-between gap-x-2 mb-3 tabular-nums">
                     <div class="">
-                        <div>{{ trans('Price') }}: <span class="font-semibold">{{ locale.currencyFormat(currency?.code, product.price || 0) }}</span></div>
+                        <div>{{ trans('Price') }}: <span class="font-semibold">{{ locale.currencyFormat(currency?.code,
+                                product.price || 0) }}</span></div>
                         <div>
                             <span class="text-sm text-gray-400 xtext-base font-normal">
-                                ({{ locale.currencyFormat(currency?.code, (product.price/product.units).toFixed(2)) }}/{{ product.unit }})
+                                ({{ locale.currencyFormat(currency?.code, (product.price / product.units).toFixed(2))
+                                }}/{{
+                                product.unit }})
                             </span>
                         </div>
                     </div>
-                    
+
                     <div v-if="product.rrp" class="text-xs xmt-1 text-right">
                         <div>RRP: {{ locale.currencyFormat(currency?.code, product.rrp || 0) }}</div>
                         <div class="text-gray-400 xtext-base font-normal">
-                            ({{ locale.currencyFormat(currency?.code, (product.rrp/product.units).toFixed(2)) }}/{{ product.unit }})
+                            ({{ locale.currencyFormat(currency?.code, (product.rrp / product.units).toFixed(2)) }}/{{
+                            product.unit }})
                         </div>
                     </div>
                 </div>
@@ -277,7 +278,8 @@ const urlLoginWithRedirect = () => {
         </div>
 
 
-        <div class="px-3">
+        <!-- Old Button - Commented Out -->
+        <!-- <div class="px-3">
             <div v-if="layout?.iris?.is_logged_in" class="w-full">
 
                 <ButtonAddToBasketInFamily
@@ -293,10 +295,17 @@ const urlLoginWithRedirect = () => {
             <Link v-else :href="urlLoginWithRedirect()" class="block text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
                 {{ trans("Login or Register for Wholesale Prices") }}
             </Link>
+        </div> -->
+
+        <!-- Login Button for Non-Logged In Users -->
+        <div v-if="!layout?.iris?.is_logged_in" class="px-3">
+            <Link :href="urlLoginWithRedirect()"
+                class="block text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
+            {{ trans("Login or Register for Wholesale Prices") }}
+            </Link>
         </div>
     </div>
 </template>
 
 
-<style scoped>
-</style>
+<style scoped></style>
