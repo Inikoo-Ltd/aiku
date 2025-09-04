@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { trans } from "laravel-vue-i18n"
 import InformationIcon from "../Utils/InformationIcon.vue"
+import { computed } from "vue"
+import Button from "../Elements/Buttons/Button.vue"
 
 
 // interface ProductItem {
@@ -37,6 +39,9 @@ const props = defineProps<{
     master_price: number
 }>();
 
+const isAllChecked = computed(() => {
+    return modelValue.value?.data?.every(item => item.create_webpage);
+})
 </script>
 
 <template>
@@ -45,8 +50,18 @@ const props = defineProps<{
             <h3 class="text-base font-semibold text-gray-800 flex items-center gap-2">
                 Shops ({{ modelValue.data.length }})
             </h3>
-        </div>
 
+            <Button
+                type="secondary"
+                @click="modelValue.data.forEach(item => item.create_webpage = true)"
+                :disabled="!modelValue.data.length || isAllChecked"
+                size="xxs"
+                
+            >
+                {{ trans('Check All') }}
+            </Button>
+        </div>
+        
         <div v-if="modelValue.data.length" class="overflow-x-auto">
             <table class="w-full border-collapse text-xs">
                 <thead>

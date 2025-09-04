@@ -47,6 +47,8 @@ const form = useForm({
     code: "",
     name: "",
     description: "",
+    description_title: "",
+    description_extra: "",
     price: 0,
     shop_family: null
 })
@@ -179,6 +181,17 @@ console.log(props)
                         </small>
                     </div>
 
+                    <!-- Description: Title -->
+                    <div class="col-span-2">
+                        <label class="font-medium block mb-1 text-sm">Description Title</label>
+                        <Textarea rows="3" v-model="form.description_title" @update:model-value="form.errors.description_title = null"
+                            class="w-full" />
+                        <small v-if="form.errors.description_title" class="text-red-500 text-xs flex items-center gap-1 mt-1">
+                            <FontAwesomeIcon :icon="faExclamationCircle" />
+                            {{ form.errors.description_title.join(", ") }}
+                        </small>
+                    </div>
+
                     <!-- Description -->
                     <div class="col-span-2">
                         <label class="font-medium block mb-1 text-sm">Description</label>
@@ -187,6 +200,17 @@ console.log(props)
                         <small v-if="form.errors.description" class="text-red-500 text-xs flex items-center gap-1 mt-1">
                             <FontAwesomeIcon :icon="faExclamationCircle" />
                             {{ form.errors.description.join(", ") }}
+                        </small>
+                    </div>
+
+                    <!-- Description: Extra -->
+                    <div class="col-span-2">
+                        <label class="font-medium block mb-1 text-sm">Description Extra</label>
+                        <Textarea rows="3" v-model="form.description_extra" @update:model-value="form.errors.description_extra = null"
+                            class="w-full" />
+                        <small v-if="form.errors.description_extra" class="text-red-500 text-xs flex items-center gap-1 mt-1">
+                            <FontAwesomeIcon :icon="faExclamationCircle" />
+                            {{ form.errors.description_extra.join(", ") }}
                         </small>
                     </div>
                 </div>
