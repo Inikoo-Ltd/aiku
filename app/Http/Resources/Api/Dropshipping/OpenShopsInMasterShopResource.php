@@ -36,7 +36,7 @@ class OpenShopsInMasterShopResource extends JsonResource
                 'cost_price' => 0,
                 'margin' => 0,
                 'create_webpage' => false,
-                'price' => 0
+                'price' => 0,
             ]
         ];
     }
