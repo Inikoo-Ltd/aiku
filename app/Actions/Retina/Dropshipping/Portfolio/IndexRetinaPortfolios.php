@@ -401,9 +401,9 @@ class IndexRetinaPortfolios extends RetinaAction
                     'count' => $this->customerSalesChannel->number_portfolios
                 ]);
 
-            $table->column(key: 'image', label: __(''), canBeHidden: false, searchable: true);
+            $table->column(key: 'image', label:'', canBeHidden: false, searchable: true);
             $table->column(key: 'name', label: __('Product'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'actions', label: '', canBeHidden: false, sortable: false, searchable: false);
+            $table->column(key: 'actions', label: '', canBeHidden: false);
 
 
             if ($this->customerSalesChannel->platform->type !== PlatformTypeEnum::MANUAL) {

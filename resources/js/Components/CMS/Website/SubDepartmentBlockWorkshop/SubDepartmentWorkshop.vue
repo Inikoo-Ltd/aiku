@@ -2,8 +2,8 @@
 import { faCube, faLink } from "@fal";
 import { faStar, faCircle, faChevronLeft, faChevronRight, faDesktop, faInfoCircle } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { ref, provide, inject, toRaw, watch, computed } from "vue";
-import SideMenuDepartementWorkshop from "./SideMenuSubDepartementWorkshop.vue";
+import { ref, provide, inject, toRaw, watch } from "vue";
+import SideMenuSubDepartmentWorkshop from "./SideMenuSubDepartmentWorkshop.vue";
 import { getComponent } from "@/Composables/getWorkshopComponents";
 import { router } from "@inertiajs/vue3";
 import { notify } from "@kyvg/vue3-notification";
@@ -11,7 +11,7 @@ import { routeType } from "@/types/route";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { layoutStructure } from '@/Composables/useLayoutStructure';
 import Drawer from 'primevue/drawer';
-import DepartementListTree from "./DepartementListTree.vue";
+import DepartmentListTree from "./DepartmentListTree.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import ScreenView from "@/Components/ScreenView.vue";
 
@@ -53,7 +53,7 @@ const autosave = () => {
   const payload = JSON.parse(JSON.stringify(toRaw(props.data.layout)));
 
   if (payload.data?.fieldValue) {
-    delete payload.data.fieldValue.departement;
+    delete payload.data.fieldValue.department;
     delete payload.data.fieldValue.sub_departments;
   }
 
@@ -87,13 +87,13 @@ function debounce(fn: Function, delay = 800) {
 const debouncedAutosave = debounce(autosave);
 
 const dataPicked = ref({
-  departement : null,
+  department : null,
   sub_departments : []
 })
 // =============== EVENT HANDLERS ===============
 const onChangeDepartment = (value: any) => {
   if (props.data.layout?.data?.fieldValue) {
-    dataPicked.value.departement = value;
+    dataPicked.value.department = value;
     dataPicked.value.sub_departments = value.sub_departments || [];
     debouncedAutosave();
   }
@@ -127,7 +127,7 @@ const onPickTemplate = (template: any) => {
 
     <div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
       <div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
-        <SideMenuDepartementWorkshop :data="props.data.layout" :webBlockTypes="props.data.web_block_types"
+        <SideMenuSubDepartmentWorkshop :data="props.data.layout" :webBlockTypes="props.data.web_block_types"
           :dataList="props.data.departments" @auto-save="debouncedAutosave" @set-up-template="onPickTemplate" />
       </div>
       <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-auto border">
@@ -136,8 +136,8 @@ const onPickTemplate = (template: any) => {
             <ScreenView @screenView="(e) => { currentView = e }" v-model="currentView" />
           </div>
           <div class="text-sm text-gray-600 italic mr-3 cursor-pointer" @click="visibleDrawer = true">
-            <span v-if="props.data.layout?.data?.fieldValue?.departement?.name">
-              Preview: <strong>{{ props.data.layout.data.fieldValue.departement?.name }}</strong>
+            <span v-if="props.data.layout?.data?.fieldValue?.department?.name">
+              Preview: <strong>{{ props.data.layout.data.fieldValue.department?.name }}</strong>
             </span>
             <span v-else>Pick The department</span>
           </div>
@@ -147,10 +147,10 @@ const onPickTemplate = (template: any) => {
             :screenType="currentView"
             :modelValue="{
               ...props.data.layout.data.fieldValue,
-              departement: dataPicked.departement || null,
+              department: dataPicked.department || null,
               sub_departments: dataPicked.sub_departments || []
             }"
-            :routeEditSubDepartement="props.data.update_sub_department_route" />
+            :routeEditSubDepartment="props.data.update_sub_department_route" />
         </div>
         <div v-else class="flex flex-col items-center justify-center gap-3 text-center text-gray-500 flex-1 min-h-[300px]"
           style="height: 100%;">
@@ -175,8 +175,8 @@ const onPickTemplate = (template: any) => {
       </div>
     </template>
 
-    <DepartementListTree :dataList="props.data.departments" @changeDepartment="onChangeDepartment"
-      :active="props.data.layout?.data?.fieldValue?.departement?.slug" />
+    <DepartmentListTree :dataList="props.data.departments" @changeDepartment="onChangeDepartment"
+      :active="props.data.layout?.data?.fieldValue?.department?.slug" />
   </Drawer>
 </template>
 

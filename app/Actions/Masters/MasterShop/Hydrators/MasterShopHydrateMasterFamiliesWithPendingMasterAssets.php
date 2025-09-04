@@ -6,7 +6,7 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Masters\MasterProductCategory\Hydrators;
+namespace App\Actions\Masters\MasterShop\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;

@@ -709,17 +709,17 @@ const confirm2 = (action) => {
         
                         <div>
                             <NeedToPay
-                                @click="() => box_stats.products.payment.pay_amount ? onPayClick : ''"
+                                @click="() => box_stats.products.payment.pay_amount ? onPayClick() : ''"
                                 :totalAmount="box_stats.products.payment.total_amount"
                                 :paidAmount="box_stats.products.payment.paid_amount"
                                 :payAmount="box_stats.products.payment.pay_amount"
                                 :class="[box_stats.products.payment.pay_amount ? 'hover:bg-gray-100 cursor-pointer' : '']"
                                 :currencyCode="currency.code"
                             >
-                                <template v-if="box_stats.products.excesses_payment?.amount" #default>
+                                <template v-if="box_stats.products.excesses_payment?.amount>0" #default>
                                     <div class="pt-1 border-t border-green-300 text-xxs">
-                                        <p class="text-gray-500">
-                                            {{ trans("You have some excesses balance") }}:
+                                        <p class="text-gray-500 mb-1 mt-2">
+                                            {{ trans("The order is overpaid") }}:
                                             <span class="text-gray-700">
                                                 {{ locale.currencyFormat(currency.code, Number(box_stats.products.excesses_payment?.amount)) }}
                                             </span>
@@ -733,6 +733,7 @@ const confirm2 = (action) => {
                                             size="xxs"
                                         />
                                     </div>
+
                                 </template>
                             </NeedToPay>
         

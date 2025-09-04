@@ -192,7 +192,7 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
                 <!-- Registration Link -->
                 <div class="border-t border-gray-200 flex justify-center items-center mt-2 pt-4">
                     <p class="text-sm text-gray-500">
-                        {{ trans("Don\'t have an account") }}?
+                        {{ trans("Don't have an account") }}?
                         <Link :href="route('retina.register')"
                             class="  font-medium hover:underline transition duration-150 ease-in-out ml-1">
                             {{ trans("Register here") }}

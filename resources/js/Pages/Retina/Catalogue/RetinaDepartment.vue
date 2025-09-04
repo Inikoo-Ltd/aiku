@@ -16,7 +16,7 @@ import {
 
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import { computed, ref } from "vue";
-import RetinaDepartmentShowcase from "@/Components/Showcases/Retina/Catalouge/RetinaDepartementShowcase.vue";
+import RetinaDepartmentShowcase from "@/Components/Showcases/Retina/Catalouge/RetinaDepartmentShowcase.vue";
 import { useTabChange } from "@/Composables/tab-change";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import { faDiagramNext } from "@fortawesome/free-solid-svg-icons";
@@ -25,7 +25,7 @@ import RetinaTableFamilies from "@/Components/Tables/Retina/RetinaTableFamilies.
 import { capitalize } from "@/Composables/capitalize";
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 import RetinaTableCollections from "@/Components/Tables/Retina/RetinaTableCollections.vue";
-import TableSubDepartments from "@/Components/Tables/Retina/RetinaTableSubDepartements.vue";
+import TableSubDepartments from "@/Components/Tables/Retina/RetinaTableSubDepartments.vue";
 import ButtonAddCategoryToPortfolio from "@/Components/Iris/Products/ButtonAddCategoryToPortfolio.vue";
 
 library.add(
