@@ -66,8 +66,11 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
             $orgStocksData                  = $organisationsData[$shop->organisation_id]['org_stocks_data'];
             $orgStocksData['shop_currency'] = $shop->currency->code;
             $orgStocksData['shop_cost']     = round($orgStocksData['org_cost'] * GetCurrencyExchange::run($shop->organisation->currency, $shop->currency), 2);
-
-            $finalData[] = [
+            $orgStocksData['price']         = round($orgStocksData['shop_cost'] * $shop->cost_price_ratio, 2);
+            $orgStocksData['margin']        = ($orgStocksData['price'] > 0)
+                ? round((($orgStocksData['price'] - $orgStocksData['shop_cost']) / $orgStocksData['price']) * 100, 2)
+                : null;
+            $finalData[]                    = [
                 'id'              => $shop->id,
                 'org_stocks_data' => $orgStocksData
             ];
@@ -115,7 +118,6 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
             'grp_currency'   => $organisation->group->currency->code,
             'grp_cost'       => round($cost * GetCurrencyExchange::run($organisation->currency, $organisation->group->currency), 2),
             'has_org_stocks' => $organisationHasOrgStocks,
-            'margin'         => 10
         ];
     }
 

@@ -117,7 +117,7 @@ class StoreInvoice extends OrgAction
         $date = now();
         data_set($modelData, 'date', $date, overwrite: false);
         data_set($modelData, 'tax_liability_at', $date, overwrite: false);
-        data_set($modelData, 'effective_total', Arr::get($modelData,'total_amount',0));
+        data_set($modelData, 'effective_total', Arr::get($modelData, 'total_amount', 0));
 
 
         $invoice = DB::transaction(function () use ($parent, $modelData, $billingAddressData, $deliveryAddressData) {

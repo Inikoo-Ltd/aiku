@@ -70,6 +70,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $mark_for_discontinued
  * @property string|null $mark_for_discontinued_at
  * @property string|null $discontinued_at
+ * @property string|null $cost_price_ratio
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Group $group
  * @property-read \App\Models\Helpers\Media|null $image

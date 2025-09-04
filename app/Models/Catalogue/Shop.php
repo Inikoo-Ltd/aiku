@@ -136,6 +136,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $registration_needs_approval
  * @property array<array-key, mixed>|null $extra_languages
  * @property bool $is_aiku
+ * @property string $cost_price_ratio
  * @property-read \App\Models\Catalogue\ShopAccountingStats|null $accountingStats
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses

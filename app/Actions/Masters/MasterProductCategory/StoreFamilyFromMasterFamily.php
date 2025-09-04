@@ -16,7 +16,6 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Catalogue\Product;
-use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 
 class StoreFamilyFromMasterFamily extends GrpAction
@@ -33,18 +32,18 @@ class StoreFamilyFromMasterFamily extends GrpAction
                 if (isset($modelData['shop_family']) && !array_key_exists($shop->id, $modelData['shop_family'])) {
                     continue;
                 }
-            
+
                 $shopProductData = isset($modelData['shop_family'][$shop->id]) ? $modelData['shop_family'][$shop->id] : [];
                 $createWebpage = isset($shopProductData['create_webpage']) ? $shopProductData['create_webpage'] : true;
 
                 $subDepartment = null;
                 $department = null;
 
-                if($masterFamily->masterSubDepartment) {
+                if ($masterFamily->masterSubDepartment) {
                     $subDepartment = $masterFamily->masterSubDepartment->productCategories()->where('shop_id', $shop->id)->first();
-                } 
+                }
 
-                if($masterFamily->masterDepartment) {
+                if ($masterFamily->masterDepartment) {
                     $department = $masterFamily->masterDepartment->productCategories()->where('shop_id', $shop->id)->first();
                 }
 
@@ -56,15 +55,15 @@ class StoreFamilyFromMasterFamily extends GrpAction
                     'type' => ProductCategoryTypeEnum::FAMILY,
                     'master_product_category_id' => $masterFamily->id,
                 ];
-                if($subDepartment) {
+                if ($subDepartment) {
                     $family = StoreProductCategory::run($subDepartment, $data);
                 } elseif ($department) {
                     $family = StoreProductCategory::run($department, $data);
                 } else {
-                     $family = StoreProductCategory::run($shop, $data);
+                    $family = StoreProductCategory::run($shop, $data);
                 }
                 $family->refresh();
-                
+
                 if ($createWebpage) {
                     $webpage = StoreProductCategoryWebpage::run($family);
                     PublishWebpage::make()->action($webpage, [
@@ -75,7 +74,7 @@ class StoreFamilyFromMasterFamily extends GrpAction
         }
     }
 
-    public function rules() : array 
+    public function rules(): array
     {
         return [
             'shop_family'            => ['sometimes', 'array']

@@ -30,18 +30,18 @@ class StoreEcomBasketTransaction extends IrisAction
 
         $historicAsset = $product->currentHistoricProduct;
 
-        if($order) {
+        if ($order) {
             $existingTransaction = $order->transactions()->where('historic_asset_id', $historicAsset->id)->first();
-            if($existingTransaction) {
-                 throw ValidationException::withMessages(
+            if ($existingTransaction) {
+                throw ValidationException::withMessages(
                     [
-                        'message' => [
-                            'transaction' => 'Product already exist in basket',
-                        ]
+                       'message' => [
+                           'transaction' => 'Product already exist in basket',
+                       ]
                     ]
                 );
             }
-            
+
         }
 
         $transaction = StoreTransaction::make()->action($order, $historicAsset, [

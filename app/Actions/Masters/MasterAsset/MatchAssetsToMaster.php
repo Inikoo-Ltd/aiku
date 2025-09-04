@@ -35,7 +35,7 @@ class MatchAssetsToMaster extends OrgAction
             ->where('type', $asset->type->value)
             ->first();
 
-        if(!$masterAsset){
+        if (!$masterAsset) {
             return $asset;
         }
 
