@@ -66,7 +66,6 @@ use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
 use App\Actions\Masters\MasterAsset\Json\GetAllTradeUnits;
 use App\Actions\Masters\MasterAsset\Json\GetRecommendedTradeUnits;
 use App\Actions\Masters\MasterAsset\Json\GetTakenTradeUnits;
-use App\Actions\Masters\MasterAsset\Json\GetTradeUnitDataForMasterProductCreation;
 use App\Actions\Masters\MasterCollection\UI\GetMasterCollections;
 use App\Actions\Masters\MasterCollection\UI\GetMasterFamilies;
 use App\Actions\Masters\MasterCollection\UI\GetMasterProductsNotAttachedToAMasterCollection;

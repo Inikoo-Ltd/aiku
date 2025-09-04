@@ -20,7 +20,6 @@ use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreMasterProductFromTradeUnits extends GrpAction

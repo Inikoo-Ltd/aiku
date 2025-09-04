@@ -16,7 +16,6 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use OwenIt\Auditing\Events\AuditCustom;

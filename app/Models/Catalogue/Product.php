@@ -143,6 +143,7 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $master_product_id
  * @property string|null $mark_for_discontinued_at
  * @property string|null $discontinued_at
+ * @property string|null $cost_price_ratio
  * @property-read \App\Models\Catalogue\Asset|null $asset
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, BackInStockReminder> $backInStockReminders

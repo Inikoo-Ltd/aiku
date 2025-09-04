@@ -72,13 +72,13 @@ class StoreMasterProductCategory extends GrpAction
             $masterProductCategory->refresh();
 
             $collection = null;
-            if($masterProductCategory->type != MasterProductCategoryTypeEnum::FAMILY) { //FOR NOW ONLY FAMILY SUPPORT Selection Feature, just ignore this, everything will still work
+            if ($masterProductCategory->type != MasterProductCategoryTypeEnum::FAMILY) { //FOR NOW ONLY FAMILY SUPPORT Selection Feature, just ignore this, everything will still work
                 if ($parent instanceof MasterShop) {
                     $collection = $parent->shops;
                 } elseif ($parent instanceof MasterProductCategory) {
                     $collection = $parent->productCategories;
                 }
-    
+
                 if ($collection && $collection->isNotEmpty()) {
                     $type = match (Arr::get($modelData, 'type')) {
                         MasterProductCategoryTypeEnum::DEPARTMENT => ProductCategoryTypeEnum::DEPARTMENT,
@@ -92,7 +92,7 @@ class StoreMasterProductCategory extends GrpAction
                             'master_product_category_id' => $masterProductCategory->id
                         ]
                     );
-    
+
                     foreach ($collection as $item) {
                         StoreProductCategory::make()->action($item, $actionData);
                     }
