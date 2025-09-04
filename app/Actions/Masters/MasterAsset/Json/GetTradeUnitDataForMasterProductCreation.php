@@ -8,6 +8,7 @@
 namespace App\Actions\Masters\MasterAsset\Json;
 
 use App\Actions\GrpAction;
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Goods\TradeUnit;
@@ -27,14 +28,14 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
         ];
     }
 
-    public function asController(MasterProductCategory $masterProductCategory, ActionRequest $request)
+    public function asController(MasterProductCategory $masterProductCategory, ActionRequest $request): \Illuminate\Http\Response|array
     {
         $this->initialisation(group(), $request);
 
         return $this->handle(masterProductCategory: $masterProductCategory, modelData: $this->validatedData);
     }
 
-    public function handle(MasterProductCategory $masterProductCategory, array $modelData)
+    public function handle(MasterProductCategory $masterProductCategory, array $modelData): array
     {
         $tradeUnits = [];
         foreach ($modelData['trade_units'] as $tradeUnitData) {
@@ -58,18 +59,20 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
         }
 
 
-
         $finalData = [];
 
         /** @var Shop $shop */
         foreach ($openShops as $shop) {
+            $orgStocksData                  = $organisationsData[$shop->organisation_id]['org_stocks_data'];
+            $orgStocksData['shop_currency'] = $shop->currency->code;
+            $orgStocksData['shop_cost']     = round($orgStocksData['org_cost'] * GetCurrencyExchange::run($shop->organisation->currency, $shop->currency), 2);
+
             $finalData[] = [
-                'id' => $shop->id,
-                'org_stocks_data' => $organisationsData[$shop->organisation_id]['org_stocks_data']
+                'id'              => $shop->id,
+                'org_stocks_data' => $orgStocksData
             ];
-
-
         }
+
 
         return $finalData;
     }
@@ -92,7 +95,7 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
                         $stock = $localStock;
                     }
 
-                    $localCost = floor($orgStock->unit_cost * $qty);
+                    $localCost = $orgStock->unit_cost * $qty;
                     if ($cost == null) {
                         $cost = $localCost;
                     } else {
@@ -107,7 +110,10 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
 
         return [
             'stock'          => $stock,
-            'cost_price'     => $cost,
+            'org_currency'   => $organisation->currency->code,
+            'org_cost'       => round($cost, 2),
+            'grp_currency'   => $organisation->group->currency->code,
+            'grp_cost'       => round($cost * GetCurrencyExchange::run($organisation->currency, $organisation->group->currency), 2),
             'has_org_stocks' => $organisationHasOrgStocks,
         ];
     }
