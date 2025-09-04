@@ -120,8 +120,6 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
             'grp_currency'   => $organisation->group->currency->code,
             'grp_cost'       => round($cost * GetCurrencyExchange::run($organisation->currency, $organisation->group->currency), 2),
             'has_org_stocks' => $organisationHasOrgStocks,
-            'margin'         => 10,
-            'rrp'            => 0
         ];
     }
 
