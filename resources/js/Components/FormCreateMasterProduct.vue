@@ -393,7 +393,7 @@ console.log(props)
 
                 <!-- Table -->
                 <div v-if="tableVisible" class="mt-4">
-                    <TableSetPriceProduct v-model="tableData"  :key="key" :currency="currency.code" @change="(data)=>getTableData(data)" />
+                    <TableSetPriceProduct v-model="tableData"  :key="key" :currency="currency.code" />
                     <small v-if="form.errors.shop_products" class="text-red-500 flex items-center gap-1">
                         {{ form.errors.shop_products.join(", ") }}
                     </small>

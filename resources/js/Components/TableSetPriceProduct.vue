@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { trans } from "laravel-vue-i18n";
 import { InputNumber } from "primevue";
-import { inject } from "vue";
+import { inject, computed } from "vue";
 
 // Interfaces
 interface TradeUnit {
@@ -32,6 +32,8 @@ interface ProductItem {
         org_cost?: number;
         org_currency?: string;
         stock?: number;
+        price?: number;
+        has_org_stocks?: boolean; // keep consistent with your v-model usage
     };
 }
 
@@ -60,15 +62,31 @@ const locale = inject("locale", {});
 
 // helper to calculate profit margin %
 function getMargin(item: ProductItem) {
-    const p = Number(item.product.price);
+    const p = Number(item.product?.price);
     const cost = Number(item.product?.org_cost);
 
-    if (isNaN(p) || p === 0) return 0;
+    if (isNaN(p) || p === 0) return 0.000;
     if (isNaN(cost) || cost === 0) {
-        return p > 0 ? 100 : 0;
+        return p > 0 ? 100.000 : 0.000;
     }
-    return ((p - cost) / cost) * 100;
+    return Number((((p - cost) / cost) * 100).toFixed());
 }
+
+// computed for "check all"
+const allChecked = computed({
+    get() {
+        return modelValue.value.data.length > 0 &&
+            modelValue.value.data.every((item) => item.product?.has_org_stocks);
+    },
+    set(val: boolean) {
+        modelValue.value.data.forEach((item) => {
+            if (item.product) {
+                item.product.has_org_stocks = val;
+            }
+        });
+        emits("change", modelValue.value);
+    }
+});
 </script>
 
 <template>
@@ -86,12 +104,15 @@ function getMargin(item: ProductItem) {
                         <th class="px-2 py-1">Code</th>
                         <th class="px-2 py-1">Name</th>
                         <th class="px-2 py-1">Stock</th>
-                       <th class="px-2 py-1 text-center">
-                            Create Webpage?
-                            <InformationIcon :information="trans('If checked, will create the product webpage')" />
+                        <th class="px-2 py-1 text-center">
+                            <div class="flex items-center justify-center gap-1">
+                                <input type="checkbox" v-model="allChecked" />
+                                <span>Create Webpage?</span>
+                                <InformationIcon :information="trans('If checked, will create the product webpage')" />
+                            </div>
                         </th>
                         <th class="px-2 py-1">
-                             <div class="flex justify-center items-center">Org cost</div>
+                            <div class="flex justify-center items-center">Org cost</div>
                         </th>
                         <th class="px-2 py-1">Price</th>
                     </tr>
@@ -105,46 +126,34 @@ function getMargin(item: ProductItem) {
                             {{ item.name }}
                         </td>
                         <td class="px-2 py-1 border-b border-gray-100 font-medium text-gray-700">
-                             <div class="flex justify-center items-end">
+                            <div class="flex justify-center items-end">
                                 {{ item.product?.stock }}
-                             </div>
-                        </td>
-                        <td class="px-2 py-1 border-b border-gray-100">
-                            <div class="flex justify-center items-center">
-                                <input 
-                                    type="checkbox" 
-                                    v-model="item.product.has_org_stocks"
-                                    @change="emits('change', modelValue )"
-                                />
                             </div>
                         </td>
                         <td class="px-2 py-1 border-b border-gray-100">
-                                <div class="flex justify-center items-center">
-                                    {{ locale.currencyFormat(item.product?.org_currency || currency, item.product?.org_cost) }}
-                                </div>
+                            <div class="flex justify-center items-center">
+                                <input type="checkbox" v-model="item.product.has_org_stocks"
+                                    @change="emits('change', modelValue)" />
+                            </div>
+                        </td>
+                        <td class="px-2 py-1 border-b border-gray-100">
+                            <div class="flex justify-center items-center">
+                                {{ locale.currencyFormat(item.product?.org_currency || currency, item.product?.org_cost)
+                                }}
+                            </div>
                         </td>
                         <td class="px-2 py-1 border-b w-48">
                             <div class="flex items-center gap-2">
-                                <InputNumber 
-                                    v-model="item.product.price" 
-                                    mode="currency"
+                                <InputNumber v-model="item.product.price" mode="currency"
                                     :currency="item?.product?.org_currency ? item.product.org_currency : item.currency"
-                                    :step="0.25" 
-                                    :showButtons="true" 
-                                    inputClass="w-full text-xs" 
-                                    :min="0"
-                                    @input="emits('change',modelValue)"
-                                />
-                                <span 
-                                    :class="{
-                                        'text-green-600 font-medium': item?.product.margin  > 0,
-                                        'text-red-600 font-medium':item?.product.margin  < 0,
-                                        'text-gray-500': item?.product.margin === 0
-                                    }" 
-                                    class="whitespace-nowrap text-xs"
-                                >
-                                    {{ item?.product.margin + '%' }} 
-                                    <!-- {{ getMargin(item) }}% -->
+                                    :step="0.25" :showButtons="true" inputClass="w-full text-xs" :min="0"
+                                    @input="emits('change', modelValue)" />
+                                <span :class="{
+                                    'text-green-600 font-medium': getMargin(item) > 0,
+                                    'text-red-600 font-medium': getMargin(item) < 0,
+                                    'text-gray-500': getMargin(item) === 0
+                                }" class="whitespace-nowrap text-xs inline-block w-16 text-right">
+                                    {{ getMargin(item) + '%' }}
                                 </span>
                             </div>
                         </td>
