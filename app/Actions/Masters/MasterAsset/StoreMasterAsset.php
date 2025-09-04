@@ -157,7 +157,7 @@ class StoreMasterAsset extends OrgAction
                     ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
             ],
             'image_id'                 => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->group->id)],
-            'price'                    => ['required', 'numeric', 'min:0'],
+            'price'                    => ['sometimes', 'numeric', 'min:0'],
             'unit'                     => ['sometimes', 'required', 'string'],
             'rrp'                      => ['sometimes', 'required', 'numeric', 'min:0'],
             'description'              => ['sometimes', 'nullable', 'max:10000'],
