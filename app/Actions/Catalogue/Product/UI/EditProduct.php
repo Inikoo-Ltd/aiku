@@ -269,6 +269,23 @@ class EditProduct extends OrgAction
                 ]
             ],
             [
+                'label'  => __('Pricing'),
+                'icon'   => 'fa-light fa-money-bill',
+                'fields' => [
+                    'cost_price_ratio' => [
+                        'type'          => 'input_number',
+                        'bind' => [
+                            'maxFractionDigits' => 3
+                        ],
+                        'label'         => __('pricing ratio'),
+                        'placeholder'   => __('Cost price ratio'),
+                        'required'      => true,
+                        'value'         => $product->cost_price_ratio,
+                        'min'           => 0
+                    ],
+                ]
+            ],
+            [
                 'label'  => __('Properties'),
                 'title'  => __('id'),
                 'icon'   => 'fa-light fa-fingerprint',
@@ -304,14 +321,6 @@ class EditProduct extends OrgAction
                         'required' => true,
                         'value'    => $product->state,
                         'options'  => Options::forEnum(AssetStateEnum::class)
-                    ],
-                    'cost_price_ratio' => [
-                        'type'          => 'input',
-                        'label'         => __('pricing'),
-                        'placeholder'   => __('Cost price ratio'),
-                        'required'      => true,
-                        'value'         => $product->cost_price_ratio,
-                        'min'           => 0
                     ],
                     //  'button'       => [
                     //     'type'     => 'button',

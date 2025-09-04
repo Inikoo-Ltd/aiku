@@ -126,9 +126,18 @@ class EditSubDepartment extends OrgAction
                                     'noSaveButton' => true,
                                     "full"         => true
                                 ],
+                            ]
+                        ],
+                        [
+                            'label'  => __('Pricing'),
+                            'icon'   => 'fa-light fa-money-bill',
+                            'fields' => [
                                 'cost_price_ratio' => [
                                     'type'          => 'input_number',
-                                    'label'         => __('pricing'),
+                                    'bind' => [
+                                        'maxFractionDigits' => 3
+                                    ],
+                                    'label'         => __('pricing ratio'),
                                     'placeholder'   => __('Cost price ratio'),
                                     'required'      => true,
                                     'value'         => $subDepartment->cost_price_ratio,

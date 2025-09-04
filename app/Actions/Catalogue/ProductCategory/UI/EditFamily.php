@@ -146,13 +146,16 @@ class EditFamily extends OrgAction
                             ]
                         ],
                         [
-                            'label'  => __('Properties'),
+                            'label'  => __('Pricing'),
                             'title'  => __('id'),
-                            'icon'   => 'fa-light fa-fingerprint',
+                            'icon'   => 'fa-light fa-money-bill',
                             'fields' => [
                                 'cost_price_ratio' => [
                                     'type'          => 'input_number',
-                                    'label'         => __('pricing'),
+                                    'bind' => [
+                                        'maxFractionDigits' => 3
+                                    ],
+                                    'label'         => __('pricing ratio'),
                                     'placeholder'   => __('Cost price ratio'),
                                     'required'      => true,
                                     'value'         => $family->cost_price_ratio,
