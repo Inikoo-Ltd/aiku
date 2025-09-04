@@ -97,7 +97,7 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 				/>
 
 				<!-- RetinaLayoutDS -->
-				<div id="retina-right-section" class="flex-1 flex flex-col pb-6 text-gray-700 relative">
+				<div class="flex-1 flex flex-col pb-6 text-gray-700 relative">
 					<div class="flex justify-between items-end absolute bottom-full w-full border-b-0 mx-auto transition-all mb-1">
 						<Breadcrumbs
 							class=""
@@ -126,6 +126,10 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 
 						<!-- Main content of the page -->
 						<slot name="default" />
+					</div>
+
+					<div id="retina-end-of-main" class="w-full mt-6">
+	
 					</div>
 				</div>
 			</main>

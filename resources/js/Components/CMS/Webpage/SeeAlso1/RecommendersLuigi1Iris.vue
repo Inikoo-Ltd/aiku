@@ -144,7 +144,7 @@ onMounted(() => {
                                 :class="Number(image.attributes?.stock_qty?.[0]) > 0 ? 'text-green-600' : 'text-red-600'">
                                 <FontAwesomeIcon :icon="faCircle" class="text-[8px]" />
                                 <span>{{ Number(image.attributes?.stock_qty?.[0]) > 0 ?
-                                    Number(image.attributes?.stock_qty?.[0]) : 0 }} {{ trans('available') }}</span>
+                                    locale.number(Number(image.attributes?.stock_qty?.[0])) : 0 }} {{ trans('available') }}</span>
                             </div>
                         </div>
                         <!-- Prices -->

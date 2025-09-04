@@ -102,26 +102,26 @@ const isTeleportReady = ref(false)
 const teleportKey = ref(0)
 
 // Responsive slides per view
-const slidesPerView = ref(4)
+const slidesPerView = ref(4.5)
 
 const updateSlidesPerView = () => {
     const width = window.innerWidth
     if (width < 640) {
-        slidesPerView.value = 2 // mobile
+        slidesPerView.value = 2.3 // mobile
     } else if (width < 768) {
-        slidesPerView.value = 2 // small tablet
+        slidesPerView.value = 2.4 // small tablet
     } else if (width < 1024) {
-        slidesPerView.value = 3 // tablet
+        slidesPerView.value = 3.5 // tablet
     } else if (width < 1280) {
-        slidesPerView.value = 4 // desktop
+        slidesPerView.value = 4.5 // desktop
     } else {
-        slidesPerView.value = 4 // large desktop
+        slidesPerView.value = 4.5 // large desktop
     }
 }
 
 const checkTeleportTarget = () => {
     try {
-        const targetElement = document.getElementById('retina-right-section')
+        const targetElement = document.getElementById('retina-end-of-main')
         if (targetElement && targetElement.parentNode) {
             const rect = targetElement.getBoundingClientRect()
             if (rect.width > 0 || rect.height > 0 || targetElement.offsetParent !== null) {
@@ -170,7 +170,7 @@ onMounted(async () => {
         setTimeout(() => {
             observer.disconnect()
             try {
-                const targetElement = document.getElementById('retina-right-section')
+                const targetElement = document.getElementById('retina-end-of-main')
                 if (targetElement) {
                     isTeleportReady.value = true
                     teleportKey.value += 1 // Force rerender
@@ -490,10 +490,20 @@ const blackListProductIds = computed(() => {
         />
     </div>
 
-    <Teleport v-if="layout.app.environment !== 'production'" to="#retina-right-section" :disabled="!isTeleportReady" :key="teleportKey">
-        <div class="max-w-[calc(1280px-200px)] mt-8 p-4 bg-white rounded-md shadow-lg">
-            <h2 class="text-2xl font-bold text-center mb-4">{{ trans('You might also like') }}</h2>
-            <RecommendersLuigi1Iris @add-to-basket="(productId: string, productCode: string) => onAddProductFromRecommender(productId, productCode)" :is-add-to-basket="true" recommendation_type="test_reco" :slidesPerView="slidesPerView"  :listLoadingProducts :blacklistItems="blackListProductIds" />
+    <Teleport xv-if="layout.app.environment !== 'production'" to="#retina-end-of-main" :disabled="!isTeleportReady" :key="teleportKey">
+        <div class="hidden max-w-[calc(1280px-200px)] mt-2 pt-4 border-t border-gray-300 border-dashed">
+            <h2 class="text-2xl font-bold text-center p-4 mb-2">{{ trans('You might also like') }}</h2>
+            <div class="bg-white p-4 rounded-md shadow-lg">
+                <RecommendersLuigi1Iris
+                    @add-to-basket="(productId: string, productCode: string) => onAddProductFromRecommender(productId, productCode)"
+                    :is-add-to-basket="true"
+                    recommendation_type="test_reco"
+                    xrecommendation_type="basket"
+                    :slidesPerView="slidesPerView" 
+                    :listLoadingProducts
+                    :blacklistItems="blackListProductIds"
+                />
+            </div>
         </div>
     </Teleport>
 
