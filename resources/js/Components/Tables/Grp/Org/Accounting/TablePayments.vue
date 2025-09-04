@@ -38,7 +38,6 @@ function paymentsRoute(payment: Payment) {
 					</Link>
 				</template>
 				<template v-else>
-					<!-- <span class="text-gray-500 italic" style="opacity: 0.7">No reference</span> -->
                     <Link :href="paymentsRoute(payment)" class="primaryLink">
 						{{ payment["reference"] }} {{ `${payment['id']}` }}
 					</Link>
@@ -54,16 +53,6 @@ function paymentsRoute(payment: Payment) {
 		<template #cell(refunded)="{ item: item }">
             <div class="text-gray-500">{{ useLocaleStore().currencyFormat( item.currency_code, item.refunded)  }}</div>
         </template>
-		<template #cell(date)="{ item }">
-			<div class="text-gray-500 text-right">
-				{{
-					useFormatTime(item["date"], {
-						localeCode: locale.language.code,
-						formatTime: "aiku",
-					})
-				}}
-				<!--   {{ useFormatTime(item.date) }} -->
-			</div>
-		</template>
+
 	</Table>
 </template>
