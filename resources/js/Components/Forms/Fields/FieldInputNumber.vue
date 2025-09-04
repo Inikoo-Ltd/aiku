@@ -12,6 +12,7 @@ import { faCopy } from '@fal'
 import { faSpinnerThird } from '@fad'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { set, get } from 'lodash-es'
+
 library.add(faExclamationCircle, faCheckCircle, faPlus, faMinus, faSpinnerThird, faCopy)
 // import { ref, watch } from "vue"
 import { InputNumber } from "primevue"
@@ -26,9 +27,7 @@ const props = defineProps<{
         readonly?: boolean
         copyButton: boolean
         maxLength?: number
-        bind: {
-
-        }
+        bind: {}
     }
 }>()
 
@@ -45,20 +44,22 @@ const props = defineProps<{
                 showButtons
                 :step="1"
             >
-                <template #incrementbuttonicon>
-                    <FontAwesomeIcon :icon="faPlus" class="" fixed-width aria-hidden="true" />
-                </template>
-                <template #decrementbuttonicon>
-                    <FontAwesomeIcon :icon="faMinus" class="" fixed-width aria-hidden="true" />
-                </template>
+                <!--                <template #incrementbuttonicon>
+                                    <FontAwesomeIcon :icon="faPlus" class="" fixed-width aria-hidden="true" />
+                                </template>
+                                <template #decrementbuttonicon>
+                                    <FontAwesomeIcon :icon="faMinus" class="" fixed-width aria-hidden="true" />
+                                </template>-->
             </InputNumber>
 
             <div class="absolute top-1/2 -translate-y-1/2 pointer-events-none right-6">
-                <FontAwesomeIcon v-if="get(form, ['errors', `${fieldName}`])" fixed-width icon="fas fa-exclamation-circle"
-                    class="h-5 w-5 text-red-500" aria-hidden="true" />
+                <FontAwesomeIcon v-if="get(form, ['errors', `${fieldName}`])" fixed-width
+                                 icon="fas fa-exclamation-circle"
+                                 class="h-5 w-5 text-red-500" aria-hidden="true"/>
                 <FontAwesomeIcon v-if="form.recentlySuccessful" fixed-width icon="fas fa-check-circle"
-                    class="h-5 w-5 text-green-500" aria-hidden="true" />
-                <FontAwesomeIcon v-if="form.processing" fixed-width icon="fad fa-spinner-third" class="h-5 w-5 animate-spin" />
+                                 class="h-5 w-5 text-green-500" aria-hidden="true"/>
+                <FontAwesomeIcon v-if="form.processing" fixed-width icon="fad fa-spinner-third"
+                                 class="h-5 w-5 animate-spin"/>
             </div>
         </div>
     </div>
