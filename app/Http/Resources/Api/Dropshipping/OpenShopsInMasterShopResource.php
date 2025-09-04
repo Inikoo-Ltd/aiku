@@ -35,7 +35,6 @@ class OpenShopsInMasterShopResource extends JsonResource
                 'stock' => 0,
                 'cost_price' => 0,
                 'margin' => 0,
-                'create_webpage' => false,
                 'org_cost' => 0,
                 'grp_cost' => 0,
                 'has_org_stocks' => false,
