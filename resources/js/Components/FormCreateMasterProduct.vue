@@ -103,7 +103,8 @@ const getTableData = (data) => {
         for (const tableDataItem of data.data) {
             finalDataTable[tableDataItem.id] = {
                 price: tableDataItem.product.price || 0,
-                has_org_stocks: tableDataItem.product.has_org_stocks
+                has_org_stocks: tableDataItem.product.has_org_stocks,
+                rrp : tableDataItem.product.rrp
             }
         }
 
@@ -165,7 +166,8 @@ const submitForm = async (redirect = true) => {
     for (const tableDataItem of tableData.value.data) {
         finalDataTable[tableDataItem.id] = {
             price: tableDataItem.product.price,
-            create_webpage: tableDataItem.product.has_org_stocks
+            create_webpage: tableDataItem.product.has_org_stocks,
+            rrp : tableDataItem.product.rrp
         }
     }
 
@@ -271,7 +273,7 @@ console.log(props)
 </script>
 
 <template>
-    <Drawer v-model:visible="drawerVisible" position="right" :class="[isFull ? '!w-full' : '!w-full md:!w-1/2']">
+    <Drawer v-model:visible="drawerVisible" position="right" :class="[isFull ? '!w-full' : '!w-full md:!w-3/4']">
         <!-- Header -->
         <template #header>
             <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2 flex-1">

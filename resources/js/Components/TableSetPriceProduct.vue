@@ -115,6 +115,10 @@ const allChecked = computed({
                             <div class="flex justify-center items-center">Org cost</div>
                         </th>
                         <th class="px-2 py-1">Price</th>
+                        <th class="px-2 py-1 text-center">
+                            <div class="flex justify-center items-center">Margin</div>
+                        </th>
+                        <th class="px-2 py-1">Rrp</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -148,13 +152,23 @@ const allChecked = computed({
                                     :currency="item?.product?.org_currency ? item.product.org_currency : item.currency"
                                     :step="0.25" :showButtons="true" inputClass="w-full text-xs" :min="0"
                                     @input="emits('change', modelValue)" />
-                                <span :class="{
-                                    'text-green-600 font-medium': getMargin(item) > 0,
-                                    'text-red-600 font-medium': getMargin(item) < 0,
-                                    'text-gray-500': getMargin(item) === 0
-                                }" class="whitespace-nowrap text-xs inline-block w-16 text-right">
-                                    {{ getMargin(item) + '%' }}
-                                </span>
+                            </div>
+                        </td>
+                        <td class="px-2 py-1 border-b border-gray-100 text-center">
+                            <span :class="{
+                                'text-green-600 font-medium': getMargin(item) > 0,
+                                'text-red-600 font-medium': getMargin(item) < 0,
+                                'text-gray-500': getMargin(item) === 0
+                            }" class="whitespace-nowrap text-xs inline-block w-16">
+                                {{ getMargin(item) + '%' }}
+                            </span>
+                        </td>
+                        <td class="px-2 py-1 border-b w-48">
+                            <div class="flex items-center gap-2">
+                                <InputNumber v-model="item.product.rrp" mode="currency"
+                                    :currency="item?.product?.org_currency ? item.product.org_currency : item.currency"
+                                    :step="0.25" :showButtons="true" inputClass="w-full text-xs" :min="0"
+                                    @input="emits('change', modelValue)" />
                             </div>
                         </td>
                     </tr>

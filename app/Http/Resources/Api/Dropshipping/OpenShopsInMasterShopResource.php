@@ -39,6 +39,7 @@ class OpenShopsInMasterShopResource extends JsonResource
                 'grp_cost' => 0,
                 'has_org_stocks' => false,
                 'price'           => 0,
+                'rrp'            => 0
             ]
         ];
     }
