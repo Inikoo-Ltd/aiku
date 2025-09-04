@@ -82,7 +82,8 @@ const form = useForm({
     shop_products: null
 });
 
-const getTableData = () => {
+const getTableData = (data) => {
+    console.log(data)
     // clear debounce kalau ada
     if (debounceTimer) {
         clearTimeout(debounceTimer)
@@ -99,14 +100,12 @@ const getTableData = () => {
         abortController = new AbortController()
 
         const finalDataTable: Record<number, { price: number | string }> = {}
-        for (const tableDataItem of tableData.value.data) {
+        for (const tableDataItem of data.data) {
             finalDataTable[tableDataItem.id] = {
-                price: tableDataItem.product.price,
+                price: tableDataItem.price || 0,
                 create_webpage: tableDataItem.product.create_webpage
             }
         }
-
-        form.shop_products = finalDataTable
 
 
         try {
@@ -115,7 +114,7 @@ const getTableData = () => {
                 route("grp.models.master_product_category.product_creation_data", {
                     masterProductCategory: props.masterProductCategory,
                 }),
-                { trade_units: form.trade_units, products : form.shop_products },
+                { trade_units: form.trade_units, shop_products : finalDataTable },
                 {
                     signal: abortController.signal, // attach abort signal
                 }
@@ -128,7 +127,8 @@ const getTableData = () => {
                 if (index !== -1) {
                     tableData.value.data[index].product = {
                         ...tableData.value.data[index].product,
-                        ...item.org_stocks_data
+                        ...item.org_stocks_data,
+                        /* margin : Math.floor(Math.random() * 100) */
                     }
                 }
             }
@@ -163,7 +163,7 @@ const submitForm = async (redirect = true) => {
     const finalDataTable: Record<number, { price: number | string }> = {}
     for (const tableDataItem of tableData.value.data) {
         finalDataTable[tableDataItem.id] = {
-            price: tableDataItem.product.price,
+            price: tableDataItem.price,
             create_webpage: tableDataItem.product.create_webpage
         }
     }
@@ -287,7 +287,7 @@ console.log(props)
             <!-- Trade Unit Selector -->
             <div>
                 <ListSelector :key="key" v-model="form.trade_units" :withQuantity="true" :tabs="selectorTab"
-                    @after-delete="() => getTableData()" @on-select="() => getTableData()" head_label="Select Trade Units"
+                    @after-delete="() => getTableData(tableData)" @on-select="() => getTableData(tableData)" head_label="Select Trade Units"
                     @update:model-value="ListSelectorChange" key_quantity="quantity" :routeFetch="{
                         name: 'grp.json.master-product-category.recommended-trade-units',
                         parameters: { masterProductCategory: route().params['masterFamily'] }
@@ -392,7 +392,7 @@ console.log(props)
 
                 <!-- Table -->
                 <div v-if="tableVisible" class="mt-4">
-                    <TableSetPriceProduct v-model="tableData"  :key="key" :currency="currency.code" @change="()=>getTableData()" />
+                    <TableSetPriceProduct v-model="tableData"  :key="key" :currency="currency.code" @change="(data)=>getTableData(data)" />
                     <small v-if="form.errors.shop_products" class="text-red-500 flex items-center gap-1">
                         {{ form.errors.shop_products.join(", ") }}
                     </small>

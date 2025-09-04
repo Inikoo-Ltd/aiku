@@ -89,7 +89,9 @@ function getMargin(item: ProductItem) {
                         <th class="px-2 py-1">
                             <div class="flex justify-center items-center">Set Webpage</div>
                         </th>
-                        <th class="px-2 py-1">Org Cost</th>
+                        <th class="px-2 py-1">
+                             <div class="flex justify-center items-center">Org cost</div>
+                        </th>
                         <th class="px-2 py-1">Price</th>
                     </tr>
                 </thead>
@@ -102,19 +104,23 @@ function getMargin(item: ProductItem) {
                             {{ item.name }}
                         </td>
                         <td class="px-2 py-1 border-b border-gray-100 font-medium text-gray-700">
-                            {{ item.product?.stock }}
+                             <div class="flex justify-center items-end">
+                                {{ item.product?.stock }}
+                             </div>
                         </td>
                         <td class="px-2 py-1 border-b border-gray-100">
                             <div class="flex justify-center items-center">
                                 <input 
                                     type="checkbox" 
-                                    v-model="item.create_webpage"
+                                    v-model="item.product.create_webpage"
                                     @change="emits('change', modelValue )"
                                 />
                             </div>
                         </td>
                         <td class="px-2 py-1 border-b border-gray-100">
-                            {{ locale.currencyFormat(item.product?.org_currency || currency, item.product?.org_cost) }}
+                                <div class="flex justify-center items-center">
+                                    {{ locale.currencyFormat(item.product?.org_currency || currency, item.product?.org_cost) }}
+                                </div>
                         </td>
                         <td class="px-2 py-1 border-b w-48">
                             <div class="flex items-center gap-2">
