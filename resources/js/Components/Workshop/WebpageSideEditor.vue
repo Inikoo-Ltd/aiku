@@ -171,6 +171,8 @@ onMounted(() => {
   window.openSideEditor = (index: number) => {
     openedBlockSideEditor.value = index
   }
+  
+  window.listSideWebBlocks = props?.webpage?.layout?.web_blocks
 })
 onUnmounted(() => {
   window.removeEventListener('click', closeContextMenu)
