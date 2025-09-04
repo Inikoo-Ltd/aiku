@@ -167,6 +167,12 @@ const duplicateBlock = (block: Daum) => {
 
 onMounted(() => {
   window.addEventListener('click', closeContextMenu)
+  // Method to handle in browser
+  window.openSideEditor = (index: number) => {
+    openedBlockSideEditor.value = index
+  }
+  
+  window.listSideWebBlocks = props?.webpage?.layout?.web_blocks
 })
 onUnmounted(() => {
   window.removeEventListener('click', closeContextMenu)
