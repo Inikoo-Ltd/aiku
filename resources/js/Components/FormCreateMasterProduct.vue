@@ -102,7 +102,7 @@ const getTableData = (data) => {
         const finalDataTable: Record<number, { price: number | string }> = {}
         for (const tableDataItem of data.data) {
             finalDataTable[tableDataItem.id] = {
-                price: tableDataItem.price || 0,
+                price: tableDataItem.product.price || 0,
                 create_webpage: tableDataItem.product.create_webpage
             }
         }
@@ -163,7 +163,7 @@ const submitForm = async (redirect = true) => {
     const finalDataTable: Record<number, { price: number | string }> = {}
     for (const tableDataItem of tableData.value.data) {
         finalDataTable[tableDataItem.id] = {
-            price: tableDataItem.price,
+            price: tableDataItem.product.price,
             create_webpage: tableDataItem.product.create_webpage
         }
     }
