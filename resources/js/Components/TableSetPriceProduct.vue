@@ -92,7 +92,7 @@ function getMargin(price: number | string) {
                             {{ item.name }}
                         </td>
                         <td class="px-2 py-1 border-b border-gray-100 font-medium text-gray-700">
-                            {{ item.stock }}
+                            {{ item.product.stock }}
                         </td>
                         <td class="px-2 py-1 border-b border-gray-100">
                             <div class="flex justify-center items-center">
@@ -100,8 +100,8 @@ function getMargin(price: number | string) {
                             </div>
                         </td>
                         <td class="px-2 py-1 border-b w-40">
-                            <InputNumber v-model="item.price" mode="currency" :currency="item.currency" :step="0.25"
-                                :showButtons="true" inputClass="w-full text-xs" />
+                            <InputNumber v-model="item.price" mode="currency" :currency="item?.product?.org_currency ? item.product.org_currency : item.currency" :step="0.25"
+                                :showButtons="true" inputClass="w-full text-xs" :min="0" />
                             <div class="flex justify-end pt-1">
                                 <span :class="{
                                     'text-green-600 font-medium': getMargin(item.price) > 0,

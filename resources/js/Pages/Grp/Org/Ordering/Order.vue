@@ -736,20 +736,20 @@ const confirm2 = (action) => {
                             >
                                 <template #default>
                                     <!-- Pay: Invoice -->
-                                    <div v-if="box_stats.products.payment.pay_amount > 0 && props.data?.data?.state === 'creating'" class="pt-1 border-t border-green-300 text-xxs">
+                                    <div v-if="box_stats.products.payment.pay_amount > 0 && !(props.data?.data?.state === 'creating' || props.data?.data?.state === 'cancelled'   ) " class="pt-1 border-t border-green-300 text-xxs">
                                         <Button
                                             @click.prevent="() => onClickPayInvoice()"
-                                            label="Pay invoice"
+                                            :label="trans('Pay')"
                                             type="secondary"
                                             size="xxs"
                                         />
                                     </div>
 
                                     <!-- Pay: Refund -->
-                                    <div v-if="box_stats.products.payment.pay_amount < 0 && props.data?.data?.state === 'creating'" class="pt-1 border-t border-green-300 text-xxs">
+                                    <div v-if="box_stats.products.payment.pay_amount < 0 && !(props.data?.data?.state === 'creating' || props.data?.data?.state === 'cancelled'   )" class="pt-1 border-t border-green-300 text-xxs">
                                         <Button
                                             @click="() => onClickPayRefund()"
-                                            label="Pay refund"
+                                            :label="trans('Refund money')"
                                             type="secondary"
                                             size="xxs"
                                         />
@@ -976,7 +976,7 @@ const confirm2 = (action) => {
         <div class="isolate bg-white px-6 lg:px-8">
             <div class="mx-auto max-w-2xl text-center">
                 <h2 class="text-lg font-bold tracking-tight sm:text-2xl">
-                    {{ trans("Return Order Payment To Customer") }}
+                    {{ trans("Return Payment") }}
                 </h2>
             </div>
 
@@ -1003,7 +1003,7 @@ const confirm2 = (action) => {
                         <Button @click="() => paymentData.payment_amount = box_stats.products.payment.pay_amount"
                                 :disabled="paymentData.payment_amount === box_stats.products.payment.pay_amount"
                                 type="tertiary"
-                            :label="trans('Pay All to Refund All Money')" size="xxs" />
+                            :label="trans('Refund all payment')" size="xxs" />
                     </div>
                 </div>
 
