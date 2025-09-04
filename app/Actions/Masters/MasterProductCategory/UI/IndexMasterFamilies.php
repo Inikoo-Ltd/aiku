@@ -264,6 +264,28 @@ class IndexMasterFamilies extends OrgAction
                     'actions'       => $this->getActions($request),
                     'subNavigation' => $subNavigation,
                 ],
+                'storeRoute' =>  match ($this->parent::class) {
+                        MasterShop::class => [
+                            'name' => 'grp.models.master_shops.master_family.store',
+                            'parameters' => [
+                                'masterShop' => $this->parent->id
+                            ]
+                        ],
+                        MasterProductCategory::class => $this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT
+                            ? [
+                                'name' => 'grp.models.master_family.store',
+                                'parameters' => [
+                                    'masterDepartment' => $this->parent->id
+                                ]
+                            ]
+                            : [
+                                'name' => 'grp.models.master-sub-department.master_family.store',
+                                'parameters' => [
+                                    'masterSubDepartment' => $this->parent->id
+                                ]
+                            ],
+                        default => null
+                },
                 'shopsData' => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterShop, 'shops')),
                 'data'        => MasterFamiliesResource::collection($masterFamilies),
             ]
