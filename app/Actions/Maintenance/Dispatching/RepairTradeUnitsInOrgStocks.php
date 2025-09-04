@@ -9,9 +9,7 @@
 namespace App\Actions\Maintenance\Dispatching;
 
 use App\Actions\OrgAction;
-use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Inventory\OrgStock;
-use App\Models\Masters\MasterAsset;
 use Exception;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -25,7 +23,7 @@ class RepairTradeUnitsInOrgStocks extends OrgAction
     {
         $stock = $orgStock->stock;
 
-        if($stock) {
+        if ($stock) {
             $tradeUnits        = [];
             $tradeUnitsInStock = $stock->tradeUnits;
             foreach ($tradeUnitsInStock as $tradeUnitInStock) {

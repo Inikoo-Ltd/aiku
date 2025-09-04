@@ -40,7 +40,7 @@ class StoreMasterFamily extends OrgAction
             StoreFamilyFromMasterFamily::make()->action($masterFamily, [
                 'shop_family' => $shops
             ]);
-            
+
             return $masterFamily;
         });
     }
@@ -61,7 +61,9 @@ class StoreMasterFamily extends OrgAction
                 ),
             ],
             'name'        => ['required', 'max:250', 'string'],
-            'description' => ['sometimes', 'required', 'max:1500'],
+            'description'       => ['sometimes', 'nullable', 'max:1500'],
+            'description_title' => ['sometimes', 'nullable', 'max:1500'],
+            'description_extra' => ['sometimes', 'nullable', 'max:1500'],
             'image'       => [
                 'sometimes',
                 'nullable',

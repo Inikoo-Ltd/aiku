@@ -31,7 +31,7 @@ class StoreProductFromMasterProduct extends GrpAction
                 if (isset($modelData['shop_products']) && !array_key_exists($shop->id, $modelData['shop_products'])) {
                     continue;
                 }
-            
+
                 $shopProductData = isset($modelData['shop_products'][$shop->id]) ? $modelData['shop_products'][$shop->id] : [];
                 $customPrice = isset($shopProductData['price']) ? $shopProductData['price'] : null;
                 $createWebpage = isset($shopProductData['create_webpage']) ? $shopProductData['create_webpage'] : true;
@@ -70,10 +70,10 @@ class StoreProductFromMasterProduct extends GrpAction
                     'status' => ProductStatusEnum::FOR_SALE,
                     'is_for_sale' => true
                 ];
-                
+
                 $product = StoreProduct::run($productCategory, $data);
                 $product->refresh();
-                
+
                 if ($createWebpage) {
                     $webpage = StoreProductWebpage::run($product);
                     PublishWebpage::make()->action($webpage, [
@@ -90,7 +90,7 @@ class StoreProductFromMasterProduct extends GrpAction
         }
     }
 
-    public function rules() : array 
+    public function rules(): array
     {
         return [
             'shop_products'            => ['sometimes', 'array']
