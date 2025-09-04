@@ -131,14 +131,14 @@ const urlLoginWithRedirect = () => {
     <div class="pb-3 relative flex flex-col justify-between h-full" comp="product-render-ecom">
 
         <!-- Top Section: Stock, Images, Title, Code, Price -->
-        <div class=" text-gray-800">
+        <div class=" text-gray-800 isolate">
             <div v-if="product?.top_seller"
-                class="absolute top-2 left-2 border border-black/50 text-xs font-bold px-2 py-0.5 rounded" :class="{
-                    'text-[#FFD700] bg-[#FFD70011] border-[#FFD700]': product.top_seller === 1, // Gold
+                class="z-10 absolute top-2 left-2 border text-xs font-bold px-2 py-0.5 rounded" :class="{
+                    'text-[#FFD700] bg-[#584b015] border-[#FFD700]': product.top_seller == 1, // Gold
                     'text-[#C0C0C0] bg-[#C0C0C033] border-[#C0C0C0]': product.top_seller === 2, // Silver
-                    'text-[#CD7F32] bg-[#CD7F3211] border-[#CD7F32]': product.top_seller === 3  // Bronze
+                    'text-[#CD7F32] bg-[#CD7F3222] border-[#CD7F32]': product.top_seller === 3  // Bronze
                 }">
-                <FontAwesomeIcon :icon="faMedal" class=" mr-0 md:mr-2" />
+                <FontAwesomeIcon :icon="faMedal" class=" mr-0 md:mr-2" fixed-width s/>
 
                 <span class="hidden md:inline">{{ trans("BESTSELLER") }}</span>
             </div>
