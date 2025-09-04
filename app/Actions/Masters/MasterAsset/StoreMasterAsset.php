@@ -41,7 +41,7 @@ class StoreMasterAsset extends OrgAction
      */
     public function handle(MasterShop|MasterProductCategory $parent, array $modelData): MasterAsset
     {
-        $tradeUnits = Arr::pull($modelData, 'trade_units', []);
+        $tradeUnits   = Arr::pull($modelData, 'trade_units', []);
         $shopProducts = Arr::pull($modelData, 'shop_products', []);
 
         if (count($tradeUnits) == 1) {
@@ -107,24 +107,27 @@ class StoreMasterAsset extends OrgAction
 
     public function processTradeUnits(MasterAsset $masterAsset, array $tradeUnits)
     {
+        $stocks = [];
         foreach ($tradeUnits as $item) {
             $tradeUnit = TradeUnit::find(Arr::get($item, 'id'));
             $masterAsset->tradeUnits()->attach($tradeUnit->id, [
                 'quantity' => Arr::get($item, 'quantity')
             ]);
 
-            if (!empty($tradeUnit->stock)) { //TODO: Need to know what to do if trade unit has no stock
-                foreach ($tradeUnit->stocks as $stock) {
-                    $stocks[$stock->id] = [
-                        'quantity' => $stock->pivot->quantity,
-                    ];
-                }
-                $masterAsset->stocks()->sync($stocks);
-            }
 
-            $masterAsset->refresh();
+            foreach ($tradeUnit->stocks as $stock) {
+                $stocks[$stock->id] = [
+                    'quantity' => $stock->pivot->quantity * Arr::get($item, 'quantity'),
+                ];
+            }
         }
+
+
+        $masterAsset->stocks()->sync($stocks);
+        $masterAsset->refresh();
+
     }
+
 
     public function rules(): array
     {

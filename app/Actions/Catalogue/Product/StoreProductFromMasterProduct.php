@@ -13,6 +13,7 @@ use App\Actions\Inventory\OrgStock\StoreOrgStock;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
+use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterAsset;
 
@@ -21,7 +22,7 @@ class StoreProductFromMasterProduct extends GrpAction
     /**
      * @throws \Throwable
      */
-    public function handle(MasterAsset $masterAsset, array $modelData)
+    public function handle(MasterAsset $masterAsset, array $modelData): void
     {
         $productCategories = $masterAsset->masterFamily->productCategories;
 
@@ -33,42 +34,43 @@ class StoreProductFromMasterProduct extends GrpAction
                 }
 
                 $shopProductData = isset($modelData['shop_products'][$shop->id]) ? $modelData['shop_products'][$shop->id] : [];
-                $customPrice = isset($shopProductData['price']) ? $shopProductData['price'] : null;
-                $createWebpage = isset($shopProductData['create_webpage']) ? $shopProductData['create_webpage'] : true;
+                $price           = $shopProductData['price'] ?? $masterAsset->price;
+                $rrp             = $shopProductData['rrp'] ?? $price * 2.4;
+                $createWebpage   = !isset($shopProductData['create_webpage']) || $shopProductData['create_webpage'];
 
                 $orgStocks = [];
+
+
                 foreach ($masterAsset->stocks as $stock) {
-                    $stockOrgStocks = $stock->orgStocks()->where('organisation_id', $productCategory->organisation_id)->get();
+                    $stockOrgStock = $stock->orgStocks()->where('organisation_id', $productCategory->organisation_id)->first();
 
-                    if ($stockOrgStocks->isEmpty()) {
 
-                        StoreOrgStock::make()->action(
+                    if (!$stockOrgStock) {
+                        $stockOrgStock = StoreOrgStock::make()->action(
                             $productCategory->organisation,
                             $stock,
-                            []
+                            [
+                                'state' => OrgStockStateEnum::ACTIVE,
+                            ]
                         );
-                        $stockOrgStocks = $stock->orgStocks()->where('organisation_id', $productCategory->organisation_id)->get();
-
                     }
-
-                    foreach ($stockOrgStocks as $orgStock) {
-                        $orgStocks[$orgStock->id] = [
-                            'quantity' => $orgStock->quantity_in_locations,
-                        ];
-                    }
+                    $orgStocks[$stockOrgStock->id] = [
+                        'quantity' => $stock->pivot->quantity,
+                    ];
                 }
 
                 $data = [
-                    'code' => $masterAsset->code,
-                    'name' => $masterAsset->name,
-                    'price' => $customPrice ?? $masterAsset->price,
-                    'unit'    => $masterAsset->unit,
-                    'is_main' => true,
-                    'org_stocks'  => $orgStocks,
+                    'code'              => $masterAsset->code,
+                    'name'              => $masterAsset->name,
+                    'price'             => $price,
+                    'rrp'               => $rrp,
+                    'unit'              => $masterAsset->unit,
+                    'is_main'           => true,
+                    'org_stocks'        => $orgStocks,
                     'master_product_id' => $masterAsset->id,
-                    'state' => ProductStateEnum::ACTIVE,
-                    'status' => ProductStatusEnum::FOR_SALE,
-                    'is_for_sale' => true
+                    'state'             => ProductStateEnum::ACTIVE,
+                    'status'            => ProductStatusEnum::FOR_SALE,
+                    'is_for_sale'       => true
                 ];
 
                 $product = StoreProduct::run($productCategory, $data);
@@ -85,7 +87,6 @@ class StoreProductFromMasterProduct extends GrpAction
                     $tradeUnitsData[$tradeUnit->id] = ['quantity' => $tradeUnit->pivot->quantity];
                 }
                 $product->tradeUnits()->syncWithoutDetaching($tradeUnitsData);
-
             }
         }
     }
@@ -93,14 +94,14 @@ class StoreProductFromMasterProduct extends GrpAction
     public function rules(): array
     {
         return [
-            'shop_products'            => ['sometimes', 'array']
+            'shop_products' => ['sometimes', 'array']
         ];
     }
 
     /**
      * @throws \Throwable
      */
-    public function action(MasterAsset $masterAsset, array $modelData, int $hydratorsDelay = 0, $strict = true, $audit = true)
+    public function action(MasterAsset $masterAsset, array $modelData, int $hydratorsDelay = 0, $strict = true, $audit = true): void
     {
         if (!$audit) {
             Product::disableAuditing();
@@ -114,7 +115,7 @@ class StoreProductFromMasterProduct extends GrpAction
 
         $this->initialisation($group, $modelData);
 
-        return $this->handle($masterAsset, $this->validatedData);
+        $this->handle($masterAsset, $this->validatedData);
     }
 
 }
