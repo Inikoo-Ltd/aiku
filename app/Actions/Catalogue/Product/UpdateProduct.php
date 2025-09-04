@@ -208,6 +208,7 @@ class UpdateProduct extends OrgAction
             'state'             => ['sometimes', 'required', Rule::enum(ProductStateEnum::class)],
             'trade_config'      => ['sometimes', 'required', Rule::enum(ProductTradeConfigEnum::class)],
             'follow_master'     => ['sometimes', 'boolean'],
+            'cost_price_ratio'  => ['sometimes', 'numeric', 'min:0'],
             'family_id'         => ['sometimes', 'nullable', Rule::exists('product_categories', 'id')->where('shop_id', $this->shop->id)],
             'master_product_id' => ['sometimes', 'nullable', 'integer', Rule::exists('master_assets', 'id')->where('master_shop_id', $this->shop->master_shop_id)],
             'barcode'           => [

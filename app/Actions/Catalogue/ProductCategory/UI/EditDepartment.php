@@ -142,6 +142,14 @@ class EditDepartment extends OrgAction
                                     'noSaveButton' => true,
                                     "full"         => true
                                 ],
+                                'cost_price_ratio' => [
+                                    'type'          => 'input_number',
+                                    'label'         => __('pricing'),
+                                    'placeholder'   => __('Cost price ratio'),
+                                    'required'      => true,
+                                    'value'         => $department->cost_price_ratio,
+                                    'min'           => 0
+                                ]
                             ]
                         ]
 

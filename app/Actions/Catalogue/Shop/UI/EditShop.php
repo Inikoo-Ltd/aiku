@@ -159,8 +159,15 @@ class EditShop extends OrgAction
                                     'options'       => GetCurrenciesOptions::run(),
                                     'searchable'    => true
                                 ],
+                                'cost_price_ratio' => [
+                                    'type'          => 'input_number',
+                                    'label'         => __('pricing'),
+                                    'placeholder'   => __('Cost price ratio'),
+                                    'required'      => true,
+                                    'value'         => $shop->cost_price_ratio,
+                                    'min'           => 0
+                                ],
                             ],
-
                         ],
                         [
                             'label'  => __('contact/details'),
