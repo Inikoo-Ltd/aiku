@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Asset\StoreAsset;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateForSale;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateProductVariants;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTradeUnitsFields;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\OrgAction;
@@ -88,8 +89,8 @@ class StoreProduct extends OrgAction
             $product = $shop->products()->create($modelData);
             $product = $this->syncOrgStocks($product, $orgStocks);
             $product = $this->associateTradeUnits($product);
+            ProductHydrateTradeUnitsFields::run($product);
             $product = ModelHydrateSingleTradeUnits::run($product);
-
             $product = ProductHydrateForSale::run($product);
 
             if ($product->is_main) {

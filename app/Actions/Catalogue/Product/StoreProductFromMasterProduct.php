@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Product;
 
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateImagesFromTradeUnits;
 use App\Actions\GrpAction;
 use App\Actions\Inventory\OrgStock\StoreOrgStock;
 use App\Actions\Web\Webpage\PublishWebpage;
@@ -74,6 +75,8 @@ class StoreProductFromMasterProduct extends GrpAction
                 ];
 
                 $product = StoreProduct::run($productCategory, $data);
+                $product->refresh();
+                ProductHydrateImagesFromTradeUnits::run($product);
                 $product->refresh();
 
                 if ($createWebpage) {
