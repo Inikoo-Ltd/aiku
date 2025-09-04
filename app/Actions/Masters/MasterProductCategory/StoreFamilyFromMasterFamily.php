@@ -30,11 +30,11 @@ class StoreFamilyFromMasterFamily extends GrpAction
 
         if ($activeShops) {
             foreach ($activeShops as $shop) {
-                if (isset($modelData['shops']) && !array_key_exists($shop->id, $modelData['shops'])) {
+                if (isset($modelData['shop_family']) && !array_key_exists($shop->id, $modelData['shop_family'])) {
                     continue;
                 }
             
-                $shopProductData = isset($modelData['shops'][$shop->id]) ? $modelData['shops'][$shop->id] : [];
+                $shopProductData = isset($modelData['shop_family'][$shop->id]) ? $modelData['shop_family'][$shop->id] : [];
                 $createWebpage = isset($shopProductData['create_webpage']) ? $shopProductData['create_webpage'] : true;
 
                 $subDepartment = null;
@@ -78,7 +78,7 @@ class StoreFamilyFromMasterFamily extends GrpAction
     public function rules() : array 
     {
         return [
-            'shops'            => ['sometimes', 'array']
+            'shop_family'            => ['sometimes', 'array']
         ];
     }
 
