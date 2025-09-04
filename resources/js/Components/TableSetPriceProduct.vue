@@ -86,8 +86,9 @@ function getMargin(item: ProductItem) {
                         <th class="px-2 py-1">Code</th>
                         <th class="px-2 py-1">Name</th>
                         <th class="px-2 py-1">Stock</th>
-                        <th class="px-2 py-1">
-                            <div class="flex justify-center items-center">Set Webpage</div>
+                       <th class="px-2 py-1 text-center">
+                            Create Webpage?
+                            <InformationIcon :information="trans('If checked, will create the product webpage')" />
                         </th>
                         <th class="px-2 py-1">
                              <div class="flex justify-center items-center">Org cost</div>
@@ -112,7 +113,7 @@ function getMargin(item: ProductItem) {
                             <div class="flex justify-center items-center">
                                 <input 
                                     type="checkbox" 
-                                    v-model="item.product.create_webpage"
+                                    v-model="item.product.has_org_stocks"
                                     @change="emits('change', modelValue )"
                                 />
                             </div>
