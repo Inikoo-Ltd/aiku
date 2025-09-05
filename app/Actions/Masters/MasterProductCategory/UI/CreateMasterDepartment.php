@@ -53,7 +53,7 @@ class CreateMasterDepartment extends OrgAction
                             'style' => 'cancel',
                             'label' => __('cancel'),
                             'route' => [
-                                'name'       => 'grp.masters.master_departments.index',
+                                'name'       => 'grp.masters.master_shops.show.master_departments.index',
                                 'parameters' => array_values($request->route()->originalParameters())
                             ],
                         ]
