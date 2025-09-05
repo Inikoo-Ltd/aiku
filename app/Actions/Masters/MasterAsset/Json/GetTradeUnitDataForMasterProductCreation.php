@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Wed, 03 Sept 2025 11:43:14 Malaysia Time, Kuala Lumpur, Malaysia
@@ -18,7 +19,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class GetTradeUnitDataForMasterProductCreation extends GrpAction
 {
-
     public function rules(): array
     {
         return [
