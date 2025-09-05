@@ -16,6 +16,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotes;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Support\Facades\DB;
@@ -47,8 +48,10 @@ class DispatchDeliveryNote extends OrgAction
 
 
             $deliveryNote->refresh();
-            foreach ($deliveryNote->orders as $order) {
-                DispatchOrderFromDeliveryNote::make()->action($order);
+            if($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
+                foreach ($deliveryNote->orders as $order) {
+                    DispatchOrderFromDeliveryNote::make()->action($order);
+                }
             }
 
 
