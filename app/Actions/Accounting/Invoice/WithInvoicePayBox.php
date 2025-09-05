@@ -41,10 +41,10 @@ trait WithInvoicePayBox
 
         if ($consolidateTotalPayments) {
             $totalPaidIn    = $invoice->payment_amount;
-            $totalNeedToPay = round($invoice->total_amount - abs($totalNeedToRefund), 2) - $invoice->payment_amount;
+            $totalNeedToPay = round($invoice->effective_total - abs($totalNeedToRefund), 2) - $invoice->payment_amount;
         } else {
             $totalPaidIn    = $invoice->payment_amount + abs($refundsPayOut);
-            $totalNeedToPay = round($invoice->total_amount - $totalPaidIn, 2);
+            $totalNeedToPay = round($invoice->effective_total - $totalPaidIn, 2);
         }
 
         $totalNeedToRefundInPaymentMethod = 0;

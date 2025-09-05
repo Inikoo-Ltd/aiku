@@ -49,6 +49,7 @@ class CalculateInvoiceTotals extends OrgAction
 
 
         data_set($modelData, 'total_amount', $totalAmount);
+        data_set($modelData, 'effective_total', $totalAmount);
         data_set($modelData, 'tax_amount', $taxAmount);
 
 
