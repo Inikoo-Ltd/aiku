@@ -40,6 +40,9 @@ class StoreMasterProductCategory extends GrpAction
 
     private MasterShop|MasterProductCategory $masterShop;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(MasterProductCategory|MasterShop $parent, array $modelData): MasterProductCategory
     {
         $imageData = ['image' => Arr::pull($modelData, 'image')];
@@ -59,7 +62,7 @@ class StoreMasterProductCategory extends GrpAction
         }
 
         $masterProductCategory = DB::transaction(function () use ($parent, $modelData) {
-            /** @var MasterProductCategory $masterProductCategory */
+
             $masterProductCategory = MasterProductCategory::create($modelData);
 
             $masterProductCategory->stats()->create();
@@ -72,7 +75,7 @@ class StoreMasterProductCategory extends GrpAction
             $masterProductCategory->refresh();
 
             $collection = null;
-            if ($masterProductCategory->type != MasterProductCategoryTypeEnum::FAMILY) { //FOR NOW ONLY FAMILY SUPPORT Selection Feature, just ignore this, everything will still work
+            if ($masterProductCategory->type != MasterProductCategoryTypeEnum::FAMILY) { //FOR NOW ONLY FAMILY SUPPORT Selection Feature, just ignore this; everything will still work
                 if ($parent instanceof MasterShop) {
                     $collection = $parent->shops;
                 } elseif ($parent instanceof MasterProductCategory) {
@@ -163,6 +166,9 @@ class StoreMasterProductCategory extends GrpAction
         return $rules;
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(MasterShop|MasterProductCategory $parent, array $modelData, int $hydratorsDelay = 0, bool $strict = true): MasterProductCategory
     {
         $this->asAction       = true;
@@ -181,6 +187,9 @@ class StoreMasterProductCategory extends GrpAction
         return $this->handle($parent, $this->validatedData);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function inDepartment(MasterShop $masterShop, MasterProductCategory $masterProductCategory, ActionRequest $request): MasterProductCategory
     {
         $this->initialisation($masterShop->group, $request);
