@@ -21,9 +21,6 @@ use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 
 class EditMasterDepartment extends OrgAction
 {
-    /**
-     * @var \App\Models\Masters\MasterShop
-     */
     private MasterShop|Group $parent;
 
     public function asController(MasterShop $masterShop, MasterProductCategory $masterDepartment, ActionRequest $request): Response
@@ -107,7 +104,7 @@ class EditMasterDepartment extends OrgAction
                                 ],
                                 'description_extra' => [
                                     'type'  => 'textEditor',
-                                    'label' => __('description extra'),
+                                    'label' => __('Extra description'),
                                     'value' => $masterProductCategory->description_extra
                                 ],
                                 'description_extra_i8n' => [

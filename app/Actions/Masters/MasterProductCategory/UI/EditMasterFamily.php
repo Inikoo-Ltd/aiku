@@ -78,7 +78,6 @@ class EditMasterFamily extends OrgAction
 
         }
 
-        // dd($masterProductCategory->masterDepartment->id);
         return Inertia::render(
             'EditModel',
             [
@@ -149,7 +148,7 @@ class EditMasterFamily extends OrgAction
                                 ],
                                 'description_extra' => [
                                     'type'  => 'textEditor',
-                                    'label' => __('description extra'),
+                                    'label' => __('Extra description'),
                                     'value' => $masterProductCategory->description_extra
                                 ],
                                 'description_extra_i8n' => [

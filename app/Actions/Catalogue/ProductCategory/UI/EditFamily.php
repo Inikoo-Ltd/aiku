@@ -140,7 +140,7 @@ class EditFamily extends OrgAction
                                 ],
                                 'description_extra_i8n' => [
                                     'type'  => 'textEditor',
-                                    'label' => __('description extra'),
+                                    'label' => __('Extra description'),
                                     'value' => $family->getTranslation('description_extra_i8n', $family->shop->language->code) ?: $family->description_extra
                                 ],
                             ]

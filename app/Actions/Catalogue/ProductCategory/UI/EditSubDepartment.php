@@ -109,7 +109,7 @@ class EditSubDepartment extends OrgAction
                                 ],
                                 'description_extra_i8n' => [
                                     'type'  => 'textEditor',
-                                    'label' => __('description extra'),
+                                    'label' => __('Extra description'),
                                     'value' => $subDepartment->getTranslation('description_extra_i8n', $subDepartment->shop->language->code) ?: $subDepartment->description_extra
                                 ],
                             ]

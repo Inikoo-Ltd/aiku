@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -18,31 +19,14 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditDepartment extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
+
     public function handle(ProductCategory $department): ProductCategory
     {
         return $department;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->parent instanceof Organisation) {
-            $this->canEdit = $request->user()->authTo(
-                [
-                    'org-supervisor.'.$this->organisation->id,
-                ]
-            );
 
-            return $request->user()->authTo(
-                [
-                    'org-supervisor.'.$this->organisation->id,
-                    'shops-view'.$this->organisation->id,
-                ]
-            );
-        } else {
-            $this->canEdit = $request->user()->authTo("products.{$this->shop->id}.edit");
-            return $request->user()->authTo("products.{$this->shop->id}.view");
-        }
-    }
 
     public function inOrganisation(Organisation $organisation, ProductCategory $department, ActionRequest $request): ProductCategory
     {
@@ -120,7 +104,7 @@ class EditDepartment extends OrgAction
                                 ],
                                 'description_extra_i8n' => [
                                     'type'  => 'textEditor',
-                                    'label' => __('description extra'),
+                                    'label' => __('Extra description'),
                                     'value' => $department->getTranslation('description_extra_i8n', $department->shop->language->code) ?: $department->description_extra
                                 ],
                             ]
