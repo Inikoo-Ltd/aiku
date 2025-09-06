@@ -79,8 +79,8 @@ const _popover = ref(null)
             type="transparent"
         >
             <template #label>
-                {{ Object.values(layout.iris.website_i18n?.language_options || {})?.find(language => language.code === layout.iris.locale)?.name }}
-                <img class="inline pr-1 pl-1 h-[1em]" :src="`/flags/${layout.iris.locale.toLowerCase()}.png`" xalt="language.code"   xtitle='capitalize(countryName)'  />
+                {{ Object.values(layout.iris.website_i18n?.language_options || {})?.find(language => language.code === layout.iris.website_i18n.current_language?.code)?.name }}
+                <img class="inline pr-1 pl-1 h-[1em]" :src="`/flags/${layout.iris.website_i18n.current_language?.flag}`" xalt="language.code"   xtitle='capitalize(countryName)'  />
             </template>
         </Button>
         <Popover ref="_popover">
@@ -89,16 +89,16 @@ const _popover = ref(null)
                 <div v-if="Object.keys(layout.iris.website_i18n?.language_options).length > 0" class="flex flex-col">
                     <!-- Language: system -->
                     <button key="website_language" type="button"
-                        @click="onSelectLanguage(layout.iris.website_i18n?.language?.code, 'system')" :class="[
+                        @click="onSelectLanguage(layout.iris.website_i18n?.shop_language?.code, 'system')" :class="[
                         'w-full text-left px-3 py-2 text-sm transition rounded-none border-b border-gray-300',
-                        layout.iris.website_i18n?.language?.code === layout.iris.locale
+                        layout.iris.website_i18n?.shop_language?.code === layout.iris.website_i18n?.current_language?.code
                             ? 'bg-gray-200 text-blue-600 font-semibold'
                             : 'hover:bg-gray-100 text-gray-800'
                     ]">
-                        {{ layout.iris.website_i18n?.language?.name }}
+                        {{ layout.iris.website_i18n?.shop_language?.name }}
                         <FontAwesomeIcon v-tooltip="trans('Default language by system')" icon="fas fa-laptop-code" class="text-gray-400" fixed-width aria-hidden="true" />
-                        <img class="inline pr-1 pl-1 h-[1em]" :src="`/flags/${layout.iris.locale.toLowerCase()}.png`" xalt="language.code"   xtitle='capitalize(countryName)'  />
-                        <LoadingIcon v-if="isLoadingChangeLanguage == `system${layout.iris.website_i18n?.language?.code}`" />
+                        <img class="inline pr-1 pl-1 h-[1em]" :src="`/flags/${layout.iris.website_i18n.current_language?.flag}`" xalt="language.code"   xtitle='capitalize(countryName)'  />
+                        <LoadingIcon v-if="isLoadingChangeLanguage == `system${layout.iris.website_i18n?.shop_language?.code}`" />
                     </button>
 
                     <hr class="border-b border-gray-200 !my-2" />
@@ -107,12 +107,12 @@ const _popover = ref(null)
                     <button v-for="(language, index) in layout.iris.website_i18n?.language_options" :key="language.id" type="button"
                         @click="onSelectLanguage(language.code, 'option')" :class="[
                         'w-full text-left px-3 py-2 text-sm transition rounded-none',
-                        language.code === layout.iris.locale
+                        language.code === layout.iris.website_i18n?.current_language?.code
                         ? 'bg-gray-200 text-blue-600 font-semibold'
                         : 'hover:bg-gray-100 text-gray-800'
                     ]">
                         {{ language.name }}
-                        <img class="inline pr-1 pl-1 h-[1em]" :src="`/flags/${language.code.toLowerCase()}.png`" xalt="language.code"   xtitle='capitalize(countryName)'  />
+                        <img class="inline pr-1 pl-1 h-[1em]" :src="`/flags/${language.flag}`" xalt="language.code"   xtitle='capitalize(countryName)'  />
                         <LoadingIcon v-if="isLoadingChangeLanguage == `option${language.code}`" />
                     </button>
                 </div>

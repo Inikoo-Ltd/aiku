@@ -28,7 +28,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|PdfLabel newQuery()
  * @method static Builder<static>|PdfLabel onlyTrashed()
  * @method static Builder<static>|PdfLabel query()
- * @method static Builder<static>|PdfLabel withTrashed()
+ * @method static Builder<static>|PdfLabel withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|PdfLabel withoutTrashed()
  * @mixin Eloquent
  */

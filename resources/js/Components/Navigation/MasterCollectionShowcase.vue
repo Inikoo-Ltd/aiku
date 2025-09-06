@@ -6,13 +6,11 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { trans } from 'laravel-vue-i18n'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { router } from '@inertiajs/vue3'
-
 import Image from '@/Components/Image.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import Icon from "@/Components/Icon.vue"
 import { notify } from '@kyvg/vue3-notification'
 import Modal from '@/Components/Utils/Modal.vue'
-import CollectionSelector from '@/Components/Departement&Family/CollectionSelector.vue'
+import CollectionSelector from '@/Components/DepartmentAndFamily/CollectionSelector.vue'
 import { routeType } from '@/types/route'
 
 library.add(faDollarSign, faImage, faUnlink, faGlobe)
@@ -145,7 +143,6 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
           <div v-if="data.parent_departments?.length" class="space-y-1 max-h-64 overflow-auto">
             <div v-for="dept in data.parent_departments" :key="dept.id"
               class="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-md p-3 hover:shadow-sm transition">
-             <!--  <Icon v-if="dept?.typeIcon" :data="dept.typeIcon" size="lg" class="text-gray-600 shrink-0" /> -->
               <div class="flex-1 min-w-0">
                 <h3 class="text-sm font-medium text-gray-800 truncate">{{ dept.code || dept.name }}</h3>
                 <p class="text-xs text-gray-500 line-clamp-2">{{ dept.name || 'No name' }}</p>
@@ -173,7 +170,6 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
           <div v-if="data.parent_subdepartments?.length" class="space-y-1 max-h-64 overflow-auto">
             <div v-for="dept in data.parent_subdepartments" :key="dept.id"
               class="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-md p-3 hover:shadow-sm transition">
-            <!--   <Icon v-if="dept?.typeIcon" :data="dept.typeIcon" size="lg" class="text-gray-600 shrink-0" /> -->
               <div class="flex-1 min-w-0">
                 <h3 class="text-sm font-medium text-gray-800 truncate">{{ dept.code || dept.name }}</h3>
                 <p class="text-xs text-gray-500 line-clamp-2">{{ dept.name || 'No Name' }}</p>
@@ -193,14 +189,14 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
 
   <!-- Modals -->
   <Modal :isOpen="isModalOpenDepartment" @onClose="isModalOpenDepartment = false" width="w-full max-w-6xl">
-    <CollectionSelector :headLabel="`${trans('Add Departement to collection')}`" :routeFetch="{
+    <CollectionSelector :headLabel="`${trans('Add Department to collection')}`" :routeFetch="{
       name: data.routes.departments_route.name,
       parameters: data.routes.departments_route.parameters
     }" :isLoadingSubmit="loading" @submit="(ids)=>attachToparent('departments',ids)" />
   </Modal>
 
   <Modal :isOpen="isModalOpenSubDepartment" @onClose="isModalOpenSubDepartment = false" width="w-full max-w-6xl">
-    <CollectionSelector :headLabel="`${trans('Add Sub-Departement to collection')}`" :routeFetch="{
+    <CollectionSelector :headLabel="`${trans('Add Sub-Department to collection')}`" :routeFetch="{
       name: data.routes.sub_departments_route.name,
       parameters: data.routes.sub_departments_route.parameters
     }" :isLoadingSubmit="loading" @submit="(ids)=>attachToparent('sub_departments',ids)" />

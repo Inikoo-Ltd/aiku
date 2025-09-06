@@ -63,33 +63,11 @@ class SeedWebsiteFixedWebpages extends OrgAction
             $webpagesData = Storage::disk('datasets')->json($filename);
             $this->addWebpages($storefront, $webpagesData);
         }
-        $filename = 'webpages/'.$website->type->value.'-operations.json';
-        if (Storage::disk('datasets')->exists($filename)) {
-            foreach (Storage::disk('datasets')->json($filename) as $webpageData) {
-                $this->addOperationWebpages($website, $webpageData);
-            }
-        }
+
 
         return $website;
     }
 
-    private function addOperationWebpages(Website $website, $webpageData): void
-    {
-        $webpage = $website->webpages()->where('code', $webpageData['code'])->first();
-
-        $webpageData = array_merge(
-            $webpageData,
-            $this->getBaseData($website)
-        );
-        if (!$webpage) {
-            $webpage = StoreWebpage::make()->action($website, $webpageData);
-            $website->updateQuietly(
-                [
-                    $webpageData['code'].'_id' => $webpage->id
-                ]
-            );
-        }
-    }
 
 
     private function addWebpages(Webpage $parent, $webpagesData): void
@@ -99,6 +77,9 @@ class SeedWebsiteFixedWebpages extends OrgAction
         }
     }
 
+    /**
+     * @throws \Throwable
+     */
     private function addWebpage(Webpage $parent, $webpageData): void
     {
         $webpageData = array_merge(

@@ -54,8 +54,14 @@ class GetCustomerShowcase
                         'customer'     => $customer->id
                     ]
                 ],
-                'route_update'    => [
-                    'name'       => 'grp.models.customer_balance.update',
+                'route_increase'    => [
+                    'name'       => 'grp.models.credit_transaction.increase',
+                    'parameters' => [
+                        'customer'     => $customer->id
+                    ]
+                ],
+                'route_decrease'    => [
+                    'name'       => 'grp.models.credit_transaction.decrease',
                     'parameters' => [
                         'customer'     => $customer->id
                     ]

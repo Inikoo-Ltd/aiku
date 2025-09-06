@@ -112,8 +112,6 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 /**
- *
- *
  * @property int $id
  * @property string $ulid
  * @property string $slug
@@ -264,7 +262,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Group newQuery()
  * @method static Builder<static>|Group onlyTrashed()
  * @method static Builder<static>|Group query()
- * @method static Builder<static>|Group withTrashed()
+ * @method static Builder<static>|Group withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Group withoutTrashed()
  * @mixin Eloquent
  */

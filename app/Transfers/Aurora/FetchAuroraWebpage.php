@@ -36,6 +36,10 @@ class FetchAuroraWebpage extends FetchAurora
         }
 
 
+        if (in_array($this->auroraModelData->{'Webpage Scope'}, ['Register', 'Login', 'ResetPwd', 'Basket', 'Top_Up', 'Checkout'])) {
+            return;
+        }
+
         if (in_array($this->auroraModelData->{'Webpage Scope'}, ['Product', 'Category Products', 'Category Categories']) and $this->auroraModelData->{'Webpage Scope Key'} == '') {
             return;
         }
@@ -89,7 +93,7 @@ class FetchAuroraWebpage extends FetchAurora
 
 
 
-        if ($website->shop->type == ShopTypeEnum::FULFILMENT and
+        if ($website->shop->type == ShopTypeEnum::FULFILMENT &&
             $parsedData['webpage']['code'] == 'shipping.sys') {
             $parsedData['webpage']['code'] = 'shipping';
         }
@@ -153,8 +157,6 @@ class FetchAuroraWebpage extends FetchAurora
         $type = match ($auroraModelData->{'Webpage Scope'}) {
             'Homepage', 'HomepageLogout', 'HomepageToLaunch' => WebpageTypeEnum::STOREFRONT,
             'Product', 'Category Categories', 'Category Products' => WebpageTypeEnum::CATALOGUE,
-            'Register', 'Login', 'ResetPwd', 'Basket', 'Top_Up', 'Checkout' => WebpageTypeEnum::OPERATIONS,
-            'TandC' => WebpageTypeEnum::INFO,
             default => WebpageTypeEnum::CONTENT,
         };
 
@@ -206,42 +208,42 @@ class FetchAuroraWebpage extends FetchAurora
 
 
 
-        switch ($type) {
-            case WebpageTypeEnum::CATALOGUE:
-                if ($subType == WebpageSubTypeEnum::PRODUCT) {
-                    $parentId = $website->products_id;
-                } elseif ($subType == WebpageSubTypeEnum::FAMILY) {
-                    $parentId = $website->catalogue_id;
-                    /** @var ProductCategory $department */
-                    $department = $model->department;
-                    if ($department) {
-                        $departmentSourceData        = explode(':', $department->source_department_id);
-                        $auroraDepartmentWebpageData = DB::connection('aurora')->table('Page Store Dimension')
-                            ->select('Page Key')
-                            ->where('Webpage Scope', 'Category Categories')
-                            ->where('Webpage Scope Key', $departmentSourceData[1])
-                            ->first();
-                        if ($auroraDepartmentWebpageData) {
-                            $departmentWebpage = $this->parseWebpage($this->organisation->id.':'.$auroraDepartmentWebpageData->{'Page Key'});
-
-
-                            if ($departmentWebpage) {
-                                $parentId = $departmentWebpage->id;
-                            } else {
-                                print "error can not fetch department webpage\n";
-                            }
-                        }
-                    }
-                } else {
-                    $parentId = $website->catalogue_id;
-                }
-
-                break;
-            default:
-
-                $parentId = $website->storefront_id;
-                break;
-        }
+        //        switch ($type) {
+        //            case WebpageTypeEnum::CATALOGUE:
+        //                if ($subType == WebpageSubTypeEnum::PRODUCT) {
+        //                   // $parentId = $website->products_id;
+        //                } elseif ($subType == WebpageSubTypeEnum::FAMILY) {
+        //                  //  $parentId = $website->catalogue_id;
+        //                    /** @var ProductCategory $department */
+        //                    $department = $model->department;
+        //                    if ($department) {
+        //                        $departmentSourceData        = explode(':', $department->source_department_id);
+        //                        $auroraDepartmentWebpageData = DB::connection('aurora')->table('Page Store Dimension')
+        //                            ->select('Page Key')
+        //                            ->where('Webpage Scope', 'Category Categories')
+        //                            ->where('Webpage Scope Key', $departmentSourceData[1])
+        //                            ->first();
+        //                        if ($auroraDepartmentWebpageData) {
+        //                            $departmentWebpage = $this->parseWebpage($this->organisation->id.':'.$auroraDepartmentWebpageData->{'Page Key'});
+        //
+        //
+        //                            if ($departmentWebpage) {
+        //                             //   $parentId = $departmentWebpage->id;
+        //                            } else {
+        //                                print "error can not fetch department webpage\n";
+        //                            }
+        //                        }
+        //                    }
+        //                } else {
+        //                  //  $parentId = $website->catalogue_id;
+        //                }
+        //
+        //                break;
+        //            default:
+        //
+        //                $parentId = $website->storefront_id;
+        //                break;
+        //        }
 
 
         if (strtolower($url) == 'products') {
@@ -251,7 +253,7 @@ class FetchAuroraWebpage extends FetchAurora
 
         $webpage =
             [
-                'parent_id'       => $parentId,
+               // 'parent_id'       => $parentId,
                 'code'            => $url,
                 'title'           => $title,
                 'url'             => strtolower($url),

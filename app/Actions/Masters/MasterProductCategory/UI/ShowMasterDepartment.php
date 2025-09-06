@@ -88,7 +88,15 @@ class ShowMasterDepartment extends GrpAction
                         'title' => $tittle
                     ],
                     'actions'       => [
-                        [
+                         $this->canEdit ? [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'route' => [
+                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                                'parameters' => $request->route()->originalParameters()
+                            ]
+                        ] : false,
+                        /* [
                             'type'  => 'button',
                             'style' => 'edit',
                             'label' => 'blueprint',
@@ -96,7 +104,7 @@ class ShowMasterDepartment extends GrpAction
                                 'name'       => preg_replace('/show$/', 'blueprint', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
                             ]
-                        ],
+                        ], */
                         $this->canDelete ? [
                             'type'  => 'button',
                             'style' => 'delete',
@@ -220,6 +228,7 @@ class ShowMasterDepartment extends GrpAction
             'grp.masters.master_shops.show.master_departments.show',
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.index',
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show',
+            'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index',
             'grp.masters.master_shops.show.master_departments.show.master_families.index',
             'grp.masters.master_shops.show.master_departments.show.master_families.show',
             'grp.masters.master_shops.show.master_departments.show.master_products.index',

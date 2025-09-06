@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterProductCategory;
 
+use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\GrpAction;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterFamilies;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
@@ -18,6 +19,7 @@ use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageCatalogue;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -38,6 +40,9 @@ class StoreMasterProductCategory extends GrpAction
 
     private MasterShop|MasterProductCategory $masterShop;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(MasterProductCategory|MasterShop $parent, array $modelData): MasterProductCategory
     {
         $imageData = ['image' => Arr::pull($modelData, 'image')];
@@ -56,8 +61,8 @@ class StoreMasterProductCategory extends GrpAction
             data_set($modelData, 'master_shop_id', $parent->id);
         }
 
-        $masterProductCategory = DB::transaction(function () use ($modelData) {
-            /** @var MasterProductCategory $masterProductCategory */
+        $masterProductCategory = DB::transaction(function () use ($parent, $modelData) {
+
             $masterProductCategory = MasterProductCategory::create($modelData);
 
             $masterProductCategory->stats()->create();
@@ -68,6 +73,34 @@ class StoreMasterProductCategory extends GrpAction
                 $masterProductCategory->timeSeries()->create(['frequency' => $frequency]);
             }
             $masterProductCategory->refresh();
+
+            $collection = null;
+            if ($masterProductCategory->type != MasterProductCategoryTypeEnum::FAMILY) { //FOR NOW ONLY FAMILY SUPPORT Selection Feature, just ignore this; everything will still work
+                if ($parent instanceof MasterShop) {
+                    $collection = $parent->shops;
+                } elseif ($parent instanceof MasterProductCategory) {
+                    $collection = $parent->productCategories;
+                }
+
+                if ($collection && $collection->isNotEmpty()) {
+                    $type = match (Arr::get($modelData, 'type')) {
+                        MasterProductCategoryTypeEnum::DEPARTMENT => ProductCategoryTypeEnum::DEPARTMENT,
+                        MasterProductCategoryTypeEnum::FAMILY => ProductCategoryTypeEnum::FAMILY,
+                        MasterProductCategoryTypeEnum::SUB_DEPARTMENT => ProductCategoryTypeEnum::SUB_DEPARTMENT,
+                    };
+                    $actionData = array_merge(
+                        Arr::except($modelData, ['status', 'type']),
+                        [
+                            'type' => $type,
+                            'master_product_category_id' => $masterProductCategory->id
+                        ]
+                    );
+
+                    foreach ($collection as $item) {
+                        StoreProductCategory::make()->action($item, $actionData);
+                    }
+                }
+            }
 
             return $masterProductCategory;
         });
@@ -133,6 +166,9 @@ class StoreMasterProductCategory extends GrpAction
         return $rules;
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(MasterShop|MasterProductCategory $parent, array $modelData, int $hydratorsDelay = 0, bool $strict = true): MasterProductCategory
     {
         $this->asAction       = true;
@@ -140,12 +176,10 @@ class StoreMasterProductCategory extends GrpAction
         $this->strict         = $strict;
         $group                = $parent->group;
 
-        if($parent instanceof MasterProductCategory) {
-            $this->masterShop=$parent->masterShop;
-
-        }else{
-            $this->masterShop=$parent;
-
+        if ($parent instanceof MasterProductCategory) {
+            $this->masterShop = $parent->masterShop;
+        } else {
+            $this->masterShop = $parent;
         }
 
         $this->initialisation($group, $modelData);
@@ -153,12 +187,13 @@ class StoreMasterProductCategory extends GrpAction
         return $this->handle($parent, $this->validatedData);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function inDepartment(MasterShop $masterShop, MasterProductCategory $masterProductCategory, ActionRequest $request): MasterProductCategory
     {
         $this->initialisation($masterShop->group, $request);
 
         return $this->handle(parent: $masterProductCategory, modelData: $this->validatedData);
     }
-
-
 }

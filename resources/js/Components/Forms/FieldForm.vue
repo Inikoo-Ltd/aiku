@@ -126,6 +126,7 @@ defineExpose({
                         :fieldData="fieldData"
                         :updateRoute
                         :refForms="refForms"
+                        @submit="submit"
                     >
                     </component>
 

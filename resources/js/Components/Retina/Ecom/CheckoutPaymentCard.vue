@@ -11,6 +11,7 @@ import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 library.add(faCopy)
 
 const props = defineProps<{
@@ -37,8 +38,11 @@ const props = defineProps<{
     currency_code: string
 }>()
 
-console.log('Checkout payment Card props', props.data)
+// console.log('Checkout payment Card props', props.data)
 const locale = inject('locale', {})
+const layout = inject('layout', retinaLayoutStructure)
+
+const currencyCode = props.currency_code || layout.iris?.currency?.code
 
 const isLoading = ref(true)
 const isLoadingAfterSuccess = ref(false)
@@ -159,7 +163,7 @@ const onClickCopy = (textToCopy: string) => {
 <template>
     <div class="relative w-full max-w-xl isolate mx-auto my-8 xoverflow-hidden">
         <div class="mb-2 pl-2">
-            Need to pay: <span class="font-bold">{{ locale.currencyFormat(currency_code, props.needToPay) }}</span>
+            Need to pay: <span class="font-bold">{{ locale.currencyFormat(currencyCode, props.needToPay) }}</span>
             <Transition name="spin-to-right">
                 <FontAwesomeIcon v-if="isRecentlyCopied" icon="fal fa-check" class="ml-1 text-green-500" fixed-width
                     aria-hidden="true" />

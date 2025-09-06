@@ -24,6 +24,16 @@ class SubDepartmentResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $urlMaster                              = null;
+        if ($this->master_product_category_id) {
+            $urlMaster = [
+                'name'       => 'grp.helpers.redirect_master_product_category',
+                'parameters' => [
+                    $this->masterProductCategory->id
+                ]
+            ];
+        }
+
         return [
             'slug'       => $this->slug,
             'id'        => $this->id,
@@ -34,6 +44,7 @@ class SubDepartmentResource extends JsonResource
             'state'      => $this->state,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+            'url_master'       => $urlMaster,
         ];
     }
 }

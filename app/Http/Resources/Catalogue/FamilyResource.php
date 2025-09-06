@@ -19,6 +19,16 @@ class FamilyResource extends JsonResource
         $family = $this->resource;
 
 
+        $urlMaster                              = null;
+        if ($family->master_product_category_id) {
+            $urlMaster = [
+                'name'       => 'grp.helpers.redirect_master_product_category',
+                'parameters' => [
+                    $family->masterProductCategory->id
+                ]
+            ];
+        }
+
         return [
             'slug'            => $family->slug,
             'id'              => $family->id,
@@ -28,7 +38,6 @@ class FamilyResource extends JsonResource
             'name'            => $family->name,
             'department_name' => $family->parent?->name ?? null,
             'department_id'   => $family->parent?->id ?? null,
-
             'state' => [
                         'value' => $family->state->value ?? null,
                         'label' => $family->state->labels()[$family->state->value] ?? ucfirst($family->state->value),
@@ -41,6 +50,7 @@ class FamilyResource extends JsonResource
             'updated_at'      => $family->updated_at,
             'type'            => $family->type,
             'follow_master'   => $family->follow_master,
+            'url_master'       => $urlMaster,
             'products' => ProductResource::collection($family->getProducts())->toArray(request())
         ];
     }

@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\Product\UI;
 
 use App\Actions\Catalogue\ProductCategory\UI\ShowDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
+use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\CRM\BackInStockReminder\UI\IndexProductBackInStockReminders;
 use App\Actions\CRM\Favourite\UI\IndexProductFavourites;
@@ -18,6 +19,7 @@ use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInProduct;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Inventory\OrgStock\UI\IndexOrgStocksInProduct;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Catalogue\ProductBackInStockRemindersResource;
 use App\Http\Resources\Catalogue\ProductFavouritesResource;
@@ -39,35 +41,10 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowProduct extends OrgAction
 {
+    use WithCatalogueAuthorisation;
+
     private Group|Organisation|Shop|Fulfilment|ProductCategory $parent;
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        if ($this->parent instanceof Organisation) {
-            $this->canEdit = $request->user()->authTo(
-                [
-                    'org-supervisor.'.$this->organisation->id,
-                ]
-            );
-
-            return $request->user()->authTo(
-                [
-                    'org-supervisor.'.$this->organisation->id,
-                    'shops-view'.$this->organisation->id,
-                ]
-            );
-        } elseif ($this->parent instanceof Group) {
-            return $request->user()->authTo("group-overview");
-        } else {
-            $this->canEdit = $request->user()->authTo("products.{$this->shop->id}.edit");
-
-            return $request->user()->authTo("products.{$this->shop->id}.view");
-        }
-    }
 
     public function handle(Product $product): Product
     {
@@ -108,6 +85,15 @@ class ShowProduct extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
+    public function inSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, Product $product, ActionRequest $request): Product
+    {
+        $this->parent = $subDepartment;
+        $this->initialisationFromShop($shop, $request)->withTab(ProductTabsEnum::values());
+
+        return $this->handle($product);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
     public function inFamily(Organisation $organisation, Shop $shop, ProductCategory $family, Product $product, ActionRequest $request): Product
     {
         $this->parent = $family;
@@ -119,6 +105,15 @@ class ShowProduct extends OrgAction
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inFamilyInDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $family, Product $product, ActionRequest $request): Product
+    {
+        $this->parent = $family;
+        $this->initialisationFromShop($shop, $request)->withTab(ProductTabsEnum::values());
+
+        return $this->handle($product);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inFamilyInSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, ProductCategory $family, Product $product, ActionRequest $request): Product
     {
         $this->parent = $family;
         $this->initialisationFromShop($shop, $request)->withTab(ProductTabsEnum::values());
@@ -197,6 +192,9 @@ class ShowProduct extends OrgAction
 
     public function htmlResponse(Product $product, ActionRequest $request): Response
     {
+
+        $hasMaster = $product->master_product_id;
+
         return Inertia::render(
             'Org/Catalogue/Product',
             [
@@ -229,9 +227,8 @@ class ShowProduct extends OrgAction
                             [
                                 'type'    => 'button',
                                 'style'   => 'edit',
-                                'tooltip' => __('To Webpage'),
-                                'label'   => __('To Webpage'),
-                                'icon'    => ["fal", "fa-drafting-compass"],
+                                'label'   => __('Webpage'),
+                                'icon'    => ["fal", "fa-browser"],
                                 'route'   => [
                                     'name'       => 'grp.org.shops.show.web.webpages.show',
                                     'parameters' => [
@@ -247,7 +244,7 @@ class ShowProduct extends OrgAction
                             'style'   => 'edit',
                             'tooltip' => __('Create Webpage'),
                             'label'   => __('Create Webpage'),
-                            'icon'    => ["fal", "fa-drafting-compass"],
+                            'icon'    => ["fal", "fa-browser"],
                             'route'   => [
                                 'name'       => 'grp.models.webpages.product.store',
                                 'parameters' => $product->id,
@@ -255,9 +252,10 @@ class ShowProduct extends OrgAction
                             ]
 
                         ],
-                        $this->canEdit ? [
+                        $this->canEdit && !$hasMaster ? [
                             'type'  => 'button',
                             'style' => 'edit',
+                            'label'   => __('Edit'),
                             'route' => [
                                 'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
@@ -276,6 +274,7 @@ class ShowProduct extends OrgAction
                 ProductTabsEnum::SHOWCASE->value => $this->tab == ProductTabsEnum::SHOWCASE->value ?
                     fn () => GetProductShowcase::run($product)
                     : Inertia::lazy(fn () => GetProductShowcase::run($product)),
+
 
 
                 ProductTabsEnum::FAVOURITES->value => $this->tab == ProductTabsEnum::FAVOURITES->value ?
@@ -478,6 +477,28 @@ class ShowProduct extends OrgAction
                     $suffix
                 )
             ),
+            'grp.org.shops.show.catalogue.sub_departments.show.products.show', =>
+            array_merge(
+                ShowSubDepartment::make()->getBreadcrumbs(
+                    subDepartment: $product->subDepartment,
+                    routeName: $routeName,
+                    routeParameters: $routeParameters
+                ),
+                $headCrumb(
+                    $product,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.sub_departments.show.products.index',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'subDepartment'])
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.sub_departments.show.products.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
             'grp.org.shops.show.catalogue.departments.show.families.show.products.show' =>
             array_merge(
                 ShowFamily::make()->getBreadcrumbs(
@@ -494,6 +515,28 @@ class ShowProduct extends OrgAction
                         ],
                         'model' => [
                             'name'       => 'grp.org.shops.show.catalogue.departments.show.families.show.products.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.shops.show.catalogue.sub_departments.show.families.show.products.show' =>
+            array_merge(
+                ShowFamily::make()->getBreadcrumbs(
+                    family: $parent,
+                    routeName: 'grp.org.shops.show.catalogue.sub_departments.show.families.show',
+                    routeParameters: Arr::only($routeParameters, ['organisation', 'shop', 'subDepartment', 'family'])
+                ),
+                $headCrumb(
+                    $product,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.sub_departments.show.families.show.products.index',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'subDepartment', 'family'])
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.sub_departments.show.families.show.products.show',
                             'parameters' => $routeParameters
                         ]
                     ],

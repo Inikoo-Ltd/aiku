@@ -10,8 +10,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- *
- *
  * @property int $id
  * @property int $task_id
  * @property int $production_id
@@ -32,7 +30,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskProductionStat newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskProductionStat onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskProductionStat query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskProductionStat withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskProductionStat withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskProductionStat withoutTrashed()
  * @mixin \Eloquent
  */

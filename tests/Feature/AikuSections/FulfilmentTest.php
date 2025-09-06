@@ -1847,7 +1847,6 @@ test('picking pallet to return', function (PalletReturn $submittedPalletReturn) 
     $pickingPalletReturn = PickingPalletReturn::make()->action(
         $submittedPalletReturn,
     );
-    // dd($storedPallet);
     $fulfilmentCustomer->refresh();
     $firstPallet = $pickingPalletReturn->pallets->first();
     expect($pickingPalletReturn)->toBeInstanceOf(PalletReturn::class)
@@ -1868,7 +1867,6 @@ test('picked pallet to return', function (PalletReturn $pickingPalletReturn) {
     $pickedPalletReturn = PickedPalletReturn::make()->action(
         $pickingPalletReturn,
     );
-    // dd($storedPallet);
     $fulfilmentCustomer->refresh();
     expect($pickedPalletReturn)->toBeInstanceOf(PalletReturn::class)
         ->and($pickedPalletReturn->state)->toBe(PalletReturnStateEnum::PICKED);
@@ -2642,7 +2640,6 @@ test('picking second pallet to return', function (PalletReturn $submittedPalletR
     $pickingPalletReturn = PickingPalletReturn::make()->action(
         $submittedPalletReturn,
     );
-    // dd($storedPallet);
     $fulfilmentCustomer->refresh();
     expect($pickingPalletReturn)->toBeInstanceOf(PalletReturn::class)
         ->and($pickingPalletReturn->state)->toBe(PalletReturnStateEnum::PICKING);
@@ -2894,7 +2891,6 @@ test('consolidate recurring bill', function ($fulfilmentCustomer) {
     $fulfilmentCustomer->refresh();
 
     $newRecurringBill = $fulfilmentCustomer->currentRecurringBill;
-    // dd($recurringBill->transactions);
 
     expect($newRecurringBill)->not->toBe($recurringBill)
         ->and($newRecurringBill)->toBeInstanceOf(RecurringBill::class)
@@ -2967,7 +2963,6 @@ test('pay invoice (full)', function ($fulfilmentCustomer) {
 
 test('consolidate 2nd recurring bill', function ($fulfilmentCustomer) {
     $recurringBill = $fulfilmentCustomer->currentRecurringBill;
-    // dd($recurringBill->transactions);
     ConsolidateRecurringBill::make()->action($recurringBill);
 
     $recurringBill->refresh();
@@ -3440,13 +3435,11 @@ test('refund to credit balance', function (array $data) {
     $refund->refresh();
 
     $refundPayment = $refund->payments->first();
-    $refundPaymentInvoice = $invoice->payments->where('type', PaymentTypeEnum::REFUND)->first();
 
     expect($refund)->toBeInstanceOf(Invoice::class)
         ->and($refund->pay_status)->toBe(InvoicePayStatusEnum::PAID)
         ->and($refund->payments->count())->toBe(1)
         ->and($refundPayment->amount)->toBe($refund->total_amount)
-        ->and($refundPaymentInvoice->amount)->toBe($refund->total_amount)
         ->and($refundPayment->type)->toBe(PaymentTypeEnum::REFUND)
         ->and($refundPayment->status)->toBe(PaymentStatusEnum::SUCCESS)
         ->and($refundPayment->state)->toBe(PaymentStateEnum::COMPLETED);

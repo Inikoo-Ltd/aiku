@@ -49,9 +49,9 @@ const emits = defineEmits<{
         
         <div class="absolute top-2 right-2 flex items-center justify-center">
             <slot name='stateIcon'>
-                <FontAwesomeIcon v-if="isError" icon="fas fa-exclamation-circle" class="h-5 w-5 text-red-500" aria-hidden="true" />
-                <FontAwesomeIcon v-if="isSuccess" icon="fas fa-check-circle" class="h-5 w-5 text-green-500" aria-hidden="true" />
                 <LoadingIcon v-if="loading" class="h-5 w-5 text-gray-500" />
+                <FontAwesomeIcon v-else-if="isError" icon="fas fa-exclamation-circle" class="h-5 w-5 text-red-500" aria-hidden="true" />
+                <FontAwesomeIcon v-else-if="isSuccess" icon="fas fa-check-circle" class="h-5 w-5 text-green-500" aria-hidden="true" />
             </slot>
         </div>
     </div>

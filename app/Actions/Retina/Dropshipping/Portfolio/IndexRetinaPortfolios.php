@@ -145,18 +145,19 @@ class IndexRetinaPortfolios extends RetinaAction
 
         // Button: Brave mode
         $bulkUploadRoute = false;
+        $bulkAllRoute = false;
         if ($platformUser) {
             $bulkUploadRoute = match ($this->customerSalesChannel->platform->type) {
                 PlatformTypeEnum::SHOPIFY => [
                     'name'       => 'retina.models.dropshipping.shopify.batch_upload',
                     'parameters' => [
-                        'shopifyUser' => $platformUser->id
+                        'customerSalesChannel' => $this->customerSalesChannel->id
                     ]
                 ],
                 PlatformTypeEnum::WOOCOMMERCE => [
-                    'name'       => 'retina.models.dropshipping.woo.batch_brave',
+                    'name'       => 'retina.models.dropshipping.woo.batch_upload',
                     'parameters' => [
-                        'wooCommerceUser' => $platformUser->id
+                        'customerSalesChannel' => $this->customerSalesChannel->id
                     ]
                 ],
                 PlatformTypeEnum::EBAY => [
@@ -179,30 +180,18 @@ class IndexRetinaPortfolios extends RetinaAction
                 ],
                 default => false
             };
-        }
 
-        // Button: Create a new product to platform
-        $duplicateRoute = false;
-        if ($platformUser) {
-            $duplicateRoute = match ($this->customerSalesChannel->platform->type) {
-                PlatformTypeEnum::WOOCOMMERCE => [
-                    'name'       => 'retina.models.dropshipping.woo.batch_upload',
+            $bulkAllRoute = match ($this->customerSalesChannel->platform->type) {
+                PlatformTypeEnum::SHOPIFY => [
+                    'name'       => 'retina.models.dropshipping.shopify.batch_all',
                     'parameters' => [
-                        'wooCommerceUser' => $platformUser->id
+                        'customerSalesChannel' => $this->customerSalesChannel->id
                     ]
                 ],
-                default => false
-            };
-        }
-
-        // Button: Sync all to platform
-        $batchSyncRoute = false;
-        if ($platformUser) {
-            $batchSyncRoute = match ($this->customerSalesChannel->platform->type) {
                 PlatformTypeEnum::WOOCOMMERCE => [
-                    'name'       => 'retina.models.dropshipping.woo.batch_sync',
+                    'name'       => 'retina.models.dropshipping.woo.batch_all',
                     'parameters' => [
-                        'wooCommerceUser' => $platformUser->id
+                        'customerSalesChannel' => $this->customerSalesChannel->id
                     ]
                 ],
                 default => false
@@ -211,15 +200,16 @@ class IndexRetinaPortfolios extends RetinaAction
 
         $actions = [];
 
+
         if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
             $countProductsNotSync = $this->customerSalesChannel->portfolios()->where('portfolios.status', true)->where('platform_status', false)->count();
         } elseif ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
             $countProductsNotSync = 0;
         } else {
-            // todo review this for other platforms , we shuuld use platform_status
-            $countProductsNotSync = $this->customerSalesChannel->portfolios()->where('platform_product_id', null)->count();
+            $countProductsNotSync = $this->customerSalesChannel->portfolios()->where('portfolios.status', true)
+                ->where('platform_status', false)
+                ->count();
         }
-
 
         if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
             $actions = [
@@ -266,8 +256,34 @@ class IndexRetinaPortfolios extends RetinaAction
                 ],
                 'routes'         => [
                     'bulk_upload'               => $bulkUploadRoute,
-                    'batch_sync'                => $batchSyncRoute,
-                    'duplicate'                 => $duplicateRoute,
+                    'batch_all'                 => $bulkAllRoute,
+                    'fetch_products'            => match ($this->customerSalesChannel->platform->type) {
+                        PlatformTypeEnum::WOOCOMMERCE => [
+                            'name' => 'retina.json.dropshipping.customer_sales_channel.woo_products'
+                        ],
+                        PlatformTypeEnum::SHOPIFY => [
+                            'name' => 'retina.json.dropshipping.customer_sales_channel.shopify_products'
+                        ],
+                        default => false
+                    },
+                    'single_create_new' => match ($this->customerSalesChannel->platform->type) {
+                        PlatformTypeEnum::WOOCOMMERCE => [
+                            'name' => 'retina.models.portfolio.store_new_woo_product'
+                        ],
+                        PlatformTypeEnum::SHOPIFY => [
+                            'name' => 'retina.models.portfolio.store_new_shopify_product'
+                        ],
+                        default => false
+                    },
+                    'single_match' => match ($this->customerSalesChannel->platform->type) {
+                        PlatformTypeEnum::WOOCOMMERCE => [
+                            'name' => 'retina.models.portfolio.match_to_existing_woo_product'
+                        ],
+                        PlatformTypeEnum::SHOPIFY => [
+                            'name' => 'retina.models.portfolio.match_to_existing_shopify_product'
+                        ],
+                        default => false
+                    },
                     'itemRoute'                 => [
                         'name'       => 'retina.dropshipping.customer_sales_channels.filtered_products.index',
                         'parameters' => [
@@ -385,18 +401,15 @@ class IndexRetinaPortfolios extends RetinaAction
                     'count' => $this->customerSalesChannel->number_portfolios
                 ]);
 
-            $table->column(key: 'image', label: __(''), canBeHidden: false, searchable: true);
+            $table->column(key: 'image', label:'', canBeHidden: false, searchable: true);
             $table->column(key: 'name', label: __('Product'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'actions', label: '', canBeHidden: false, sortable: false, searchable: false);
+            $table->column(key: 'actions', label: '', canBeHidden: false);
 
 
             if ($this->customerSalesChannel->platform->type !== PlatformTypeEnum::MANUAL) {
                 $table->column(key: 'status', label: __('status'));
 
-                $matchesLabel = __('Matches');
-                if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
-                    $matchesLabel = __('Shopify product');
-                }
+                $matchesLabel = __($this->customerSalesChannel->platform->name . ' product');
 
                 $table->column(key: 'matches', label: $matchesLabel, canBeHidden: false);
                 $table->column(key: 'create_new', label: '', canBeHidden: false);

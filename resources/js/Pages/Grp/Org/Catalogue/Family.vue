@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head } from "@inertiajs/vue3"
+import { Head, Link } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import {
     faBullhorn,
@@ -10,10 +10,11 @@ import {
     faProjectDiagram,
     faTag,
     faUser,
-    faBrowser
+    faBrowser,
+    faPlus, faMinus,
 } from "@fal"
 import { faExclamationTriangle } from "@fas"
-
+import Button from "@/Components/Elements/Buttons/Button.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { computed, defineAsyncComponent, ref } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
@@ -23,12 +24,14 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import TableMailshots from "@/Components/Tables/TableMailshots.vue"
 import { capitalize } from "@/Composables/capitalize"
 import FamilyShowcase from "@/Components/Showcases/Grp/FamilyShowcase.vue"
-import Button from "@/Components/Elements/Buttons/Button.vue"
-import Modal from "@/Components/Utils/Modal.vue"
 import { Message } from "primevue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from "laravel-vue-i18n"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
+import { routeType } from "@/types/route";
+import FormCreateMasterProduct from "@/Components/FormCreateMasterProduct.vue"
+import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
+
 
 library.add(
     faFolder,
@@ -42,7 +45,6 @@ library.add(
     faBrowser, faExclamationTriangle
 )
 
-const ModelChangelog = defineAsyncComponent(() => import("@/Components/ModelChangelog.vue"))
 
 const props = defineProps<{
     title: string
@@ -51,16 +53,21 @@ const props = defineProps<{
         current: string
         navigation: object
     }
+    storeProductRoute : routeType
     customers: object
     mailshots: object
     showcase: object
     details: object
     history?: object;
     is_orphan?: boolean
+    currency?:Object
+    url_master?:routeType
+    shopsData? :any
+    masterProductCategory?:number
 }>()
-
+console.log('family',props)
 const currentTab = ref(props.tabs.current)
-const isOpenModal = ref(false) // ✅ Added missing ref
+
 
 const handleTabUpdate = (tabSlug: string) => {
     useTabChange(tabSlug, currentTab)
@@ -76,6 +83,11 @@ const component = computed(() => {
     }
     return components[currentTab.value] ?? ModelDetails
 })
+console.log(route().params)
+
+const showDialog = ref(false);
+
+
 </script>
 
 <template>
@@ -83,17 +95,20 @@ const component = computed(() => {
     <Head :title="capitalize(title)" />
 
     <PageHeading :data="pageHead">
-        <!--  <template #button-index-1="{ action }">
-      <Button
-        :style="action.style"
-        :label="action.label"
-        :icon="action.icon"
-        :iconRight="action.iconRight"
-        :key="`ActionButton${action?.key}${action.style}`"
-        :tooltip="action.tooltip"
-        @click="isOpenModal = true"
-      />
-    </template> -->
+        <template #button-master-product="{ action }">
+            <Button :icon="action.icon" :label="action.label" @click="showDialog = true" :style="action.style" />
+        </template>
+
+        <template #afterTitle>
+           <div class="whitespace-nowrap">
+            <Link v-if="url_master"  :href="route(url_master.name,url_master.parameters)"  v-tooltip="'Go to Master'" class="mr-1"  :class="'opacity-70 hover:opacity-100'">
+                <FontAwesomeIcon
+                    :icon="faOctopusDeploy"
+                    color="#4B0082"
+                />
+            </Link>
+            </div>
+        </template>
     </PageHeading>
 
     <Message v-if="is_orphan" severity="warn" class="m-4 mb-2">
@@ -105,9 +120,13 @@ const component = computed(() => {
 
     <component :is="component" :data="props[currentTab]" :tab="currentTab" />
 
-    <!--  <Modal :isOpen="isOpenModal" @onClose="isOpenModal = false">
-    <div class="p-4">
-      <p class="text-gray-700">This is a modal placeholder content.</p>
-    </div>
-  </Modal> -->
+    <FormCreateMasterProduct 
+        :showDialog="showDialog" 
+        :storeProductRoute="storeProductRoute" 
+        @update:show-dialog="(value) => showDialog = value"
+        :master-currency="currency"
+        :shopsData="shopsData"
+        :masterProductCategory="masterProductCategory"
+    />
+
 </template>

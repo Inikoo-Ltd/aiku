@@ -106,7 +106,7 @@ class EditCustomer extends OrgAction
                                         'countriesAddressData' => GetAddressData::run()
                                     ]
                                 ],
-                                    'vat'      => [
+                                'vat'      => [
                                     'type'    => 'tax_number',
                                     'label'   => __('Tax number'),
                                     'value'   => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : null,
@@ -135,7 +135,7 @@ class EditCustomer extends OrgAction
         return ShowCustomer::make()->getBreadcrumbs(
             routeName: preg_replace('/edit$/', 'show', $routeName),
             routeParameters: $routeParameters,
-            suffix: '('.__('Editing').')'
+            suffix: '(' . __('Editing') . ')'
         );
     }
 
@@ -149,7 +149,6 @@ class EditCustomer extends OrgAction
         })->orderBy('slug', 'desc')->first();
 
         return $this->getNavigation($previous, $request->route()->getName());
-
     }
 
     public function getNext(Customer $customer, ActionRequest $request): ?array

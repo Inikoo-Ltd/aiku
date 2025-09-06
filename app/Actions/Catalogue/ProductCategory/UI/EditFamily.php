@@ -59,6 +59,15 @@ class EditFamily extends OrgAction
         return $this->handle($family);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, ProductCategory $family, ActionRequest $request): ProductCategory
+    {
+
+        $this->initialisationFromShop($shop, $request)->withTab(DepartmentTabsEnum::values());
+
+        return $this->handle($family);
+    }
+
     public function htmlResponse(ProductCategory $family, ActionRequest $request): Response
     {
         $departmentIdFormData = [];
@@ -114,37 +123,58 @@ class EditFamily extends OrgAction
                                     'label' => __('code'),
                                     'value' => $family->code
                                 ],
-                                'name' => [
+                                'name_i8n' => [
                                     'type'  => 'input',
                                     'label' => __('name'),
-                                    'value' => $family->name
+                                    'value' => $family->getTranslation('name_i8n', $family->shop->language->code) ?: $family->name
                                 ],
-                                'description_title' => [
+                                'description_title_i8n' => [
                                     'type'  => 'input',
                                     'label' => __('description title'),
-                                    'value' => $family->description_title
+                                    'value' => $family->getTranslation('description_title_i8n', $family->shop->language->code) ?: $family->description_title
                                 ],
-                                'description' => [
+                                'description_i8n' => [
                                     'type'  => 'textEditor',
                                     'label' => __('description'),
-                                    'value' => $family->description
+                                    'value' => $family->getTranslation('description_i8n', $family->shop->language->code) ?: $family->description
                                 ],
-                                'description_extra' => [
+                                'description_extra_i8n' => [
                                     'type'  => 'textEditor',
-                                    'label' => __('description extra'),
-                                    'value' => $family->description_extra
+                                    'label' => __('Extra description'),
+                                    'value' => $family->getTranslation('description_extra_i8n', $family->shop->language->code) ?: $family->description_extra
                                 ],
                             ]
                         ],
                         [
-                            'label'  => __('Properties'),
-                            'icon'   => 'fa-light fa-fingerprint',
+                            'label'  => __('Pricing'),
                             'title'  => __('id'),
+                            'icon'   => 'fa-light fa-money-bill',
+                            'fields' => [
+                                'cost_price_ratio' => [
+                                    'type'          => 'input_number',
+                                    'bind' => [
+                                        'maxFractionDigits' => 3
+                                    ],
+                                    'label'         => __('pricing ratio'),
+                                    'placeholder'   => __('Cost price ratio'),
+                                    'required'      => true,
+                                    'value'         => $family->cost_price_ratio,
+                                    'min'           => 0
+                                ]
+                            ]
+                        ],
+                        [
+                            'label'  => __('Image'),
+                            'icon'   => 'fa-light fa-image',
+                            'title'  => __('Media'),
                             'fields' => [
                                 "image"         => [
-                                    "type"    => "image_crop_square",
+                                    "type"    => "crop-image-full",
                                     "label"   => __("Image"),
                                     "value"   => $family->imageSources(720, 480),
+                                    "required" => false,
+                                    'noSaveButton' => true,
+                                    "full"         => true
                                 ],
                                 ...$departmentIdFormData
                             ]

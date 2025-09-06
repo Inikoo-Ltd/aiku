@@ -160,13 +160,29 @@ class EditShop extends OrgAction
                                     'searchable'    => true
                                 ],
                             ],
-
                         ],
                         [
                             'label'  => __('contact/details'),
                             'icon'   => 'fa-light fa-user',
                             'fields' => [
 
+                            ]
+                        ],
+                        [
+                            'label'  => __('Pricing'),
+                            'icon'   => 'fa-light fa-money-bill',
+                            'fields' => [
+                                'cost_price_ratio' => [
+                                    'type'          => 'input_number',
+                                    'bind' => [
+                                        'maxFractionDigits' => 3
+                                    ],
+                                    'label'         => __('pricing ratio'),
+                                    'placeholder'   => __('Cost price ratio'),
+                                    'required'      => true,
+                                    'value'         => $shop->cost_price_ratio,
+                                    'min'           => 0
+                                ],
                             ]
                         ],
                         [

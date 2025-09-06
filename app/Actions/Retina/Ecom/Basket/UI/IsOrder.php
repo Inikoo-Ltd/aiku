@@ -162,6 +162,16 @@ trait IsOrder
                     'pay_amount'   => $roundedDiff,
                     'pay_status'   => $order->pay_status,
                 ],
+                'excesses_payment'  => [
+                    'amount'    => round($order->payment_amount - $order->total_amount, 2),
+                    'route_to_add_balance' => [
+                        'name'       => 'grp.models.order.return_excess_payment',
+                        'parameters' => [
+                            'order' => $order->id
+                        ],
+                        'method' => 'post'
+                    ]
+                ],
                 'estimated_weight' => $estWeight,
             ],
 

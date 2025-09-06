@@ -76,6 +76,8 @@ trait WithCheckoutCom
 
     }
 
+
+
     protected function getFailureTitle($status): string
     {
         $title = __('Error');

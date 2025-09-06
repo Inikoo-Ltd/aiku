@@ -11,8 +11,6 @@ namespace App\Models\Fulfilment;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 
 /**
- *
- *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletDeliveryPhysicalGood newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletDeliveryPhysicalGood newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletDeliveryPhysicalGood query()

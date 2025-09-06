@@ -27,7 +27,10 @@ class CustomerHydrateCustomerSalesChannels implements ShouldBeUnique
     public function handle(int $customerID): void
     {
 
-        $customer = Customer::findOrFail($customerID);
+        $customer = Customer::find($customerID);
+        if (!$customer) {
+            return;
+        }
 
         $totalCustomerChannels = $customer->customerSalesChannels()->count();
 

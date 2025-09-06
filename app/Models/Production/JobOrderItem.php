@@ -14,8 +14,6 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id
@@ -41,7 +39,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrderItem newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrderItem onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrderItem query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrderItem withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrderItem withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|JobOrderItem withoutTrashed()
  * @mixin \Eloquent
  */

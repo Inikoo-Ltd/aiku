@@ -100,14 +100,14 @@ const onPickBlock = (value: object) => {
 
       <!-- Scrollable Panels -->
       <TabPanels class="overflow-auto flex-grow bg-gray-50">
-        <TabPanel class="p-4">
+        <TabPanel class="xp-4">
           <WebBlockListDnd
             :webBlockTypes="webBlockTypes"
             @pick-block="onPickBlock"
             :selectedWeblock="data?.code"
           />
         </TabPanel>
-        <TabPanel v-if="data?.data?.fieldValue" class="p-4">
+        <TabPanel v-if="data?.data?.fieldValue" class="xp-4">
           <SideEditor 
             v-model="data.data.fieldValue" 
             :blueprint="getBlueprint(data.code)"

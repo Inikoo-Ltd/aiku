@@ -17,6 +17,8 @@ use App\Models\Masters\MasterShop;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
@@ -30,9 +32,17 @@ class StoreMasterFamily extends OrgAction
 
     public function handle(MasterProductCategory|MasterShop $parent, array $modelData): MasterProductCategory
     {
-        data_set($modelData, 'type', MasterProductCategoryTypeEnum::FAMILY);
+        return DB::transaction(function () use ($parent, $modelData) {
+            $shops = Arr::pull($modelData, 'shop_family', []);
+            data_set($modelData, 'type', MasterProductCategoryTypeEnum::FAMILY);
 
-        return StoreMasterProductCategory::run($parent, $modelData);
+            $masterFamily = StoreMasterProductCategory::run($parent, $modelData);
+            StoreFamilyFromMasterFamily::make()->action($masterFamily, [
+                'shop_family' => $shops
+            ]);
+
+            return $masterFamily;
+        });
     }
 
     public function rules(): array
@@ -51,13 +61,16 @@ class StoreMasterFamily extends OrgAction
                 ),
             ],
             'name'        => ['required', 'max:250', 'string'],
-            'description' => ['sometimes', 'required', 'max:1500'],
+            'description'       => ['sometimes', 'nullable', 'max:1500'],
+            'description_title' => ['sometimes', 'nullable', 'max:1500'],
+            'description_extra' => ['sometimes', 'nullable', 'max:1500'],
             'image'       => [
                 'sometimes',
                 'nullable',
                 File::image()
                     ->max(12 * 1024)
             ],
+            'shop_family' => ['sometimes', 'array']
         ];
     }
 
@@ -97,17 +110,11 @@ class StoreMasterFamily extends OrgAction
 
     public function htmlResponse(MasterProductCategory $masterProductCategory, ActionRequest $request): RedirectResponse
     {
-        if ($this->parent instanceof MasterShop) {
-            return Redirect::route('grp.masters.master_shops.show.master_families.show', [
-                'masterShop' => $this->parent->slug,
-                'masterFamily' => $masterProductCategory->slug,
-            ]);
-        }
-
-        return Redirect::route('grp.masters.master_departments.show.master_families.show', [
-            'masterDepartment' => $masterProductCategory->masterDepartment->slug,
+        return Redirect::route('grp.masters.master_shops.show.master_families.show', [
+            'masterShop' => $masterProductCategory->masterShop->slug,
             'masterFamily' => $masterProductCategory->slug,
         ]);
+
     }
 
 

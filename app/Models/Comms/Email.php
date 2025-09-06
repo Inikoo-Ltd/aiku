@@ -20,8 +20,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int|null $organisation_id

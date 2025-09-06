@@ -50,6 +50,7 @@ use App\Actions\Dispatching\Printer\Json\GetPrintNodeComputers;
 use App\Actions\Dispatching\Printer\Json\GetPrintNodePrinters;
 use App\Actions\Dispatching\Shipper\Json\GetShippers;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetShopifyProducts;
+use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetWooProducts;
 use App\Actions\Fulfilment\Pallet\Json\GetFulfilmentCustomerStoringPallets;
 use App\Actions\Fulfilment\PalletDelivery\Json\GetFulfilmentPhysicalGoods;
 use App\Actions\Fulfilment\PalletDelivery\Json\GetFulfilmentServices;
@@ -62,6 +63,9 @@ use App\Actions\Helpers\Tag\Json\GetGrpTags;
 use App\Actions\Helpers\Tag\Json\GetTags;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocks;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
+use App\Actions\Masters\MasterAsset\Json\GetAllTradeUnits;
+use App\Actions\Masters\MasterAsset\Json\GetRecommendedTradeUnits;
+use App\Actions\Masters\MasterAsset\Json\GetTakenTradeUnits;
 use App\Actions\Masters\MasterCollection\UI\GetMasterCollections;
 use App\Actions\Masters\MasterCollection\UI\GetMasterFamilies;
 use App\Actions\Masters\MasterCollection\UI\GetMasterProductsNotAttachedToAMasterCollection;
@@ -175,6 +179,8 @@ Route::get('mini-delivery-note-shipments/{deliveryNote:id}', GetMiniDeliveryNote
 
 Route::get('customer-sales-channel/{customerSalesChannel:id}/shopify-products', GetShopifyProducts::class)->name('dropshipping.customer_sales_channel.shopify_products');
 
+Route::get('customer-sales-channel/{customerSalesChannel:id}/woo-products', GetWooProducts::class)->name('dropshipping.customer_sales_channel.woo_products');
+
 Route::get('master-shop/{masterShop}/scopes/{scope}/departments', GetMasterDepartments::class)->name('master_shop.master_departments');
 Route::get('master-shop/{masterShop}/scopes/{scope}/sub-departments', GetMasterSubDepartments::class)->name('master_shop.master_sub_departments');
 
@@ -187,3 +193,8 @@ Route::get('master-shop/{masterShop}/master-collection/{masterCollection}/produc
 Route::get('webpage/{webpage:id}/web-block-histories', GetWebBlockHistories::class)->name('webpage.web_block_histories.index')->withoutScopedBindings();
 Route::get('webpage/{webpage:id}/web-block/{webBlock:id}/web-block-histories', [GetWebBlockHistories::class, 'inWebBlock'])->name('web-block.web_block_histories.index')->withoutScopedBindings();
 Route::get('webpage/{webpage:id}/web-block-type/{webBlockType:id}/web-block-histories', [GetWebBlockHistories::class, 'inWebBlockType'])->name('web-block-type.web_block_histories.index')->withoutScopedBindings();
+
+
+Route::get('master-product-category/{masterProductCategory}/recommended-trade-units', GetRecommendedTradeUnits::class)->name('master-product-category.recommended-trade-units')->withoutScopedBindings();
+Route::get('master-product-category/{masterProductCategory}/taken-trade-units', GetTakenTradeUnits::class)->name('master-product-category.taken-trade-units')->withoutScopedBindings();
+Route::get('master-product-category/{masterProductCategory}/all-trade-units', GetAllTradeUnits::class)->name('master-product-category.all-trade-units')->withoutScopedBindings();

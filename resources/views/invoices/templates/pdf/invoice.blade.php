@@ -283,7 +283,9 @@
             </td>
 
             <td style="text-align:left">
-                @if($transaction->historicAsset)
+                @if($transaction->quantity)
+                    {{ $invoice->currency->symbol . ' ' . $transaction->net_amount / $transaction->quantity }}
+                @elseif($transaction->historicAsset)
                     {{ $invoice->currency->symbol . ' ' . optional($transaction->historicAsset)->price }}
                 @endif
             </td>

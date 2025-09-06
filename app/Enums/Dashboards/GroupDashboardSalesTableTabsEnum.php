@@ -71,10 +71,6 @@ enum GroupDashboardSalesTableTabsEnum: string
             GroupDashboardSalesTableTabsEnum::INVOICE_CATEGORIES => json_decode(DashboardTotalGroupInvoiceCategoriesSalesResource::make($group)->toJson(), true)
         };
 
-
-        // dd($body);
-
-
         return [
             'header' => $header,
             'body'   => $body,

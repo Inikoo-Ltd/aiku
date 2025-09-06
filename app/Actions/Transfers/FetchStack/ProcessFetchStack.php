@@ -19,7 +19,6 @@ use App\Actions\Transfers\Aurora\Api\ProcessAuroraDeleteDeliveryNote;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraDeleteFavourites;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraDeleteInvoice;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraDeliveryNote;
-use App\Actions\Transfers\Aurora\Api\ProcessAuroraDepartment;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraDispatchedEmail;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraEmailTrackingEvent;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraEmployee;
@@ -88,7 +87,6 @@ class ProcessFetchStack
             'Credit' => ProcessAuroraCredit::make()->action($organisation, $modelData),
             'CustomerNote' => ProcessAuroraCustomerNote::make()->action($organisation, $modelData),
             'DeleteDeliveryNote' => ProcessAuroraDeleteDeliveryNote::make()->action($organisation, $modelData),
-            'Department' => ProcessAuroraDepartment::make()->action($organisation, $modelData),
             'EmailTrackingEvent' => ProcessAuroraEmailTrackingEvent::make()->action($organisation, $modelData),
             'Staff', 'Employee' => ProcessAuroraEmployee::make()->action($organisation, $modelData),
             'Family' => ProcessAuroraFamily::make()->action($organisation, $modelData),

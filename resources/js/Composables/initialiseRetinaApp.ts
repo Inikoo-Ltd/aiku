@@ -36,8 +36,8 @@ export const initialiseRetinaApp = () => {
     }
     
     router.on('navigate', (event) => {
-        // To see Vue filename in console (component.vue())
-        if (usePage().component) {
+        // To see Vue filename in console (component.vue)
+        if (import.meta.env.VITE_APP_ENV === 'local' && usePage().component) {
             window.component = {
                 vue: usePage().component
             }

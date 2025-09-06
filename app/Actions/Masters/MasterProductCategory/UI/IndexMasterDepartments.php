@@ -123,7 +123,7 @@ class IndexMasterDepartments extends OrgAction
 
 
             if ($parent instanceof Group) {
-                $table->column('master_shop_code', __('Shop'), sortable: true);
+                $table->column('master_shop_code', __('M. Shop'), sortable: true);
             }
 
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
@@ -173,6 +173,28 @@ class IndexMasterDepartments extends OrgAction
             $subNavigation = null;
         }
 
+        $actions = [];
+        if ($request->route()->getName() == 'grp.masters.master_shops.show.master_departments.index') {
+            $actions = [
+                [
+                    'type'    => 'button',
+                    'style'   => 'create',
+                    'tooltip' => __('new master department'),
+                    'label'   => __('master department'),
+                    'route'   => match ($this->parent::class) {
+                        MasterProductCategory::class => [
+                            'name'       => 'grp.masters.master_departments.create',
+                            'parameters' => $request->route()->originalParameters()
+                        ],
+                        default => [
+                            'name'       => 'grp.masters.master_shops.show.master_departments.create',
+                            'parameters' => $request->route()->originalParameters()
+                        ]
+                    }
+                ],
+            ];
+        }
+
 
         return Inertia::render(
             'Masters/MasterDepartments',
@@ -189,24 +211,7 @@ class IndexMasterDepartments extends OrgAction
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
-                    'actions'       => [
-                        [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'tooltip' => __('new master department'),
-                            'label'   => __('master department'),
-                            'route'   => match ($this->parent::class) {
-                                MasterProductCategory::class => [
-                                    'name'       => 'grp.masters.master_departments.create',
-                                    'parameters' => $request->route()->originalParameters()
-                                ],
-                                default => [
-                                    'name'       => 'grp.masters.master_shops.show.master_departments.create',
-                                    'parameters' => $request->route()->originalParameters()
-                                ]
-                            }
-                        ],
-                    ],
+                    'actions'       => $actions,
                     'subNavigation' => $subNavigation,
                 ],
                 'data'        => MasterDepartmentsResource::collection($masterDepartments),

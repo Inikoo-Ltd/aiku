@@ -14,6 +14,7 @@ use App\Models\Goods\TradeUnit;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 
 class EditTradeUnit extends OrgAction
 {
@@ -33,6 +34,92 @@ class EditTradeUnit extends OrgAction
 
     public function htmlResponse(TradeUnit $tradeUnit, ActionRequest $request): Response
     {
+
+        $tagRoute = [
+           'index_tag' => [
+               'name'       => 'grp.json.trade_units.tags.index',
+               'parameters' => [
+                   'tradeUnit' => $tradeUnit->id,
+               ]
+           ],
+           'store_tag' => [
+               'name'       => 'grp.models.trade-unit.tags.store',
+               'parameters' => [
+                   'tradeUnit' => $tradeUnit->id,
+               ]
+           ],
+           'update_tag' => [
+               'name'       => 'grp.models.trade-unit.tags.update',
+               'parameters' => [
+                   'tradeUnit' => $tradeUnit->id,
+               ],
+               'method'    => 'patch'
+           ],
+           'delete_tag' => [
+               'name'       => 'grp.models.trade-unit.tags.delete',
+               'parameters' => [
+                   'tradeUnit' => $tradeUnit->id,
+               ],
+               'method'    => 'delete'
+           ],
+           'attach_tag' => [
+               'name'       => 'grp.models.trade-unit.tags.attach',
+               'parameters' => [
+                   'tradeUnit' => $tradeUnit->id,
+               ],
+               'method'    => 'post'
+           ],
+           'detach_tag' => [
+               'name'       => 'grp.models.trade-unit.tags.detach',
+               'parameters' => [
+                   'tradeUnit' => $tradeUnit->id,
+               ],
+               'method'    => 'delete'
+           ],
+        ];
+
+        $brandRoute = [
+          'index_brand' => [
+              'name'       => 'grp.json.brands.index',
+              'parameters' => []
+          ],
+          'store_brand' => [
+              'name'       => 'grp.models.trade-unit.brands.store',
+              'parameters' => [
+                  'tradeUnit' => $tradeUnit->id,
+              ]
+          ],
+          'update_brand' => [
+              'name'       => 'grp.models.trade-unit.brands.update',
+              'parameters' => [
+                  'tradeUnit' => $tradeUnit->id,
+              ],
+              'method'    => 'patch'
+          ],
+          'delete_brand' => [
+              'name'       => 'grp.models.trade-unit.brands.delete',
+              'parameters' => [
+                  'tradeUnit' => $tradeUnit->id,
+              ],
+              'method'    => 'delete'
+          ],
+          'attach_brand' => [
+              'name'       => 'grp.models.trade-unit.brands.attach',
+              'parameters' => [
+                  'tradeUnit' => $tradeUnit->id,
+              ],
+              'method'    => 'post'
+          ],
+          'detach_brand' => [
+              'name'       => 'grp.models.trade-unit.brands.detach',
+              'parameters' => [
+                  'tradeUnit' => $tradeUnit->id,
+                  'brand' => $tradeUnit->brand()?->id,
+              ],
+              'method'    => 'delete'
+          ],
+        ];
+
         return Inertia::render(
             'EditModel',
             [
@@ -67,7 +154,8 @@ class EditTradeUnit extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('edit sku'),
+                            'label'  => __('Name/Description'),
+                            'icon'   => 'fa-light fa-tag',
                             'fields' => [
                                 'code' => [
                                     'type'  => 'input',
@@ -79,10 +167,44 @@ class EditTradeUnit extends OrgAction
                                     'label' => __('name'),
                                     'value' => $tradeUnit->name
                                 ],
+                                'name_i8n' => [
+                                    'type'  => 'input_translation',
+                                    'label' => __('translate name'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($tradeUnit->group->extra_languages),
+                                    'value' => $tradeUnit->getTranslations('name_i8n')
+                                ],
+                                'description_title' => [
+                                    'type'  => 'input',
+                                    'label' => __('description title'),
+                                    'value' => $tradeUnit->description_title
+                                ],
+                                'description_title_i8n' => [
+                                    'type'  => 'input_translation',
+                                    'label' => __('translate description title'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($tradeUnit->group->extra_languages),
+                                    'value' => $tradeUnit->getTranslations('description_title_i8n')
+                                ],
                                 'description' => [
                                     'type'  => 'textarea',
                                     'label' => __('description'),
                                     'value' => $tradeUnit->description
+                                ],
+                                'description_i8n' => [
+                                    'type'  => 'textEditor_translation',
+                                    'label' => __('translate description'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($tradeUnit->group->extra_languages),
+                                    'value' => $tradeUnit->getTranslations('description_i8n')
+                                ],
+                                'description_extra' => [
+                                    'type'  => 'textEditor',
+                                    'label' => __('Extra description'),
+                                    'value' => $tradeUnit->description_extra
+                                ],
+                                'description_extra_i8n' => [
+                                    'type'  => 'textEditor_translation',
+                                    'label' => __('translate description extra'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($tradeUnit->group->extra_languages),
+                                    'value' => $tradeUnit->getTranslations('description_extra_i8n')
                                 ],
                                 'gross_weight' => [
                                     'type'  => 'input',
@@ -90,7 +212,25 @@ class EditTradeUnit extends OrgAction
                                     'value' => $tradeUnit->gross_weight
                                 ],
                             ],
-                        ]
+                        ],
+                        [
+                            'label'  => __('Tags & Brands'),
+                            'icon'   => 'fa-light fa-tag',
+                            'fields' => [
+                                'tags' => [
+                                    'type'  => 'tags-trade-unit',
+                                    'label' => __('Tags'),
+                                    'value' => $tradeUnit->tags->pluck('id')->toArray(),
+                                    'tag_routes' => $tagRoute
+                                ],
+                                 'brands' => [
+                                    'type'  => 'brands-trade-unit',
+                                    'label' => __('Brands'),
+                                    'value' => $tradeUnit->brand()->id,
+                                    'brand_routes' =>  $brandRoute
+                                ],
+                            ],
+                        ],
                     ],
 
                     'args' => [

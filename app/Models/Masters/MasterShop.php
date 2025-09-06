@@ -10,6 +10,7 @@ namespace App\Models\Masters;
 
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
@@ -25,8 +26,6 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property string $slug
@@ -46,13 +45,14 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Masters\MasterShopOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Masters\MasterShopOrderingStats|null $orderingStats
  * @property-read \App\Models\Masters\MasterShopSalesIntervals|null $salesIntervals
+ * @property-read LaravelCollection<int, Shop> $shops
  * @property-read \App\Models\Masters\MasterShopStats|null $stats
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterShopTimeSeries> $timeSeries
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShop newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShop newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShop onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShop query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShop withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShop withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShop withoutTrashed()
  * @mixin \Eloquent
  */
@@ -104,6 +104,11 @@ class MasterShop extends Model implements Auditable
     public function group(): BelongsTo
     {
         return $this->belongsTo(Group::class);
+    }
+
+    public function shops(): HasMany
+    {
+        return $this->hasMany(Shop::class);
     }
 
     public function stats(): HasOne
@@ -167,5 +172,4 @@ class MasterShop extends Model implements Auditable
     {
         return $this->morphToMany(MasterCollection::class, 'model', 'model_has_master_collections')->withTimestamps();
     }
-
 }

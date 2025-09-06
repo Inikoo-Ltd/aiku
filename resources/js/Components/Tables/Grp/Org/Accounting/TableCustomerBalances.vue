@@ -43,9 +43,13 @@ function customerRoute(customerBalance: CustomerBalance) {
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(name)="{ item: customerBalance }">
-            <Link :href="customerRoute(customerBalance) as string" class="primaryLink">
-                {{ customerBalance.name }}
+            <Link :href="customerRoute(customerBalance)" class="primaryLink">
+            {{ customerBalance.name }}
             </Link>
         </template>
+        <!-- need change after BE rady -->
+        <!-- <template #cell(balance)="{ item: customerBalance }">
+            {{ locale.currencyFormat(customerBalance.currency_code, customerBalance.balance) }}
+        </template> -->
     </Table>
 </template>

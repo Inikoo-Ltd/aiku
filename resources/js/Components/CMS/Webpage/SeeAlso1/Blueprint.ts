@@ -1,4 +1,4 @@
-export const blueprint = (data?: object) => {
+export const blueprint = (data?: {}) => {
     // console.log('SeeAlso1 Blueprint data:', data)
 	return {
 		blueprint: [

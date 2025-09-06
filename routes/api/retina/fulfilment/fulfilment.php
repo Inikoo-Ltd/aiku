@@ -15,7 +15,7 @@ use App\Actions\Api\Retina\Fulfilment\Order\CancelApiOrder;
 use App\Actions\Api\Retina\Fulfilment\Order\GetOrder;
 use App\Actions\Api\Retina\Fulfilment\Order\GetOrders;
 use App\Actions\Api\Retina\Fulfilment\Order\StoreApiOrder;
-use App\Actions\Api\Retina\Fulfilment\Order\SubmitApiOrder;
+use App\Actions\Api\Retina\Fulfilment\Order\SubmitApiPalletReturn;
 use App\Actions\Api\Retina\Fulfilment\Order\UpdateApiOrder;
 use App\Actions\Api\Retina\Fulfilment\Portfolio\DeleteApiPortfolio;
 use App\Actions\Api\Retina\Fulfilment\Portfolio\GetPortfolios;
@@ -31,7 +31,7 @@ Route::prefix('order')->as('order.')->group(function () {
     Route::post('/client/{customerClient:id}/store', StoreApiOrder::class)->name('store');
     Route::get('{palletReturn:id}', GetOrder::class)->name('show');
     Route::patch('{palletReturn:id}/update', UpdateApiOrder::class)->name('update');
-    Route::patch('{palletReturn:id}/submit', SubmitApiOrder::class)->name('submit');
+    Route::patch('{palletReturn:id}/submit', SubmitApiPalletReturn::class)->name('submit');
     Route::post('{palletReturn:id}/cancel', CancelApiOrder::class)->name('cancel');
     Route::get('{palletReturn:id}/transactions', GetTransactions::class)->name('transaction.index');
     Route::post('/{palletReturn:id}/sku/{sku:id}/store', AttachApiOrderTransaction::class)->name('transaction.store')->withoutScopedBindings();

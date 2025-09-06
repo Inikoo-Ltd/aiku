@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
+use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
 use App\Actions\Masters\MasterProductCategory\WithMasterSubDepartmentSubNavigation;
@@ -16,6 +17,7 @@ use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Http\Resources\Masters\MasterFamiliesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Masters\MasterProductCategory;
@@ -198,6 +200,7 @@ class IndexMasterFamilies extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $masterFamilies, ActionRequest $request): Response
     {
+        $masterShop = null;
         $subNavigation = null;
         $title         = $this->parent->name;
         $model         = '';
@@ -213,6 +216,7 @@ class IndexMasterFamilies extends OrgAction
         ];
         if ($this->parent instanceof MasterShop) {
             $subNavigation = $this->getMasterShopNavigation($this->parent);
+            $masterShop = $this->parent;
         } elseif ($this->parent instanceof Group) {
             $title      = __('Master families');
             $icon       = [
@@ -239,6 +243,7 @@ class IndexMasterFamilies extends OrgAction
                 ];
                 $subNavigation = $this->getMasterSubDepartmentSubNavigation($this->parent);
             }
+            $masterShop = $this->parent->masterShop;
         }
 
         return Inertia::render(
@@ -259,6 +264,29 @@ class IndexMasterFamilies extends OrgAction
                     'actions'       => $this->getActions($request),
                     'subNavigation' => $subNavigation,
                 ],
+                'storeRoute' =>  match ($this->parent::class) {
+                    MasterShop::class => [
+                        'name' => 'grp.models.master_shops.master_family.store',
+                        'parameters' => [
+                            'masterShop' => $this->parent->id
+                        ]
+                    ],
+                    MasterProductCategory::class => $this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT
+                        ? [
+                            'name' => 'grp.models.master_family.store',
+                            'parameters' => [
+                                'masterDepartment' => $this->parent->id
+                            ]
+                        ]
+                        : [
+                            'name' => 'grp.models.master-sub-department.master_family.store',
+                            'parameters' => [
+                                'masterSubDepartment' => $this->parent->id
+                            ]
+                        ],
+                    default => null
+                },
+                'shopsData' => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterShop, 'shops')),
                 'data'        => MasterFamiliesResource::collection($masterFamilies),
             ]
         )->table($this->tableStructure($this->parent));
@@ -293,6 +321,7 @@ class IndexMasterFamilies extends OrgAction
 
         $actions[] = [
             'type'    => 'button',
+            'key'     => 'add-master-family',
             'style'   => 'create',
             'tooltip' => __('master new family'),
             'label'   => __('master family'),

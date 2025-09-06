@@ -54,7 +54,7 @@ class WebBlockProductResourceEcom extends JsonResource
         if ($request->user()) {
             $customer = $request->user()->customer;
             if ($customer) {
-                $favourite = $customer->favourites()->where('product_id', $product->id)->first();
+                $favourite = $customer->favourites()->where('product_id', $product->id)->whereNull('unfavourited_at')->first();
 
                 $basket = $customer->orderInBasket;
                 if ($basket) {
@@ -72,7 +72,10 @@ class WebBlockProductResourceEcom extends JsonResource
             }
         }
 
+        $luigi_identity = $product->group_id . ':' . $product->organisation_id . ':' . $product->shop_id . ':' . $product->webpage->website->id . ':' . $product->webpage->id;
+
         return [
+            'luigi_identity'    => $luigi_identity,
             'slug'              => $product->slug,
             'code'              => $product->code,
             'name'              => $product->name,
@@ -98,7 +101,7 @@ class WebBlockProductResourceEcom extends JsonResource
             'tags'              => TagResource::collection($product->tradeUnitTagsViaTradeUnits())->toArray($request),
             'transaction_id'      => $transactionId,
             'quantity_ordered'      => (int) $quantityOrdered,
-            'quantity_ordered_new'  => (int) $quantityOrdered,  // To editable in Frontend
+            'quantity_ordered_new'  => 1,  // To editable in Frontend
             'is_favourite'          => $favourite && !$favourite->unfavourited_at ?? false,
         ];
     }

@@ -11,6 +11,7 @@ namespace App\Actions\Ordering\Order;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\Dispatching\DeliveryNote\CopyOrderNotesToDeliveryNote;
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateOrders;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\Ordering\Order\Search\OrderRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderInBasketAtCustomerUpdateIntervals;
@@ -57,6 +58,7 @@ class UpdateOrder extends OrgAction
                 GroupHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->group, $intervalsExceptHistorical, []);
                 OrganisationHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->organisation, $intervalsExceptHistorical, []);
                 ShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->shop, $intervalsExceptHistorical, []);
+                MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->master_shop_id, $intervalsExceptHistorical, []);
             }
 
             if ($order->deliveryNotes->first()) {

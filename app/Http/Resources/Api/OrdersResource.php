@@ -11,28 +11,35 @@
 namespace App\Http\Resources\Api;
 
 use App\Http\Resources\HasSelfCall;
-use App\Models\CRM\Customer;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @property int $id
+ * @property string $reference
+ * @property string $state
+ * @property float $net_amount
+ * @property float $total_amount
+ * @property string|\Illuminate\Support\Carbon|null $date
+ * @property string|null $payment_status
+ * @property string|null $payment_state
+ * @property string $currency_code
+ */
 class OrdersResource extends JsonResource
 {
     use HasSelfCall;
 
     public function toArray($request): array
     {
-        /** @var Customer $customer */
-        $order = $this;
-
         return [
-            'id'            => $order->id,
-            'reference'     => $order->reference,
-            'state'         => $order->state,
-            'net_amount'    => $order->net_amount,
-            'total_amount'    => $order->total_amount,
-            'date'          => $order->date,
-            'payment_status'       => $order->payment_status,
-            'payment_state'        => $order->payment_state,
-            'currency_code' => $order->currency_code,
+            'id'             => $this->id,
+            'reference'      => $this->reference,
+            'state'          => $this->state,
+            'net_amount'     => $this->net_amount,
+            'total_amount'   => $this->total_amount,
+            'date'           => $this->date,
+            'payment_status' => $this->payment_status,
+            'payment_state'  => $this->payment_state,
+            'currency_code'  => $this->currency_code,
         ];
     }
 }

@@ -45,7 +45,7 @@ class AttachPaymentToInvoice extends OrgAction
 
         $invoice->refresh();
 
-        SetInvoicePaymentState::run($invoice);
+        UpdateInvoicePaymentState::run($invoice);
     }
 
     public function rules(): array

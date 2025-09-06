@@ -186,3 +186,14 @@ export const useHMAP = (date?: string) => {
     }
     return format(parseISO(date), 'hh:mm a')
 }
+
+// Method: Check if a future date has passed (futureDate: '2025-07-04')
+export const isFutureDatePassed = (futureDate: string) => {
+    const today = new Date();
+    const targetDate = new Date(futureDate);
+
+    today.setHours(0, 0, 0, 0);
+    targetDate.setHours(0, 0, 0, 0);
+
+    return targetDate < today;
+}

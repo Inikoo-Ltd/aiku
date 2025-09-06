@@ -17,8 +17,6 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id
