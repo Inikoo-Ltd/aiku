@@ -130,6 +130,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $traffic_sources
  * @property int|null $master_shop_id
  * @property OrderPayDetailedStatusEnum|null $pay_detailed_status
+ * @property string|null $collection_notes
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits

@@ -23,7 +23,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexCustomerFavourites extends OrgAction
 {
-
     public function handle(Customer $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
