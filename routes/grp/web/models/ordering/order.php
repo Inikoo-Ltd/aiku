@@ -30,6 +30,8 @@ use App\Actions\Ordering\Order\UpdateOrderStateToPacked;
 use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
+use App\Actions\Retina\Dropshipping\Orders\DeleteOrderAddressCollection;
+use App\Actions\Retina\Dropshipping\Orders\StoreOrderAddressCollection;
 use Illuminate\Support\Facades\Route;
 
 Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(function () {
@@ -45,6 +47,9 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::patch('generate-invoice', GenerateInvoiceFromOrder::class)->name('generate_invoice');
     Route::post('payment-account/{paymentAccount:id}/payment', PayOrder::class)->name('payment.store')->withoutScopedBindings();
     Route::patch('address/switch', SwitchOrderDeliveryAddress::class)->name('address.switch');
+
+    Route::post('add-collection', StoreOrderAddressCollection::class)->name('basket.collection.store');
+    Route::delete('delete-collection', DeleteOrderAddressCollection::class)->name('basket.collection.delete');
 
     Route::name('attachment.')->prefix('attachment')->group(function () {
         Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inOrder'])->name('attach');

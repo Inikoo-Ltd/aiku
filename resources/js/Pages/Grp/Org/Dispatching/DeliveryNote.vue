@@ -5,43 +5,60 @@
   -->
 
 <script setup lang="ts">
-import { Head, router, useForm, Link} from "@inertiajs/vue3";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faSmileWink,faRecycle, faCube, faChair, faHandPaper, faExternalLink, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faTired, faFilePdf, faBoxOpen, faExclamation, faExclamationTriangle } from "@fal";
-import { faArrowRight, faCheck } from "@fas";
+import {Head, router, useForm, Link} from "@inertiajs/vue3";
+import {library} from "@fortawesome/fontawesome-svg-core";
+import {
+    faSmileWink,
+    faRecycle,
+    faCube,
+    faChair,
+    faHandPaper,
+    faExternalLink,
+    faFolder,
+    faBoxCheck,
+    faPrint,
+    faExchangeAlt,
+    faUserSlash,
+    faTired,
+    faFilePdf,
+    faBoxOpen,
+    faExclamation,
+    faExclamationTriangle
+} from "@fal";
+import {faArrowRight, faCheck} from "@fas";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
-import { capitalize } from "@/Composables/capitalize";
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
-import { Tabs as TSTabs } from "@/types/Tabs";
+import {capitalize} from "@/Composables/capitalize";
+import {PageHeading as PageHeadingTypes} from "@/types/PageHeading";
+import {Tabs as TSTabs} from "@/types/Tabs";
 import AlertMessage from "@/Components/Utils/AlertMessage.vue";
 import BoxNote from "@/Components/Pallet/BoxNote.vue";
 import Timeline from "@/Components/Utils/Timeline.vue";
-import { Timeline as TSTimeline } from "@/types/Timeline";
-import { computed, provide, ref, watch, onMounted  } from "vue";
-import type { Component } from "vue";
-import { useTabChange } from "@/Composables/tab-change";
+import {Timeline as TSTimeline} from "@/types/Timeline";
+import {computed, provide, ref, watch, onMounted} from "vue";
+import type {Component} from "vue";
+import {useTabChange} from "@/Composables/tab-change";
 import BoxStatsDeliveryNote from "@/Components/Warehouse/DeliveryNotes/BoxStatsDeliveryNote.vue";
 import TableDeliveryNoteItems from "@/Components/Warehouse/DeliveryNotes/TableDeliveryNoteItems.vue";
 import TablePickings from "@/Components/Warehouse/DeliveryNotes/TablePickings.vue";
-import { routeType } from "@/types/route";
+import {routeType} from "@/types/route";
 import Tabs from "@/Components/Navigation/Tabs.vue";
-import type { DeliveryNote } from "@/types/warehouse";
+import type {DeliveryNote} from "@/types/warehouse";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import Modal from "@/Components/Utils/Modal.vue";
-import { trans } from "laravel-vue-i18n";
+import {trans} from "laravel-vue-i18n";
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { notify } from "@kyvg/vue3-notification";
+import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome";
+import {notify} from "@kyvg/vue3-notification";
 import axios from "axios";
-import { get, set } from 'lodash-es';
+import {get, set} from 'lodash-es';
 import PureInput from "@/Components/Pure/PureInput.vue";
 import ToggleSwitch from 'primevue/toggleswitch';
 import PureAddress from "@/Components/Pure/PureAddress.vue"
 import Message from 'primevue/message';
-import { debounce } from "lodash-es";
+import {debounce} from "lodash-es";
 
 
-library.add(faSmileWink,faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck);
+library.add(faSmileWink, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck);
 
 const props = defineProps<{
     title: string,
@@ -49,9 +66,9 @@ const props = defineProps<{
     tabs: TSTabs
     items?: {}
     pickings?: {}
-    warning?:{
-        text : string
-        picking_sessions : routeType
+    warning?: {
+        text: string
+        picking_sessions: routeType
     }
     alert?: {
         status: string
@@ -59,6 +76,7 @@ const props = defineProps<{
         description?: string
     }
     delivery_note: DeliveryNote
+    is_collection: boolean
     notes?: {
         note_list: {
             label: string
@@ -93,9 +111,7 @@ const props = defineProps<{
         fetch_route: routeType
     }
     address: {
-        delivery: {
-
-        }
+        delivery: {}
         options: {
             countriesAddressData: {
                 id: number
@@ -135,9 +151,9 @@ const onUpdatePicker = () => {
     const routeName = isUnassigned ? props.routes.set_queue.name : props.routes.update.name;
     const routeParams = {
         ...props.routes[isUnassigned ? 'set_queue' : 'update'].parameters,
-        ...(isUnassigned ? { user: selectedPicker.value.id } : {})
+        ...(isUnassigned ? {user: selectedPicker.value.id} : {})
     };
-    const payload = isUnassigned ? {} : { picker_user_id: selectedPicker.value.id };
+    const payload = isUnassigned ? {} : {picker_user_id: selectedPicker.value.id};
 
     router.patch(
         route(routeName, routeParams),
@@ -163,7 +179,7 @@ const onUpdatePicker = () => {
 // Section: Shipment
 const isLoadingButton = ref<string | boolean>(false);
 const isLoadingData = ref<string | boolean>(false);
-const formTrackingNumber = useForm({ shipping_id: "", tracking_number: "" });
+const formTrackingNumber = useForm({shipping_id: "", tracking_number: ""});
 const isModalShipment = ref(false);
 const optionShippingList = ref([]);
 const onOpenModalTrackingNumber = async () => {
@@ -189,7 +205,7 @@ const onSubmitShipment = () => {
             shipper_id: data.shipping_id?.id,
             tracking: data.shipping_id?.api_shipper ? undefined : data.tracking_number
         }))
-        .post(route(props.shipments.submit_route.name, { ...props.shipments.submit_route.parameters }), {
+        .post(route(props.shipments.submit_route.name, {...props.shipments.submit_route.parameters}), {
             preserveScroll: true,
             onStart: () => {
                 isLoadingButton.value = "addTrackingNumber";
@@ -214,17 +230,17 @@ const onSubmitShipment = () => {
 }
 
 const onSaveAddress = (submitShipment: Function) => {
-    const filterDataAddress = { ...xxxCopyAddress.value }
+    const filterDataAddress = {...xxxCopyAddress.value}
     delete filterDataAddress.formatted_address
     delete filterDataAddress.country
     delete filterDataAddress.country_code
     delete filterDataAddress.id
     delete filterDataAddress.can_edit
     delete filterDataAddress.can_delete
-    
+
     const updateRoute = {
         name: 'grp.models.delivery_note.update_address',
-        parameters: { deliveryNote: props.delivery_note.id }
+        parameters: {deliveryNote: props.delivery_note.id}
     }
     router.patch(
         route(updateRoute.name, updateRoute.parameters),
@@ -262,7 +278,7 @@ const listError = ref({
 provide("listError", listError.value);
 
 const isModalEditAddress = ref(false)
-const xxxCopyAddress = ref({ ...props.address.delivery })
+const xxxCopyAddress = ref({...props.address.delivery})
 
 // ✅ Toggle for picking view — with localStorage persistence
 const pickingView = ref(false);
@@ -270,12 +286,12 @@ const pickingView = ref(false);
 // ✅ Get initial value from localStorage
 const storedPickingView = localStorage.getItem('delivery-note:pickingView');
 if (storedPickingView !== null) {
-  pickingView.value = storedPickingView === 'true';
+    pickingView.value = storedPickingView === 'true';
 }
 
 // ✅ Watch and persist to localStorage
 watch(pickingView, (val) => {
-  localStorage.setItem('delivery-note:pickingView', String(val));
+    localStorage.setItem('delivery-note:pickingView', String(val));
 });
 
 console.log(props)
@@ -290,52 +306,52 @@ const debReloadPage = debounce(() => {
 
 const selectSocketBasedPlatform = (porto) => {
     return {
-      event: `grp.dn.${porto.id}`,
-      action: '.dn-note-update'
+        event: `grp.dn.${porto.id}`,
+        action: '.dn-note-update'
     }
 }
 
 onMounted(() => {
-  const socketConfig = selectSocketBasedPlatform(props.delivery_note)
+    const socketConfig = selectSocketBasedPlatform(props.delivery_note)
 
-  if (!socketConfig) {
-    console.warn('Socket config not found for platform:', props.delivery_note.id)
-    return
-  }
+    if (!socketConfig) {
+        console.warn('Socket config not found for platform:', props.delivery_note.id)
+        return
+    }
 
-  const channel = window.Echo
-    .private(socketConfig.event)
-    .listen(socketConfig.action, (eventData: any) => {
-      debReloadPage()
-    })
-  console.log('Subscribed to channel for porto ID:', props.delivery_note.id, 'Channel:', channel)
+    const channel = window.Echo
+        .private(socketConfig.event)
+        .listen(socketConfig.action, (eventData: any) => {
+            debReloadPage()
+        })
+    console.log('Subscribed to channel for porto ID:', props.delivery_note.id, 'Channel:', channel)
 })
 </script>
 
 
 <template>
 
-    <Head :title="capitalize(title)" />
+    <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead" isButtonGroupWithBorder>
         <template #otherBefore>
             <!-- Button: Download PDF -->
             <div class="flex items-center gap-3 bg-gray-50 border border-gray-200 px-4 py-2 rounded-md">
-                <FontAwesomeIcon :icon="faBoxOpen" class="text-gray-400" fixed-width />
+                <FontAwesomeIcon :icon="faBoxOpen" class="text-gray-400" fixed-width/>
 
                 <div class="flex items-center justify-between w-full">
                     <span class="text-sm text-gray-700 font-medium mx-2">
                         Picking View
                     </span>
 
-                    <ToggleSwitch v-model="pickingView" />
+                    <ToggleSwitch v-model="pickingView"/>
                 </div>
             </div>
 
             <a :href="route('grp.pdfs.delivery-notes', {
                 deliveryNote: route().params.deliveryNote,
             })" as="a" target="_blank" class="flex items-center"
-                v-tooltip="trans('Download PDF of this Delivery Note')">
-                <Button class="flex items-center" icon="fal fa-file-pdf" type="tertiary" />
+               v-tooltip="trans('Download PDF of this Delivery Note')">
+                <Button class="flex items-center" icon="fal fa-file-pdf" type="tertiary"/>
             </a>
 
             <!-- Button: Shipment -->
@@ -348,68 +364,68 @@ onMounted(() => {
 
         <template #button-to-queue="{ action }">
             <Button @click="isModalToQueue = true" :label="action.label" :icon="action.icon"
-                :iconRight="action.iconRight" :type="action.type" />
+                    :iconRight="action.iconRight" :type="action.type"/>
         </template>
 
         <template #button-group-change-picker="{ action }">
             <Button @click="isModalToQueue = true" :label="action.label" :icon="action.icon" type="tertiary"
-                class="border-transparent rounded-l-none" />
+                    class="border-transparent rounded-l-none"/>
         </template>
 
         <template #button-change-picker="{ action }">
-            <Button @click="isModalToQueue = true" :label="action.label" :icon="action.icon" type="tertiary" />
+            <Button @click="isModalToQueue = true" :label="action.label" :icon="action.icon" type="tertiary"/>
         </template>
 
 
     </PageHeading>
     <!-- Section: Pallet Warning -->
     <div v-if="alert?.status" class="p-2 pb-0">
-        <AlertMessage :alert />
+        <AlertMessage :alert/>
     </div>
 
-  <div v-if="warning && showWarningMessage" class="p-1">
-  <Message 
-    severity="warn"
-    class="p-1 rounded-md border-l-4 border-yellow-500 bg-yellow-50 text-yellow-800"
-    :closable="true"
-    @close="showWarningMessage = false"
-  >
-    <div class="flex items-start gap-3">
-      <!-- Icon -->
-      <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500 w-4 h-4 flex-shrink-0" />
+    <div v-if="warning && showWarningMessage" class="p-1">
+        <Message
+            severity="warn"
+            class="p-1 rounded-md border-l-4 border-yellow-500 bg-yellow-50 text-yellow-800"
+            :closable="true"
+            @close="showWarningMessage = false"
+        >
+            <div class="flex items-start gap-3">
+                <!-- Icon -->
+                <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500 w-4 h-4 flex-shrink-0"/>
 
-      <!-- Main Content -->
-      <div class="flex gap-2 flex-wrap items-center">
-        <!-- Warning Text -->
-        <div class="text-sm font-medium">
-          {{ warning?.text }}
-        </div>
+                <!-- Main Content -->
+                <div class="flex gap-2 flex-wrap items-center">
+                    <!-- Warning Text -->
+                    <div class="text-sm font-medium">
+                        {{ warning?.text }}
+                    </div>
 
-        <!-- Session Links in One Line -->
-        <div class="flex flex-wrap items-center gap-2 font-bold underline">
-          <template v-for="(item, idx) in warning?.picking_sessions" :key="idx">
-            <Link :href="route(item.route.name, item.route.parameters)" class="text-sm hover:underline">
-              {{ item.reference }}
-            </Link>
-          </template>
-        </div>
-      </div>
+                    <!-- Session Links in One Line -->
+                    <div class="flex flex-wrap items-center gap-2 font-bold underline">
+                        <template v-for="(item, idx) in warning?.picking_sessions" :key="idx">
+                            <Link :href="route(item.route.name, item.route.parameters)" class="text-sm hover:underline">
+                                {{ item.reference }}
+                            </Link>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </Message>
     </div>
-  </Message>
-</div>
 
 
     <!-- Section: Box Note -->
     <div v-if="pickingView" class="relative">
         <Transition name="headlessui">
             <div xv-if="notes?.note_list?.some(item => !!(item?.note?.trim()))"
-                class="p-2 grid grid-cols-2 sm:grid-cols-4 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
+                 class="p-2 grid grid-cols-2 sm:grid-cols-4 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
                 <BoxNote v-for="(note, index) in notes.note_list" :key="index+note.label" :noteData="note"
-                    :updateRoute="routes.update" :fetchRoute="{
+                         :updateRoute="routes.update" :fetchRoute="{
                         name: 'grp.models.delivery_note.copy_notes',
                         parameters: { deliveryNote: props.delivery_note.id },
                         method: 'patch'
-                    }" />
+                    }"/>
             </div>
         </Transition>
     </div>
@@ -417,18 +433,18 @@ onMounted(() => {
     <!-- Section: Timeline -->
     <div v-if="timelines" class="mt-4 sm:mt-1 border-b border-gray-200 pb-2">
         <Timeline :options="timelines" :state="delivery_note.state" :slidesPerView="6"
-            :format-time="'MMMM d yyyy, HH:mm'" />
+                  :format-time="'MMMM d yyyy, HH:mm'"/>
     </div>
 
 
     <BoxStatsDeliveryNote v-if="box_stats && pickingView" :boxStats="box_stats" :routes :deliveryNote="delivery_note"
-        :updateRoute="routes.update" :shipments />
+                          :updateRoute="routes.update" :shipments/>
 
-    <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
+    <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate"/>
 
     <div class="pb-12">
         <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" :routes
-            :state="delivery_note.state" />
+                   :state="delivery_note.state"/>
     </div>
 
     <!-- Modal: Select picker -->
@@ -446,9 +462,9 @@ onMounted(() => {
                     <PureMultiselectInfiniteScroll v-model="selectedPicker" xxxupdate:modelValue="
                             (selectedPicker) => onSubmitPickerPacker(selectedPicker, 'picker')
                         " required :fetchRoute="routes.pickers_list" :placeholder="trans('Select picker')"
-                        labelProp="contact_name" valueProp="id" object clearOnBlur
-                        :loading="isLoading['picker' + selectedPicker?.id]"
-                        :disabled="disable == 'picker_assigned' || disable == 'packing' || disable == 'packed' || disable == 'finalised' || disable == 'settled'">
+                                                   labelProp="contact_name" valueProp="id" object clearOnBlur
+                                                   :loading="isLoading['picker' + selectedPicker?.id]"
+                                                   :disabled="disable == 'picker_assigned' || disable == 'packing' || disable == 'packed' || disable == 'finalised' || disable == 'settled'">
                         <template #singlelabel="{ value }">
                             <div class="w-full text-left pl-3 pr-2 text-sm whitespace-nowrap truncate">
                                 {{ value.contact_name }}
@@ -465,8 +481,8 @@ onMounted(() => {
                     <div v-if="quick_pickers && quick_pickers.length > 0" class="mt-3">
                         <div class="flex flex-wrap justify-center gap-2">
                             <Button v-for="picker in quick_pickers" :key="picker.id" @click="selectedPicker = picker"
-                                class="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm rounded-md border border-blue-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                :class="{ 'bg-blue-500 text-white': selectedPicker?.id === picker.id }">
+                                    class="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm rounded-md border border-blue-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    :class="{ 'bg-blue-500 text-white': selectedPicker?.id === picker.id }">
                                 {{ picker.contact_name }}
                             </Button>
                         </div>
@@ -475,17 +491,19 @@ onMounted(() => {
             </div>
             <div class="w-full mt-2">
                 <Button @click="onUpdatePicker()"
-                    :label="delivery_note_state.value === 'queued' ? trans('Change picker') : trans('Set Picker')"
-                    :iconRight="['fas', 'fa-arrow-right']" full :loading="isLoadingToQueue" :disabled="!selectedPicker"
-                    v-tooltip="selectedPicker ? '' : trans('Select picker before set to queue')">
+                        :label="delivery_note_state.value === 'queued' ? trans('Change picker') : trans('Set Picker')"
+                        :iconRight="['fas', 'fa-arrow-right']" full :loading="isLoadingToQueue"
+                        :disabled="!selectedPicker"
+                        v-tooltip="selectedPicker ? '' : trans('Select picker before set to queue')">
                 </Button>
             </div>
         </div>
     </Modal>
 
     <!-- Modal: Shipment -->
-    <Modal v-if="['packed', 'finalised', 'dispatched'].includes(delivery_note_state.value)" :isOpen="isModalShipment"
-        @onClose="isModalShipment = false" width="w-full max-w-2xl">
+    <Modal v-if="['packed', 'finalised', 'dispatched'].includes(delivery_note_state.value)"
+           :isOpen="isModalShipment"
+           @onClose="isModalShipment = false" width="w-full max-w-2xl">
         <div>
             <div class="text-center font-bold mb-4">
                 {{ trans("Add shipment") }}
@@ -495,11 +513,12 @@ onMounted(() => {
                 <span class="text-xs px-1 my-2">{{ trans("Shipping options") }}: </span>
                 <div class="grid grid-cols-3 gap-x-2 gap-y-2 mb-2">
                     <div v-if="isLoadingData === 'addTrackingNumber'" v-for="sip in 3"
-                        class="skeleton w-full max-w-52 h-20 rounded">
+                         class="skeleton w-full max-w-52 h-20 rounded">
                     </div>
                     <div v-else v-for="(shipment, index) in optionShippingList.filter(shipment => shipment.api_shipper)"
-                        @click="() => isLoadingButton == 'addTrackingNumber' ? null : formTrackingNumber.shipping_id = shipment"
-                        class="relative isolate w-full max-w-52 h-20 border rounded-md px-5 py-3 cursor-pointer" :class="[
+                         @click="() => isLoadingButton == 'addTrackingNumber' ? null : formTrackingNumber.shipping_id = shipment"
+                         class="relative isolate w-full max-w-52 h-20 border rounded-md px-5 py-3 cursor-pointer"
+                         :class="[
                                     formTrackingNumber.shipping_id?.id == shipment.id
                                         ? 'bg-indigo-200 border-indigo-300'
                                         : 'hover:bg-gray-100 border-gray-300',
@@ -512,18 +531,20 @@ onMounted(() => {
                             {{ shipment.tracking_url }}
                         </div>
                         <FontAwesomeIcon v-tooltip="trans('Barcode print')" icon="fal fa-print"
-                            class="text-gray-500 absolute top-3 right-3" fixed-width aria-hidden="true" />
+                                         class="text-gray-500 absolute top-3 right-3" fixed-width aria-hidden="true"/>
                         <div v-if="isLoadingButton == 'addTrackingNumber'"
-                            class="bg-black/40 rounded-md absolute inset-0 z-10">
+                             class="bg-black/40 rounded-md absolute inset-0 z-10">
                         </div>
                     </div>
                 </div>
 
                 <div class="">
                     <PureMultiselectInfiniteScroll v-if="shipments?.fetch_route"
-                        v-model="formTrackingNumber.shipping_id" :fetchRoute="shipments?.fetch_route" required
-                        :disabled="isLoadingButton == 'addTrackingNumber'" :placeholder="trans('Select shipping')"
-                        object @optionsList="(e) => optionShippingList = e">
+                                                   v-model="formTrackingNumber.shipping_id"
+                                                   :fetchRoute="shipments?.fetch_route" required
+                                                   :disabled="isLoadingButton == 'addTrackingNumber'"
+                                                   :placeholder="trans('Select shipping')"
+                                                   object @optionsList="(e) => optionShippingList = e">
                         <template #singlelabel="{ value }">
                             <div class="w-full text-left pl-4">
                                 {{ value.name }}
@@ -547,7 +568,7 @@ onMounted(() => {
                 <div v-if="formTrackingNumber.shipping_id && !formTrackingNumber.shipping_id?.api_shipper" class="mt-3">
                     <span class="text-xs px-1 my-2">{{ trans("Tracking number") }}: </span>
                     <PureInput v-model="formTrackingNumber.tracking_number" placeholder="ABC-DE-1234567"
-                        xxkeydown.enter="() => onSubmitAddService(action, closed)" />
+                               xxkeydown.enter="() => onSubmitAddService(action, closed)"/>
                     <p v-if="get(formTrackingNumber, ['errors', 'tracking_number'])" class="mt-2 text-sm text-red-600">
                         {{ formTrackingNumber.errors.tracking_number }}
                     </p>
@@ -555,7 +576,7 @@ onMounted(() => {
 
                 <!-- Section: error -->
                 <div v-if="Object.keys(get(formTrackingNumber, ['errors'], {}))?.length"
-                    class="mt-2 text-sm text-red-600">
+                     class="mt-2 text-sm text-red-600">
                     <p v-if="typeof formTrackingNumber?.errors?.address === 'string'" class="italic">
                         *{{ formTrackingNumber?.errors?.address }}
                     </p>
@@ -566,23 +587,24 @@ onMounted(() => {
 
                 <!-- Field: Address -->
                 <div v-if="formTrackingNumber?.errors?.address" class="my-3 p-2 rounded bg-gray-100"
-                    :class="formTrackingNumber?.errors?.address ? 'errorShake' : ''">
-                    <PureAddress v-model="xxxCopyAddress" :options="address.options" xfieldLabel />
+                     :class="formTrackingNumber?.errors?.address ? 'errorShake' : ''">
+                    <PureAddress v-model="xxxCopyAddress" :options="address.options" xfieldLabel/>
                 </div>
 
                 <!-- Button: Save -->
                 <div class="flex justify-end mt-3">
-                    <Button :style="'save'" :loading="isLoadingButton == 'addTrackingNumber'" :label="'save'" :disabled="
+                    <Button :style="'save'" :loading="isLoadingButton == 'addTrackingNumber'" :label="'save'"
+                            :disabled="
                             !formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id?.api_shipper ? true : formTrackingNumber.tracking_number)
                         " full
-                        @click="() => formTrackingNumber?.errors?.address ? onSubmitAddressThenShipment() : onSubmitShipment()" />
+                            @click="() => formTrackingNumber?.errors?.address ? onSubmitAddressThenShipment() : onSubmitShipment()"/>
                 </div>
 
                 <!-- Loading: fetching service list -->
                 <div v-if="isLoadingData === 'addTrackingNumber'"
-                    class="bg-white/50 absolute inset-0 flex place-content-center items-center">
+                     class="bg-white/50 absolute inset-0 flex place-content-center items-center">
                     <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-5xl" fixed-width
-                        aria-hidden="true" />
+                                     aria-hidden="true"/>
                 </div>
             </div>
         </div>
