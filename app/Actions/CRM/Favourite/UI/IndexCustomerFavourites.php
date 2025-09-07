@@ -99,7 +99,7 @@ class IndexCustomerFavourites extends OrgAction
 
             $table->column(key: 'code', label: __('code'), canBeHidden: false, searchable: true);
             $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'actions', label: '', canBeHidden: false, sortable: false, searchable: false);
+            $table->column(key: 'actions', label: '', canBeHidden: false);
         };
     }
 
