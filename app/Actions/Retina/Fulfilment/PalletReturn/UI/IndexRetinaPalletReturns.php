@@ -122,7 +122,7 @@ class IndexRetinaPalletReturns extends RetinaAction
                 'type'    => 'button',
                 'style'   => 'create',
                 'tooltip' => __('Create new dispatch (Selected SKUs)'),
-                'label'   => __('Dropship Dispatch'),
+                'label'   => __('Dropshipping dispatch'),
                 'route'   => [
                     'method'     => 'post',
                     'name'       => 'retina.models.pallet-return-stored-items.store',

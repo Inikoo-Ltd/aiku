@@ -12,10 +12,10 @@ import RetinaDsLeftSidebar from "./Retina/RetinaDsLeftSidebar.vue"
 import ScreenWarning from "@/Components/Utils/ScreenWarning.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder, faBuilding, faCreditCard, } from "@fal"
+import { faShoppingBasket, faHandHoldingUsd, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder, faBuilding, faCreditCard, } from "@fal"
 import { faArrowRight, faExclamationCircle, faCheckCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-library.add( faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder, faBuilding, faCreditCard, faExclamationCircle, faCheckCircle, faArrowRight, faListUl, faEye )
+library.add( faShoppingBasket, faHandHoldingUsd, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder, faBuilding, faCreditCard, faExclamationCircle, faCheckCircle, faArrowRight, faListUl, faEye )
 import { faListUl, faEye } from "@far"
 
 import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
@@ -126,6 +126,10 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 
 						<!-- Main content of the page -->
 						<slot name="default" />
+					</div>
+
+					<div id="retina-end-of-main" class="w-full mt-6">
+	
 					</div>
 				</div>
 			</main>

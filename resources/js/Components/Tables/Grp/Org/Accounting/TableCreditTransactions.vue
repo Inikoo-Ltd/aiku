@@ -103,7 +103,7 @@ function createRefundRoute(transaction: CreditTransaction) {
         </template>
         <template #cell(actions)="{item}">
           <Button 
-            v-if="item.payment_id !== null && item.payment_reference !== null" 
+            v-if="item.payment_id !== null && item.payment_reference !== null && layout?.app?.environment !== 'production'" 
             :icon="faUndo" 
             v-tooltip="trans('Proceed Refund')"
             @click="openRefundModal(item)"

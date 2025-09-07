@@ -78,6 +78,39 @@ class UpdateProductCategory extends OrgAction
             $originalMasterProductCategory = $productCategory->masterProductCategory;
         }
 
+        if (Arr::has($modelData, 'name_i8n')) {
+            UpdateProductCategoryTranslationsFromUpdate::make()->action($productCategory, [
+                'translations' => [
+                    'name' => [$productCategory->shop->language->code => Arr::pull($modelData, 'name_i8n')]
+                ]
+            ]);
+        }
+
+        if (Arr::has($modelData, 'description_title_i8n')) {
+            UpdateProductCategoryTranslationsFromUpdate::make()->action($productCategory, [
+                'translations' => [
+                    'description_title' => [$productCategory->shop->language->code => Arr::pull($modelData, 'description_title_i8n')]
+                ]
+            ]);
+        }
+
+        if (Arr::has($modelData, 'description_i8n')) {
+            UpdateProductCategoryTranslationsFromUpdate::make()->action($productCategory, [
+                'translations' => [
+                    'description' => [$productCategory->shop->language->code => Arr::pull($modelData, 'description_i8n')]
+                ]
+            ]);
+        }
+
+        if (Arr::has($modelData, 'description_extra_i8n')) {
+            UpdateProductCategoryTranslationsFromUpdate::make()->action($productCategory, [
+                'translations' => [
+                    'description_extra' => [$productCategory->shop->language->code => Arr::pull($modelData, 'description_extra_i8n')]
+                ]
+            ]);
+        }
+
+
         $productCategory = $this->update($productCategory, $modelData, ['data']);
         $productCategory->refresh();
 
@@ -111,7 +144,8 @@ class UpdateProductCategory extends OrgAction
             'code',
             'name',
             'type',
-            'state'
+            'state',
+            'name_i8n'
         ])) {
             $this->productCategoryHydrators($productCategory);
             if ($productCategory->webpage_id) {
@@ -154,7 +188,7 @@ class UpdateProductCategory extends OrgAction
             'name'              => ['sometimes', 'max:250', 'string'],
             'image_id'          => ['sometimes', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
             'state'             => ['sometimes', 'required', Rule::enum(ProductCategoryStateEnum::class)],
-            'description'       => ['sometimes', 'required', 'max:65500'],
+            'description'       => ['sometimes', 'nullable', 'max:65500'],
             'description_title' => ['sometimes', 'nullable', 'max:255'],
             'description_extra' => ['sometimes', 'nullable', 'max:65500'],
             'department_id'     => [
@@ -181,7 +215,11 @@ class UpdateProductCategory extends OrgAction
             'url'                        => ['sometimes', 'nullable', 'string', 'max:250'],
             'images'                     => ['sometimes', 'array'],
             'master_product_category_id' => ['sometimes', 'integer', 'nullable', Rule::exists('master_product_categories', 'id')->where('master_shop_id', $this->shop->master_shop_id)],
-
+            'name_i8n' =>               ['sometimes'],
+            'description_title_i8n' =>  ['sometimes'],
+            'description_i8n' =>        ['sometimes'],
+            'description_extra_i8n' =>  ['sometimes'],
+            'cost_price_ratio'         => ['sometimes', 'numeric', 'min:0']
         ];
 
         if (!$this->strict) {

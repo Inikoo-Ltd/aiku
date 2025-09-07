@@ -10,27 +10,39 @@
 
 namespace App\Actions\Web\Website;
 
-use App\Actions\OrgAction;
+use App\Actions\Web\WithLuigis;
 use App\Models\Web\Website;
-use Lorisleiva\Actions\ActionRequest;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class ReindexWebsiteLuigi extends OrgAction
+class ReindexWebsiteLuigi
 {
+    use AsAction;
+    use WithLuigis;
+
+    public string $commandSignature = 'luigis:reindex_website {website?}';
+
     /**
      * @throws \Exception
      */
     public function handle(Website $website): void
     {
-        ReindexWebsiteLuigiData::dispatch($website);
-
-        UpdateWebsite::run($website, [
-            'last_reindex_at' => now()
-        ]);
+        $this->reindex($website);
     }
 
-    public function asController(Website $website, ActionRequest $request): void
+
+    /**
+     * @throws \Laravel\Octane\Exceptions\DdException
+     * @throws \Illuminate\Http\Client\ConnectionException
+     * @throws \Exception
+     */
+    public function asCommand($command): int
     {
-        $this->initialisation($website->organisation, $request);
+        if ($command->argument('website')) {
+            $website = Website::find($command->argument('website'));
+        } else {
+            $website = Website::first();
+        }
         $this->handle($website);
+        return 0;
     }
 }

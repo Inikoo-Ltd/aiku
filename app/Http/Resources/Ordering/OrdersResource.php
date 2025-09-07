@@ -8,8 +8,8 @@
 
 namespace App\Http\Resources\Ordering;
 
+use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Models\Ordering\Order;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -18,7 +18,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $created_at
  * @property mixed $updated_at
  * @property string $name
- * @property string $state
+ * @property OrderStateEnum $state
  * @property string $shop_slug
  * @property string $date
  * @property string $reference
@@ -36,40 +36,29 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $organisation_code
  * @property mixed $shop_code
  * @property mixed $updated_by_customer_at
+ * @property mixed $payment_amount
+ * @property OrderPayDetailedStatusEnum $pay_detailed_status
  *
  */
 class OrdersResource extends JsonResource
 {
     public function toArray($request): array
     {
-        /** @var Order $order */
-        $order = $this;
-        $payStatus = null;
-
-        $payStatus = match (true) {
-            $this->state == OrderStateEnum::CREATING => 'waiting',
-            $this->payment_amount == $this->total_amount => 'success',
-            $this->state == OrderStateEnum::CANCELLED => 'fail',
-            default => 'waiting'
-        };
-
-
         return [
             'slug'                   => $this->slug,
             'reference'              => $this->reference,
             'date'                   => $this->date,
             'name'                   => $this->name,
             'state'                  => $this->state,
-            'state_icon'             => $order->state->stateIcon()[$order->state->value],
+            'state_icon'             => $this->state->stateIcon()[$this->state->value],
             'net_amount'             => $this->net_amount,
-            'payment_amount'           => $this->payment_amount,
+            'payment_amount'         => $this->payment_amount,
             'total_amount'           => $this->total_amount,
             'customer_name'          => $this->customer_name,
             'customer_slug'          => $this->customer_slug,
             'payment_state'          => $this->payment_state,
-            'payment_amount'         => $this->payment_amount,
             'payment_status'         => $this->payment_status,
-            'pay_status'             => $payStatus,
+            'pay_detailed_status'    => $this->pay_detailed_status->labels()[$this->pay_detailed_status->value],
             'currency_code'          => $this->currency_code,
             'currency_id'            => $this->currency_id,
             'organisation_name'      => $this->organisation_name,

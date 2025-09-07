@@ -62,8 +62,8 @@ console.log('layout', layout.retina.type)
 
 const component = computed(() => {
     const components: Component = {
-        bank_transfer: CheckoutPaymentBankTransfer,
         credit_card: CheckoutPaymentCard,
+        bank_transfer: CheckoutPaymentBankTransfer,
 
     };
 

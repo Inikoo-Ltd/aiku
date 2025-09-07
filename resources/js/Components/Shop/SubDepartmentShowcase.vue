@@ -8,6 +8,8 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import TranslationBox from '@/Components/TranslationBox.vue';
 import { trans } from "laravel-vue-i18n"
 import ProductCategoryCard from "../ProductCategoryCard.vue"
+import { Message } from "primevue"
+import { Head, Link } from "@inertiajs/vue3";
 
 library.add(faUnlink, faThLarge, faBars, faSeedling, faCheck)
 
@@ -57,7 +59,7 @@ provide('isModalOpen', isModalOpen)
 <template>
     <div class="px-4 pb-8 m-5">
         <!-- Master Message -->
-        <Message v-if="data.subDepartment?.url_master" severity="success" closable>
+           <Message v-if="data.subDepartment?.url_master" severity="success" closable>
             <template #icon>
                 <FontAwesomeIcon :icon="faInfoCircle" />
             </template>
@@ -77,6 +79,6 @@ provide('isModalOpen', isModalOpen)
         </div>
     </div>
 
-    <TranslationBox :master="data.subDepartment" :needTranslation="data.subDepartment"
-        v-bind="data.translation_box" />
+    <!-- <TranslationBox :master="data.subDepartment" :needTranslation="data.subDepartment"
+        v-bind="data.translation_box" /> -->
 </template>

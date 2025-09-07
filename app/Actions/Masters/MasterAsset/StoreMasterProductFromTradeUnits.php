@@ -14,14 +14,12 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterAssets;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
-use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreMasterProductFromTradeUnits extends GrpAction
@@ -35,44 +33,26 @@ class StoreMasterProductFromTradeUnits extends GrpAction
     public function handle(MasterProductCategory $parent, array $modelData): MasterAsset
     {
         $tradeUnits = Arr::pull($modelData, 'trade_units', []);
+        $shopProducts = Arr::pull($modelData, 'shop_products', []);
 
         if (!Arr::has($modelData, 'unit') && count($tradeUnits) == 1) {
             data_set($modelData, 'unit', Arr::get($tradeUnits, '0.type'));
         }
 
 
-        $masterAsset = DB::transaction(function () use ($parent, $modelData, $tradeUnits) {
-            $stocks = [];
-
-            foreach ($tradeUnits as $item) {
-                $tradeUnit = TradeUnit::find(Arr::get($item, 'id'));
-                foreach ($tradeUnit->stocks as $stock) {
-                    $stocks[$stock->id] = [
-                        'quantity' => $stock->pivot->quantity,
-                    ];
-                }
-            }
-
+        $masterAsset = DB::transaction(function () use ($parent, $modelData, $tradeUnits, $shopProducts) {
             $data        = [
                 'code'    => Arr::get($modelData, 'code'),
                 'name'    => Arr::get($modelData, 'name'),
-                'price'   => Arr::get($modelData, 'price'),
                 'unit'    => Arr::get($modelData, 'unit'),
                 'is_main' => true,
                 'type'    => MasterAssetTypeEnum::PRODUCT,
-                'stocks'  => $stocks
+                'trade_units'  => $tradeUnits,
+                'shop_products' => $shopProducts
             ];
 
             $masterAsset = StoreMasterAsset::make()->action($parent, $data);
             $masterAsset->refresh();
-            foreach ($tradeUnits as $item) {
-                $tradeUnitId = Arr::get($item, 'id');
-                $masterAsset->tradeUnits()->attach($tradeUnitId, [
-                    'quantity' => Arr::get($item, 'quantity')
-                ]);
-                $masterAsset->refresh();
-            }
-
             return $masterAsset;
         });
 
@@ -100,7 +80,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
             ],
             'name'                   => ['required', 'string'],
             'unit'                   => ['sometimes', 'string'],
-            'price'                  => ['required', 'numeric', 'min:0'],
+            'price'                  => ['sometimes', 'numeric', 'min:0'],
             'trade_units'            => [
                 'required',
                 'array'
@@ -115,6 +95,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
                 'numeric',
                 'min:1'
             ],
+            'shop_products' => ['sometimes', 'array']
         ];
     }
 
@@ -140,14 +121,5 @@ class StoreMasterProductFromTradeUnits extends GrpAction
     {
         $this->initialisation($masterFamily->group, $request);
         return $this->handle($masterFamily, $this->validatedData);
-    }
-
-    public function htmlResponse(MasterAsset $masterAsset): \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
-    {
-        return Redirect::route('grp.masters.master_shops.show.master_families.master_products.show', [
-            'masterShop'    => $masterAsset->masterShop->slug,
-            'masterFamily' => $masterAsset->masterFamily->slug,
-            'masterProduct' => $masterAsset->slug
-        ]);
     }
 }

@@ -13,6 +13,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
+import RetinaEcomTableOrders from '@/Components/Tables/Retina/RetinaEcomTableOrders.vue'
 library.add(faArrowRight, faExternalLinkAlt)
 
 const props = defineProps<{
@@ -88,7 +89,7 @@ const onSubmitCreateOrder = () => {
     </PageHeading>
 
 
-    <RetinaTablePalletOrders :data="props.data" :currency  />
+    <RetinaEcomTableOrders :data="props.data" :currency  />
 
     <!-- Modal: Create order -->
     <Modal v-if="is_show_button_create_order" :isOpen="isModalCreateOrder" @onClose="isModalCreateOrder = false" closeButton :isClosableInBackground="false" width="max-w-lg w-full">

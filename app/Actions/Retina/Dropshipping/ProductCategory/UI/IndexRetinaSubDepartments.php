@@ -93,20 +93,18 @@ class IndexRetinaSubDepartments extends RetinaAction
             ->withQueryString();
     }
 
-    public function tableStructure(Shop|ProductCategory $parent, ?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure($prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
+        return function (InertiaTable $table) use ($prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
                     ->pageName($prefix.'Page');
             }
 
-            $buttonLabel = __('New Sub-department');
-
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_families', label: __('families'), canBeHidden: false, sortable: false, searchable: false);
+                ->column(key: 'number_families', label: __('families'), canBeHidden: false);
         };
     }
 
@@ -132,9 +130,6 @@ class IndexRetinaSubDepartments extends RetinaAction
                 'icon'  => ['fal', 'fa-folder-tree'],
                 'title' => __('department')
             ];
-            // $iconRight  = [
-            //     'icon' => 'fal fa-dot-circle',
-            // ];
             $iconRight  = $this->parent->state->stateIcon()[$this->parent->state->value];
 
             $afterTitle = [
@@ -144,7 +139,7 @@ class IndexRetinaSubDepartments extends RetinaAction
         }
 
         return Inertia::render(
-            'Catalogue/RetinaSubDepartements',
+            'Catalogue/RetinaSubDepartments',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
@@ -160,7 +155,7 @@ class IndexRetinaSubDepartments extends RetinaAction
                 ],
                 'data'        => SubDepartmentsResource::collection($subDepartment),
             ]
-        )->table($this->tableStructure($this->parent));
+        )->table($this->tableStructure());
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array

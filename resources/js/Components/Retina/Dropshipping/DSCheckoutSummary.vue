@@ -183,7 +183,7 @@ onMounted(() => {
 
             <!-- Field: Reference Number -->
 
-            <Link v-if="summary?.customer_client.ulid" as="a" v-tooltip="trans('Client')"
+            <Link v-if="summary?.customer_client?.ulid" as="a" v-tooltip="trans('Client')"
                   :href="route('retina.dropshipping.customer_sales_channels.client.show', [summary.customer_channel?.slug, summary?.customer_client.ulid])"
                   class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
                 <div class="flex-none">
@@ -195,7 +195,7 @@ onMounted(() => {
             </Link>
 
             <!-- Field: Contact name -->
-            <div v-if="summary?.customer_client.contact_name" v-tooltip="trans('Contact name')"
+            <div v-if="summary?.customer_client?.contact_name" v-tooltip="trans('Contact name')"
                  class="pl-1 flex items-center w-fit flex-none gap-x-2">
                 <div class="flex-none">
                     <FontAwesomeIcon icon='fal fa-id-card-alt' class='text-gray-400' fixed-width aria-hidden='true'/>
@@ -213,7 +213,7 @@ onMounted(() => {
             </div>
 
             <!-- Field: Email -->
-            <div v-if="summary?.customer_client.email" class="pl-1 flex items-center w-full flex-none gap-x-2">
+            <div v-if="summary?.customer_client?.email" class="pl-1 flex items-center w-full flex-none gap-x-2">
                 <div v-tooltip="trans('Email')" class="flex-none">
                     <FontAwesomeIcon icon='fal fa-envelope' class='text-gray-400' fixed-width aria-hidden='true'/>
                 </div>
@@ -222,7 +222,7 @@ onMounted(() => {
             </div>
 
             <!-- Field: Phone -->
-            <div v-if="summary?.customer_client.phone" class="pl-1 flex items-center w-full flex-none gap-x-2">
+            <div v-if="summary?.customer_client?.phone" class="pl-1 flex items-center w-full flex-none gap-x-2">
                 <div v-tooltip="trans('Phone')" class="flex-none">
                     <FontAwesomeIcon icon='fal fa-phone' class='text-gray-400' fixed-width aria-hidden='true'/>
                 </div>

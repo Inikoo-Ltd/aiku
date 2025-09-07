@@ -16,8 +16,10 @@ use App\Http\Resources\UI\LoggedWebUserResource;
 use App\Http\Resources\Web\WebsiteIrisResource;
 use App\Models\CRM\WebUser;
 use App\Models\Helpers\Language;
+use App\Models\Ordering\Order;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 
 trait WithIrisInertia
 {
@@ -35,10 +37,12 @@ trait WithIrisInertia
 
         $cartCount  = 0;
         $cartAmount = 0;
+        $itemsCount = 0;
         if ($webUser && $shop->type == ShopTypeEnum::B2B) {
             $orderInBasket = $webUser->customer->orderInBasket;
             $cartCount     = $orderInBasket ? $orderInBasket->stats->number_item_transactions : 0;
             $cartAmount    = $orderInBasket ? $orderInBasket->total_amount : 0;
+            $itemsCount    = $orderInBasket ? intval($this->countItems($orderInBasket)) : 0;
         }
 
         $migrationRedirect = null;
@@ -98,10 +102,20 @@ trait WithIrisInertia
                 'username'         => $webUser?->username,
                 'email'            => $webUser?->email,
                 'favourites_count' => $webUser?->customer?->stats?->number_favourites,
-                'cart_count'       => $cartCount,
+                'items_count'      => $itemsCount,  // Count of all items with the quantity
+                'cart_count'       => $cartCount,  // Count of unique items
                 'cart_amount'      => $cartAmount,
             ],
             'migration_redirect' => $migrationRedirect
         ];
+    }
+
+    public function countItems(Order $order)
+    {
+        return DB::table('transactions')
+            ->where('order_id', $order->id)
+            ->where('model_type', 'Product')
+            ->whereNull('deleted_at')
+            ->sum('quantity_ordered');
     }
 }

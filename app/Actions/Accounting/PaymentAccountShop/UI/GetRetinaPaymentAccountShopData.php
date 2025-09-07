@@ -40,15 +40,17 @@ class GetRetinaPaymentAccountShopData
                     'order_payment_api_point' => $orderPaymentApiPoint->ulid
                 ];
         } elseif ($paymentAccountShop->type == PaymentAccountTypeEnum::BANK) {
+
+
             return
                 [
                     'label' => __('Bank transfer'),
                     'key'   => 'bank_transfer',
                     'icon'  => 'fal fa-university',
                     'data'  => [
-                        'bank_name'      => 'AAA',
-                        'account_number' => 'xxxx',
-                        'iban'           => 'yyyy'
+                        'bank_name'      => Arr::get($paymentAccountShop->paymentAccount->data, 'bank.name'),
+                        'account_number' => Arr::get($paymentAccountShop->paymentAccount->data, 'bank.account'),
+                        'iban'           => Arr::get($paymentAccountShop->paymentAccount->data, 'bank.iban'),
                     ]
                 ];
         }

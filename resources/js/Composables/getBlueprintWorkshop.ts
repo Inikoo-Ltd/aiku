@@ -1,5 +1,3 @@
-import type { Component } from "vue"
-
 import Footer1Blueprint from "@/Components/CMS/Website/Footers/footerTheme1/bluprint"
 import Topbar1Blueprint from "@/Components/CMS/Website/TopBars/Template/Topbar1/Blueprint"
 import Topbar2Blueprint from "@/Components/CMS/Website/TopBars/Template/Topbar2/Blueprint"
@@ -29,10 +27,10 @@ import Button from "@/Components/CMS/Webpage/Button/Blueprint"
 import ColumnLayout2Blueprint from "@/Components/CMS/Webpage/Column/Blueprint"
 import DisclosureBlueprint from "@/Components/CMS/Webpage/Disclosure/Blueprint"
 import FamilyBluprint from "@/Components/CMS/Webpage/Family-1/Blueprint"
-import DepartementBlueprint from "@/Components/CMS/Webpage/Department1/Blueprint"
+import DepartmentBlueprint from "@/Components/CMS/Webpage/Department1/Blueprint"
 import Timeline2Bluprint from "@/Components/CMS/Webpage/Step1/Blueprint"
 import Carousel1Blueprint from "@/Components/CMS/Webpage/Carousel-1/Blueprint"
-import SubDepartement1Blueprint from "@/Components/CMS/Webpage/SubDepartement1/Blueprint"
+import SubDepartment1Blueprint from "@/Components/CMS/Webpage/SubDepartment1/Blueprint"
 import Product1Blueprint from "@/Components/CMS/Webpage/Product1/Blueprint"
 import ProductsList1Blueprint from '@/Components/CMS/Webpage/Products1/Blueprint'
 import VideoBlueprint from '@/Components/CMS/Webpage/Video/Blueprint'
@@ -63,11 +61,11 @@ export const getBlueprint = (componentName: string, data?: object) => {
 		"footer-1": Footer1Blueprint.blueprint,
 
 		// departments
-		"departments": DepartementBlueprint.blueprint,
-		"department-1": DepartementBlueprint.blueprint,
+		"departments": DepartmentBlueprint.blueprint,
+		"department-1": DepartmentBlueprint.blueprint,
 
 		// sub-department
-		"sub-departments-1": SubDepartement1Blueprint.blueprint,
+		"sub-departments-1": SubDepartment1Blueprint.blueprint,
 
 		// family
 		"family-1": FamilyBluprint.blueprint,
@@ -116,23 +114,6 @@ export const getBlueprint = (componentName: string, data?: object) => {
 	const blueprint = components[componentName]
 	return typeof blueprint === 'function' ? blueprint() : blueprint ?? []
 }
-
-/* export const getBluprintPermissions = (componentName: string) => {
-	const components: Component = {
-		"departments": false,
-		"family-1": false,
-		"families-1": false,
-		"product": false,
-		"product-1": false,
-		"family": false,
-		"families": false,
-		"sub-departments-1": false,
-		"department-1": false,
-		"products-1": false,
-	}
-	return components[componentName] ?? true
-} */
-
 
 type PermissionData = {
   permissions?: string[]

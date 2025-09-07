@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, inject } from "vue"
+import { ref, computed } from "vue"
 import { routeType } from "@/types/route"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { TabGroup, Tab, TabPanels, TabPanel } from '@headlessui/vue'
@@ -62,7 +62,7 @@ const tabs = [
 	{ label: 'Settings', icon: faPaintBrushAlt, tooltip: 'setting' }
 ]
 
-function changeTab(index: Number) {
+function changeTab(index: number) {
 	selectedTab.value = index
 }
 
@@ -110,9 +110,6 @@ const onPickBlock = (value: object) => {
             :selectedWeblock="data?.code"
           />
         </TabPanel>
-        <!-- <TabPanel v-if="data" class="p-4">
-          <SubDepartementListTree  :dataList="dataList" @changeDepartment="(value)=>emits('onChangeDepartment', value)" />
-        </TabPanel> -->
         <TabPanel v-if="data?.data?.fieldValue" class="p-4">
           <SideEditor 
             v-model="data.data.fieldValue" 

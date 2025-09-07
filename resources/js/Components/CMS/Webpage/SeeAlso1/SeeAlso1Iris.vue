@@ -61,10 +61,12 @@ const compSwiperOptions = computed(() => {
         return props.fieldValue?.settings?.products_data?.top_sellers || []
     }
 })
+
+console.log('see also',props)
 </script>
 
 <template>
- <div id="see-also-1-iris" class="w-full pb-6 max-w-7xl mx-auto" :style="{
+ <div id="see-also-1-iris" class="w-full pb-6" :style="{
     ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
     ...getStyles(fieldValue.container?.properties, screenType),
     width: 'auto'

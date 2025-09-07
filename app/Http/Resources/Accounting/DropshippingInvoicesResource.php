@@ -43,12 +43,12 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class DropshippingInvoicesResource extends JsonResource
 {
-    private mixed $customer_sales_channel_reference;
-    private mixed $customer_sales_channel_name;
-    private mixed $customer_sales_channel_slug;
-    private mixed $platform_id;
-    private mixed $platform_name;
-    private mixed $platform_code;
+    // private mixed $customer_sales_channel_reference; not sure why this is here, it causes error
+    // private mixed $customer_sales_channel_name;
+    // private mixed $customer_sales_channel_slug;
+    // private mixed $platform_id;
+    // private mixed $platform_name;
+    // private mixed $platform_code;
 
     public function toArray($request): array
     {

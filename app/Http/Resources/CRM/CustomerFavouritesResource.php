@@ -42,12 +42,12 @@ class CustomerFavouritesResource extends JsonResource
         return [
             'image'         => $this->image_id ? ImageResource::make($media)->getArray() : null,
             'id'                     => $this->id,
+            'favourite_id'           => $this->favourite_id,
             'code'                   => $this->code,
             'slug'                   => $this->slug,
             'name'                   => $this->name,
             'description'            => $this->description,
             'price'                  => $this->price,
-            'is_favourite'           => $this->favourite,  // TODO: make this works
             'url'                    => $webpage ? $webpage->getUrl() : null  // This not correct yet
         ];
     }

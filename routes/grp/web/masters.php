@@ -60,6 +60,14 @@ Route::prefix('/master-departments/{masterDepartment}')->as('master_departments.
                 });
         });
     });
+
+
+    Route::prefix('master-collections')->as('.master_collections.')->group(function () {
+        Route::get('', [IndexMasterCollectionsInMasterProductCategory::class, 'inMasterDepartment'])->name('index');
+        Route::get('create', [CreateMasterCollection::class, 'inMasterDepartment'])->name('create');
+        Route::get('{masterCollection}', [ShowMasterCollection::class, 'inMasterDepartment'])->name('show');
+    });
+
     Route::get('/master-products', [IndexMasterProducts::class, 'inMasterDepartment'])->name('.master_products.index');
     Route::get('/master-sub-departments', [IndexMasterSubDepartments::class, 'inMasterDepartment'])->name('.master_sub_departments.index');
     Route::get('/master-sub-departments/create', [CreateMasterSubDepartment::class, 'inMasterDepartment'])->name('.master_sub_departments.create');

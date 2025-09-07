@@ -280,7 +280,7 @@ console.log(props.pageHead);
     <!-- Button: delete Refund -->
     <template #button-delete-refund="{ action }">
       <div>
-        <ModalConfirmationDelete :routeDelete="action.route" isFullLoading>
+        <ModalConfirmationDelete :routeDelete="action.route" isFullLoading isWithMessage keyMessage="deleted_note">
           <template #default="{ isOpenModal, changeModel, isLoadingdelete }">
             <Button @click="() => changeModel()" :style="'negative'" :icon="faTrashAlt"
                     :loading="isLoadingdelete" :iconRight="action.iconRight" :label="''"
@@ -391,11 +391,17 @@ console.log(props.pageHead);
           </dd>
         </dl>
 
-        <InvoiceRefundPay v-if="!invoice_refund?.in_process && invoice_pay " :invoice_pay :routes="{
-          submit_route: invoice_pay.routes.submit_payment,
-          fetch_payment_accounts_route: invoice_pay.routes.fetch_payment_accounts,
-          payments : invoice_pay.routes.payments
-        }" @onPayInOnClick="onPayInOnClick" />
+        <InvoiceRefundPay
+          v-if="!invoice_refund?.in_process && invoice_pay "
+          :invoice_pay
+          :routes="{
+            submit_route: invoice_pay.routes.submit_payment,
+            fetch_payment_accounts_route: invoice_pay.routes.fetch_payment_accounts,
+            payments : invoice_pay.routes.payments
+          }"
+          @onPayInOnClick="onPayInOnClick"
+          :is_in_refund="true"
+        />
       </div>
     </BoxStatPallet>
 

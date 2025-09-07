@@ -107,7 +107,7 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $description_extra_i8n
  * @property string|null $description_title
  * @property string|null $description_extra
- * @property string $cost_price
+ * @property string|null $cost_price
  * @property-read MediaCollection<int, Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Media|null $backImage
@@ -215,17 +215,17 @@ class TradeUnit extends Model implements HasMedia, Auditable
 
     public function products(): MorphToMany
     {
-        return $this->morphedByMany(Product::class, 'model', 'model_has_trade_units');
+        return $this->morphedByMany(Product::class, 'model', 'model_has_trade_units')->withPivot(['quantity']);
     }
 
     public function orgStocks(): MorphToMany
     {
-        return $this->morphedByMany(OrgStock::class, 'model', 'model_has_trade_units');
+        return $this->morphedByMany(OrgStock::class, 'model', 'model_has_trade_units')->withPivot(['quantity']);
     }
 
     public function supplierProducts(): MorphToMany
     {
-        return $this->morphedByMany(SupplierProduct::class, 'model', 'model_has_trade_units');
+        return $this->morphedByMany(SupplierProduct::class, 'model', 'model_has_trade_units')->withPivot(['quantity']);
     }
 
     public function barcode(): BelongsTo

@@ -18,6 +18,7 @@ use App\Models\SysAdmin\Group;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 
 class EditMasterFamily extends OrgAction
 {
@@ -77,7 +78,6 @@ class EditMasterFamily extends OrgAction
 
         }
 
-        // dd($masterProductCategory->masterDepartment->id);
         return Inertia::render(
             'EditModel',
             [
@@ -118,21 +118,63 @@ class EditMasterFamily extends OrgAction
                                     'label' => __('name'),
                                     'value' => $masterProductCategory->name
                                 ],
+                                'name_i8n' => [
+                                    'type'  => 'input_translation',
+                                    'label' => __('translate name'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
+                                    'value' => $masterProductCategory->getTranslations('name_i8n')
+                                ],
                                 'description_title' => [
                                     'type'  => 'input',
                                     'label' => __('description title'),
                                     'value' => $masterProductCategory->description_title
+                                ],
+                                'description_title_i8n' => [
+                                    'type'  => 'input_translation',
+                                    'label' => __('translate description title'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
+                                    'value' => $masterProductCategory->getTranslations('description_title_i8n')
                                 ],
                                 'description' => [
                                     'type'  => 'textEditor',
                                     'label' => __('description'),
                                     'value' => $masterProductCategory->description
                                 ],
+                                'description_i8n' => [
+                                    'type'  => 'textEditor_translation',
+                                    'label' => __('translate description'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
+                                    'value' => $masterProductCategory->getTranslations('description_i8n')
+                                ],
                                 'description_extra' => [
                                     'type'  => 'textEditor',
-                                    'label' => __('description extra'),
+                                    'label' => __('Extra description'),
                                     'value' => $masterProductCategory->description_extra
                                 ],
+                                'description_extra_i8n' => [
+                                    'type'  => 'textEditor_translation',
+                                    'label' => __('translate description extra'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
+                                    'value' => $masterProductCategory->getTranslations('description_extra_i8n')
+                                ],
+                            ]
+                        ],
+                        [
+                            'label'  => __('Pricing'),
+                            'title'  => __('id'),
+                            'icon'   => 'fa-light fa-money-bill',
+                            'fields' => [
+                                'cost_price_ratio' => [
+                                    'type'          => 'input_number',
+                                    'bind' => [
+                                        'maxFractionDigits' => 3
+                                    ],
+                                    'label'         => __('pricing ratio'),
+                                    'placeholder'   => __('Cost price ratio'),
+                                    'required'      => true,
+                                    'value'         => $masterProductCategory->cost_price_ratio,
+                                    'min'           => 0
+                                ]
                             ]
                         ],
                         [

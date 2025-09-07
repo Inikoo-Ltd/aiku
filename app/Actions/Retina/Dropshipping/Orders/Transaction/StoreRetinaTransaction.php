@@ -16,13 +16,27 @@ use App\Models\Ordering\Transaction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreRetinaTransaction extends RetinaAction
 {
     public function handle(Order $order, array $modelData): Transaction
     {
-        $historicAsset = HistoricAsset::find($modelData['historic_asset_id']);
+        $historicAssetId = $modelData['historic_asset_id'];
+
+        $existingTransaction = $order->transactions()->where('historic_asset_id', $historicAssetId)->first();
+        if ($existingTransaction) {
+            throw ValidationException::withMessages(
+                [
+                        'message' => [
+                            'amount' => 'Item already exist in basket',
+                        ]
+                    ]
+            );
+        }
+
+        $historicAsset = HistoricAsset::find($historicAssetId);
 
         return StoreTransaction::make()->action($order, $historicAsset, [
             'quantity_ordered' => Arr::get($modelData, 'quantity')

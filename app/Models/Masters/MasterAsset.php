@@ -9,6 +9,7 @@
 namespace App\Models\Masters;
 
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
 use App\Models\SysAdmin\Group;
@@ -69,6 +70,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool $mark_for_discontinued
  * @property string|null $mark_for_discontinued_at
  * @property string|null $discontinued_at
+ * @property string|null $cost_price_ratio
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Group $group
  * @property-read \App\Models\Helpers\Media|null $image
@@ -82,6 +84,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\Masters\MasterAssetOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Masters\MasterAssetOrderingStats|null $orderingStats
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Product> $products
  * @property-read \App\Models\Masters\MasterAssetSalesIntervals|null $salesIntervals
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Masters\MasterAssetStats|null $stats
@@ -174,6 +177,11 @@ class MasterAsset extends Model implements Auditable, HasMedia
     public function masterShop(): BelongsTo
     {
         return $this->belongsTo(MasterShop::class);
+    }
+
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class, 'master_product_id');
     }
 
     public function masterProductVariants(): HasMany

@@ -114,7 +114,7 @@ const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false));
 
 
             <nav ref="_scrollContainer" @scroll="() => checkScroll()"
-                class="relative flex text-sm text-gray-600 w-full overflow-x-auto scrollbar-hide">
+                class="relative flex text-sm text-gray-600 w-full overflow-x-auto scrollbar-hide ml-5">
 
                 <template v-for="(navigation, idxNavigation) in fieldValue?.navigation" :key="idxNavigation">
                     <a :href="navigation?.link?.href" :target="navigation?.link?.target"
@@ -140,8 +140,8 @@ const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false));
             </nav>
 
             <Collapse v-if="hoveredNavigation?.subnavs" :when="isCollapsedOpen" as="div"
-                class="absolute left-0 top-full bg-white border border-gray-300 w-full shadow-lg"
-                :class="isCollapsedOpen ? 'z-50' : 'border-t-0 z-50'"
+                class="z-[49] absolute left-0 top-full bg-white border border-gray-300 w-full shadow-lg"
+                :class="isCollapsedOpen ? '' : 'border-t-0'"
                 :style="getStyles(fieldValue?.container?.properties, screenType)" >
                 <div class="grid grid-cols-4 gap-3 p-6">
                     <div v-for="subnav in hoveredNavigation?.subnavs" :key="subnav.title" class="space-y-4">

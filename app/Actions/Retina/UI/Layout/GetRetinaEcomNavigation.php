@@ -8,7 +8,6 @@
 
 namespace App\Actions\Retina\UI\Layout;
 
-use App\Models\CRM\WebUser;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetRetinaEcomNavigation
@@ -31,9 +30,71 @@ class GetRetinaEcomNavigation
             ]
         ];
 
+        $groupNavigation['catalogue'] = [
+            'label' => __('Catalogue'),
+            'icon' => ['fal', 'fa-books'],
+            'root' => 'retina.catalogue.',
+            'route' => [
+                'name' => 'retina.catalogue.dashboard'
+            ],
+            'topMenu' => [
+                'subSections' =>
+                    [
+                        [
+                            'label' => __('Catalogue'),
+                            'icon'  => ['far', 'fa-books'],
+                            'root'  => 'retina.catalogue.',
+                            'route' => [
+                                'name' => 'retina.catalogue.dashboard'
+                            ]
+                        ],
+                        [
+                            'label' => __('Departments'),
+                            'icon'  => ['far', 'fa-folder-tree'],
+                            'root'  => 'retina.catalogue.departments.',
+                            'route' => [
+                                'name' => 'retina.catalogue.departments.index'
+                            ]
+                        ],
+                        [
+                            'label' => __('Sub Departments'),
+                            'icon'  => ['far', 'fa-dot-circle'],
+                            'root'  => 'retina.catalogue.sub_departments.',
+                            'route' => [
+                                'name' => 'retina.catalogue.sub_departments.index'
+                            ]
+                        ],
+                        [
+                            'label' => __('Collections'),
+                            'icon'  => ['far', 'fa-album-collection'],
+                            'root'  => 'retina.catalogue.collections.',
+                            'route' => [
+                                'name' => 'retina.catalogue.collections.index'
+                            ]
+                        ],
+                        [
+                            'label' => __('Families'),
+                            'icon'  => ['far', 'fa-folder'],
+                            'root'  => 'retina.catalogue.families.',
+                            'route' => [
+                                'name' => 'retina.catalogue.families.index'
+                            ]
+                        ],
+                        [
+                            'label' => __('Products'),
+                            'icon'  => ['far', 'fa-cube'],
+                            'root'  => 'retina.catalogue.products.',
+                            'route' => [
+                                'name' => 'retina.catalogue.products.index'
+                            ]
+                        ],
+                    ]
+            ]
+        ];
+
         $groupNavigation['basket'] = [
             'label' => __('Basket'),
-            'icon' => ['fal', 'fa-shopping-basket'],
+            'icon' => ['fal', 'fa-shopping-cart'],
             'root' => 'retina.ecom.basket.',
             'route' => [
                 'name' => 'retina.ecom.basket.show'
@@ -45,7 +106,7 @@ class GetRetinaEcomNavigation
 
         $groupNavigation['orders'] = [
             'label'   => __('Orders'),
-            'icon'    => ['fal', 'fa-shopping-cart'],
+            'icon'    => ['fal', 'fa-shopping-basket'],
             'root'    => 'retina.ecom.orders.',
             'route'   => [
                 'name' => 'retina.ecom.orders.index'

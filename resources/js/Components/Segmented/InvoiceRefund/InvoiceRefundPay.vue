@@ -1,29 +1,29 @@
 <script setup lang="ts">
-import {aikuLocaleStructure} from "@/Composables/useLocaleStructure";
-import {trans} from "laravel-vue-i18n";
-import {inject, computed, watch, ref} from "vue";
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
+import { trans } from "laravel-vue-i18n";
+import { inject, computed, watch, ref } from "vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import PureMultiselect from "@/Components/Pure/PureMultiselect.vue";
 import PureInput from "@/Components/Pure/PureInput.vue";
-import {notify} from "@kyvg/vue3-notification";
+import { notify } from "@kyvg/vue3-notification";
 import axios from "axios";
-import {routeType} from "@/types/route";
-import {Link, router} from "@inertiajs/vue3";
+import { routeType } from "@/types/route";
+import { Link, router } from "@inertiajs/vue3";
 import InputNumber from "primevue/inputnumber";
-import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome";
-import {faCheck, faSave} from "@far";
-import {faPlus, faMinus} from "@fal";
-import {library} from "@fortawesome/fontawesome-svg-core";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faCheck, faSave } from "@far";
+import { faPlus, faMinus, faArrowRight } from "@fal";
+import { library } from "@fortawesome/fontawesome-svg-core";
 import BluePrintTableRefund from "@/Components/Segmented/InvoiceRefund/BlueprintTableRefund";
 import PureTable from "@/Components/Pure/PureTable/PureTable.vue";
 import Dialog from "primevue/dialog";
 import ColumnGroup from "primevue/columngroup";
 import Row from "primevue/row";
 import Column from "primevue/column";
-import {useLocaleStore} from "@/Stores/locale";
+import { useLocaleStore } from "@/Stores/locale";
 import ActionCell from "./ActionCell.vue";
 
-library.add(faCheck, faSave, faPlus, faMinus);
+library.add(faCheck, faSave, faPlus, faMinus, faArrowRight);
 
 
 const props = defineProps<{
@@ -47,6 +47,7 @@ const props = defineProps<{
         fetch_payment_accounts_route: routeType
         payments: routeType
     }
+    is_in_refund?: boolean
 }>();
 
 const emits = defineEmits<{
@@ -245,6 +246,19 @@ watch(paymentRefund, () => {
 });
 
 const generateRefundRoute = (refundSlug: string) => {
+
+    if (route().current() === 'grp.org.fulfilments.show.crm.customers.show.invoices.show') {
+        return route("grp.org.fulfilments.show.crm.customers.show.invoices.show.refunds.show", {
+            fulfilment: route().params?.fulfilment,
+            fulfilmentCustomer: route().params?.fulfilmentCustomer,
+            organisation: route().params?.organisation,
+            shop: route().params?.shop,
+            refund: refundSlug,
+            invoice: props.invoice_pay.invoice_slug
+        })
+    }
+
+
     if (route().params?.fulfilment) {
         return route("grp.org.fulfilments.show.operations.invoices.show.refunds.show", {
             organisation: route().params?.organisation,
@@ -264,6 +278,17 @@ const generateRefundRoute = (refundSlug: string) => {
 
 
 const generateInvoiceRoute = () => {
+    if (route().current() === 'grp.org.fulfilments.show.crm.customers.show.invoices.show.refunds.show') {
+        return route("grp.org.fulfilments.show.crm.customers.show.invoices.show", {
+            fulfilment: route().params?.fulfilment,
+            fulfilmentCustomer: route().params?.fulfilmentCustomer,
+            organisation: route().params?.organisation,
+            shop: route().params?.shop,
+            invoice: props.invoice_pay.invoice_slug
+        })
+    }
+
+
     if (route().params?.fulfilment) {
         return route("grp.org.fulfilments.show.operations.invoices.show", {
             organisation: route().params?.organisation,
@@ -271,10 +296,19 @@ const generateInvoiceRoute = () => {
             invoice: props.invoice_pay.invoice_slug
         });
     } else {
-        return route("grp.org.accounting.invoices.show", {
-            organisation: route().params?.organisation,
-            invoice: props.invoice_pay.invoice_slug
-        });
+        switch (route().current()) {
+            case 'grp.org.shops.show.dashboard.invoices.refunds.show':
+                return route("grp.org.shops.show.dashboard.invoices.show", {
+                    organisation: route().params?.organisation,
+                    shop: route().params?.shop,
+                    invoice: props.invoice_pay.invoice_slug
+                });
+            default:
+                return route("grp.org.accounting.invoices.show", {
+                    organisation: route().params?.organisation,
+                    invoice: props.invoice_pay.invoice_slug
+                });
+        }
     }
 };
 
@@ -331,10 +365,11 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
 </script>
 
 <template>
-    <dd class="relative w-full flex flex-col border rounded-md border-gray-400 overflow-hidden">
+    <dd class="relative w-full flex flex-col border rounded-md border-gray-300 overflow-hidden">
         <dl class="">
 
-            <div v-if="invoice_pay.order_reference"  class="border-b border-gray-400 px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
+            <div v-if="invoice_pay.order_reference"
+                 class="border-b border-gray-300 px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                 <dt class="text-sm/6 font-medium ">
                     <FontAwesomeIcon v-tooltip="trans('Invoice')" icon="fal fa-shopping-cart"
                                      class="text-gray-400" fixed-width aria-hidden="true"/>
@@ -345,42 +380,59 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                     </Link>
                 </dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
-                    {{ locale.currencyFormat(invoice_pay.currency_code || "usd", Number(invoice_pay.total_invoice)) }}
+                    {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_invoice)) }}
                 </dd>
             </div>
 
-            <!-- Refunds -->
-            <div v-if="Number(invoice_pay.total_refunds) < 0" class="border-b border-gray-400">
-                <div v-for="refund in invoice_pay.list_refunds.data"
-                     class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
+            <!-- Link to Invoice -->
+            <div v-if="Number(invoice_pay.total_need_to_pay) < 0" class="border-b border-gray-300 ">
+                <div class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                     <dt class="text-sm/6 font-medium ">
-                        <FontAwesomeIcon v-tooltip="trans('Refund')" icon="fal fa-arrow-circle-left"
-                                         class="text-gray-400" fixed-width aria-hidden="true"/>
-                        <Link :href="generateRefundRoute(refund.slug)" class="secondaryLink">{{ refund.reference }}
+                        <FontAwesomeIcon v-tooltip="trans('Refund')" icon="fal fa-file-invoice-dollar" class="text-gray-400" fixed-width aria-hidden="true" />
+                        <Link :href="generateInvoiceRoute(invoice_pay.invoice_slug)" class="secondaryLink">
+                            {{ invoice_pay.invoice_reference }}
                         </Link>
                     </dt>
                     <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
-                        {{ locale.currencyFormat(invoice_pay.currency_code || "usd", Number(refund.total_amount)) }}
+                        {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_invoice)) }}
                     </dd>
                 </div>
             </div>
 
+            <!-- Link to refunds -->
+            <div v-if="Number(invoice_pay.total_need_to_pay) > 0" class="border-b border-gray-300">
+                <div v-for="refund in invoice_pay.list_refunds.data"
+                        class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
+                    <dt class="text-sm/6 font-medium ">
+                        <FontAwesomeIcon v-tooltip="trans('Invoice')" icon="fal fa-arrow-circle-left" class="text-gray-400" fixed-width aria-hidden="true" />
+                        <Link :href="generateRefundRoute(refund.slug)" class="secondaryLink">
+                            {{ refund.reference }}
+                        </Link>
+                    </dt>
+                    <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
+                        {{ locale.currencyFormat(invoice_pay.currency_code, Number(refund.total_amount)) }}
+                    </dd>
+                </div>
+            </div>
+
+
+
             <!-- I+R total -->
             <div v-if="Number(invoice_pay.total_refunds) < 0"
-                 class="border-b border-gray-400 px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
+                class="border-b border-gray-300 px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                 <dt class="text-sm/6 font-medium ">I+R total</dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right"
                     :class="Number(invoice_pay.total_balance) > 0 ? '' : Number(invoice_pay.total_balance) < 0 ? '' : ''">
-                    {{ locale.currencyFormat(invoice_pay.currency_code || "usd", Number(invoice_pay.total_balance)) }}
+                    {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_balance)) }}
                 </dd>
             </div>
             <!-- addition excess payment -->
-            <div class="border-b border-gray-400" v-if="Number(invoice_pay.total_excess_payment) > 0">
+            <div class="border-b border-gray-300" v-if="Number(invoice_pay.total_excess_payment) > 0">
                 <div class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                     <dt class="text-sm/6 font-medium" v-tooltip="'auto add to customer balance'">Excess Payment</dt>
                     <dd class="mt-1 text-sm/6 sm:mt-0 text-right text-gray-700">
                         {{
-                            locale.currencyFormat(invoice_pay.currency_code || "usd",
+                            locale.currencyFormat(invoice_pay.currency_code,
                                 Number(invoice_pay.total_excess_payment))
                         }}
                     </dd>
@@ -389,14 +441,14 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
 
 
             <!-- Pay in -->
-            <div class="border-b border-gray-400">
+            <div class="border-b border-gray-300">
                 <div class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                     <dt class="text-sm/6 font-medium secondaryLink cursor-pointer" :style="{padding : 0}"
                         @click="()=>emits('onPayInOnClick')">Payed in
                     </dt>
                     <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
                         {{
-                            locale.currencyFormat(invoice_pay.currency_code || "usd", Number(invoice_pay.total_paid_in))
+                            locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_paid_in))
                         }}
                     </dd>
                 </div>
@@ -406,7 +458,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                     <dt class="text-sm/6 font-medium">Payed back</dt>
                     <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
                         {{
-                            locale.currencyFormat(invoice_pay.currency_code || "usd", Number(invoice_pay.total_paid_out))
+                            locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_paid_out))
                         }}
                     </dd>
                 </div>
@@ -435,7 +487,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                                      class="text-green-500"
                                      fixed-width aria-hidden="true"/>
                     <span :class="[Number(invoice_pay.total_need_to_pay) < 0 ? 'text-red-500' : '', 'ml-2']">{{
-                            locale.currencyFormat(invoice_pay.currency_code || "usd", Number(invoice_pay.total_need_to_pay))
+                            locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_need_to_pay))
                         }}</span>
                 </dd>
             </div>
@@ -499,7 +551,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
 
                         <div class="space-x-1">
                             <span class="text-xxs text-gray-500">{{ trans("Need to pay") }}: {{
-                                    locale.currencyFormat(invoice_pay.currency_code || "usd",
+                                    locale.currencyFormat(invoice_pay.currency_code,
                                         Number(invoice_pay.total_need_to_pay))
                                 }}</span>
                             <Button @click="() => paymentData.payment_amount = invoice_pay.total_need_to_pay"
@@ -609,7 +661,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                                     :class="[props.invoice_pay.total_need_to_refund_in_payment_method < 0 ? 'text-red-500' : 'text-green-600',
                                     'ml-2 font-semibold tracking-wide']">
                                     {{
-                                        locale.currencyFormat(invoice_pay.currency_code || "usd", props.invoice_pay.total_need_to_refund_in_payment_method)
+                                        locale.currencyFormat(invoice_pay.currency_code, props.invoice_pay.total_need_to_refund_in_payment_method)
                                     }}
                                 </span>
                             </div>
@@ -638,7 +690,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                                         :disabled="false"
                                         class="px-2 py-1 text-xs bg-gray-300 rounded disabled:bg-gray-300 disabled:cursor-not-allowed hover:text-blue-500 disabled:hover:bg-gray-300 transition">
                                         Pay {{
-                                            locale.currencyFormat(invoice_pay.currency_code || "usd", props.invoice_pay.total_need_to_refund_in_payment_method)
+                                            locale.currencyFormat(invoice_pay.currency_code, props.invoice_pay.total_need_to_refund_in_payment_method)
                                         }}
                                     </button>
                                 </template>

@@ -192,6 +192,9 @@ class ShowProduct extends OrgAction
 
     public function htmlResponse(Product $product, ActionRequest $request): Response
     {
+
+        $hasMaster = $product->master_product_id;
+
         return Inertia::render(
             'Org/Catalogue/Product',
             [
@@ -249,7 +252,7 @@ class ShowProduct extends OrgAction
                             ]
 
                         ],
-                        $this->canEdit ? [
+                        $this->canEdit && !$hasMaster ? [
                             'type'  => 'button',
                             'style' => 'edit',
                             'label'   => __('Edit'),
@@ -271,9 +274,7 @@ class ShowProduct extends OrgAction
                 ProductTabsEnum::SHOWCASE->value => $this->tab == ProductTabsEnum::SHOWCASE->value ?
                     fn () => GetProductShowcase::run($product)
                     : Inertia::lazy(fn () => GetProductShowcase::run($product)),
-                ProductTabsEnum::TRANSLATION->value => $this->tab == ProductTabsEnum::TRANSLATION->value ?
-                    fn () => GetProductShowcase::run($product)
-                    : Inertia::lazy(fn () => GetProductShowcase::run($product)),
+
 
 
                 ProductTabsEnum::FAVOURITES->value => $this->tab == ProductTabsEnum::FAVOURITES->value ?

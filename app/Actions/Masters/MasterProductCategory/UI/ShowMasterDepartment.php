@@ -96,7 +96,7 @@ class ShowMasterDepartment extends GrpAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ] : false,
-                        [
+                        /* [
                             'type'  => 'button',
                             'style' => 'edit',
                             'label' => 'blueprint',
@@ -104,7 +104,7 @@ class ShowMasterDepartment extends GrpAction
                                 'name'       => preg_replace('/show$/', 'blueprint', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
                             ]
-                        ],
+                        ], */
                         $this->canDelete ? [
                             'type'  => 'button',
                             'style' => 'delete',

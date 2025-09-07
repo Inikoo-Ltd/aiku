@@ -37,59 +37,50 @@ class ShowShippingZoneSchema extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, ShippingZoneSchema $shippingZoneSchema, ActionRequest $request): ShippingZoneSchema
     {
         $this->initialisationFromShop($shop, $request)->withTab(ShippingZoneSchemaTabsEnum::values());
+
         return $this->handle($shippingZoneSchema);
     }
 
     public function htmlResponse(ShippingZoneSchema $shippingZoneSchema, ActionRequest $request): Response
     {
-
         return Inertia::render(
             'Org/Catalogue/ShippingZoneSchema',
             [
-                    'title'       => __('Shipping Zone Schema'),
-                    'breadcrumbs' => $this->getBreadcrumbs(
-                        $shippingZoneSchema,
-                        $request->route()->getName(),
-                        $request->route()->originalParameters()
-                    ),
-                    'navigation'  => [
-                        'previous' => $this->getPrevious($shippingZoneSchema, $request),
-                        'next'     => $this->getNext($shippingZoneSchema, $request),
+                'title'                                  => __('Shipping Zone Schema'),
+                'breadcrumbs'                            => $this->getBreadcrumbs(
+                    $shippingZoneSchema,
+                    $request->route()->getName(),
+                    $request->route()->originalParameters()
+                ),
+                'navigation'                             => [
+                    'previous' => $this->getPrevious($shippingZoneSchema, $request),
+                    'next'     => $this->getNext($shippingZoneSchema, $request),
+                ],
+                'pageHead'                               => [
+                    'icon'          => [
+                        'title' => __('trade unit'),
+                        'icon'  => 'fal fa-atom'
                     ],
-                    'pageHead'    => [
-                        'icon'    => [
-                            'title' => __('trade unit'),
-                            'icon'  => 'fal fa-atom'
-                        ],
-                        'title'   => $shippingZoneSchema->name,
-                        'actions' => [
-                            $this->canEdit ? [
-                                'type'  => 'button',
-                                'style' => 'edit',
-                                'route' => [
-                                    'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                                    'parameters' => array_values($request->route()->originalParameters())
-                                ]
-                            ] : false,
-                            // $this->canDelete ? [
-                            //     'type'  => 'button',
-                            //     'style' => 'delete',
-                            //     'route' => [
-                            //         'name'       => 'grp.org.warehouses.show.inventory.org_stock_families.show.stocks.remove',
-                            //         'parameters' => array_values($request->route()->originalParameters())
-                            //     ]
+                    'title'         => $shippingZoneSchema->name,
+                    'actions'       => [
+                        $this->canEdit ? [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'route' => [
+                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters())
+                            ]
+                        ] : false,
+                    ],
+                    'subNavigation' => $this->getShippingZoneSchemaSubNavigation($shippingZoneSchema->shop),
+                ],
+                'tabs'                                   => [
+                    'current'    => $this->tab,
+                    'navigation' => ShippingZoneSchemaTabsEnum::navigation()
 
-                            // ] : false
-                                ],
-                        'subNavigation' => $this->getShippingZoneSchemaSubNavigation($shippingZoneSchema->shop),
-                    ],
-                    'tabs' => [
-                        'current'    => $this->tab,
-                        'navigation' => ShippingZoneSchemaTabsEnum::navigation()
-
-                    ],
-                    ShippingZoneSchemaTabsEnum::ZONES->value => $this->tab == ShippingZoneSchemaTabsEnum::ZONES->value ?
-                    fn () => ShippingZonesResource::collection(IndexShippingZones::run($shippingZoneSchema))
+                ],
+                ShippingZoneSchemaTabsEnum::ZONES->value => $this->tab == ShippingZoneSchemaTabsEnum::ZONES->value ?
+                    fn () => ShippingZonesResource::collection(IndexShippingZones::run($shippingZoneSchema, ShippingZoneSchemaTabsEnum::ZONES->value))
                     : Inertia::lazy(fn () => ShippingZonesResource::collection(IndexShippingZones::run($shippingZoneSchema)))
             ]
         )->table(IndexShippingZones::make()->tableStructure(parent: $shippingZoneSchema, prefix: ShippingZoneSchemaTabsEnum::ZONES->value));
@@ -117,7 +108,7 @@ class ShowShippingZoneSchema extends OrgAction
                             'label' => $shippingZoneSchema->slug,
                         ],
                     ],
-                    'suffix' => $suffix,
+                    'suffix'         => $suffix,
 
                 ],
             ];
@@ -149,6 +140,7 @@ class ShowShippingZoneSchema extends OrgAction
     public function getPrevious(ShippingZoneSchema $shippingZoneSchema, ActionRequest $request): ?array
     {
         $previous = ShippingZoneSchema::where('slug', '<', $shippingZoneSchema->slug)->orderBy('slug', 'desc')->first();
+
         return $this->getNavigation($previous, $request->route()->getName());
     }
 

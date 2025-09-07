@@ -83,6 +83,7 @@ class ShowPlatform extends OrgAction
             ]
         )->table(
             IndexCustomerSalesChannels::make()->tableStructure(
+                parent:$platform,
                 prefix: PlatformTabsEnum::CHANNELS->value,
             )
         )->table(

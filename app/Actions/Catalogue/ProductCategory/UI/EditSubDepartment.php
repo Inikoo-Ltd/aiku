@@ -92,25 +92,25 @@ class EditSubDepartment extends OrgAction
                                     'label' => __('code'),
                                     'value' => $subDepartment->code
                                 ],
-                                'name' => [
+                                'name_i8n' => [
                                     'type'  => 'input',
                                     'label' => __('name'),
-                                    'value' => $subDepartment->name
+                                    'value' => $subDepartment->getTranslation('name_i8n', $subDepartment->shop->language->code) ?: $subDepartment->name
                                 ],
-                                'description' => [
-                                    'type'  => 'textEditor',
-                                    'label' => __('description'),
-                                    'value' => $subDepartment->description
-                                ],
-                                'description_title' => [
+                                'description_title_i8n' => [
                                     'type'  => 'input',
                                     'label' => __('description title'),
-                                    'value' => $subDepartment->description_title
+                                    'value' => $subDepartment->getTranslation('description_title_i8n', $subDepartment->shop->language->code) ?: $subDepartment->description_title
                                 ],
-                                'description_extra' => [
+                                'description_i8n' => [
                                     'type'  => 'textEditor',
-                                    'label' => __('description extra'),
-                                    'value' => $subDepartment->description_extra
+                                    'label' => __('description'),
+                                    'value' => $subDepartment->getTranslation('description_i8n', $subDepartment->shop->language->code) ?: $subDepartment->description
+                                ],
+                                'description_extra_i8n' => [
+                                    'type'  => 'textEditor',
+                                    'label' => __('Extra description'),
+                                    'value' => $subDepartment->getTranslation('description_extra_i8n', $subDepartment->shop->language->code) ?: $subDepartment->description_extra
                                 ],
                             ]
                         ],
@@ -125,6 +125,23 @@ class EditSubDepartment extends OrgAction
                                     "required" => false,
                                     'noSaveButton' => true,
                                     "full"         => true
+                                ],
+                            ]
+                        ],
+                        [
+                            'label'  => __('Pricing'),
+                            'icon'   => 'fa-light fa-money-bill',
+                            'fields' => [
+                                'cost_price_ratio' => [
+                                    'type'          => 'input_number',
+                                    'bind' => [
+                                        'maxFractionDigits' => 3
+                                    ],
+                                    'label'         => __('pricing ratio'),
+                                    'placeholder'   => __('Cost price ratio'),
+                                    'required'      => true,
+                                    'value'         => $subDepartment->cost_price_ratio,
+                                    'min'           => 0
                                 ],
                             ]
                         ],

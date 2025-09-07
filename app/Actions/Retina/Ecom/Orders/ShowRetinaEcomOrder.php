@@ -77,7 +77,7 @@ class ShowRetinaEcomOrder extends RetinaAction
                     'title'   => $order->reference,
                     'model'   => __('Order'),
                     'icon'    => [
-                        'icon'  => 'fal fa-shopping-cart',
+                        'icon'  => 'fal fa-shopping-basket',
                         'title' => __('Order')
                     ],
                     'actions' => $action,

@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -18,31 +19,14 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditDepartment extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
+
     public function handle(ProductCategory $department): ProductCategory
     {
         return $department;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->parent instanceof Organisation) {
-            $this->canEdit = $request->user()->authTo(
-                [
-                    'org-supervisor.'.$this->organisation->id,
-                ]
-            );
 
-            return $request->user()->authTo(
-                [
-                    'org-supervisor.'.$this->organisation->id,
-                    'shops-view'.$this->organisation->id,
-                ]
-            );
-        } else {
-            $this->canEdit = $request->user()->authTo("products.{$this->shop->id}.edit");
-            return $request->user()->authTo("products.{$this->shop->id}.view");
-        }
-    }
 
     public function inOrganisation(Organisation $organisation, ProductCategory $department, ActionRequest $request): ProductCategory
     {
@@ -103,25 +87,42 @@ class EditDepartment extends OrgAction
                                     'label' => __('code'),
                                     'value' => $department->code
                                 ],
-                                'name' => [
+                                'name_i8n' => [
                                     'type'  => 'input',
                                     'label' => __('name'),
-                                    'value' => $department->name
+                                    'value' => $department->getTranslation('name_i8n', $department->shop->language->code) ?: $department->name
                                 ],
-                                'description_title' => [
+                                'description_title_i8n' => [
                                     'type'  => 'input',
                                     'label' => __('description title'),
-                                    'value' => $department->description_title
+                                    'value' => $department->getTranslation('description_title_i8n', $department->shop->language->code) ?: $department->description_title
                                 ],
-                                'description' => [
+                                'description_i8n' => [
                                     'type'  => 'textEditor',
                                     'label' => __('description'),
-                                    'value' => $department->description
+                                    'value' => $department->getTranslation('description_i8n', $department->shop->language->code) ?: $department->description
                                 ],
-                                'description_extra' => [
+                                'description_extra_i8n' => [
                                     'type'  => 'textEditor',
-                                    'label' => __('description extra'),
-                                    'value' => $department->description_extra
+                                    'label' => __('Extra description'),
+                                    'value' => $department->getTranslation('description_extra_i8n', $department->shop->language->code) ?: $department->description_extra
+                                ],
+                            ]
+                        ],
+                        [
+                            'label'  => __('Pricing'),
+                            'icon'   => 'fa-light fa-money-bill',
+                            'fields' => [
+                                'cost_price_ratio' => [
+                                    'type'          => 'input_number',
+                                    'bind' => [
+                                        'maxFractionDigits' => 3
+                                    ],
+                                    'label'         => __('pricing ratio'),
+                                    'placeholder'   => __('Cost price ratio'),
+                                    'required'      => true,
+                                    'value'         => $department->cost_price_ratio,
+                                    'min'           => 0
                                 ],
                             ]
                         ],
@@ -141,7 +142,7 @@ class EditDepartment extends OrgAction
                                     "required" => false,
                                     'noSaveButton' => true,
                                     "full"         => true
-                                ],
+                                ]
                             ]
                         ]
 

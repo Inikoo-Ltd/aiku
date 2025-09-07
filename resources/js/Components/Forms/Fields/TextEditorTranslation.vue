@@ -1,106 +1,116 @@
 <script setup lang="ts">
-import Editor from '@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue'
+import { ref, watch, onMounted, onBeforeUnmount } from "vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import EditorV2 from "./BubleTextEditor/EditorV2.vue";
 import { EditorContent } from '@tiptap/vue-3'
-import Dialog from 'primevue/dialog'
-import Button from 'primevue/button'
-import { ref, computed } from 'vue'
-import { faLanguage } from '@fal'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
 const props = defineProps<{
-  form: Record<string, any>
+  form: any
   fieldName: string
-  fieldData: {
-    type: string
-    placeholder: string
-    readonly?: boolean
-    copyButton: boolean
-    maxLength?: number
-  }
+  fieldData: any
 }>()
 
-const translationData = computed(() => props.form[props.fieldName] || {})
+const emits = defineEmits(["update:form"])
 
-const defaultLang = computed(() =>
-  Object.entries(translationData.value).find(([_lang, value]: any) => value?.default)
+// Init
+const storedLang = localStorage.getItem("translation_box")
+const initialLang = storedLang || Object.values(props.fieldData.languages)[0]?.code || "en"
+const selectedLang = ref(initialLang)
+
+// Ensure valid language
+if (!Object.values(props.fieldData.languages).some(l => l.code === selectedLang.value)) {
+  selectedLang.value = Object.values(props.fieldData.languages)[0]?.code || "en"
+}
+
+// Ensure form field exists
+if (!props.form[props.fieldName]) {
+  props.form[props.fieldName] = {}
+}
+
+// Local buffer (copy all existing translations)
+const langBuffers = ref<Record<string, string>>({
+  ...props.form[props.fieldName]
+})
+
+// Helper
+const langLabel = (code: string) => {
+  const langObj = Object.values(props.fieldData.languages).find(
+    (l: any) => l.code === code
+  )
+  return langObj?.name ?? code
+}
+
+// Sync buffer → form (always push updated values back)
+watch(
+  langBuffers,
+  (newVal) => {
+    props.form[props.fieldName] = { ...newVal }
+    emits("update:form", { ...props.form })
+  },
+  { deep: true }
 )
 
-const otherLangs = computed(() =>
-  Object.entries(translationData.value).filter(([_lang, value]: any) => !value?.default)
+// Sync selectedLang → localStorage + custom event
+watch(
+  selectedLang,
+  (newLang) => {
+    localStorage.setItem("translation_box", newLang)
+    window.dispatchEvent(new CustomEvent("translation_box_updated", { detail: newLang }))
+  },
+  { immediate: true }
 )
 
-const showModal = ref(false)
+// Listen to cross-tab + same-tab updates
+onMounted(() => {
+  const handleStorage = (e: StorageEvent) => {
+    if (e.key === "translation_box" && e.newValue) {
+      selectedLang.value = e.newValue
+    }
+  }
+
+  const handleCustom = (e: CustomEvent) => {
+    selectedLang.value = e.detail
+  }
+
+  window.addEventListener("storage", handleStorage)
+  window.addEventListener("translation_box_updated", handleCustom as EventListener)
+
+  onBeforeUnmount(() => {
+    window.removeEventListener("storage", handleStorage)
+    window.removeEventListener("translation_box_updated", handleCustom as EventListener)
+  })
+})
 </script>
 
 <template>
   <div class="space-y-4">
-    <!-- ✅ Default Language Editor -->
-    <div class="rounded-xl bg-white shadow-md border border-gray-200 transition-all">
-      <!-- Label -->
-      <div class="px-4 pt-3 pb-1 border-b border-gray-100 bg-gray-50 rounded-t-xl">
-        <span class="block text-sm font-semibold text-gray-700 capitalize tracking-wide">
-          {{ defaultLang?.[0] }}
-        </span>
-      </div>
-
-      <!-- Editor -->
-      <div class="p-1">
-        <Editor v-model="translationData[defaultLang?.[0]]['value']">
-          <template #editor-content="{ editor }">
-            <div
-              class="editor-wrapper border border-gray-300 rounded-md bg-white p-3 focus-within:border-blue-400 transition-all">
-              <EditorContent :editor="editor" class="editor-content focus:outline-none" />
-            </div>
-          </template>
-        </Editor>
-      </div>
+    <!-- Language Selector -->
+    <div class="flex flex-wrap gap-2">
+      <Button
+        v-for="lang in Object.values(fieldData.languages)"
+        :key="lang.code + selectedLang"
+        :label="lang.name"
+        size="xxs"
+        :type="selectedLang === lang.code ? 'primary' : 'tertiary'"
+        @click="selectedLang = lang.code"
+      />
     </div>
 
-    <!-- ✅ Modal Trigger Button -->
-    <button
-      class="text-sm text-blue-600 underline hover:text-blue-800 transition"
-      @click="showModal = true"
-    >
-      <FontAwesomeIcon :icon="faLanguage" /> Edit other languages
-    </button>
+    <!-- Translation Input -->
+    <div v-if="selectedLang" class="mt-3">
+      <label class="block mb-1 font-medium text-sm">
+        Translation to {{ langLabel(selectedLang) }}
+      </label>
 
-    <!-- ✅ Modal for Other Languages -->
-    <Dialog v-model:visible="showModal" modal header="Translations" :style="{ width: '90vw', maxWidth: '900px' }">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div v-for="[lang, data] in otherLangs" :key="lang"
-          class="rounded-xl bg-white shadow-md border border-gray-200 transition-all hover:shadow-lg">
-          <!-- Label -->
-          <div class="px-4 pt-3 pb-1 border-b border-gray-100 bg-gray-50 rounded-t-xl">
-            <span class="block text-sm font-semibold text-gray-700 capitalize tracking-wide">
-              {{ lang }}
-            </span>
+      <EditorV2 v-model="langBuffers[selectedLang]" :key="selectedLang">
+        <template #editor-content="{ editor }">
+          <div
+            class="editor-wrapper border border-gray-300 rounded-md bg-white p-3 focus-within:border-blue-400 transition-all"
+          >
+            <EditorContent :editor="editor"  class="editor-content focus:outline-none leading-6 min-h-[6rem]" />
           </div>
-
-          <!-- Editor -->
-          <div class="p-1">
-            <Editor v-model="data.value">
-              <template #editor-content="{ editor }">
-                <div
-                  class="editor-wrapper border border-gray-300 rounded-md bg-white p-3 focus-within:border-blue-400 transition-all">
-                  <EditorContent :editor="editor" class="editor-content focus:outline-none" />
-                </div>
-              </template>
-            </Editor>
-          </div>
-        </div>
-      </div>
-    </Dialog>
+        </template>
+      </EditorV2>
+    </div>
   </div>
 </template>
-
-<style scoped>
-.editor-wrapper {
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-.editor-content {
-  min-height: 120px;
-  font-size: 0.95rem;
-  line-height: 1.5;
-}
-</style>

@@ -77,7 +77,7 @@ const urlLoginWithRedirect = () => {
 
 <template>
     <div></div>
-    <div id="top_bar_1_iris" class="py-1 px-4 flex flex-col md:flex-row md:justify-between gap-x-4" :style="{
+    <div id="top_bar_1_iris" class="py-1 px-4 flex flex-col md:flex-row md:justify-between gap-x-4 sticky top-0 z-50" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         margin: 0,
         ...getStyles(model?.container?.properties, screenType)
@@ -137,9 +137,18 @@ const urlLoginWithRedirect = () => {
             <!-- Section: Basket (cart) -->
             <ButtonWithLink
                 v-if="checkVisible(model?.cart?.visible || null, isLoggedIn) && layout.retina?.type == 'b2b'"
-                url="/app/basket" icon="fal fa-shopping-cart" :noHover="true">
+                url="/app/basket" :noHover="true" type="transparent">
+                <template #icon>
+                    <FontAwesomeIcon icon="fal fa-shopping-cart" :style="{ color: 'white' }" fixed-width
+                        aria-hidden="true" />
+                </template>
                 <template #label>
-                    <span class="text-white" v-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)" />
+                    <span
+                        class="text-white"
+                        xv-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)"
+                        v-html="textReplaceVariables('{{ items_count }} items ({{ cart_amount }})', layout.iris_variables)"
+                    >
+                    </span>
                 </template>
             </ButtonWithLink>
 

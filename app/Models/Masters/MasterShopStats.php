@@ -51,6 +51,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_collections_products_status_discontinued
  * @property int $number_master_families_no_master_department
  * @property int $number_master_products_no_master_family
+ * @property int $number_master_families_with_pending_master_assets
  * @property-read \App\Models\Masters\MasterShop $masterShop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShopStats newQuery()

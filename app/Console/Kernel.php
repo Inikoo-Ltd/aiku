@@ -6,6 +6,7 @@ use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\Dropshipping\Ebay\Orders\FetchEbayOrders;
 use App\Actions\Dropshipping\Ebay\Orders\FetchWooOrders;
 use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolios;
+use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInWooPortfolio;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomersHydrateStatus;
 use App\Actions\Fulfilment\UpdateCurrentRecurringBillsTemporalAggregates;
 use App\Actions\Helpers\Intervals\ResetDailyIntervals;
@@ -89,6 +90,10 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'FetchWooOrders',
         );
 
+        $schedule->job(UpdateInventoryInWooPortfolio::makeJob())->hourly()->sentryMonitor(
+            monitorSlug: 'UpdateWooStockInventories',
+        );
+
         $schedule->job(CheckShopifyPortfolios::makeJob())->dailyAt('03:00')->timezone('UTC')->sentryMonitor(
             monitorSlug: 'CheckShopifyPortfolios',
         );
@@ -107,7 +112,8 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'SaveWebsitesSitemap',
         );
 
-        $schedule->command('schedule:platform-orders')->everyMinute()->timezone('UTC')->sentryMonitor('GetPlatformOrders');
+        // TODO: We dont need this because we already have fetch orders scheduler above
+        // $schedule->command('schedule:platform-orders')->everyMinute()->timezone('UTC')->sentryMonitor('GetPlatformOrders');
     }
 
 

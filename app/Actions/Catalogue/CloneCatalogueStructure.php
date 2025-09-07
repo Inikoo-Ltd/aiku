@@ -12,6 +12,7 @@ use App\Actions\Catalogue\ProductCategory\AttachFamiliesToDepartment;
 use App\Actions\Catalogue\ProductCategory\AttachFamiliesToSubDepartment;
 use App\Actions\Catalogue\ProductCategory\DeleteProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
+use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
 use App\Actions\Catalogue\ProductCategory\StoreSubDepartment;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Masters\MasterProductCategory\AttachMasterFamiliesToMasterDepartment;
@@ -20,6 +21,7 @@ use App\Actions\Masters\MasterProductCategory\DeleteMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\StoreMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\StoreMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategory;
+use App\Actions\Web\Webpage\PublishWebpage;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
@@ -254,6 +256,17 @@ class CloneCatalogueStructure
             );
         }
 
+        if (!$foundDepartment->webpage) {
+            $webpage = StoreProductCategoryWebpage::make()->action($foundDepartment);
+            PublishWebpage::make()->action(
+                $webpage,
+                [
+                    'comment' => 'Published after cloning',
+                ]
+            );
+        }
+
+
         return $foundDepartment;
     }
 
@@ -339,6 +352,16 @@ class CloneCatalogueStructure
             $subDepartment = UpdateProductCategory::make()->action(
                 $foundSubDepartment,
                 $dataToUpdate
+            );
+        }
+
+        if (!$subDepartment->webpage) {
+            $webpage = StoreProductCategoryWebpage::make()->action($subDepartment);
+            PublishWebpage::make()->action(
+                $webpage,
+                [
+                    'comment' => 'Published after cloning',
+                ]
             );
         }
 

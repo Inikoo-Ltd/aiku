@@ -40,7 +40,6 @@ class UpdateProduct extends OrgAction
 
     public function handle(Product $product, array $modelData): Product
     {
-
         $oldHistoricProduct = $product->current_historic_asset_id;
 
         if (Arr::has($modelData, 'family_id')) {
@@ -53,8 +52,9 @@ class UpdateProduct extends OrgAction
             $orgStocksRaw = Arr::pull($modelData, 'org_stocks', []);
             $orgStocksRaw = array_column($orgStocksRaw, null, 'org_stock_id');
             $orgStocksRaw = array_map(function ($item) {
-                $filtered = Arr::only($item, ['org_stock_id', 'quantity', 'notes']);
-                $filtered['quantity'] = (float) $filtered['quantity']; // or (int) if you want integers
+                $filtered             = Arr::only($item, ['org_stock_id', 'quantity', 'notes']);
+                $filtered['quantity'] = (float)$filtered['quantity']; // or (int) if you want integers
+
                 return $filtered;
             }, $orgStocksRaw);
 
@@ -62,10 +62,41 @@ class UpdateProduct extends OrgAction
             //todo  after updating orgStock need a new method to update Trade Units
         }
 
-
         $assetData = [];
         if (Arr::has($modelData, 'follow_master')) {
             data_set($assetData, 'follow_master', Arr::pull($modelData, 'follow_master'));
+        }
+
+        if (Arr::has($modelData, 'name_i8n')) {
+            UpdateProductTranslations::make()->action($product, [
+                'translations' => [
+                    'name' => Arr::pull($modelData, 'name_i8n')
+                ]
+            ]);
+        }
+
+        if (Arr::has($modelData, 'description_title_i8n')) {
+            UpdateProductTranslations::make()->action($product, [
+                'translations' => [
+                    'description_title' => Arr::pull($modelData, 'description_title_i8n')
+                ]
+            ]);
+        }
+
+        if (Arr::has($modelData, 'description_i8n')) {
+            UpdateProductTranslations::make()->action($product, [
+                'translations' => [
+                    'description' => Arr::pull($modelData, 'description_i8n')
+                ]
+            ]);
+        }
+
+        if (Arr::has($modelData, 'description_extra_i8n')) {
+            UpdateProductTranslations::make()->action($product, [
+                'translations' => [
+                    'description_extra' => Arr::pull($modelData, 'description_extra_i8n')
+                ]
+            ]);
         }
 
         $product = $this->update($product, $modelData);
@@ -177,7 +208,9 @@ class UpdateProduct extends OrgAction
             'state'             => ['sometimes', 'required', Rule::enum(ProductStateEnum::class)],
             'trade_config'      => ['sometimes', 'required', Rule::enum(ProductTradeConfigEnum::class)],
             'follow_master'     => ['sometimes', 'boolean'],
+            'cost_price_ratio'  => ['sometimes', 'numeric', 'min:0'],
             'family_id'         => ['sometimes', 'nullable', Rule::exists('product_categories', 'id')->where('shop_id', $this->shop->id)],
+            'master_product_id' => ['sometimes', 'nullable', 'integer', Rule::exists('master_assets', 'id')->where('master_shop_id', $this->shop->master_shop_id)],
             'barcode'           => [
                 'sometimes',
                 'nullable',
@@ -197,7 +230,11 @@ class UpdateProduct extends OrgAction
                 Rule::exists('customers', 'id')->where('shop__id', $this->shop->id)
             ],
 
-            'org_stocks' => ['sometimes', 'present', 'array']
+            'org_stocks' => ['sometimes', 'present', 'array'],
+            'name_i8n' => ['sometimes', 'array'],
+            'description_title_i8n' => ['sometimes', 'array'],
+            'description_i8n' => ['sometimes', 'array'],
+            'description_extra_i8n' => ['sometimes', 'array'],
         ];
 
 
