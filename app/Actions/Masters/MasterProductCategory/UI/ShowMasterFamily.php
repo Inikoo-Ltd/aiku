@@ -102,7 +102,7 @@ class ShowMasterFamily extends GrpAction
     public function htmlResponse(MasterProductCategory $masterFamily, ActionRequest $request): Response
     {
         return Inertia::render(
-            'Org/Catalogue/Family',
+            'Masters/MasterFamily',
             [
                 'title'       => __('family'),
                 'breadcrumbs' => $this->getBreadcrumbs(

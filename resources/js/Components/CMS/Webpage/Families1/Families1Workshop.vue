@@ -101,6 +101,7 @@ const responsiveGridClass = computed(() => {
 })
 const layout: any = inject("layout", {})
 const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
+
 </script>
 
 <template>

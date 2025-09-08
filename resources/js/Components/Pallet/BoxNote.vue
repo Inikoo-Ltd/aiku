@@ -54,29 +54,29 @@ const onSubmitNote = async () => {
     isModalOpen.value = false
 }
 
-const onFetchNotes = async () => {
-    isSubmitNoteLoading.value = true
-    try {
-        const response = await axios.patch(route(props.fetchRoute.name, props.fetchRoute.parameters), {
-            [props.noteData.field]: true
-        },
-        {
-                headers: { "Content-Type": 'application/json' },
-        }
-        )
+// const onFetchNotes = async () => {
+//     isSubmitNoteLoading.value = true
+//     try {
+//         const response = await axios.patch(route(props.fetchRoute.name, props.fetchRoute.parameters), {
+//             [props.noteData.field]: true
+//         },
+//         {
+//                 headers: { "Content-Type": 'application/json' },
+//         }
+//         )
 
-        props.noteData.note = response.data?.[props.noteData.field] || ''
-    } catch  {
-        notify({
-			title: "Failed",
-			text: "Failed to fetch the note, try again.",
-			type: "error",
-		})
-    }
+//         props.noteData.note = response.data?.[props.noteData.field] || ''
+//     } catch  {
+//         notify({
+// 			title: "Failed",
+// 			text: "Failed to fetch the note, try again.",
+// 			type: "error",
+// 		})
+//     }
 
-    isSubmitNoteLoading.value = false
-    isModalOpen.value = false
-}
+//     isSubmitNoteLoading.value = false
+//     isModalOpen.value = false
+// }
 
 const fallbackBgColor = '#f9fafb'  // Background
 const fallbackColor = '#374151'  // Color
@@ -105,7 +105,8 @@ const fallbackColor = '#374151'  // Color
                     {{ noteData.label }}
                     <InformationIcon v-if="noteData.information" :information="noteData.information" />
                     
-                    <span 
+                    <!-- Button: fetch notes from Order -->
+                    <!-- <span 
                         v-if="props.fetchRoute?.name"
                         v-tooltip="trans('Duplicate note from Order (only :field)', { field: noteData.label })"
                         @click="() => onFetchNotes()"
@@ -115,7 +116,9 @@ const fallbackColor = '#374151'  // Color
                             <LoadingIcon v-if="isSubmitNoteLoading" />
                             <FontAwesomeIcon v-else icon="fal fa-sync-alt" class="" fixed-width aria-hidden="true" />
                         </span>
-                    </span>
+                    </span> -->
+
+
                     <!-- <Button
                         
                        

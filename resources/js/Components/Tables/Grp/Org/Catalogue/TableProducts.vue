@@ -12,16 +12,18 @@ import Icon from "@/Components/Icon.vue";
 import { remove as loRemove } from "lodash-es";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faConciergeBell, faGarage, faExclamationTriangle, faPencil } from "@fal";
+import { faOctopusDeploy } from  "@fortawesome/free-brands-svg-icons"
 import { routeType } from "@/types/route";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { onMounted, onUnmounted, ref, inject } from "vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import { Invoice } from "@/types/invoice";
 import { RouteParams } from "@/types/route-params";
 
 
-library.add(faConciergeBell, faGarage, faExclamationTriangle, faPencil);
+library.add(faOctopusDeploy, faConciergeBell, faGarage, faExclamationTriangle, faPencil);
 
 
 const props = defineProps<{
@@ -171,6 +173,15 @@ function productRoute(product: Product) {
     }
 }
 
+function masterProductRoute(product: {}) {
+    if(!product.master_product_id){
+        return '';
+    }
+
+    return route(
+        "grp.helpers.redirect_master_product",
+        [product.master_product_id]);
+}
 
 function organisationRoute(invoice: Invoice) {
     if (!invoice.organisation_slug) {
@@ -250,9 +261,17 @@ const locale = inject("locale", aikuLocaleStructure);
         </template>
 
         <template #cell(code)="{ item: product }">
-            <Link :href="productRoute(product)" class="primaryLink">
-            {{ product["code"] }}
-            </Link>
+            <div class="whitespace-nowrap">
+                <Link  :href="(masterProductRoute(product) as string)"  v-tooltip="'Go to Master'" class="mr-1"  :class="[ product.master_product_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
+                    <FontAwesomeIcon
+                        icon="fab fa-octopus-deploy"
+                        color="#4B0082"
+                    />
+                </Link>
+                <Link :href="productRoute(product)" class="primaryLink">
+                {{ product["code"] }}
+                </Link>
+            </div>
         </template>
 
         <template #cell(shop_code)="{ item: product }">
