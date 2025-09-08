@@ -138,7 +138,7 @@ class ShowMasterDepartment extends GrpAction
 
             ]
         )
-            ->table(IndexDepartments::make()->tableStructure(parent: $masterDepartment, prefix: MasterDepartmentTabsEnum::DEPARTMENTS->value))
+            ->table(IndexDepartments::make()->tableStructure(parent: $masterDepartment, prefix: MasterDepartmentTabsEnum::DEPARTMENTS->value, sales:false))
             ->table(IndexHistory::make()->tableStructure(prefix: MasterDepartmentTabsEnum::HISTORY->value));
     }
 
