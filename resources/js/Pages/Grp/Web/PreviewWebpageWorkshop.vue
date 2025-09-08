@@ -59,7 +59,7 @@ const showWebpage = (item) => {
 }
 
 onMounted(() => {
-  layout.app.theme = props.layout.color,
+  layout.app.theme = props.layout?.color,
   layout.app.webpage_layout = props.layout
   updateIrisLayout()
 })
@@ -128,7 +128,7 @@ watch(filterBlock, () => {
             <template v-for="(block, idx) in data.layout.web_blocks" :key="block.id">
               <section v-show="showWebpage(block)" :data-block-id="idx" class="w-full min-h-[50px] relative"
                 :class="{ 'border-4 active-block': activeBlock === idx }"
-                :style="activeBlock === idx ? { borderColor: layout?.app?.theme[0] } : {}"
+                :style="activeBlock === idx ? { borderColor: layout?.app?.theme?.[0] } : {}"
                 @click="() => sendMessageToParent('activeBlock', idx)">
                 <!-- Toolbar Controls -->
                 <div v-if="activeBlock === idx" class="trapezoid-button" @click.stop>
