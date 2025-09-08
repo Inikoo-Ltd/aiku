@@ -47,7 +47,7 @@ class CallApiPacketaShipping extends OrgAction
 
     public function getPickupPointApiUrl(string $apiKey): string
     {
-        return "https://pickup-point.api.packeta.com/v5/{$apiKey}/carrier/json?lang=en";
+        return "https://pickup-point.api.packeta.com/v5/$apiKey/carrier/json?lang=en";
     }
 
     /**
@@ -55,8 +55,8 @@ class CallApiPacketaShipping extends OrgAction
      */
     public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper): array
     {
-        $creds = $this->getAccessToken($shipper);
-        $apiPassword = Arr::get($creds, 'api_password');
+        $accessToken = $this->getAccessToken($shipper);
+        $apiPassword = Arr::get($accessToken, 'api_password');
         $url = $this->getBaseUrl() . '/api/soap.wsdl';
 
         if ($parent instanceof PalletReturn) {
@@ -76,7 +76,7 @@ class CallApiPacketaShipping extends OrgAction
             return [
                 'status' => 'fail',
                 'errorData' => [
-                    'message' => "No address ID found for country code {$countryCode} and weight {$weight} kg.",
+                    'message' => "No address ID found for country code $countryCode and weight $weight kg.",
                 ],
                 'modelData' => [],
             ];
@@ -154,7 +154,7 @@ class CallApiPacketaShipping extends OrgAction
                             $errorData['address'] .= "postal code,";
                             break;
                         default:
-                            $errorData['others'] .= "{$fault->name},";
+                            $errorData['others'] .= "$fault->name,";
                             break;
                     }
                 }
@@ -549,7 +549,7 @@ class CallApiPacketaShipping extends OrgAction
     }
 
     /**
-     * sources https://client.packeta.com/en/user-conversions
+     * Sources https://client.packeta.com/en/user-conversions
      * Returns the COD and max packet value limits per country.
      * Format: [ 'COUNTRY_CODE' => ['cod' => value, 'cod_currency' => 'CUR', 'max' => value, 'max_currency' => 'CUR'] ]
      */
@@ -626,12 +626,5 @@ class CallApiPacketaShipping extends OrgAction
         return 100;
     }
 
-    public string $commandSignature = 'xxx222x';
 
-    public function asCommand($command)
-    {
-        $d = DeliveryNote::find(981605);
-        $s = Shipper::find(37);
-        dd($this->handle($d, $s));
-    }
 }
