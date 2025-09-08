@@ -560,7 +560,7 @@ const onDisableCheckbox = (item) => {
             <div v-if="item.customer_sales_channel_platform_status  && !item.platform_status "
                  class="flex gap-x-2 items-center">
                 <ButtonWithLink
-                    v-tooltip="trans('Will create new product in Shopify')"
+                    v-tooltip="trans('Will create new product in :platform', {platform: props.platform_data.name})"
                     :routeTarget="{
                     method: 'post',
                         name: props.routes.single_create_new.name,
@@ -582,7 +582,7 @@ const onDisableCheckbox = (item) => {
 
         <!-- Column: Actions 3 -->
         <template #cell(delete)="{ item }">
-            <ButtonWithLink v-tooltip="trans('Unselect product')" type="negative" icon="fal fa-skull"
+            <ButtonWithLink v-tooltip="trans('Unselect product. This will not remove the product from :platform', {platform: props.platform_data.name})" type="negative" icon="fal fa-skull"
                             :routeTarget="item.update_portfolio" :body="{
 						'status': false,
 					}" size="xs" :bindToLink="{
