@@ -8,13 +8,13 @@
 
 namespace App\Actions\Dropshipping\WooCommerce\Product;
 
-use App\Actions\RetinaAction;
+use App\Actions\OrgAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class StoreBulkNewProductToCurrentWooCommerce extends RetinaAction
+class StoreBulkNewProductToCurrentWooCommerce extends OrgAction
 {
     use AsAction;
     use WithAttributes;
