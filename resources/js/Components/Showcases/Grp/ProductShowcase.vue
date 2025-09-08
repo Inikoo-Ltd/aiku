@@ -193,11 +193,6 @@ console.log('sss',props)
 					<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
 					<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
 				</div>
-
-				<!-- Add Image Button -->
-				<div class="mt-4">
-					<Button type="primary" full @click="isModalGallery = true" label="Add Images" :icon="faPlus" />
-				</div>
 			</div>
 		</div>
 
