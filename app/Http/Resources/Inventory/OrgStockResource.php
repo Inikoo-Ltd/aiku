@@ -34,7 +34,7 @@ class OrgStockResource extends JsonResource
             'picking_priority'    => $this->picking_priority,
             'value'               => $this->value,
             'dropshipping_pipe'   => $this->dropshipping_pipe,
-            'quantity'            => $this->quantity,
+            'quantity'            => (int) $this->quantity,
             'notes'               => $this->notes,
         ];
     }

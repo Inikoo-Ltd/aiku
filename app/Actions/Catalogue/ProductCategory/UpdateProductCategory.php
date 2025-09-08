@@ -78,13 +78,6 @@ class UpdateProductCategory extends OrgAction
             $originalMasterProductCategory = $productCategory->masterProductCategory;
         }
 
-
-
-
-
-
-
-
         $productCategory = $this->update($productCategory, $modelData, ['data']);
         $productCategory->refresh();
 
@@ -115,7 +108,6 @@ class UpdateProductCategory extends OrgAction
         }
 
         if (Arr::has($changes, 'name')){
-
             UpdateProductCategoryAndMasterTranslations::make()->action($productCategory, [
                 'translations' => [
                     'name' => [$productCategory->shop->language->code => Arr::pull($modelData, 'name')]
@@ -123,8 +115,6 @@ class UpdateProductCategory extends OrgAction
             ]);
 
         }
-
-
 
         if (Arr::has($changes,  'description_title')) {
             UpdateProductCategoryAndMasterTranslations::make()->action($productCategory, [
@@ -229,7 +219,11 @@ class UpdateProductCategory extends OrgAction
             'url'                        => ['sometimes', 'nullable', 'string', 'max:250'],
             'images'                     => ['sometimes', 'array'],
             'master_product_category_id' => ['sometimes', 'integer', 'nullable', Rule::exists('master_product_categories', 'id')->where('master_shop_id', $this->shop->master_shop_id)],
-            'cost_price_ratio'         => ['sometimes', 'numeric', 'min:0']
+            'cost_price_ratio'         => ['sometimes', 'numeric', 'min:0'],
+            'name_i8n' => ['sometimes', 'array'],
+            'description_title_i8n' => ['sometimes', 'array'],
+            'description_i8n' => ['sometimes', 'array'],
+            'description_extra_i8n' => ['sometimes', 'array'],
         ];
 
         if (!$this->strict) {

@@ -102,6 +102,38 @@ class UpdateProduct extends OrgAction
         $product = $this->update($product, $modelData);
         $changed = Arr::except($product->getChanges(), ['updated_at', 'last_fetched_at']);
 
+        if (Arr::has($changed, 'name')){
+            UpdateProductAndMasterTranslations::make()->action($product, [
+                'translations' => [
+                    'name' => [$product->shop->language->code => Arr::pull($modelData, 'name')]
+                ]
+            ]);
+        }
+
+        if (Arr::has($changed,  'description_title')) {
+            UpdateProductAndMasterTranslations::make()->action($product, [
+                'translations' => [
+                    'description_title' => [$product->shop->language->code => Arr::pull($modelData, 'description_title')]
+                ]
+            ]);
+        }
+
+        if (Arr::has($changed, 'description')) {
+            UpdateProductAndMasterTranslations::make()->action($product, [
+                'translations' => [
+                    'description' => [$product->shop->language->code => Arr::pull($modelData, 'description')]
+                ]
+            ]);
+        }
+
+        if (Arr::has($changed, 'description_extra')) {
+            UpdateProductAndMasterTranslations::make()->action($product, [
+                'translations' => [
+                    'description_extra' => [$product->shop->language->code => Arr::pull($modelData, 'description_extra')]
+                ]
+            ]);
+        }
+
 
         if (Arr::hasAny($changed, ['name', 'code', 'price', 'units', 'unit'])) {
             $historicAsset = StoreHistoricAsset::run($product, [], $this->hydratorsDelay);
