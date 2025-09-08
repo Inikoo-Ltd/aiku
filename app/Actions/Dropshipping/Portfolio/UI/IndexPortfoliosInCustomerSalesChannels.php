@@ -143,41 +143,41 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                 'customerSalesChannelId'     => $this->customerSalesChannel->id,
                 'routes'         => [
                     'bulk_upload'               => [
-                        'name'       => 'xxx',
+                        'name'       => 'grp.models.dropshipping.shopify.bulk_upload',
                         'parameters' => [
                             'customerSalesChannel' => $this->customerSalesChannel->id
                         ]
                     ],
                     'batch_all'                 => [
-                        'name'       => 'xxx',
+                        'name'       => 'grp.models.dropshipping.shopify.batch_all',
                         'parameters' => [
                             'customerSalesChannel' => $this->customerSalesChannel->id
                         ]
                     ],
                     'fetch_products'            => match ($this->customerSalesChannel->platform->type) {
                         PlatformTypeEnum::WOOCOMMERCE => [
-                            'name' => 'xxx'
+                            'name' => 'grp.json.dropshipping.customer_sales_channel.woo_products'
                         ],
                         PlatformTypeEnum::SHOPIFY => [
-                            'name' => 'xxx'
+                            'name' => 'grp.json.dropshipping.customer_sales_channel.shopify_products'
                         ],
                         default => false
                     },
                     'single_create_new' => match ($this->customerSalesChannel->platform->type) {
                         PlatformTypeEnum::WOOCOMMERCE => [
-                            'name' => 'xxx'
+                            'name' => 'grp.models.portfolio.store_new_woo_product'
                         ],
                         PlatformTypeEnum::SHOPIFY => [
-                            'name' => 'xxxx'
+                            'name' => 'grp.models.portfolio.store_new_shopify_product'
                         ],
                         default => false
                     },
                     'single_match' => match ($this->customerSalesChannel->platform->type) {
                         PlatformTypeEnum::WOOCOMMERCE => [
-                            'name' => 'xxx'
+                            'name' => 'grp.models.portfolio.match_to_existing_woo_product'
                         ],
                         PlatformTypeEnum::SHOPIFY => [
-                            'name' => 'xxx'
+                            'name' => 'grp.models.portfolio.match_to_existing_shopify_product'
                         ],
                         default => false
                     },
