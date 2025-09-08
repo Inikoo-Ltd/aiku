@@ -46,14 +46,19 @@ class StoreDeliveryNote extends OrgAction
             $modelData['delivery_address'] = $order->deliveryAddress;
         }
 
-
         $deliveryAddress = Arr::pull($modelData, 'delivery_address');
-
 
         data_set($modelData, 'shop_id', $order->shop_id);
         data_set($modelData, 'customer_id', $order->customer_id);
         data_set($modelData, 'group_id', $order->group_id);
         data_set($modelData, 'organisation_id', $order->organisation_id);
+
+
+        data_set($modelData, 'customer_notes', $order->customer_notes);
+        data_set($modelData, 'internal_notes', $order->internal_notes);
+        data_set($modelData, 'public_notes', $order->public_notes);
+        data_set($modelData, 'shipping_notes', $order->shipping_notes);
+
 
         $deliveryNote = DB::transaction(function () use ($order, $modelData, $deliveryAddress) {
             /** @var DeliveryNote $deliveryNote */
