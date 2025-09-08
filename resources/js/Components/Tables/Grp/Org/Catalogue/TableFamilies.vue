@@ -118,7 +118,7 @@ function departmentRoute(family: Family) {
     }
 }
 
-function collectionRoute(shop_slug: string, collection: { id: string, name: string, code?: string }) {
+function collectionRoute(organisation_slug: string, shop_slug: string, collection: { id: string, name: string, code?: string }) {
     switch (route().current()) {
         case 'xxxxxxxxx':
             return route(
@@ -132,7 +132,7 @@ function collectionRoute(shop_slug: string, collection: { id: string, name: stri
             return route(
                 "grp.org.shops.show.catalogue.collections.show",
                 {
-                    organisation: (route().params as RouteParams).organisation,
+                    organisation: organisation_slug,
                     shop: shop_slug,
                     collection: collection.slug
                 })
@@ -225,7 +225,7 @@ const isLoadingDetach = ref<string[]>([])
             <div class="flex flex-col gap-2">
                 <ul>
                     <li v-for="collect in family.collections" :key="collect.id" class="list-disc">
-                        <Link :href="collectionRoute(family.shop_slug, collect)" class="secondaryLink w-fit">
+                        <Link :href="collectionRoute(family.organisation_slug, family.shop_slug, collect)" class="secondaryLink w-fit">
                             {{ collect.name }} <span v-if="collect.code" class="text-gray-400 italic">({{ collect.code }})</span>
                         </Link>
                     </li>

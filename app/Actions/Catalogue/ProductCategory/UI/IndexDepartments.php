@@ -179,6 +179,9 @@ class IndexDepartments extends OrgAction
                     ->column(key: 'sales', label: __('sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'invoices', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true);
             } else {
+                if(class_basename($parent) == 'MasterProductCategory') {
+                    $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
+                }
                 $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
 
