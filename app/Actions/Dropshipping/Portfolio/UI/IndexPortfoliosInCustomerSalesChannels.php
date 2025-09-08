@@ -86,6 +86,8 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $portfolios, ActionRequest $request): Response
     {
+
+
         return Inertia::render(
             'Org/Dropshipping/Portfolios',
             [
@@ -139,6 +141,81 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                 'platform'                   => $this->customerSalesChannel->platform,
                 'customerSalesChannel'       => $this->customerSalesChannel,
                 'customerSalesChannelId'     => $this->customerSalesChannel->id,
+                'routes'         => [
+                    'bulk_upload'               => [
+                        'name'       => 'xxx',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ]
+                    ],
+                    'batch_all'                 => [
+                        'name'       => 'xxx',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ]
+                    ],
+                    'fetch_products'            => match ($this->customerSalesChannel->platform->type) {
+                        PlatformTypeEnum::WOOCOMMERCE => [
+                            'name' => 'xxx'
+                        ],
+                        PlatformTypeEnum::SHOPIFY => [
+                            'name' => 'xxx'
+                        ],
+                        default => false
+                    },
+                    'single_create_new' => match ($this->customerSalesChannel->platform->type) {
+                        PlatformTypeEnum::WOOCOMMERCE => [
+                            'name' => 'xxx'
+                        ],
+                        PlatformTypeEnum::SHOPIFY => [
+                            'name' => 'xxxx'
+                        ],
+                        default => false
+                    },
+                    'single_match' => match ($this->customerSalesChannel->platform->type) {
+                        PlatformTypeEnum::WOOCOMMERCE => [
+                            'name' => 'xxx'
+                        ],
+                        PlatformTypeEnum::SHOPIFY => [
+                            'name' => 'xxx'
+                        ],
+                        default => false
+                    },
+                    'itemRoute'                 => [
+                        'name'       => 'xxx',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->slug
+                        ]
+                    ],
+                    'addPortfolioRoute'         => [
+                        'name'       => 'xxx',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ]
+                    ],
+                    'updatePortfolioRoute'      => [
+                        'name'       => 'xxx',
+                        'parameters' => []
+                    ],
+                    'deletePortfolioRoute'      => [
+                        'name'       => 'xxx',
+                        'parameters' => []
+                    ],
+                    'clonePortfolioRoute'       => [
+                        'method'     => 'post',
+                        'name'       => 'xxx',
+                        'parameters' => [
+                            'targetCustomerSalesChannel' => $this->customerSalesChannel->id
+                        ]
+                    ],
+                    'batchDeletePortfolioRoute' => [
+                        'name'       => 'xxx',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ],
+                        'method'     => 'post'
+                    ],
+                ],
             ]
         )->table($this->tableStructure());
     }
