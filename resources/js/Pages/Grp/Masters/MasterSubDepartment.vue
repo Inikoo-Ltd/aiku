@@ -32,6 +32,8 @@ import Button from "@/Components/Elements/Buttons/Button.vue";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import { routeType } from "@/types/route";
 import FormCreateMasterFamily from "@/Components/Master/FormCreateMasterFamily.vue"
+import { sub } from "date-fns";
+import TableSubDepartments from "@/Components/Tables/Grp/Org/Catalogue/TableSubDepartments.vue";
 
 library.add(
     faFolder,
@@ -67,6 +69,7 @@ const props = defineProps<{
     customers: {}
     mailshots: {}
     products: {}
+    sub_departments?: {}
     storeRoute: routeType
     shopsData: {}
 }>();
@@ -80,6 +83,7 @@ const component: Component = computed(() => {
         products: TableProducts,
         mailshots: TableMailshots,
         customers: TableCustomers,
+        sub_departments: TableSubDepartments,
         details: ModelDetails,
         history: ModelChangelog
     };
