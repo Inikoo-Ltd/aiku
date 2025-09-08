@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { inject } from 'vue'
+import { inject, computed } from 'vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 import { useTruncate } from '@/Composables/useTruncate'
 import { trans } from 'laravel-vue-i18n'
@@ -26,6 +26,23 @@ const props = defineProps<{
 }>()
 
 const layout = inject('layout', layoutStructure)
+
+// Computed property untuk mengurutkan menuItems berdasarkan alphabet
+const sortedMenuItems = computed(() => {
+    if (!props.menuItems || !Array.isArray(props.menuItems)) return []
+
+    // Jika menuKey adalah 'group', tidak perlu sort karena biasanya cuma 1 item
+    if (props.menuKey === 'group') {
+        return props.menuItems
+    }
+
+    // Sort berdasarkan label secara alphabetical untuk organisasi
+    return [...props.menuItems].sort((a, b) => {
+        const labelA = (a.label || '').toLowerCase()
+        const labelB = (b.label || '').toLowerCase()
+        return labelA.localeCompare(labelB, 'en', { numeric: true, sensitivity: 'base' })
+    })
+})
 
 const onClickOrg = async (slug?: string) => {
     if (!slug) return
@@ -58,7 +75,7 @@ const onClickOrg = async (slug?: string) => {
         }
     }
 
-    try {      
+    try {
         if (!route().current()?.includes('grp.org.')) {
             throw new Error('Redirect to dashboard')
         }
@@ -91,35 +108,36 @@ const onClickOrg = async (slug?: string) => {
             <span class="text-[9px] leading-none text-gray-400 capitalize whitespace-nowrap">{{ label }}</span>
             <hr class="w-full rounded-full border-slate-300">
         </div>
-        
+
         <div class="max-h-52 overflow-y-auto space-y-1.5">
             <template v-if="menuKey === 'group'">
                 <MenuItem v-slot="{ active }">
-                    <div @click="() => router.visit(route('grp.dashboard.show'))" :class="[
-                        menuItems[0].slug == layout.currentParams?.organisation ? 'bg-slate-300 text-slate-600' : 'text-slate-600 hover:bg-slate-200/75 hover:text-indigo-600',
-                        'group flex gap-x-2 w-full justify-start items-center rounded pl-2 pr-4 py-2 text-sm cursor-pointer',
-                    ]">
-                        <FontAwesomeIcon icon="fal fa-city" class="" ariaa-hidden="true" />
-                        <div class="space-x-1 whitespace-nowrap">
-                            <span class="font-semibold">{{ layout.group?.label }}</span>
-                            <span class="text-[9px] leading-none text-gray-400">({{ trans("Group") }})</span>
-                        </div>
+                <div @click="() => router.visit(route('grp.dashboard.show'))" :class="[
+                    sortedMenuItems[0].slug == layout.currentParams?.organisation ? 'bg-slate-300 text-slate-600' : 'text-slate-600 hover:bg-slate-200/75 hover:text-indigo-600',
+                    'group flex gap-x-2 w-full justify-start items-center rounded pl-2 pr-4 py-2 text-sm cursor-pointer',
+                ]">
+                    <FontAwesomeIcon icon="fal fa-city" class="" ariaa-hidden="true" />
+                    <div class="space-x-1 whitespace-nowrap">
+                        <span class="font-semibold">{{ layout.group?.label }}</span>
+                        <span class="text-[9px] leading-none text-gray-400">({{ trans("Group") }})</span>
                     </div>
+                </div>
                 </MenuItem>
             </template>
 
             <template v-else>
-                <MenuItem v-for="(item) in menuItems" v-slot="{ active }">
-                    <div @click="() => onClickOrg(item.slug)" :class="[
-                        item.slug == layout.currentParams?.organisation ? 'bg-slate-300 text-slate-600' : 'text-slate-600 hover:bg-slate-200/75 hover:text-indigo-600',
-                        'group flex gap-x-2 w-full justify-start items-center rounded pl-2 pr-4 py-2 text-sm cursor-pointer',
-                    ]">
-                        <div class="h-5 aspect-square rounded-full overflow-hidden ring-1 ring-slate-200 bg-slate-50">
-                            <Image v-show="!imageSkeleton[item.slug]" :src="item.logo" @onLoadImage="() => imageSkeleton[item.slug] = false" />
-                            <div v-show="imageSkeleton[item.slug]" class="skeleton w-5 h-5" />
-                        </div>
-                        <div class="font-semibold whitespace-nowrap">{{ useTruncate(item.label, 20) }}</div>
+                <MenuItem v-for="(item, index) in sortedMenuItems" :key="item.slug || index" v-slot="{ active }">
+                <div @click="() => onClickOrg(item.slug)" :class="[
+                    item.slug == layout.currentParams?.organisation ? 'bg-slate-300 text-slate-600' : 'text-slate-600 hover:bg-slate-200/75 hover:text-indigo-600',
+                    'group flex gap-x-2 w-full justify-start items-center rounded pl-2 pr-4 py-2 text-sm cursor-pointer',
+                ]">
+                    <div class="h-5 aspect-square rounded-full overflow-hidden ring-1 ring-slate-200 bg-slate-50">
+                        <Image v-show="!imageSkeleton[item.slug]" :src="item.logo"
+                            @onLoadImage="() => imageSkeleton[item.slug] = false" />
+                        <div v-show="imageSkeleton[item.slug]" class="skeleton w-5 h-5" />
                     </div>
+                    <div class="font-semibold whitespace-nowrap">{{ useTruncate(item.label, 20) }}</div>
+                </div>
                 </MenuItem>
             </template>
         </div>
