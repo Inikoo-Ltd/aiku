@@ -1,19 +1,17 @@
 <script setup lang="ts">
-import { routeType } from '@/types/route'
-import { ref } from 'vue'
+import { ref } from "vue"
 import { router } from "@inertiajs/vue3"
-import { trans } from 'laravel-vue-i18n'
-import { notify } from '@kyvg/vue3-notification'
-import Image from '../Image.vue'
-import { Image as ImageTS } from '@/types/Image'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import Table from '../Table/Table.vue'
-import { Popover } from 'primevue'
-import Button from '../Elements/Buttons/Button.vue'
-import Modal from '../Utils/Modal.vue'
-import PureInput from '../Pure/PureInput.vue'
-import { set } from 'lodash-es'
-import LoadingIcon from '../Utils/LoadingIcon.vue'
+import { trans } from "laravel-vue-i18n"
+import { notify } from "@kyvg/vue3-notification"
+import { faImage } from "@far"
+
+// Components
+import Image from "../Image.vue"
+import { Image as ImageTS } from "@/types/Image"
+import { routeType } from "@/types/route"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import LoadingIcon from "../Utils/LoadingIcon.vue"
+import { GridProducts } from "@/Components/Product"
 
 const props = defineProps<{
     currentTab: string
@@ -28,257 +26,190 @@ const props = defineProps<{
     imagesUpdateRoute: routeType
     dataTable: {}
 }>()
+
 const selectedDragImage = ref<ImageTS | null>(null)
+const loadingSubmit = ref<null | number | string>(null)
+const isModalEditVideo = ref(false)
+const selectedVideoToUpdate = ref<any>(null)
+
 function onStartDrag(event: DragEvent, img: ImageTS) {
     selectedDragImage.value = img
-    const data = JSON.stringify(img)
-    console.log('Dropping data:', data)
-    event.dataTransfer?.setData('application/json', data)
+    event.dataTransfer?.setData("application/json", JSON.stringify(img))
 }
 
-const loadingSubmit = ref<null | number | string>(null)
+function onSubmitImage(dataRow: any, categoryBox: any) {
+    categoryBox.imageUrl = dataRow?.image?.original
 
-const onSubmitImage = (dataRow, category_box) => {
-    console.log('Files dropped:', dataRow)
-    category_box.imageUrl = dataRow?.image?.original
-    router[props.imagesUpdateRoute.method || 'patch'](
+    router[props.imagesUpdateRoute.method || "patch"](
         route(props.imagesUpdateRoute.name, props.imagesUpdateRoute.parameters),
-        {
-            [category_box.column_in_db]: dataRow.id,
-        },
+        { [categoryBox.column_in_db]: dataRow.id },
         {
             preserveScroll: true,
             preserveState: true,
-            only: ['images_category_box'],
-            onStart: () => { 
-                loadingSubmit.value = category_box.column_in_db
-            },
+            only: ["images_category_box"],
+            onStart: () => (loadingSubmit.value = categoryBox.column_in_db),
             onSuccess: () => {
                 notify({
                     title: trans("Success"),
-                    text: trans("Successfully set image for :category", { category: category_box.label }),
-                    type: "success"
+                    text: trans("Successfully set image for :category", {
+                        category: categoryBox.label,
+                    }),
+                    type: "success",
                 })
             },
-            onError: errors => {
+            onError: () => {
                 notify({
                     title: trans("Something went wrong"),
                     text: trans("Failed to set image"),
-                    type: "error"
+                    type: "error",
                 })
             },
-            onFinish: () => {
-                loadingSubmit.value = null
-            },
+            onFinish: () => (loadingSubmit.value = null),
         }
     )
 }
-const onDropImage = (event: DragEvent, category_box: any) => {
-    const dataRowImage = JSON.parse(event.dataTransfer?.getData('application/json') || '{}')
 
-    // console.log('111 Files dropped:', dataRowImage?.image?.original)
-    // console.log('222 Files dropped:', dataRowImage)
-    // console.log('222 client:', category_box)
-    
+function onDropImage(event: DragEvent, categoryBox: any) {
+    const dataRowImage = JSON.parse(
+        event.dataTransfer?.getData("application/json") || "{}"
+    )
     if (dataRowImage) {
-        onSubmitImage(dataRowImage, category_box)
+        onSubmitImage(dataRowImage, categoryBox)
     }
 }
-const onSubmitVideoUrl = () => {
 
-    router[props.imagesUpdateRoute.method || 'patch'](
+function onSubmitVideoUrl() {
+    router[props.imagesUpdateRoute.method || "patch"](
         route(props.imagesUpdateRoute.name, props.imagesUpdateRoute.parameters),
-        {
-            [selectedVideoToUpdate.value.column_in_db]: selectedVideoToUpdate.value?.url,
-        },
+        { [selectedVideoToUpdate.value.column_in_db]: selectedVideoToUpdate.value?.url },
         {
             preserveScroll: true,
             preserveState: true,
-            only: ['images_category_box'],
-            onStart: () => { 
-                loadingSubmit.value = 'video'
-            },
+            only: ["images_category_box"],
+            onStart: () => (loadingSubmit.value = "video"),
             onSuccess: () => {
                 notify({
                     title: trans("Success"),
                     text: trans("Successfully submit the data"),
-                    type: "success"
+                    type: "success",
                 })
                 isModalEditVideo.value = false
             },
-            onError: errors => {
+            onError: () => {
                 notify({
                     title: trans("Something went wrong"),
                     text: trans("Failed to set video url"),
-                    type: "error"
+                    type: "error",
                 })
             },
-            onFinish: () => {
-                loadingSubmit.value = null
-            },
+            onFinish: () => (loadingSubmit.value = null),
         }
     )
 }
-const isModalEditVideo = ref(false)
-const selectedVideoToUpdate = ref(null)
-const _popover = ref(null)
-const selectedRow = ref(null)
+
+const activeCategory = ref(null);
+
+
+
+console.log('upload Image', props)
 </script>
 
 <template>
-    <div>
-        <div v-if="currentTab === 'images' && imagesCategoryBox?.length" class="px-4 py-3">
-            <ul xv-if="" class="grid grid-cols-4 md:grid-cols-5 xl:flex gap-x-6 gap-y-2 md:gap-y-8 xl:gap-x-4">
-                <li
-                    v-for="category_box in imagesCategoryBox"
-                    :key="category_box.column_in_db"
-                    class="h-fit xxl:h-32 xl:w-24 flex-grow overflow-hidden rounded-xl border border-gray-200"
-                >
-                    <div
-                        class="aspect-square w-full flex items-center justify-center border-b border-gray-900/5 bg-gray-100 relative"
-                        @dragover.prevent
-                        @drop.prevent="(e) => category_box.type === 'image' ? onDropImage(e, category_box) : undefined"
-                        xclass="selectedDragImage ? 'shimmer' : ''"
-                    >
-                        <Image
-                            v-if="category_box.type === 'image' && category_box.images"
-                            :src="category_box.images"
-                            xclass="max-h-full max-w-full mx-auto object-contain"
-                        />
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 px-10 py-4">
+        <!-- Left: Category Drop Areas -->
+        <div v-if="currentTab === 'images' && imagesCategoryBox?.length" class="rounded-xl bg-white p-5 lg:col-span-2">
+            <h3 class="mb-4 text-base font-semibold text-gray-700">
+                {{ trans("Trade Units Images / Videos") }}
+            </h3>
 
-                        <!-- Button: Edit -->
-                        <div
-                            v-if="category_box.type === 'video'"
-                            @click="() => (isModalEditVideo = true, selectedVideoToUpdate = category_box)"
-                            v-tooltip="trans('Change url')"
-                            class="text-gray-400 hover:text-gray-700 absolute bottom-2 right-2 cursor-pointer">
-                            <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true" />
-                        </div>
-
-                        <div
-                            v-if="loadingSubmit === category_box.column_in_db"
-                            class="absolute bg-black/50 text-center text-white text-4xl inset-0 flex items-center justify-center"
-                        >
-                            <LoadingIcon />
-                        </div>
-                        <div
-                            v-else-if="selectedDragImage && category_box.type === 'image'"
-                            class="absolute bg-black/50 text-center text-white text-xl inset-0 flex items-center justify-center"
-                        >
-                            {{ trans("Drop image here") }}
-                        </div>
+            <ul class="grid grid-cols-2 sm:grid-cols-4 gap-4 overflow-y-auto max-h-[600px]">
+                <li v-for="categoryBox in imagesCategoryBox" :key="categoryBox.column_in_db"
+                    class="flex flex-col overflow-hidden rounded-xl border bg-gray-50 transition-all duration-200"
+                    :class="{
+                        'border-blue-500 ring-2 ring-blue-300 bg-blue-50 shadow-md':
+                            activeCategory === categoryBox.column_in_db,
+                    }" @dragover.prevent @dragenter.prevent="activeCategory = categoryBox.column_in_db"
+                    @dragleave="activeCategory = null" @drop.prevent="onDropImage($event, categoryBox)">
+                    <!-- Label -->
+                    <div class="flex items-center justify-between px-3 py-2 bg-gray-100 border-b">
+                        <span class="truncate text-sm font-medium text-gray-700" :title="categoryBox.label">
+                            {{ categoryBox.label }}
+                        </span>
+                        <FontAwesomeIcon v-if="categoryBox.information" v-tooltip="categoryBox.information"
+                            icon="fal fa-info-circle" class="text-gray-400 hover:text-gray-600" fixed-width />
                     </div>
 
-                    <dl class="-my-3 text-center font-medium text-xs md:text-base divide-y divide-gray-100 px-2 md:px-6 xl:px-2 py-4">
-                        {{ category_box.label }}
-                        <FontAwesomeIcon v-if="category_box.information" v-tooltip="category_box.information" icon="fal fa-info-circle" class="text-sm text-gray-400 hover:text-gray-700" fixed-width aria-hidden="true" />
-                    </dl>
+                    <!-- Drop Zone -->
+                    <div class="relative flex h-36 w-full items-center justify-center bg-gray-50">
+                        <Image v-if="categoryBox.images" :src="categoryBox.images"
+                            class="max-h-full max-w-full object-contain" />
+                        <div v-else class="flex flex-col items-center justify-center text-gray-400">
+                            <FontAwesomeIcon :icon="faImage" class="mb-1 text-2xl" />
+                            <span class="text-[12px] font-medium">
+                                {{ trans("Drop image here") }}
+                            </span>
+                        </div>
+                    </div>
                 </li>
             </ul>
         </div>
 
-        <Table :resource="dataTable" name="images" class="mt-5">
-            <template #cell(grabable_area)="{ item }">
-                <div
-                    v-tooltip="trans('Drag and drop to the box to set image')"
-                    class="px-2 py-1 text-gray-400 hover:text-gray-700 cursor-grab"
-                    draggable="true"
-                    @dragstart="(e) => onStartDrag(e, item)"
-                    @dragend="(e) => selectedDragImage = null"
-                >
-                    <FontAwesomeIcon icon="fal fa-grip-horizontal" class="" fixed-width aria-hidden="true" />
-                </div>
+        <!-- Right: Products (draggable) -->
+        <div class="rounded-xl bg-white p-5 lg:col-span-1 flex flex-col border border-gray-200 rounded-lg bg-white">
+            <h3 class="mb-4 text-base font-semibold text-gray-700">
+                {{ trans("Image List") }}
+            </h3>
 
-                <div
-                    @click="(e) => (_popover?.toggle(e), selectedRow = item)"
-                    v-tooltip="trans('Add image to category:')"
-                    class="px-2 py-1 text-gray-400 hover:text-gray-700 cursor-pointer"
-                    draggable="true"
-                >
-                    <FontAwesomeIcon icon="fal fa-arrow-right" class="" fixed-width aria-hidden="true" />
-                </div>
-            </template>
+            <!-- Scrollable Product List -->
+            <div class="flex-1 overflow-y-auto max-h-[600px] pr-1 ">
+                <GridProducts :resource="dataTable" gridClass="grid-cols-1">
+                    <template #card="{ item }">
+                        <article
+                            class="group flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white mb-2 p-3 shadow-sm transition hover:shadow-md hover:border-blue-400 cursor-move"
+                            draggable="true" @dragstart="onStartDrag(item, $event)" @dragend="activeCategory = null">
+                            <!-- Left: Image + Info -->
+                            <div class="flex items-center gap-3 min-w-0 flex-1">
+                                <!-- Product Image -->
+                                <div
+                                    class="relative flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-md bg-gray-100 group-hover:bg-gray-50 transition">
+                                    <Image v-if="item?.image" :src="item?.image"
+                                        class="max-h-full max-w-full object-contain" />
+                                    <div v-else class="text-gray-400">
+                                        <FontAwesomeIcon icon="fal fa-image" class="text-base" />
+                                    </div>
+                                </div>
 
-            <template #cell(image)="{ item: image }">
-                <Image :src="image['image']"  />
-            </template>
-
-            <template #cell(scope)="{ item: image }">
-                {{ image["scope"] }}
-            </template>
-
-            <template #cell(caption)="{ item: image }">
-                {{ image["caption"] }}
-            </template>
-
-            <template #cell(name)="{ item: image }">
-                <pre>{{ image.data}}</pre>
-            </template>
-        </Table>
-
-        <Popover ref="_popover">
-            <div class="w-64 relative">
-                <div class="text-sm mb-2">
-                    {{ trans("Add image to:") }}:
-                </div>
-
-                <div class="space-y-2">
-                    <Button v-for="category_box in imagesCategoryBox"
-                        :key="category_box.column_in_db"
-                        @click="() => onSubmitImage(selectedRow, category_box)"
-                        type="tertiary"
-                        xlabel="channel.customer_sales_channel_name + `${channel.platform_name}`"
-                        full
-                        :disabled="category_box.type === 'video'"
-                        :loading="loadingSubmit === category_box.column_in_db">
-                        <template #label>
-                            <div class="flex items-center gap-2">
-                                {{ category_box.label }}
+                                <!-- Product Info -->
+                                <div class="flex-1 min-w-0">
+                                    <p class="truncate max-w-[160px] text-sm font-medium text-gray-800"
+                                        :title="item?.name">
+                                        {{ item?.name || trans("Unnamed product") }}
+                                    </p>
+                                    <span class="truncate max-w-[160px] block text-[11px] text-gray-500 italic"
+                                        :title="item?.code">
+                                        {{ item?.size  }}
+                                    </span>
+                                </div>
                             </div>
-                        </template>
-                    </Button>
-                </div>
 
+                            <!-- Right: Delete Button -->
+                            <button @click="onDelete(item)"
+                                class="ml-2 flex-shrink-0 rounded-full p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 transition"
+                                v-tooltip="trans('Delete')">
+                                <FontAwesomeIcon icon="fal fa-trash-alt" class="text-sm text-red-400" />
+                            </button>
+                        </article>
+                    </template>
+                </GridProducts>
             </div>
-        </Popover>
+        </div>
 
-        <Modal :isOpen="isModalEditVideo" @onClose="() => (isModalEditVideo = false)" width="max-w-2xl w-full">
-            <div class="p-6">
-                <h2 class="text-3xl font-bold text-center mb-6">{{ trans("Video URL") }}</h2>
-
-                <div class="space-y-6">
-                    <div>
-                        <label for="amount" class="block text-gray-700 font-medium mb-2">
-                            {{ trans("Input video url") }}
-                            <p class="inline text-base text-gray-400 italic xmb-6 text-center">({{ trans("Youtube url or Vimeo url") }})</p>:
-                        </label>
-                        <PureInput
-                            :modelValue="selectedVideoToUpdate?.url"
-                            @update:modelValue="(value) => set(selectedVideoToUpdate, ['url'], value)"
-                            :placeholder="trans('https://example.com/video.mp4')"
-                            class="w-full"
-                            @keydown.enter="() => onSubmitVideoUrl()"
-                            :isLoading="loadingSubmit === 'video'"
-                        />
-                    </div>
-                </div>
-
-                <div class="mt-8 flex justify-end space-x-4">
-                    <Button
-                        :label="trans('Cancel')"
-                        type="negative"
-                        @click="() => isModalEditVideo = false"
-                    />
-
-                    <Button
-                        :label="trans('Submit')"
-                        type="primary"
-                        @click="() => onSubmitVideoUrl()"
-                        full
-                        :loading="loadingSubmit === 'video'"
-                    />
-                </div>
-            </div>
-        </Modal>
     </div>
+
 </template>
+
+<style scoped>
+li {
+    transition: all 0.25s ease-in-out;
+}
+</style>
