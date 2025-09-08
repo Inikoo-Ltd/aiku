@@ -18,7 +18,6 @@ defineProps<{
 
 const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', {})
-console.log(layout)
 
 function stockRoute(stock: Stock) {
   console.log(route().current());
@@ -96,11 +95,11 @@ function stockFamilyRoute(stock: Stock) {
       </Link>
     </template>
     <template #cell(type)="{ item: stock }">
-      {{ stock.type ?? 'no data' }}
+      {{ stock.type ?? '' }}
     </template>
 
     <template #cell(picking_priority)="{ item: stock }">
-      {{ stock.picking_priority ?? 'no data'}}
+      {{ stock.picking_priority ?? ''}}
     </template>
 
     <template #cell(value)="{ item: stock }">
@@ -108,15 +107,17 @@ function stockFamilyRoute(stock: Stock) {
     </template>
 
     <template #cell(dropshipping_pipe)="{ item: stock }">
-      {{ stock.dropshipping_pipe ?? 'no data'}}
+      {{ stock.dropshipping_pipe ?? ''}}
     </template>
 
     <template #cell(quantity)="{ item: stock }">
-      {{ stock.quantity ?? 'no data'}}
+      <div class="text-right">
+        {{ stock.quantity ?? '' }}
+      </div>
     </template>
 
     <template #cell(notes)="{ item: stock }">
-      {{ stock.notes ?? 'no data'}}
+      {{ stock.notes ?? ''}}
     </template>
 
   </Table>

@@ -35,15 +35,17 @@ class GetWebBlockSeeAlso
 
         // Products selected manually
         $products = Arr::get($webBlock, "{$settingsPath}.products", []);
-
+        
         // Ensure type exists but don’t overwrite if already set
-        $type = Arr::has($webBlock, "{$settingsPath}.type")
-            ? Arr::get($webBlock, "{$settingsPath}.type")
-            : "luigi-trends";
-
+        $luigiTrackerId = data_get($webpage->website, 'settings.luigisbox.tracker_id');
         if (!Arr::has($webBlock, "{$settingsPath}.type")) {
-            data_set($webBlock, "{$settingsPath}.type", $type);
+            if ($webpage->sub_type == WebpageSubTypeEnum::PRODUCT) {
+                data_set($webBlock, "{$settingsPath}.type", "current-family");
+            } else if ($luigiTrackerId) {
+                data_set($webBlock, "{$settingsPath}.type", "luigi-trends");
+            }
         }
+
 
         // Section: Other Family
         $dataOtherFamilyToWorkshop = null;

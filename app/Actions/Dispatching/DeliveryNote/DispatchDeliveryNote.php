@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotes;
+use App\Actions\Comms\Email\SendDispatchedReplacementOrderEmailToCustomer;
 use App\Actions\Ordering\Order\DispatchOrderFromDeliveryNote;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
@@ -48,10 +49,12 @@ class DispatchDeliveryNote extends OrgAction
 
 
             $deliveryNote->refresh();
-            if($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
+            if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
                 foreach ($deliveryNote->orders as $order) {
                     DispatchOrderFromDeliveryNote::make()->action($order);
                 }
+            } else {
+                SendDispatchedReplacementOrderEmailToCustomer::dispatch($deliveryNote);
             }
 
 
