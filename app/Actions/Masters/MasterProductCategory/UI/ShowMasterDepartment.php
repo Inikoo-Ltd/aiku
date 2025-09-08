@@ -10,6 +10,7 @@
 
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
+use App\Actions\Catalogue\ProductCategory\UI\IndexDepartments;
 use App\Actions\GrpAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
@@ -17,6 +18,7 @@ use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\UI\SupplyChain\MasterDepartmentTabsEnum;
+use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -125,6 +127,9 @@ class ShowMasterDepartment extends GrpAction
                     fn () => GetMasterProductCategoryShowcase::run($masterDepartment)
                     : Inertia::lazy(fn () => GetMasterProductCategoryShowcase::run($masterDepartment)),
 
+                MasterDepartmentTabsEnum::DEPARTMENTS->value => $this->tab == MasterDepartmentTabsEnum::DEPARTMENTS->value ?
+                    fn () => DepartmentsResource::collection(IndexDepartments::run($masterDepartment))
+                    : Inertia::lazy(fn () => DepartmentsResource::collection(IndexDepartments::run($masterDepartment))),
 
                 MasterDepartmentTabsEnum::HISTORY->value => $this->tab == MasterDepartmentTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($masterDepartment))
@@ -133,6 +138,7 @@ class ShowMasterDepartment extends GrpAction
 
             ]
         )
+            ->table(IndexDepartments::make()->tableStructure(parent: $masterDepartment, prefix: MasterDepartmentTabsEnum::DEPARTMENTS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: MasterDepartmentTabsEnum::HISTORY->value));
     }
 
