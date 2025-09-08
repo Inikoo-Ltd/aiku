@@ -58,7 +58,10 @@ class GetWebBlockSeeAlso
                 'code'  => $modelOtherFamily->code,
                 'title' => $modelOtherFamily->title,
                 'option' => ProductsWebpageResource::collection(
-                    $modelOtherFamily->getProducts()->sortByDesc('id')->take(6)
+                    $modelOtherFamily->getProducts()
+                        // ->where('stock', '>', 0)
+                        ->sortByDesc('id')
+                        ->take(6)
                 )->resolve(),
             ];
         }

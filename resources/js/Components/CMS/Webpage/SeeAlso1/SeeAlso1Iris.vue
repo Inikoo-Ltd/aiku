@@ -18,6 +18,7 @@ import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons
 import { library } from '@fortawesome/fontawesome-svg-core'
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import RecommendersLuigi1Iris from "./RecommendersLuigi1Iris.vue"
+import ProductRenderEcom from "../Products1/ProductRenderEcom.vue"
 library.add(faChevronLeft, faChevronRight)
 
 
@@ -114,7 +115,8 @@ console.log('see also',props)
           class="h-full">
           <div class="h-full">
             <div v-if="product" class="h-full flex flex-col">
-              <ProductRender :product="product" :productHasPortfolio="[]" />
+              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :product="product" />
+              <ProductRender v-else :product="product" :productHasPortfolio="[]" />
             </div>
             <div v-else>
             </div>

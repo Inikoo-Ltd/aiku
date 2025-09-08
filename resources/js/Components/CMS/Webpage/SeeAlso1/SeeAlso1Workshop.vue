@@ -18,6 +18,7 @@ import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons
 import { library } from '@fortawesome/fontawesome-svg-core'
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import RecommendersLuigi1Workshop from "./RecommendersLuigi1Workshop.vue"
+import ProductRenderEcom from "../Products1/ProductRenderEcom.vue"
 library.add(faChevronLeft, faChevronRight)
 
 const dummyProductImage = '/product/product_dummy.jpeg'
@@ -119,7 +120,8 @@ const compSwiperOptions = computed(() => {
           class="h-full">
           <div class="h-full">
             <div v-if="product" class="h-full flex flex-col">
-              <ProductRender :product="product" :productHasPortfolio="[]" />
+              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :product="product" />
+              <ProductRender v-else :product="product" :productHasPortfolio="[]" />
             </div>
             <div v-else
               class="h-full text-gray-400 text-sm text-center py-6 p-3 relative rounded-lg shadow-sm bg-white hover:shadow-md transition-all duration-200">

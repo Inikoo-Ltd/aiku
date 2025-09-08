@@ -77,8 +77,6 @@ const onSubmitSubscribe = async () => {
 }
 
 
-console.log('layout', props)
-
 const getValueTransleted = (value: Translatable) => {
 //   console.log(value)
 
