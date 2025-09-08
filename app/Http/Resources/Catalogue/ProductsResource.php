@@ -85,6 +85,7 @@ class ProductsResource extends JsonResource
             'stock'                     => $this->available_quantity,
             'images'                    => ImageResource::collection($this->images),
             'image_thumbnail'           => $this->imageSources(720, 480),
+            'master_product_id'         => $this->master_product_id, 
         ];
     }
 }
