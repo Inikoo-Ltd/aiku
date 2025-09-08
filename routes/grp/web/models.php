@@ -203,6 +203,7 @@ use App\Actions\HumanResources\Workplace\StoreWorkplace;
 use App\Actions\HumanResources\Workplace\UpdateWorkplace;
 use App\Actions\Masters\MasterAsset\Json\GetTradeUnitDataForMasterProductCreation;
 use App\Actions\Masters\MasterAsset\StoreMasterProductFromTradeUnits;
+use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterCollection\AttachMasterCollectionToModel;
 use App\Actions\Masters\MasterCollection\AttachModelsToMasterCollection;
 use App\Actions\Masters\MasterCollection\AttachMultipleParentsToAMasterCollection;
@@ -382,6 +383,10 @@ Route::prefix('master-collection/{masterCollection:id}')->name('master_collectio
 
 Route::prefix('master-family/{masterFamily:id}')->name('master_family.')->group(function () {
     Route::post('store-assets', StoreMasterProductFromTradeUnits::class)->name('store-assets');
+});
+
+Route::prefix('master-asset/{masterAsset:id}')->name('master_asset.')->group(function () {
+    Route::patch('update', UpdateMasterAsset::class)->name('update');
 });
 
 Route::prefix('department/{productCategory:id}')->name('department.')->group(function () {
