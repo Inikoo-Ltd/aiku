@@ -34,6 +34,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { routeType } from "@/types/route";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons";
+import TableDepartments from "@/Components/Tables/Grp/Org/Catalogue/TableDepartments.vue";
 
 library.add(
     faFolder,
@@ -63,6 +64,7 @@ const props = defineProps<{
     customers?: object;
     mailshots?: object;
     history?: object;
+    departments?: object
     showcase?: object
     url_master?:routeType
 }>();
@@ -75,6 +77,7 @@ const component = computed(() => {
         showcase: DepartmentShowcase,
         products: TableProducts,
         families: TableFamilies,
+        departments: TableDepartments,
         mailshots: TableMailshots,
         customers: TableCustomers,
         details: ModelDetails,
