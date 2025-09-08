@@ -29,7 +29,6 @@ const props = defineProps<{
 }>()
 
 const showDialog = ref(false)
-const dummyMasterProductCategory = 312
 </script>
 
 <template>
