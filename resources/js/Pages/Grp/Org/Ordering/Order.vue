@@ -64,6 +64,7 @@ import Icon from "@/Components/Icon.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { ToggleSwitch } from "primevue"
+import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
 
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt)
 
@@ -627,6 +628,35 @@ const updateCollectionNotes = () => {
                 </template>
             </Popover>
         </template>
+
+        <template #button-replacement="{ action }">
+            <ModalConfirmation
+                :routeYes="action.route"
+                :title="trans('Create Replacement Order?')"
+                :description="trans('This will create a replacement for the current Delivery Note (do this when the user requests replacement of items)')"
+            >
+                <template #default="{ changeModel }">
+                    <Button
+                        @click="() => changeModel()"
+                        :label="trans('Replacement')"
+                        xsize="xs"
+                        icon="fal fa-repeat-1-alt"
+                        type="secondary"
+                        key="1"
+                        v-tooltip="trans('Create replacement if the user requests replacement of items')"
+                    />
+                </template>
+
+                <template #btn-yes="{ isLoadingdelete, clickYes}">
+                    <Button
+                        :loading="isLoadingdelete"
+                        @click="() => clickYes()"
+                        :label="trans('Yes, Create Replacement')"
+                    />
+                </template>
+            </ModalConfirmation>
+        </template>
+
         <template #other>
             <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
                 icon="upload" />
