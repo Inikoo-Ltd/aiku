@@ -39,6 +39,15 @@ function subDepartmentRoute(SubDepartment: SubDepartmentx) {
                 SubDepartment.slug
             ]
         )
+    } else {
+        return route(
+            "grp.org.shops.show.catalogue.sub_departments.show",
+            [
+                SubDepartment.organisation_slug,
+                SubDepartment.shop_slug,
+                SubDepartment.slug
+            ]
+        )
     }
 }
 

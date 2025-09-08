@@ -10,6 +10,7 @@
 
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
+use App\Actions\Catalogue\ProductCategory\UI\IndexFamilies;
 use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
@@ -20,6 +21,7 @@ use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\UI\SupplyChain\MasterFamilyTabsEnum;
 use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Http\Resources\Catalogue\DepartmentsResource;
+use App\Http\Resources\Catalogue\FamiliesResource;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
@@ -167,6 +169,10 @@ class ShowMasterFamily extends GrpAction
              fn () => GetMasterProductCategoryShowcase::run($masterFamily)
              : Inertia::lazy(fn () => GetMasterProductCategoryShowcase::run($masterFamily)),
 
+            MasterFamilyTabsEnum::FAMILIES->value => $this->tab == MasterFamilyTabsEnum::FAMILIES->value ?
+            fn () => FamiliesResource::collection(IndexFamilies::run($masterFamily))
+            : Inertia::lazy(fn () => FamiliesResource::collection(IndexFamilies::run($masterFamily))),
+
                 // FamilyTabsEnum::CUSTOMERS->value => $this->tab == FamilyTabsEnum::CUSTOMERS->value ?
                 //     fn () => CustomersResource::collection(IndexCustomers::run(parent : $masterFamily->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
                 //     : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run(parent : $masterFamily->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))),
@@ -178,7 +184,8 @@ class ShowMasterFamily extends GrpAction
             ]
         )
             // ->table(IndexCustomers::make()->tableStructure(parent: $masterFamily->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
-            ->table(IndexMailshots::make()->tableStructure($masterFamily));
+            ->table(IndexMailshots::make()->tableStructure($masterFamily))
+            ->table(IndexFamilies::make()->tableStructure(parent: $masterFamily, prefix: MasterFamilyTabsEnum::FAMILIES->value, sales:false));
     }
 
 

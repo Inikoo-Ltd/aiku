@@ -31,6 +31,7 @@ import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import { routeType } from "@/types/route";
 import FormCreateMasterProduct from "@/Components/FormCreateMasterProduct.vue"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
+import TableFamilies from "@/Components/Tables/Grp/Org/Catalogue/TableFamilies.vue"
 
 
 library.add(
@@ -59,6 +60,7 @@ const props = defineProps<{
     showcase: object
     details: object
     history?: object;
+    families?: object   
     is_orphan?: boolean
     currency?:Object
     url_master?:routeType
@@ -77,6 +79,7 @@ const component = computed(() => {
     const components = {
         showcase: FamilyShowcase,
         mailshots: TableMailshots,
+        families: TableFamilies,
         customers: TableCustomers,
         details: ModelDetails,
         history: TableHistories
