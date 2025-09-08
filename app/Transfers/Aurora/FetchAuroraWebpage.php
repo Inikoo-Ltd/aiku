@@ -44,6 +44,10 @@ class FetchAuroraWebpage extends FetchAurora
             return;
         }
 
+        if (in_array($this->auroraModelData->{'Webpage Scope'}, ['Product', 'Category Products', 'Category Categories'])) {
+            return;
+        }
+
 
 
         if (preg_match('/\.sys$/', $this->auroraModelData->{'Webpage Code'})) {

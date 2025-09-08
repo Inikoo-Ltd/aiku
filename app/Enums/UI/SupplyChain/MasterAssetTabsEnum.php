@@ -20,10 +20,8 @@ enum MasterAssetTabsEnum: string
 
 
     case SHOWCASE = 'showcase';
+    case PRODUCTS = 'products';
     case HISTORY  = 'history';
-
-
-
 
 
     public function blueprint(): array
@@ -36,6 +34,10 @@ enum MasterAssetTabsEnum: string
                 'title' => __('changelog'),
                 'icon'  => 'fal fa-clock',
 
+            ],
+            MasterAssetTabsEnum::PRODUCTS => [
+                'title' => __('products in shop'),
+                'icon'  => 'fal fa-store',
             ],
             MasterAssetTabsEnum::SHOWCASE => [
                 'title' => __('overview'),

@@ -6,6 +6,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import Family1Render from './Families1Render.vue'
 import { getStyles } from "@/Composables/styles"
 import { computed, inject} from "vue"
+import { trans } from "laravel-vue-i18n"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
 
