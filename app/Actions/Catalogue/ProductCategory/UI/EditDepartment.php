@@ -87,25 +87,25 @@ class EditDepartment extends OrgAction
                                     'label' => __('code'),
                                     'value' => $department->code
                                 ],
-                                'name_i8n' => [
+                                'name' => [
                                     'type'  => 'input',
                                     'label' => __('name'),
-                                    'value' => $department->getTranslation('name_i8n', $department->shop->language->code) ?: $department->name
+                                    'value' =>  $department->name
                                 ],
-                                'description_title_i8n' => [
+                                'description_title' => [
                                     'type'  => 'input',
                                     'label' => __('description title'),
-                                    'value' => $department->getTranslation('description_title_i8n', $department->shop->language->code) ?: $department->description_title
+                                    'value' =>  $department->description_title
                                 ],
-                                'description_i8n' => [
+                                'description' => [
                                     'type'  => 'textEditor',
                                     'label' => __('description'),
-                                    'value' => $department->getTranslation('description_i8n', $department->shop->language->code) ?: $department->description
+                                    'value' => $department->description
                                 ],
-                                'description_extra_i8n' => [
+                                'description_extra' => [
                                     'type'  => 'textEditor',
                                     'label' => __('Extra description'),
-                                    'value' => $department->getTranslation('description_extra_i8n', $department->shop->language->code) ?: $department->description_extra
+                                    'value' =>  $department->description_extra
                                 ],
                             ]
                         ],

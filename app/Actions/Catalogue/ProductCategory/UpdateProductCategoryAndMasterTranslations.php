@@ -8,7 +8,7 @@ use App\Models\Masters\MasterProductCategory;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class UpdateProductCategoryTranslationsFromUpdate extends OrgAction
+class UpdateProductCategoryAndMasterTranslations extends OrgAction
 {
     use asAction;
 
