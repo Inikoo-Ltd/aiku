@@ -54,6 +54,7 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
                 'org_stocks.id as org_stock_id',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
+                'org_stocks.slug as org_stock_slug',
                 'org_stocks.packed_in',
                 'delivery_notes.slug as delivery_note_slug',
                 'delivery_notes.id as delivery_note_id',
@@ -92,8 +93,8 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
 
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'delivery_note_reference', label: __('Delivery Note'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'org_stock_code', label: __('SKU'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'org_stock_name', label: __('SKU Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'pickings', label: __('Pickings'), canBeHidden: false);
             $table->column(key: 'picking_position', label: __('To do actions'), canBeHidden: false, sortable: true);
         };
