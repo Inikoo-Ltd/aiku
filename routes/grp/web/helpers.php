@@ -15,6 +15,7 @@ use App\Actions\Helpers\RedirectInvoicesInCustomerLink;
 use App\Actions\Helpers\RedirectInvoicesInShopFromDashboard;
 use App\Actions\Helpers\RedirectInvoicesInShopLink;
 use App\Actions\Helpers\RedirectMasterProductCategoryLink;
+use App\Actions\Helpers\RedirectMasterProductLink;
 use App\Actions\Helpers\RedirectPickingSessionLink;
 use App\Actions\Helpers\RedirectPortfolioItemLink;
 use App\Actions\Helpers\RedirectProductCategoryLink;
@@ -42,6 +43,7 @@ Route::get('redirect-collections-in-product-category/{productCategory:slug}', Re
 
 Route::get('redirect-picking-session/{pickingSession:id}', RedirectPickingSessionLink::class)->name('redirect_picking_session');
 
+Route::get('redirect-master-product/{masterAsset:id}', RedirectMasterProductLink::class)->name('redirect_master_product');
 Route::get('redirect-master-product-category/{masterProductCategory:id}', RedirectMasterProductCategoryLink::class)->name('redirect_master_product_category');
 
 

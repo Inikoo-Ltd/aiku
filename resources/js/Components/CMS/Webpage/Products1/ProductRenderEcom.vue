@@ -226,10 +226,10 @@ const urlLoginWithRedirect = () => {
 
                             <FontAwesomeIcon v-if="product.is_favourite" :icon="fasHeart" fixed-width
                                 class="text-pink-500" />
-                            <div v-else class="relative">
-                                <FontAwesomeIcon :icon="fasHeart" class="hidden group-hover:inline text-pink-400"
-                                    fixed-width />
-                                <FontAwesomeIcon :icon="faHeart" class="inline group-hover:hidden text-pink-300"
+                            <div v-else class="relative" v-tooltip="trans('Add To Favourite')">
+                                <!-- <FontAwesomeIcon :icon="fasHeart" class="hidden group-hover:inline text-pink-400"
+                                    fixed-width /> -->
+                                <FontAwesomeIcon :icon="faHeart" class="inline text-pink-300"
                                     fixed-width />
                             </div>
 

@@ -123,6 +123,7 @@ class IndexProductsInCatalogue extends OrgAction
                 'products.slug',
                 'available_quantity',
                 'units',
+                'master_product_id',
             ])
             ->selectRaw("'{$shop->currency->code}'  as currency_code")
             ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');

@@ -140,6 +140,7 @@ trait IsOrder
                 'weight' => NaturalLanguage::make()->weight($order->estimated_weight),
             ],
             'delivery_notes'   => $deliveryNotesData,
+            'shipping_notes' => $order->shipping_notes,
             'products'         => [
                 'payment'          => [
                     'routes'       => [

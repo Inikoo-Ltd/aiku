@@ -135,13 +135,12 @@ class UpdateOrder extends OrgAction
             'dispatched_at'         => ['sometimes', 'nullable', 'date'],
             'delivery_address_id'   => ['sometimes', Rule::exists('addresses', 'id')],
             'collection_address_id' => ['sometimes', 'nullable', Rule::exists('addresses', 'id')],
-            'shipping_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'customer_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'public_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'internal_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'collection_notes'      => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'state'                 => ['sometimes', Rule::enum(OrderStateEnum::class)],
-            'sales_channel_id'      => [
+            'shipping_notes'      => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'customer_notes'      => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'public_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'internal_notes'      => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'state'               => ['sometimes', Rule::enum(OrderStateEnum::class)],
+            'sales_channel_id'    => [
                 'sometimes',
                 'required',
                 Rule::exists('sales_channels', 'id')->where(function ($query) {

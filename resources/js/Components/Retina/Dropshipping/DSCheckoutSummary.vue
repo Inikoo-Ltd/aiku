@@ -1,19 +1,19 @@
 <script setup lang="ts">
 
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
-import {trans} from "laravel-vue-i18n"
-import {inject, onMounted, ref} from "vue"
-import {Link, router} from "@inertiajs/vue3"
-import {AddressManagement} from "@/types/PureComponent/Address"
+import { trans } from "laravel-vue-i18n"
+import { inject, onMounted, ref } from "vue"
+import { Link, router } from "@inertiajs/vue3"
+import { AddressManagement } from "@/types/PureComponent/Address"
 import Modal from "@/Components/Utils/Modal.vue"
 import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
 import Icon from "@/Components/Icon.vue"
 
-import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
-import {faFilePdf, faIdCardAlt, faTruck, faWeight, faMapPin} from "@fal"
-import {library} from "@fortawesome/fontawesome-svg-core"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faFilePdf, faIdCardAlt, faTruck, faWeight, faMapPin } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
 import ToggleSwitch from 'primevue/toggleswitch';
-import {notify} from "@kyvg/vue3-notification"
+import { notify } from "@kyvg/vue3-notification"
 
 library.add(faIdCardAlt, faWeight, faMapPin)
 
@@ -109,7 +109,7 @@ const updateCollectionType = () => {
     }
 
     if (collectionBy.value === 'myself') {
-        payload.collection_notes = null
+        payload.shipping_notes = null
         textValue.value = null // also clear in frontend
     }
 
@@ -139,7 +139,7 @@ const updateCollectionType = () => {
 const updateCollectionNotes = () => {
     router.patch(
         route(props.address_management.updateRoute.name, props.address_management.updateRoute.parameters),
-        { collection_notes: textValue.value },
+        {shipping_notes: textValue.value},
         {
             preserveScroll: true,
             onSuccess: () => {
