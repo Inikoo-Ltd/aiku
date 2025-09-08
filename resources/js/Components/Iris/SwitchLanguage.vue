@@ -69,7 +69,7 @@ const _popover = ref(null)
 </script>
 
 <template>
-    <div v-if="layout.app.environment === 'local'">
+    <div xv-if="layout.app.environment === 'local'" v-if="Object.keys(layout.iris.website_i18n?.language_options).length > 0">
         <Button
             @click="(e) => _popover?.toggle(e)"
             v-tooltip="trans('Change language of the website')"
