@@ -3,7 +3,6 @@ import { faTh, faCircle, faChevronRight, faChevronDown } from "@fas";
 import { ref } from "vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import EmptyState from "@/Components/Utils/EmptyState.vue";
 import { routeType } from "@/types/route";
 import { faEmptySet } from "@fal";
 import axios from "axios";
@@ -18,7 +17,7 @@ const props = defineProps<{
       families_route: routeType
     }>;
   };
-   active: String
+   active: string
 }>();
 
 const emits = defineEmits<{
@@ -48,7 +47,7 @@ async function toggle(index: number) {
       dept.families_route.parameters
     ));
     families.value = response.data.data || [];
-    emits("changeDepartment", { sub_departement : dept, families: families.value });
+    emits("changeDepartment", { sub_department : dept, families: families.value });
   } catch (err) {
     console.error("Error fetching sub-departments", err);
     families.value = [];

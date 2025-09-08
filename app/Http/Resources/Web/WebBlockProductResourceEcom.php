@@ -101,7 +101,7 @@ class WebBlockProductResourceEcom extends JsonResource
             'tags'              => TagResource::collection($product->tradeUnitTagsViaTradeUnits())->toArray($request),
             'transaction_id'      => $transactionId,
             'quantity_ordered'      => (int) $quantityOrdered,
-            'quantity_ordered_new'  => (int) $quantityOrdered,  // To editable in Frontend
+            'quantity_ordered_new'  => 1,  // To editable in Frontend
             'is_favourite'          => $favourite && !$favourite->unfavourited_at ?? false,
         ];
     }

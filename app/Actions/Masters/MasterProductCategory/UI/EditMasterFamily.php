@@ -78,7 +78,6 @@ class EditMasterFamily extends OrgAction
 
         }
 
-        // dd($masterProductCategory->masterDepartment->id);
         return Inertia::render(
             'EditModel',
             [
@@ -149,7 +148,7 @@ class EditMasterFamily extends OrgAction
                                 ],
                                 'description_extra' => [
                                     'type'  => 'textEditor',
-                                    'label' => __('description extra'),
+                                    'label' => __('Extra description'),
                                     'value' => $masterProductCategory->description_extra
                                 ],
                                 'description_extra_i8n' => [
@@ -158,6 +157,24 @@ class EditMasterFamily extends OrgAction
                                     'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
                                     'value' => $masterProductCategory->getTranslations('description_extra_i8n')
                                 ],
+                            ]
+                        ],
+                        [
+                            'label'  => __('Pricing'),
+                            'title'  => __('id'),
+                            'icon'   => 'fa-light fa-money-bill',
+                            'fields' => [
+                                'cost_price_ratio' => [
+                                    'type'          => 'input_number',
+                                    'bind' => [
+                                        'maxFractionDigits' => 3
+                                    ],
+                                    'label'         => __('pricing ratio'),
+                                    'placeholder'   => __('Cost price ratio'),
+                                    'required'      => true,
+                                    'value'         => $masterProductCategory->cost_price_ratio,
+                                    'min'           => 0
+                                ]
                             ]
                         ],
                         [

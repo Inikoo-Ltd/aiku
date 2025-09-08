@@ -219,7 +219,7 @@ class UpdateProductCategory extends OrgAction
             'description_title_i8n' =>  ['sometimes'],
             'description_i8n' =>        ['sometimes'],
             'description_extra_i8n' =>  ['sometimes'],
-
+            'cost_price_ratio'         => ['sometimes', 'numeric', 'min:0']
         ];
 
         if (!$this->strict) {

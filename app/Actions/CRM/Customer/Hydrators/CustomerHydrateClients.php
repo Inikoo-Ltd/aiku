@@ -25,7 +25,7 @@ class CustomerHydrateClients implements ShouldBeUnique
     {
         $stats = [
             'number_customer_clients'         => $customer->clients->count(),
-            'number_current_customer_clients' => $customer->clients->where('customer_clients.status', true)->count(),
+            'number_current_customer_clients' => $customer->clients()->where('customer_clients.status', true)->count(),
         ];
         $customer->stats()->update($stats);
     }

@@ -45,7 +45,6 @@ library.add(
     faBrowser, faExclamationTriangle
 )
 
-const ModelChangelog = defineAsyncComponent(() => import("@/Components/ModelChangelog.vue"))
 
 const props = defineProps<{
     title: string
@@ -64,10 +63,11 @@ const props = defineProps<{
     currency?:Object
     url_master?:routeType
     shopsData? :any
+    masterProductCategory?:number
 }>()
 console.log('family',props)
 const currentTab = ref(props.tabs.current)
-const isOpenModal = ref(false) // ✅ Added missing ref
+
 
 const handleTabUpdate = (tabSlug: string) => {
     useTabChange(tabSlug, currentTab)
@@ -83,7 +83,7 @@ const component = computed(() => {
     }
     return components[currentTab.value] ?? ModelDetails
 })
-
+console.log(route().params)
 
 const showDialog = ref(false);
 
@@ -126,6 +126,7 @@ const showDialog = ref(false);
         @update:show-dialog="(value) => showDialog = value"
         :master-currency="currency"
         :shopsData="shopsData"
+        :masterProductCategory="masterProductCategory"
     />
 
 </template>

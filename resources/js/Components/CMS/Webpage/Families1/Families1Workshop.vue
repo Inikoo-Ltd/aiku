@@ -9,7 +9,7 @@ import EmptyState from '@/Components/Utils/EmptyState.vue'
 import { getStyles } from "@/Composables/styles"
 import Dialog from 'primevue/dialog'
 import { routeType } from '@/types/route'
-import FormEditProductCategory from "@/Components/Departement&Family/FormEditProductCategory.vue"
+import FormEditProductCategory from "@/Components/DepartmentAndFamily/FormEditProductCategory.vue"
 import Blueprint from './Blueprint'
 import { sendMessageToParent } from "@/Composables/Workshop"
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -37,7 +37,7 @@ const props = defineProps<{
   routeEditfamily?: routeType
   webpageData?: any
   blockData?: Object
-  indexBlock: Number
+  indexBlock: number
   screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 

@@ -12,7 +12,7 @@ import Image from "@/Components/Image.vue"
 import { notify } from "@kyvg/vue3-notification"
 import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
 import { trans } from "laravel-vue-i18n"
-import { router } from "@inertiajs/vue3"
+import { router, Link } from "@inertiajs/vue3"
 import { Image as ImageTS } from '@/types/Image'
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { set } from "lodash-es"
@@ -155,6 +155,15 @@ const toggleExpanded = () => {
   expanded.value = !expanded.value
 }
 
+// Method: generate url for Login
+const urlLoginWithRedirect = () => {
+    if (route()?.current() !== "retina.login.show" && route()?.current() !== "retina.register") {
+        return `/app/login?ref=${encodeURIComponent(window?.location.pathname)}${window?.location.search ? encodeURIComponent(window?.location.search) : ""
+            }`
+    } else {
+        return "/app/login"
+    }
+}
 </script>
 
 <template>
@@ -194,7 +203,7 @@ const toggleExpanded = () => {
                             </div> -->
                         </div>
 
-                        <div v-if="layout?.iris?.is_logged_in" class="flex items-center gap-2 text-sm text-gray-600 mb-4">
+                        <div v-if="layout?.iris?.is_logged_in" class="flex items-center gap-2 text-sm">
                             <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
                                 :class="fieldValue.product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
                             <span>
@@ -236,7 +245,7 @@ const toggleExpanded = () => {
                 </div>
 
                 <!-- Section: Price, RRP -->
-                <div v-if="layout?.iris?.is_logged_in" class="flex flex-wrap gap-x-4 items-end mb-6">
+                <div v-if="layout?.iris?.is_logged_in" class="flex flex-wrap gap-x-4 items-end mb-3">
                     <div class="font-semibold text-2xl capitalize leading-none flex-grow min-w-0">
                         {{ locale.currencyFormat(currency?.code, fieldValue.product.price || 0) }}
                         <span class="text-gray-500 text-base font-normal">
@@ -255,18 +264,27 @@ const toggleExpanded = () => {
 
                 <!-- Section: Button add to cart -->
                 <div class="relative flex gap-2 mb-6">
-                    <ButtonAddToBasket
-                        :product="fieldValue.product"
-                    />
+                    <div v-if="layout?.iris?.is_logged_in" class="w-full">
+                        <ButtonAddToBasket
+                            v-if="fieldValue.product.stock > 0"
+                            :product="fieldValue.product"
+                        />
+
+                        <div v-else>
+                            <Button :label="trans('Out of stock')" type="tertiary" disabled full />
+                        </div>
+                    </div>
+
+                    <Link v-else :href="urlLoginWithRedirect()" class="block text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
+                        {{ trans("Login or Register for Wholesale Prices") }}
+                    </Link>
                 </div>
 
-
-
-                <div class="text-sm font-medium text-gray-800" :style="getStyles(fieldValue?.description?.description_title, screenType)">
+                <div class="text-sm" :style="getStyles(fieldValue?.description?.description_title, screenType)">
                     <div>{{ fieldValue.product.description_title }}</div>
                 </div>
             
-                <div class="text-xs font-medium text-gray-800" :style="getStyles(fieldValue?.description?.description_content, screenType)">
+                <div class="text-sm" :style="getStyles(fieldValue?.description?.description_content, screenType)">
                     <div v-html="fieldValue.product.description"></div>
                 </div>
                 <div v-if="fieldValue.setting?.information" class="my-4 space-y-2">

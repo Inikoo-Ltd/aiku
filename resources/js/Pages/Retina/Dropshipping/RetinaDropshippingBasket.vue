@@ -6,43 +6,58 @@
 -->
 
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3'
+import {Head, router} from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
-import { capitalize } from "@/Composables/capitalize"
+import {capitalize} from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
-import { computed, ref } from 'vue'
-import type { Component } from 'vue'
-import { useTabChange } from "@/Composables/tab-change"
+import {computed, ref} from 'vue'
+import type {Component} from 'vue'
+import {useTabChange} from "@/Composables/tab-change"
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { debounce } from 'lodash-es'
+import {debounce} from 'lodash-es'
 import UploadExcel from '@/Components/Upload/UploadExcel.vue'
-import { trans } from "laravel-vue-i18n"
-import { routeType } from '@/types/route'
-import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
-import { UploadPallet } from '@/types/Pallet'
-import { Tabs as TSTabs } from '@/types/Tabs'
+import {trans} from "laravel-vue-i18n"
+import {routeType} from '@/types/route'
+import {PageHeading as PageHeadingTypes} from '@/types/PageHeading'
+import {UploadPallet} from '@/types/Pallet'
+import {Tabs as TSTabs} from '@/types/Tabs'
 import '@vuepic/vue-datepicker/dist/main.css'
 import '@/Composables/Icon/PalletDeliveryStateEnum'
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 import axios from 'axios'
 import TableDeliveryNotes from "@/Components/Tables/Grp/Org/Dispatching/TableDeliveryNotes.vue"
-import { notify } from '@kyvg/vue3-notification'
+import {notify} from '@kyvg/vue3-notification'
 import OrderProductTable from '@/Components/Dropshipping/Orders/OrderProductTable.vue'
 import Modal from '@/Components/Utils/Modal.vue'
-import { Address, AddressManagement } from "@/types/PureComponent/Address"
-import { library } from "@fortawesome/fontawesome-svg-core"
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import {Address, AddressManagement} from "@/types/PureComponent/Address"
+import {library} from "@fortawesome/fontawesome-svg-core"
+import {FontAwesomeIcon} from '@fortawesome/vue-fontawesome'
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
-import { faExclamationTriangle as fadExclamationTriangle } from '@fad'
-import { faExclamationTriangle, faExclamation } from '@fas'
-import { faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, } from '@fal'
-import { Currency } from '@/types/LayoutRules'
+import {faExclamationTriangle as fadExclamationTriangle} from '@fad'
+import {faExclamationTriangle, faExclamation} from '@fas'
+import {
+    faDollarSign,
+    faIdCardAlt,
+    faShippingFast,
+    faIdCard,
+    faEnvelope,
+    faPhone,
+    faWeight,
+    faStickyNote,
+    faTruck,
+    faFilePdf,
+    faPaperclip,
+    faTimes,
+    faInfoCircle,
+} from '@fal'
+import {Currency} from '@/types/LayoutRules'
 import TableInvoices from '@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue'
 import TableProductList from '@/Components/Tables/Grp/Helpers/TableProductList.vue'
-import { faSpinnerThird } from '@far'
+import {faSpinnerThird} from '@far'
 import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
 import DSCheckoutSummary from '@/Components/Retina/Dropshipping/DSCheckoutSummary.vue'
+
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird)
 
 const props = defineProps<{
@@ -59,6 +74,7 @@ const props = defineProps<{
             customer_notes?: string
             created_at: string
             updated_at: string
+            is_collection: boolean
         }
     }
     pageHead: PageHeadingTypes
@@ -92,30 +108,28 @@ const props = defineProps<{
         order_properties: {
             weight: string
         }
-        order_summary: {
-
-        }
+        order_summary: {}
     }
-    
+
     routes?: {
         select_products: routeType
         update_route: routeType
         submit_route: routeType
         pay_with_balance: routeType
     }
-    
+
     transactions: {}
     currency: Currency
     delivery_notes: {
         data: Array<any>
     }
-    
+
     attachments?: {}
     invoices?: {}
 
     is_in_basket: boolean  // true if Order state is 'created'
     upload_spreadsheet: UploadPallet
-    balance: string 
+    balance: string
     total_to_pay: number
     address_management: AddressManagement
     total_products: number
@@ -134,7 +148,7 @@ const component = computed(() => {
         delivery_notes: TableDeliveryNotes,
         attachments: TableAttachments,
         invoices: TableInvoices,
-		products: TableProductList
+        products: TableProductList
     }
 
     return components[currentTab.value]
@@ -142,7 +156,6 @@ const component = computed(() => {
 
 
 const currentAction = ref(null);
-
 
 
 const noteToSubmit = ref(props?.data?.data?.customer_notes || '')
@@ -163,7 +176,7 @@ const onSubmitNote = async (key_in_db: string, value: string) => {
         setTimeout(() => {
             recentlySuccessNote.value = recentlySuccessNote.value.filter(item => item !== key_in_db)
         }, 3000)
-    } catch  {
+    } catch {
         recentlyErrorNote.value = true
         setTimeout(() => {
             recentlyErrorNote.value = false
@@ -180,24 +193,21 @@ const debounceSubmitNote = debounce(() => onSubmitNote('customer_notes', noteToS
 const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes', deliveryInstructions.value), 800)
 
 
-
 const isLoadingSubmit = ref(false)
 
 
-const listLoadingProducts = ref({
-    
-})
-const onAddProducts = async (product: {historic_asset_id: number}) => {
+const listLoadingProducts = ref({})
+const onAddProducts = async (product: { historic_asset_id: number }) => {
 
-    const routePost = product?.transaction_id ? 
+    const routePost = product?.transaction_id ?
         {
-            route_post: route('retina.models.transaction.update', {transaction: product.transaction_id }),
+            route_post: route('retina.models.transaction.update', {transaction: product.transaction_id}),
             method: 'patch',
             body: {
                 quantity_ordered: product.quantity_selected ?? 1,
             }
         } : {
-            route_post: route('retina.models.order.transaction.store', { order: props?.data?.data?.id }),
+            route_post: route('retina.models.order.transaction.store', {order: props?.data?.data?.id}),
             method: 'post',
             body: {
                 quantity: product.quantity_selected ?? 1,
@@ -256,27 +266,27 @@ console.log('basket ds', props)
 </script>
 
 <template>
-    <Head :title="capitalize(title)" />
+    <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead">
         <template #button-group-upload-add="{ action }">
             <div class="flex items-center border border-gray-300 rounded-md divide-x divide-gray-300">
-				<Button
-					v-if="upload_spreadsheet"
-					@click="() => upload_spreadsheet ? isModalUploadSpreadsheet = true : onNoStructureUpload()"
-					:label="trans('Upload products')"
+                <Button
+                    v-if="upload_spreadsheet"
+                    @click="() => upload_spreadsheet ? isModalUploadSpreadsheet = true : onNoStructureUpload()"
+                    :label="trans('Upload products')"
                     icon="upload"
                     type="tertiary"
-					class="rounded-none border-0"
-				/>
+                    class="rounded-none border-0"
+                />
                 <Button
                     v-if="is_in_basket"
                     @click="() => isModalProductListOpen = true"
                     :label="trans('Add products')"
                     type="tertiary"
-					icon="fas fa-plus"
-					class="rounded-none border-none"
+                    icon="fas fa-plus"
+                    class="rounded-none border-none"
                 />
-			</div>
+            </div>
 
         </template>
     </PageHeading>
@@ -287,17 +297,18 @@ console.log('basket ds', props)
         :address_management
     />
 
-    <Tabs  v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
+    <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation"
+          @update:tab="handleTabUpdate"/>
 
     <div class="mb-4 mx-4 mt-4 rounded-md border border-gray-200">
         <component :is="component"
-            :data="props[currentTab as keyof typeof props]" :tab="currentTab"
-            :updateRoute="routes?.updateOrderRoute" :state="data?.data?.state"
-            detachRoute="attachmentRoutes?.detachRoute"
-            :fetchRoute="routes?.products_list"
-			:modalOpen="isModalUploadOpen"
-			:action="currentAction"
-			@update:tab="handleTabUpdate"/>
+                   :data="props[currentTab as keyof typeof props]" :tab="currentTab"
+                   :updateRoute="routes?.updateOrderRoute" :state="data?.data?.state"
+                   detachRoute="attachmentRoutes?.detachRoute"
+                   :fetchRoute="routes?.products_list"
+                   :modalOpen="isModalUploadOpen"
+                   :action="currentAction"
+                   @update:tab="handleTabUpdate"/>
     </div>
 
     <div v-if="total_products > 0" class="flex justify-end px-6 gap-x-4">
@@ -321,13 +332,14 @@ console.log('basket ds', props)
                     xisError="recentlyErrorNote"
                 />
             </div> -->
-            
+
             <!-- Input text: Delivery instructions -->
             <div class="">
                 <div class="text-sm text-gray-500">
-                    <FontAwesomeIcon icon="fal fa-truck" class="text-[#38bdf8]" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon icon="fal fa-truck" class="text-[#38bdf8]" fixed-width aria-hidden="true"/>
                     {{ trans("Delivery instructions") }}
-                    <FontAwesomeIcon v-tooltip="trans('To be printed in shipping label')" icon="fal fa-info-circle" class="text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-tooltip="trans('To be printed in shipping label')" icon="fal fa-info-circle"
+                                     class="text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true"/>
                     :
                 </div>
                 <PureTextarea
@@ -345,7 +357,8 @@ console.log('basket ds', props)
             <!-- Input text: Other instructions -->
             <div class="">
                 <div class="text-sm text-gray-500">
-                    <FontAwesomeIcon icon="fal fa-sticky-note" style="color: rgb(255, 125, 189)" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon icon="fal fa-sticky-note" style="color: rgb(255, 125, 189)" fixed-width
+                                     aria-hidden="true"/>
                     {{ trans("Other instructions") }}:
                 </div>
                 <PureTextarea
@@ -375,7 +388,7 @@ console.log('basket ds', props)
                 </ButtonWithLink>
 
                 <div class="text-xs text-gray-500 mt-2 italic flex items-start gap-x-1">
-                    <FontAwesomeIcon icon="fal fa-info-circle" class="mt-[4px]" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon icon="fal fa-info-circle" class="mt-[4px]" fixed-width aria-hidden="true"/>
                     <div class="leading-5">
                         {{ trans("This is your final confirmation. You can pay totally with your current balance.") }}
                     </div>

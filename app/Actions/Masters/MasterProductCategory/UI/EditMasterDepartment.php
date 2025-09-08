@@ -21,9 +21,6 @@ use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 
 class EditMasterDepartment extends OrgAction
 {
-    /**
-     * @var \App\Models\Masters\MasterShop
-     */
     private MasterShop|Group $parent;
 
     public function asController(MasterShop $masterShop, MasterProductCategory $masterDepartment, ActionRequest $request): Response
@@ -107,7 +104,7 @@ class EditMasterDepartment extends OrgAction
                                 ],
                                 'description_extra' => [
                                     'type'  => 'textEditor',
-                                    'label' => __('description extra'),
+                                    'label' => __('Extra description'),
                                     'value' => $masterProductCategory->description_extra
                                 ],
                                 'description_extra_i8n' => [
@@ -115,6 +112,23 @@ class EditMasterDepartment extends OrgAction
                                     'label' => __('translate description extra'),
                                     'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
                                     'value' => $masterProductCategory->getTranslations('description_extra_i8n')
+                                ],
+                            ]
+                        ],
+                        [
+                            'label'  => __('Pricing'),
+                            'icon'   => 'fa-light fa-money-bill',
+                            'fields' => [
+                                'cost_price_ratio' => [
+                                    'type'          => 'input_number',
+                                    'bind' => [
+                                        'maxFractionDigits' => 3
+                                    ],
+                                    'label'         => __('pricing ratio'),
+                                    'placeholder'   => __('Cost price ratio'),
+                                    'required'      => true,
+                                    'value'         => $masterProductCategory->cost_price_ratio,
+                                    'min'           => 0
                                 ],
                             ]
                         ],

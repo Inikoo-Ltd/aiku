@@ -37,7 +37,6 @@ use App\Transfers\Aurora\FetchAuroraDeletedSupplierProduct;
 use App\Transfers\Aurora\FetchAuroraDeletedUser;
 use App\Transfers\Aurora\FetchAuroraDeliveryNote;
 use App\Transfers\Aurora\FetchAuroraDeliveryNoteItem;
-use App\Transfers\Aurora\FetchAuroraDepartment;
 use App\Transfers\Aurora\FetchAuroraDispatchedEmail;
 use App\Transfers\Aurora\FetchAuroraEmail;
 use App\Transfers\Aurora\FetchAuroraEmailBulkRun;
@@ -272,11 +271,6 @@ class AuroraOrganisationService implements SourceOrganisationService
     public function fetchProductHasOrgStock($id): ?array
     {
         return (new FetchAuroraProductHasOrgStock($this))->fetch($id);
-    }
-
-    public function fetchDepartment($id): ?array
-    {
-        return (new FetchAuroraDepartment($this))->fetch($id);
     }
 
     public function fetchFamily($id): ?array

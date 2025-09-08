@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, inject } from "vue"
+import { ref, computed } from "vue"
 import { routeType } from "@/types/route"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { TabGroup, Tab, TabPanels, TabPanel } from '@headlessui/vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import WebBlockListDnd from "@/Components/CMS/Fields/WebBlockListDnd.vue"
-import SetMenuListWorkshop from "@/Components/CMS/Fields/SetMenuListWorkshop.vue"
-import axios from "axios"
 import {
 	faChevronRight,
 	faSignOutAlt,
@@ -17,13 +15,11 @@ import {
 	faPlusCircle,
 	faBars,
 	faThLarge,
-	faList,
 	faPaintBrushAlt,
 } from "@fas"
 import { faHeart, faLowVision } from "@far"
 import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue"
 import { getBlueprint } from "@/Composables/getBlueprintWorkshop"
-import DepartementListTree from "./DepartementListTree.vue"
 
 library.add(
 	faChevronRight,
@@ -62,11 +58,10 @@ const selectedTab = ref(props.data?.data ? 1 : 0)
 
 const tabs = [
 	{ label: 'Templates', icon: faThLarge, tooltip: 'template' },
-/* 	{ label: 'Menu', icon: faList, tooltip: 'menu' }, */
 	{ label: 'Settings', icon: faPaintBrushAlt, tooltip: 'setting' }
 ]
 
-function changeTab(index: Number) {
+function changeTab(index: number) {
 	selectedTab.value = index
 }
 

@@ -169,6 +169,7 @@ class UpdateMasterProductCategory extends OrgAction
             'description_title_i8n' => ['sometimes', 'array'],
             'description_i8n' => ['sometimes', 'array'],
             'description_extra_i8n' => ['sometimes', 'array'],
+            'cost_price_ratio'         => ['sometimes', 'numeric', 'min:0']
         ];
 
         if (!$this->strict) {

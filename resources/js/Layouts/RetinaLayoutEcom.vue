@@ -127,6 +127,10 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 						<!-- Main content of the page -->
 						<slot name="default" />
 					</div>
+
+					<div id="retina-end-of-main" class="w-full mt-6">
+	
+					</div>
 				</div>
 			</main>
 		</div>

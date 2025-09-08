@@ -23,8 +23,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexCustomerFavourites extends OrgAction
 {
-    private Customer $parent;
-
     public function handle(Customer $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -99,7 +97,7 @@ class IndexCustomerFavourites extends OrgAction
 
             $table->column(key: 'code', label: __('code'), canBeHidden: false, searchable: true);
             $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'actions', label: '', canBeHidden: false, sortable: false, searchable: false);
+            $table->column(key: 'actions', label: '', canBeHidden: false);
         };
     }
 

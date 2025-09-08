@@ -9,7 +9,7 @@ import { trans } from "laravel-vue-i18n";
 import Image from "@/Components/Image.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import Modal from "@/Components/Utils/Modal.vue";
-import CollectionSelector from "@/Components/Departement&Family/CollectionSelector.vue";
+import CollectionSelector from "@/Components/DepartmentAndFamily/CollectionSelector.vue";
 
 library.add(faImage, faUnlink);
 

@@ -15,7 +15,6 @@ import ConfirmDialog from 'primevue/confirmdialog';
 import { faEdit } from "@fal";
 import ToggleSwitch from 'primevue/toggleswitch';
 import { notify } from "@kyvg/vue3-notification";
-import SelectButton from 'primevue/selectbutton';
 import { trans } from "laravel-vue-i18n";
 
 import Family1Render from '@/Components/CMS/Webpage/Families1/Families1Render.vue'
@@ -131,7 +130,6 @@ const onUpload = async (files: File[], clear) => {
             onSuccess: (e) => {
                 form.image = props.data.image
                 isModalGallery.value = false;
-                /*     clear(); */
             },
             onError: (errors) => {
                 console.error('Image upload failed:', errors);
@@ -151,7 +149,7 @@ const onUpload = async (files: File[], clear) => {
             <div class="flex justify-between items-center border-b pb-4 mb-4">
                 <h3 class="text-xl font-semibold">{{ title }}</h3>
                 <div v-if="!disabled">
-                    <Button v-if="!departmentEdit" label="Edit Departement" :size="'xs'" :type="'primary'" :icon="faEdit"
+                    <Button v-if="!departmentEdit" label="Edit Department" :size="'xs'" :type="'primary'" :icon="faEdit"
                     @click="departmentEdit = true" />
                 <div v-else class="flex gap-3">
                     <Button label="Cancel" :size="'xs'" :type="'tertiary'" @click="departmentEdit = false" />

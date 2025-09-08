@@ -140,9 +140,27 @@ class EditFamily extends OrgAction
                                 ],
                                 'description_extra_i8n' => [
                                     'type'  => 'textEditor',
-                                    'label' => __('description extra'),
+                                    'label' => __('Extra description'),
                                     'value' => $family->getTranslation('description_extra_i8n', $family->shop->language->code) ?: $family->description_extra
                                 ],
+                            ]
+                        ],
+                        [
+                            'label'  => __('Pricing'),
+                            'title'  => __('id'),
+                            'icon'   => 'fa-light fa-money-bill',
+                            'fields' => [
+                                'cost_price_ratio' => [
+                                    'type'          => 'input_number',
+                                    'bind' => [
+                                        'maxFractionDigits' => 3
+                                    ],
+                                    'label'         => __('pricing ratio'),
+                                    'placeholder'   => __('Cost price ratio'),
+                                    'required'      => true,
+                                    'value'         => $family->cost_price_ratio,
+                                    'min'           => 0
+                                ]
                             ]
                         ],
                         [

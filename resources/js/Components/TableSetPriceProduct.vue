@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import { trans } from "laravel-vue-i18n";
-import { useForm } from "@inertiajs/vue3";
 import { InputNumber } from "primevue";
-import { inject } from "vue";
-import Button from "@/Components/Elements/Buttons/Button.vue";
-
+import { inject, computed } from "vue";
 
 // Interfaces
 interface TradeUnit {
@@ -17,7 +14,7 @@ interface TradeUnit {
 }
 
 interface ProductItem {
-    product_id: number;
+    id: number;
     name: string;
     code?: string;
     shop_id: number;
@@ -28,6 +25,16 @@ interface ProductItem {
         name: string;
         parameters: Record<string, any>;
     };
+    stock?: number;
+    create_webpage?: boolean;
+    currency?: string;
+    product?: {
+        org_cost?: number;
+        org_currency?: string;
+        stock?: number;
+        price?: number;
+        has_org_stocks?: boolean; // keep consistent with your v-model usage
+    };
 }
 
 interface ProductData {
@@ -36,119 +43,141 @@ interface ProductData {
     image?: {
         source: string;
     };
-
     trade_units: TradeUnit[];
     data: ProductItem[];
 }
 
-const props = defineProps<{
-    currency: string
-    data: ProductData;
-    master_price : number
+// v-model:data
+const modelValue = defineModel<ProductData>();
+
+const emits = defineEmits<{
+    (e: "change", payload: { tableData: ProductItem[]; data: ProductData }): void;
 }>();
 
-const locale = inject('locale', {})
+const props = defineProps<{
+    currency: string;
+}>();
 
-console.log(props)
-const forms = props.data.data.reduce((acc: any, product) => {
-    acc[product.product_id] = useForm({
-        price: product.price,
-    });
-    return acc;
-}, {});
+const locale = inject("locale", {});
 
+// helper to calculate profit margin %
+function getMargin(item: ProductItem) {
+    const p = Number(item.product?.price);
+    const cost = Number(item.product?.org_cost);
 
-function saveForm(item: ProductItem) {
-    const form = forms[item.product_id]
-
-    form.patch(route(item.update_route.name, item.update_route.parameters), {
-        onSuccess: () => {
-            form.defaults({ price: form.price })
-        },
-    })
+    if (isNaN(p) || p === 0) return 0.000;
+    if (isNaN(cost) || cost === 0) {
+        return p > 0 ? 100.000 : 0.000;
+    }
+    return Number((((p - cost) / cost) * 100).toFixed());
 }
 
-console.log(props)
+// computed for "check all"
+const allChecked = computed({
+    get() {
+        return modelValue.value.data.length > 0 &&
+            modelValue.value.data.every((item) => item.product?.has_org_stocks);
+    },
+    set(val: boolean) {
+        modelValue.value.data.forEach((item) => {
+            if (item.product) {
+                item.product.has_org_stocks = val;
+            }
+        });
+        emits("change", modelValue.value);
+    }
+});
 </script>
 
-
 <template>
-  <!-- Products (compact table) -->
-  <div class="bg-white border rounded-md shadow-sm p-3">
-    <div class="flex justify-between items-center mb-3">
-      <h3 class="text-base font-semibold text-gray-800 flex items-center gap-2">
-        Products ({{ data.data.length }})
-      </h3>
-      <span class="px-2 py-0.5 text-[11px] rounded bg-gray-100 text-gray-600 border border-gray-200">
-        Master Price: {{ locale.currencyFormat(data.currency || 'usd', master_price) }}
-      </span>
-    </div>
+    <div class="bg-white border rounded-md shadow-sm p-3">
+        <div class="flex justify-between items-center mb-3">
+            <h3 class="text-base font-semibold text-gray-800 flex items-center gap-2">
+                Products ({{ modelValue.data.length }})
+            </h3>
+        </div>
 
-    <div v-if="data.data.length" class="overflow-x-auto">
-      <table class="w-full border-collapse text-xs">
-        <thead>
-          <tr class="bg-gray-50 text-left font-medium text-gray-600 border-b border-gray-200">
-            <th class="px-2 py-1">Code</th>
-            <th class="px-2 py-1">Name</th>
-            <th class="px-2 py-1">Price</th>
-            <th class="px-2 py-1 text-center">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="item in data.data"
-            :key="item.product_id"
-            :class="[
-              'transition-colors',
-              forms[item.product_id].isDirty ? 'bg-yellow-50' : ''
-            ]"
-          >
-            <td class="px-2 py-1 border-b border-gray-100 text-gray-600">
-              {{ item.code || '-' }}
-            </td>
-            <td class="px-2 py-1 border-b border-gray-100 font-medium text-gray-700">
-              {{ item.name }}
-            </td>
-            <td class="px-2 py-1 border-b  w-32">
-              <InputNumber
-                v-model="forms[item.product_id].price"
-                mode="currency"
-                :currency="item.currency"
-                :step="0.25"
-                showButtons
-                inputClass="w-full text-xs"
-              />
-              <div
-                v-if="forms[item.product_id].errors.price"
-                class="text-[11px] text-red-500 mt-0.5"
-              >
-                {{ forms[item.product_id].errors.price }}
-              </div>
-            </td>
-            <td class="px-2 py-1 border-b border-gray-100 text-center">
-            <!--   <Button
-                type="save"
-                size="xs"
-                label="Save"
-                class="!px-2 !py-1 text-xs"
-                :loading="forms[item.product_id].processing"
-                :disabled="
-                  forms[item.product_id].processing ||
-                  !forms[item.product_id].isDirty
-                "
-                @click="saveForm(item)"
-              /> -->
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+        <div v-if="modelValue.data.length" class="overflow-x-auto">
+            <table class="w-full border-collapse text-xs">
+                <thead>
+                    <tr class="bg-gray-50 text-left font-medium text-gray-600 border-b border-gray-200">
+                        <th class="px-2 py-1">Code</th>
+                        <th class="px-2 py-1">Name</th>
+                        <th class="px-2 py-1">Stock</th>
+                        <th class="px-2 py-1 text-center">
+                            <div class="flex items-center justify-center gap-1">
+                                <input type="checkbox" v-model="allChecked" />
+                                <span>Create Webpage?</span>
+                                <InformationIcon :information="trans('If checked, will create the product webpage')" />
+                            </div>
+                        </th>
+                        <th class="px-2 py-1">
+                            <div class="flex justify-center items-center">Org cost</div>
+                        </th>
+                        <th class="px-2 py-1">Price</th>
+                        <th class="px-2 py-1 text-center">
+                            <div class="flex justify-center items-center">Margin</div>
+                        </th>
+                        <th class="px-2 py-1">Rrp</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="item in modelValue.data" :key="item.id" class="transition-colors">
+                        <td class="px-2 py-1 border-b border-gray-100 text-gray-600">
+                            {{ item.code || "-" }}
+                        </td>
+                        <td class="px-2 py-1 border-b border-gray-100 font-medium text-gray-700">
+                            {{ item.name }}
+                        </td>
+                        <td class="px-2 py-1 border-b border-gray-100 font-medium text-gray-700">
+                            <div class="flex justify-center items-end">
+                                {{ item.product?.stock }}
+                            </div>
+                        </td>
+                        <td class="px-2 py-1 border-b border-gray-100">
+                            <div class="flex justify-center items-center">
+                                <input type="checkbox" v-model="item.product.has_org_stocks"
+                                    @change="emits('change', modelValue)" />
+                            </div>
+                        </td>
+                        <td class="px-2 py-1 border-b border-gray-100">
+                            <div class="flex justify-center items-center">
+                                {{ locale.currencyFormat(item.product?.org_currency || currency, item.product?.org_cost)
+                                }}
+                            </div>
+                        </td>
+                        <td class="px-2 py-1 border-b w-48">
+                            <div class="flex items-center gap-2">
+                                <InputNumber v-model="item.product.price" mode="currency"
+                                    :currency="item?.product?.org_currency ? item.product.org_currency : item.currency"
+                                    :step="0.25" :showButtons="true" inputClass="w-full text-xs" :min="0"
+                                    @input="emits('change', modelValue)" />
+                            </div>
+                        </td>
+                        <td class="px-2 py-1 border-b border-gray-100 text-center">
+                            <span :class="{
+                                'text-green-600 font-medium': getMargin(item) > 0,
+                                'text-red-600 font-medium': getMargin(item) < 0,
+                                'text-gray-500': getMargin(item) === 0
+                            }" class="whitespace-nowrap text-xs inline-block w-16">
+                                {{ getMargin(item) + '%' }}
+                            </span>
+                        </td>
+                        <td class="px-2 py-1 border-b w-48">
+                            <div class="flex items-center gap-2">
+                                <InputNumber v-model="item.product.rrp" mode="currency"
+                                    :currency="item?.product?.org_currency ? item.product.org_currency : item.currency"
+                                    :step="0.25" :showButtons="true" inputClass="w-full text-xs" :min="0"
+                                    @input="emits('change', modelValue)" />
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
 
-    <div
-      v-else
-      class="text-xs text-gray-500 italic p-4 text-center bg-gray-50 rounded"
-    >
-      {{ trans("No data available") }}
+        <div v-else class="text-xs text-gray-500 italic p-4 text-center bg-gray-50 rounded">
+            {{ trans("No data available") }}
+        </div>
     </div>
-  </div>
 </template>

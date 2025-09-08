@@ -12,8 +12,6 @@ import { faExclamationTriangle } from "@far"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
-
-import customerSalesChannel from "@/Pages/Grp/Org/Dropshipping/CustomerSalesChannel.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faUndoAlt, faTrashAlt } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -29,105 +27,95 @@ const confirm = useConfirm()
 const deletingId = ref<number | null>(null)
 
 function customerSalesChannelRoute(customerSalesChannel: CustomerSalesChannel) {
-
-    switch (route().current()) {
-        case "grp.org.shops.show.crm.platforms.show":
-            return route("grp.org.shops.show.crm.platforms.show.customer_sales_channels.show",
-                [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    (route().params as RouteParams).platform,
-                    customerSalesChannel.slug]
-            )
-            break
-        default:
-            return route("grp.org.shops.show.crm.customers.show.customer_sales_channels.show",
-                [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    (route().params as RouteParams).customer,
-                    customerSalesChannel.slug]
-            )
+    const current = route().current()
+    if (current === "grp.org.shops.show.crm.platforms.show") {
+        return route(
+            "grp.org.shops.show.crm.platforms.show.customer_sales_channels.show",
+            [
+                (route().params as RouteParams).organisation,
+                (route().params as RouteParams).shop,
+                (route().params as RouteParams).platform,
+                customerSalesChannel.slug
+            ]
+        )
     }
+    return route(
+        "grp.org.shops.show.crm.customers.show.customer_sales_channels.show",
+        [
+            (route().params as RouteParams).organisation,
+            (route().params as RouteParams).shop,
+            (route().params as RouteParams).customer,
+            customerSalesChannel.slug
+        ]
+    )
 }
 
 function customerRoute(customerSalesChannel: CustomerSalesChannel) {
-
-    switch (route().current()) {
-        case "grp.org.shops.show.crm.platforms.show":
-            return route("grp.org.shops.show.crm.customers.show",
-                [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    customerSalesChannel.customer_slug]
-            )
-            break
-        default:
-            return route("grp.org.shops.show.crm.customers.show",
-                [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    customerSalesChannel.customer_slug]
-            )
-    }
+    // Both branches return the same route; simplify to a single return.
+    return route(
+        "grp.org.shops.show.crm.customers.show",
+        [
+            (route().params as RouteParams).organisation,
+            (route().params as RouteParams).shop,
+            customerSalesChannel.customer_slug
+        ]
+    )
 }
 
 function portfoliosRoute(customerSalesChannel: CustomerSalesChannel) {
-    switch (route().current()) {
-        case "grp.org.shops.show.crm.platforms.show":
-            return route(
-                "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.portfolios.index",
-                [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    customerSalesChannel.customer_slug,
-                    customerSalesChannel.slug])
-
-        default:
-            return route(
-                "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.portfolios.index",
-                [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    (route().params as RouteParams).customer,
-                    customerSalesChannel.slug])
+    const current = route().current()
+    if (current === "grp.org.shops.show.crm.platforms.show") {
+        return route(
+            "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.portfolios.index",
+            [
+                (route().params as RouteParams).organisation,
+                (route().params as RouteParams).shop,
+                customerSalesChannel.customer_slug,
+                customerSalesChannel.slug
+            ]
+        )
     }
-
-
+    return route(
+        "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.portfolios.index",
+        [
+            (route().params as RouteParams).organisation,
+            (route().params as RouteParams).shop,
+            (route().params as RouteParams).customer,
+            customerSalesChannel.slug
+        ]
+    )
 }
 
 function clientsRoute(customerSalesChannel: CustomerSalesChannel) {
-    switch (route().current()) {
-        case "grp.org.shops.show.crm.platforms.show":
-            return ""
-
-        default:
-            return route(
-                "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.index",
-                [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    (route().params as RouteParams).customer,
-                    customerSalesChannel.slug])
+    const current = route().current()
+    if (current === "grp.org.shops.show.crm.platforms.show") {
+        return ""
     }
-
+    return route(
+        "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.index",
+        [
+            (route().params as RouteParams).organisation,
+            (route().params as RouteParams).shop,
+            (route().params as RouteParams).customer,
+            customerSalesChannel.slug
+        ]
+    )
 }
 
 function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
-    switch (route().current()) {
-        case "grp.org.shops.show.crm.platforms.show":
-            return ""
-
-        default:
-            return route(
-                "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.index",
-                [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    (route().params as RouteParams).customer,
-                    customerSalesChannel.slug])
+    const current = route().current()
+    if (current === "grp.org.shops.show.crm.platforms.show") {
+        return ""
     }
-
+    return route(
+        "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.index",
+        [
+            (route().params as RouteParams).organisation,
+            (route().params as RouteParams).shop,
+            (route().params as RouteParams).customer,
+            customerSalesChannel.slug
+        ]
+    )
 }
 
 
@@ -214,22 +202,30 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
         </template>
 
         <template #cell(number_portfolios)="{ item: customerSalesChannel }">
+
             <Link :href="(portfoliosRoute(customerSalesChannel) as string)" class="secondaryLink">
-                <span
-                    v-if="customerSalesChannel.number_portfolio_broken === 0 && customerSalesChannel.number_portfolios === 0"
-                >
+
+                <span v-if="customerSalesChannel.platform_type=='manual'">
+                       {{ customerSalesChannel.number_portfolios }}
+                </span>
+                <template v-else>
+                      <span
+                          v-if="customerSalesChannel.number_portfolio_broken === 0 && customerSalesChannel.number_portfolios === 0"
+                      >
                     {{ customerSalesChannel.number_portfolios }}
                 </span>
-                <span
-                    v-else-if="customerSalesChannel.number_portfolio_broken === customerSalesChannel.number_portfolios"
-                    class="text-red-500">
+                    <span
+                        v-else-if="customerSalesChannel.number_portfolio_broken === customerSalesChannel.number_portfolios"
+                        class="text-red-500">
                     {{ customerSalesChannel.number_portfolio_broken }}
                 </span>
-                <span v-else>
+                    <span v-else>
                     <span class="text-red-500">{{
                             customerSalesChannel.number_portfolio_broken
                         }}</span>/{{ customerSalesChannel.number_portfolios }}
                 </span>
+                </template>
+
             </Link>
         </template>
 

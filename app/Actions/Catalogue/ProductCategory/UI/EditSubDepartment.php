@@ -109,7 +109,7 @@ class EditSubDepartment extends OrgAction
                                 ],
                                 'description_extra_i8n' => [
                                     'type'  => 'textEditor',
-                                    'label' => __('description extra'),
+                                    'label' => __('Extra description'),
                                     'value' => $subDepartment->getTranslation('description_extra_i8n', $subDepartment->shop->language->code) ?: $subDepartment->description_extra
                                 ],
                             ]
@@ -125,6 +125,23 @@ class EditSubDepartment extends OrgAction
                                     "required" => false,
                                     'noSaveButton' => true,
                                     "full"         => true
+                                ],
+                            ]
+                        ],
+                        [
+                            'label'  => __('Pricing'),
+                            'icon'   => 'fa-light fa-money-bill',
+                            'fields' => [
+                                'cost_price_ratio' => [
+                                    'type'          => 'input_number',
+                                    'bind' => [
+                                        'maxFractionDigits' => 3
+                                    ],
+                                    'label'         => __('pricing ratio'),
+                                    'placeholder'   => __('Cost price ratio'),
+                                    'required'      => true,
+                                    'value'         => $subDepartment->cost_price_ratio,
+                                    'min'           => 0
                                 ],
                             ]
                         ],

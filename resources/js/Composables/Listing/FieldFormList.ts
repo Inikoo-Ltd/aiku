@@ -1,6 +1,7 @@
 import type { Component } from 'vue'
 import { defineAsyncComponent } from 'vue'
 import Input from '@/Components/Forms/Fields/Input.vue'
+import FieldInputNumber from '@/Components/Forms/Fields/FieldInputNumber.vue'
 import Select from '@/Components/Forms/Fields/Select.vue'
 import SelectBillingCycle from '@/Components/Forms/Fields/SelectBillingCycle.vue'
 import Phone from '@/Components/Forms/Fields/Phone.vue'
@@ -62,6 +63,7 @@ import BrandsTradeUnit from '@/Components/Forms/Fields/BrandsTradeUnit.vue'
 export const componentsList: {[key: string]: Component} = {
     'image_crop_square': ImageCropSquare,
     'input': Input,
+    'input_number': FieldInputNumber,
     'inputWithAddOn': InputWithAddOn,
     'phone': Phone,
     'date': Date,

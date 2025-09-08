@@ -347,6 +347,7 @@ class ShowDeliveryNote extends OrgAction
             'state'            => $deliveryNote->state,
             'state_icon'       => DeliveryNoteStateEnum::stateIcon()[$deliveryNote->state->value],
             'state_label'      => $deliveryNote->state->labels()[$deliveryNote->state->value],
+            'is_collection' => (bool) $deliveryNote->orders()->first()->collection_address_id,
             'customer'         => array_merge(
                 CustomerResource::make($deliveryNote->customer)->getArray(),
                 [

@@ -20,7 +20,6 @@ use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreMasterProductFromTradeUnits extends GrpAction
@@ -34,21 +33,22 @@ class StoreMasterProductFromTradeUnits extends GrpAction
     public function handle(MasterProductCategory $parent, array $modelData): MasterAsset
     {
         $tradeUnits = Arr::pull($modelData, 'trade_units', []);
+        $shopProducts = Arr::pull($modelData, 'shop_products', []);
 
         if (!Arr::has($modelData, 'unit') && count($tradeUnits) == 1) {
             data_set($modelData, 'unit', Arr::get($tradeUnits, '0.type'));
         }
 
 
-        $masterAsset = DB::transaction(function () use ($parent, $modelData, $tradeUnits) {
+        $masterAsset = DB::transaction(function () use ($parent, $modelData, $tradeUnits, $shopProducts) {
             $data        = [
                 'code'    => Arr::get($modelData, 'code'),
                 'name'    => Arr::get($modelData, 'name'),
-                'price'   => Arr::get($modelData, 'price'),
                 'unit'    => Arr::get($modelData, 'unit'),
                 'is_main' => true,
                 'type'    => MasterAssetTypeEnum::PRODUCT,
-                'trade_units'  => $tradeUnits
+                'trade_units'  => $tradeUnits,
+                'shop_products' => $shopProducts
             ];
 
             $masterAsset = StoreMasterAsset::make()->action($parent, $data);
@@ -80,7 +80,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
             ],
             'name'                   => ['required', 'string'],
             'unit'                   => ['sometimes', 'string'],
-            'price'                  => ['required', 'numeric', 'min:0'],
+            'price'                  => ['sometimes', 'numeric', 'min:0'],
             'trade_units'            => [
                 'required',
                 'array'
@@ -95,6 +95,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
                 'numeric',
                 'min:1'
             ],
+            'shop_products' => ['sometimes', 'array']
         ];
     }
 
@@ -120,14 +121,5 @@ class StoreMasterProductFromTradeUnits extends GrpAction
     {
         $this->initialisation($masterFamily->group, $request);
         return $this->handle($masterFamily, $this->validatedData);
-    }
-
-    public function htmlResponse(MasterAsset $masterAsset): \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
-    {
-        return Redirect::route('grp.masters.master_shops.show.master_families.master_products.show', [
-            'masterShop'    => $masterAsset->masterShop->slug,
-            'masterFamily' => $masterAsset->masterFamily->slug,
-            'masterProduct' => $masterAsset->slug
-        ]);
     }
 }

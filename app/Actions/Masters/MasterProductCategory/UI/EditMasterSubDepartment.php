@@ -117,7 +117,7 @@ class EditMasterSubDepartment extends OrgAction
                                 ],
                                 'description_extra' => [
                                     'type'  => 'textEditor',
-                                    'label' => __('description extra'),
+                                    'label' => __('Extra description'),
                                     'value' => $masterProductCategory->description_extra
                                 ],
                                 'description_extra_i8n' => [
@@ -139,6 +139,23 @@ class EditMasterSubDepartment extends OrgAction
                                     "required" => false,
                                     'noSaveButton' => true,
                                     "full"         => true
+                                ]
+                            ]
+                        ],
+                        [
+                            'label'  => __('Pricing'),
+                            'icon'   => 'fa-light fa-money-bill',
+                            'fields' => [
+                                'cost_price_ratio' => [
+                                    'type'          => 'input_number',
+                                    'bind' => [
+                                        'maxFractionDigits' => 3
+                                    ],
+                                    'label'         => __('pricing ratio'),
+                                    'placeholder'   => __('Cost price ratio'),
+                                    'required'      => true,
+                                    'value'         => $masterProductCategory->cost_price_ratio,
+                                    'min'           => 0
                                 ],
                             ]
                         ],

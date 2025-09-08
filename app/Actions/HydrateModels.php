@@ -121,13 +121,10 @@ class HydrateModels extends HydrateModel
 
         /** @var Shop $shop */
         foreach (Shop::where('type', ShopTypeEnum::DROPSHIPPING)->get() as $shop) {
-
-
             $command->call('hydrate:customers', [
                 '-S' => $shop->slug
             ]);
         }
-
     }
 
     protected function hydrateDispatching(Command $command): void

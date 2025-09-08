@@ -48,7 +48,7 @@ class UpdateOrder extends OrgAction
         $changes = Arr::except($order->getChanges(), ['updated_at', 'last_fetched_at']);
 
 
-        if (Arr::has($changes, 'tax_category_id')) {
+        if (Arr::hasAny($changes, ['tax_category_id', 'collection_address_id'])) {
             CalculateOrderTotalAmounts::run($order);
         }
 
@@ -122,10 +122,12 @@ class UpdateOrder extends OrgAction
             'in_warehouse_at'     => ['sometimes', 'date'],
             'dispatched_at'       => ['sometimes', 'nullable', 'date'],
             'delivery_address_id' => ['sometimes', Rule::exists('addresses', 'id')],
+            'collection_address_id' => ['sometimes', 'nullable', Rule::exists('addresses', 'id')],
             'shipping_notes'      => ['sometimes', 'nullable', 'string', 'max:4000'],
             'customer_notes'      => ['sometimes', 'nullable', 'string', 'max:4000'],
             'public_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
             'internal_notes'      => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'collection_notes'    => ['sometimes', 'nullable', 'string', 'max:4000'],
             'state'               => ['sometimes', Rule::enum(OrderStateEnum::class)],
             'sales_channel_id'    => [
                 'sometimes',

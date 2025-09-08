@@ -41,7 +41,8 @@ class StoreMasterAsset extends OrgAction
      */
     public function handle(MasterShop|MasterProductCategory $parent, array $modelData): MasterAsset
     {
-        $tradeUnits = Arr::pull($modelData, 'trade_units', []);
+        $tradeUnits   = Arr::pull($modelData, 'trade_units', []);
+        $shopProducts = Arr::pull($modelData, 'shop_products', []);
 
         if (count($tradeUnits) == 1) {
             $units = $tradeUnits[array_key_first($tradeUnits)]['quantity'];
@@ -69,7 +70,7 @@ class StoreMasterAsset extends OrgAction
             }
         }
 
-        $masterAsset = DB::transaction(function () use ($parent, $modelData, $tradeUnits) {
+        $masterAsset = DB::transaction(function () use ($parent, $modelData, $tradeUnits, $shopProducts) {
             /** @var MasterAsset $masterAsset */
             $masterAsset = $parent->masterAssets()->create($modelData);
             $masterAsset->stats()->create();
@@ -83,7 +84,9 @@ class StoreMasterAsset extends OrgAction
             $masterAsset->refresh();
 
             if ($masterAsset->type == MasterAssetTypeEnum::PRODUCT) {
-                StoreProductFromMasterProduct::make()->action($masterAsset);
+                StoreProductFromMasterProduct::make()->action($masterAsset, [
+                    'shop_products' => $shopProducts
+                ]);
             }
 
             return ModelHydrateSingleTradeUnits::run($masterAsset);
@@ -104,22 +107,27 @@ class StoreMasterAsset extends OrgAction
 
     public function processTradeUnits(MasterAsset $masterAsset, array $tradeUnits)
     {
+        $stocks = [];
         foreach ($tradeUnits as $item) {
             $tradeUnit = TradeUnit::find(Arr::get($item, 'id'));
             $masterAsset->tradeUnits()->attach($tradeUnit->id, [
                 'quantity' => Arr::get($item, 'quantity')
             ]);
 
+
             foreach ($tradeUnit->stocks as $stock) {
                 $stocks[$stock->id] = [
-                    'quantity' => $stock->pivot->quantity,
+                    'quantity' => $stock->pivot->quantity * Arr::get($item, 'quantity'),
                 ];
             }
-            $masterAsset->stocks()->sync($stocks);
-
-            $masterAsset->refresh();
         }
+
+
+        $masterAsset->stocks()->sync($stocks);
+        $masterAsset->refresh();
+
     }
+
 
     public function rules(): array
     {
@@ -152,7 +160,7 @@ class StoreMasterAsset extends OrgAction
                     ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
             ],
             'image_id'                 => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->group->id)],
-            'price'                    => ['required', 'numeric', 'min:0'],
+            'price'                    => ['sometimes', 'numeric', 'min:0'],
             'unit'                     => ['sometimes', 'required', 'string'],
             'rrp'                      => ['sometimes', 'required', 'numeric', 'min:0'],
             'description'              => ['sometimes', 'nullable', 'max:10000'],
@@ -167,7 +175,8 @@ class StoreMasterAsset extends OrgAction
             'variant_ratio'            => ['sometimes', 'required', 'numeric', 'gt:0'],
             'variant_is_visible'       => ['sometimes', 'required', 'boolean'],
             'trade_units'              => ['sometimes', 'array', 'nullable'],
-            'type'                     => ['required', Rule::enum(MasterAssetTypeEnum::class)]
+            'type'                     => ['required', Rule::enum(MasterAssetTypeEnum::class)],
+            'shop_products'            => ['sometimes', 'array']
 
         ];
 

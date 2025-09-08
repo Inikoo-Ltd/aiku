@@ -3,7 +3,7 @@ import { trans } from 'laravel-vue-i18n'
 import CheckoutSummary from "@/Components/Retina/Ecom/CheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { Head, Link, router } from "@inertiajs/vue3"
-import { inject, ref } from "vue"
+import { inject, ref, onMounted, nextTick, onBeforeUnmount, computed } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import { routeType } from "@/types/route"
@@ -22,6 +22,7 @@ import EmptyState from '@/Components/Utils/EmptyState.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
+import RecommendersLuigi1Iris from '@/Components/CMS/Webpage/SeeAlso1/RecommendersLuigi1Iris.vue'
 library.add(faTag)
 
 const props = defineProps<{
@@ -85,7 +86,7 @@ const props = defineProps<{
     is_in_basket: boolean
 }>()
 
-console.log(props)
+console.log(props.transactions)
 
 const layout = inject('layout', retinaLayoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
@@ -95,6 +96,97 @@ const listLoadingProducts = ref({
 
 })
 const isLoadingSubmit = ref(false)
+
+// Teleport control with key for rerender
+const isTeleportReady = ref(false)
+const teleportKey = ref(0)
+
+// Responsive slides per view
+const slidesPerView = ref(4.5)
+
+const updateSlidesPerView = () => {
+    const width = window.innerWidth
+    if (width < 640) {
+        slidesPerView.value = 2.3 // mobile
+    } else if (width < 768) {
+        slidesPerView.value = 2.4 // small tablet
+    } else if (width < 1024) {
+        slidesPerView.value = 3.5 // tablet
+    } else if (width < 1280) {
+        slidesPerView.value = 4.5 // desktop
+    } else {
+        slidesPerView.value = 4.5 // large desktop
+    }
+}
+
+const checkTeleportTarget = () => {
+    try {
+        const targetElement = document.getElementById('retina-end-of-main')
+        if (targetElement && targetElement.parentNode) {
+            const rect = targetElement.getBoundingClientRect()
+            if (rect.width > 0 || rect.height > 0 || targetElement.offsetParent !== null) {
+                isTeleportReady.value = true
+                teleportKey.value += 1 // Force rerender
+                return true
+            }
+        }
+    } catch (error) {
+        console.warn('Error checking teleport target:', error)
+    }
+    return false
+}
+
+onMounted(async () => {
+    await nextTick()
+    
+    // Set initial slides per view
+    updateSlidesPerView()
+    
+    // Add resize listener
+    window.addEventListener('resize', updateSlidesPerView)
+    
+    // Wait a bit for layout to stabilize
+    setTimeout(async () => {
+        await nextTick()
+        
+        // Check immediately if target exists and is ready
+        if (checkTeleportTarget()) {
+            return
+        }
+        
+        // If not found, use MutationObserver to watch for the element
+        const observer = new MutationObserver(() => {
+            if (checkTeleportTarget()) {
+                observer.disconnect()
+            }
+        })
+        
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        })
+        
+        // Fallback timeout
+        setTimeout(() => {
+            observer.disconnect()
+            try {
+                const targetElement = document.getElementById('retina-end-of-main')
+                if (targetElement) {
+                    isTeleportReady.value = true
+                    teleportKey.value += 1 // Force rerender
+                }
+            } catch (error) {
+                console.warn('Final teleport check failed:', error)
+                isTeleportReady.value = false
+            }
+        }, 2000)
+    }, 100)
+})
+
+// Cleanup resize listener
+onBeforeUnmount(() => {
+    window.removeEventListener('resize', updateSlidesPerView)
+})
 
 // Section: Submit Note
 const noteToSubmit = ref(props?.order?.customer_notes || '')
@@ -196,6 +288,81 @@ const onAddProducts = async (product: Product) => {
             }
         })
 }
+
+const onAddProductFromRecommender = async (productId: string, productCode: string) => {
+    // Check if product already exists in transactions
+    const existingTransaction = props.transactions?.data?.find(transaction => 
+        transaction.asset_code === productCode
+    )
+
+    const storeRoute = {
+        route_post: route('retina.models.product.add-to-basket', {
+            product: productId
+        }),
+        method: 'post',
+        body: {
+            quantity: 1,
+        }
+    }
+    
+    const routePost = existingTransaction ? {
+        route_post: route('retina.models.transaction.update', {
+            transaction: existingTransaction.id
+        }),
+        method: 'patch',
+        body: {
+            quantity_ordered: (parseInt(existingTransaction.quantity_ordered) + 1).toString(),
+        }
+    } : storeRoute
+
+    const onlyProps = existingTransaction ? ['transactions', 'box_stats', 'total_products', 'balance', 'total_to_pay'] : {}
+
+    router[routePost.method](
+        routePost.route_post,
+        routePost.body,
+        {
+            preserveScroll: true,
+            ...onlyProps,
+            onStart: () => {
+                listLoadingProducts.value[`recommender-${productId}`] = 'loading'
+            },
+            onBefore: () => {
+                isLoadingSubmit.value = true
+            },
+            onError: (error) => {
+                notify({
+                    title: trans("Something went wrong."),
+                    text: error.products || undefined,
+                    type: "error"
+                })
+                listLoadingProducts.value[`recommender-${productId}`] = 'error'
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success!"),
+                    text: trans("Product added to basket"),
+                    type: "success"
+                })
+                listLoadingProducts.value[`recommender-${productId}`] = 'success'
+            },
+            onFinish: () => {
+                isLoadingSubmit.value = false
+                setTimeout(() => {
+                    listLoadingProducts.value[`recommender-${productId}`] = null
+                }, 3000)
+            }
+        })
+}
+
+const blackListProductIds = computed(() => {
+    if (!props.transactions?.data) return []
+
+    return props.transactions.data
+        .map(transaction => {
+            return transaction.id.toString()
+        })
+        .filter(Boolean)
+})
 </script>
 
 <template>
@@ -300,7 +467,7 @@ const onAddProducts = async (product: Product) => {
                     <ButtonWithLink
                         v-else
                         iconRight="fas fa-arrow-right"
-                        :label="trans('Pay with Checkout')"
+                        :label="trans('Go to checkout')"
                         :routeTarget="{
                             name: 'retina.ecom.checkout.show',
                             parameters: {
@@ -322,6 +489,23 @@ const onAddProducts = async (product: Product) => {
             }"
         />
     </div>
+
+    <Teleport xv-if="layout.app.environment !== 'production'" to="#retina-end-of-main" :disabled="!isTeleportReady" :key="teleportKey">
+        <div class="hidden max-w-[calc(1280px-200px)] mt-2 pt-4 border-t border-gray-300 border-dashed">
+            <h2 class="text-2xl font-bold text-center p-4 mb-2">{{ trans('You might also like') }}</h2>
+            <div class="bg-white p-4 rounded-md shadow-lg">
+                <RecommendersLuigi1Iris
+                    @add-to-basket="(productId: string, productCode: string) => onAddProductFromRecommender(productId, productCode)"
+                    :is-add-to-basket="true"
+                    recommendation_type="test_reco"
+                    xrecommendation_type="basket"
+                    :slidesPerView="slidesPerView" 
+                    :listLoadingProducts
+                    :blacklistItems="blackListProductIds"
+                />
+            </div>
+        </div>
+    </Teleport>
 
       <!-- Modal: add products to Order -->
     <Modal :isOpen="isModalProductListOpen" @onClose="isModalProductListOpen = false" width="w-full max-w-6xl" key="">

@@ -257,7 +257,7 @@ class EditProduct extends OrgAction
                     ],
                     'description_extra' => [
                         'type'  => 'textEditor',
-                        'label' => __('description extra'),
+                        'label' => __('Extra description'),
                         'value' => $product->description_extra
                     ],
                     'description_extra_i8n' => [
@@ -265,6 +265,23 @@ class EditProduct extends OrgAction
                         'label' => __('translate description extra'),
                         'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($product->shop->extra_languages),
                         'value' => $product->getTranslations('description_extra_i8n')
+                    ],
+                ]
+            ],
+            [
+                'label'  => __('Pricing'),
+                'icon'   => 'fa-light fa-money-bill',
+                'fields' => [
+                    'cost_price_ratio' => [
+                        'type'          => 'input_number',
+                        'bind' => [
+                            'maxFractionDigits' => 3
+                        ],
+                        'label'         => __('pricing ratio'),
+                        'placeholder'   => __('Cost price ratio'),
+                        'required'      => true,
+                        'value'         => $product->cost_price_ratio,
+                        'min'           => 0
                     ],
                 ]
             ],
