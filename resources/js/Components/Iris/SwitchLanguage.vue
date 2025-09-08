@@ -74,6 +74,7 @@ const _popover = ref(null)
             @click="(e) => _popover?.toggle(e)"
             v-tooltip="trans('Change language of the website')"
             icon="fal fa-language"
+            class="text-white"
             xlabel="Object.values(layout.iris.website_i18n?.language_options || {})?.find(language => language.code === layout.iris.locale)?.name"
             :loading="!!isLoadingChangeLanguage"
             type="transparent"
