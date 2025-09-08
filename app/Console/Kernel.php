@@ -86,7 +86,7 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'FetchEbayOrders',
         );
 
-        $schedule->job(FetchWooOrders::makeJob())->cron('2,12,22,32,42,52 * * * *')->sentryMonitor(
+        $schedule->job(FetchWooOrders::makeJob())->everyTenMinutes()->sentryMonitor(
             monitorSlug: 'FetchWooOrders',
         );
 

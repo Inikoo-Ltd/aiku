@@ -273,7 +273,6 @@ const selectedDelivery = ref(null)
 
         <!-- Column: Pickings -->
         <template #cell(pickings)="{ item }">
-
             <div v-if="item.pickings?.length" class="space-y-1">
                 <div v-for="picking in item.pickings" :key="picking.id" class="flex gap-x-2 w-fit">
                     <!-- {{ picking.location_code }} -->
@@ -326,7 +325,7 @@ const selectedDelivery = ref(null)
         </template>
 
         <template #cell(items)="{ item: itemValue, proxyItem }">
-            <div v-for="(deliveryItem, index) in itemValue.items" :key="deliveryItem.id || index" class="space-y-2">
+            <div v-if="itemValue.items.length" v-for="(deliveryItem, index) in itemValue.items" :key="deliveryItem.id || index" class="space-y-2">
 
                 <div class="flex justify-between items-center">
                     <div>{{ deliveryItem.org_stock_code }}</div>
@@ -481,6 +480,9 @@ const selectedDelivery = ref(null)
                 </div>
             </div>
 
+            <div v-else>
+                <div class="text-xs text-gray-400 italic">No items</div>
+            </div>
 
         </template>
 
