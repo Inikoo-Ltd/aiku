@@ -148,7 +148,7 @@ console.log(props)
 
 
     <!-- Products (full width below) -->
-    <div class="bg-white border rounded-lg shadow-sm p-4">
+<!--     <div class="bg-white border rounded-lg shadow-sm p-4">
       <div class="flex justify-between items-center mb-4">
         <h3 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
           Products ({{ data.data.products.length }})
@@ -232,6 +232,6 @@ console.log(props)
       >
         {{ trans("No products available") }}
       </div>
-    </div>
+    </div> -->
   </div>
 </template>
