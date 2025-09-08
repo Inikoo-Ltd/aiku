@@ -68,7 +68,7 @@ class ShowMasterDepartment extends GrpAction
         $subNavigation = $this->getMasterDepartmentSubNavigation($masterDepartment);
 
         return Inertia::render(
-            'Org/Catalogue/Department',
+            'Masters/MasterDepartment',
             [
                 'title'       => $tittle,
                 'breadcrumbs' => $this->getBreadcrumbs(

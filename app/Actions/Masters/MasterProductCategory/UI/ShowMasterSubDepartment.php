@@ -24,6 +24,8 @@ use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
+use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 
 class ShowMasterSubDepartment extends GrpAction
 {
@@ -126,6 +128,15 @@ class ShowMasterSubDepartment extends GrpAction
                         ]
                     ]
                 ],
+                'storeRoute' =>  match ($this->parent::class) {
+                    MasterShop::class => [
+                        'name' => 'grp.models.master_shops.master_family.store',
+                        'parameters' => [
+                            'masterShop' => $this->parent->id
+                        ]
+                    ]
+                },
+                'shopsData' => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterShop, 'shops')),
 
                 MasterSubDepartmentTabsEnum::SHOWCASE->value => $this->tab == MasterSubDepartmentTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterProductCategoryShowcase::run($masterSubDepartment)

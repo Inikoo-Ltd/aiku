@@ -106,9 +106,9 @@ const allChecked = computed({
                         <th class="px-2 py-1">Stock</th>
                         <th class="px-2 py-1 text-center">
                             <div class="flex items-center justify-center gap-1">
-                                <input type="checkbox" v-model="allChecked" />
                                 <span>Create Webpage?</span>
                                 <InformationIcon :information="trans('If checked, will create the product webpage')" />
+                                <input type="checkbox" v-model="allChecked" />
                             </div>
                         </th>
                         <th class="px-2 py-1">
