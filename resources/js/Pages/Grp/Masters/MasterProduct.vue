@@ -29,6 +29,7 @@ import TransleteLanguage from "@/Components/Showcases/Grp/TransleteLanguage.vue"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import MasterProductShowcase from "@/Components/Showcases/Grp/MasterProductShowcase.vue";
 import {PageHeading as PageHeadingTypes} from "@/types/PageHeading";
+import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue";
 
 library.add(faChartLine, faCheckCircle, faFolderTree, faFolder, faCube, faShoppingCart, faFileInvoice, faStickyNote,
     faMoneyBillWave, faFolderOpen, faAtom
@@ -44,6 +45,7 @@ const props = defineProps<{
     showcase?: {}
     history?: {}
     language?:{}
+    products?: {}
 
 }>();
 
@@ -55,7 +57,8 @@ const component = computed(() => {
     const components = {
         showcase: MasterProductShowcase,
         language : TransleteLanguage,
-        history: TableHistories
+        history: TableHistories,
+        products: TableProducts
     };
     return components[currentTab.value];
 
