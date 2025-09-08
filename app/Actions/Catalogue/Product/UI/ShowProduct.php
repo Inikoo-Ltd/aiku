@@ -264,6 +264,13 @@ class ShowProduct extends OrgAction
 
                     ]
                 ],
+                'masterRoute' => $hasMaster ? [
+                    'name' => 'grp.masters.master_shops.show.master_products.show',
+                    'parameters' => [
+                        'masterShop' => $product->masterProduct->masterShop->slug,
+                        'masterProduct' => $product->masterProduct->slug   
+                    ]
+                ] : [],
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => ProductTabsEnum::navigation()
