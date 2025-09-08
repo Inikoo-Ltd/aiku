@@ -16,6 +16,7 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
 import Image from "@/Components/Image.vue"
 import {debounce, get, set} from "lodash-es"
+import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import {
     faConciergeBell,
@@ -59,6 +60,7 @@ const isLoadingTable = ref<null | string>(null)
 const selectedProducts = defineModel<number[]>('selectedProducts')
 const isLoadingSubmit = ref(false)
 const isOpenModal = ref(false)
+const querySearchPortfolios = ref('')
 function itemRoute(portfolio: Portfolio) {
     return route(
         "grp.helpers.redirect_portfolio_item",
@@ -66,12 +68,6 @@ function itemRoute(portfolio: Portfolio) {
 }
 
 const onSubmitVariant = () => {
-
-
-    /* selectedVariant.value = null
-    selectedPortfolio.value = null */
-
-    /* Section: Submit */
     router.post(
         route(props.routes.single_match.name, {
             portfolio: selectedPortfolio.value?.id,
@@ -156,7 +152,6 @@ const fetchRoute = async () => {
         }))
 
         resultOfFetchPlatformProduct.value = www.data
-        // console.log('qweqw', www)
     } catch (e) {
         console.error("Error processing products", e)
     }
@@ -200,7 +195,6 @@ const onDisableCheckbox = (item) => {
 </script>
 
 <template>
-    <!-- <pre>{{ data.data[0] }}</pre> -->
     <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="false"
         @onChecked="(item) => onChangeCheked(true, item)" @onUnchecked="(item) => onChangeCheked(false, item)"
         @onCheckedAll="(data) => onCheckedAll(data)" checkboxKey='id'
@@ -223,14 +217,32 @@ const onDisableCheckbox = (item) => {
             <AddressLocation :data="portfolio['location']" />
         </template>
 
-        <template #cell(platform_status)="{ item: portfolio }">
-        </template>
 
         <template #cell(created_at)="{ item: portfolio }">
             <div class="text-gray-500">{{ useFormatTime(portfolio["created_at"], {
                 localeCode: locale.language.code,
                 formatTime: "hm"
             }) }}
+            </div>
+        </template>
+
+
+         <template #cell(platform_status)="{ item }">
+            <div class="whitespace-nowrap">
+                <FontAwesomeIcon v-if="item.has_valid_platform_product_id"
+                                 v-tooltip="trans('Has valid platform product id')" icon="fal fa-check"
+                                 class="text-green-500"
+                                 fixed-width aria-hidden="true"/>
+                <FontAwesomeIcon v-else v-tooltip="trans('Has valid platform product id')" icon="fal fa-times"
+                                 class="text-red-500" fixed-width aria-hidden="true"/>
+                <FontAwesomeIcon v-if="item.exist_in_platform" v-tooltip="trans('Exist in platform')"
+                                 icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true"/>
+                <FontAwesomeIcon v-else v-tooltip="trans('Exist in platform')" icon="fal fa-times" class="text-red-500"
+                                 fixed-width aria-hidden="true"/>
+                <FontAwesomeIcon v-if="item.platform_status" v-tooltip="trans('Platform status')" icon="fal fa-check"
+                                 class="text-green-500" fixed-width aria-hidden="true"/>
+                <FontAwesomeIcon v-else v-tooltip="trans('Platform status')" icon="fal fa-times" class="text-red-500"
+                                 fixed-width aria-hidden="true"/>
             </div>
         </template>
 
