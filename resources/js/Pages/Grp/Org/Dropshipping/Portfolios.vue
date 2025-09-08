@@ -150,7 +150,7 @@ const submitPortfolioAction = async (action: any) => {
 
     <TablePortfoliosShopify v-if="platform.type === 'shopify'" :data="data" :customerSalesChannel v-model:selectedProducts="selectedProducts" :key="key" :progressToUploadToShopifyAll="progessbar"/>
     <TablePortfoliosManual v-else-if="platform.type === 'manual'" :data="data" :customerSalesChannel />
-    <TablePortfolios v-else :data="data" :customerSalesChannel  v-model:selectedProducts="selectedProducts" :key="key" :progressToUploadToShopifyAll="progessbar"  :routes="props.routes"/>
+    <TablePortfolios v-else :data="data" :customerSalesChannel  v-model:selectedProducts="selectedProducts" :key="key"    :progressToUploadToShopifyAll="progessbar"  :routes="props.routes"/>
 
 
     <Modal v-if="is_show_add_products_modal" :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false"
