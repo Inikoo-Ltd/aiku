@@ -78,37 +78,11 @@ class UpdateProductCategory extends OrgAction
             $originalMasterProductCategory = $productCategory->masterProductCategory;
         }
 
-        if (Arr::has($modelData, 'name_i8n')) {
-            UpdateProductCategoryTranslationsFromUpdate::make()->action($productCategory, [
-                'translations' => [
-                    'name' => [$productCategory->shop->language->code => Arr::pull($modelData, 'name_i8n')]
-                ]
-            ]);
-        }
 
-        if (Arr::has($modelData, 'description_title_i8n')) {
-            UpdateProductCategoryTranslationsFromUpdate::make()->action($productCategory, [
-                'translations' => [
-                    'description_title' => [$productCategory->shop->language->code => Arr::pull($modelData, 'description_title_i8n')]
-                ]
-            ]);
-        }
 
-        if (Arr::has($modelData, 'description_i8n')) {
-            UpdateProductCategoryTranslationsFromUpdate::make()->action($productCategory, [
-                'translations' => [
-                    'description' => [$productCategory->shop->language->code => Arr::pull($modelData, 'description_i8n')]
-                ]
-            ]);
-        }
 
-        if (Arr::has($modelData, 'description_extra_i8n')) {
-            UpdateProductCategoryTranslationsFromUpdate::make()->action($productCategory, [
-                'translations' => [
-                    'description_extra' => [$productCategory->shop->language->code => Arr::pull($modelData, 'description_extra_i8n')]
-                ]
-            ]);
-        }
+
+
 
 
         $productCategory = $this->update($productCategory, $modelData, ['data']);
@@ -139,6 +113,46 @@ class UpdateProductCategory extends OrgAction
                 $this->masterProductCategoryUsageHydrators($productCategory, $originalMasterProductCategory);
             }
         }
+
+        if (Arr::has($changes, 'name')){
+
+            UpdateProductCategoryAndMasterTranslations::make()->action($productCategory, [
+                'translations' => [
+                    'name' => [$productCategory->shop->language->code => Arr::pull($modelData, 'name')]
+                ]
+            ]);
+
+        }
+
+
+
+        if (Arr::has($changes,  'description_title')) {
+            UpdateProductCategoryAndMasterTranslations::make()->action($productCategory, [
+                'translations' => [
+                    'description_title' => [$productCategory->shop->language->code => Arr::pull($modelData, 'description_title')]
+                ]
+            ]);
+        }
+
+        if (Arr::has($changes, 'description')) {
+            UpdateProductCategoryAndMasterTranslations::make()->action($productCategory, [
+                'translations' => [
+                    'description' => [$productCategory->shop->language->code => Arr::pull($modelData, 'description')]
+                ]
+            ]);
+        }
+
+        if (Arr::has($changes, 'description_extra')) {
+            UpdateProductCategoryAndMasterTranslations::make()->action($productCategory, [
+                'translations' => [
+                    'description_extra' => [$productCategory->shop->language->code => Arr::pull($modelData, 'description_extra')]
+                ]
+            ]);
+        }
+
+
+
+
 
         if (Arr::hasAny($changes, [
             'code',
@@ -215,10 +229,6 @@ class UpdateProductCategory extends OrgAction
             'url'                        => ['sometimes', 'nullable', 'string', 'max:250'],
             'images'                     => ['sometimes', 'array'],
             'master_product_category_id' => ['sometimes', 'integer', 'nullable', Rule::exists('master_product_categories', 'id')->where('master_shop_id', $this->shop->master_shop_id)],
-            'name_i8n' =>               ['sometimes'],
-            'description_title_i8n' =>  ['sometimes'],
-            'description_i8n' =>        ['sometimes'],
-            'description_extra_i8n' =>  ['sometimes'],
             'cost_price_ratio'         => ['sometimes', 'numeric', 'min:0']
         ];
 
