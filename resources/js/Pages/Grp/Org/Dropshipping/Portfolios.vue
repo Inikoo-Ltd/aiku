@@ -15,7 +15,6 @@ import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 import { ref, onMounted } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
-import { trans } from "laravel-vue-i18n"
 import ProductsSelector from "@/Components/Dropshipping/ProductsSelector.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { Customer } from "@/types/customer"
@@ -24,6 +23,7 @@ import { faBookmark } from "@fal"
 import { ulid } from "ulid"
 import {debounce} from "lodash-es"
 import axios from "axios"
+import { trans } from "laravel-vue-i18n"
 
 library.add(faBookmark)
 
@@ -36,6 +36,7 @@ const props = defineProps<{
     customerSalesChannelId: number
     platform: {}
     customerSalesChannel: {}
+    routes:{}
 }>()
 
 
@@ -147,10 +148,9 @@ const submitPortfolioAction = async (action: any) => {
         </template>
     </PageHeading>
 
-    <TablePortfoliosShopify v-if="platform.type === 'shopify'" :data="data" :customerSalesChannel
-        v-model:selectedProducts="selectedProducts" :key="key" :progressToUploadToShopifyAll="progessbar"/>
+    <TablePortfoliosShopify v-if="platform.type === 'shopify'" :data="data" :customerSalesChannel v-model:selectedProducts="selectedProducts" :key="key" :progressToUploadToShopifyAll="progessbar"/>
     <TablePortfoliosManual v-else-if="platform.type === 'manual'" :data="data" :customerSalesChannel />
-    <TablePortfolios v-else :data="data" :customerSalesChannel />
+    <TablePortfolios v-else :data="data" :customerSalesChannel  v-model:selectedProducts="selectedProducts" :key="key" :progressToUploadToShopifyAll="progessbar"  :routes="props.routes"/>
 
 
     <Modal v-if="is_show_add_products_modal" :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false"
