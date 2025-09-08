@@ -478,13 +478,22 @@ const toggleFavorite = (product: Product): void => {
             </div>
 
             <!-- Empty State -->
-            <EmptyState v-else-if="!isVisiting" :message="trans('No products found')"
-                :description="getSearchInputValue('global') ? trans('Try adjusting your search terms') : trans('No products are available at this time')" />
+            <EmptyState
+            v-else-if="!isVisiting"
+                :message="getSearchInputValue('global') ? trans('No result') : trans('Your favourites is empty')"
+                :description="getSearchInputValue('global') ? trans('Try adjusting your search terms') : trans('No products are available at this time')"
+            />
 
             <!-- Pagination -->
-            <Pagination :on-click="visit" :has-data="hasData" :meta="compResourceMeta"
-                :exportLinks="queryBuilderProps?.exportLinks" :per-page-options="queryBuilderProps?.perPageOptions"
-                :on-per-page-change="onPerPageChange" />
+            <Pagination
+                v-if="hasData"
+                :on-click="visit"
+                :has-data="hasData"
+                :meta="compResourceMeta"
+                :exportLinks="queryBuilderProps?.exportLinks"
+                :per-page-options="queryBuilderProps?.perPageOptions"
+                :on-per-page-change="onPerPageChange"
+            />
         </TableWrapper>
     </fieldset>
 </template>

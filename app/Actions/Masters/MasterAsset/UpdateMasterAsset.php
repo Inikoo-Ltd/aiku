@@ -24,6 +24,7 @@ use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
+use Lorisleiva\Actions\ActionRequest;
 
 class UpdateMasterAsset extends OrgAction
 {
@@ -49,19 +50,38 @@ class UpdateMasterAsset extends OrgAction
             }
             data_set($modelData, 'master_department_id', $masterDepartmentID);
         }
-        $masterAsset = $this->update($masterAsset, $modelData);
-        $changed = Arr::except($masterAsset->getChanges(), ['updated_at']);
-
-        if (Arr::hasAny($changed, ['code', 'name', 'description', 'rrp'])) {
-            foreach ($masterAsset->products as $product) {
-                UpdateProduct::make()->action($product, [
-                    'code' => $masterAsset->code,
-                    'name' => $masterAsset->name,
-                    'description' => $masterAsset->description,
-                    'rrp' => $masterAsset->rrp
-                ]);
-            }
+        if (Arr::has($modelData, 'name_i8n')) {
+            UpdateMasterProductTranslationsFromUpdate::make()->action($masterAsset, [
+                'translations' => [
+                    'name' => Arr::pull($modelData, 'name_i8n')
+                ]
+            ]);
         }
+
+        if (Arr::has($modelData, 'description_title_i8n')) {
+            UpdateMasterProductTranslationsFromUpdate::make()->action($masterAsset, [
+                'translations' => [
+                    'description_title' => Arr::pull($modelData, 'description_title_i8n')
+                ]
+            ]);
+        }
+
+        if (Arr::has($modelData, 'description_i8n')) {
+            UpdateMasterProductTranslationsFromUpdate::make()->action($masterAsset, [
+                'translations' => [
+                    'description' => Arr::pull($modelData, 'description_i8n')
+                ]
+            ]);
+        }
+
+        if (Arr::has($modelData, 'description_extra_i8n')) {
+            UpdateMasterProductTranslationsFromUpdate::make()->action($masterAsset, [
+                'translations' => [
+                    'description_extra' => Arr::pull($modelData, 'description_extra_i8n')
+                ]
+            ]);
+        }
+        $masterAsset = $this->update($masterAsset, $modelData);
 
         if ($masterAsset->wasChanged('status')) {
             GroupHydrateMasterAssets::dispatch($masterAsset->group)->delay($this->hydratorsDelay);
@@ -107,6 +127,10 @@ class UpdateMasterAsset extends OrgAction
                     ->where('master_shop_id', $this->masterAsset->master_shop_id)
                     ->where('type', MasterProductCategoryTypeEnum::FAMILY)
             ],
+            'name_i8n' => ['sometimes', 'array'],
+            'description_title_i8n' => ['sometimes', 'array'],
+            'description_i8n' => ['sometimes', 'array'],
+            'description_extra_i8n' => ['sometimes', 'array'],
         ];
 
         if (!$this->strict) {
@@ -135,4 +159,11 @@ class UpdateMasterAsset extends OrgAction
         return $this->handle($masterAsset, $this->validatedData);
     }
 
+    public function asController(MasterAsset $masterAsset, ActionRequest $request): MasterAsset
+    {
+        $this->masterAsset = $masterAsset;
+        $this->initialisationFromGroup($masterAsset->group, $request);
+
+        return $this->handle($masterAsset, $this->validatedData);
+    }
 }

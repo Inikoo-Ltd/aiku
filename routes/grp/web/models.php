@@ -93,6 +93,10 @@ use App\Actions\Dropshipping\Shopify\Product\MatchBulkPortfoliosToCurrentShopify
 use App\Actions\Dropshipping\Shopify\Product\MatchPortfolioToCurrentShopifyProduct;
 use App\Actions\Dropshipping\Shopify\Product\StoreNewProductToCurrentShopify;
 use App\Actions\Dropshipping\Shopify\ResetShopifyChannel;
+use App\Actions\Dropshipping\WooCommerce\Product\MatchBulkNewProductToCurrentWooCommerce;
+use App\Actions\Dropshipping\WooCommerce\Product\MatchPortfolioToCurrentWooProduct;
+use App\Actions\Dropshipping\WooCommerce\Product\StoreBulkNewProductToCurrentWooCommerce;
+use App\Actions\Dropshipping\WooCommerce\Product\StoreNewProductToCurrentWooCommerce;
 use App\Actions\Fulfilment\Fulfilment\StoreFulfilmentFromUI;
 use App\Actions\Fulfilment\Fulfilment\UpdateFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\StoreFulfilmentCustomer;
@@ -203,6 +207,7 @@ use App\Actions\HumanResources\Workplace\StoreWorkplace;
 use App\Actions\HumanResources\Workplace\UpdateWorkplace;
 use App\Actions\Masters\MasterAsset\Json\GetTradeUnitDataForMasterProductCreation;
 use App\Actions\Masters\MasterAsset\StoreMasterProductFromTradeUnits;
+use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterCollection\AttachMasterCollectionToModel;
 use App\Actions\Masters\MasterCollection\AttachModelsToMasterCollection;
 use App\Actions\Masters\MasterCollection\AttachMultipleParentsToAMasterCollection;
@@ -382,6 +387,10 @@ Route::prefix('master-collection/{masterCollection:id}')->name('master_collectio
 
 Route::prefix('master-family/{masterFamily:id}')->name('master_family.')->group(function () {
     Route::post('store-assets', StoreMasterProductFromTradeUnits::class)->name('store-assets');
+});
+
+Route::prefix('master-asset/{masterAsset:id}')->name('master_asset.')->group(function () {
+    Route::patch('update', UpdateMasterAsset::class)->name('update');
 });
 
 Route::prefix('department/{productCategory:id}')->name('department.')->group(function () {
@@ -599,6 +608,23 @@ Route::name('pallet-return-item.')->prefix('pallet-return-item/{palletReturnItem
     Route::patch('undo-picking', UndoPickingPalletFromReturn::class)->name('undo-picking');
     Route::patch('undo', UndoPalletReturnItem::class)->name('undo-confirmed');
 });
+
+
+Route::post('{customerSalesChannel:id}/shopify-batch-upload', CreateNewBulkPortfoliosToShopify::class)->name('shopify.batch_upload')->withoutScopedBindings();
+Route::post('{customerSalesChannel:id}/shopify-batch-match', MatchBulkPortfoliosToCurrentShopifyProduct::class)->name('shopify.batch_match')->withoutScopedBindings();
+Route::post('{customerSalesChannel:id}/shopify-batch-all', CreateNewBulkPortfoliosToShopify::class)->name('shopify.batch_all')->withoutScopedBindings();
+
+Route::post('{customerSalesChannel:id}/woo-batch-upload', StoreBulkNewProductToCurrentWooCommerce::class)->name('woo.batch_upload')->withoutScopedBindings();
+Route::post('{customerSalesChannel:id}/woo-batch-match', MatchBulkNewProductToCurrentWooCommerce::class)->name('woo.batch_match')->withoutScopedBindings();
+Route::post('{customerSalesChannel:id}/woo-batch-all', StoreBulkNewProductToCurrentWooCommerce::class)->name('woo.batch_all')->withoutScopedBindings();
+
+
+Route::post('portfolio/{portfolio:id}/match-to-existing-shopify-product', MatchPortfolioToCurrentShopifyProduct::class)->name('portfolio.match_to_existing_shopify_product');
+Route::post('portfolio/{portfolio:id}/store-new-shopify-product', StoreNewProductToCurrentShopify::class)->name('portfolio.store_new_shopify_product');
+
+Route::post('portfolio/{portfolio:id}/match-to-existing-woo-product', MatchPortfolioToCurrentWooProduct::class)->name('portfolio.match_to_existing_woo_product');
+Route::post('portfolio/{portfolio:id}/store-new-woo-product', StoreNewProductToCurrentWooCommerce::class)->name('portfolio.store_new_woo_product');
+
 
 Route::patch('{storedItem:id}/stored-items/pallets', SyncStoredItemPallet::class)->name('stored-items.pallets.update');
 Route::patch('{storedItem:id}/stored-items', MoveStoredItem::class)->name('stored-items.move');

@@ -10,6 +10,7 @@
 
 namespace App\Actions\Masters\MasterAsset\UI;
 
+use App\Actions\Catalogue\Product\UI\IndexProductsInMasterProduct;
 use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
 use App\Actions\GrpAction;
@@ -19,6 +20,7 @@ use App\Actions\Masters\MasterProductCategory\UI\ShowMasterSubDepartment;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\UI\SupplyChain\MasterAssetTabsEnum;
+use App\Http\Resources\Catalogue\ProductsResource;
 use App\Http\Resources\Masters\MasterProductResource;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
@@ -111,15 +113,15 @@ class ShowMasterProducts extends GrpAction
                         'title' => __('master asset')
                     ],
                     'actions' => [
-                        // [
-                        //     'type'  => 'button',
-                        //     'style' => 'edit',
-                        //     'label' => 'blueprint',
-                        //     'route' => [
-                        //         'name'       => preg_replace('/show$/', 'blueprint', $request->route()->getName()),
-                        //         'parameters' => $request->route()->originalParameters()
-                        //     ]
-                        // ],
+                        [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('edit'),
+                            'route' => [
+                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                                'parameters' => $request->route()->originalParameters()
+                            ]
+                        ],
                         $this->canDelete ? [
                             'type'  => 'button',
                             'style' => 'delete',
@@ -138,8 +140,13 @@ class ShowMasterProducts extends GrpAction
                 MasterAssetTabsEnum::SHOWCASE->value => $this->tab == MasterAssetTabsEnum::SHOWCASE->value ?
                     fn () => MasterProductResource::make($masterAsset)
                     : Inertia::lazy(fn () => MasterProductResource::make($masterAsset)),
+                MasterAssetTabsEnum::PRODUCTS->value => $this->tab == MasterAssetTabsEnum::PRODUCTS->value ?
+                    fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset))
+                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset))),
+
             ]
-        )->table(IndexMailshots::make()->tableStructure($masterAsset));
+        )->table(IndexProductsInMasterProduct::make()->tableStructure(masterAsset: $masterAsset, prefix: MasterAssetTabsEnum::PRODUCTS->value))
+        ->table(IndexMailshots::make()->tableStructure($masterAsset));
     }
 
     public function jsonResponse(MasterAsset $masterAsset): MasterProductResource
