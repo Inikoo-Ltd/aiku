@@ -10,6 +10,7 @@
 
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
+use App\Actions\Catalogue\ProductCategory\UI\IndexSubDepartments;
 use App\Actions\GrpAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Masters\MasterProductCategory\WithMasterSubDepartmentSubNavigation;
@@ -26,6 +27,7 @@ use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
+use App\Http\Resources\Catalogue\SubDepartmentsResource;
 
 class ShowMasterSubDepartment extends GrpAction
 {
@@ -105,7 +107,7 @@ class ShowMasterSubDepartment extends GrpAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => DepartmentTabsEnum::navigation()
+                    'navigation' => MasterSubDepartmentTabsEnum::navigation()
                 ],
 
                 'routes' => [
@@ -149,6 +151,10 @@ class ShowMasterSubDepartment extends GrpAction
                     fn () => GetMasterProductCategoryShowcase::run($masterSubDepartment)
                     : Inertia::lazy(fn () => GetMasterProductCategoryShowcase::run($masterSubDepartment)),
 
+                MasterSubDepartmentTabsEnum::SUB_DEPARTMENTS->value => $this->tab == MasterSubDepartmentTabsEnum::SUB_DEPARTMENTS->value ?
+                    fn () => SubDepartmentsResource::collection(IndexSubDepartments::run($masterSubDepartment))
+                    : Inertia::lazy(fn () => SubDepartmentsResource::collection(IndexSubDepartments::run($masterSubDepartment))),
+
                 MasterSubDepartmentTabsEnum::HISTORY->value => $this->tab == MasterSubDepartmentTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($masterSubDepartment))
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($masterSubDepartment))),
@@ -156,6 +162,7 @@ class ShowMasterSubDepartment extends GrpAction
 
             ]
         )
+            ->table(IndexSubDepartments::make()->tableStructure(parent: $masterSubDepartment, prefix: MasterSubDepartmentTabsEnum::SUB_DEPARTMENTS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: MasterSubDepartmentTabsEnum::HISTORY->value));
     }
 

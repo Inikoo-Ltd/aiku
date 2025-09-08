@@ -34,18 +34,6 @@ class FamiliesResource extends JsonResource
     public function toArray($request): array
     {
         /** @var \App\Models\Catalogue\ProductCategory $department */
-        $department = $this->resource;
-
-        $urlMaster                              = null;
-        if ($department->master_product_category_id) {
-            $urlMaster = [
-                'name'       => 'grp.masters.master_departments.show',
-                'parameters' => [
-                    $department->masterProductCategory->slug
-                ]
-            ];
-        }
-
         $imageSources = null;
         $media        = Media::find($this->image_id);
         if ($media) {

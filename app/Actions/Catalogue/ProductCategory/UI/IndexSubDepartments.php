@@ -18,6 +18,7 @@ use App\Http\Resources\Catalogue\SubDepartmentsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
+use App\Models\Masters\MasterProductCategory;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
@@ -54,7 +55,7 @@ class IndexSubDepartments extends OrgAction
     }
 
 
-    public function handle(Shop|ProductCategory $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Shop|ProductCategory|MasterProductCategory $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -68,17 +69,21 @@ class IndexSubDepartments extends OrgAction
 
         $queryBuilder = QueryBuilder::for(ProductCategory::class);
 
-        foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
-            $queryBuilder->whereElementGroup(
-                key: $key,
-                allowedElements: array_keys($elementGroup['elements']),
-                engine: $elementGroup['engine'],
-                prefix: $prefix
-            );
+        if(class_basename($parent) != 'MasterProductCategory') {
+            foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+                $queryBuilder->whereElementGroup(
+                    key: $key,
+                    allowedElements: array_keys($elementGroup['elements']),
+                    engine: $elementGroup['engine'],
+                    prefix: $prefix
+                );
+            }
         }
 
         if ($parent instanceof  Shop) {
             $queryBuilder->where('product_categories.shop_id', $parent->id);
+        } elseif ($parent instanceof MasterProductCategory) {
+            $queryBuilder->where('product_categories.master_product_category_id', $parent->id);
         } else {
             $queryBuilder->where('product_categories.department_id', $parent->id);
 
@@ -86,7 +91,8 @@ class IndexSubDepartments extends OrgAction
 
 
         $queryBuilder->where('product_categories.type', ProductCategoryTypeEnum::SUB_DEPARTMENT);
-
+        $queryBuilder->leftJoin('shops', 'product_categories.shop_id', 'shops.id');
+        $queryBuilder->leftJoin('organisations', 'product_categories.organisation_id', 'organisations.id');
         return $queryBuilder
             ->defaultSort('product_categories.code')
             ->select([
@@ -102,6 +108,12 @@ class IndexSubDepartments extends OrgAction
                 'departments.slug as department_slug',
                 'departments.code as department_code',
                 'departments.name as department_name',
+                'shops.slug as shop_slug',
+                'shops.code as shop_code',
+                'shops.name as shop_name',
+                'organisations.slug as organisation_slug',
+                'organisations.code as organisation_code',
+                'organisations.name as organisation_name',
                 'product_category_stats.number_current_families as number_families',
                 'product_category_stats.number_current_products as number_products',
 
@@ -115,7 +127,7 @@ class IndexSubDepartments extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Shop|ProductCategory $parent, ?array $modelOperations = null, $prefix = null, $canEdit = false): Closure
+    public function tableStructure(Shop|ProductCategory|MasterProductCategory $parent, ?array $modelOperations = null, $prefix = null, $canEdit = false): Closure
     {
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix, $canEdit) {
             if ($prefix) {
@@ -124,12 +136,14 @@ class IndexSubDepartments extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
-            foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
-                $table->elementGroup(
-                    key: $key,
-                    label: $elementGroup['label'],
-                    elements: $elementGroup['elements']
-                );
+            if(class_basename($parent) != 'MasterProductCategory') {
+                foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+                    $table->elementGroup(
+                        key: $key,
+                        label: $elementGroup['label'],
+                        elements: $elementGroup['elements']
+                    );
+                }
             }
 
             $buttonLabel = __('New Sub-department');
@@ -167,7 +181,9 @@ class IndexSubDepartments extends OrgAction
                 $table->column(key: 'department_code', label: __('department'), sortable: true, searchable: true);
             }
 
-
+            if(class_basename($parent) == 'MasterProductCategory') {
+                $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
+            }
             $table->column(key: 'code', label: __('code'), sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), sortable: true, searchable: true)
                 ->column(key: 'number_families', label: __('families'), sortable: true)

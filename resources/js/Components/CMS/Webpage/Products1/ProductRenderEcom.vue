@@ -34,8 +34,6 @@ const locale = useLocaleStore()
 
 const props = defineProps<{
     product: ProductResource
-    productHasPortfolio: number[]
-    style?: Object | null
 }>()
 
 
@@ -178,7 +176,7 @@ const urlLoginWithRedirect = () => {
 
                 <!-- New Add to Cart Button - hanya tampil jika user sudah login -->
                 <div v-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">
-                    <NewAddToCartButton :product="product" :key="product" />
+                    <NewAddToCartButton v-if="product.stock > 0" :product="product" :key="product" />
                 </div>
             </component>
 
@@ -203,11 +201,16 @@ const urlLoginWithRedirect = () => {
 
                         <!-- Rating and Stock -->
                         <div class="flex justify-between items-center text-xs mb-2">
-                            <div v-if="layout?.iris?.is_logged_in" class="flex items-center gap-1"
-                                :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'">
-                                <FontAwesomeIcon :icon="faCircle" class="text-[8px]"
-                                    :class="product.stock > 0 ? 'animate-pulse' : ''" />
-                                <span>({{ product.stock > 0 ? product.stock : 0 }} {{ trans('available') }})</span>
+                            <div v-if="layout?.iris?.is_logged_in">
+                                <div v-if="product.stock > 0" class="flex items-center gap-1"
+                                    :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'">
+                                    <FontAwesomeIcon :icon="faCircle" class="text-[8px]"
+                                        :class="product.stock > 0 ? 'animate-pulse' : ''" />
+                                    <span>({{ product.stock > 0 ? product.stock : 0 }} {{ trans('available') }})</span>
+                                </div>
+                                <div v-else class="bg-red-500/20 px-2 xpy-1 rounded text-xs text-red-500 border border-red-500/50">
+                                    {{ trans("Out of stock") }}
+                                </div>
                             </div>
                             <div class="flex items-center space-x-[1px] text-gray-500">
                             </div>
