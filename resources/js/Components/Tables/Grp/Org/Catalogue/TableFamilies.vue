@@ -79,6 +79,12 @@ function familyRoute(family: Family) {
             return route(
                 'grp.org.shops.show.catalogue.families.show',
                 [family.organisation_slug, family.shop_slug, family.slug])
+        case 'grp.masters.master_shops.show.master_departments.show.master_families.show':
+        case 'grp.masters.master_shops.show.master_families.show':
+        case 'grp.masters.master_shops.show.master_sub_departments.master_families.show':
+            return route(
+                'grp.org.shops.show.catalogue.families.show',
+                [family.organisation_slug, family.shop_slug, family.slug])
     }
 }
 

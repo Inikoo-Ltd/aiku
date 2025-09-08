@@ -1,68 +1,3 @@
-<template>
-    <fieldset 
-        :key="`grid-${name}`" 
-        class="min-w-0" 
-        :class="{ 'opacity-75': isVisiting || isParentLoading }"
-    >
-        <!-- Header Section -->
-        <div class="py-2 sm:py-0 my-0">
-            <div class="grid grid-flow-col justify-between items-center flex-nowrap px-3 sm:px-4">
-                <!-- Left Section: Counter and Search -->
-                <div class="h-fit flex flex-wrap gap-y-0.5 gap-x-1 items-center my-0.5">
-                    <!-- Record Counter -->
-                    <RecordCounter 
-                        :total="compResourceMeta?.total || 0"
-                        :labelSingular="queryBuilderProps?.labelRecord?.[0] || trans('product')"
-                        :labelPlural="queryBuilderProps?.labelRecord?.[1] || queryBuilderProps?.labelRecord?.[0] || trans('products')"
-                    />
-
-                    <!-- Search Input -->
-                    <div class="flex flex-row">
-                        <TableFilterSearch 
-                            @resetSearch="resetQuery" 
-                            :label="trans('Search products...')"
-                            :value="getSearchInputValue('global')" 
-                            :on-change="changeGlobalSearchValue"
-                            :isVisiting="isVisiting"
-                        />
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Products Grid -->
-        <TableWrapper :result="compResourceMeta?.total === 0" class="mt-2">
-            <div v-if="compResourceData.length > 0" class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 auto-rows-auto gap-4 p-4 bg-white">
-                <!-- Product Cards -->
-                <ProductCard
-                    v-for="(product, index) in compResourceData" 
-                    :key="`product-${index}`"
-                    :product="product"
-                    @toggle-favorite="toggleFavorite"
-                />
-            </div>
-
-            <!-- Empty State -->
-            <EmptyState 
-                v-else-if="!isVisiting"
-                :message="getSearchInputValue('global') ? trans('No result') : trans('Your favourites is empty')"
-                :description="getSearchInputValue('global') ? trans('Try adjusting your search terms') : trans('No products are available at this time')"
-            />
-
-            <!-- Pagination -->
-            <Pagination
-                v-if="hasData"
-                :on-click="visit" 
-                :has-data="hasData" 
-                :meta="compResourceMeta"
-                :exportLinks="queryBuilderProps?.exportLinks"
-                :per-page-options="queryBuilderProps?.perPageOptions"
-                :on-per-page-change="onPerPageChange" 
-            />
-        </TableWrapper>
-    </fieldset>
-</template>
-
 <script setup lang="ts">
 /**
  * GridProducts Component
@@ -138,6 +73,11 @@ const props = defineProps({
     isParentLoading: {
         type: Boolean,
         default: false,
+        required: false,
+    },
+    gridClass: {
+        type: String,
+        default: 'lg:grid-cols-3 xl:grid-cols-4 grid grid-cols-2',
         required: false,
     },
 })
@@ -500,3 +440,62 @@ const toggleFavorite = (product: Product): void => {
     } 
 }
 </script>
+
+<template>
+    <fieldset :key="`grid-${name}`" class="min-w-0" :class="{ 'opacity-75': isVisiting || isParentLoading }">
+        <!-- Header Section -->
+        <div class="py-2 sm:py-0 my-0">
+            <div class="grid grid-flow-col justify-between items-center flex-nowrap px-3 sm:px-4">
+                <!-- Left Section: Counter and Search -->
+                <div class="h-fit flex flex-wrap gap-y-0.5 gap-x-1 items-center my-0.5">
+                    <!-- Record Counter -->
+                    <RecordCounter :total="compResourceMeta?.total || 0"
+                        :labelSingular="queryBuilderProps?.labelRecord?.[0] || trans('product')"
+                        :labelPlural="queryBuilderProps?.labelRecord?.[1] || queryBuilderProps?.labelRecord?.[0] || trans('products')" />
+
+                    <!-- Search Input -->
+                    <div class="flex flex-row">
+                        <TableFilterSearch @resetSearch="resetQuery" :label="trans('Search products...')"
+                            :value="getSearchInputValue('global')" :on-change="changeGlobalSearchValue"
+                            :isVisiting="isVisiting" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Grid -->
+        <TableWrapper :result="compResourceMeta?.total === 0" class="mt-2">
+            <div v-if="compResourceData.length > 0"
+                class="auto-rows-auto gap-4 p-4" :class="gridClass">
+                <!-- Product Cards -->
+                <div v-for="(item, index) in compResourceData" :key="`product-${index}`">
+                    <slot name="card" :item="item">
+                        <ProductCard :product="item" @toggle-favorite="toggleFavorite" />
+                    </slot>
+                </div>
+
+
+            </div>
+
+            <!-- Empty State -->
+            <EmptyState
+            v-else-if="!isVisiting"
+                :message="getSearchInputValue('global') ? trans('No result') : trans('Your favourites is empty')"
+                :description="getSearchInputValue('global') ? trans('Try adjusting your search terms') : trans('No products are available at this time')"
+            />
+
+            <!-- Pagination -->
+            <Pagination
+                v-if="hasData"
+                :on-click="visit"
+                :has-data="hasData"
+                :meta="compResourceMeta"
+                :exportLinks="queryBuilderProps?.exportLinks"
+                :per-page-options="queryBuilderProps?.perPageOptions"
+                :on-per-page-change="onPerPageChange"
+            />
+        </TableWrapper>
+    </fieldset>
+</template>
+
+

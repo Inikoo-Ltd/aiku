@@ -252,7 +252,7 @@ class ShowProduct extends OrgAction
                             ]
 
                         ],
-                        $this->canEdit && !$hasMaster ? [
+                        $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
                             'label'   => __('Edit'),
