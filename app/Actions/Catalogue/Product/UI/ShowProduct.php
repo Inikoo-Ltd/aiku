@@ -269,7 +269,7 @@ class ShowProduct extends OrgAction
                     'name' => 'grp.masters.master_shops.show.master_products.show',
                     'parameters' => [
                         'masterShop' => $product->masterProduct->masterShop->slug,
-                        'masterProduct' => $product->masterProduct->slug   
+                        'masterProduct' => $product->masterProduct->slug
                     ]
                 ] : [],
                 'tabs'        => [

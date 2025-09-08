@@ -500,8 +500,7 @@ class ShowDeliveryNote extends OrgAction
         }
 
         $model = __('Delivery Note');
-        if($deliveryNote->type == DeliveryNoteTypeEnum::REPLACEMENT)
-        {
+        if ($deliveryNote->type == DeliveryNoteTypeEnum::REPLACEMENT) {
             $model = __('Replacement Delivery Note');
         }
         $props = [

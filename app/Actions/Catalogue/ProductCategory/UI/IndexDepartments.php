@@ -64,8 +64,7 @@ class IndexDepartments extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(ProductCategory::class);
-        if(class_basename($parent) != 'MasterProductCategory') 
-        {
+        if (class_basename($parent) != 'MasterProductCategory') {
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                 $queryBuilder->whereElementGroup(
                     key: $key,
@@ -137,7 +136,7 @@ class IndexDepartments extends OrgAction
                     ->pageName($prefix . 'Page');
             }
 
-            if(class_basename($parent) != 'MasterProductCategory') {
+            if (class_basename($parent) != 'MasterProductCategory') {
                 foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                     $table->elementGroup(
                         key: $key,
@@ -179,7 +178,7 @@ class IndexDepartments extends OrgAction
                     ->column(key: 'sales', label: __('sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
                     ->column(key: 'invoices', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true);
             } else {
-                if(class_basename($parent) == 'MasterProductCategory') {
+                if (class_basename($parent) == 'MasterProductCategory') {
                     $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
                 }
                 $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
