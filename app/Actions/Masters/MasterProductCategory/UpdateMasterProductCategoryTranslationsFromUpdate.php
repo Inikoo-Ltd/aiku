@@ -64,11 +64,15 @@ class UpdateMasterProductCategoryTranslationsFromUpdate extends GrpAction
         $childDescriptionI8n = $productCategory->getTranslations('description_i8n');
         $childDescriptionTitleI8n = $productCategory->getTranslations('description_title_i8n');
         $childDescriptionExtraI8n =  $productCategory->getTranslations('description_extra_i8n');
+        $childLanguage = $productCategory->shop->language->code;
 
         $updateChild = false;
         if (!empty($name_i8n)) {
             foreach ($name_i8n as $locale => $translation) {
                 $childNameI8n[$locale] = $translation;
+                if($locale === $childLanguage) {
+                    $productCategory->name = $translation;
+                }
             }
             $productCategory->name_i8n = $childNameI8n;
             $updateChild = true;
@@ -77,6 +81,9 @@ class UpdateMasterProductCategoryTranslationsFromUpdate extends GrpAction
         if (!empty($description_i8n)) {
             foreach ($description_i8n as $locale => $translation) {
                 $childDescriptionI8n[$locale] = $translation;
+                if($locale === $childLanguage) {
+                    $productCategory->description = $translation;
+                }
             }
             $productCategory->description_i8n = $childDescriptionI8n;
             $updateChild = true;
@@ -85,6 +92,9 @@ class UpdateMasterProductCategoryTranslationsFromUpdate extends GrpAction
         if (!empty($description_title_i8n)) {
             foreach ($description_title_i8n as $locale => $translation) {
                 $childDescriptionTitleI8n[$locale] = $translation;
+                if($locale === $childLanguage) {
+                    $productCategory->description_title = $translation;
+                }
             }
             $productCategory->description_title_i8n = $childDescriptionTitleI8n;
             $updateChild = true;
@@ -93,6 +103,9 @@ class UpdateMasterProductCategoryTranslationsFromUpdate extends GrpAction
         if (!empty($description_extra_i8n)) {
             foreach ($description_extra_i8n as $locale => $translation) {
                 $childDescriptionExtraI8n[$locale] = $translation;
+                if($locale === $childLanguage) {
+                    $productCategory->description_extra = $translation;
+                }
             }
             $productCategory->description_extra_i8n = $childDescriptionExtraI8n;
             $updateChild = true;
