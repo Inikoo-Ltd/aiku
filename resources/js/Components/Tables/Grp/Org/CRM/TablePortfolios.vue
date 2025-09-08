@@ -32,7 +32,8 @@ import {
     faExclamationCircle,
     faClone,
     faLink, faScrewdriver, faTools,
-    faRecycle, faHandPointer, faHandshakeSlash, faHandshake
+    faRecycle, faHandPointer, faHandshakeSlash, faHandshake,
+    faCheckCircle
 } from "@fal"
 import { faStar, faFilter } from "@fas"
 import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
@@ -63,6 +64,7 @@ const selectedProducts = defineModel<number[]>('selectedProducts')
 const isLoadingSubmit = ref(false)
 const isOpenModal = ref(false)
 const querySearchPortfolios = ref('')
+const selectedVariant = ref<Product | null>(null)
 function itemRoute(portfolio: Portfolio) {
     return route(
         "grp.helpers.redirect_portfolio_item",
@@ -76,7 +78,7 @@ const onSubmitVariant = () => {
             platform_product_id: selectedVariant.value?.id
         }),
         {
-            // data: 'qqq'
+
         },
         {
             preserveScroll: true,
@@ -99,6 +101,7 @@ const onSubmitVariant = () => {
 
             },
             onError: errors => {
+                console.log(errors)
                 notify({
                     title: trans("Something went wrong"),
                     text: errors.message ?? trans("Failed to match the product to platform"),
@@ -145,17 +148,18 @@ const resultOfFetchPlatformProduct = ref<PlatformProduct[]>([])
 const isLoadingFetchPlatformProduct = ref(false)
 const fetchRoute = async () => {
     isLoadingFetchPlatformProduct.value = true
-
+    isLoadingSubmit.value = true
 
     try {
         const www = await axios.get(route(props.routes.fetch_products.name, {
             customerSalesChannel: props.customerSalesChannel?.id,
             query: querySearchPortfolios.value
         }))
-
+        isLoadingSubmit.value = false
         resultOfFetchPlatformProduct.value = www.data
     } catch (e) {
         console.error("Error processing products", e)
+        isLoadingSubmit.value = false
     }
     isLoadingFetchPlatformProduct.value = false
 
@@ -371,7 +375,7 @@ const onDisableCheckbox = (item) => {
                                     ]">
                                     <Transition name="slide-to-right">
                                         <FontAwesomeIcon v-if="selectedVariant?.id === item.id"
-                                            icon="fas fa-check-circle" class="bottom-2 right-2 absolute text-green-500"
+                                            :icon="faCheckCircle" class="bottom-2 right-2 absolute text-green-500"
                                             fixed-width aria-hidden="true" />
                                     </Transition>
                                     <slot name="product" :item="item">
