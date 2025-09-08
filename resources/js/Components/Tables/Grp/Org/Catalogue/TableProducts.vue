@@ -276,7 +276,7 @@ const locale = inject("locale", aikuLocaleStructure);
 
         <template #cell(shop_code)="{ item: product }">
             <Link v-if="product['shop_slug']" :href="(shopRoute(product) as string)" class="secondaryLink">
-            {{ product["shop_slug"] }}
+            {{ product["shop_code"] }}
             </Link>
         </template>
 
