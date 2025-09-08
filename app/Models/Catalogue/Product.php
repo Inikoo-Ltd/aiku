@@ -21,6 +21,7 @@ use App\Models\Helpers\Brand;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\Tag;
 use App\Models\Inventory\OrgStock;
+use App\Models\Masters\MasterAsset;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
@@ -383,5 +384,10 @@ class Product extends Model implements Auditable, HasMedia
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class, 'currency_id');
+    }
+
+    public function masterProduct(): BelongsTo
+    {
+        return $this->belongsTo(MasterAsset::class, 'master_product_id');
     }
 }

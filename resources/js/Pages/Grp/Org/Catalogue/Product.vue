@@ -30,6 +30,9 @@ import TableOrgStocks from '@/Components/Tables/Grp/Org/Inventory/TableOrgStocks
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 import TableImages from "@/Components/Tables/Grp/Helpers/TableImages.vue"
 import ProductTranslation from '@/Components/Showcases/Grp/ProductTranslation.vue'
+import { template } from 'lodash'
+import { faOctopusDeploy } from  "@fortawesome/free-brands-svg-icons"
+import { routeType } from '@/types/route'
 
 
 library.add(
@@ -69,6 +72,8 @@ const props = defineProps<{
     history?: {}
     stocks?: {}
     images?: {}
+    master : boolean
+    masterRoute?: routeType
     taxonomy: {
         department?: {
             name: string
@@ -156,13 +161,36 @@ const breadcrumbItems = computed(() => {
     }
     return items
 })
+
+
+function masterProductRoute() {
+    return route(
+        "grp.masters.master_shops.show.master_products.show",
+        {
+            masterShop : route().params.shop as string,
+            masterProduct : props.code as string
+        }
+    );
+}
+
+
+
 </script>
 
 <template>
 
     <Head :title="capitalize(title)" />
 
-    <PageHeading :data="pageHead" />
+    <PageHeading :data="pageHead" >
+        <template #afterTitle>
+             <Link v-if="master" :href="route(masterRoute.name, masterRoute.parameters)"  v-tooltip="'Go to Master'" class="mr-1">
+                <FontAwesomeIcon
+                    icon="fab fa-octopus-deploy"
+                    color="#4B0082"
+                />
+            </Link>
+        </template>
+    </PageHeading>
 
 
     <Message v-if="showMissingTaxonomyMessage" severity="warn" class="mb-4">

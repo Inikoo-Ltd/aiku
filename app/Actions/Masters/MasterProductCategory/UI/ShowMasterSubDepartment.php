@@ -134,9 +134,16 @@ class ShowMasterSubDepartment extends GrpAction
                         'parameters' => [
                             'masterShop' => $this->parent->id
                         ]
-                    ]
+                    ],
+                    MasterProductCategory::class => [
+                        'name' => 'grp.models.master-sub-department.master_family.store',
+                            'parameters' => [
+                                'masterSubDepartment' => $this->parent->id
+                        ]
+                    ],
+                    default => []
                 },
-                'shopsData' => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterShop, 'shops')),
+                'shopsData' => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterSubDepartment->masterShop, 'shops')),
 
                 MasterSubDepartmentTabsEnum::SHOWCASE->value => $this->tab == MasterSubDepartmentTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterProductCategoryShowcase::run($masterSubDepartment)
