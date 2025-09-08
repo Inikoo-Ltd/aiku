@@ -78,7 +78,7 @@ const fetchRecommenders = async () => {
                     "recommendation_type": props.recommendation_type || "test_reco",
                     "recommender_client_identifier": props.recommendation_type || "test_reco",
                     "size": 7,
-                    "user_id": layout.user?.customer_id.toString(),
+                    "user_id": layout.user?.customer_id?.toString(),
                     "recommendation_context": {},
                     // "hit_fields": ["url", "title"]
                 }
@@ -106,7 +106,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="py-4">
+    <div class="py-4" :type="`recommenders-luigi-1-iris-${props.recommendation_type || 'test_reco'}`" >
         <Swiper :slides-per-view="slidesPerView ? Math.min(listProducts?.length || 0, slidesPerView || 0) : 4"
             :loop="false" :autoplay="false" :pagination="{ clickable: true }" :modules="[Autoplay]" class="w-full"
             xstyle="getStyles(fieldValue?.value?.layout?.properties, screenType)" spaceBetween="12">

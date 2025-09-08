@@ -9,7 +9,6 @@
 namespace App\Actions\Ordering\Order;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdateIntervals;
-use App\Actions\Dispatching\DeliveryNote\CopyOrderNotesToDeliveryNote;
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateOrders;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\Ordering\Order\Search\OrderRecordSearch;
@@ -22,6 +21,7 @@ use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Events\UpdateOrderNotesEvent;
 use App\Models\Ordering\Order;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
@@ -65,21 +65,33 @@ class UpdateOrder extends OrgAction
                 $deliveryNote = $order->deliveryNotes->first();
 
                 if (Arr::has($changes, 'customer_notes')) {
-                    $deliveryNote = CopyOrderNotesToDeliveryNote::make()->action($deliveryNote, [
-                            'customer_notes' => true,
-                    ], true);
+                    $deliveryNote->update(
+                        [
+                            'customer_notes' => $order->customer_notes,
+                        ]
+                    );
+                    UpdateOrderNotesEvent::dispatch($deliveryNote);
                 } elseif (Arr::has($changes, 'public_notes')) {
-                    $deliveryNote = CopyOrderNotesToDeliveryNote::make()->action($deliveryNote, [
-                            'public_notes' => true,
-                    ], true);
+                    $deliveryNote->update(
+                        [
+                            'public_notes' => $order->public_notes,
+                        ]
+                    );
+                    UpdateOrderNotesEvent::dispatch($deliveryNote);
                 } elseif (Arr::has($changes, 'internal_notes')) {
-                    $deliveryNote = CopyOrderNotesToDeliveryNote::make()->action($deliveryNote, [
-                            'internal_notes' => true,
-                    ], true);
+                    $deliveryNote->update(
+                        [
+                            'internal_notes' => $order->internal_notes,
+                        ]
+                    );
+                    UpdateOrderNotesEvent::dispatch($deliveryNote);
                 } elseif (Arr::has($changes, 'shipping_notes')) {
-                    $deliveryNote = CopyOrderNotesToDeliveryNote::make()->action($deliveryNote, [
-                            'shipping_notes' => true,
-                    ], true);
+                    $deliveryNote->update(
+                        [
+                            'shipping_notes' => $order->shipping_notes,
+                        ]
+                    );
+                    UpdateOrderNotesEvent::dispatch($deliveryNote);
                 }
             }
 
@@ -119,24 +131,24 @@ class UpdateOrder extends OrgAction
                 ),
             ],
 
-            'in_warehouse_at'     => ['sometimes', 'date'],
-            'dispatched_at'       => ['sometimes', 'nullable', 'date'],
-            'delivery_address_id' => ['sometimes', Rule::exists('addresses', 'id')],
+            'in_warehouse_at'       => ['sometimes', 'date'],
+            'dispatched_at'         => ['sometimes', 'nullable', 'date'],
+            'delivery_address_id'   => ['sometimes', Rule::exists('addresses', 'id')],
             'collection_address_id' => ['sometimes', 'nullable', Rule::exists('addresses', 'id')],
-            'shipping_notes'      => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'customer_notes'      => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'public_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'internal_notes'      => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'collection_notes'    => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'state'               => ['sometimes', Rule::enum(OrderStateEnum::class)],
-            'sales_channel_id'    => [
+            'shipping_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'customer_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'public_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'internal_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'collection_notes'      => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'state'                 => ['sometimes', Rule::enum(OrderStateEnum::class)],
+            'sales_channel_id'      => [
                 'sometimes',
                 'required',
                 Rule::exists('sales_channels', 'id')->where(function ($query) {
                     $query->where('group_id', $this->shop->group_id);
                 })
             ],
-            'tax_category_id'     => ['sometimes', Rule::exists('tax_categories', 'id')],
+            'tax_category_id'       => ['sometimes', Rule::exists('tax_categories', 'id')],
         ];
 
 
