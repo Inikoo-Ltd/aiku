@@ -5,17 +5,17 @@
   -->
 
 <script setup lang="ts">
-import {Link, router} from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
-import {Product} from "@/types/product"
-import {library} from "@fortawesome/fontawesome-svg-core"
-import {inject, onMounted, ref, computed} from "vue"
-import {trans} from "laravel-vue-i18n"
-import {aikuLocaleStructure} from "@/Composables/useLocaleStructure"
+import { Product } from "@/types/product"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { inject, onMounted, ref, computed } from "vue"
+import { trans } from "laravel-vue-i18n"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
-import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@/Components/Image.vue"
-import {debounce, get, set} from "lodash-es"
+import { debounce, get, set } from "lodash-es"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { useLocaleStore } from "@/Stores/locale"
 import {
@@ -34,17 +34,17 @@ import {
     faLink, faScrewdriver, faTools,
     faRecycle, faHandPointer, faHandshakeSlash, faHandshake
 } from "@fal"
-import {faStar, faFilter} from "@fas"
-import {faExclamationTriangle as fadExclamationTriangle} from "@fad"
-import {faCheck} from "@far"
+import { faStar, faFilter } from "@fas"
+import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
+import { faCheck } from "@far"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import {retinaLayoutStructure} from "@/Composables/useRetinaLayoutStructure"
-import {notify} from "@kyvg/vue3-notification"
+import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
+import { notify } from "@kyvg/vue3-notification"
 import Modal from "@/Components/Utils/Modal.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import axios from "axios"
-import {routeType} from "@/types/route";
+import { routeType } from "@/types/route";
 
 
 library.add(faHandshake, faHandshakeSlash, faHandPointer, fadExclamationTriangle, faSyncAlt, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, faClone, faLink, faScrewdriver, faTools)
@@ -52,10 +52,12 @@ library.add(faHandshake, faHandshakeSlash, faHandPointer, fadExclamationTriangle
 const props = defineProps<{
     data: {}
     tab?: string
-    routes : {}
+    routes: {}
+    customerSalesChannel: {}
 }>()
-console.log('ddddd',props)
+console.log('ddddd', props)
 const locale = useLocaleStore()
+const selectedPortfolio = ref(null)
 const isLoadingTable = ref<null | string>(null)
 const selectedProducts = defineModel<number[]>('selectedProducts')
 const isLoadingSubmit = ref(false)
@@ -227,29 +229,22 @@ const onDisableCheckbox = (item) => {
         </template>
 
 
-         <template #cell(platform_status)="{ item }">
+        <template #cell(platform_status)="{ item }">
             <div class="whitespace-nowrap">
                 <FontAwesomeIcon v-if="item.has_valid_platform_product_id"
-                                 v-tooltip="trans('Has valid platform product id')" icon="fal fa-check"
-                                 class="text-green-500"
-                                 fixed-width aria-hidden="true"/>
+                    v-tooltip="trans('Has valid platform product id')" icon="fal fa-check" class="text-green-500"
+                    fixed-width aria-hidden="true" />
                 <FontAwesomeIcon v-else v-tooltip="trans('Has valid platform product id')" icon="fal fa-times"
-                                 class="text-red-500" fixed-width aria-hidden="true"/>
+                    class="text-red-500" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon v-if="item.exist_in_platform" v-tooltip="trans('Exist in platform')"
-                                 icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true"/>
+                    icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon v-else v-tooltip="trans('Exist in platform')" icon="fal fa-times" class="text-red-500"
-                                 fixed-width aria-hidden="true"/>
+                    fixed-width aria-hidden="true" />
                 <FontAwesomeIcon v-if="item.platform_status" v-tooltip="trans('Platform status')" icon="fal fa-check"
-                                 class="text-green-500" fixed-width aria-hidden="true"/>
+                    class="text-green-500" fixed-width aria-hidden="true" />
                 <FontAwesomeIcon v-else v-tooltip="trans('Platform status')" icon="fal fa-times" class="text-red-500"
-                                 fixed-width aria-hidden="true"/>
+                    fixed-width aria-hidden="true" />
             </div>
-        </template>
-
-        <template #cell(action)="{ item: portfolio }">
-            <Button @click="() => onDeletePortfolio(portfolio.routes.delete_route, portfolio.item_id)"
-                :key="portfolio.item_id" icon="fal fa-trash-alt" type="negative"
-                :disabled="isDeleteLoading === portfolio.item_id" :loading="isDeleteLoading === portfolio.item_id" />
         </template>
 
         <template #cell(matches)="{ item }">
@@ -284,10 +279,10 @@ const onDisableCheckbox = (item) => {
                     </div>
 
                     <Button v-if="item.platform_possible_matches?.number_matches"
-                        @click="() => (fetchRoute(), isOpenModal = true, selectedPortfolio = item)"
+                        @click="() => {fetchRoute(), isOpenModal = true, selectedPortfolio = item}"
                         :label="trans('Choose another product from your shop')" :capitalize="false" size="xxs"
                         type="tertiary" />
-                    <Button v-else @click="() => (fetchRoute(), isOpenModal = true, selectedPortfolio = item)"
+                    <Button v-else @click="() => {fetchRoute(), isOpenModal = true, selectedPortfolio = item}"
                         :label="trans('Match it with an existing product in your shop')" :capitalize="false" size="xxs"
                         type="tertiary" />
                 </template>
@@ -321,7 +316,7 @@ const onDisableCheckbox = (item) => {
         <template #cell(actions)="{ item }">
             <div v-if="item.customer_sales_channel_platform_status && !item.platform_status"
                 class="flex gap-x-2 items-center">
-                <!-- <ButtonWithLink v-tooltip="trans('Will create new product in Shopify')" :routeTarget="{
+                <ButtonWithLink v-tooltip="trans('Will create new product')" :routeTarget="{
                     method: 'post',
                     name: props.routes.single_create_new.name,
                     parameters: {
@@ -329,7 +324,7 @@ const onDisableCheckbox = (item) => {
                     },
                 }" isWithError icon="" :label="trans('Create new product')" size="xxs" type="tertiary" :bindToLink="{
                     preserveScroll: true,
-                }" /> -->
+                }" />
             </div>
 
             <ButtonWithLink v-tooltip="trans('Unselect product')" type="negative" icon="fal fa-skull"
@@ -419,11 +414,7 @@ const onDisableCheckbox = (item) => {
 
 
                     <div class="mt-4">
-                        <Button 
-                            @click="() => onSubmitVariant()"
-                            label="Select as variant" 
-                            type="primary" 
-                            full 
+                        <Button @click="() => onSubmitVariant()" label="Select as variant" type="primary" full
                             :loading="isLoadingSubmit" />
                     </div>
                 </div>
