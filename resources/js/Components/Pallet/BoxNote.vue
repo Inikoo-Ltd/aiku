@@ -105,7 +105,8 @@ const fallbackColor = '#374151'  // Color
                     {{ noteData.label }}
                     <InformationIcon v-if="noteData.information" :information="noteData.information" />
                     
-                    <span 
+                    <!-- Button: fetch notes from Order -->
+                    <!-- <span 
                         v-if="props.fetchRoute?.name"
                         v-tooltip="trans('Duplicate note from Order (only :field)', { field: noteData.label })"
                         @click="() => onFetchNotes()"
@@ -115,7 +116,9 @@ const fallbackColor = '#374151'  // Color
                             <LoadingIcon v-if="isSubmitNoteLoading" />
                             <FontAwesomeIcon v-else icon="fal fa-sync-alt" class="" fixed-width aria-hidden="true" />
                         </span>
-                    </span>
+                    </span> -->
+
+
                     <!-- <Button
                         
                        
