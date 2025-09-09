@@ -102,7 +102,7 @@ class UpdateProduct extends OrgAction
         $product = $this->update($product, $modelData);
         $changed = Arr::except($product->getChanges(), ['updated_at', 'last_fetched_at']);
 
-        if (Arr::has($changed, 'name')){
+        if (Arr::has($changed, 'name')) {
             UpdateProductAndMasterTranslations::make()->action($product, [
                 'translations' => [
                     'name' => [$product->shop->language->code => Arr::pull($modelData, 'name')]
@@ -110,7 +110,7 @@ class UpdateProduct extends OrgAction
             ]);
         }
 
-        if (Arr::has($changed,  'description_title')) {
+        if (Arr::has($changed, 'description_title')) {
             UpdateProductAndMasterTranslations::make()->action($product, [
                 'translations' => [
                     'description_title' => [$product->shop->language->code => Arr::pull($modelData, 'description_title')]

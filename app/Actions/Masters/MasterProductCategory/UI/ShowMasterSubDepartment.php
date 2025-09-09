@@ -16,7 +16,6 @@ use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Masters\MasterProductCategory\WithMasterSubDepartmentSubNavigation;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
-use App\Enums\UI\Catalogue\DepartmentTabsEnum;
 use App\Enums\UI\SupplyChain\MasterSubDepartmentTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\History\HistoryResource;
