@@ -518,7 +518,7 @@ Route::name('product.')->prefix('product')->group(function () {
     Route::patch('/{product:id}/move-family', MoveFamilyProductToOtherFamily::class)->name('move_family');
     Route::post('/{product:id}/content', [StoreModelHasContent::class, 'inProduct'])->name('content.store');
     Route::post('{product:id}/images', UploadImagesToProduct::class)->name('images.store')->withoutScopedBindings();
-    Route::post('{product:id}/update_images', UpdateProductImages::class)->name('images.update_images')->withoutScopedBindings();
+    Route::patch('{product:id}/update_images', UpdateProductImages::class)->name('images.update_images')->withoutScopedBindings();
 });
 
 Route::name('pallet-delivery.')->prefix('pallet-delivery/{palletDelivery:id}')->group(function () {
