@@ -73,5 +73,9 @@ function snapshotRoute(data: {}) {
         <template #cell(published_until)="{ item: user }">
             <div class="text-gray-500">{{ useFormatTime(user.published_until, { localeCode: locale.language.code, formatTime: 'hm' }) }}</div>
         </template>
+
+        <template #cell(recyclable)="{ item }">
+            <slot name="banner-snapshot" :item></slot>
+        </template>
     </Table>
 </template>

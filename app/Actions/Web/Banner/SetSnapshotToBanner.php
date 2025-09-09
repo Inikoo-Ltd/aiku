@@ -8,23 +8,23 @@
 
 namespace App\Actions\Web\Banner;
 
+use App\Actions\Helpers\Snapshot\UpdateSnapshot;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
+use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Banner\Search\BannerRecordSearch;
+use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
 use App\Enums\Web\Banner\BannerStateEnum;
 use App\Models\Helpers\Snapshot;
 use App\Models\Web\Banner;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class SetSnapshotToBanner extends OrgAction
 {
     use WithWebEditAuthorisation;
-    use AsAction;
-    use WithAttributes;
+    use WithActionUpdate;
 
-    public function handle(Snapshot $snapshot): Banner
+    public function handle(Snapshot $snapshot): void
     {
         /** @var Banner $banner */
         $banner = $snapshot->parent;
@@ -39,22 +39,35 @@ class SetSnapshotToBanner extends OrgAction
 
         $banner->update(
             [
-                'compiled_layout' => $snapshot->compiledLayout(),
+                'compiled_layout'   => $snapshot->compiledLayout(),
+                'state'             => BannerStateEnum::LIVE,
+                'switch_off_at'     => null,
                 ...$snapshotConditions
 
             ]
         );
 
+        foreach ($banner->snapshots()->where('state', SnapshotStateEnum::LIVE)->get() as $liveSnapshot) {
+            UpdateSnapshot::run($liveSnapshot, [
+                'state'           => SnapshotStateEnum::HISTORIC,
+                'published_until' => now()
+            ]);
+        }
+
+        $this->update($snapshot, [
+            'state' => SnapshotStateEnum::LIVE
+        ]);
+
         UpdateBannerImage::run($banner);
         BannerRecordSearch::dispatch($banner);
 
-        return $banner;
+        // return $banner;
     }
 
-    public function asController(Banner $banner, Snapshot $snapshot, ActionRequest $request): Banner
+    public function asController(Banner $banner, Snapshot $snapshot, ActionRequest $request): void
     {
         $this->initialisationFromShop($banner->shop, $request);
 
-        return $this->handle($snapshot);
+        $this->handle($snapshot);
     }
 }
