@@ -13,6 +13,7 @@ namespace App\Actions\Masters\MasterAsset\UI;
 use App\Actions\Catalogue\Product\UI\IndexProductsInMasterProduct;
 use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
+use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInMasterProduct;
 use App\Actions\GrpAction;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
@@ -21,6 +22,7 @@ use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\UI\SupplyChain\MasterAssetTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
+use App\Http\Resources\Goods\TradeUnitsResource;
 use App\Http\Resources\Masters\MasterProductResource;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
@@ -140,13 +142,19 @@ class ShowMasterProducts extends GrpAction
                 MasterAssetTabsEnum::SHOWCASE->value => $this->tab == MasterAssetTabsEnum::SHOWCASE->value ?
                     fn () => MasterProductResource::make($masterAsset)
                     : Inertia::lazy(fn () => MasterProductResource::make($masterAsset)),
+                    
+                MasterAssetTabsEnum::TRADE_UNITS->value => $this->tab == MasterAssetTabsEnum::TRADE_UNITS->value ?
+                    fn () => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset))
+                    : Inertia::lazy(fn () => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset))),
+
                 MasterAssetTabsEnum::PRODUCTS->value => $this->tab == MasterAssetTabsEnum::PRODUCTS->value ?
                     fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset))
                     : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset))),
 
             ]
         )->table(IndexProductsInMasterProduct::make()->tableStructure(masterAsset: $masterAsset, prefix: MasterAssetTabsEnum::PRODUCTS->value))
-        ->table(IndexMailshots::make()->tableStructure($masterAsset));
+        ->table(IndexMailshots::make()->tableStructure($masterAsset))
+        ->table(IndexTradeUnitsInMasterProduct::make()->tableStructure(prefix: MasterAssetTabsEnum::TRADE_UNITS->value));
     }
 
     public function jsonResponse(MasterAsset $masterAsset): MasterProductResource
@@ -182,7 +190,7 @@ class ShowMasterProducts extends GrpAction
         return match ($routeName) {
             'grp.masters.master_shops.show.master_products.show' =>
             array_merge(
-                ShowMasterShop::make()->getBreadcrumbs($this->parent, $routeParameters),
+                ShowMasterShop::make()->getBreadcrumbs($masterAsset->masterShop, $routeParameters),
                 $headCrumb(
                     $masterAsset,
                     [

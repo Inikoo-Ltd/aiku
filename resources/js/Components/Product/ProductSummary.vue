@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { inject, ref } from "vue"
+import { inject, ref, computed } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
@@ -80,17 +80,23 @@ interface PropsData {
 	trade_units: TradeUnit[]
 }
 
-const props = defineProps<{ 
-	data: PropsData 
-	gpsr?: Gpsr
-	parts?: { id: number; name: string }[]
-	properties?: {
-		country_of_origin?: { code: string; name: string }
-		tariff_code?: string
-		duty_rate?: string
-	}
-
-}>()
+const props = withDefaults(
+  defineProps<{
+    data: PropsData
+    gpsr?: Gpsr
+    parts?: { id: number; name: string }[]
+    type: string
+	video?: string
+    properties?: {
+      country_of_origin?: { code: string; name: string }
+      tariff_code?: string
+      duty_rate?: string
+    }
+  }>(),
+  {
+    type: "product", // default type is 'product' (alternative: 'trade_unit')
+  }
+)
 
 library.add(
 	faCircle,
@@ -157,6 +163,28 @@ const getActiveHazards = () => {
 	})
 }
 
+
+// --- Normalize video URL to embed form ---
+function normalizeVideoUrl(url: string): string {
+  if (!url) return ""
+
+  // YouTube
+  const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/)
+  if (ytMatch) {
+    return `https://www.youtube.com/embed/${ytMatch[1]}`
+  }
+
+  // Vimeo
+  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/)
+  if (vimeoMatch) {
+    return `https://player.vimeo.com/video/${vimeoMatch[1]}`
+  }
+
+  return url // fallback
+}
+
+const embedUrl = computed(() => normalizeVideoUrl(props.video || ""))
+
 console.log('product summary : ', props)
 </script>
 
@@ -166,7 +194,8 @@ console.log('product summary : ', props)
 	<div>
 		<div class="bg-white rounded-xl p-4 lg:p-5">
 			<div class="flex justify-between items-center border-b pb-3">
-				<h2 class="text-base lg:text-lg font-semibold ">{{ trans("Product summary") }}</h2>
+				<h2 class="text-base lg:text-lg font-semibold ">{{ type == 'product' ? trans("Product summary") :
+					trans("Trade unit summary") }}</h2>
 				<!-- the barcode label need provide from BE -->
 				<span v-tooltip="'barcode label'" class="text-xs cursor-pointer">{{ data?.specifications?.barcode }}
 					<FontAwesomeIcon :icon="faBarcode" />
@@ -196,20 +225,20 @@ console.log('product summary : ', props)
 							{{ data?.stock }} {{ data?.unit }}
 						</dd>
 					</div>
-					<div class="flex justify-between flex-wrap gap-1">
+					<div v-if="type == 'product'" class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("Price") }}</dt>
 						<dd class="font-semibold text-green-600">
 							{{ locale.currencyFormat(data?.currency_code, data?.price) }}
 						</dd>
 					</div>
-					<div class="flex justify-between flex-wrap gap-1">
+					<div v-if="type == 'product'" class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">RRP</dt>
 						<dd class="font-semibold">
 							{{ locale.currencyFormat(data?.currency_code, data?.rrp) }}
 							<span class="ml-1 text-xs text-gray-500">
 								({{
-									((data?.rrp - data?.price) /
-										data?.price * 100).toFixed(2)
+								((data?.rrp - data?.price) /
+								data?.price * 100).toFixed(2)
 								}}%)
 							</span>
 						</dd>
@@ -240,11 +269,11 @@ console.log('product summary : ', props)
 							</AccordionHeader>
 							<AccordionContent>
 								<div class="py-2">
-									<!-- <dt class="text-gray-500">{{ trans("Vimeo video link") }}</dt> -->
-									<!-- <iframe src="https://player.vimeo.com/video/1112228622?autoplay=1"
-											class="w-full h-auto aspect-video rounded-lg" frameborder="0" allow="autoplay;">
-										</iframe> -->
-									<div
+									<div v-if="embedUrl" class="w-full h-auto aspect-video rounded-lg">
+										<iframe :src="embedUrl" class="w-full h-full rounded-lg" frameborder="0"
+											allow="autoplay; fullscreen" allowfullscreen></iframe>
+									</div>
+									<div v-else
 										class="w-full h-auto aspect-video rounded-lg bg-gray-200 flex items-center justify-center">
 										<span>No Video to Show</span>
 									</div>
@@ -325,7 +354,7 @@ console.log('product summary : ', props)
 													:src="'/flags/' + properties?.country_of_origin.code.toLowerCase() + '.png'"
 													:alt="`Bendera ${'us'}`" loading="lazy" />
 												<span class="ml-2">{{ properties.country_of_origin.name
-												}}</span>
+													}}</span>
 											</div>
 											<span v-else>-</span>
 										</dd>
@@ -402,7 +431,7 @@ console.log('product summary : ', props)
 							<AccordionHeader>
 								<div class="flex items-center gap-2">
 									<span class="font-medium text-base">{{ trans("GPSR (if empty will use Part GPSR)")
-									}}</span>
+										}}</span>
 									<FontAwesomeIcon icon="fal fa-shield-alt" class="text-blue-500" />
 								</div>
 							</AccordionHeader>
@@ -435,7 +464,7 @@ console.log('product summary : ', props)
 
 											<div class="flex justify-between items-start">
 												<dt class="text-gray-500 text-sm">{{ trans("Class & category of danger")
-												}}</dt>
+													}}</dt>
 												<dd class="font-medium text-sm text-right flex-1 ml-2">
 													<span v-if="gpsr?.gpsr_class_category_danger">{{
 														gpsr?.gpsr_class_category_danger }}</span>
@@ -447,7 +476,7 @@ console.log('product summary : ', props)
 
 											<div class="flex justify-between items-start">
 												<dt class="text-gray-500 text-sm">{{ trans("Product GPSR Languages")
-												}}</dt>
+													}}</dt>
 												<dd class="font-medium text-sm text-right flex-1 ml-2">
 													<span v-if="gpsr?.product_languages">{{
 														gpsr?.product_languages }}</span>
