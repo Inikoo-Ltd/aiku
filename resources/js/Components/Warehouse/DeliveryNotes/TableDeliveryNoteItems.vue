@@ -42,9 +42,9 @@ function orgStockRoute(deliveryNoteItem: DeliverNoteItem) {
     console.log(deliveryNoteItem.org_stock_slug)
     switch (route().current()) {
         case "grp.org.warehouses.show.dispatching.delivery_notes.show":
-         return route(
-            "grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show",
-           [route().params["organisation"], route().params["warehouse"], deliveryNoteItem.org_stock_slug])
+            return route(
+                "grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show",
+                [route().params["organisation"], route().params["warehouse"], deliveryNoteItem.org_stock_slug])
         default:
             return "";
     }
@@ -135,7 +135,7 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
 };
 
 // Section: Modal for a location list
-const isModalLocation = ref(false) 
+const isModalLocation = ref(false)
 const selectedItemValue = ref()
 const selectedItemProxy = ref()
 const onCloseModal = () => {
@@ -147,7 +147,7 @@ const onCloseModal = () => {
 }
 
 // Method: to find the location that Alt ed, fallback is index 0
-const findLocation = (locationsList: {location_code: string}[], selectedHehe: string) => {
+const findLocation = (locationsList: { location_code: string }[], selectedHehe: string) => {
     return locationsList.find(x => x.location_code == selectedHehe) || locationsList[0]
 }
 
@@ -162,7 +162,7 @@ onMounted(() => {
     <Table :resource="data" :name="tab" class="mt-5" rowAlignTop>
         <!-- Column: state -->
         <template #cell(state)="{ item }">
-            <Icon :data="item.state_icon" />
+            <Icon :data="item.state_icon"/>
         </template>
 
         <!-- Column: Reference -->
@@ -176,8 +176,9 @@ onMounted(() => {
         <template #cell(quantity_required)="{ item }">
 
             <span v-tooltip="item.quantity_required">
-                <FractionDisplay  v-if="item.quantity_required_fractional"   :fractionData="item.quantity_required_fractional" />
-                <span v-else>{{item.quantity_required}}</span>
+                <FractionDisplay v-if="item.quantity_required_fractional"
+                                 :fractionData="item.quantity_required_fractional"/>
+                <span v-else>{{ item.quantity_required }}</span>
 
             </span>
 
@@ -199,22 +200,29 @@ onMounted(() => {
                 </span>
 
                 <div v-else v-tooltip="trans('Quantity not gonna be picked')" class="text-red-500 w-fit ml-auto">
-                    <FontAwesomeIcon icon="fas fa-skull" class="" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon icon="fas fa-skull" class="" fixed-width aria-hidden="true"/>
                     {{ item.quantity_not_picked }}
                 </div>
             </template>
 
         </template>
 
+        <template #cell(quantity_dispatched)="{ item: item, proxyItem }">
+            <FractionDisplay v-if="item.quantity_dispatched_fractional"
+                             :fractionData="item.quantity_dispatched_fractional"/>
+            <span v-else>{{ item.quantity_dispatched }}</span>
+
+        </template>
+
         <template #cell(quantity_picked)="{ item: item, proxyItem }">
-            <FractionDisplay  v-if="item.quantity_picked_fractional"   :fractionData="item.quantity_picked_fractional" />
-            <span v-else>{{item.quantity_picked}}</span>
+            <FractionDisplay v-if="item.quantity_picked_fractional" :fractionData="item.quantity_picked_fractional"/>
+            <span v-else>{{ item.quantity_picked }}</span>
 
         </template>
 
         <template #cell(quantity_packed)="{ item: item, proxyItem }">
-            <FractionDisplay  v-if="item.quantity_packed_fractional"   :fractionData="item.quantity_packed_fractional" />
-            <span v-else>{{item.quantity_packed}}</span>
+            <FractionDisplay v-if="item.quantity_packed_fractional" :fractionData="item.quantity_packed_fractional"/>
+            <span v-else>{{ item.quantity_packed }}</span>
 
         </template>
 
@@ -233,19 +241,24 @@ onMounted(() => {
                         <Link :href="generateLocationRoute(picking)" class="secondaryLink">
                             {{ picking.location_code }}
                         </Link>
-                    
-                        <div v-tooltip="trans('Total picked quantity in this location')" class="text-gray-500 whitespace-nowrap">
-                            <FontAwesomeIcon icon="fal fa-hand-holding-box" class="mr text-gray-500" fixed-width aria-hidden="true" />
-                            <FractionDisplay v-if="picking.quantity_picked_fractional" :fractionData="picking.quantity_picked_fractional" />
+
+                        <div v-tooltip="trans('Total picked quantity in this location')"
+                             class="text-gray-500 whitespace-nowrap">
+                            <FontAwesomeIcon icon="fal fa-hand-holding-box" class="mr text-gray-500" fixed-width
+                                             aria-hidden="true"/>
+                            <FractionDisplay v-if="picking.quantity_picked_fractional"
+                                             :fractionData="picking.quantity_picked_fractional"/>
                             <span v-else>
                                 {{ picking.quantity_picked }}
                             </span>
                         </div>
                     </div>
-                    
-                    <div v-if="picking.type === 'not-pick'" v-tooltip="trans('Quantity not gonna be picked')" class="text-red-500 w-fit mr-auto">
-                        <FontAwesomeIcon icon="fas fa-skull" class="" fixed-width aria-hidden="true" />
-                        <FractionDisplay v-if="picking.quantity_picked_fractional" :fractionData="picking.quantity_picked_fractional" />
+
+                    <div v-if="picking.type === 'not-pick'" v-tooltip="trans('Quantity not gonna be picked')"
+                         class="text-red-500 w-fit mr-auto">
+                        <FontAwesomeIcon icon="fas fa-skull" class="" fixed-width aria-hidden="true"/>
+                        <FractionDisplay v-if="picking.quantity_picked_fractional"
+                                         :fractionData="picking.quantity_picked_fractional"/>
                         <span v-else>
                             {{ picking.quantity_picked }}
                         </span>
@@ -291,7 +304,8 @@ onMounted(() => {
         <template #cell(picking_position)="{ item: itemValue, proxyItem }">
 
             <div v-if="itemValue.quantity_to_pick > 0">
-                <div v-if="findLocation(itemValue.locations, proxyItem.hehe)" class="flex flex-col justify-between gap-x-6 items-center">
+                <div v-if="findLocation(itemValue.locations, proxyItem.hehe)"
+                     class="flex flex-col justify-between gap-x-6 items-center">
                     <!-- Action: decrease and increase quantity -->
                     <div class="mb-3 w-full flex justify-between gap-x-6 xitems-center">
                         <div class="">
@@ -301,19 +315,24 @@ onMounted(() => {
                                         <Link
                                             v-tooltip="`${itemValue.warehouse_area}`"
                                             :href="generateLocationRoute(findLocation(itemValue.locations, proxyItem.hehe))"
-                                              class="secondaryLink">
+                                            class="secondaryLink">
                                             {{ findLocation(itemValue.locations, proxyItem.hehe).location_code }}
                                         </Link>
                                     </span>
-                                    <span v-else  v-tooltip="trans('Unknown location')" class="text-gray-400 italic">
+                                    <span v-else v-tooltip="trans('Unknown location')" class="text-gray-400 italic">
                                         ({{ trans("Unknown") }})
                                     </span>
                                     <span
                                         v-tooltip="trans('Total stock is :quantity in location :location_code', {quantity: locale.number(findLocation(itemValue.locations, proxyItem.hehe)?.quantity), location_code: findLocation(itemValue.locations, proxyItem.hehe)?.location_code})"
                                         class="whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-gray-300 rounded px-1">
-                                        <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width aria-hidden="true" />
-                                        <FractionDisplay v-if="findLocation(itemValue.locations, proxyItem.hehe)?.quantity_fractional" :fractionData="findLocation(itemValue.locations, proxyItem.hehe)?.quantity_fractional" />
-                                        <template v-else>{{ locale.number(findLocation(itemValue.locations, proxyItem.hehe).quantity) }}</template>
+                                        <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width
+                                                         aria-hidden="true"/>
+                                        <FractionDisplay
+                                            v-if="findLocation(itemValue.locations, proxyItem.hehe)?.quantity_fractional"
+                                            :fractionData="findLocation(itemValue.locations, proxyItem.hehe)?.quantity_fractional"/>
+                                        <template v-else>{{
+                                                locale.number(findLocation(itemValue.locations, proxyItem.hehe).quantity)
+                                            }}</template>
                                     </span>
 
                                     <span
@@ -325,15 +344,16 @@ onMounted(() => {
                                         }"
                                         v-tooltip="`Other ${itemValue.locations?.length - 1} locations`"
                                         class="cursor-pointer hover:bg-orange-50 ml-1 whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-orange-300 rounded px-1">
-                                        <FontAwesomeIcon icon="fal fa-list-ol" class="mr-1" fixed-width aria-hidden="true" />
+                                        <FontAwesomeIcon icon="fal fa-list-ol" class="mr-1" fixed-width
+                                                         aria-hidden="true"/>
                                         {{ itemValue.locations?.length - 1 }}
                                     </span>
                                 </div>
                             </Transition>
-                            
+
 
                         </div>
-                        
+
                         <div class="flex items-center flex-nowrap gap-x-2">
                             <!-- Button: input number (picking) -->
                             <NumberWithButtonSave
@@ -385,13 +405,16 @@ onMounted(() => {
                                         >
                                             <template #label>
                                                 <div>
-                                                    <FractionDisplay v-if="itemValue.quantity_to_pick_fractional" :fractionData="itemValue.quantity_to_pick_fractional" />
-                                                    <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0 ) }}</span>
+                                                    <FractionDisplay v-if="itemValue.quantity_to_pick_fractional"
+                                                                     :fractionData="itemValue.quantity_to_pick_fractional"/>
+                                                    <span v-else>{{
+                                                            locale.number(itemValue.quantity_to_pick ?? 0)
+                                                        }}</span>
                                                 </div>
                                             </template>
                                         </ButtonWithLink>
                                     </div>
-                                    
+
                                     <div class="lg:hidden space-y-1">
                                         <ButtonWithLink
                                             v-tooltip="trans('Pick all required quantity in this location')"
@@ -414,8 +437,11 @@ onMounted(() => {
                                         >
                                             <template #label>
                                                 <div>
-                                                    <FractionDisplay v-if="itemValue.quantity_to_pick_fractional" :fractionData="itemValue.quantity_to_pick_fractional" />
-                                                    <span v-else>{{ locale.number(itemValue.quantity_to_pick ?? 0 ) }}</span>
+                                                    <FractionDisplay v-if="itemValue.quantity_to_pick_fractional"
+                                                                     :fractionData="itemValue.quantity_to_pick_fractional"/>
+                                                    <span v-else>{{
+                                                            locale.number(itemValue.quantity_to_pick ?? 0)
+                                                        }}</span>
                                                 </div>
                                             </template>
                                         </ButtonWithLink>
@@ -423,7 +449,7 @@ onMounted(() => {
                                 </template>
                             </NumberWithButtonSave>
 
-                            
+
                             <ButtonWithLink
                                 v-if="!itemValue.is_handled"
                                 type="negative"
@@ -436,7 +462,9 @@ onMounted(() => {
 
                             <!-- Section: Errors list -->
                             <div v-if="proxyItem.errors?.length">
-                                <p v-for="error in proxyItem.errors" class="text-xs text-red-500 italic">*{{ error }}</p>
+                                <p v-for="error in proxyItem.errors" class="text-xs text-red-500 italic">*{{
+                                        error
+                                    }}</p>
                             </div>
                         </div>
                     </div>
@@ -445,7 +473,7 @@ onMounted(() => {
                 </div>
                 <div v-else>
 
-                    {{itemValue.quantity_to_pick}}
+                    {{ itemValue.quantity_to_pick }}
 
                     <ButtonWithLink
                         type="negative"
@@ -471,8 +499,6 @@ onMounted(() => {
             </div>
 
 
-
-
         </template>
     </Table>
 
@@ -485,7 +511,8 @@ onMounted(() => {
         </div>
 
         <div class="rounded p-1 grid grid-cols-3 justify-between gap-x-6 items-center divide-x divide-gray-300">
-            <div v-for="location in selectedItemValue?.locations" class="bg-white rounded mb-3 w-full xeven:bg-black/5 flex gap-x-3 items-center px-2 py-1">
+            <div v-for="location in selectedItemValue?.locations"
+                 class="bg-white rounded mb-3 w-full xeven:bg-black/5 flex gap-x-3 items-center px-2 py-1">
                 <label :for="location.location_code">
                     <span
                         v-if="location.location_code"
@@ -493,17 +520,21 @@ onMounted(() => {
                         :class="location.quantity <= 0 ? 'text-gray-400' : ''"
 
                     >
-                        <Link :href="generateLocationRoute(location)" class="bg-gradient-to-t from-yellow-300/50 to-yellow-200/50 focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0.2em] motion-safe:transition-all motion-safe:duration-200 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1;">
+                        <Link :href="generateLocationRoute(location)"
+                              class="bg-gradient-to-t from-yellow-300/50 to-yellow-200/50 focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0.2em] motion-safe:transition-all motion-safe:duration-200 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1;">
                             {{ location.location_code }}
                         </Link>
                     </span>
-                    <span v-else  v-tooltip="trans('Unknown location')" class="text-gray-400 italic">({{ trans("Unknown") }})</span>
+                    <span v-else v-tooltip="trans('Unknown location')" class="text-gray-400 italic">({{
+                            trans("Unknown")
+                        }})</span>
 
                     <span
                         v-tooltip="trans('Total stock is :quantity in location :location_code', {quantity: locale.number(location.quantity), location_code: location.location_code})"
                         class="ml-1 whitespace-nowrap text-gray-400 tabular-nums border border-gray-300 rounded px-1">
-                        <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width aria-hidden="true" />
-                        <FractionDisplay v-if="location.quantity_fractional" :fractionData="location.quantity_fractional" />
+                        <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width aria-hidden="true"/>
+                        <FractionDisplay v-if="location.quantity_fractional"
+                                         :fractionData="location.quantity_fractional"/>
                         <template v-else>{{ location.quantity }}</template>
                     </span>
                 </label>
@@ -583,10 +614,12 @@ onMounted(() => {
                     <div v-else class="text-gray-400 italic">
                         {{ trans("No quantity available to pick") }}
                     </div>
-                    
+
                     <!-- Section: Errors list -->
                     <div v-if="selectedItemProxy?.errors?.length">
-                        <p v-for="error in selectedItemProxy.errors" class="text-xs text-red-500 italic">*{{ error }}</p>
+                        <p v-for="error in selectedItemProxy.errors" class="text-xs text-red-500 italic">*{{
+                                error
+                            }}</p>
                     </div>
                 </div>
             </div>

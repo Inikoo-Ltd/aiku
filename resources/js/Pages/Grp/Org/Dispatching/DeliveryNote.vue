@@ -5,8 +5,8 @@
   -->
 
 <script setup lang="ts">
-import {Head, router, useForm, Link} from "@inertiajs/vue3";
-import {library} from "@fortawesome/fontawesome-svg-core";
+import { Head, router, useForm, Link } from "@inertiajs/vue3";
+import { library } from "@fortawesome/fontawesome-svg-core";
 import {
     faSmileWink,
     faRecycle,
@@ -25,37 +25,37 @@ import {
     faExclamation,
     faExclamationTriangle
 } from "@fal";
-import {faArrowRight, faCheck} from "@fas";
+import { faArrowRight, faCheck } from "@fas";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
-import {capitalize} from "@/Composables/capitalize";
-import {PageHeading as PageHeadingTypes} from "@/types/PageHeading";
-import {Tabs as TSTabs} from "@/types/Tabs";
+import { capitalize } from "@/Composables/capitalize";
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import { Tabs as TSTabs } from "@/types/Tabs";
 import AlertMessage from "@/Components/Utils/AlertMessage.vue";
 import BoxNote from "@/Components/Pallet/BoxNote.vue";
 import Timeline from "@/Components/Utils/Timeline.vue";
-import {Timeline as TSTimeline} from "@/types/Timeline";
-import {computed, provide, ref, watch, onMounted} from "vue";
-import type {Component} from "vue";
-import {useTabChange} from "@/Composables/tab-change";
+import { Timeline as TSTimeline } from "@/types/Timeline";
+import { computed, provide, ref, watch, onMounted } from "vue";
+import type { Component } from "vue";
+import { useTabChange } from "@/Composables/tab-change";
 import BoxStatsDeliveryNote from "@/Components/Warehouse/DeliveryNotes/BoxStatsDeliveryNote.vue";
 import TableDeliveryNoteItems from "@/Components/Warehouse/DeliveryNotes/TableDeliveryNoteItems.vue";
 import TablePickings from "@/Components/Warehouse/DeliveryNotes/TablePickings.vue";
-import {routeType} from "@/types/route";
+import { routeType } from "@/types/route";
 import Tabs from "@/Components/Navigation/Tabs.vue";
-import type {DeliveryNote} from "@/types/warehouse";
+import type { DeliveryNote } from "@/types/warehouse";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import Modal from "@/Components/Utils/Modal.vue";
-import {trans} from "laravel-vue-i18n";
+import { trans } from "laravel-vue-i18n";
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
-import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome";
-import {notify} from "@kyvg/vue3-notification";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { notify } from "@kyvg/vue3-notification";
 import axios from "axios";
-import {get, set} from 'lodash-es';
+import { get, set } from 'lodash-es';
 import PureInput from "@/Components/Pure/PureInput.vue";
 import ToggleSwitch from 'primevue/toggleswitch';
 import PureAddress from "@/Components/Pure/PureAddress.vue"
 import Message from 'primevue/message';
-import {debounce} from "lodash-es";
+import { debounce } from "lodash-es";
 
 
 library.add(faSmileWink, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck);
@@ -347,7 +347,7 @@ onMounted(() => {
                 </div>
             </div>
 
-            <a :href="route('grp.pdfs.delivery-notes', {
+            <a v-if="route().params.deliveryNote" :href="route('grp.pdfs.delivery-notes', {
                 deliveryNote: route().params.deliveryNote,
             })" as="a" target="_blank" class="flex items-center"
                v-tooltip="trans('Download PDF of this Delivery Note')">
