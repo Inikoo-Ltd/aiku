@@ -4,11 +4,13 @@ import { router } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faImage, faUpload } from "@fal"
+import { faImage, faPencil, faUpload, faVideo } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import Image from "../Image.vue"
+import Image from "@/Components/Image.vue"
 import { GridProducts } from "@/Components/Product"
 import axios from "axios"
+import Dialog from "primevue/dialog"
+import InputText from "primevue/inputtext"
 
 // Types
 import { Image as ImageTS } from "@/types/Image"
@@ -39,6 +41,7 @@ const loadingSubmit = ref<null | number | string>(null)
 const isModalEditVideo = ref(false)
 const selectedVideoToUpdate = ref<any>(null)
 const activeCategory = ref<string | null>(null)
+
 
 /* ---------------------------
    Helpers
@@ -78,20 +81,51 @@ function onSubmitImage(dataRow: any, categoryBox: any) {
     )
 }
 
+function normalizeVideoUrl(url: string): string {
+    if (!url) return ""
+
+    // YouTube: standardize to embed link
+    const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/)
+    if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`
+
+    // Vimeo: convert to embed
+    const vimeoMatch = url.match(/vimeo\.com\/(\d+)/)
+    if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`
+
+    // Default: return as-is
+    return url
+}
+
+/**
+ * Handle video URL submission
+ */
 function onSubmitVideoUrl() {
-    router[props.data.images_update_route.method || "patch"](
+    const normalizedUrl = normalizeVideoUrl(selectedVideoToUpdate.value?.url || "")
+
+    router["patch"](
         route(props.data.images_update_route.name, props.data.images_update_route.parameters),
-        { [selectedVideoToUpdate.value.column_in_db]: selectedVideoToUpdate.value?.url },
+        { video_url : normalizedUrl },
         {
             preserveScroll: true,
             preserveState: true,
             only: ["images_category_box"],
             onStart: () => (loadingSubmit.value = "video"),
             onSuccess: () => {
-                notifySuccess(trans("Successfully submit the data"))
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully saved the video URL"),
+                    type: "success",
+                })
+                  router.reload({ only: ["images"] })
                 isModalEditVideo.value = false
             },
-            onError: () => notifyError(trans("Failed to set video url")),
+            onError: () => {
+                notify({
+                    title: trans("Error"),
+                    text: trans("Failed to save video URL"),
+                    type: "error",
+                })
+            },
             onFinish: () => (loadingSubmit.value = null),
         }
     )
@@ -135,7 +169,7 @@ async function uploadFiles(files: FileList) {
         )
 
         notifySuccess(trans("Image(s) uploaded successfully"))
-        router.reload({ preserveScroll: true, preserveState: true })
+        router.reload({ only: ["images"] })
     } catch (e) {
         console.error(e)
         notifyError(trans("Failed to upload image(s)"))
@@ -204,20 +238,44 @@ function onDeleteFilesInList(categoryBox: any) {
                         <div class="flex items-center gap-2">
                             <FontAwesomeIcon v-if="categoryBox.information" v-tooltip="categoryBox.information"
                                 icon="fal fa-info-circle" class="text-gray-400 hover:text-gray-600" fixed-width />
+                            <FontAwesomeIcon v-if="categoryBox.type == 'video'" @click="() => {
+                                selectedVideoToUpdate = { ...categoryBox }
+                                isModalEditVideo = true
+                            }" :icon="faPencil" class="text-gray-400 hover:text-gray-600" fixed-width />
                             <FontAwesomeIcon icon="fal fa-trash-alt" @click="() => onDeletefilesInBox(categoryBox)"
                                 class="text-gray-400 text-red-600 cursor-pointer" />
                         </div>
                     </div>
 
                     <!-- Drop Zone -->
-                    <div class="relative flex h-36 w-full items-center justify-center bg-gray-50">
-                        <Image v-if="categoryBox.images" :src="categoryBox.images"
-                              :style="{ objectFit: 'contain' }"/>
+                    <div v-if="categoryBox.type == 'image'"
+                        class="relative flex h-36 w-full items-center justify-center bg-gray-50">
+                        <Image v-if="categoryBox.images" :src="categoryBox.images" :style="{ objectFit: 'contain' }" />
                         <div v-else class="flex flex-col items-center justify-center text-gray-400">
                             <FontAwesomeIcon :icon="faImage" class="mb-1 text-2xl" />
                             <span class="text-[12px] font-medium">{{ trans("Drop image here") }}</span>
                         </div>
                     </div>
+
+                    <div v-if="categoryBox.type == 'video'"
+                        class="relative flex h-36 w-full items-center justify-center bg-gray-50 cursor-pointer" @click="() => {
+                            selectedVideoToUpdate = { ...categoryBox }
+                            isModalEditVideo = true
+                        }">
+                      
+                        <div v-if="categoryBox.url" class="w-full h-full">
+                            <!-- Preview video -->
+                            <iframe class="w-full h-full rounded-md" :src="categoryBox.url" frameborder="0"
+                                allowfullscreen></iframe>
+                        </div>
+                        <div v-else class="flex flex-col items-center justify-center text-gray-400">
+                            <FontAwesomeIcon :icon="faVideo" class="mb-1 text-2xl" />
+                            <span class="text-[12px] font-medium">
+                                {{ trans("Click to edit video here") }}
+                            </span>
+                        </div>
+                    </div>
+
                 </li>
             </TransitionGroup>
         </div>
@@ -292,6 +350,29 @@ function onDeleteFilesInList(categoryBox: any) {
         </div>
 
     </div>
+
+
+    <Dialog v-model:visible="isModalEditVideo" modal header="Edit Video Link" :style="{ width: '40rem' }">
+
+        <div class="space-y-4">
+            <!-- Input -->
+            <InputText v-model="selectedVideoToUpdate.url" placeholder="https://youtube.com/..." class="w-full" />
+
+            <!-- Video Preview -->
+            <div v-if="selectedVideoToUpdate?.url" class="w-full aspect-video">
+                <iframe class="w-full h-full rounded-md" :src="selectedVideoToUpdate.url" frameborder="0"
+                    allowfullscreen></iframe>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <template #footer>
+            <Button type="cancel" :label="trans('Cancel')" @click="isModalEditVideo = false" />
+            <Button :loading="loadingSubmit === 'video'" type="create" :label="trans('Save')"
+                @click="onSubmitVideoUrl()" />
+        </template>
+    </Dialog>
+
 </template>
 
 <style scoped>

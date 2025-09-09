@@ -1,24 +1,24 @@
 <script setup lang="ts">
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
 import ShipmentSection from "@/Components/Warehouse/DeliveryNotes/ShipmentSection.vue"
-import {trans} from "laravel-vue-i18n"
-import {Address} from "@/types/PureComponent/Address"
+import { trans } from "laravel-vue-i18n"
+import { Address } from "@/types/PureComponent/Address"
 
-import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
-import {faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faBarcodeRead} from "@fal"
-import {faCubes} from "@fas"
-import {library} from "@fortawesome/fontawesome-svg-core"
-import {Link, router} from "@inertiajs/vue3"
-import {inject, ref, toRaw} from "vue"
-import {routeType} from "@/types/route"
-import {set} from 'lodash-es'
-import {notify} from "@kyvg/vue3-notification"
-import {useTruncate} from "@/Composables/useTruncate"
-import {aikuLocaleStructure} from "@/Composables/useLocaleStructure"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faBarcodeRead } from "@fal"
+import { faCubes } from "@fas"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { Link, router } from "@inertiajs/vue3"
+import { inject, ref, toRaw } from "vue"
+import { routeType } from "@/types/route"
+import { set } from 'lodash-es'
+import { notify } from "@kyvg/vue3-notification"
+import { useTruncate } from "@/Composables/useTruncate"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import {Fieldset, InputNumber} from "primevue"
+import { Fieldset, InputNumber } from "primevue"
 import Icon from "@/Components/Icon.vue"
 import axios from "axios"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
@@ -383,7 +383,7 @@ const listError = inject('listError', {})
                     </div>
 
                     <!-- Section: Shipments -->
-                    <dl v-if="['packed', 'finalised', 'dispatched'].includes(deliveryNote?.state) && !boxStats?.is_collection"
+                    <dl v-if="['packed', 'finalised', 'dispatched'].includes(deliveryNote?.state) && !boxStats?.is_collection && boxStats.shipments"
                         class="flex items-xcenter w-full pr-3 flex-none gap-x-1.5">
                         <dt class="flex-none mt-1">
                             <FontAwesomeIcon v-tooltip="trans('Shipment')" icon="fal fa-shipping-fast" fixed-width

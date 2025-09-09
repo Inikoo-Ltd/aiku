@@ -47,7 +47,7 @@ import AlertMessage from "@/Components/Utils/AlertMessage.vue"
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
 import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
-import { faExclamationTriangle, faExclamation } from "@fas"
+import { faExclamationTriangle, faExclamation, faUndo } from "@fas"
 import {
     faDollarSign,
     faIdCardAlt,
@@ -60,7 +60,8 @@ import {
     faTruck,
     faFilePdf,
     faPaperclip,
-    faMapMarkerAlt
+    faMapMarkerAlt,
+    faPlus
 } from "@fal"
 import { Currency } from "@/types/LayoutRules"
 import TableInvoices from "@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue"
@@ -79,7 +80,7 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import { ToggleSwitch } from "primevue"
 import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
 
-library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt)
+library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faPlus)
 
 interface UploadSection {
     title: {
@@ -213,7 +214,6 @@ const props = defineProps<{
     upload_excel: UploadSection
 }>()
 
-console.log(props)
 
 const isModalUploadOpen = ref(false)
 const isModalProductListOpen = ref(false)
@@ -550,6 +550,29 @@ const updateCollectionNotes = () => {
     )
 }
 // end: collection feature
+
+const replacementLoading = ref<boolean>(false)
+const onCreateReplacement = (action: any) => {
+    router[action.route.method](
+        route(action.route.name, action.route.parameters),
+        {}, {
+            preserveScroll: true,
+            onStart: () => {
+                replacementLoading.value = true
+            },
+            onFinish: () => {
+                replacementLoading.value = false
+            },
+            onError: () => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to update text"),
+                    type: "error",
+                })
+            },
+        }
+    )
+}
 </script>
 
 <template>
@@ -586,7 +609,7 @@ const updateCollectionNotes = () => {
                                          isFullLoading
                                          :noLabel="trans('Yes, rollback')" noIcon="far fa-undo-alt">
                     <template #default="{ changeModel }">
-                        <Button @click="changeModel" type="negative" :label="trans('Undispatch')" icon="far fa-undo-alt"
+                        <Button @click="changeModel" type="negative" :label="trans('Undispatch')" icon="fas fa-undo"
                                 :tooltip="trans('Rollback the dispatch')"/>
                     </template>
                 </ModalConfirmationDelete>
@@ -651,7 +674,17 @@ const updateCollectionNotes = () => {
         </template>
 
         <template #button-replacement="{ action }">
-            <ModalConfirmation
+             <Button
+                        @click="() =>onCreateReplacement(action)"
+                        :label="trans('Replacement')"
+                        xsize="xs"
+                        type="secondary"
+                        icon="fal fa-plus"
+                        key="1"
+                        :disabled="replacementLoading"
+                        v-tooltip="trans('Create replacement if the user requests replacement of items')"
+                    />
+            <!-- <ModalConfirmation
                 :routeYes="action.route"
                 :title="trans('Create Replacement Order?')"
                 :description="trans('This will create a replacement for the current Delivery Note (do this when the user requests replacement of items)')"
@@ -661,11 +694,16 @@ const updateCollectionNotes = () => {
                         @click="() => changeModel()"
                         :label="trans('Replacement')"
                         xsize="xs"
+<<<<<<< HEAD
+=======
                         icon="fas fa-plus"
+>>>>>>> e67b4daa50ecf8c512250c8aa38b9cd84b2f023e
                         type="secondary"
+                        icon="fal fa-plus"
                         key="1"
                         v-tooltip="trans('Create replacement')"
                     />
+                    
                 </template>
 
                 <template #btn-yes="{ isLoadingdelete, clickYes}">
@@ -675,7 +713,7 @@ const updateCollectionNotes = () => {
                         :label="trans('Yes, Create Replacement')"
                     />
                 </template>
-            </ModalConfirmation>
+            </ModalConfirmation> -->
         </template>
 
         <template #other>
@@ -800,7 +838,7 @@ const updateCollectionNotes = () => {
                     </dl>
 
                     <!-- Collection Toggle -->
-                    <div class="!mt-2 pl-1 flex items w-full flex-none gap-x-2 items-center">
+                    <div v-if="props.data?.data?.state != 'dispatched'" class="!mt-2 pl-1 flex items w-full flex-none gap-x-2 items-center">
                         <FontAwesomeIcon icon='fal fa-map-marker-alt' class='text-gray-400' fixed-width
                                          aria-hidden='true'/>
                         <ToggleSwitch v-model="isCollection" @change="updateCollection"/>
@@ -839,7 +877,7 @@ const updateCollectionNotes = () => {
                             </dt>
                             <dd class=" text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded min-w-52">
                                 <span v-html="box_stats?.customer.addresses.delivery.formatted_address"></span>
-                                <div v-if="!props.readonly" @click="() => isModalAddress = true"
+                                <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched'" @click="() => isModalAddress = true"
                                      class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
                                     <span>{{ trans("Edit") }}</span>
                                 </div>
@@ -855,7 +893,7 @@ const updateCollectionNotes = () => {
                             </dt>
                             <dd class="flex text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
                                 <span v-html="box_stats?.customer.addresses.delivery.formatted_address"></span>
-                                <div v-if="!props.readonly" @click="() => isModalAddress = true"
+                                <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched'" @click="() => isModalAddress = true"
                                      class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
                                     <span>{{ trans("Edit") }}</span>
                                 </div>
