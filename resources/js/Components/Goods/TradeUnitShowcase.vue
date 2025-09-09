@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import GalleryManagement from "@/Components/Utils/GalleryManagement/GalleryManagement.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { notify } from "@kyvg/vue3-notification"
-import Image from "@/Components/Image.vue"
 import { ref, computed, watch } from "vue"
 import {
 	faTrash as falTrash,
@@ -22,12 +20,8 @@ import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { router } from "@inertiajs/vue3"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
-import Button from "@/Components/Elements/Buttons/Button.vue"
-import Dialog from "primevue/dialog"
 import { faImage } from "@far"
-import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import ProductSummary from "@/Components/Product/ProductSummary.vue"
-import EditTradeUnit from "./EditTradeUnit.vue"
 
 library.add(
 	faCircle,
@@ -64,11 +58,7 @@ const props = defineProps<{
 	}
 }>()
 
-console.log("Trade Unit Showcase : ", props)
-
 const selectedImage = ref(0)
-const isLoading = ref<string[] | number[]>([])
-const isModalGallery = ref(false)
 const imagesSetup = ref(
 	props.data.images
 		.filter(item => item.type === "image")
@@ -83,12 +73,8 @@ const videoSetup = ref(
 	props.data.images.find(item => item.type === "video") || null
 )
 
-console.log('imagesSetup', imagesSetup.value, videoSetup.value)
 const images = computed(() => props.data?.tradeUnit?.data?.images ?? [])
 
-function changeSelectedImage(index: number) {
-	selectedImage.value = index
-}
 
 watch(
 	images,
@@ -172,13 +158,4 @@ const validImages = computed(() =>
 		<!-- tradeUnit Summary -->
 		<ProductSummary :data="data.tradeUnit" :gpsr="data.gpsr" :type="'trade_unit'" :video="videoSetup.url" />
 	</div>
-
-	<!-- Gallery Dialog -->
-	<Dialog v-model:visible="isModalGallery" modal closable dismissableMask header="Gallery Management"
-		:style="{ width: '95vw', maxWidth: '900px' }" :pt="{ root: { class: 'rounded-xl shadow-xl' } }">
-		<GalleryManagement :multiple="true" :uploadRoute="data.uploadImageRoute"
-			:submitUpload="(file, refDAta) => onSubmitUpload(file, refDAta)"
-			:imagesUploadedRoutes="data.imagesUploadedRoutes" :attachImageRoute="data.attachImageRoute"
-			:stockImagesRoute="data.stockImagesRoute" @selectImage="(image) => console.log('Selected:', image)" />
-	</Dialog>
 </template>

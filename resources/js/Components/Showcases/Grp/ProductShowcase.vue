@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import GalleryManagement from "@/Components/Utils/GalleryManagement/GalleryManagement.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { notify } from "@kyvg/vue3-notification"
 import Image from "@/Components/Image.vue"
 import { ref, computed, watch } from "vue"
 import { faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo } from "@fal"
@@ -10,10 +8,7 @@ import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { Images } from "@/types/Images"
-import { Link, router } from "@inertiajs/vue3"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
-import Button from "@/Components/Elements/Buttons/Button.vue"
-import Dialog from 'primevue/dialog'
 import { faImage } from "@far"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import ProductSummary from "@/Components/Product/ProductSummary.vue"
@@ -97,8 +92,6 @@ const props = defineProps<{
 }>()
 
 const selectedImage = ref(0)
-const isModalGallery = ref(false)
-
 const images = computed(() => props.data?.product?.data?.images ?? [])
 
 watch(images, (newVal) => {
@@ -108,45 +101,6 @@ watch(images, (newVal) => {
 }, { immediate: true })
 
 
-const onSubmitUpload = async (files: File[], refData = null) => {
-	const formData = new FormData()
-	files.forEach((file, index) => {
-		formData.append(`images[${index}]`, file)
-	})
-
-
-	router.post(
-		route(props.data.uploadImageRoute.name, props.data.uploadImageRoute.parameters),
-		formData,
-		{
-			preserveScroll: true,
-
-			onSuccess: () => {
-				notify({
-					title: trans('Success'),
-					text: trans('New image added'),
-					type: 'success',
-				})
-
-
-				isModalGallery.value = false
-
-
-			},
-			onError: () => {
-
-				notify({
-					title: trans('Upload failed'),
-					text: trans('Failed to add new image'),
-					type: 'error',
-				})
-			},
-
-		}
-	)
-}
-
-console.log('sss',props)
 </script>
 
 <template>
@@ -154,7 +108,7 @@ console.log('sss',props)
 		<!-- Sidebar -->
 		<div class="space-y-4 lg:space-y-6">
 			<!-- Image Preview & Thumbnails -->
-			<div class="bg-white rounded-xl shadow-sm  p-4 lg:p-5">
+			<div class="bg-white   p-4 lg:p-5">
 				<ImageProducts v-if="data.product.data.images?.length" :images="data.product.data.images" :breakpoints="{
 					0: { slidesPerView: 3 },
 					480: { slidesPerView: 4 },
@@ -199,15 +153,6 @@ console.log('sss',props)
 		<!-- Product Summary -->
 		<ProductSummary :data="data.product.data" :gpsr="data.gpsr" :properties="data.properties" :parts="data.parts" />
 	</div>
-
-	<!-- Gallery Dialog -->
-	<Dialog v-model:visible="isModalGallery" modal closable dismissableMask header="Gallery Management"
-		:style="{ width: '95vw', maxWidth: '900px' }" :pt="{ root: { class: 'rounded-xl shadow-xl' } }">
-		<GalleryManagement :multiple="true" :uploadRoute="data.uploadImageRoute"
-			:submitUpload="(file, refDAta) => onSubmitUpload(file, refDAta)"
-			:imagesUploadedRoutes="data.imagesUploadedRoutes" :attachImageRoute="data.attachImageRoute"
-			:stockImagesRoute="data.stockImagesRoute" @selectImage="(image) => console.log('Selected:', image)" />
-	</Dialog>
 </template>
 
 <style scoped>

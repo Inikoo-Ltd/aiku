@@ -30,9 +30,8 @@ import TableOrgStocks from '@/Components/Tables/Grp/Org/Inventory/TableOrgStocks
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 import TableImages from "@/Components/Tables/Grp/Helpers/TableImages.vue"
 import ProductTranslation from '@/Components/Showcases/Grp/ProductTranslation.vue'
-import { template } from 'lodash'
-import { faOctopusDeploy } from  "@fortawesome/free-brands-svg-icons"
 import { routeType } from '@/types/route'
+import TradeUnitImagesManagement from "@/Components/Goods/TradeUnitImagesManagement.vue"
 
 
 library.add(
@@ -93,7 +92,7 @@ const props = defineProps<{
         }
     }
 }>()
-console.log('Product.vue props:', props)
+
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
@@ -111,7 +110,7 @@ const component = computed(() => {
         reminders: TableProductBackInStockReminders,
         trade_units: TableTradeUnits,
         stocks: TableOrgStocks,
-        images: TableImages,
+        images: TradeUnitImagesManagement,
         translation: ProductTranslation,
     }
     console.log(currentTab.value)
@@ -198,7 +197,6 @@ function masterProductRoute() {
     </Message>
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-<!-- {{pageHead}} -->
     <div class="bg-white shadow-sm rounded px-4 py-2 mx-4 mt-2 w-fit border border-gray-200 overflow-x-auto">
         <Breadcrumb :model="breadcrumbItems">
             <template #item="{ item, index }">
