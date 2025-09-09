@@ -86,7 +86,7 @@ class ShowRetinaAccountManagement extends RetinaAction
                                         'label'   => __('Delivery Address'),
                                         'value'   => AddressFormFieldsResource::make($customer->deliveryAddress)->getArray(),
                                         'options' => [
-                                            'use_billing_address' => $customer->address_id===$customer->delivery_address_id,
+                                            'use_billing_address' => $customer->address_id === $customer->delivery_address_id,
                                             'countriesAddressData' => GetAddressData::run()
                                         ]
                                     ],

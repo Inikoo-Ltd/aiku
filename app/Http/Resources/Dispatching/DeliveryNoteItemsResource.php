@@ -41,14 +41,14 @@ class DeliveryNoteItemsResource extends JsonResource
 
 
         $packedIn = $this->packed_in;
-        if($packedIn==null){
-            $packedIn=1;
+        if ($packedIn == null) {
+            $packedIn = 1;
         }
 
 
         $quantityDispatched = $this->quantity_dispatched;
-        if($quantityDispatched==null){
-            $quantityDispatched=0;
+        if ($quantityDispatched == null) {
+            $quantityDispatched = 0;
         }
 
 

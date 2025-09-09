@@ -41,17 +41,18 @@ class UpdateProductImages extends OrgAction
 
         foreach ($imageKeys as $imageKey) {
             $mediaId = $modelData[$imageKey];
-            
+
             if ($mediaId === null) {
                 $product->images()->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
-                    ->updateExistingPivot($product->images()
+                    ->updateExistingPivot(
+                        $product->images()
                         ->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
-                        ->first()?->id, 
+                        ->first()?->id,
                         ['sub_scope' => null]
                     );
             } else {
                 $media = Media::find($mediaId);
-                
+
                 if ($media) {
                     $product->images()->updateExistingPivot(
                         $media->id,

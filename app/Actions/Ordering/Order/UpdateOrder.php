@@ -8,7 +8,6 @@
 
 namespace App\Actions\Ordering\Order;
 
-use Adawolfa\ISDOC\Schema\Invoice\DeliveryNote;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateOrders;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals;
@@ -64,10 +63,10 @@ class UpdateOrder extends OrgAction
                 MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->master_shop_id, $intervalsExceptHistorical, []);
             }
 
-            $deliveryNote = $order->deliveryNotes()->where('delivery_notes.type',DeliveryNoteTypeEnum::ORDER)->first();
+            $deliveryNote = $order->deliveryNotes()->where('delivery_notes.type', DeliveryNoteTypeEnum::ORDER)->first();
             if ($deliveryNote) {
 
-                if (Arr::has($changes, 'collection_address_id') &&  !in_array($deliveryNote->state,[DeliveryNoteStateEnum::CANCELLED, DeliveryNoteStateEnum::DISPATCHED])) {
+                if (Arr::has($changes, 'collection_address_id') &&  !in_array($deliveryNote->state, [DeliveryNoteStateEnum::CANCELLED, DeliveryNoteStateEnum::DISPATCHED])) {
                     $deliveryNote->update(
                         [
                             'collection_address_id' => $order->collection_address_id,

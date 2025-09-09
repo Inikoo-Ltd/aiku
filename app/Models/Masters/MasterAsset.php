@@ -72,25 +72,42 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $mark_for_discontinued_at
  * @property string|null $discontinued_at
  * @property string|null $cost_price_ratio
+ * @property int|null $front_image_id
+ * @property int|null $34_image_id
+ * @property int|null $left_image_id
+ * @property int|null $right_image_id
+ * @property int|null $back_image_id
+ * @property int|null $top_image_id
+ * @property int|null $bottom_image_id
+ * @property int|null $size_comparison_image_id
+ * @property string|null $video_url
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read Media|null $backImage
+ * @property-read Media|null $bottomImage
+ * @property-read Media|null $frontImage
  * @property-read Group $group
- * @property-read \App\Models\Helpers\Media|null $image
- * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
+ * @property-read Media|null $image
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
+ * @property-read Media|null $leftImage
  * @property-read MasterAsset|null $mainMasterProduct
  * @property-read \App\Models\Masters\MasterProductCategory|null $masterDepartment
  * @property-read \App\Models\Masters\MasterProductCategory|null $masterFamily
  * @property-read \Illuminate\Database\Eloquent\Collection<int, MasterAsset> $masterProductVariants
  * @property-read \App\Models\Masters\MasterShop|null $masterShop
  * @property-read \App\Models\Masters\MasterProductCategory|null $masterSubDepartment
- * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read \App\Models\Masters\MasterAssetOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Masters\MasterAssetOrderingStats|null $orderingStats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Product> $products
+ * @property-read Media|null $rightImage
  * @property-read \App\Models\Masters\MasterAssetSalesIntervals|null $salesIntervals
- * @property-read \App\Models\Helpers\Media|null $seoImage
+ * @property-read Media|null $seoImage
+ * @property-read Media|null $sizeComparisonImage
  * @property-read \App\Models\Masters\MasterAssetStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Stock> $stocks
+ * @property-read Media|null $threeQuarterImage
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Masters\MasterAssetTimeSeries> $timeSeries
+ * @property-read Media|null $topImage
  * @property-read \Illuminate\Database\Eloquent\Collection<int, TradeUnit> $tradeUnits
  * @property-read mixed $translations
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch

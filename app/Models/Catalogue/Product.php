@@ -148,7 +148,9 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $cost_price_ratio
  * @property-read \App\Models\Catalogue\Asset|null $asset
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read Media|null $backImage
  * @property-read LaravelCollection<int, BackInStockReminder> $backInStockReminders
+ * @property-read Media|null $bottomImage
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $containedByCollections
  * @property-read LaravelCollection<int, ModelHasContent> $contents
@@ -158,22 +160,28 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Customer|null $exclusiveForCustomer
  * @property-read \App\Models\Catalogue\ProductCategory|null $family
  * @property-read LaravelCollection<int, Favourite> $favourites
+ * @property-read Media|null $frontImage
  * @property-read Group $group
  * @property-read \App\Models\Catalogue\HistoricAsset|null $historicAsset
  * @property-read LaravelCollection<int, \App\Models\Catalogue\HistoricAsset> $historicAssets
- * @property-read \App\Models\Helpers\Media|null $image
- * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
+ * @property-read Media|null $image
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
+ * @property-read Media|null $leftImage
  * @property-read Product|null $mainProduct
  * @property-read MasterAsset|null $masterProduct
- * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read LaravelCollection<int, OrgStock> $orgStocks
  * @property-read Organisation $organisation
  * @property-read LaravelCollection<int, Portfolio> $portfolios
  * @property-read LaravelCollection<int, Product> $productVariants
- * @property-read \App\Models\Helpers\Media|null $seoImage
+ * @property-read Media|null $rightImage
+ * @property-read Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
+ * @property-read Media|null $sizeComparisonImage
  * @property-read \App\Models\Catalogue\ProductStats|null $stats
  * @property-read \App\Models\Catalogue\ProductCategory|null $subDepartment
+ * @property-read Media|null $threeQuarterImage
+ * @property-read Media|null $topImage
  * @property-read LaravelCollection<int, TradeUnit> $tradeUnits
  * @property-read mixed $translations
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
@@ -398,7 +406,7 @@ class Product extends Model implements Auditable, HasMedia
         return $this->group_id . ':' . $this->organisation_id . ':' . $this->shop_id . ':' . $this->webpage?->website?->id . ':' . $this->webpage?->id;
     }
 
-        public function frontImage(): HasOne
+    public function frontImage(): HasOne
     {
         return $this->hasOne(Media::class, 'id', 'front_image_id');
     }

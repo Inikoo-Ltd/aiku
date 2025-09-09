@@ -28,7 +28,7 @@ class TradeUnitResource extends JsonResource
             'barcode'           => $tradeUnit->barcode,
             'dimensions'        => $tradeUnit->marketing_dimensions,
         ];
-        
+
         return array(
             'slug'   => $tradeUnit->slug,
             'status' => $tradeUnit->status,
