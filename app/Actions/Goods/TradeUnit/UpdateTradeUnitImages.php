@@ -34,19 +34,24 @@ class UpdateTradeUnitImages extends GrpAction
             'size_comparison_image_id' => 'size_comparison',
         ];
 
-        $mediaIds = collect($imageTypeMapping)
+        $imageKeys = collect($imageTypeMapping)
             ->keys()
             ->filter(fn ($key) => Arr::exists($modelData, $key))
-            ->mapWithKeys(fn ($key) => [$key => $modelData[$key]])
-            ->filter()
             ->toArray();
 
-        if (!empty($mediaIds)) {
-            $mediaCollection = Media::whereIn('id', array_values($mediaIds))->get()->keyBy('id');
-
-            foreach ($mediaIds as $imageKey => $mediaId) {
-                $media = $mediaCollection->get($mediaId);
-
+        foreach ($imageKeys as $imageKey) {
+            $mediaId = $modelData[$imageKey];
+            
+            if ($mediaId === null) {
+                $tradeUnit->images()->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
+                    ->updateExistingPivot($tradeUnit->images()
+                        ->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
+                        ->first()?->id, 
+                        ['sub_scope' => null]
+                    );
+            } else {
+                $media = Media::find($mediaId);
+                
                 if ($media) {
                     $tradeUnit->images()->updateExistingPivot(
                         $media->id,
@@ -64,18 +69,19 @@ class UpdateTradeUnitImages extends GrpAction
     public function rules(): array
     {
         return [
-            'image_id' => ['sometimes', 'exists:media,id'],
-            'front_image_id' => ['sometimes', 'exists:media,id'],
-            '34_image_id' => ['sometimes', 'exists:media,id'],
-            'left_image_id' => ['sometimes', 'exists:media,id'],
-            'right_image_id' => ['sometimes', 'exists:media,id'],
-            'back_image_id' => ['sometimes', 'exists:media,id'],
-            'top_image_id' => ['sometimes', 'exists:media,id'],
-            'bottom_image_id' => ['sometimes', 'exists:media,id'],
-            'size_comparison_image_id' => ['sometimes', 'exists:media,id'],
-            'video_url' => ['sometimes'],
+            'image_id' => ['sometimes', 'nullable', 'exists:media,id'],
+            'front_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
+            '34_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
+            'left_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
+            'right_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
+            'back_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
+            'top_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
+            'bottom_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
+            'size_comparison_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
+            'video_url' => ['sometimes', 'nullable'],
         ];
     }
+
 
     public function asController(TradeUnit $tradeUnit, ActionRequest $request): void
     {
