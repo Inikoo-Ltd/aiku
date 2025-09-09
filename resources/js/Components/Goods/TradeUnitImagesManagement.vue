@@ -212,7 +212,7 @@ function onDeleteFilesInList(categoryBox: any) {
                     <!-- Drop Zone -->
                     <div class="relative flex h-36 w-full items-center justify-center bg-gray-50">
                         <Image v-if="categoryBox.images" :src="categoryBox.images"
-                            class="max-h-full max-w-full object-contain" />
+                              :style="{ objectFit: 'contain' }"/>
                         <div v-else class="flex flex-col items-center justify-center text-gray-400">
                             <FontAwesomeIcon :icon="faImage" class="mb-1 text-2xl" />
                             <span class="text-[12px] font-medium">{{ trans("Drop image here") }}</span>
@@ -223,33 +223,48 @@ function onDeleteFilesInList(categoryBox: any) {
         </div>
 
         <!-- Right: Image List -->
-        <div class="rounded-xl bg-white p-5 lg:col-span-1 flex flex-col border border-gray-200">
-            <h3 class="mb-4 text-base font-semibold text-gray-700 flex justify-between items-center">
-                {{ trans("Image List") }}
+        <div class="lg:col-span-1 flex flex-col p-5 bg-white rounded-xl shadow-sm border h-fit">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-base font-semibold text-gray-700">
+                    {{ trans("Image List") }}
+                </h3>
+                <div class="flex items-center gap-2">
+                    <Button :loading="loadingSubmit === 'upload'" type="create" :label="trans('Upload')"
+                        :icon="faUpload" @click="$refs.fileInput.click()" />
+                    <input ref="fileInput" type="file" accept="image/*" multiple class="hidden"
+                        @change="onUploadFile($event)" />
+                </div>
+            </div>
 
-                <Button :loading="loadingSubmit === 'upload'" type="create" label="Upload" :icon="faUpload"
-                    @click="$refs.fileInput.click()" />
-                <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="onUploadFile($event)" />
-            </h3>
+            <!-- Drop Zone -->
+            <div class="relative flex-1 overflow-y-auto rounded-lg  transition
+           scrollbar-thin scrollbar-thumb-gray-300 hover:scrollbar-thumb-gray-400"
+                :class="isDragOver ? 'border-blue-400 bg-blue-50 shadow-md' : 'border-gray-200'"
+                @dragover.prevent="isDragOver = true" @dragleave="isDragOver = false"
+                @drop.prevent="onDropFile($event); isDragOver = false">
+                <!-- Overlay saat drag -->
+                <div v-if="isDragOver" class="absolute inset-0 z-10 flex flex-col items-center justify-center
+             bg-blue-50/80 backdrop-blur-sm text-blue-500 pointer-events-none">
+                    <FontAwesomeIcon :icon="faUpload" class="text-3xl mb-2" />
+                    <p class="text-sm font-medium">{{ trans("Drop files to upload") }}</p>
+                </div>
 
-            <div class="flex-1 overflow-y-auto max-h-[600px] min-h-[100px] pr-1 
-                       scrollbar-thin scrollbar-thumb-gray-300 hover:scrollbar-thumb-gray-400
-                       border-2 border-dashed border-transparent hover:border-blue-300 transition" @dragover.prevent
-                @drop.prevent="onDropFile($event)">
-                <GridProducts :resource="props.data.images" gridClass="grid-cols-1">
+                <!-- List of images -->
+                <GridProducts :resource="props.data.images" gridClass="grid-cols-1" name="images">
                     <template #card="{ item }">
                         <article class="group flex items-center justify-between gap-3 
-                                   rounded-lg border border-gray-200 bg-white mb-2 py-3 px-2
-                                   shadow-sm transition hover:shadow-md hover:border-blue-400 cursor-move"
-                            draggable="true" @dragstart="onStartDrag($event, item)" @dragend="onEndDrag($event)">
+                 rounded-lg  bg-white p-3 mb-2 shadow-sm
+                 hover:shadow-md hover:border-blue-400 transition" draggable="true"
+                            @dragstart="onStartDrag($event, item)" @dragend="onEndDrag($event)">
                             <!-- Image + Info -->
                             <div class="flex items-center gap-3 min-w-0 flex-1">
                                 <div class="relative flex h-14 w-14 flex-shrink-0 items-center justify-center 
-                                           overflow-hidden rounded-md bg-gray-100 group-hover:bg-gray-50 transition">
+                     overflow-hidden rounded-md bg-gray-100 group-hover:bg-gray-50 transition">
                                     <Image v-if="item?.image" :src="item?.image"
                                         class="max-h-full max-w-full object-contain" />
                                     <div v-else class="text-gray-400">
-                                        <FontAwesomeIcon icon="fal fa-image" class="text-base" />
+                                        <FontAwesomeIcon :icon="faImage" class="text-base" />
                                     </div>
                                 </div>
 
@@ -267,8 +282,7 @@ function onDeleteFilesInList(categoryBox: any) {
 
                             <!-- Delete -->
                             <button @click="onDeleteFilesInList(item)" class="ml-2 flex-shrink-0 rounded-full p-1.5 
-                                       text-gray-400 hover:text-red-600 hover:bg-red-50 transition"
-                                v-tooltip="trans('Delete')">
+                   text-gray-400 hover:text-red-600 hover:bg-red-50 transition" v-tooltip="trans('Delete')">
                                 <FontAwesomeIcon icon="fal fa-trash-alt" class="text-sm text-red-400" />
                             </button>
                         </article>
@@ -276,6 +290,7 @@ function onDeleteFilesInList(categoryBox: any) {
                 </GridProducts>
             </div>
         </div>
+
     </div>
 </template>
 
