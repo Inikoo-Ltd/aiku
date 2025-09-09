@@ -450,7 +450,7 @@ const toggleFavorite = (product: Product): void => {
                 <div class="h-fit flex flex-wrap gap-y-0.5 gap-x-1 items-center my-0.5">
                     <!-- Record Counter -->
                     <RecordCounter :total="compResourceMeta?.total || 0"
-                        :labelSingular="queryBuilderProps?.labelRecord?.[0] || trans('product')"
+                        :labelSingular="queryBuilderProps?.labelRecord?.[0] || trans(name)"
                         :labelPlural="queryBuilderProps?.labelRecord?.[1] || queryBuilderProps?.labelRecord?.[0] || trans('products')" />
 
                     <!-- Search Input -->
