@@ -28,7 +28,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 class IndexShippers extends OrgAction
 {
     use WithShipperSubNavigation;
-    public function handle(Organisation $parent, $prefix = null): LengthAwarePaginator
+
+    public function handle(Organisation $parent, bool $status, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -43,11 +44,10 @@ class IndexShippers extends OrgAction
 
         $query = QueryBuilder::for(Shipper::class);
         $query->where('organisation_id', $parent->id);
-
-        $query->where('status', $this?->status ?? true);
+        $query->where('status', $status);
 
         return $query->defaultSort('id')
-            ->allowedSorts(['id'])
+            ->allowedSorts(['api_shipper', 'code', 'name'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -55,31 +55,20 @@ class IndexShippers extends OrgAction
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
-        $this->parent = $organisation;
         $this->initialisationFromWarehouse($warehouse, $request);
 
-        return $this->handle($organisation);
+        return $this->handle($organisation, true);
     }
 
-    public function inCurrent(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
-    {
-        $this->status = true;
-        $this->parent = $organisation;
-        $this->initialisationFromWarehouse($warehouse, $request);
-
-        return $this->handle($organisation);
-    }
 
     public function inInactive(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator
     {
-        $this->status = false;
-        $this->parent = $organisation;
         $this->initialisationFromWarehouse($warehouse, $request);
 
-        return $this->handle($organisation);
+        return $this->handle($organisation, false);
     }
 
-    public function jsonResponse(LengthAwarePaginator $shippers): LengthAwarePaginator
+    public function jsonResponse(LengthAwarePaginator $shippers): \Illuminate\Http\Resources\Json\AnonymousResourceCollection
     {
         return ShippersResource::collection($shippers);
     }
@@ -96,9 +85,9 @@ class IndexShippers extends OrgAction
                 'title'       => __('Shippers'),
                 'pageHead'    => [
                     'subNavigation' => $this->getShipperNavigation($this->organisation, $this->warehouse),
-                    'title' => __('Shippers'),
-                    'icon'  => 'fal fa-shipping-fast',
-                    'actions' => [
+                    'title'         => __('Shippers'),
+                    'icon'          => 'fal fa-shipping-fast',
+                    'actions'       => [
                         [
                             'type'    => 'button',
                             'style'   => 'create',
@@ -108,7 +97,7 @@ class IndexShippers extends OrgAction
                                 'name'       => 'grp.org.warehouses.show.dispatching.shippers.create',
                                 'parameters' => [
                                     'organisation' => $this->organisation->slug,
-                                    'warehouse'         => $this->warehouse->slug,
+                                    'warehouse'    => $this->warehouse->slug,
                                 ]
                             ]
                         ],
@@ -139,8 +128,9 @@ class IndexShippers extends OrgAction
                 ->withModelOperations($modelOperations);
 
 
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, searchable: true);
-            $table->column(key: 'name', label: __('name'), canBeHidden: false, searchable: true);
+            $table->column(key: 'api_shipper', label: __('type'), sortable: true);
+            $table->column(key: 'code', label: __('code'), sortable: true);
+            $table->column(key: 'name', label: __('name'), sortable: true);
         };
     }
 
@@ -183,7 +173,6 @@ class IndexShippers extends OrgAction
                 )
             ),
             default => []
-
         };
     }
 }
