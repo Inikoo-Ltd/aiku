@@ -152,7 +152,7 @@ function onDropImage(event: DragEvent, categoryBox: any) {
 function onStartDrag(event: DragEvent, img: any, fromCategory?: any) {
     selectedDragImage.value = { ...img, fromCategory }
     event.dataTransfer?.setData("application/json", JSON.stringify(img))
-    ;(event.target as HTMLElement).classList.add("dragging")
+        ; (event.target as HTMLElement).classList.add("dragging")
 }
 
 function onEndDrag(event: DragEvent) {
@@ -222,7 +222,7 @@ function onDeleteFilesInList(categoryBox: any) {
     )
 }
 
-console.log('dddd',props)
+console.log('dddd', props)
 </script>
 
 <template>
@@ -273,8 +273,7 @@ console.log('dddd',props)
                     <div v-if="categoryBox.type == 'image'"
                         class="relative flex h-36 w-full items-center justify-center bg-gray-50"
                         :draggable="!!categoryBox.images"
-                        @dragstart="(e) => categoryBox.images && onStartDrag(e, categoryBox)"
-                        @dragend="onEndDrag">
+                        @dragstart="(e) => categoryBox.images && onStartDrag(e, categoryBox)" @dragend="onEndDrag">
                         <Image v-if="categoryBox.images" :src="categoryBox.images" :style="{ objectFit: 'contain' }" />
                         <div v-else class="flex flex-col items-center justify-center text-gray-400">
                             <FontAwesomeIcon :icon="faImage" class="mb-1 text-2xl" />
@@ -328,8 +327,7 @@ console.log('dddd',props)
             </div>
 
             <!-- Drop Zone -->
-            <div class="relative flex-1 overflow-y-auto rounded-lg  transition
-           scrollbar-thin scrollbar-thumb-gray-300 hover:scrollbar-thumb-gray-400"
+            <div class="relative flex-1 overflow-y-auto rounded-lg  transition scrollbar-thin scrollbar-thumb-gray-300 hover:scrollbar-thumb-gray-400"
                 :class="isDragOver ? 'border-blue-400 bg-blue-50 shadow-md' : 'border-gray-200'"
                 @dragover.prevent="isDragOver = true" @dragleave="isDragOver = false"
                 @drop.prevent="onDropFile($event); isDragOver = false">
@@ -340,46 +338,49 @@ console.log('dddd',props)
                     <p class="text-sm font-medium">{{ trans("Drop files to upload") }}</p>
                 </div>
 
-                <!-- List of images -->
-                <GridProducts :resource="props.data.images" gridClass="grid-cols-1" name="images">
-                    <template #card="{ item }">
-                        <article class="group flex items-center justify-between gap-3 rounded-lg bg-white p-3 mb-2 shadow-sm
-         hover:shadow-md hover:border-blue-400 transition" draggable="true" @dragstart="onStartDrag($event, item)"
-                            @dragend="onEndDrag($event)">
-                            <!-- Image + Info -->
-                            <div class="flex items-center gap-3 min-w-0 flex-1">
-                                <div class="relative flex h-14 w-14 flex-shrink-0 items-center justify-center 
-                     overflow-hidden rounded-md bg-gray-100 group-hover:bg-gray-50 transition">
-                                    <Image v-if="item?.image" :src="item?.image"
-                                        class="max-h-full max-w-full object-contain" />
-                                    <div v-else class="text-gray-400">
-                                        <FontAwesomeIcon :icon="faImage" class="text-base" />
-                                    </div>
-                                </div>
+                <!-- Loader -->
+                <div v-if="loadingSubmit === 'list'" class="flex justify-center p-6 text-gray-500">
+                    <FontAwesomeIcon icon="fal fa-spinner-third" class="animate-spin mr-2" />
+                    {{ trans("Loading images...") }}
+                </div>
 
-                                <div class="flex-1 min-w-0">
-                                    <p class="truncate max-w-[160px] text-sm font-medium text-gray-800"
-                                        :title="item?.name">
-                                        {{ item?.name || trans("Unnamed product") }}
-                                    </p>
-                                    <span class="truncate max-w-[160px] block text-[11px] text-gray-500 italic"
-                                        :title="item?.code">
-                                        {{ item?.size }}
-                                    </span>
+                <!-- List of images -->
+                <div v-else>
+                    <article v-for="item in props.data.images" :key="item.id" class="group flex items-center justify-between gap-3 p-1  bg-white mb-1 border
+               hover:shadow-md hover:border-blue-400 transition" draggable="true"
+                        @dragstart="onStartDrag($event, item)" @dragend="onEndDrag($event)">
+                        <!-- Image + Info -->
+                        <div class="flex items-center gap-3 min-w-0 flex-1">
+                            <div class="relative flex h-14 w-14 flex-shrink-0 items-center justify-center
+                   overflow-hidden bg-gray-100 group-hover:bg-gray-50 transition">
+                                <Image v-if="item?.image" :src="item?.image"
+                                    class="max-h-full max-w-full object-contain" />
+                                <div v-else class="text-gray-400">
+                                    <FontAwesomeIcon :icon="faImage" class="text-base" />
                                 </div>
                             </div>
 
-                            <!-- Delete -->
-                            <button @click="onDeleteFilesInList(item)" class="ml-2 flex-shrink-0 rounded-full p-1.5 
-                                    text-gray-400 hover:text-red-600 hover:bg-red-50 transition"
-                                v-tooltip="trans('Delete')">
-                                <FontAwesomeIcon icon="fal fa-trash-alt" class="text-sm text-red-400" />
-                            </button>
-                        </article>
-                    </template>
-                </GridProducts>
+                            <div class="flex-1 min-w-0">
+                                <p class="truncate max-w-[160px] text-sm font-medium text-gray-800" :title="item?.name">
+                                    {{ item?.name || trans("Unnamed product") }}
+                                </p>
+                                <span class="truncate max-w-[160px] block text-[11px] text-gray-500 italic"
+                                    :title="item?.code">
+                                    {{ item?.size }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Delete -->
+                        <button @click="onDeleteFilesInList(item)" class="ml-2 flex-shrink-0 rounded-full p-1.5 
+                 text-gray-400 hover:text-red-600 hover:bg-red-50 transition" v-tooltip="trans('Delete')">
+                            <FontAwesomeIcon icon="fal fa-trash-alt" class="text-sm text-red-400" />
+                        </button>
+                    </article>
+                </div>
             </div>
         </div>
+
 
     </div>
 
