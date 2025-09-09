@@ -11,6 +11,7 @@ namespace App\Actions\Web\Banner;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Web\Banner\Search\BannerRecordSearch;
+use App\Enums\Web\Banner\BannerStateEnum;
 use App\Models\Helpers\Snapshot;
 use App\Models\Web\Banner;
 use Lorisleiva\Actions\ActionRequest;
@@ -28,9 +29,19 @@ class SetSnapshotToBanner extends OrgAction
         /** @var Banner $banner */
         $banner = $snapshot->parent;
 
+        $snapshotConditions = [];
+
+        if ($banner->state === BannerStateEnum::LIVE) {
+            $snapshotConditions['live_snapshot_id'] = $snapshot->id;
+        } else {
+            $snapshotConditions['unpublished_snapshot_id'] = $snapshot->id;
+        }
+
         $banner->update(
             [
-                'compiled_layout' => $snapshot->compiledLayout()
+                'compiled_layout' => $snapshot->compiledLayout(),
+                ...$snapshotConditions
+
             ]
         );
 
