@@ -8,21 +8,21 @@
 
 namespace App\Actions\Web\Banner;
 
+use App\Actions\Helpers\Snapshot\UpdateSnapshot;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
+use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Banner\Search\BannerRecordSearch;
+use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
 use App\Enums\Web\Banner\BannerStateEnum;
 use App\Models\Helpers\Snapshot;
 use App\Models\Web\Banner;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class SetSnapshotToBanner extends OrgAction
 {
     use WithWebEditAuthorisation;
-    use AsAction;
-    use WithAttributes;
+    use WithActionUpdate;
 
     public function handle(Snapshot $snapshot): void
     {
@@ -46,6 +46,17 @@ class SetSnapshotToBanner extends OrgAction
 
             ]
         );
+
+        foreach ($banner->snapshots()->where('state', SnapshotStateEnum::LIVE)->get() as $liveSnapshot) {
+            UpdateSnapshot::run($liveSnapshot, [
+                'state'           => SnapshotStateEnum::HISTORIC,
+                'published_until' => now()
+            ]);
+        }
+
+        $this->update($snapshot, [
+            'state' => SnapshotStateEnum::LIVE
+        ]);
 
         UpdateBannerImage::run($banner);
         BannerRecordSearch::dispatch($banner);
