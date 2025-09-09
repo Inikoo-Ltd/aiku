@@ -7,11 +7,11 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faImage, faPencil, faUpload, faVideo } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@/Components/Image.vue"
-import { GridProducts } from "@/Components/Product"
 import axios from "axios"
 import Dialog from "primevue/dialog"
 import InputText from "primevue/inputtext"
-
+import Tag from "@/Components/Tag.vue"
+import { capitalize } from "lodash"
 // Types
 import { Image as ImageTS } from "@/types/Image"
 import { routeType } from "@/types/route"
@@ -361,14 +361,22 @@ console.log('dddd', props)
                             </div>
 
                             <div class="flex-1 min-w-0">
-                                <p class="truncate max-w-[160px] text-sm font-medium text-gray-800" :title="item?.name">
-                                    {{ item?.name || trans("Unnamed product") }}
-                                </p>
+                                <div class="flex items-center gap-2">
+                                    <p class="truncate max-w-[140px] text-sm font-medium text-gray-800"
+                                        :title="item?.name">
+                                        {{ item?.name || trans("Unnamed product") }}
+                                    </p>
+
+                                    <!-- Tag PrimeVue untuk sub_scope -->
+                                    <Tag v-if="item?.sub_scope" :label="capitalize(item.sub_scope  +  ' side')"  :size="'xxs'" />
+                                </div>
+
                                 <span class="truncate max-w-[160px] block text-[11px] text-gray-500 italic"
-                                    :title="item?.code">
+                                    :title="item?.size">
                                     {{ item?.size }}
                                 </span>
                             </div>
+
                         </div>
 
                         <!-- Delete -->
