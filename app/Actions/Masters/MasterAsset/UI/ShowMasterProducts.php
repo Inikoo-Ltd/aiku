@@ -146,6 +146,10 @@ class ShowMasterProducts extends GrpAction
                     fn () => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset))
                     : Inertia::lazy(fn () => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset))),
 
+                MasterAssetTabsEnum::IMAGES->value => $this->tab == MasterAssetTabsEnum::IMAGES->value ?
+                    fn () =>  GetMasterProductImages::run($masterAsset)
+                    : Inertia::lazy(fn () => GetMasterProductImages::run($masterAsset)),
+
                 MasterAssetTabsEnum::PRODUCTS->value => $this->tab == MasterAssetTabsEnum::PRODUCTS->value ?
                     fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset))
                     : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset))),
