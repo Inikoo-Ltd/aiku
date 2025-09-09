@@ -42,18 +42,7 @@ class UpdateCustomerAddress extends OrgAction
         ];
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
 
-        if ($this->scope instanceof Customer) {
-            return $request->user()->authTo("crm.{$this->shop->id}.edit");
-        } else {
-            return $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
-        }
-    }
 
     public function asController(Customer $customer, ActionRequest $request): void
     {
