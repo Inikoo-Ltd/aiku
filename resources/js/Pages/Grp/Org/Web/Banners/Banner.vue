@@ -15,10 +15,13 @@ import Tabs from "@/Components/Navigation/Tabs.vue";
 import {capitalize} from "@/Composables/capitalize"
 //import TableCustomerHistories from "@/Components/Tables/TableCustomerHistories.vue";
 import {faSign, faGlobe, faPencil, faSeedling, faPaste, faLayerGroup} from '@fal'
+import { faRocketLaunch } from '@far'
 import TableSnapshots from '@/Components/Tables/TableSnapshots.vue';
 import BannerShowcase from "@/Pages/Grp/Org/Web/Banners/BannerShowcase.vue";
+import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
+import { trans } from 'laravel-vue-i18n'
 
-library.add(faSign, faGlobe, faPencil, faSeedling, faPaste, faLayerGroup)
+library.add(faSign, faRocketLaunch, faGlobe, faPencil, faSeedling, faPaste, faLayerGroup)
 
 const props = defineProps<{    
     title: string,
@@ -56,6 +59,25 @@ const component = computed(() => {
     <!-- <pre>{{ showcase }}</pre> -->
     <PageHeading :data="pageHead"></PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate"/>
-    <component :is="component" :tab="currentTab" :data="props[currentTab]"></component>
+    <component :is="component" :tab="currentTab" :data="props[currentTab]">
+        <template #banner-snapshot="{ item }">
+            <ButtonWithLink
+                v-if="item.state_value != 'live'"
+                v-tooltip="trans('Publish this snapshot as current active banner')"
+                :label="trans('Checkout')"
+                size="xs"
+                icon="far fa-rocket-launch"
+                type="tertiary"
+                method="POST"
+                :routeTarget="{
+                    name: 'grp.models.banner.snapshot_to_banner.store',
+                    parameters: {
+                        banner: item.parent_id,
+                        snapshot: item.id
+                    }
+                }"
+            />
+        </template>
+    </component>
 </template>
 

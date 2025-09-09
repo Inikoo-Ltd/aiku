@@ -24,7 +24,7 @@ class SetSnapshotToBanner extends OrgAction
     use AsAction;
     use WithAttributes;
 
-    public function handle(Snapshot $snapshot): Banner
+    public function handle(Snapshot $snapshot): void
     {
         /** @var Banner $banner */
         $banner = $snapshot->parent;
@@ -39,7 +39,9 @@ class SetSnapshotToBanner extends OrgAction
 
         $banner->update(
             [
-                'compiled_layout' => $snapshot->compiledLayout(),
+                'compiled_layout'   => $snapshot->compiledLayout(),
+                'state'             => BannerStateEnum::LIVE,
+                'switch_off_at'     => null,
                 ...$snapshotConditions
 
             ]
@@ -48,13 +50,13 @@ class SetSnapshotToBanner extends OrgAction
         UpdateBannerImage::run($banner);
         BannerRecordSearch::dispatch($banner);
 
-        return $banner;
+        // return $banner;
     }
 
-    public function asController(Banner $banner, Snapshot $snapshot, ActionRequest $request): Banner
+    public function asController(Banner $banner, Snapshot $snapshot, ActionRequest $request): void
     {
         $this->initialisationFromShop($banner->shop, $request);
 
-        return $this->handle($snapshot);
+        $this->handle($snapshot);
     }
 }
