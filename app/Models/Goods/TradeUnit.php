@@ -312,7 +312,7 @@ class TradeUnit extends Model implements HasMedia, Auditable
 
     public function bottomImage(): HasOne
     {
-        return $this->hasOne(Media::class, 'id', 'top_image_id');
+        return $this->hasOne(Media::class, 'id', 'bottom_image_id');
     }
 
     public function sizeComparisonImage(): HasOne
