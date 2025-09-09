@@ -80,8 +80,11 @@ const isAbleReindex = computed(() => {
 
     return lastReindexed30Minutes < new Date()
 })
-const dateLastReindex = new Date(props.luigi_data.last_reindexed)
-const dateAdd30MinutesLastReindex = dateLastReindex.setMinutes(dateLastReindex.getMinutes() + 30) 
+const dateAdd30MinutesLastReindex = computed(() => {
+    const dateLastReindex = new Date(props.luigi_data.last_reindexed)
+    return dateLastReindex.setMinutes(dateLastReindex.getMinutes() + 30) 
+})
+
 
 </script>
 

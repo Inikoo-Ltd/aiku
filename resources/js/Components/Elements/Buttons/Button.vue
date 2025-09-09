@@ -39,7 +39,7 @@ const props = withDefaults(defineProps<{
   iconRotation?: number | string
 }>(), {
   size: "m",
-  capitalize: true,
+  capitalize: false,
   loading: false
 });
 

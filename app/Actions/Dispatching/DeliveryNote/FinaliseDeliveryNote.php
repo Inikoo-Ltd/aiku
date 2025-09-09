@@ -28,10 +28,10 @@ class FinaliseDeliveryNote extends OrgAction
      */
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
-        if ($deliveryNote->shipments->isEmpty()) {
+        if ($deliveryNote->shipments->isEmpty() && !$deliveryNote->collection_address_id) {
             throw ValidationException::withMessages([
                   'message' => [
-                            'delivery_note' => 'Shipment should be set before finalizing.',
+                            'delivery_note' => __('Shipment should be set before finalizing.'),
                         ]
             ]);
         }
