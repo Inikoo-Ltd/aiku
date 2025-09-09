@@ -8,7 +8,6 @@
 
 namespace App\Actions\Masters\MasterAsset;
 
-use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterAssets;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateMasterAssets;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;

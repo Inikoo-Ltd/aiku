@@ -37,8 +37,7 @@ class ShippingDropshippingDeliveryNoteResource extends JsonResource
         }
 
 
-
-        $fromLastName = (strpos($fromContactName, ' ') !== false)
+        $fromLastName = (str_contains($fromContactName, ' '))
             ? substr($fromContactName, strpos($fromContactName, ' ') + 1)
             : 'Unknown';
 
@@ -63,7 +62,7 @@ class ShippingDropshippingDeliveryNoteResource extends JsonResource
         $contactName   = $recipient->contact_name ?? '';
 
         $toFirstName = explode(' ', $contactName)[0];
-        $toLastName  = (strpos($contactName, ' ') !== false)
+        $toLastName  = (str_contains($contactName, ' '))
             ? substr($contactName, strpos($contactName, ' ') + 1)
             : '-';
 
@@ -79,7 +78,7 @@ class ShippingDropshippingDeliveryNoteResource extends JsonResource
         }
 
         if ($toEmail == '') {
-            $toEmail = 'anonymous@gmail.com';
+            $toEmail = $shop->email;
         }
 
         return [

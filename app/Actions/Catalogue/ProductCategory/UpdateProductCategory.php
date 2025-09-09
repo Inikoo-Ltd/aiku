@@ -107,7 +107,7 @@ class UpdateProductCategory extends OrgAction
             }
         }
 
-        if (Arr::has($changes, 'name')){
+        if (Arr::has($changes, 'name')) {
             UpdateProductCategoryAndMasterTranslations::make()->action($productCategory, [
                 'translations' => [
                     'name' => [$productCategory->shop->language->code => Arr::pull($modelData, 'name')]
@@ -116,7 +116,7 @@ class UpdateProductCategory extends OrgAction
 
         }
 
-        if (Arr::has($changes,  'description_title')) {
+        if (Arr::has($changes, 'description_title')) {
             UpdateProductCategoryAndMasterTranslations::make()->action($productCategory, [
                 'translations' => [
                     'description_title' => [$productCategory->shop->language->code => Arr::pull($modelData, 'description_title')]

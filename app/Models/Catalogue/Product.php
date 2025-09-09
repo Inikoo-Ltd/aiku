@@ -163,6 +163,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read Product|null $mainProduct
+ * @property-read MasterAsset|null $masterProduct
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read LaravelCollection<int, OrgStock> $orgStocks
  * @property-read Organisation $organisation

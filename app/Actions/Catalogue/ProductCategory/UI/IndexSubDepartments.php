@@ -69,7 +69,7 @@ class IndexSubDepartments extends OrgAction
 
         $queryBuilder = QueryBuilder::for(ProductCategory::class);
 
-        if(class_basename($parent) != 'MasterProductCategory') {
+        if (class_basename($parent) != 'MasterProductCategory') {
             foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                 $queryBuilder->whereElementGroup(
                     key: $key,
@@ -136,7 +136,7 @@ class IndexSubDepartments extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
-            if(class_basename($parent) != 'MasterProductCategory') {
+            if (class_basename($parent) != 'MasterProductCategory') {
                 foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                     $table->elementGroup(
                         key: $key,
@@ -181,7 +181,7 @@ class IndexSubDepartments extends OrgAction
                 $table->column(key: 'department_code', label: __('department'), sortable: true, searchable: true);
             }
 
-            if(class_basename($parent) == 'MasterProductCategory') {
+            if (class_basename($parent) == 'MasterProductCategory') {
                 $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
             }
             $table->column(key: 'code', label: __('code'), sortable: true, searchable: true)

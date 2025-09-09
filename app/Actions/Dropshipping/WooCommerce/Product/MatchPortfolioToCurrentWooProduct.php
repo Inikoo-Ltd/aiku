@@ -35,7 +35,7 @@ class MatchPortfolioToCurrentWooProduct extends OrgAction
     public function rules(): array
     {
         return [
-            'woo_product_id' => ['required', 'string'],
+            'platform_product_id' => ['required', 'string'],
         ];
     }
 

@@ -32,7 +32,9 @@ import {
     faExclamationCircle,
     faClone,
     faLink, faScrewdriver, faTools,
-    faRecycle, faHandPointer, faHandshakeSlash, faHandshake
+    faRecycle, faHandPointer, faHandshakeSlash, faHandshake,
+    faCheckCircle,
+    faPlus
 } from "@fal"
 import { faStar, faFilter } from "@fas"
 import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
@@ -63,6 +65,7 @@ const selectedProducts = defineModel<number[]>('selectedProducts')
 const isLoadingSubmit = ref(false)
 const isOpenModal = ref(false)
 const querySearchPortfolios = ref('')
+const selectedVariant = ref<Product | null>(null)
 function itemRoute(portfolio: Portfolio) {
     return route(
         "grp.helpers.redirect_portfolio_item",
@@ -76,7 +79,7 @@ const onSubmitVariant = () => {
             platform_product_id: selectedVariant.value?.id
         }),
         {
-            // data: 'qqq'
+
         },
         {
             preserveScroll: true,
@@ -99,6 +102,7 @@ const onSubmitVariant = () => {
 
             },
             onError: errors => {
+                console.log(errors)
                 notify({
                     title: trans("Something went wrong"),
                     text: errors.message ?? trans("Failed to match the product to platform"),
@@ -145,17 +149,18 @@ const resultOfFetchPlatformProduct = ref<PlatformProduct[]>([])
 const isLoadingFetchPlatformProduct = ref(false)
 const fetchRoute = async () => {
     isLoadingFetchPlatformProduct.value = true
-
+    isLoadingSubmit.value = true
 
     try {
         const www = await axios.get(route(props.routes.fetch_products.name, {
             customerSalesChannel: props.customerSalesChannel?.id,
             query: querySearchPortfolios.value
         }))
-
+        isLoadingSubmit.value = false
         resultOfFetchPlatformProduct.value = www.data
     } catch (e) {
         console.error("Error processing products", e)
+        isLoadingSubmit.value = false
     }
     isLoadingFetchPlatformProduct.value = false
 
@@ -279,10 +284,10 @@ const onDisableCheckbox = (item) => {
                     </div>
 
                     <Button v-if="item.platform_possible_matches?.number_matches"
-                        @click="() => {fetchRoute(), isOpenModal = true, selectedPortfolio = item}"
+                        @click="() => { fetchRoute(), isOpenModal = true, selectedPortfolio = item }"
                         :label="trans('Choose another product from your shop')" :capitalize="false" size="xxs"
                         type="tertiary" />
-                    <Button v-else @click="() => {fetchRoute(), isOpenModal = true, selectedPortfolio = item}"
+                    <Button v-else @click="() => { fetchRoute(), isOpenModal = true, selectedPortfolio = item }"
                         :label="trans('Match it with an existing product in your shop')" :capitalize="false" size="xxs"
                         type="tertiary" />
                 </template>
@@ -314,25 +319,27 @@ const onDisableCheckbox = (item) => {
 
         <!-- Column: actions -->
         <template #cell(actions)="{ item }">
-            <div v-if="item.customer_sales_channel_platform_status && !item.platform_status"
-                class="flex gap-x-2 items-center">
-                <ButtonWithLink v-tooltip="trans('Will create new product')" :routeTarget="{
-                    method: 'post',
-                    name: props.routes.single_create_new.name,
-                    parameters: {
-                        portfolio: item.id
-                    },
-                }" isWithError icon="" :label="trans('Create new product')" size="xxs" type="tertiary" :bindToLink="{
+            <div class="flex gap-2">
+                <div v-if="item.customer_sales_channel_platform_status && !item.platform_status" class="flex gap-x-2 items-center">
+                    <ButtonWithLink v-tooltip="trans('Will create new product')" :routeTarget="{
+                        method: 'post',
+                        name: props.routes.single_create_new.name,
+                        parameters: {
+                            portfolio: item.id
+                        },
+                    }" isWithError :label="trans('Create new product')" size="xs" :icon="faPlus" type="tertiary" :bindToLink="{
+                    preserveScroll: true,
+                }" />
+                </div>
+
+                <ButtonWithLink v-tooltip="trans('Unselect product')" type="negative" icon="fal fa-skull"
+                    :routeTarget="item.update_portfolio" :body="{
+                        'status': false,
+                    }" size="xs" :bindToLink="{
                     preserveScroll: true,
                 }" />
             </div>
 
-            <ButtonWithLink v-tooltip="trans('Unselect product')" type="negative" icon="fal fa-skull"
-                :routeTarget="item.update_portfolio" :body="{
-                    'status': false,
-                }" size="xs" :bindToLink="{
-                    preserveScroll: true,
-                }" />
         </template>
     </Table>
 
@@ -370,9 +377,9 @@ const onDisableCheckbox = (item) => {
                                         selectedVariant?.id === item.id ? 'bg-green-100 border-green-400' : ''
                                     ]">
                                     <Transition name="slide-to-right">
-                                        <FontAwesomeIcon v-if="selectedVariant?.id === item.id"
-                                            icon="fas fa-check-circle" class="bottom-2 right-2 absolute text-green-500"
-                                            fixed-width aria-hidden="true" />
+                                        <FontAwesomeIcon v-if="selectedVariant?.id === item.id" :icon="faCheckCircle"
+                                            class="bottom-2 right-2 absolute text-green-500" fixed-width
+                                            aria-hidden="true" />
                                     </Transition>
                                     <slot name="product" :item="item">
                                         <Image v-if="item.images?.src" :src="item.images?.src"

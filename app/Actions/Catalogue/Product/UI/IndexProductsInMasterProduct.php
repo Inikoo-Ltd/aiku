@@ -8,38 +8,19 @@
 
 namespace App\Actions\Catalogue\Product\UI;
 
-use App\Actions\Catalogue\ProductCategory\UI\ShowDepartment;
-use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
-use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
-use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
-use App\Actions\Catalogue\WithDepartmentSubNavigation;
-use App\Actions\Catalogue\WithFamilySubNavigation;
-use App\Actions\Catalogue\WithSubDepartmentSubNavigation;
-use App\Actions\GrpAction;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
-use App\Enums\Catalogue\Product\ProductStateEnum;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Enums\UI\Catalogue\ProductsTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
-use App\Models\Catalogue\ProductCategory;
-use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterAsset;
-use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Inertia\Inertia;
-use Inertia\Response;
-use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexProductsInMasterProduct extends OrgAction
 {
-
     public function handle(MasterAsset $masterAsset, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {

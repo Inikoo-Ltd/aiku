@@ -4,9 +4,7 @@ namespace App\Actions\Catalogue\Product;
 
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Product;
-use App\Models\Catalogue\ProductCategory;
 use App\Models\Masters\MasterAsset;
-use App\Models\Masters\MasterProductCategory;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 

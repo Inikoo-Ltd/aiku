@@ -4,9 +4,7 @@ namespace App\Actions\Masters\MasterAsset;
 
 use App\Actions\GrpAction;
 use App\Models\Catalogue\Product;
-use App\Models\Catalogue\ProductCategory;
 use App\Models\Masters\MasterAsset;
-use App\Models\Masters\MasterProductCategory;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -72,7 +70,7 @@ class UpdateMasterProductTranslationsFromUpdate extends GrpAction
         if (!empty($name_i8n)) {
             foreach ($name_i8n as $locale => $translation) {
                 $childNameI8n[$locale] = $translation;
-                if($locale === $childLanguage) {
+                if ($locale === $childLanguage) {
                     $product->name = $translation;
                 }
             }
@@ -83,7 +81,7 @@ class UpdateMasterProductTranslationsFromUpdate extends GrpAction
         if (!empty($description_i8n)) {
             foreach ($description_i8n as $locale => $translation) {
                 $childDescriptionI8n[$locale] = $translation;
-                if($locale === $childLanguage) {
+                if ($locale === $childLanguage) {
                     $product->description = $translation;
                 }
             }
@@ -94,7 +92,7 @@ class UpdateMasterProductTranslationsFromUpdate extends GrpAction
         if (!empty($description_title_i8n)) {
             foreach ($description_title_i8n as $locale => $translation) {
                 $childDescriptionTitleI8n[$locale] = $translation;
-                if($locale === $childLanguage) {
+                if ($locale === $childLanguage) {
                     $product->description_title = $translation;
                 }
             }
@@ -105,7 +103,7 @@ class UpdateMasterProductTranslationsFromUpdate extends GrpAction
         if (!empty($description_extra_i8n)) {
             foreach ($description_extra_i8n as $locale => $translation) {
                 $childDescriptionExtraI8n[$locale] = $translation;
-                if($locale === $childLanguage) {
+                if ($locale === $childLanguage) {
                     $product->description_extra = $translation;
                 }
             }

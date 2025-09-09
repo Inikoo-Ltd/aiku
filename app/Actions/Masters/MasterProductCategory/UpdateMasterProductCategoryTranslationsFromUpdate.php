@@ -70,7 +70,7 @@ class UpdateMasterProductCategoryTranslationsFromUpdate extends GrpAction
         if (!empty($name_i8n)) {
             foreach ($name_i8n as $locale => $translation) {
                 $childNameI8n[$locale] = $translation;
-                if($locale === $childLanguage) {
+                if ($locale === $childLanguage) {
                     $productCategory->name = $translation;
                 }
             }
@@ -81,7 +81,7 @@ class UpdateMasterProductCategoryTranslationsFromUpdate extends GrpAction
         if (!empty($description_i8n)) {
             foreach ($description_i8n as $locale => $translation) {
                 $childDescriptionI8n[$locale] = $translation;
-                if($locale === $childLanguage) {
+                if ($locale === $childLanguage) {
                     $productCategory->description = $translation;
                 }
             }
@@ -92,7 +92,7 @@ class UpdateMasterProductCategoryTranslationsFromUpdate extends GrpAction
         if (!empty($description_title_i8n)) {
             foreach ($description_title_i8n as $locale => $translation) {
                 $childDescriptionTitleI8n[$locale] = $translation;
-                if($locale === $childLanguage) {
+                if ($locale === $childLanguage) {
                     $productCategory->description_title = $translation;
                 }
             }
@@ -103,7 +103,7 @@ class UpdateMasterProductCategoryTranslationsFromUpdate extends GrpAction
         if (!empty($description_extra_i8n)) {
             foreach ($description_extra_i8n as $locale => $translation) {
                 $childDescriptionExtraI8n[$locale] = $translation;
-                if($locale === $childLanguage) {
+                if ($locale === $childLanguage) {
                     $productCategory->description_extra = $translation;
                 }
             }

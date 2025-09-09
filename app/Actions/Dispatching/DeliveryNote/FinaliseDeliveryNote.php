@@ -42,7 +42,7 @@ class FinaliseDeliveryNote extends OrgAction
 
 
             $deliveryNote->refresh();
-            if($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
+            if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
                 foreach ($deliveryNote->orders as $order) {
                     InvoiceOrderFromDeliveryNoteFinalisation::make()->action($order);
                 }
