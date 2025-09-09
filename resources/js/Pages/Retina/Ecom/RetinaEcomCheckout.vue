@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import CheckoutSummary from "@/Components/Retina/Ecom/CheckoutSummary.vue"
+import EcomCheckoutSummary from "@/Components/Retina/Ecom/EcomCheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { faPaypal } from "@fortawesome/free-brands-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -106,7 +106,7 @@ const component = computed(() => {
             <span class="text-gray-500">{{ trans("Order number") }}</span> <span class="font-bold">#{{ order.reference }}</span>
         </div> -->
         
-        <CheckoutSummary
+        <EcomCheckoutSummary
             :summary
             :balance
         />

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { trans } from 'laravel-vue-i18n'
-import CheckoutSummary from "@/Components/Retina/Ecom/CheckoutSummary.vue"
+import EcomCheckoutSummary from "@/Components/Retina/Ecom/EcomCheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { Head, Link, router } from "@inertiajs/vue3"
 import { inject, ref, onMounted, nextTick, onBeforeUnmount, computed } from "vue"
@@ -23,6 +23,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
 import RecommendersLuigi1Iris from '@/Components/CMS/Webpage/SeeAlso1/RecommendersLuigi1Iris.vue'
+import { AddressManagement } from '@/types/PureComponent/Address'
 library.add(faTag)
 
 const props = defineProps<{
@@ -84,6 +85,7 @@ const props = defineProps<{
     }
     total_products: number
     is_in_basket: boolean
+    address_management: AddressManagement
 }>()
 
 console.log(props.transactions)
@@ -392,9 +394,10 @@ const blackListProductIds = computed(() => {
     </PageHeading>
 
 
-    <CheckoutSummary
+    <EcomCheckoutSummary
         :summary
         :balance
+        :address_management
     />
     
     <template v-if="order">
