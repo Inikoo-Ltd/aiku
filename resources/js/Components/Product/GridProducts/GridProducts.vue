@@ -480,8 +480,8 @@ const toggleFavorite = (product: Product): void => {
             <!-- Empty State -->
             <EmptyState
             v-else-if="!isVisiting"
-                :message="getSearchInputValue('global') ? trans('No result') : trans('Your favourites is empty')"
-                :description="getSearchInputValue('global') ? trans('Try adjusting your search terms') : trans('No products are available at this time')"
+                :message="getSearchInputValue('global') ? trans('No result') : ( trans('Empty ') + name) "
+                :description="getSearchInputValue('global') ? trans('Try adjusting your search terms') : trans('No ') + name + trans(' are available at this time')"
             />
 
             <!-- Pagination -->
