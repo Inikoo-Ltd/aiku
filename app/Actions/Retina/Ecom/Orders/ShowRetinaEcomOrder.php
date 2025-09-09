@@ -8,7 +8,6 @@
 
 namespace App\Actions\Retina\Ecom\Orders;
 
-use App\Actions\Ordering\Order\UI\GetOrderAddressManagement;
 use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexTransactions;
@@ -113,9 +112,6 @@ class ShowRetinaEcomOrder extends RetinaAction
                 ],
 
                 'timelines' => $finalTimeline,
-
-                // 'address_management' => GetOrderAddressManagement::run(order: $order, isRetina: true),
-
                 'box_stats' => $this->getOrderBoxStats($order),
                 'currency'  => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'      => OrderResource::make($order),

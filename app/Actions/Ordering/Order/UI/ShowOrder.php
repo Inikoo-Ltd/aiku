@@ -22,7 +22,6 @@ use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Ordering\OrderTabsEnum;
@@ -303,7 +302,7 @@ class ShowOrder extends OrgAction
                 'notes'                       => $this->getOrderNotes($order),
                 'timelines'                   => $finalTimeline,
                 'readonly'                    => $readonly,
-                'delivery_address_management' => $this->shop->type == ShopTypeEnum::DROPSHIPPING ? GetDropshippingOrderDeliveryAddressManagement::run(order: $order) : GetOrderAddressManagement::run(order: $order),
+                'delivery_address_management' =>  GetOrderDeliveryAddressManagement::run(order: $order),
 
                 'box_stats'     => $this->getOrderBoxStats($order),
                 'currency'      => CurrencyResource::make($order->currency)->toArray(request()),

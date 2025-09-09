@@ -267,7 +267,7 @@ onMounted(() => {
                     <dd
                         class="w-full text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
                         <div v-html="summary?.customer?.addresses?.delivery?.formatted_address"></div>
-                        <div v-if="address_management?.updateRoute" @click="isModalShippingAddress = true"
+                        <div v-if="address_management?.address_update_route" @click="isModalShippingAddress = true"
                              class="underline cursor-pointer hover:text-gray-700">
                             {{ trans("Edit") }}
                             <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true"/>

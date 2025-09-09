@@ -9,11 +9,10 @@ import { trans } from "laravel-vue-i18n";
 import { Address, AddressManagement } from "@/types/PureComponent/Address";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faCheckCircle as faCheckCircleSolid } from "@fas";
-import { faThumbtack, faPencil, faHouse, faTrashAlt, faTruck, faTruckCouch, faCheckCircle, fal } from "@fal";
+import { faThumbtack, faPencil, faHouse, faTrashAlt, faTruck, faTruckCouch, faCheckCircle, faThumbtack as faThumbtackSolid  } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
 import { useTruncate } from "@/Composables/useTruncate";
-import { faThumbtack as faThumbtackSolid } from "@fas";
 
 library.add(faThumbtack, faPencil, faHouse, faTrashAlt, faTruck, faTruckCouch, faCheckCircle, faThumbtack, faCheckCircleSolid);
 
@@ -35,13 +34,13 @@ const homeAddress = computed(() => {
   );
 });
 
-// Method: Create new address
+// Method: Create a new address
 const isSubmitAddressLoading = ref(false);
 const onSubmitNewAddress = async (address: Address) => {
   const filterDataAddress = { ...address };
   delete filterDataAddress.formatted_address;
   delete filterDataAddress.country;
-  delete filterDataAddress.id;  // Remove id cuz create new one
+  delete filterDataAddress.id;  // Remove id cuz create a new one
 
   router[props.addresses.routes_list.store_route.method || "post"](
     route(props.addresses.routes_list.store_route.name, props.addresses.routes_list.store_route.parameters),
@@ -224,7 +223,6 @@ const onDeleteAddress = (addressID: number) => {
     </div>
 
     <div class="relative transition-all">
-      <!-- <Transition name="v"> -->
       <div v-if="isCreateNewAddress" class="mx-auto max-w-96 py-4">
         <div class="mb-2">{{ trans("Create new address") }}</div>
         <div class="border border-gray-300 rounded-lg relative p-3 ">
@@ -281,7 +279,7 @@ const onDeleteAddress = (addressID: number) => {
           <div v-html="selectedAddress?.formatted_address" class="px-3 py-2"></div>
         </div>
 
-        <!-- Form: Edit address -->
+        <!-- Form: Edit address Delivery Address -->
         <div class="relative bg-gray-100 p-4 rounded-md">
           <div @click="() => (isEditAddress = false, selectedAddress = null)"
                class="absolute top-2 right-2 cursor-pointer">
@@ -438,5 +436,3 @@ const onDeleteAddress = (addressID: number) => {
     </Button>
   </div>
 </template>
-
-<style scoped></style>

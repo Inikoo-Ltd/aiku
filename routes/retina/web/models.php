@@ -107,6 +107,7 @@ use App\Actions\Retina\Fulfilment\StoredItem\UpdateRetinaStoredItem;
 use App\Actions\Retina\Media\AttachRetinaAttachmentToModel;
 use App\Actions\Retina\Media\DetachRetinaAttachmentFromModel;
 use App\Actions\Retina\Media\DownloadRetinaAttachment;
+use App\Actions\Retina\Ordering\UpdateRetinaOrderDeliveryAddress;
 use App\Actions\Retina\Shopify\CreateRetinaNewAllPortfoliosToShopify;
 use App\Actions\Retina\Shopify\CreateRetinaNewBulkPortfoliosToShopify;
 use App\Actions\Retina\Shopify\MatchRetinaBulkPortfoliosToCurrentShopifyProduct;
@@ -206,6 +207,8 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::delete('delete-basket', DeleteRetinaBasket::class)->name('delete_basket');
     Route::patch('submit', SubmitRetinaOrder::class)->name('submit');
     Route::patch('pay-with-balance', PayRetinaOrderWithBalance::class)->name('pay_with_balance');
+
+    Route::patch('delivery-address-update', UpdateRetinaOrderDeliveryAddress::class)->name('delivery_address_update');
 
     Route::post('add-collection', StoreOrderAddressCollection::class)->name('basket.collection.store');
     Route::delete('delete-collection', DeleteOrderAddressCollection::class)->name('basket.collection.delete');
