@@ -6,7 +6,7 @@ import { Link } from '@inertiajs/vue3'
 // import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import { trans } from 'laravel-vue-i18n'
-import { inject, onMounted, ref, withDefaults } from 'vue'
+import { inject, onBeforeUnmount, onMounted, ref, withDefaults } from 'vue'
 
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import { Autoplay } from 'swiper/modules'
@@ -34,14 +34,9 @@ interface ProductHits {
 }
 
 const props = withDefaults(defineProps<{
-    recommendation_type?: string
-    slidesPerView?: number
-    size?: number
-    isAddToBasket?: boolean
     listLoadingProducts?: Record<string, string>
     blacklistItems?: string[]
 }>(), {
-    isAddToBasket: false,
     blacklistItems: () => []
 })
 
@@ -56,7 +51,7 @@ const listProducts = ref<ProductHits[] | null>()
 const isLoadingFetch = ref(false)
 
 const handleProductClick = (product: ProductHits) => {
-    if (props.isAddToBasket && product.attributes.product_id?.[0]) {
+    if (product.attributes.product_id?.[0]) {
         emit('add-to-basket', product.attributes.product_id[0], product.attributes.product_code[0])
     }
 }
@@ -75,8 +70,8 @@ const fetchRecommenders = async () => {
                 {
                     "blacklisted_item_ids": props.blacklistItems,
                     "item_ids": [],
-                    "recommendation_type": props.recommendation_type || "test_reco",
-                    "recommender_client_identifier": props.recommendation_type || "test_reco",
+                    "recommendation_type": 'basket',
+                    "recommender_client_identifier": 'basket',
                     "size": 7,
                     "user_id": layout.user?.customer_id?.toString(),
                     "recommendation_context": {},
@@ -103,10 +98,39 @@ const fetchRecommenders = async () => {
 onMounted(() => {
     fetchRecommenders()
 })
+
+
+// Section: responsive Slides per view
+const slidesPerView = ref(4.5)
+const updateSlidesPerView = () => {
+    const width = window.innerWidth
+    if (width < 640) {
+        slidesPerView.value = 2.3 // mobile
+    } else if (width < 768) {
+        slidesPerView.value = 2.4 // small tablet
+    } else if (width < 1024) {
+        slidesPerView.value = 3.5 // tablet
+    } else if (width < 1280) {
+        slidesPerView.value = 4.5 // desktop
+    } else {
+        slidesPerView.value = 4.5 // large desktop
+    }
+}
+onMounted(() => {
+    // Set initial slides per view
+    updateSlidesPerView()
+    
+    // Add resize listener
+    window.addEventListener('resize', updateSlidesPerView)
+})
+// Cleanup resize listener
+onBeforeUnmount(() => {
+    window.removeEventListener('resize', updateSlidesPerView)
+})
 </script>
 
 <template>
-    <div class="py-4" :type="`recommenders-luigi-1-iris-${props.recommendation_type || 'test_reco'}`" >
+    <div class="py-4" id="basket-recommendations" >
         <Swiper :slides-per-view="slidesPerView ? Math.min(listProducts?.length || 0, slidesPerView || 0) : 4"
             :loop="false" :autoplay="false" :pagination="{ clickable: true }" :modules="[Autoplay]" class="w-full"
             xstyle="getStyles(fieldValue?.value?.layout?.properties, screenType)" spaceBetween="12">
@@ -116,7 +140,7 @@ onMounted(() => {
                 </div>
             </div>
 
-            <template v-else>
+            <template v-else-if="listProducts?.length">
                 <SwiperSlide v-for="(image, index) in listProducts" :key="index" class="w-full cursor-grab relative hover:bg-gray-500/10 px-4 py-3 rounded flex flex-col justify-between h-full">
                     <!-- Product Image - Always a link -->
                     <component :is="image.attributes.web_url?.[0] ? Link : 'div'"
@@ -156,13 +180,17 @@ onMounted(() => {
                     </div>
 
                     <!-- Add to Basket Button -->
-                    <div v-if="isAddToBasket && image.attributes.product_id?.[0]">
+                    <div v-if="image.attributes.product_id?.[0]">
                         <Button @click="handleProductClick(image)"
                             :disabled="isProductLoading(image.attributes.product_id[0])" :label="isProductLoading(image.attributes.product_id[0]) ? trans('Adding...') :
                                 trans('Add to Basket')" class="w-full justify-center" :loading="isProductLoading(image.attributes.product_id[0])" />
                     </div>
                 </SwiperSlide>
             </template>
+
+            <div v-else class="w-full h-full text-center text-gray-400 py-6">
+                <span class="italic">{{ trans("No recommendations found. Explore more products to get personalized suggestions") }}</span> 🙂
+            </div>
         </Swiper>
     </div>
 </template>

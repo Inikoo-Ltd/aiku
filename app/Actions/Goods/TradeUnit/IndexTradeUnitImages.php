@@ -33,7 +33,8 @@ class IndexTradeUnitImages extends OrgAction
         $queryBuilder
             ->defaultSort('media.id')
             ->select([
-                'media.*'
+                'media.*',
+                'model_has_media.sub_scope as sub_scope',
             ]);
 
         return $queryBuilder->allowedSorts(['size', 'name'])
