@@ -284,6 +284,13 @@ class ShowOrder extends OrgAction
                             'order' => $order->id,
                         ]
                     ],
+                    'rollback_dispatch' => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.order.rollback_dispatch',
+                        'parameters' => [
+                            'order' => $order->id
+                        ]
+                    ],
                     'products_list'    => [
                         'name'       => 'grp.json.order.products',
                         'parameters' => [
