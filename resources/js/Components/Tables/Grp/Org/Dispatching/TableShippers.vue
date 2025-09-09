@@ -40,9 +40,9 @@ function shipperRoute(shipper: Shipper) {
         <template #cell(api_shipper)="{ item: shipper }">
                 {{ shipper.type }}
         </template>
-        <template #cell(code)="{ item: shipper }">
+        <template #cell(name)="{ item: shipper }">
             <Link :href="shipperRoute(shipper)" class="primaryLink">
-                {{ shipper.code }}
+                {{ shipper.name }}
             </Link>
         </template>
     </Table>

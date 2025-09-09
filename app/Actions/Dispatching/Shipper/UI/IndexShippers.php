@@ -47,7 +47,7 @@ class IndexShippers extends OrgAction
         $query->where('status', $status);
 
         return $query->defaultSort('id')
-            ->allowedSorts(['api_shipper', 'code', 'name'])
+            ->allowedSorts(['api_shipper', 'code', 'name','trade_as'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -129,8 +129,8 @@ class IndexShippers extends OrgAction
 
 
             $table->column(key: 'api_shipper', label: __('type'), sortable: true);
-            $table->column(key: 'code', label: __('code'), sortable: true);
             $table->column(key: 'name', label: __('name'), sortable: true);
+            $table->column(key: 'trade_as', label: __('Trade as'), sortable: true);
         };
     }
 
