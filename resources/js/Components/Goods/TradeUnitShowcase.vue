@@ -56,6 +56,7 @@ const props = defineProps<{
 		tags: {}[]
 		tags_selected_id: number[]
 		gpsr: any
+		images: {}
 		translation_box: {
 			title: string
 			save_route: routeType
@@ -68,7 +69,21 @@ console.log("Trade Unit Showcase : ", props)
 const selectedImage = ref(0)
 const isLoading = ref<string[] | number[]>([])
 const isModalGallery = ref(false)
+const imagesSetup = ref(
+	props.data.images
+		.filter(item => item.type === "image")
+		.map(item => ({
+			label: item.label,
+			column: item.column_in_db,
+			images: item.images,
+		}))
+)
 
+const videoSetup = ref(
+	props.data.images.find(item => item.type === "video") || null
+)
+
+console.log('imagesSetup', imagesSetup.value, videoSetup.value)
 const images = computed(() => props.data?.tradeUnit?.data?.images ?? [])
 
 function changeSelectedImage(index: number) {
@@ -117,6 +132,21 @@ const onSubmitUpload = async (files: File[], refData = null) => {
 		}
 	)
 }
+
+const validImages = computed(() =>
+  imagesSetup.value
+    .filter(item => item.images) // only keep if images exist
+    .flatMap(item => {
+      const images = Array.isArray(item.images) ? item.images : [item.images] // normalize to array
+      return images.map(img => ({
+        source: img,
+        thumbnail: img
+      }))
+    })
+)
+
+
+
 </script>
 
 <template>
@@ -124,36 +154,23 @@ const onSubmitUpload = async (files: File[], refData = null) => {
 		<!-- Sidebar -->
 		<div class="space-y-4 lg:space-y-6">
 			<!-- Image Preview & Thumbnails -->
-			<div class="bg-white rounded-xl shadow-sm p-4 lg:p-5">
-				<ImageProducts v-if="data.tradeUnit.images?.length" :images="data.tradeUnit.images" :breakpoints="{
+			<div class="bg-white rounded-xl  p-4 lg:p-5">
+				<ImageProducts v-if="validImages.length" :images="validImages" :breakpoints="{
 					0: { slidesPerView: 3 },
 					480: { slidesPerView: 4 },
 					640: { slidesPerView: 5 },
 					1024: { slidesPerView: 6 },
-				}" class="overflow-x-auto">
-				</ImageProducts>
+				}" class="overflow-x-auto" />
 
-				<!-- Empty State -->
 				<div v-else
-					class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg h-80" >
+					class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg h-80">
 					<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
 					<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
 				</div>
 			</div>
 		</div>
 		<!-- tradeUnit Summary -->
-		<ProductSummary :data="data.tradeUnit" :gpsr="data.gpsr" />
-
-	<!-- 	<div class="p-4">
-			<EditTradeUnit 
-				:tags_selected_id="props.data.tags_selected_id" 
-				:brand="props.data.brand"
-				:brand_routes="props.data.brand_routes" 
-				:tags="props.data.tags" 
-				:tag_routes="props.data.tag_routes" 
-			/>
-		</div> -->
-
+		<ProductSummary :data="data.tradeUnit" :gpsr="data.gpsr" :type="'trade_unit'" :video="videoSetup.url" />
 	</div>
 
 	<!-- Gallery Dialog -->
