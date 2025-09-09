@@ -6,6 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Goods\TradeUnit\DeleteImageFromTradeUnit;
 use App\Actions\Goods\TradeUnit\UpdateTradeUnit;
 use App\Actions\Goods\TradeUnit\UpdateTradeUnitImages;
 use App\Actions\Goods\TradeUnit\UploadImagesToTradeUnit;
@@ -17,6 +18,7 @@ Route::name('trade-unit.')->prefix('trade-unit/{tradeUnit:id}')->group(function 
     Route::patch('update', UpdateTradeUnit::class)->name('update')->withoutScopedBindings();
     Route::patch('update-images', UpdateTradeUnitImages::class)->name('update_images')->withoutScopedBindings();
     Route::post('upload-images', UploadImagesToTradeUnit::class)->name('upload_images')->withoutScopedBindings();
+    Route::delete('detach-image/{media:id}', DeleteImageFromTradeUnit::class)->name('detach_image')->withoutScopedBindings();
 
     Route::name('attachment.')->prefix('attachment')->group(function () {
         Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inTradeUnit'])->name('attach');
