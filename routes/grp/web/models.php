@@ -265,6 +265,7 @@ use App\Actions\UI\Profile\GetProfileAppLoginQRCode;
 use App\Actions\UI\Profile\UpdateProfile;
 use App\Actions\Web\Banner\DeleteBanner;
 use App\Actions\Web\Banner\PublishBanner;
+use App\Actions\Web\Banner\SetSnapshotToBanner;
 use App\Actions\Web\Banner\ShutdownBanner;
 use App\Actions\Web\Banner\StoreBanner;
 use App\Actions\Web\Banner\UpdateBanner;
@@ -642,6 +643,7 @@ Route::name('banner.')->prefix('banner/{banner:id}')->group(function () {
     Route::patch('publish', PublishBanner::class)->name('publish');
     Route::patch('layout', UpdateUnpublishedBannerSnapshot::class)->name('layout.update');
     Route::post('images', UploadImagesToBanner::class)->name('images.store');
+    Route::post('set-snapshot-to-banner/{snapshot:id}', SetSnapshotToBanner::class)->name('snapshot_to_banner.store')->withoutScopedBindings();
 });
 
 Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
