@@ -82,13 +82,16 @@ class StoreReplacementDeliveryNote extends OrgAction
                     'address' => $deliveryAddress
                 ]);
             }
-            $transactions = $order->transactions()->where('model_type', 'Product')->get();
+            $transactions = $order->transactions()->whereIn('model_id', Arr::get($modelData, 'products'))
+                ->where('model_type', 'Product')->get();
 
             /** @var Transaction $transaction */
             foreach ($transactions as $transaction) {
                 $product = Product::find($transaction->model_id);
+                $quantity = Arr::get($modelData, 'quantity.' .  $product->id);
+
                 foreach ($product->orgStocks as $orgStock) {
-                    $quantity             = $orgStock->pivot->quantity * $transaction->quantity_ordered;
+
                     $deliveryNoteItemData = [
                         'org_stock_id'      => $orgStock->id,
                         'transaction_id'    => $transaction->id,
@@ -151,6 +154,7 @@ class StoreReplacementDeliveryNote extends OrgAction
             'customer_client_id'        => ['sometimes', 'nullable'],
             'customer_sales_channel_id' => ['sometimes', 'nullable'],
             'platform_id'               => ['sometimes', 'nullable'],
+            'products'               => ['sometimes', 'array']
         ];
 
         if (!$this->strict) {
