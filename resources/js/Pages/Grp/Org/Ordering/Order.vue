@@ -661,10 +661,10 @@ const updateCollectionNotes = () => {
                         @click="() => changeModel()"
                         :label="trans('Replacement')"
                         xsize="xs"
-                        icon="fal fa-repeat-1-alt"
+                        icon="fas fa-plus"
                         type="secondary"
                         key="1"
-                        v-tooltip="trans('Create replacement if the user requests replacement of items')"
+                        v-tooltip="trans('Create replacement')"
                     />
                 </template>
 
