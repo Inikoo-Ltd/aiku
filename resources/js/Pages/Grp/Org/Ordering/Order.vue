@@ -694,10 +694,14 @@ const onCreateReplacement = (action: any) => {
                         @click="() => changeModel()"
                         :label="trans('Replacement')"
                         xsize="xs"
+<<<<<<< HEAD
+=======
+                        icon="fas fa-plus"
+>>>>>>> e67b4daa50ecf8c512250c8aa38b9cd84b2f023e
                         type="secondary"
                         icon="fal fa-plus"
                         key="1"
-                        v-tooltip="trans('Create replacement if the user requests replacement of items')"
+                        v-tooltip="trans('Create replacement')"
                     />
                     
                 </template>

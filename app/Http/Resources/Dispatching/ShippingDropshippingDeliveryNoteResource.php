@@ -30,6 +30,9 @@ class ShippingDropshippingDeliveryNoteResource extends JsonResource
         if (!$fromCompany) {
             $fromCompany = $customer->name;
         }
+        if (!$fromCompany) {
+            $fromCompany = $shop->name;
+        }
 
         $fromContactName = $customer->contact_name;
         if (!$fromContactName) {
