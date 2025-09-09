@@ -51,11 +51,8 @@ class SetSnapshotToBanner extends OrgAction
         return $banner;
     }
 
-    public function asController(Snapshot $snapshot, ActionRequest $request): Banner
+    public function asController(Banner $banner, Snapshot $snapshot, ActionRequest $request): Banner
     {
-        /** @var Banner $banner */
-        $banner = $snapshot->parent;
-
         $this->initialisationFromShop($banner->shop, $request);
 
         return $this->handle($snapshot);
