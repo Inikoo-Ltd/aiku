@@ -30,6 +30,7 @@ import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import MasterProductShowcase from "@/Components/Showcases/Grp/MasterProductShowcase.vue";
 import {PageHeading as PageHeadingTypes} from "@/types/PageHeading";
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue";
+import TableTradeUnits from "@/Components/Tables/Grp/Goods/TableTradeUnits.vue";
 
 library.add(faChartLine, faCheckCircle, faFolderTree, faFolder, faCube, faShoppingCart, faFileInvoice, faStickyNote,
     faMoneyBillWave, faFolderOpen, faAtom
@@ -46,6 +47,7 @@ const props = defineProps<{
     history?: {}
     language?:{}
     products?: {}
+    trade_units?: {}
 
 }>();
 
@@ -58,7 +60,8 @@ const component = computed(() => {
         showcase: MasterProductShowcase,
         language : TransleteLanguage,
         history: TableHistories,
-        products: TableProducts
+        products: TableProducts,
+        trade_units: TableTradeUnits
     };
     return components[currentTab.value];
 

@@ -21,6 +21,7 @@ enum MasterAssetTabsEnum: string
 
     case SHOWCASE = 'showcase';
     case PRODUCTS = 'products';
+    case TRADE_UNITS = 'trade_units';
     case HISTORY  = 'history';
 
 
@@ -28,6 +29,12 @@ enum MasterAssetTabsEnum: string
     {
         return match ($this) {
 
+            MasterAssetTabsEnum::TRADE_UNITS => [
+                'title' => __('Trade units'),
+                'icon'  => 'fal fa-atom',
+                'type'  => 'icon',
+                'align' => 'right',
+            ],
             MasterAssetTabsEnum::HISTORY => [
                 'align' => 'right',
                 'type'  => 'icon',
