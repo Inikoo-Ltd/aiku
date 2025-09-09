@@ -21,6 +21,7 @@ use App\Http\Resources\Goods\StocksResource;
 use App\Http\Resources\Goods\TradeUnitResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\Helpers\ImagesResource;
+use App\Http\Resources\Helpers\TradeUnitImagesResource;
 use App\Models\Goods\TradeUnit;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -189,8 +190,8 @@ class ShowTradeUnit extends GrpAction
                     : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($tradeUnit))),
 
                 TradeUnitTabsEnum::IMAGES->value => $this->tab == TradeUnitTabsEnum::IMAGES->value ?
-                    fn () => ImagesResource::collection(IndexTradeUnitImages::run($tradeUnit))
-                    : Inertia::lazy(fn () => ImagesResource::collection(IndexTradeUnitImages::run($tradeUnit))),
+                    fn () => TradeUnitImagesResource::collection(IndexTradeUnitImages::run($tradeUnit))
+                    : Inertia::lazy(fn () => TradeUnitImagesResource::collection(IndexTradeUnitImages::run($tradeUnit))),
 
                 TradeUnitTabsEnum::PRODUCTS->value => $this->tab == TradeUnitTabsEnum::PRODUCTS->value ?
                     fn () => ProductsResource::collection(IndexProductsInTradeUnit::run($tradeUnit))
