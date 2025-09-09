@@ -16,11 +16,39 @@ trait WithRetinaOrderPlacedRedirection
 {
     public function htmlResponse(array $arr): RedirectResponse
     {
+        $itemsToPushTolayer = [];
+        foreach ($arr['order']?->transactions as $index => $transaction) {
+            if($transaction->model_type != 'Product') {
+                continue;
+            }
+
+            $itemsToPushTolayer[] = (object)[
+                'item_id'   => $transaction->model?->getLuigiIdentity(),
+                'item_name' => $transaction->model?->name,
+                'index'     => $index,
+                'price'     => (float) $transaction->model?->price,
+                'quantity'  => (float) $transaction->quantity_ordered,
+            ];
+        }
+        
         if ($arr['success']) {
             $notification = [
                 'status'  => 'success',
                 'title'   => __('Success!'),
                 'description' => __('Your order has been submitted.'),
+            ];
+            
+            $gtm = [
+                'key'               => 'retina_dropshipping_order_placed',
+                'event'             => 'purchase',
+                'data_to_submit'    => [
+                    'ecommerce' => [
+                        'transaction_id'    => $arr['order']->id,
+                        'value'             => (float) $arr['order']->total_amount,
+                        'currency'          => $arr['order']->shop->currency->code,
+                        'items'             => $itemsToPushTolayer
+                    ]
+                ]
             ];
 
             if ($arr['order']->shop->type == ShopTypeEnum::DROPSHIPPING) {
@@ -32,17 +60,7 @@ trait WithRetinaOrderPlacedRedirection
                     ]
                 )
                     ->with('modal', $notification)
-                    ->with('gtm', [
-                        'key'               => 'retina_dropshipping_order_placed',
-                        'event'             => 'purchaseSuccess',
-                        'data_to_submit'    => [
-                            'ecommerce' => [
-                                'transaction_id'    => $arr['order']->id,
-                                'value'             => $arr['order']->total_amount,
-                                'currency'          => $arr['order']->shop->currency->code,
-                            ]
-                        ]
-                    ])
+                    ->with('gtm', $gtm)
                     ->with('confetti', [
                         'key' => 'dropshipping_order_placed' . $arr['order']->id,
                     ]);
@@ -53,16 +71,8 @@ trait WithRetinaOrderPlacedRedirection
                         'order' => $arr['order']->slug
                     ]
                 )->with('notification', $notification)
-                ->with('gtm', [
-                    'event'             => 'purchaseSuccess',
-                    'data_to_submit'    => [
-                        'ecommerce' => [
-                            'transaction_id'    => $arr['order']->id,
-                            'value'             => $arr['order']->total_amount,
-                            'currency'          => $arr['order']->shop->currency->code,
-                        ]
-                    ]
-                ])->with('confetti', [
+                ->with('gtm', $gtm)
+                ->with('confetti', [
                     'key' => 'ecom_order_placed' . $arr['order']->id,
                 ]);
             }

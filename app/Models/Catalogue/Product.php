@@ -391,4 +391,9 @@ class Product extends Model implements Auditable, HasMedia
     {
         return $this->belongsTo(MasterAsset::class, 'master_product_id');
     }
+
+    public function getLuigiIdentity(): string
+    {
+        return $this->group_id . ':' . $this->organisation_id . ':' . $this->shop_id . ':' . $this->webpage?->website?->id . ':' . $this->webpage?->id;
+    }
 }
