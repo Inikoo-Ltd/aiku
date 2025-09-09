@@ -235,6 +235,9 @@ const listError = inject('listError', {})
         <!-- Box: Shipping -->
         <BoxStatPallet class="py-2 px-3 border-r border-gray-200" icon="fal fa-user">
             <div class="text-xs md:text-sm">
+
+
+                <template v-if="!boxStats?.is_collection">
                 <div class="font-semibold xmb-2 text-base">
                     {{ trans("Shipping") }}
                 </div>
@@ -264,6 +267,8 @@ const listError = inject('listError', {})
                 <div v-else class="text-gray-500 italic pl-2">
                     {{ trans("No shipping information available.") }}
                 </div>
+                </template>
+                <div v-else  class="font-semibold xmb-2 text-base"> {{ trans("For collection") }}</div>
             </div>
         </BoxStatPallet>
 

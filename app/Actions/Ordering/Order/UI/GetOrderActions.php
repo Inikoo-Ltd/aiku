@@ -152,10 +152,12 @@ class GetOrderActions
                          'label'   => __('Replacement'),
                          'key'     => 'replacement',
                          'route'   => [
-                             'method'     => 'post',
-                             'name'       => 'grp.models.order.replacement_delivery_note.store',
+                             'method'     => 'get',
+                             'name'       => 'grp.org.shops.show.ordering.orders.show.replacement.create',
                              'parameters' => [
-                                 'order' => $order->id
+                                 'organisation' => $order->organisation->slug,
+                                 'shop' => $order->shop->slug,
+                                 'order' => $order->slug
                              ]
                          ]
                      ],

@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head, router } from "@inertiajs/vue3"
+import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faGripHorizontal } from "@fal"
@@ -22,7 +22,6 @@ import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.v
 import TableStocks from "@/Components/Tables/Grp/Goods/TableStocks.vue"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 import type { Navigation } from "@/types/Tabs"
-import TableImages from "@/Components/Tables/Grp/Helpers/TableImages.vue"
 import { Images } from "@/types/Images"
 import TradeUnitImagesManagement from "@/Components/Goods/TradeUnitImagesManagement.vue"
 
@@ -62,7 +61,6 @@ const props = defineProps<{
     id : number | string
 }>()
 
-console.log('opo', props.images_category_box)
 
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
@@ -95,19 +93,6 @@ const component = computed(() => {
     </PageHeading>
 
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-
-
-
-    <!-- <TradeUnitImagesManagement
-        v-if="currentTab === 'images' && images_category_box?.length"
-        :currentTab
-        :imagesCategoryBox="images_category_box"
-        :imagesUpdateRoute="props.images_update_route"
-        :dataTable="props.images"
-        :id="props.id"
-    /> -->
-
-
     <component 
         :is="component"
         :data="props[currentTab]"
@@ -115,10 +100,6 @@ const component = computed(() => {
         :tag_routes
         :detachRoute="attachmentRoutes.detachRoute">
     </component>
-
-    <!-- Modal: Increase balance -->
-    
-
 
     <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{
         label: 'Upload your file',

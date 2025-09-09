@@ -114,7 +114,7 @@ class ShowRetinaEcomOrder extends RetinaAction
 
                 'timelines' => $finalTimeline,
 
-                'address_management' => GetOrderAddressManagement::run(order: $order, isRetina: true),
+                // 'address_management' => GetOrderAddressManagement::run(order: $order, isRetina: true),
 
                 'box_stats' => $this->getOrderBoxStats($order),
                 'currency'  => CurrencyResource::make($order->currency)->toArray(request()),
