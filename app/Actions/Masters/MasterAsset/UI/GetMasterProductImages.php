@@ -8,122 +8,124 @@
  *
 */
 
-namespace App\Actions\Goods\TradeUnit\UI;
+namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\Goods\TradeUnit\IndexTradeUnitImages;
+use App\Http\Resources\Helpers\ImagesResource;
 use App\Http\Resources\Helpers\TradeUnitImagesResource;
 use App\Models\Goods\TradeUnit;
+use App\Models\Masters\MasterAsset;
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class GetTradeUnitImages
+class GetMasterProductImages
 {
     use AsObject;
 
-    public function handle(TradeUnit $tradeUnit): array
+    public function handle(MasterAsset $masterAsset): array
     {
         return [
-            'id' => $tradeUnit->id,
-            'images_category_box' => $this->getImagesData($tradeUnit),
+            'id' => $masterAsset->id,
+            'images_category_box' => $this->getImagesData($masterAsset),
             'images_update_route' => [
                 'method'     => 'patch',
-                'name'       => 'grp.models.trade-unit.update_images',
+                'name'       => 'grp.models.master_asset.update_images',
                 'parameters' => [
-                    'tradeUnit' => $tradeUnit->id,
+                    'masterAsset' => $masterAsset->id,
                 ],
             ],
             'upload_images_route' => [
                 'method'     => 'post',
-                'name'       => 'grp.models.trade-unit.upload_images',
+                'name'       => 'grp.models.master_asset.upload_images',
                 'parameters' => [
-                    'tradeUnit' => $tradeUnit->id,
+                    'masterAsset' => $masterAsset->id,
                 ],
             ],
             'delete_images_route' => [
                 'method'     => 'post',
-                'name'       => 'grp.models.trade-unit.detach_image',
+                'name'       => 'grp.models.master_asset.delete_images',
                 'parameters' => [
-                    'tradeUnit' => $tradeUnit->id,
+                    'masterAsset' => $masterAsset->id,
                     'media'   => ''
                 ],
             ],
-            'images' => TradeUnitImagesResource::collection(IndexTradeUnitImages::run($tradeUnit))->resolve(),
+            'images' => ImagesResource::collection(IndexMasterProductImages::run($masterAsset))->resolve(),
 
         ];
     }
 
-    public function getImagesData(TradeUnit $tradeUnit): array
+    public function getImagesData(MasterAsset $masterAsset): array
     {
 
-                return [
+        return [
             [
                 'label' => __('Main'),
                 'type'  => 'image',
                 'column_in_db' => 'image_id',
-                'id' => $tradeUnit->image_id,
-                'images' => $tradeUnit->imageSources(),
+                'id' => $masterAsset->image_id,
+                'images' => $masterAsset->imageSources(),
             ],
             [
                 'label' => __('Video'),
                 'type'  => 'video',
                 'information' => __('You can use YouTube or Vimeo links'),
                 'column_in_db' => 'video_url',
-                'url' => $tradeUnit->video_url,
+                'url' => $masterAsset->video_url,
             ],
             [
                 'label' => __('Front side'),
                 'type'  => 'image',
                 'column_in_db' => 'front_image_id',
-                'id' => $tradeUnit->front_image_id,
-                'images' => $tradeUnit->imageSources(getImage:'frontImage'),
+                'id' => $masterAsset->front_image_id,
+                'images' => $masterAsset->imageSources(getImage:'frontImage'),
             ],
             [
                 'label' => __('Left side'),
                 'type'  => 'image',
                 'column_in_db' => 'left_image_id',
-                'id' => $tradeUnit->left_image_id,
-                'images' => $tradeUnit->imageSources(getImage:'leftImage'),
+                'id' => $masterAsset->left_image_id,
+                'images' => $masterAsset->imageSources(getImage:'leftImage'),
             ],
             [
                 'label' => __('3/4 angle side'),
                 'type'  => 'image',
                 'column_in_db' => '34_image_id',
-                'id' => $tradeUnit->{'34_image_id'},
-                'images' => $tradeUnit->imageSources(getImage:'threeQuarterImage'),
+                'id' => $masterAsset->{'34_image_id'},
+                'images' => $masterAsset->imageSources(getImage:'threeQuarterImage'),
             ],
             [
                 'label' => __('Right side'),
                 'type'  => 'image',
                 'column_in_db' => 'right_image_id',
-                'id' => $tradeUnit->right_image_id,
-                'images' => $tradeUnit->imageSources(getImage:'rightImage'),
+                'id' => $masterAsset->right_image_id,
+                'images' => $masterAsset->imageSources(getImage:'rightImage'),
             ],
             [
                 'label' => __('Back side'),
                 'type'  => 'image',
                 'column_in_db' => 'back_image_id',
-                'id' => $tradeUnit->back_image_id,
-                'images' => $tradeUnit->imageSources(getImage:'backImage'),
+                'id' => $masterAsset->back_image_id,
+                'images' => $masterAsset->imageSources(getImage:'backImage'),
             ],
             [
                 'label' => __('Top side'),
                 'type'  => 'image',
                 'column_in_db' => 'top_image_id',
-                'id' => $tradeUnit->top_image_id,
-                'images' => $tradeUnit->imageSources(getImage:'topImage'),
+                'id' => $masterAsset->top_image_id,
+                'images' => $masterAsset->imageSources(getImage:'topImage'),
             ],
             [
                 'label' => __('Bottom side'),
                 'type'  => 'image',
                 'column_in_db' => 'bottom_image_id',
-                'id' => $tradeUnit->bottom_image_id,
-                'images' => $tradeUnit->imageSources(getImage:'bottomImage'),
+                'id' => $masterAsset->bottom_image_id,
+                'images' => $masterAsset->imageSources(getImage:'bottomImage'),
             ],
             [
                 'label' => __('Comparison image'),
                 'type'  => 'image',
                 'column_in_db' => 'size_comparison_image_id',
-                'id' => $tradeUnit->size_comparison_image_id,
-                'images' => $tradeUnit->imageSources(getImage:'sizeComparisonImage'),
+                'id' => $masterAsset->size_comparison_image_id,
+                'images' => $masterAsset->imageSources(getImage:'sizeComparisonImage'),
             ],
         ];
 

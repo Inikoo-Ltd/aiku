@@ -107,168 +107,22 @@ class CreateReplacementDeliveryNote extends OrgAction
 
     public function getActions(DeliveryNote $deliveryNote, ActionRequest $request): array
     {
-        $startPickingLabel    = __('Start picking');
-        $generateInvoiceLabel = __('Generate Invoice');
-
-
-        return match ($deliveryNote->state) {
-            DeliveryNoteStateEnum::UNASSIGNED => [
-                [
-                    'type'      => 'button',
-                    'style'     => 'save',
-                    'tooltip'   => __('Unassigned'),
-                    'label'     => __('Put in Queue'),
-                    'iconRight' => 'fas fa-arrow-right',
-                    'key'       => 'to-queue',
-                ],
-                [
-                    'type'    => 'button',
-                    'style'   => 'save',
-                    'icon'    => 'fal fa-smile-wink',
-                    'tooltip' => __('Change picker to myself, and start picking'),
-                    'label'   => $startPickingLabel,
-                    'key'     => 'start-picking',
-                    'route'   => [
-                        'method'     => 'patch',
-                        'name'       => 'grp.models.delivery_note.state.handling',
-                        'parameters' => [
-                            'deliveryNote' => $deliveryNote->id
-                        ]
-                    ],
-                ],
-            ],
-            DeliveryNoteStateEnum::QUEUED => [
-                [
-                    'type'   => 'buttonGroup',
-                    'key'    => 'picker',
-                    'button' => [
-                        [
-                            'type'    => 'button',
-                            'style'   => 'delete',
-                            'tooltip' => __('Remove picker'),
-                            'label'   => __('Remove Picker'),
-                            'icon'    => 'fal fa-user-slash',
-                            'key'     => 'remove-picker',
-                            'route'   => [
-                                'method'     => 'patch',
-                                'name'       => 'grp.models.delivery_note.state.remove-picker',
-                                'parameters' => [
-                                    'deliveryNote' => $deliveryNote->id
-                                ]
-                            ]
-                        ],
-                        [
-                            'type'    => 'button',
-                            'style'   => 'save',
-                            'tooltip' => __('Change picker'),
-                            'icon'    => 'fal fa-exchange-alt',
-                            'label'   => __('Change Picker'),
-                            'key'     => 'change-picker',
-                        ]
-
-                    ],
-
-                ],
-
-                $deliveryNote->pickerUser->id == $request->user()->id
-                    ? [
-                    'type'    => 'button',
-                    'style'   => 'save',
-                    'tooltip' => $startPickingLabel,
-                    'label'   => $startPickingLabel,
-                    'key'     => 'start-picking',
-                    'route'   => [
-                        'method'     => 'patch',
-                        'name'       => 'grp.models.delivery_note.state.handling',
-                        'parameters' => [
-                            'deliveryNote' => $deliveryNote->id
-                        ]
+        return [
+            [
+                'type'    => 'button',
+                'style'   => 'save',
+                'tooltip' => __('create replacement'),
+                'label'   => __('create replacement'),
+                'key'     => 'action',
+                'route'   => [
+                    'method'     => 'post',
+                    'name'       => 'grp.models.order.replacement_delivery_note.store',
+                    'parameters' => [
+                        'order' => $deliveryNote->orders->first()->id
                     ]
                 ]
-                    : [
-                    'type'    => 'button',
-                    'style'   => 'save',
-                    'icon'    => 'fal fa-tired',
-                    'tooltip' => __('Change picker to myself, and start picking'),
-                    'label'   => __('I will pick this'),
-                    'key'     => 'start-picking',
-                    'route'   => [
-                        'method'     => 'patch',
-                        'name'       => 'grp.models.delivery_note.state.handling',
-                        'parameters' => [
-                            'deliveryNote' => $deliveryNote->id
-                        ]
-                    ],
-                ],
-            ],
-            DeliveryNoteStateEnum::HANDLING => $this->getHandlingActions($deliveryNote),
-
-            DeliveryNoteStateEnum::PACKED => [
-                count($deliveryNote->parcels ?? []) ? [
-                    'type'    => 'button',
-                    'style'   => 'save',
-                    'tooltip' => __('Finalised'),
-                    'label'   => __('Finalise and Dispatch'),
-                    'key'     => 'action',
-                    'route'   => [
-                        'method'     => 'patch',
-                        'name'       => 'grp.models.delivery_note.state.finalise_and_dispatch',
-                        'parameters' => [
-                            'deliveryNote' => $deliveryNote->id
-                        ]
-                    ]
-                ] : [],
-            ],
-            DeliveryNoteStateEnum::FINALISED => [
-                [
-                    'type'    => 'button',
-                    'style'   => 'save',
-                    'tooltip' => __('Dispatch'),
-                    'label'   => __('Dispatch'),
-                    'key'     => 'action',
-                    'route'   => [
-                        'method'     => 'patch',
-                        'name'       => 'grp.models.delivery_note.state.dispatched',
-                        'parameters' => [
-                            'deliveryNote' => $deliveryNote->id
-                        ]
-                    ]
-                ],
-                $deliveryNote->orders->first()->invoices->count() == 0 ?
-                    [
-                        'type'    => 'button',
-                        'style'   => '',
-                        'tooltip' => $generateInvoiceLabel,
-                        'label'   => $generateInvoiceLabel,
-                        'key'     => 'action',
-                        'route'   => [
-                            'method'     => 'patch',
-                            'name'       => 'grp.models.order.generate_invoice',
-                            'parameters' => [
-                                'order' => $deliveryNote->orders->first()->id
-                            ]
-                        ]
-                    ] : [],
-            ],
-            DeliveryNoteStateEnum::DISPATCHED => [
-                $deliveryNote->orders->first()->invoices->count() == 0 ?
-                    [
-                        'type'    => 'button',
-                        'style'   => '',
-                        'tooltip' => $generateInvoiceLabel,
-                        'label'   => $generateInvoiceLabel,
-                        'key'     => 'action',
-                        'route'   => [
-                            'method'     => 'patch',
-                            'name'       => 'grp.models.delivery_note.state.dispatched',
-                            'parameters' => [
-                                'order' => $deliveryNote->orders->first()->id
-                            ]
-                        ]
-                    ] : []
-            ],
-            default => []
-        };
+            ]
+        ];
     }
 
     public function getInvoiceButton(DeliveryNote $deliveryNote): array
@@ -308,6 +162,19 @@ class CreateReplacementDeliveryNote extends OrgAction
             'state_icon'       => DeliveryNoteStateEnum::stateIcon()[$deliveryNote->state->value],
             'state_label'      => $deliveryNote->state->labels()[$deliveryNote->state->value],
             'is_collection' => (bool) $deliveryNote->orders()->first()->collection_address_id,
+            'is_replacement' => true,
+            'delivery_note'            => [
+                'reference' => $deliveryNote->reference,
+                'route'     => [
+                    'name'       => 'grp.org.shops.show.ordering.orders.show.delivery-note',
+                    'parameters' => [
+                        'organisation' => $order->organisation->slug,
+                        'shop'         => $order->shop->slug,
+                        'order'        => $order->slug,
+                        'deliveryNote'        => $deliveryNote->slug
+                    ]
+                ],
+            ],
             'customer'         => array_merge(
                 CustomerResource::make($deliveryNote->customer)->getArray(),
                 [
@@ -350,10 +217,7 @@ class CreateReplacementDeliveryNote extends OrgAction
                     'countriesAddressData' => GetAddressData::run()
                 ]
             ],
-            'delivery_address' => AddressResource::make($deliveryNote->deliveryAddress),
-            'picker'           => $deliveryNote->pickerUser,
-            'packer'           => $deliveryNote->packerUser,
-            'parcels'          => $deliveryNote->parcels
+            'delivery_address' => AddressResource::make($deliveryNote->deliveryAddress)
         ];
     }
 

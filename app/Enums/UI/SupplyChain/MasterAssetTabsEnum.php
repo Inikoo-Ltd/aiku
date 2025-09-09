@@ -22,6 +22,7 @@ enum MasterAssetTabsEnum: string
     case SHOWCASE = 'showcase';
     case PRODUCTS = 'products';
     case TRADE_UNITS = 'trade_units';
+    case IMAGES = 'images';
     case HISTORY  = 'history';
 
 
@@ -41,6 +42,13 @@ enum MasterAssetTabsEnum: string
                 'title' => __('changelog'),
                 'icon'  => 'fal fa-clock',
 
+            ],
+
+            MasterAssetTabsEnum::IMAGES => [
+                'type'  => 'icon',
+                'align' => 'right',
+                'title' => __('images'),
+                'icon'  => 'fal fa-camera-retro',
             ],
             MasterAssetTabsEnum::PRODUCTS => [
                 'title' => __('products in shop'),

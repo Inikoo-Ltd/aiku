@@ -6,19 +6,20 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Goods\TradeUnit;
+namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\OrgAction;
 use App\InertiaTable\InertiaTable;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Media;
+use App\Models\Masters\MasterAsset;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
-class IndexTradeUnitImages extends OrgAction
+class IndexMasterProductImages extends OrgAction
 {
-    public function handle(TradeUnit $tradeUnit, $prefix = null): LengthAwarePaginator
+    public function handle(MasterAsset $masterAsset, $prefix = null): LengthAwarePaginator
     {
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
@@ -26,8 +27,8 @@ class IndexTradeUnitImages extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Media::class);
         $queryBuilder->leftJoin('model_has_media', 'media.id', 'model_has_media.media_id');
-        $queryBuilder->where('model_has_media.model_id', $tradeUnit->id);
-        $queryBuilder->where('model_has_media.model_type', 'TradeUnit');
+        $queryBuilder->where('model_has_media.model_id', $masterAsset->id);
+        $queryBuilder->where('model_has_media.model_type', 'MasterAsset');
 
 
         $queryBuilder
@@ -42,9 +43,9 @@ class IndexTradeUnitImages extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(TradeUnit $tradeUnit, $prefix = null): Closure
+    public function tableStructure(MasterAsset $masterAsset, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($tradeUnit, $prefix) {
+        return function (InertiaTable $table) use ($masterAsset, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -58,7 +59,7 @@ class IndexTradeUnitImages extends OrgAction
                 ->withEmptyState(
                     [
 
-                        'count' => $tradeUnit->stats->number_images,
+                        'count' => $masterAsset->stats->number_images,
 
                     ]
                 );

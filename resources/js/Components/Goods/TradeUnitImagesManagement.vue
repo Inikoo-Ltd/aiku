@@ -104,7 +104,7 @@ function onSubmitVideoUrl() {
 
     router["patch"](
         route(props.data.images_update_route.name, props.data.images_update_route.parameters),
-        { video_url : normalizedUrl },
+        { video_url: normalizedUrl },
         {
             preserveScroll: true,
             preserveState: true,
@@ -116,7 +116,7 @@ function onSubmitVideoUrl() {
                     text: trans("Successfully saved the video URL"),
                     type: "success",
                 })
-                  router.reload({ only: ["images"] })
+                router.reload({ only: ["images"] })
                 isModalEditVideo.value = false
             },
             onError: () => {
@@ -131,16 +131,26 @@ function onSubmitVideoUrl() {
     )
 }
 
+
 /* ---------------------------
    Drag & Drop Handlers
 ---------------------------- */
 function onDropImage(event: DragEvent, categoryBox: any) {
     const dataRowImage = JSON.parse(event.dataTransfer?.getData("application/json") || "{}")
-    if (dataRowImage) onSubmitImage(dataRowImage, categoryBox)
+    console.log(dataRowImage)
+    if (dataRowImage?.id) {
+        onSubmitImage(dataRowImage, categoryBox)
+
+        // If the dragged image came from another category, clear that one
+        if (selectedDragImage.value?.id === dataRowImage.id && selectedDragImage.value?.fromCategory) {
+            onSubmitImage(null, selectedDragImage.value.fromCategory)
+        }
+    }
+    activeCategory.value = null
 }
 
-function onStartDrag(event: DragEvent, img: ImageTS) {
-    selectedDragImage.value = img
+function onStartDrag(event: DragEvent, img: any, fromCategory?: any) {
+    selectedDragImage.value = { ...img, fromCategory }
     event.dataTransfer?.setData("application/json", JSON.stringify(img))
         ; (event.target as HTMLElement).classList.add("dragging")
 }
@@ -212,7 +222,7 @@ function onDeleteFilesInList(categoryBox: any) {
     )
 }
 
-console.log(props.data)
+console.log('dddd', props)
 </script>
 
 <template>
@@ -220,7 +230,7 @@ console.log(props.data)
         <!-- Left: Drop Areas -->
         <div v-if="props.data.images_category_box?.length" class="rounded-xl bg-white p-5 lg:col-span-2">
             <h3 class="mb-4 text-base font-semibold text-gray-700">
-                {{ trans("Trade Units Images / Videos") }}
+                {{ trans("Media") }}
             </h3>
 
             <TransitionGroup name="fade-move" tag="ul"
@@ -230,8 +240,17 @@ console.log(props.data)
                     :class="{
                         'border-blue-500 ring-2 ring-blue-300 bg-blue-50 shadow-md':
                             activeCategory === categoryBox.column_in_db,
-                    }" @dragover.prevent @dragenter.prevent="activeCategory = categoryBox.column_in_db"
-                    @dragleave="activeCategory = null" @drop.prevent="onDropImage($event, categoryBox)">
+                    }" v-bind="categoryBox.type === 'image'
+                        ? {
+                            onDragover: (e) => e.preventDefault(),
+                            onDragenter: (e) => {
+                                e.preventDefault()
+                                activeCategory = categoryBox.column_in_db
+                            },
+                            onDragleave: () => (activeCategory = null),
+                            onDrop: (e) => onDropImage(e, categoryBox),
+                        }
+                        : {}">
                     <!-- Header -->
                     <div class="flex items-center justify-between px-3 py-2 bg-gray-100 border-b">
                         <span class="truncate text-sm font-medium text-gray-700" :title="categoryBox.label">
@@ -244,46 +263,56 @@ console.log(props.data)
                                 selectedVideoToUpdate = { ...categoryBox }
                                 isModalEditVideo = true
                             }" :icon="faPencil" class="text-gray-400 hover:text-gray-600" fixed-width />
-                            <FontAwesomeIcon v-if="categoryBox.images || categoryBox.url" icon="fal fa-trash-alt" @click="() => onDeletefilesInBox(categoryBox)"
+                            <FontAwesomeIcon v-if="categoryBox.images || categoryBox.url" icon="fal fa-trash-alt"
+                                @click="() => onDeletefilesInBox(categoryBox)"
                                 class="text-gray-400 text-red-600 cursor-pointer" />
                         </div>
                     </div>
 
                     <!-- Drop Zone -->
                     <div v-if="categoryBox.type == 'image'"
-                        class="relative flex h-36 w-full items-center justify-center bg-gray-50">
+                        class="relative flex h-36 w-full items-center justify-center bg-gray-50"
+                        :draggable="!!categoryBox.images"
+                        @dragstart="(e) => categoryBox.images && onStartDrag(e, categoryBox)" @dragend="onEndDrag">
                         <Image v-if="categoryBox.images" :src="categoryBox.images" :style="{ objectFit: 'contain' }" />
                         <div v-else class="flex flex-col items-center justify-center text-gray-400">
                             <FontAwesomeIcon :icon="faImage" class="mb-1 text-2xl" />
-                            <span class="text-[12px] font-medium">{{ trans("Drop image here") }}</span>
+                            <span class="text-[12px] font-medium">{{ trans('Drop image here') }}</span>
                         </div>
                     </div>
 
+
                     <div v-if="categoryBox.type == 'video'"
-                        class="relative flex h-36 w-full items-center justify-center bg-gray-50 cursor-pointer" @click="() => {
-                            selectedVideoToUpdate = { ...categoryBox }
-                            isModalEditVideo = true
-                        }">
-                      
-                        <div v-if="categoryBox.url" class="w-full h-full">
-                            <!-- Preview video -->
-                            <iframe class="w-full h-full rounded-md" :src="categoryBox.url" frameborder="0"
-                                allowfullscreen></iframe>
+                        class="relative flex h-36 w-full items-center justify-center bg-gray-50 cursor-pointer"
+                        @click="() => { selectedVideoToUpdate = { ...categoryBox }; isModalEditVideo = true }">
+
+                        <!-- Video preview -->
+                        <div v-if="categoryBox.url" class="relative w-full h-full">
+                            <iframe class="w-full h-full rounded-md pointer-events-none" :src="categoryBox.url"
+                                frameborder="0" allowfullscreen></iframe>
                         </div>
+
                         <div v-else class="flex flex-col items-center justify-center text-gray-400">
                             <FontAwesomeIcon :icon="faVideo" class="mb-1 text-2xl" />
                             <span class="text-[12px] font-medium">
                                 {{ trans("Click to edit video here") }}
                             </span>
                         </div>
+
+                        <!-- Drag overlay -->
+                        <div v-show="activeCategory === categoryBox.column_in_db"
+                            class="absolute inset-0 bg-blue-200 bg-opacity-30 border-2 border-dashed border-blue-500 rounded-md pointer-events-none">
+                        </div>
                     </div>
+
 
                 </li>
             </TransitionGroup>
         </div>
 
         <!-- Right: Image List -->
-        <div class="lg:col-span-1 flex flex-col p-5 bg-white rounded-xl shadow-sm border h-fit">
+        <div
+            class="lg:col-span-1 flex flex-col p-5 bg-white rounded-xl shadow-sm border h-fit max-h-[600px] overflow-auto">
             <!-- Header -->
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-base font-semibold text-gray-700">
@@ -298,8 +327,7 @@ console.log(props.data)
             </div>
 
             <!-- Drop Zone -->
-            <div class="relative flex-1 overflow-y-auto rounded-lg  transition
-           scrollbar-thin scrollbar-thumb-gray-300 hover:scrollbar-thumb-gray-400"
+            <div class="relative flex-1 overflow-y-auto rounded-lg  transition scrollbar-thin scrollbar-thumb-gray-300 hover:scrollbar-thumb-gray-400"
                 :class="isDragOver ? 'border-blue-400 bg-blue-50 shadow-md' : 'border-gray-200'"
                 @dragover.prevent="isDragOver = true" @dragleave="isDragOver = false"
                 @drop.prevent="onDropFile($event); isDragOver = false">
@@ -310,46 +338,49 @@ console.log(props.data)
                     <p class="text-sm font-medium">{{ trans("Drop files to upload") }}</p>
                 </div>
 
-                <!-- List of images -->
-                <GridProducts :resource="props.data.images" gridClass="grid-cols-1" name="images">
-                    <template #card="{ item }">
-                        <article class="group flex items-center justify-between gap-3 
-                 rounded-lg  bg-white p-3 mb-2 shadow-sm
-                 hover:shadow-md hover:border-blue-400 transition" draggable="true"
-                            @dragstart="onStartDrag($event, item)" @dragend="onEndDrag($event)">
-                            <!-- Image + Info -->
-                            <div class="flex items-center gap-3 min-w-0 flex-1">
-                                <div class="relative flex h-14 w-14 flex-shrink-0 items-center justify-center 
-                     overflow-hidden rounded-md bg-gray-100 group-hover:bg-gray-50 transition">
-                                    <Image v-if="item?.image" :src="item?.image"
-                                        class="max-h-full max-w-full object-contain" />
-                                    <div v-else class="text-gray-400">
-                                        <FontAwesomeIcon :icon="faImage" class="text-base" />
-                                    </div>
-                                </div>
+                <!-- Loader -->
+                <div v-if="loadingSubmit === 'list'" class="flex justify-center p-6 text-gray-500">
+                    <FontAwesomeIcon icon="fal fa-spinner-third" class="animate-spin mr-2" />
+                    {{ trans("Loading images...") }}
+                </div>
 
-                                <div class="flex-1 min-w-0">
-                                    <p class="truncate max-w-[160px] text-sm font-medium text-gray-800"
-                                        :title="item?.name">
-                                        {{ item?.name || trans("Unnamed product") }}
-                                    </p>
-                                    <span class="truncate max-w-[160px] block text-[11px] text-gray-500 italic"
-                                        :title="item?.code">
-                                        {{ item?.size }}
-                                    </span>
+                <!-- List of images -->
+                <div v-else>
+                    <article v-for="item in props.data.images" :key="item.id" class="group flex items-center justify-between gap-3 p-1  bg-white mb-1 border
+               hover:shadow-md hover:border-blue-400 transition" draggable="true"
+                        @dragstart="onStartDrag($event, item)" @dragend="onEndDrag($event)">
+                        <!-- Image + Info -->
+                        <div class="flex items-center gap-3 min-w-0 flex-1">
+                            <div class="relative flex h-14 w-14 flex-shrink-0 items-center justify-center
+                   overflow-hidden bg-gray-100 group-hover:bg-gray-50 transition">
+                                <Image v-if="item?.image" :src="item?.image"
+                                    class="max-h-full max-w-full object-contain" />
+                                <div v-else class="text-gray-400">
+                                    <FontAwesomeIcon :icon="faImage" class="text-base" />
                                 </div>
                             </div>
 
-                            <!-- Delete -->
-                            <button @click="onDeleteFilesInList(item)" class="ml-2 flex-shrink-0 rounded-full p-1.5 
-                   text-gray-400 hover:text-red-600 hover:bg-red-50 transition" v-tooltip="trans('Delete')">
-                                <FontAwesomeIcon icon="fal fa-trash-alt" class="text-sm text-red-400" />
-                            </button>
-                        </article>
-                    </template>
-                </GridProducts>
+                            <div class="flex-1 min-w-0">
+                                <p class="truncate max-w-[160px] text-sm font-medium text-gray-800" :title="item?.name">
+                                    {{ item?.name || trans("Unnamed product") }}
+                                </p>
+                                <span class="truncate max-w-[160px] block text-[11px] text-gray-500 italic"
+                                    :title="item?.code">
+                                    {{ item?.size }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Delete -->
+                        <button @click="onDeleteFilesInList(item)" class="ml-2 flex-shrink-0 rounded-full p-1.5 
+                 text-gray-400 hover:text-red-600 hover:bg-red-50 transition" v-tooltip="trans('Delete')">
+                            <FontAwesomeIcon icon="fal fa-trash-alt" class="text-sm text-red-400" />
+                        </button>
+                    </article>
+                </div>
             </div>
         </div>
+
 
     </div>
 

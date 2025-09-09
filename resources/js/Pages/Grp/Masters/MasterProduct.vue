@@ -48,6 +48,7 @@ const props = defineProps<{
     language?:{}
     products?: {}
     trade_units?: {}
+    images?: {}
 
 }>();
 
