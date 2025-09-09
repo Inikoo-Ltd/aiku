@@ -308,6 +308,19 @@ class CreateReplacementDeliveryNote extends OrgAction
             'state_icon'       => DeliveryNoteStateEnum::stateIcon()[$deliveryNote->state->value],
             'state_label'      => $deliveryNote->state->labels()[$deliveryNote->state->value],
             'is_collection' => (bool) $deliveryNote->orders()->first()->collection_address_id,
+            'is_replacement' => true,
+            'delivery_note'            => [
+                'reference' => $deliveryNote->reference,
+                'route'     => [
+                    'name'       => 'grp.org.shops.show.ordering.orders.show.delivery-note',
+                    'parameters' => [
+                        'organisation' => $order->organisation->slug,
+                        'shop'         => $order->shop->slug,
+                        'order'        => $order->slug,
+                        'deliveryNote'        => $deliveryNote->slug
+                    ]
+                ],
+            ],
             'customer'         => array_merge(
                 CustomerResource::make($deliveryNote->customer)->getArray(),
                 [
@@ -350,10 +363,7 @@ class CreateReplacementDeliveryNote extends OrgAction
                     'countriesAddressData' => GetAddressData::run()
                 ]
             ],
-            'delivery_address' => AddressResource::make($deliveryNote->deliveryAddress),
-            'picker'           => $deliveryNote->pickerUser,
-            'packer'           => $deliveryNote->packerUser,
-            'parcels'          => $deliveryNote->parcels
+            'delivery_address' => AddressResource::make($deliveryNote->deliveryAddress)
         ];
     }
 
