@@ -19,7 +19,16 @@ class TradeUnitResource extends JsonResource
         /** @var TradeUnit $tradeUnit */
         $tradeUnit = $this;
 
+        $ingredients = $tradeUnit->ingredients->pluck('name');
 
+        $specifications = [
+            'ingredients'       => $ingredients,
+            'gross_weight'      => $tradeUnit->gross_weight,
+            'marketing_weights' => $tradeUnit->marketing_weights,
+            'barcode'           => $tradeUnit->barcode,
+            'dimensions'        => $tradeUnit->marketing_dimensions,
+        ];
+        
         return array(
             'slug'   => $tradeUnit->slug,
             'status' => $tradeUnit->status,
@@ -43,6 +52,7 @@ class TradeUnitResource extends JsonResource
             'description_i8n'       => $tradeUnit->getTranslations('description_i8n'),
             'description_title_i8n' => $tradeUnit->getTranslations('description_title_i8n'),
             'description_extra_i8n' => $tradeUnit->getTranslations('description_extra_i8n'),
+            'specifications'        => $specifications,
         );
     }
 
