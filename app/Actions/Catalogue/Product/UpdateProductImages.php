@@ -7,7 +7,7 @@
  * copyright 2025
 */
 
-namespace App\Actions\Goods\TradeUnit;
+namespace App\Actions\Catalogue\Product;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
