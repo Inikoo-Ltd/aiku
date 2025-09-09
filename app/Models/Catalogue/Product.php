@@ -19,6 +19,7 @@ use App\Models\Dropshipping\Portfolio;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Brand;
 use App\Models\Helpers\Currency;
+use App\Models\Helpers\Media;
 use App\Models\Helpers\Tag;
 use App\Models\Inventory\OrgStock;
 use App\Models\Masters\MasterAsset;
@@ -395,5 +396,45 @@ class Product extends Model implements Auditable, HasMedia
     public function getLuigiIdentity(): string
     {
         return $this->group_id . ':' . $this->organisation_id . ':' . $this->shop_id . ':' . $this->webpage?->website?->id . ':' . $this->webpage?->id;
+    }
+
+        public function frontImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'front_image_id');
+    }
+
+    public function threeQuarterImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', '34_image_id');
+    }
+
+    public function leftImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'left_image_id');
+    }
+
+    public function rightImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'right_image_id');
+    }
+
+    public function backImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'back_image_id');
+    }
+
+    public function topImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'top_image_id');
+    }
+
+    public function bottomImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'bottom_image_id');
+    }
+
+    public function sizeComparisonImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'size_comparison_image_id');
     }
 }
