@@ -363,7 +363,7 @@ trait WithLuigis
                     "web_url"           => $this->getWebpageUrl($webpage),
                     "availability"      => intval($model->state == ProductStateEnum::ACTIVE),
                     "stock_qty"         => $model->available_quantity ?? 0,
-                    "price"             => $model->price ?? 0,
+                    "price"             => (float) $model->price ?? 0,
                     "formatted_price"   => $model->currency->symbol . $model->price . '/' . $model->unit,
                     "image_link"        => Arr::get($model->imageSources(200, 200), 'original'),
                     "product_code"      => $model->code,
