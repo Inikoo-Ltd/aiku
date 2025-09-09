@@ -118,7 +118,6 @@ class ShowMasterProducts extends GrpAction
                         [
                             'type'  => 'button',
                             'style' => 'edit',
-                            'label' => __('edit'),
                             'route' => [
                                 'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()

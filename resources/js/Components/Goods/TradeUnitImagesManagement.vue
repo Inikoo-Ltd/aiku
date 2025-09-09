@@ -211,6 +211,8 @@ function onDeleteFilesInList(categoryBox: any) {
         }
     )
 }
+
+
 </script>
 
 <template>
