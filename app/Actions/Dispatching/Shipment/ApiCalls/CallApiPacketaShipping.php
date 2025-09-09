@@ -92,7 +92,7 @@ class CallApiPacketaShipping extends OrgAction
             'addressId' => $addressId,
             'value' => $value,
             'currency' => $order->currency?->code ?? 'EUR',
-            'eshop' => 'AWGifts Europe',
+            'eshop' => Arr::get($parentResource, 'from_company_name'),
             'weight' => $weight, // in kg
             'street' => Arr::get($parentResource, 'to_address.address_line_1'),
             'houseNumber' => Arr::get($parentResource, 'to_address.address_line_2'),
