@@ -20,6 +20,7 @@ use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\UI\WithInertia;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsResource;
@@ -410,7 +411,8 @@ class CreateReplacementDeliveryNote extends OrgAction
 
     public function htmlResponse(Order $order, ActionRequest $request): Response
     {
-        $deliveryNote = $order->deliveryNotes()->first();
+        /** @var DeliveryNote $deliveryNote */
+        $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->first();
         $actions = $this->getActions($deliveryNote, $request);
 
         $warning = null;
