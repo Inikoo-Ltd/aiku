@@ -88,19 +88,38 @@ const props = defineProps<{
 			product_languages: string | null
 			warnings: string | null
 		}
+		images: {}
 	}
 }>()
 
-const selectedImage = ref(0)
-const images = computed(() => props.data?.product?.data?.images ?? [])
+const imagesSetup = ref(
+	props.data.images
+		.filter(item => item.type === "image")
+		.map(item => ({
+			label: item.label,
+			column: item.column_in_db,
+			images: item.images,
+		}))
+)
 
-watch(images, (newVal) => {
-	if (!newVal?.length || selectedImage.value > newVal.length - 1) {
-		selectedImage.value = 0
-	}
-}, { immediate: true })
+const videoSetup = ref(
+	props.data.images.find(item => item.type === "video") || null
+)
+
+const images = computed(() => props.data?.tradeUnit?.data?.images ?? [])
 
 
+const validImages = computed(() =>
+  imagesSetup.value
+    .filter(item => item.images) // only keep if images exist
+    .flatMap(item => {
+      const images = Array.isArray(item.images) ? item.images : [item.images] // normalize to array
+      return images.map(img => ({
+        source: img,
+        thumbnail: img
+      }))
+    })
+)
 </script>
 
 <template>
@@ -109,7 +128,7 @@ watch(images, (newVal) => {
 		<div class="space-y-4 lg:space-y-6">
 			<!-- Image Preview & Thumbnails -->
 			<div class="bg-white   p-4 lg:p-5">
-				<ImageProducts v-if="data.product.data.images?.length" :images="data.product.data.images" :breakpoints="{
+				<ImageProducts v-if="validImages.length" :images="validImages" :breakpoints="{
 					0: { slidesPerView: 3 },
 					480: { slidesPerView: 4 },
 					640: { slidesPerView: 5 },
@@ -151,7 +170,7 @@ watch(images, (newVal) => {
 		</div>
 
 		<!-- Product Summary -->
-		<ProductSummary :data="data.product.data" :gpsr="data.gpsr" :properties="data.properties" :parts="data.parts" />
+		<ProductSummary :data="data.product.data" :gpsr="data.gpsr" :properties="data.properties" :parts="data.parts" :video="videoSetup.url" />
 	</div>
 </template>
 

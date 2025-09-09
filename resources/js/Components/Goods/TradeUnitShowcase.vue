@@ -58,7 +58,6 @@ const props = defineProps<{
 	}
 }>()
 
-const selectedImage = ref(0)
 const imagesSetup = ref(
 	props.data.images
 		.filter(item => item.type === "image")
@@ -75,49 +74,6 @@ const videoSetup = ref(
 
 const images = computed(() => props.data?.tradeUnit?.data?.images ?? [])
 
-
-watch(
-	images,
-	(newVal) => {
-		if (!newVal?.length || selectedImage.value > newVal.length - 1) {
-			selectedImage.value = 0
-		}
-	},
-	{ immediate: true }
-)
-
-
-const onSubmitUpload = async (files: File[], refData = null) => {
-	const formData = new FormData()
-	files.forEach((file, index) => {
-		formData.append(`images[${index}]`, file)
-	})
-
-	router.post(
-		route(props.data.uploadImageRoute.name, props.data.uploadImageRoute.parameters),
-		formData,
-		{
-			preserveScroll: true,
-
-			onSuccess: () => {
-				notify({
-					title: trans("Success"),
-					text: trans("New image added"),
-					type: "success",
-				})
-
-				isModalGallery.value = false
-			},
-			onError: () => {
-				notify({
-					title: trans("Upload failed"),
-					text: trans("Failed to add new image"),
-					type: "error",
-				})
-			},
-		}
-	)
-}
 
 const validImages = computed(() =>
   imagesSetup.value

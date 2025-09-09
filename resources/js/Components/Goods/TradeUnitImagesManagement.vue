@@ -212,7 +212,7 @@ function onDeleteFilesInList(categoryBox: any) {
     )
 }
 
-
+console.log(props.data)
 </script>
 
 <template>
@@ -244,7 +244,7 @@ function onDeleteFilesInList(categoryBox: any) {
                                 selectedVideoToUpdate = { ...categoryBox }
                                 isModalEditVideo = true
                             }" :icon="faPencil" class="text-gray-400 hover:text-gray-600" fixed-width />
-                            <FontAwesomeIcon icon="fal fa-trash-alt" @click="() => onDeletefilesInBox(categoryBox)"
+                            <FontAwesomeIcon v-if="categoryBox.images || categoryBox.url" icon="fal fa-trash-alt" @click="() => onDeletefilesInBox(categoryBox)"
                                 class="text-gray-400 text-red-600 cursor-pointer" />
                         </div>
                     </div>
