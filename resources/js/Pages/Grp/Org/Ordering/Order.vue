@@ -14,7 +14,9 @@ import { computed, ref, inject } from "vue"
 import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import Timeline from "@/Components/Utils/Timeline.vue"
+// import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue"
 import Popover from "@/Components/Popover.vue"
+import {Popover as PopoverPrimevue} from 'primevue';
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
@@ -61,7 +63,8 @@ import {
     faFilePdf,
     faPaperclip,
     faMapMarkerAlt,
-    faPlus
+    faPlus,
+    faEllipsisH
 } from "@fal"
 import { Currency } from "@/types/LayoutRules"
 import TableInvoices from "@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue"
@@ -194,6 +197,7 @@ const props = defineProps<{
         updateOrderRoute: routeType
         products_list: routeType
         delivery_note: routeType
+        rollback_dispatch: routeType
     }
     // nonProductItems: {}
     transactions: {}
@@ -353,7 +357,10 @@ const onSubmitNote = async (closePopup: Function) => {
                 headers: {"Content-Type": "application/json"},
                 onStart: () => isLoadingButton.value = "submitNote",
                 onError: (error) => errorNote.value = error,
-                onFinish: () => isLoadingButton.value = false,
+                onFinish: () => {
+                    isLoadingButton.value = false
+                    ellipsis.value.hide()
+                },
                 onSuccess: () => {
                     closePopup()
                     noteToSubmit.value.selectedNote = ""
@@ -573,82 +580,84 @@ const onCreateReplacement = (action: any) => {
         }
     )
 }
+
+const ellipsis = ref()
+const toggleElipsis = (e: Event) => {
+    ellipsis.value.toggle(e)
+}
 </script>
 
 <template>
 
-    <Head :title="capitalize(title)"/>
+    <Head :title="capitalize(title)" />
     <ConfirmDialog>
         <template #icon>
-            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-orange-500"/>
+            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-orange-500" />
         </template>
     </ConfirmDialog>
     <PageHeading :data="pageHead">
         <template #button-add-products="{ action }">
             <div class="relative">
                 <Button :style="action.style" :label="action.label" :icon="action.icon" @click="() => openModal(action)"
-                        :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip"/>
+                    :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />
             </div>
         </template>
 
         <template #button-cancel="{ action }">
             <div class="relative">
                 <Button :style="action.style" :label="action.label" :icon="action.icon" :loading="cancelLoading"
-                        @click="() => confirm2(action)" :key="`ActionButton${action.label}${action.style}`"
-                        :tooltip="action.tooltip"/>
+                    @click="() => confirm2(action)" :key="`ActionButton${action.label}${action.style}`"
+                    :tooltip="action.tooltip" />
             </div>
         </template>
 
         <!-- Button: rollback -->
-        <template #button-rollback="{ action }">
+        <!-- <template #button-rollback="{ action }">
             <div class="relative">
 
                 <ModalConfirmationDelete :routeDelete="action.route"
-                                         :title="trans('Are you sure you want to rollback the Order??')"
-                                         :description="trans('The state of the Order will go back to finalised state.')"
-                                         isFullLoading
-                                         :noLabel="trans('Yes, rollback')" noIcon="far fa-undo-alt">
+                    :title="trans('Are you sure you want to rollback the Order??')"
+                    :description="trans('The state of the Order will go back to finalised state.')" isFullLoading
+                    :noLabel="trans('Yes, rollback')" noIcon="far fa-undo-alt">
                     <template #default="{ changeModel }">
                         <Button @click="changeModel" type="negative" :label="trans('Undispatch')" icon="fas fa-undo"
-                                :tooltip="trans('Rollback the dispatch')"/>
+                            :tooltip="trans('Rollback the dispatch')" />
                     </template>
                 </ModalConfirmationDelete>
 
 
             </div>
-        </template>
+        </template> -->
 
         <template #button-group-upload-add="{ action }">
             <div class="relative">
                 <Button v-if="upload_excel" :style="action.button[0].style" :label="action.button[0].label"
-                        :icon="action.button[0].icon" @click="() => isModalUploadExcel = true"
-                        :key="`ActionButton${action.button[0].label}${action.button[0].style}`"
-                        :tooltip="action.button[0].tooltip"/>
+                    :icon="action.button[0].icon" @click="() => isModalUploadExcel = true"
+                    :key="`ActionButton${action.button[0].label}${action.button[0].style}`"
+                    :tooltip="action.button[0].tooltip" />
             </div>
         </template>
 
-        <template #otherBefore v-if="!props.readonly">
-            <!-- Section: Add notes -->
+        <!-- <template #otherBefore v-if="!props.readonly">
             <Popover v-if="!notes?.note_list?.some(item => !!(item?.note?.trim()))">
                 <template #button="{ open }">
-                    <Button icon="fal fa-sticky-note" type="tertiary" label="Add notes"/>
+                    <Button icon="fal fa-sticky-note" type="tertiary" label="Add notes" />
                 </template>
                 <template #content="{ close: closed }">
                     <div class="w-[350px]">
                         <span class="text-xs px-1 my-2">{{ trans("Select type note") }}: </span>
                         <div class="">
                             <PureMultiselect v-model="noteToSubmit.selectedNote"
-                                             @update:modelValue="() => errorNote = ''"
-                                             :placeholder="trans('Select type note')"
-                                             required
-                                             :options="[{ label: 'Public note', value: 'public_notes' }, { label: 'Private note', value: 'internal_notes' }]"
-                                             valueProp="value"/>
+                                @update:modelValue="() => errorNote = ''" :placeholder="trans('Select type note')"
+                                required
+                                :options="[{ label: 'Public note', value: 'public_notes' }, { label: 'Private note', value: 'internal_notes' }]"
+                                valueProp="value" />
                         </div>
 
                         <div class="mt-3">
                             <span class="text-xs px-1 my-2">{{ trans("Note") }}: </span>
                             <PureTextarea v-model="noteToSubmit.value" :placeholder="trans('Note')"
-                                          @keydown.enter="() => onSubmitNote(closed)"/>
+                                @keydown.enter="() => onSubmitNote(closed)" />
                         </div>
 
                         <p v-if="errorNote" class="mt-2 text-sm text-red-600">
@@ -657,33 +666,88 @@ const onCreateReplacement = (action: any) => {
 
                         <div class="flex justify-end mt-3">
                             <Button @click="() => onSubmitNote(closed)" :style="'save'"
-                                    :loading="isLoadingButton === 'submitNote'" :disabled="!noteToSubmit.value"
-                                    label="Save"
-                                    full/>
+                                :loading="isLoadingButton === 'submitNote'" :disabled="!noteToSubmit.value" label="Save"
+                                full />
                         </div>
 
-                        <!-- Loading: fetching service list -->
                         <div v-if="isLoadingButton === 'submitNote'"
-                             class="bg-white/50 absolute inset-0 flex place-content-center items-center">
+                            class="bg-white/50 absolute inset-0 flex place-content-center items-center">
                             <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-5xl" fixed-width
-                                             aria-hidden="true"/>
+                                aria-hidden="true" />
                         </div>
                     </div>
                 </template>
             </Popover>
+        </template> -->
+
+        <template #other v-if="!props.readonly">
+            <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
+                icon="upload" />
+
+            <div
+                v-if="!notes?.note_list?.some(item => !!(item?.note?.trim())) || props.data?.data?.state === 'dispatched'">
+                <button @click="toggleElipsis" class="cursor-pointer " :class="'text-gray-400 hover:text-indigo-500'">
+                    <FontAwesomeIcon :icon="faEllipsisH" class="text-4xl" fixed-width aria-hidden="true" />
+                </button>
+                <PopoverPrimevue ref="ellipsis">
+                    <div class="flex flex-col gap-2">
+                        <ModalConfirmationDelete v-if="props.data?.data?.state === 'dispatched'" :routeDelete="routes.rollback_dispatch" :title="trans('Are you sure you want to rollback the Order??')"
+                            :description="trans('The state of the Order will go back to finalised state.')"
+                            isFullLoading :noLabel="trans('Yes, rollback')" noIcon="far fa-undo-alt">
+                            <template #default="{ changeModel }">
+                                <Button @click="changeModel" type="negative" :label="trans('Undispatch')"
+                                    icon="fas fa-undo" :tooltip="trans('Rollback the dispatch')" />
+                            </template>
+                        </ModalConfirmationDelete>
+
+                        <Popover v-if="!notes?.note_list?.some(item => !!(item?.note?.trim()))">
+                            <template #button="{ open }">
+                                <Button icon="fal fa-sticky-note" type="tertiary" label="Add notes" />
+                            </template>
+                            <template #content="{ close: closed }">
+                                <div class="w-[350px]">
+                                    <span class="text-xs px-1 my-2">{{ trans("Select type note") }}: </span>
+                                    <div class="">
+                                        <PureMultiselect v-model="noteToSubmit.selectedNote"
+                                            @update:modelValue="() => errorNote = ''"
+                                            :placeholder="trans('Select type note')" required
+                                            :options="[{ label: 'Public note', value: 'public_notes' }, { label: 'Private note', value: 'internal_notes' }]"
+                                            valueProp="value" />
+                                    </div>
+
+                                    <div class="mt-3">
+                                        <span class="text-xs px-1 my-2">{{ trans("Note") }}: </span>
+                                        <PureTextarea v-model="noteToSubmit.value" :placeholder="trans('Note')"
+                                            @keydown.enter="() => onSubmitNote(closed)" />
+                                    </div>
+
+                                    <p v-if="errorNote" class="mt-2 text-sm text-red-600">
+                                        *{{ errorNote }}
+                                    </p>
+
+                                    <div class="flex justify-end mt-3">
+                                        <Button @click="() => onSubmitNote(closed)" :style="'save'"
+                                            :loading="isLoadingButton === 'submitNote'" :disabled="!noteToSubmit.value"
+                                            label="Save" full />
+                                    </div>
+
+                                    <div v-if="isLoadingButton === 'submitNote'"
+                                        class="bg-white/50 absolute inset-0 flex place-content-center items-center">
+                                        <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-5xl"
+                                            fixed-width aria-hidden="true" />
+                                    </div>
+                                </div>
+                            </template>
+                        </Popover>
+                    </div>
+                </PopoverPrimevue>
+            </div>
         </template>
 
         <template #button-replacement="{ action }">
-             <Button
-                        @click="() =>onCreateReplacement(action)"
-                        :label="trans('Replacement')"
-                        xsize="xs"
-                        type="secondary"
-                        icon="fal fa-plus"
-                        key="1"
-                        :disabled="replacementLoading"
-                        v-tooltip="trans('Create replacement if the user requests replacement of items')"
-                    />
+            <Button @click="() =>onCreateReplacement(action)" :label="trans('Replacement')" xsize="xs" type="secondary"
+                icon="fal fa-plus" key="1" :disabled="replacementLoading"
+                v-tooltip="trans('Create replacement if the user requests replacement of items')" />
             <!-- <ModalConfirmation
                 :routeYes="action.route"
                 :title="trans('Create Replacement Order?')"
@@ -694,10 +758,6 @@ const onCreateReplacement = (action: any) => {
                         @click="() => changeModel()"
                         :label="trans('Replacement')"
                         xsize="xs"
-<<<<<<< HEAD
-=======
-                        icon="fas fa-plus"
->>>>>>> e67b4daa50ecf8c512250c8aa38b9cd84b2f023e
                         type="secondary"
                         icon="fal fa-plus"
                         key="1"
@@ -715,38 +775,33 @@ const onCreateReplacement = (action: any) => {
                 </template>
             </ModalConfirmation> -->
         </template>
-
-        <template #other>
-            <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
-                    icon="upload"/>
-        </template>
     </PageHeading>
 
     <!-- Section: Pallet Warning -->
     <div v-if="alert?.status" class="p-2 pb-0">
-        <AlertMessage :alert/>
+        <AlertMessage :alert />
     </div>
 
     <!-- Section: Box Note -->
     <div class="relative">
         <Transition name="headlessui">
             <div xv-if="notes?.note_list?.some(item => !!(item?.note?.trim()))"
-                 class="p-2 grid grid-cols-2 sm:grid-cols-4 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
+                class="p-2 grid grid-cols-2 sm:grid-cols-4 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
                 <BoxNote v-for="(note, index) in notes.note_list" :key="index + note.label" :noteData="note"
-                         :updateRoute="routes.updateOrderRoute"/>
+                    :updateRoute="routes.updateOrderRoute" />
             </div>
         </Transition>
     </div>
 
     <!-- Section: Timeline -->
     <div v-if="props.data?.data?.state != 'in_process' && currentTab != 'products'"
-         class="mt-4 sm:mt-0 border-b border-gray-200 pb-2">
+        class="mt-4 sm:mt-0 border-b border-gray-200 pb-2">
         <Timeline v-if="timelines" :options="timelines" :state="props.data?.data?.state" :slidesPerView="6"
-                  formatTime="EEE, do MMM yy, HH:mm"/>
+            formatTime="EEE, do MMM yy, HH:mm" />
     </div>
 
     <div v-if="currentTab != 'products'"
-         class="grid grid-cols-2 lg:grid-cols-3 divide-x divide-gray-300 border-b border-gray-200">
+        class="grid grid-cols-2 lg:grid-cols-3 divide-x divide-gray-300 border-b border-gray-200">
         <BoxStatPallet class=" py-2 px-3" icon="fal fa-user">
             <div class="text-xs md:text-sm">
                 <div class="font-semibold xmb-2 text-base">
@@ -756,33 +811,33 @@ const onCreateReplacement = (action: any) => {
                 <div class="space-y-0.5 pl-1">
                     <!-- Field: Reference Number -->
                     <Link as="a" v-if="box_stats?.customer.reference"
-                          :href="box_stats?.customer?.route?.name ? route(box_stats?.customer.route.name, box_stats?.customer.route.parameters) : '#'"
-                          class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
-                        <div v-tooltip="trans('Customer')" class="flex-none">
-                            <FontAwesomeIcon icon="fal fa-user" class="text-gray-400" fixed-width aria-hidden="true"/>
-                        </div>
-                        <dd class="text-sm text-gray-500">#{{ box_stats?.customer.reference }}</dd>
+                        :href="box_stats?.customer?.route?.name ? route(box_stats?.customer.route.name, box_stats?.customer.route.parameters) : '#'"
+                        class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
+                    <div v-tooltip="trans('Customer')" class="flex-none">
+                        <FontAwesomeIcon icon="fal fa-user" class="text-gray-400" fixed-width aria-hidden="true" />
+                    </div>
+                    <dd class="text-sm text-gray-500">#{{ box_stats?.customer.reference }}</dd>
                     </Link>
 
                     <!-- Field: Customer -->
                     <Link as="a" v-if="!box_stats?.customer.reference"
-                          :href="box_stats?.customer?.route?.name ? route(box_stats?.customer.route.name, box_stats?.customer.route.parameters) : '#'"
-                          class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer secondaryLink">
-                        <div v-tooltip="trans('Contact name')" class="flex-none">
-                            <FontAwesomeIcon icon="fal fa-id-card-alt" class="text-gray-400" fixed-width
-                                             aria-hidden="true"/>
-                        </div>
-                        <dd class="text-sm text-gray-500">{{ box_stats?.customer.contact_name }}</dd>
+                        :href="box_stats?.customer?.route?.name ? route(box_stats?.customer.route.name, box_stats?.customer.route.parameters) : '#'"
+                        class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer secondaryLink">
+                    <div v-tooltip="trans('Contact name')" class="flex-none">
+                        <FontAwesomeIcon icon="fal fa-id-card-alt" class="text-gray-400" fixed-width
+                            aria-hidden="true" />
+                    </div>
+                    <dd class="text-sm text-gray-500">{{ box_stats?.customer.contact_name }}</dd>
                     </Link>
 
                     <!-- Field: Client -->
                     <Link as="a" v-if="box_stats?.customer_client"
-                          :href="box_stats?.customer_client?.route?.name ? route(box_stats?.customer_client.route.name, box_stats?.customer_client.route.parameters) : '#'"
-                          class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer secondaryLink">
-                        <div v-tooltip="trans('Customer client')" class="flex-none">
-                            <FontAwesomeIcon icon="fal fa-users" class="text-gray-400" fixed-width aria-hidden="true"/>
-                        </div>
-                        <dd class="text-sm text-gray-500">{{ box_stats?.customer_client.contact_name }}</dd>
+                        :href="box_stats?.customer_client?.route?.name ? route(box_stats?.customer_client.route.name, box_stats?.customer_client.route.parameters) : '#'"
+                        class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer secondaryLink">
+                    <div v-tooltip="trans('Customer client')" class="flex-none">
+                        <FontAwesomeIcon icon="fal fa-users" class="text-gray-400" fixed-width aria-hidden="true" />
+                    </div>
+                    <dd class="text-sm text-gray-500">{{ box_stats?.customer_client.contact_name }}</dd>
                     </Link>
 
                     <!-- Field: Contact name -->
@@ -790,7 +845,7 @@ const onCreateReplacement = (action: any) => {
                         class="pl-1 flex items-center w-fit flex-none gap-x-2">
                         <dt v-tooltip="trans('Contact name')" class="flex-none">
                             <FontAwesomeIcon icon="fal fa-id-card-alt" class="text-gray-400" fixed-width
-                                             aria-hidden="true"/>
+                                aria-hidden="true" />
                         </dt>
                         <dd class="text-sm text-gray-500">{{ box_stats?.customer.contact_name }}</dd>
                     </dl>
@@ -799,7 +854,7 @@ const onCreateReplacement = (action: any) => {
                     <dl v-if="box_stats?.customer.company_name" class="pl-1 flex items-center w-full flex-none gap-x-2">
                         <dt v-tooltip="trans('Company name')" class="flex-none">
                             <FontAwesomeIcon icon="fal fa-building" class="text-gray-400" fixed-width
-                                             aria-hidden="true"/>
+                                aria-hidden="true" />
                         </dt>
                         <dd class="text-sm text-gray-500">{{ box_stats?.customer.company_name }}</dd>
                     </dl>
@@ -808,21 +863,21 @@ const onCreateReplacement = (action: any) => {
                     <dl v-if="box_stats?.customer.email" class="pl-1 flex items-center w-full flex-none gap-x-2">
                         <dt v-tooltip="trans('Email')" class="flex-none">
                             <FontAwesomeIcon icon="fal fa-envelope" class="text-gray-400" fixed-width
-                                             aria-hidden="true"/>
+                                aria-hidden="true" />
                         </dt>
                         <a :href="`mailto:${box_stats?.customer.email}`" v-tooltip="'Click to send email'"
-                           class="text-sm text-gray-500 hover:text-gray-700 truncate">{{
-                                box_stats?.customer.email
+                            class="text-sm text-gray-500 hover:text-gray-700 truncate">{{
+                            box_stats?.customer.email
                             }}</a>
                     </dl>
 
                     <!-- Field: Phone -->
                     <dl v-if="box_stats?.customer.phone" class="pl-1 flex items-center w-full flex-none gap-x-2">
                         <dt v-tooltip="trans('Phone')" class="flex-none">
-                            <FontAwesomeIcon icon="fal fa-phone" class="text-gray-400" fixed-width aria-hidden="true"/>
+                            <FontAwesomeIcon icon="fal fa-phone" class="text-gray-400" fixed-width aria-hidden="true" />
                         </dt>
                         <a :href="`tel:${box_stats?.customer.phone}`" v-tooltip="'Click to make a phone call'"
-                           class="text-sm text-gray-500 hover:text-gray-700">{{ box_stats?.customer.phone }}</a>
+                            class="text-sm text-gray-500 hover:text-gray-700">{{ box_stats?.customer.phone }}</a>
                     </dl>
 
                     <!-- Field: Billing Address -->
@@ -830,7 +885,7 @@ const onCreateReplacement = (action: any) => {
                         class="pl-1 flex items w-full flex-none gap-x-2">
                         <dt v-tooltip="trans('Billing address')" class="flex-none">
                             <FontAwesomeIcon icon="fal fa-dollar-sign" class="text-gray-400" fixed-width
-                                             aria-hidden="true"/>
+                                aria-hidden="true" />
                         </dt>
                         <dd class="flex text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded min-w-52"
                             v-html="box_stats?.customer.addresses.billing.formatted_address">
@@ -838,10 +893,11 @@ const onCreateReplacement = (action: any) => {
                     </dl>
 
                     <!-- Collection Toggle -->
-                    <div v-if="props.data?.data?.state != 'dispatched'" class="!mt-2 pl-1 flex items w-full flex-none gap-x-2 items-center">
+                    <div v-if="props.data?.data?.state != 'dispatched'"
+                        class="!mt-2 pl-1 flex items w-full flex-none gap-x-2 items-center">
                         <FontAwesomeIcon icon='fal fa-map-marker-alt' class='text-gray-400' fixed-width
-                                         aria-hidden='true'/>
-                        <ToggleSwitch v-model="isCollection" @change="updateCollection"/>
+                            aria-hidden='true' />
+                        <ToggleSwitch v-model="isCollection" @change="updateCollection" />
                         <span class="text-sm text-gray-500">Collection</span>
                     </div>
 
@@ -851,20 +907,20 @@ const onCreateReplacement = (action: any) => {
                             <div class="flex space-x-4">
                                 <label class="inline-flex items-center">
                                     <input type="radio" value="myself" v-model="collectionBy"
-                                           @change="updateCollectionType" class="form-radio"/>
+                                        @change="updateCollectionType" class="form-radio" />
                                     <span class="ml-2">{{ trans("My Self") }}</span>
                                 </label>
                                 <label class="inline-flex items-center">
                                     <input type="radio" value="thirdParty" v-model="collectionBy"
-                                           @change="updateCollectionType" class="form-radio"/>
+                                        @change="updateCollectionType" class="form-radio" />
                                     <span class="ml-2">{{ trans("Third Party") }}</span>
                                 </label>
                             </div>
 
                             <div v-if="collectionBy === 'thirdParty'" class="mt-3">
                                 <textarea v-model="textValue" @blur="updateCollectionNotes" rows="5"
-                                          class="w-full border border-gray-300 rounded-md p-2"
-                                          placeholder="Type additional notes..."></textarea>
+                                    class="w-full border border-gray-300 rounded-md p-2"
+                                    placeholder="Type additional notes..."></textarea>
                             </div>
                         </div>
 
@@ -873,12 +929,14 @@ const onCreateReplacement = (action: any) => {
                             class="mt-2 pt-1 flex items w-full flex-none gap-x-2">
                             <dt v-tooltip="trans('Shipping address')" class="flex-none">
                                 <FontAwesomeIcon icon="fal fa-shipping-fast" class="text-gray-400" fixed-width
-                                                 aria-hidden="true"/>
+                                    aria-hidden="true" />
                             </dt>
-                            <dd class=" text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded min-w-52">
+                            <dd
+                                class=" text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded min-w-52">
                                 <span v-html="box_stats?.customer.addresses.delivery.formatted_address"></span>
-                                <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched'" @click="() => isModalAddress = true"
-                                     class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
+                                <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched'"
+                                    @click="() => isModalAddress = true"
+                                    class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
                                     <span>{{ trans("Edit") }}</span>
                                 </div>
                             </dd>
@@ -889,12 +947,14 @@ const onCreateReplacement = (action: any) => {
                             class="mt-2 flex items w-full flex-none gap-x-2">
                             <dt v-tooltip="trans('Shipping address and Billing address')" class="flex-none">
                                 <FontAwesomeIcon icon="fal fa-shipping-fast" class="text-gray-400" fixed-width
-                                                 aria-hidden="true"/>
+                                    aria-hidden="true" />
                             </dt>
-                            <dd class="flex text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
+                            <dd
+                                class="flex text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
                                 <span v-html="box_stats?.customer.addresses.delivery.formatted_address"></span>
-                                <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched'" @click="() => isModalAddress = true"
-                                     class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
+                                <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched'"
+                                    @click="() => isModalAddress = true"
+                                    class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
                                     <span>{{ trans("Edit") }}</span>
                                 </div>
                             </dd>
@@ -914,51 +974,39 @@ const onCreateReplacement = (action: any) => {
                     <dl class="relative flex items-start w-full flex-none gap-x-1">
                         <dt class="flex-none pt-0.5 pl-1">
                             <FontAwesomeIcon icon="fal fa-dollar-sign" fixed-width aria-hidden="true"
-                                             class="text-gray-500"/>
+                                class="text-gray-500" />
                         </dt>
 
                         <div>
-                            <NeedToPay
-                                :totalAmount="box_stats.products.payment.total_amount"
+                            <NeedToPay :totalAmount="box_stats.products.payment.total_amount"
                                 :paidAmount="box_stats.products.payment.paid_amount"
                                 :payAmount="box_stats.products.payment.pay_amount"
                                 xclass="[box_stats.products.payment.pay_amount ? 'hover:bg-gray-100 cursor-pointer' : '']"
-                                :currencyCode="currency.code"
-                            >
+                                :currencyCode="currency.code">
                                 <template #default>
                                     <!-- Pay: Invoice -->
-                                    <div
-                                        v-if="box_stats.products.payment.pay_amount > 0 && !(props.data?.data?.state === 'creating' || props.data?.data?.state === 'cancelled'   ) "
+                                    <div v-if="box_stats.products.payment.pay_amount > 0 && !(props.data?.data?.state === 'creating' || props.data?.data?.state === 'cancelled'   ) "
                                         class="pt-1 border-t border-green-300 text-xxs">
-                                        <Button
-                                            @click.prevent="() => onClickPayInvoice()"
-                                            :label="trans('Pay')"
-                                            type="secondary"
-                                            size="xxs"
-                                        />
+                                        <Button @click.prevent="() => onClickPayInvoice()" :label="trans('Pay')"
+                                            type="secondary" size="xxs" />
                                     </div>
 
                                     <!-- Pay: Refund -->
-                                    <div
-                                        v-if="box_stats.products.payment.pay_amount < 0 && !(props.data?.data?.state === 'creating' || props.data?.data?.state === 'cancelled'   )"
+                                    <div v-if="box_stats.products.payment.pay_amount < 0 && !(props.data?.data?.state === 'creating' || props.data?.data?.state === 'cancelled'   )"
                                         class="pt-1 border-t border-green-300 text-xxs">
-                                        <Button
-                                            @click="() => onClickPayRefund()"
-                                            :label="trans('Refund money')"
-                                            type="secondary"
-                                            size="xxs"
-                                        />
+                                        <Button @click="() => onClickPayRefund()" :label="trans('Refund money')"
+                                            type="secondary" size="xxs" />
                                     </div>
 
                                     <!-- Pay: excesses balance -->
                                     <div v-if="box_stats.products.excesses_payment?.amount > 0"
-                                         class="pt-1 border-t border-green-300 text-xxs">
+                                        class="pt-1 border-t border-green-300 text-xxs">
                                         <p class="text-gray-500 mb-1 mt-2">
                                             {{ trans("The order is overpaid") }}:
                                             <span class="text-gray-700">
                                                 {{
-                                                    locale.currencyFormat(currency.code,
-                                                        Number(box_stats.products.excesses_payment?.amount))
+                                                locale.currencyFormat(currency.code,
+                                                Number(box_stats.products.excesses_payment?.amount))
                                                 }}
                                             </span>
                                         </p>
@@ -966,7 +1014,7 @@ const onCreateReplacement = (action: any) => {
                                         <ButtonWithLink
                                             v-if="box_stats.products.excesses_payment?.route_to_add_balance?.name"
                                             :routeTarget="box_stats.products.excesses_payment?.route_to_add_balance"
-                                            icon="far fa-plus" label="Add to customer balance" size="xxs"/>
+                                            icon="far fa-plus" label="Add to customer balance" size="xxs" />
                                     </div>
 
                                 </template>
@@ -987,7 +1035,7 @@ const onCreateReplacement = (action: any) => {
                     <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
                         <dt class="flex-none pl-1">
                             <FontAwesomeIcon icon="fal fa-weight" fixed-width aria-hidden="true"
-                                             class="text-gray-500"/>
+                                class="text-gray-500" />
                         </dt>
                         <dd class="text-gray-500 sep" v-tooltip="trans('Estimated weight of all products')">
                             {{ box_stats?.products.estimated_weight || 0 }} kilograms
@@ -999,28 +1047,28 @@ const onCreateReplacement = (action: any) => {
                         <Link
                             :href="route(box_stats?.invoice?.routes?.show?.name, box_stats?.invoice?.routes?.show.parameters)"
                             class="flex items-center gap-3 gap-x-1.5 primaryLink cursor-pointer">
-                            <div class="flex-none">
-                                <FontAwesomeIcon icon="fal fa-file-invoice-dollar" fixed-width aria-hidden="true"
-                                                 class="text-gray-500"/>
-                            </div>
-                            <div class="text-gray-500 " v-tooltip="trans('Invoice')">
-                                {{ box_stats?.invoice?.reference }}
-                            </div>
+                        <div class="flex-none">
+                            <FontAwesomeIcon icon="fal fa-file-invoice-dollar" fixed-width aria-hidden="true"
+                                class="text-gray-500" />
+                        </div>
+                        <div class="text-gray-500 " v-tooltip="trans('Invoice')">
+                            {{ box_stats?.invoice?.reference }}
+                        </div>
                         </Link>
 
                         <a v-if="box_stats?.invoice?.routes?.download?.name"
-                           :href="route(box_stats?.invoice?.routes?.download?.name, box_stats?.invoice?.routes?.download.parameters)"
-                           as="a" target="_blank" class="flex items-center text-gray-400 hover:text-orange-600">
-                            <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true"/>
+                            :href="route(box_stats?.invoice?.routes?.download?.name, box_stats?.invoice?.routes?.download.parameters)"
+                            as="a" target="_blank" class="flex items-center text-gray-400 hover:text-orange-600">
+                            <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true" />
                         </a>
                     </div>
 
 
                     <div v-if="box_stats?.delivery_notes?.length"
-                         class="mt-4 border rounded-lg p-4 pt-3 bg-white shadow-sm">
+                        class="mt-4 border rounded-lg p-4 pt-3 bg-white shadow-sm">
                         <!-- Section Title -->
                         <div class="flex items-center gap-2 border-b border-gray-200 pb-2 mb-3">
-                            <FontAwesomeIcon :icon="faTruck" class="text-blue-500" fixed-width/>
+                            <FontAwesomeIcon :icon="faTruck" class="text-blue-500" fixed-width />
                             <div class="text-sm font-semibold text-gray-800">
                                 {{ trans('Delivery Notes') }}
                             </div>
@@ -1028,16 +1076,16 @@ const onCreateReplacement = (action: any) => {
 
                         <!-- Delivery Note Items -->
                         <div v-for="(note, index) in box_stats?.delivery_notes" :key="index"
-                             class="mb-3 pb-3 border-b border-dashed last:border-0 last:mb-0 last:pb-0">
+                            class="mb-3 pb-3 border-b border-dashed last:border-0 last:mb-0 last:pb-0">
 
                             <div class="flex items-center gap-2 text-sm text-gray-700 mb-1">
                                 <span class="font-medium">Ref:</span>
                                 <Link :href="generateRouteDeliveryNote(note?.slug)" class="secondaryLink">{{
-                                        note?.reference
-                                    }}
+                                note?.reference
+                                }}
                                 </Link>
                                 <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
-                                    <Icon :data="note?.state"/>
+                                    <Icon :data="note?.state" />
                                 </span>
                             </div>
 
@@ -1051,7 +1099,7 @@ const onCreateReplacement = (action: any) => {
                                             <div v-for="trackingData in shipment.formatted_tracking_urls">
 
                                                 <a :href="trackingData.url" target="_blank" rel="noopener noreferrer"
-                                                   class="secondaryLink" v-tooltip="trans('Click to track shipment')">
+                                                    class="secondaryLink" v-tooltip="trans('Click to track shipment')">
                                                     {{ trackingData.tracking }}
                                                 </a>
                                             </div>
@@ -1084,31 +1132,30 @@ const onCreateReplacement = (action: any) => {
                 </div>
 
                 <section aria-labelledby="summary-heading" class="rounded-lg px-4 py-4 sm:px-6 lg:mt-0">
-                    <OrderSummary :order_summary="box_stats.order_summary" :currency_code="currency.code"/>
+                    <OrderSummary :order_summary="box_stats.order_summary" :currency_code="currency.code" />
                 </section>
             </div>
         </BoxStatPallet>
     </div>
 
     <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation"
-          @update:tab="handleTabUpdate"/>
+        @update:tab="handleTabUpdate" />
     <div class="pb-12">
         <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"
-                   :updateRoute="routes.updateOrderRoute" :state="data?.data?.state"
-                   :detachRoute="attachmentRoutes.detachRoute" :fetchRoute="routes.products_list"
-                   :modalOpen="isModalUploadOpen" :action="currentAction" :readonly="props.readonly"
-                   @update:tab="handleTabUpdate"/>
+            :updateRoute="routes.updateOrderRoute" :state="data?.data?.state"
+            :detachRoute="attachmentRoutes.detachRoute" :fetchRoute="routes.products_list"
+            :modalOpen="isModalUploadOpen" :action="currentAction" :readonly="props.readonly"
+            @update:tab="handleTabUpdate" />
     </div>
 
     <ModalProductList v-model="isModalProductListOpen" :fetchRoute="routes.products_list" :action="currentAction"
-                      :current="currentTab" v-model:currentTab="currentTab" :typeModel="'order'"/>
+        :current="currentTab" v-model:currentTab="currentTab" :typeModel="'order'" />
 
     <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)" width="w-full max-w-5xl">
         <DeliveryAddressManagementModal :address_modal_title="delivery_address_management.address_modal_title"
-                                        :addresses="delivery_address_management.addresses"
-                                        :updateRoute="delivery_address_management.address_update_route"
-                                        keyPayloadEdit="address"
-                                        @onDone="() => (isModalAddress = false)"/>
+            :addresses="delivery_address_management.addresses"
+            :updateRoute="delivery_address_management.address_update_route" keyPayloadEdit="address"
+            @onDone="() => (isModalAddress = false)" />
     </Modal>
 
 
@@ -1130,7 +1177,7 @@ const onCreateReplacement = (action: any) => {
                     </label>
                     <div class="mt-1">
                         <PureMultiselect v-model="paymentData.payment_method" :options="listPaymentMethod"
-                                         :isLoading="isLoadingFetch" label="name" valueProp="id" required caret/>
+                            :isLoading="isLoadingFetch" label="name" valueProp="id" required caret />
                     </div>
                 </div>
 
@@ -1139,25 +1186,25 @@ const onCreateReplacement = (action: any) => {
                         {{ trans("Payment amount") }}
                     </label>
                     <div class="mt-1">
-                        <PureInputNumber v-model="paymentData.payment_amount"/>
+                        <PureInputNumber v-model="paymentData.payment_amount" />
                     </div>
                     <div class="space-x-1">
                         <span class="text-xxs text-gray-500">{{
-                                trans("Need to pay")
+                            trans("Need to pay")
                             }}: {{
-                                locale.currencyFormat(box_stats.order_summary.currency.code, box_stats.products.payment.pay_amount)
+                            locale.currencyFormat(box_stats.order_summary.currency.code,
+                            box_stats.products.payment.pay_amount)
                             }}</span>
                         <Button @click="() => paymentData.payment_amount = box_stats.products.payment.pay_amount"
-                                :disabled="paymentData.payment_amount === box_stats.products.payment.pay_amount"
-                                type="tertiary"
-                                :label="trans('Pay all')" size="xxs"/>
+                            :disabled="paymentData.payment_amount === box_stats.products.payment.pay_amount"
+                            type="tertiary" :label="trans('Pay all')" size="xxs" />
                     </div>
                 </div>
 
                 <div class="col-span-2">
                     <label for="last-name" class="block text-sm font-medium leading-6">{{ trans("Reference") }}</label>
                     <div class="mt-1">
-                        <PureInput v-model="paymentData.payment_reference" placeholder="#000000"/>
+                        <PureInput v-model="paymentData.payment_reference" placeholder="#000000" />
                     </div>
                 </div>
 
@@ -1165,10 +1212,10 @@ const onCreateReplacement = (action: any) => {
 
             <div class="mt-6 mb-4 relative">
                 <Button @click="() => onSubmitPayment()" label="Submit" :disabled="!(!!paymentData.payment_method)"
-                        :loading="isLoadingPayment" full/>
+                    :loading="isLoadingPayment" full />
                 <Transition name="spin-to-down">
                     <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">*{{
-                            errorPaymentMethod
+                        errorPaymentMethod
                         }}</p>
                 </Transition>
             </div>
@@ -1191,7 +1238,7 @@ const onCreateReplacement = (action: any) => {
                     </label>
                     <div class="mt-1">
                         <PureMultiselect v-model="paymentData.payment_method" :options="listPaymentMethod"
-                                         :isLoading="isLoadingFetch" label="name" valueProp="id" required caret/>
+                            :isLoading="isLoadingFetch" label="name" valueProp="id" required caret />
                     </div>
                 </div>
 
@@ -1200,25 +1247,25 @@ const onCreateReplacement = (action: any) => {
                         {{ trans('Refund amount') }}
                     </label>
                     <div class="mt-1">
-                        <PureInputNumber v-model="paymentData.payment_amount"/>
+                        <PureInputNumber v-model="paymentData.payment_amount" />
                     </div>
                     <div class="space-x-1">
                         <span class="text-xxs text-gray-500">{{
-                                trans("Need to refund")
+                            trans("Need to refund")
                             }}: {{
-                                locale.currencyFormat(box_stats.order_summary.currency.code, box_stats.products.payment.pay_amount)
+                            locale.currencyFormat(box_stats.order_summary.currency.code,
+                            box_stats.products.payment.pay_amount)
                             }}</span>
                         <Button @click="() => paymentData.payment_amount = box_stats.products.payment.pay_amount"
-                                :disabled="paymentData.payment_amount === box_stats.products.payment.pay_amount"
-                                type="tertiary"
-                                :label="trans('Refund all payment')" size="xxs"/>
+                            :disabled="paymentData.payment_amount === box_stats.products.payment.pay_amount"
+                            type="tertiary" :label="trans('Refund all payment')" size="xxs" />
                     </div>
                 </div>
 
                 <div class="col-span-2">
                     <label for="last-name" class="block text-sm font-medium leading-6">{{ trans("Reference") }}</label>
                     <div class="mt-1">
-                        <PureInput v-model="paymentData.payment_reference" placeholder="#000000"/>
+                        <PureInput v-model="paymentData.payment_reference" placeholder="#000000" />
                     </div>
                 </div>
 
@@ -1226,7 +1273,7 @@ const onCreateReplacement = (action: any) => {
 
             <div class="mt-6 mb-4 relative">
                 <Button @click="() => onSubmitPayment(true)" label="Submit" :disabled="!(!!paymentData.payment_method)"
-                        :loading="isLoadingPayment" full/>
+                    :loading="isLoadingPayment" full />
                 <Transition name="spin-to-down">
                     <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">
                         *{{ errorPaymentMethod }}</p>
@@ -1236,16 +1283,14 @@ const onCreateReplacement = (action: any) => {
     </Modal>
 
     <UploadExcel v-if="props.upload_excel" v-model="isModalUploadExcel" :title="upload_excel.title"
-                 :progressDescription="upload_excel.progressDescription"
-                 :upload_spreadsheet="upload_excel.upload_spreadsheet"
-                 :preview_template="upload_excel.preview_template"
-                 :propsRefreshAfterFinish="['transactions', 'box_stats']"
-                 :xadditionalDataToSend="'interest.pallets_storage' ? ['stored_items'] : undefined"/>
+        :progressDescription="upload_excel.progressDescription" :upload_spreadsheet="upload_excel.upload_spreadsheet"
+        :preview_template="upload_excel.preview_template" :propsRefreshAfterFinish="['transactions', 'box_stats']"
+        :xadditionalDataToSend="'interest.pallets_storage' ? ['stored_items'] : undefined" />
 
     <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{
         label: 'Upload your file',
         information: 'The list of column file: customer_reference, notes, stored_items'
-    }" progressDescription="Adding Pallet Deliveries" :attachmentRoutes="attachmentRoutes"/>
+    }" progressDescription="Adding Pallet Deliveries" :attachmentRoutes="attachmentRoutes" />
 </template>
 
 <style scoped>

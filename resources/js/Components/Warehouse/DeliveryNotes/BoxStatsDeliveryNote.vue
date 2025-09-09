@@ -36,6 +36,11 @@ const props = defineProps<{
             address: Address
         }
         is_collection?: boolean
+        is_replacement?: boolean
+        delivery_note: {
+            reference?: string
+            route: routeType
+        },
         customer_client?: {
             name: string
             contact_name?: string
@@ -238,37 +243,37 @@ const listError = inject('listError', {})
 
 
                 <template v-if="!boxStats?.is_collection">
-                <div class="font-semibold xmb-2 text-base">
-                    {{ trans("Shipping") }}
-                </div>
+                    <div class="font-semibold xmb-2 text-base">
+                        {{ trans("Shipping") }}
+                    </div>
 
-                <div v-if="boxStats?.delivery_address" class="space-y-0.5 pl-2">
-                    <div class="border border-gray-300 p-4 rounded-lg">
-                        <div v-if="boxStats.customer_client" class="mb-3">
-                            <div class="xtext-xs text-gray-600 leading-snug">
-                                <div>
-                                    <strong>Name:</strong>
-                                    {{ boxStats.customer_client.contact_name || boxStats.customer_client.name }}
-                                </div>
-                                <div v-if="boxStats.customer_client.email">
-                                    <strong>Email:</strong> {{ boxStats.customer_client.email }}
-                                </div>
-                                <div v-if="boxStats.customer_client.phone">
-                                    <strong>Phone:</strong> {{ boxStats.customer_client.phone }}
+                    <div v-if="boxStats?.delivery_address" class="space-y-0.5 pl-2">
+                        <div class="border border-gray-300 p-4 rounded-lg">
+                            <div v-if="boxStats.customer_client" class="mb-3">
+                                <div class="xtext-xs text-gray-600 leading-snug">
+                                    <div>
+                                        <strong>Name:</strong>
+                                        {{ boxStats.customer_client.contact_name || boxStats.customer_client.name }}
+                                    </div>
+                                    <div v-if="boxStats.customer_client.email">
+                                        <strong>Email:</strong> {{ boxStats.customer_client.email }}
+                                    </div>
+                                    <div v-if="boxStats.customer_client.phone">
+                                        <strong>Phone:</strong> {{ boxStats.customer_client.phone }}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div v-html="boxStats.delivery_address.formatted_address"
-                             class="xtext-xs text-gray-600 leading-snug">
+                            <div v-html="boxStats.delivery_address.formatted_address"
+                                 class="xtext-xs text-gray-600 leading-snug">
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div v-else class="text-gray-500 italic pl-2">
-                    {{ trans("No shipping information available.") }}
-                </div>
+                    <div v-else class="text-gray-500 italic pl-2">
+                        {{ trans("No shipping information available.") }}
+                    </div>
                 </template>
-                <div v-else  class="font-semibold xmb-2 text-base"> {{ trans("For collection") }}</div>
+                <div v-else class="font-semibold xmb-2 text-base"> {{ trans("For collection") }}</div>
             </div>
         </BoxStatPallet>
 
@@ -279,7 +284,7 @@ const listError = inject('listError', {})
                     {{ trans("Delivery Note") }}
                 </div>
 
-                <div class="space-y-0.5 pl-2">
+                <div class="space-y-0.5 pl-2" v-if="!boxStats?.is_replacement">
                     <div v-if="boxStats?.picker?.contact_name">
                         <dl v-tooltip="trans('Picker name')"
                             class=" border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
@@ -403,6 +408,20 @@ const listError = inject('listError', {})
                             />
                         </dd>
                     </dl>
+                </div>
+                <div v-else class="space-y-0.5 pl-1">
+                    <!-- Field: Delivery notes reference -->
+                    <Link v-if="boxStats?.order"
+                          :href="route(boxStats?.delivery_note?.route?.name, boxStats?.delivery_note?.route?.parameters)"
+                          class="w-fit flex items-center gap-3 gap-x-1.5 primaryLink cursor-pointer">
+                        <dt class="flex-none">
+                            <FontAwesomeIcon icon='fal fa-truck' fixed-width aria-hidden='true'
+                                             class="text-gray-500"/>
+                        </dt>
+                        <dd class="text-gray-500 " v-tooltip="trans('Delivery Note')">
+                            {{ boxStats?.delivery_note?.reference }}
+                        </dd>
+                    </Link>
                 </div>
             </div>
         </BoxStatPallet>

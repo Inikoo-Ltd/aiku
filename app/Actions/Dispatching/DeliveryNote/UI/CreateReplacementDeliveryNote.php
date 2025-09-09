@@ -20,6 +20,7 @@ use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\UI\WithInertia;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\UI\Dispatch\DeliveryNoteTabsEnum;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Dispatching\DeliveryNoteItemsResource;
@@ -307,6 +308,19 @@ class CreateReplacementDeliveryNote extends OrgAction
             'state_icon'       => DeliveryNoteStateEnum::stateIcon()[$deliveryNote->state->value],
             'state_label'      => $deliveryNote->state->labels()[$deliveryNote->state->value],
             'is_collection' => (bool) $deliveryNote->orders()->first()->collection_address_id,
+            'is_replacement' => true,
+            'delivery_note'            => [
+                'reference' => $deliveryNote->reference,
+                'route'     => [
+                    'name'       => 'grp.org.shops.show.ordering.orders.show.delivery-note',
+                    'parameters' => [
+                        'organisation' => $order->organisation->slug,
+                        'shop'         => $order->shop->slug,
+                        'order'        => $order->slug,
+                        'deliveryNote'        => $deliveryNote->slug
+                    ]
+                ],
+            ],
             'customer'         => array_merge(
                 CustomerResource::make($deliveryNote->customer)->getArray(),
                 [
@@ -349,10 +363,7 @@ class CreateReplacementDeliveryNote extends OrgAction
                     'countriesAddressData' => GetAddressData::run()
                 ]
             ],
-            'delivery_address' => AddressResource::make($deliveryNote->deliveryAddress),
-            'picker'           => $deliveryNote->pickerUser,
-            'packer'           => $deliveryNote->packerUser,
-            'parcels'          => $deliveryNote->parcels
+            'delivery_address' => AddressResource::make($deliveryNote->deliveryAddress)
         ];
     }
 
@@ -410,7 +421,8 @@ class CreateReplacementDeliveryNote extends OrgAction
 
     public function htmlResponse(Order $order, ActionRequest $request): Response
     {
-        $deliveryNote = $order->deliveryNotes()->first();
+        /** @var DeliveryNote $deliveryNote */
+        $deliveryNote = $order->deliveryNotes()->where('type', DeliveryNoteTypeEnum::ORDER)->first();
         $actions = $this->getActions($deliveryNote, $request);
 
         $warning = null;

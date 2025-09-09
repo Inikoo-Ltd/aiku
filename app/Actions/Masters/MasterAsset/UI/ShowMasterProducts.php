@@ -118,7 +118,6 @@ class ShowMasterProducts extends GrpAction
                         [
                             'type'  => 'button',
                             'style' => 'edit',
-                            'label' => __('edit'),
                             'route' => [
                                 'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
@@ -146,6 +145,10 @@ class ShowMasterProducts extends GrpAction
                 MasterAssetTabsEnum::TRADE_UNITS->value => $this->tab == MasterAssetTabsEnum::TRADE_UNITS->value ?
                     fn () => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset))
                     : Inertia::lazy(fn () => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset))),
+
+                MasterAssetTabsEnum::IMAGES->value => $this->tab == MasterAssetTabsEnum::IMAGES->value ?
+                    fn () =>  GetMasterProductImages::run($masterAsset)
+                    : Inertia::lazy(fn () => GetMasterProductImages::run($masterAsset)),
 
                 MasterAssetTabsEnum::PRODUCTS->value => $this->tab == MasterAssetTabsEnum::PRODUCTS->value ?
                     fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset))
