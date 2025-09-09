@@ -30,11 +30,13 @@ import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl);
 
 
-defineProps<{
+const props = defineProps<{
     data: TableTS
     tab?: string
     state: string
 }>();
+
+console.log(props.data);
 
 const locale = inject("locale", aikuLocaleStructure);
 
@@ -213,6 +215,12 @@ onMounted(() => {
             <span v-else>{{ item.quantity_dispatched }}</span>
 
         </template>
+        <!-- <template #cell(quantity_dispatched)="{ item: item, proxyItem }">
+            <FractionDisplay v-if="item.quantity_dispatched_fractional"
+                             :fractionData="item.quantity_dispatched_fractional"/>
+            <span v-else>{{ item.quantity_dispatched }}</span>
+
+        </template> -->
 
         <template #cell(quantity_picked)="{ item: item, proxyItem }">
             <FractionDisplay v-if="item.quantity_picked_fractional" :fractionData="item.quantity_picked_fractional"/>

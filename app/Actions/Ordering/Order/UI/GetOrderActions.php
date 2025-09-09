@@ -130,20 +130,20 @@ class GetOrderActions
                                  ]
                              ]
                          ] : [],
-                         [
-                             'type'    => 'button',
-                             'style'   => '',
-                             'tooltip' => __('Rollback'),
-                             'label'   => __('Rollback'),
-                             'key'     => 'rollback',
-                             'route'   => [
-                                 'method'     => 'patch',
-                                 'name'       => 'grp.models.order.rollback_dispatch',
-                                 'parameters' => [
-                                     'order' => $order->id
-                                 ]
-                             ]
-                         ],
+                        //  [
+                        //      'type'    => 'button',
+                        //      'style'   => '',
+                        //      'tooltip' => __('Rollback'),
+                        //      'label'   => __('Rollback'),
+                        //      'key'     => 'rollback',
+                        //      'route'   => [
+                        //          'method'     => 'patch',
+                        //          'name'       => 'grp.models.order.rollback_dispatch',
+                        //          'parameters' => [
+                        //              'order' => $order->id
+                        //          ]
+                        //      ]
+                        //  ],
                      [
                          'type'    => 'button',
                          'style'   => 'save',
