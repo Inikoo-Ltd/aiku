@@ -4,7 +4,10 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faClipboard, faDollarSign, faPencil } from "@fal"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import { trans } from "laravel-vue-i18n"
-import { inject } from "vue"
+import { inject, ref } from "vue"
+import { AddressManagement } from "@/types/PureComponent/Address"
+import Modal from "@/Components/Utils/Modal.vue"
+import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
 
 const props = defineProps<{
     summary: {
@@ -16,9 +19,12 @@ const props = defineProps<{
         charges_amount: string
     }
     balance?: string
+    address_management?: AddressManagement
 }>()
 
 const locale = inject('locale', {})
+
+const isModalShippingAddress = ref(false)
 
 </script>
 
@@ -64,14 +70,23 @@ const locale = inject('locale', {})
                     <FontAwesomeIcon :icon="faClipboard" class="" fixed-width aria-hidden="true" />
                     {{ trans("Delivery Address") }}
                 </div>
+
                 <div v-if="summary?.customer?.addresses?.delivery?.formatted_address" class="pl-6 pr-3" v-html="summary?.customer?.addresses?.delivery?.formatted_address">
                 </div>
+
                 <div v-else class="text-gray-400 italic pl-6 pr-3">
                     {{ trans("No delivery address") }}
+                </div>
+
+                <div v-if="address_management?.updateRoute" @click="isModalShippingAddress = true"
+                    class="pl-6 pr-3 w-fit underline cursor-pointer hover:text-gray-700">
+                    {{ trans("Edit") }}
+                    <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true"/>
                 </div>
             </div>
         </div>
 
+        <!-- Summary -->
         <div>
             <div class="border-b border-gray-200 pb-0.5 flex justify-between pl-1.5 pr-4 mb-1.5">
                 <div class="">{{ trans("Current balance") }}:</div>
@@ -88,42 +103,14 @@ const locale = inject('locale', {})
             </div>
         </div>
 
-        <!-- <div class="text-right">
-            <div class="py-1 border-t border-gray-400 grid grid-cols-2 ">
-                <div>Item gross</div>
-                <div>{{ summary.gross_amount }}</div>
-            </div>
-            <div class="py-1 border-t border-gray-300 grid grid-cols-2 ">
-                <div>Discounts</div>
-                <div>-31.83</div>
-            </div>
-            <div class="py-1 border-t border-gray-400 grid grid-cols-2 ">
-                <div>Item Net</div>
-                <div>{{ summary.net_amount }}</div>
-            </div>
-            <div class="py-1 border-t border-gray-300 grid grid-cols-2 ">
-                <div>Charges</div>
-                <div>{{ summary.charges_amount }}</div>
-            </div>
-            <div class="py-1 border-t border-gray-300 grid grid-cols-2 ">
-                <div>Shipping</div>
-                <div>{{ summary.services_amount }}</div>
-            </div>
-            <div class="py-1 border-t border-gray-400 grid grid-cols-2 ">
-                <div>Net</div>
-                <div>79.28</div>
-            </div>
-            <div class="py-1 border-t border-gray-300 grid grid-cols-2 ">
-                <div>
-                    <div>Tax</div>
-                    <div class="text-xs text-gray-400">GB-SR VAT 20%</div>
-                </div>
-                <div>15.86</div>
-            </div>
-            <div class="font-semibold py-1 border-t border-b border-gray-400 grid grid-cols-2 ">
-                <div class="">Total</div>
-                <div>79.28</div>
-            </div>
-        </div> -->
+        <!-- Section: Delivery address -->
+        <Modal v-if="address_management" :isOpen="isModalShippingAddress" @onClose="() => (isModalShippingAddress = false)" width="w-full max-w-4xl">
+            <AddressEditModal :addresses="address_management.addresses"
+                :address="summary?.customer?.addresses?.delivery"
+                :updateRoute="address_management.address_update_route"
+                :address_modal_title="address_management.address_modal_title"
+                @onDone="() => (isModalShippingAddress = false)"
+            />
+        </Modal>
     </div>
 </template>
