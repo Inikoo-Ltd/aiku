@@ -10,7 +10,6 @@ import Image from "../Image.vue"
 import { Image as ImageTS } from "@/types/Image"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import LoadingIcon from "../Utils/LoadingIcon.vue"
 import { GridProducts } from "@/Components/Product"
 
 const props = defineProps<{
@@ -32,13 +31,10 @@ const loadingSubmit = ref<null | number | string>(null)
 const isModalEditVideo = ref(false)
 const selectedVideoToUpdate = ref<any>(null)
 
-function onStartDrag(event: DragEvent, img: ImageTS) {
-    selectedDragImage.value = img
-    event.dataTransfer?.setData("application/json", JSON.stringify(img))
-}
-
 function onSubmitImage(dataRow: any, categoryBox: any) {
     categoryBox.imageUrl = dataRow?.image?.original
+
+    console.log(dataRow,categoryBox)
 
     router[props.imagesUpdateRoute.method || "patch"](
         route(props.imagesUpdateRoute.name, props.imagesUpdateRoute.parameters),
@@ -73,9 +69,15 @@ function onDropImage(event: DragEvent, categoryBox: any) {
     const dataRowImage = JSON.parse(
         event.dataTransfer?.getData("application/json") || "{}"
     )
+    console.log('dataRowImage', dataRowImage, event)
     if (dataRowImage) {
         onSubmitImage(dataRowImage, categoryBox)
     }
+}
+
+function onStartDrag(event: DragEvent, img: ImageTS) {
+    selectedDragImage.value = img
+    event.dataTransfer?.setData("application/json", JSON.stringify(img))
 }
 
 function onSubmitVideoUrl() {
@@ -111,7 +113,6 @@ const activeCategory = ref(null);
 
 
 
-console.log('upload Image', props)
 </script>
 
 <template>
@@ -161,12 +162,12 @@ console.log('upload Image', props)
             </h3>
 
             <!-- Scrollable Product List -->
-            <div class="flex-1 overflow-y-auto max-h-[600px] pr-1 ">
+        <div class="flex-1 overflow-y-auto max-h-[600px] min-h-[100px] pr-1 scrollbar-thin scrollbar-thumb-gray-300 hover:scrollbar-thumb-gray-400">
                 <GridProducts :resource="dataTable" gridClass="grid-cols-1">
                     <template #card="{ item }">
                         <article
                             class="group flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white mb-2 p-3 shadow-sm transition hover:shadow-md hover:border-blue-400 cursor-move"
-                            draggable="true" @dragstart="onStartDrag(item, $event)" @dragend="activeCategory = null">
+                            draggable="true" @dragstart="onStartDrag($event,item)" @dragend="activeCategory = null">
                             <!-- Left: Image + Info -->
                             <div class="flex items-center gap-3 min-w-0 flex-1">
                                 <!-- Product Image -->
