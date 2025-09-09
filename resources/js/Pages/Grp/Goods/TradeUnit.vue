@@ -59,7 +59,7 @@ const props = defineProps<{
         images?: Images
     }[]
     images_update_route: routeType
-
+    id : number | string
 }>()
 
 console.log('opo', props.images_category_box)
@@ -104,6 +104,7 @@ const component = computed(() => {
         :imagesCategoryBox="images_category_box"
         :imagesUpdateRoute="props.images_update_route"
         :dataTable="props.images"
+        :id="props.id"
     />
 
 
