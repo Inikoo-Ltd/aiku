@@ -190,7 +190,7 @@ class ShowMasterProducts extends GrpAction
         return match ($routeName) {
             'grp.masters.master_shops.show.master_products.show' =>
             array_merge(
-                ShowMasterShop::make()->getBreadcrumbs($this->parent, $routeParameters),
+                ShowMasterShop::make()->getBreadcrumbs($masterAsset->masterShop, $routeParameters),
                 $headCrumb(
                     $masterAsset,
                     [
