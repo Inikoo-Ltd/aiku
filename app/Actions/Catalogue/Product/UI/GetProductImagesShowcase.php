@@ -41,7 +41,7 @@ class GetProductImagesShowcase
                     'media'   => ''
                 ],
             ],
-            'images' => ImageResource::collection($product->images)->resolve(),
+            'images' => ImageResource::collection(IndexProductImages::run($product))->resolve(),
             
         ];
     }
