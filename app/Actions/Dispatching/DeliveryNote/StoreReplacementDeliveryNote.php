@@ -22,6 +22,7 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Ordering\Order;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
@@ -83,8 +84,10 @@ class StoreReplacementDeliveryNote extends OrgAction
                 ]);
             }
 
-            $productIds = collect(Arr::get($modelData, 'products'))->pluck('id');
-            $transactions = $order->transactions()->whereIn('model_id', $productIds)->where('model_type', 'Product')->get();
+            $itemIds = collect(Arr::get($modelData, 'products'))->pluck('id');
+            $transactionIds = DeliveryNoteItem::whereIn('id', $itemIds)->pluck('transaction_id');
+
+            $transactions = $order->transactions()->whereIn('transactions.id', $transactionIds)->get();
 
             /** @var Transaction $transaction */
             foreach ($transactions as $transaction) {
