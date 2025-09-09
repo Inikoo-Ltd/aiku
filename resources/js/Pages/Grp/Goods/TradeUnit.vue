@@ -75,7 +75,7 @@ const component = computed(() => {
         attachments: TableAttachments,
         products: TableProducts,
         stocks: TableStocks,
-        images: TableImages
+        images: TradeUnitImagesManagement
     }
     return components[currentTab.value]
 
@@ -98,17 +98,17 @@ const component = computed(() => {
 
 
 
-    <TradeUnitImagesManagement
+    <!-- <TradeUnitImagesManagement
         v-if="currentTab === 'images' && images_category_box?.length"
         :currentTab
         :imagesCategoryBox="images_category_box"
         :imagesUpdateRoute="props.images_update_route"
         :dataTable="props.images"
         :id="props.id"
-    />
+    /> -->
 
 
-    <component v-else
+    <component 
         :is="component"
         :data="props[currentTab]"
         :tab="currentTab"

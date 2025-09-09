@@ -25,11 +25,26 @@ class GetTradeUnitImages
             'id' => $tradeUnit->id,
             'images_category_box' => $this->getImagesData($tradeUnit),
             'images_update_route' => [
+                'method'     => 'patch',
                 'name'       => 'grp.models.trade-unit.update_images',
                 'parameters' => [
                     'tradeUnit' => $tradeUnit->id,
                 ],
-                'method'     => 'patch'
+            ],
+            'upload_images_route' => [
+                'method'     => 'post',
+                'name'       => 'grp.models.trade-unit.upload_images',
+                'parameters' => [
+                    'tradeUnit' => $tradeUnit->id,
+                ],
+            ],
+            'delete_images_route' => [
+                'method'     => 'post',
+                'name'       => 'grp.models.trade-unit.detach_image',
+                'parameters' => [
+                    'tradeUnit' => $tradeUnit->id,
+                    'media'   => ''
+                ],
             ],
             'images' => TradeUnitImagesResource::collection(IndexTradeUnitImages::run($tradeUnit))->resolve(),
             
