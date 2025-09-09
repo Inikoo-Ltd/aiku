@@ -295,7 +295,7 @@ class IndexFamilies extends OrgAction
                     $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
                     $table->column(key: 'department_code', label: __('department'), canBeHidden: false, sortable: true, searchable: true);
                 }
-                if(class_basename($parent) == 'MasterProductCategory') {
+                if (class_basename($parent) == 'MasterProductCategory') {
                     $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
                 }
                 $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)

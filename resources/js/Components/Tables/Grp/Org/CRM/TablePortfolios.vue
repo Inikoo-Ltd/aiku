@@ -33,7 +33,8 @@ import {
     faClone,
     faLink, faScrewdriver, faTools,
     faRecycle, faHandPointer, faHandshakeSlash, faHandshake,
-    faCheckCircle
+    faCheckCircle,
+    faPlus
 } from "@fal"
 import { faStar, faFilter } from "@fas"
 import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
@@ -283,10 +284,10 @@ const onDisableCheckbox = (item) => {
                     </div>
 
                     <Button v-if="item.platform_possible_matches?.number_matches"
-                        @click="() => {fetchRoute(), isOpenModal = true, selectedPortfolio = item}"
+                        @click="() => { fetchRoute(), isOpenModal = true, selectedPortfolio = item }"
                         :label="trans('Choose another product from your shop')" :capitalize="false" size="xxs"
                         type="tertiary" />
-                    <Button v-else @click="() => {fetchRoute(), isOpenModal = true, selectedPortfolio = item}"
+                    <Button v-else @click="() => { fetchRoute(), isOpenModal = true, selectedPortfolio = item }"
                         :label="trans('Match it with an existing product in your shop')" :capitalize="false" size="xxs"
                         type="tertiary" />
                 </template>
@@ -318,25 +319,27 @@ const onDisableCheckbox = (item) => {
 
         <!-- Column: actions -->
         <template #cell(actions)="{ item }">
-            <div v-if="item.customer_sales_channel_platform_status && !item.platform_status"
-                class="flex gap-x-2 items-center">
-                <ButtonWithLink v-tooltip="trans('Will create new product')" :routeTarget="{
-                    method: 'post',
-                    name: props.routes.single_create_new.name,
-                    parameters: {
-                        portfolio: item.id
-                    },
-                }" isWithError icon="" :label="trans('Create new product')" size="xxs" type="tertiary" :bindToLink="{
+            <div class="flex gap-2">
+                <div v-if="item.customer_sales_channel_platform_status && !item.platform_status" class="flex gap-x-2 items-center">
+                    <ButtonWithLink v-tooltip="trans('Will create new product')" :routeTarget="{
+                        method: 'post',
+                        name: props.routes.single_create_new.name,
+                        parameters: {
+                            portfolio: item.id
+                        },
+                    }" isWithError :label="trans('Create new product')" size="xs" :icon="faPlus" type="tertiary" :bindToLink="{
+                    preserveScroll: true,
+                }" />
+                </div>
+
+                <ButtonWithLink v-tooltip="trans('Unselect product')" type="negative" icon="fal fa-skull"
+                    :routeTarget="item.update_portfolio" :body="{
+                        'status': false,
+                    }" size="xs" :bindToLink="{
                     preserveScroll: true,
                 }" />
             </div>
 
-            <ButtonWithLink v-tooltip="trans('Unselect product')" type="negative" icon="fal fa-skull"
-                :routeTarget="item.update_portfolio" :body="{
-                    'status': false,
-                }" size="xs" :bindToLink="{
-                    preserveScroll: true,
-                }" />
         </template>
     </Table>
 
@@ -374,9 +377,9 @@ const onDisableCheckbox = (item) => {
                                         selectedVariant?.id === item.id ? 'bg-green-100 border-green-400' : ''
                                     ]">
                                     <Transition name="slide-to-right">
-                                        <FontAwesomeIcon v-if="selectedVariant?.id === item.id"
-                                            :icon="faCheckCircle" class="bottom-2 right-2 absolute text-green-500"
-                                            fixed-width aria-hidden="true" />
+                                        <FontAwesomeIcon v-if="selectedVariant?.id === item.id" :icon="faCheckCircle"
+                                            class="bottom-2 right-2 absolute text-green-500" fixed-width
+                                            aria-hidden="true" />
                                     </Transition>
                                     <slot name="product" :item="item">
                                         <Image v-if="item.images?.src" :src="item.images?.src"
