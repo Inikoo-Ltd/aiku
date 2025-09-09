@@ -52,6 +52,7 @@ class StoreDeliveryNote extends OrgAction
         data_set($modelData, 'customer_id', $order->customer_id);
         data_set($modelData, 'group_id', $order->group_id);
         data_set($modelData, 'organisation_id', $order->organisation_id);
+        data_set($modelData, 'collection_address_id', $order->collection_address_id);
 
 
         data_set($modelData, 'customer_notes', $order->customer_notes);

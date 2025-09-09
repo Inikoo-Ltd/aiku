@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order;
 
+use Adawolfa\ISDOC\Schema\Invoice\DeliveryNote;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateOrders;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals;
@@ -20,6 +21,8 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\DateIntervals\DateIntervalEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Events\UpdateOrderNotesEvent;
 use App\Models\Ordering\Order;
@@ -61,8 +64,17 @@ class UpdateOrder extends OrgAction
                 MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->master_shop_id, $intervalsExceptHistorical, []);
             }
 
-            if ($order->deliveryNotes->first()) {
-                $deliveryNote = $order->deliveryNotes->first();
+            $deliveryNote = $order->deliveryNotes()->where('delivery_notes.type',DeliveryNoteTypeEnum::ORDER)->first();
+            if ($deliveryNote) {
+
+                if (Arr::has($changes, 'collection_address_id') &&  !in_array($deliveryNote->state,[DeliveryNoteStateEnum::CANCELLED, DeliveryNoteStateEnum::DISPATCHED])) {
+                    $deliveryNote->update(
+                        [
+                            'collection_address_id' => $order->collection_address_id,
+                        ]
+                    );
+                }
+
 
                 if (Arr::has($changes, 'customer_notes')) {
                     $deliveryNote->update(
