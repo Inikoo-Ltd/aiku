@@ -338,7 +338,6 @@ class CreateReplacementDeliveryNote extends OrgAction
 
             'box_stats' => $this->getBoxStats($deliveryNote),
             'notes'              => $this->getDeliveryNoteNotes($deliveryNote),
-            'quick_pickers'       => $this->quickGetPickers(),
             'routes'              => [
                 'update'         => [
                     'name'       => 'grp.models.delivery_note.update',
@@ -346,59 +345,10 @@ class CreateReplacementDeliveryNote extends OrgAction
                         'deliveryNote' => $deliveryNote->id
                     ]
                 ],
-                'set_queue'      => [
-                    'method'     => 'patch',
-                    'name'       => 'grp.models.delivery_note.state.in_queue',
-                    'parameters' => [
-                        'deliveryNote' => $deliveryNote->id
-                    ]
-                ],
-                'pickers_list'   => [
-                    'name'       => 'grp.json.employees.picker_users',
-                    'parameters' => [
-                        'organisation' => $deliveryNote->organisation->slug
-                    ]
-                ],
-                'packers_list'   => [
-                    'name'       => 'grp.json.employees.packers',
-                    'parameters' => [
-                        'organisation' => $deliveryNote->organisation->slug
-                    ]
-                ],
-                'exportPdfRoute' => [
-                    'name'       => 'grp.org.accounting.invoices.download',
-                    'parameters' => [
-                        'organisation' => $deliveryNote->organisation->slug,
-                        'invoice'      => $deliveryNote->slug
-                    ]
-                ],
-            ],
-            'delivery_note_state' => [
-                'value' => $deliveryNote->state,
-                'label' => $deliveryNote->state->labels()[$deliveryNote->state->value],
-            ],
-            'shipments_routes'           => [
-                'submit_route' => [
-                    'name'       => 'grp.models.delivery_note.shipment.store',
-                    'parameters' => [
-                        'deliveryNote' => $deliveryNote->id
-                    ]
-                ],
 
-                'fetch_route' => [
-                    'name'       => 'grp.json.shippers.index',
-                    'parameters' => [
-                        'organisation' => $deliveryNote->organisation->slug,
-                    ]
-                ],
-
-                'delete_route' => [
-                    'name'       => 'grp.models.delivery_note.shipment.detach',
-                    'parameters' => [
-                        'deliveryNote' => $deliveryNote->id
-                    ]
-                ],
             ],
+
+
             'warehouse'           => [
                 'slug' => $deliveryNote->warehouse->slug,
             ],
@@ -411,8 +361,8 @@ class CreateReplacementDeliveryNote extends OrgAction
 
 
         $inertiaResponse = Inertia::render(
-            'Org/Dispatching/DeliveryNote',
-            $props
+            'Org/Dispatching/CreateReplacement',
+            $props,
         );
 
         $inertiaResponse->table($this->tableStructure(parent: $deliveryNote, prefix: DeliveryNoteTabsEnum::ITEMS->value));

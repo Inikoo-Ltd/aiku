@@ -63,6 +63,7 @@ class Translate extends OrgAction
     public function asController($language, ActionRequest $request): string
     {
         $this->initialisationFromGroup(group(), $request);
+        $language = Language::where('code', $language)->first();
         $text = Arr::get($this->validatedData, 'text');
         return $this->handle($text, $language);
     }
