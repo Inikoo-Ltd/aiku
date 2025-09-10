@@ -112,8 +112,9 @@ class CreateReplacementDeliveryNote extends OrgAction
                 'type'    => 'button',
                 'style'   => 'save',
                 'tooltip' => __('create replacement'),
-                'label'   => __('create replacement'),
-                'key'     => 'action',
+                'label'   => __('Create Replacement'),
+                'key'     => 'action_replacement',
+                'icon'    => 'fal fa-plus',
                 'route'   => [
                     'method'     => 'post',
                     'name'       => 'grp.models.order.replacement_delivery_note.store',

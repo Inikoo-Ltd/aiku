@@ -36,6 +36,10 @@ defineProps<{
     state: string
 }>();
 
+const emit = defineEmits<{
+    'update:quantity-to-resend': [itemId: string | number, value: number]
+}>();
+
 
 const locale = inject("locale", aikuLocaleStructure);
 
@@ -210,7 +214,12 @@ onMounted(() => {
         <template #cell(quantity_to_resend)="{ item: item, proxyItem }">
             <InputNumber v-model="item.quantity_to_resend" :min="0" :max="item.quantity_dispatched" :step="1"
                 :invalid="item.quantity_to_resend < 0 || item.quantity_to_resend > item.quantity_dispatched"
-                size="small" mode="decimal" showButtons />
+                ode="decimal" showButtons size="small"
+                @update:modelValue="(value) => emit('update:quantity-to-resend', item.id, value)" :pt="{
+                    input: { class: 'text-center' },
+                    incrementButton: { class: 'p-1' },
+                    decrementButton: { class: 'p-1' }
+                }" />
         </template>
 
         <template #cell(quantity_picked)="{ item: item, proxyItem }">
