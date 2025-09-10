@@ -61,7 +61,11 @@ class StoreReplacementDeliveryNote extends OrgAction
         data_set($modelData, 'organisation_id', $order->organisation_id);
         data_set($modelData, 'type', DeliveryNoteTypeEnum::REPLACEMENT);
 
-        $deliveryNote = DB::transaction(function () use ($order, $modelData, $deliveryAddress) {
+
+        $items = Arr::pull($modelData, 'products');
+        $itemIds = collect($items)->where('quantity', '>', 0)->pluck('id');
+
+        $deliveryNote = DB::transaction(function () use ($order, $modelData, $deliveryAddress, $itemIds, $items) {
             /** @var DeliveryNote $deliveryNote */
             $deliveryNote = $order->deliveryNotes()->create($modelData);
 
@@ -84,27 +88,24 @@ class StoreReplacementDeliveryNote extends OrgAction
                 ]);
             }
 
-            $itemIds = collect(Arr::get($modelData, 'products'))->pluck('id');
-            $transactionIds = DeliveryNoteItem::whereIn('id', $itemIds)->pluck('transaction_id');
+            $deliveryNoteItems = DeliveryNoteItem::whereIn('id', $itemIds)->get();
 
-            $transactions = $order->transactions()->whereIn('transactions.id', $transactionIds)->get();
-
-            /** @var Transaction $transaction */
-            foreach ($transactions as $transaction) {
+            foreach ($deliveryNoteItems as $deliveryNoteItem) {
+                $transaction = $deliveryNoteItem->transaction;
                 $product = Product::find($transaction->model_id);
-                $quantity = collect(Arr::get($modelData, 'products'))->where('id', $product->id)->first()->quantity;
+
+                $quantity = collect($items)
+                    ->where('id', $deliveryNoteItem->id)->value('quantity');
 
                 foreach ($product->orgStocks as $orgStock) {
-
                     $deliveryNoteItemData = [
-                        'org_stock_id'      => $orgStock->id,
-                        'transaction_id'    => $transaction->id,
+                        'org_stock_id' => $orgStock->id,
+                        'transaction_id' => $transaction->id,
                         'quantity_required' => $quantity
                     ];
                     StoreDeliveryNoteItem::make()->action($deliveryNote, $deliveryNoteItemData);
                 }
             }
-
 
             return $deliveryNote;
         });
