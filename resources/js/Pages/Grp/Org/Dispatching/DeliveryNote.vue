@@ -38,7 +38,7 @@ import { computed, provide, ref, watch, onMounted } from "vue";
 import type { Component } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
 import BoxStatsDeliveryNote from "@/Components/Warehouse/DeliveryNotes/BoxStatsDeliveryNote.vue";
-import TableDeliveryNoteItems from "@/Components/Warehouse/DeliveryNotes/TableDeliveryNoteItems.vue";
+import TableDeliveryNoteItems from "@/Components/Warehouse/Replacement/TableDeliveryNoteItems.vue";
 import TablePickings from "@/Components/Warehouse/DeliveryNotes/TablePickings.vue";
 import { routeType } from "@/types/route";
 import Tabs from "@/Components/Navigation/Tabs.vue";
@@ -409,7 +409,6 @@ const onCreateReplacement = (action: any) => {
 <template>
 
     <Head :title="capitalize(title)" />
-    {{ quantityToResendData }}
     <PageHeading :data="pageHead" isButtonGroupWithBorder>
         <template #otherBefore v-if="!box_stats.is_replacement">
             <!-- Button: Download PDF -->
