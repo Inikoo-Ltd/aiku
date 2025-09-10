@@ -9,7 +9,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Orders;
 
-use App\Actions\Ordering\Order\UpdateOrder;
+use App\Actions\Ordering\Order\UpdateOrderPremiumDispatch;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Ordering\Order;
@@ -18,36 +18,36 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class UpdateRetinaOrder extends RetinaAction
+class UpdateRetinaOrderPremiumDispatch extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
 
+    private Order $order;
+
     public function handle(Order $order, array $modelData): Order
     {
-        $order = UpdateOrder::make()->action($order, $modelData);
+        $order = UpdateOrderPremiumDispatch::make()->action($order, $modelData);
 
         return $order;
     }
 
     public function authorize(ActionRequest $request): bool
     {
-        return true;
+        return $this->order->customer_id == $request->user()->id;
     }
 
     public function rules(): array
     {
         return [
-            'customer_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'shipping_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'is_premium_dispatch'   => ['sometimes', 'boolean'],
-            'collection_address_id' => ['sometimes', 'nullable', Rule::exists('addresses', 'id')]
+            'is_premium_dispatch'   => ['required', 'boolean'],
         ];
     }
 
     public function asController(Order $order, ActionRequest $request): Order
     {
+        $this->order = $order;
         $this->initialisation($request);
 
         return $this->handle($order, $this->validatedData);

@@ -46,7 +46,7 @@ enum TradeUnitTabsEnum: string
             TradeUnitTabsEnum::IMAGES => [
                 'type'  => 'icon',
                 'align' => 'right',
-                'title' => __('images'),
+                'title' => __('media'),
                 'icon'  => 'fal fa-camera-retro',
             ],
             TradeUnitTabsEnum::HISTORY => [
