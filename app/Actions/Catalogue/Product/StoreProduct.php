@@ -82,6 +82,7 @@ class StoreProduct extends OrgAction
             }
         }
         data_set($modelData, 'currency_id', $shop->currency_id);
+        data_set($modelData, 'bucket_images', $this->strict);
 
 
         $product = DB::transaction(function () use ($shop, $modelData, $orgStocks) {

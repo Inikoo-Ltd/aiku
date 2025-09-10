@@ -127,9 +127,9 @@ class GetMasterProductImages
             [
                 'label' => __('Lifestyle image'),
                 'type'  => 'image',
-                'column_in_db' => 'size_comparison_image_id',
-                'id' => $masterAsset->size_comparison_image_id,
-                'images' => $masterAsset->imageSources(getImage:'sizeComparisonImage'),
+                'column_in_db' => 'lifestyle_image_id',
+                'id' => $masterAsset->lifestyle_image_id,
+                'images' => $masterAsset->imageSources(getImage:'LifestyleImage'),
             ],
         ];
 

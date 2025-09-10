@@ -69,6 +69,7 @@ class StoreMasterAsset extends OrgAction
                 data_set($modelData, 'master_sub_department_id', $parent->id);
             }
         }
+        data_set($modelData, 'bucket_images', $this->strict);
 
         $masterAsset = DB::transaction(function () use ($parent, $modelData, $tradeUnits, $shopProducts) {
             /** @var MasterAsset $masterAsset */
