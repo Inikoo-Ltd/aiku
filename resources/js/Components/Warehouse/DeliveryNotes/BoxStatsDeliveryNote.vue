@@ -411,7 +411,7 @@ const listError = inject('listError', {})
                 </div>
                 <div v-else class="space-y-0.5 pl-1">
                     <!-- Field: Delivery notes reference -->
-                    <Link v-if="boxStats?.order"
+                    <Link v-if="boxStats?.order && boxStats?.delivery_note"
                           :href="route(boxStats?.delivery_note?.route?.name, boxStats?.delivery_note?.route?.parameters)"
                           class="w-fit flex items-center gap-3 gap-x-1.5 primaryLink cursor-pointer">
                         <dt class="flex-none">

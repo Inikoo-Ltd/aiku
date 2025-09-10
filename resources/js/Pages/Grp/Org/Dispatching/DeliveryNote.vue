@@ -496,7 +496,7 @@ const onCreateReplacement = (action: any) => {
 
 
     <BoxStatsDeliveryNote v-if="box_stats && pickingView" :boxStats="box_stats" :routes :deliveryNote="delivery_note"
-        :updateRoute="routes.update" :shipments />
+        :updateRoute="routes.update" :shipments :is_collection />
 
     <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
 
