@@ -62,6 +62,7 @@ class UpdateTradeUnitImages extends GrpAction
             }
         }
 
+        data_set($modelData, 'bucket_images', true);
         $this->update($tradeUnit, $modelData);
 
         return $tradeUnit;
