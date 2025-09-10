@@ -39,7 +39,10 @@ class ImagesResource extends JsonResource
             'size'      => NaturalLanguage::make()->fileSize($this->size, 1, 'MB'),
             'image'     => $imageSources,
             'sub_scope' => $this->sub_scope,
-
+            'dimensions' => [
+                'width'  => $this->width ?? 0,
+                'height' => $this->height ?? 0
+            ],
         ];
     }
 }
