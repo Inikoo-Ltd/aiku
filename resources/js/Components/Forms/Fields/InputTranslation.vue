@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onBeforeUnmount } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { faRobot } from "@far";
-import {router} from "@inertiajs/vue3"
+import { faRobot } from "@far"
+import axios from "axios"
+import { notify } from "@kyvg/vue3-notification"
 
 const props = defineProps<{
   form: any
@@ -12,27 +13,26 @@ const props = defineProps<{
 
 const emits = defineEmits(["update:form"])
 
-// Init
 const storedLang = localStorage.getItem("translation_box")
 const initialLang = storedLang || Object.values(props.fieldData.languages)[0]?.code || "en"
 const selectedLang = ref(initialLang)
 
-// Ensure valid language
+// Loading states
+const loadingOne = ref(false)
+const loadingAll = ref(false)
+
 if (!Object.values(props.fieldData.languages).some(l => l.code === selectedLang.value)) {
   selectedLang.value = Object.values(props.fieldData.languages)[0]?.code || "en"
 }
 
-// Ensure form field exists
 if (!props.form[props.fieldName]) {
   props.form[props.fieldName] = {}
 }
 
-// Local buffer (copy all existing translations)
 const langBuffers = ref<Record<string, string>>({
   ...props.form[props.fieldName]
 })
 
-// Helper
 const langLabel = (code: string) => {
   const langObj = Object.values(props.fieldData.languages).find(
     (l: any) => l.code === code
@@ -40,7 +40,6 @@ const langLabel = (code: string) => {
   return langObj?.name ?? code
 }
 
-// Sync buffer → form (always push updated values back)
 watch(
   langBuffers,
   (newVal) => {
@@ -50,7 +49,6 @@ watch(
   { deep: true }
 )
 
-// Sync selectedLang → localStorage + custom event
 watch(
   selectedLang,
   (newLang) => {
@@ -60,37 +58,73 @@ watch(
   { immediate: true }
 )
 
+// Single translation
+const generateLanguagetranslateAI = async () => {
+  loadingOne.value = true
+  try {
+    const response = await axios.post(
+      route("grp.models.translate", { language: selectedLang.value }),
+      { text: props.fieldData.main }
+    )
 
-const generateLanguagetranslateAI = () => {
-  router.post(
-    route("grp.models.translate", { language: selectedLang.value }),
-    {
-      text: props.fieldData.main
-    },
-    {
-      onSuccess: () => {
-        console.log("Translation success");
-        // you can add your follow-up logic here
-      },
-      onError: (errors) => {
-        console.error("Translation failed", errors);
-      }
+    if (response.data) {
+      langBuffers.value[selectedLang.value] = response.data
     }
-  )
+  } catch (error: any) {
+    notify({
+      title: "Translation Error",
+      text: error.response?.data?.message || "Failed to generate translation.",
+      type: "error",
+    })
+  } finally {
+    loadingOne.value = false
+  }
 }
 
-// Listen to cross-tab + same-tab updates
+// Translate ALL
+const generateAllTranslationsAI = async () => {
+  loadingAll.value = true
+  const langs = Object.values(props.fieldData.languages).map((l: any) => l.code)
+
+  for (const lang of langs) {
+    if (lang === "main" || lang === props.fieldData.mainLang) continue
+
+    try {
+      const response = await axios.post(
+        route("grp.models.translate", { language: lang }),
+        { text: props.fieldData.main }
+      )
+
+      if (response.data) {
+        langBuffers.value[lang] = response.data
+      }
+    } catch (error: any) {
+      notify({
+        title: `Translation Error for ${langLabel(lang)}`,
+        text: error.response?.data?.message || "Failed to translate this language.",
+        type: "error",
+      })
+    }
+  }
+
+  loadingAll.value = false
+
+  notify({
+    title: "Translation Complete",
+    text: "All available translations have been updated.",
+    type: "success",
+  })
+}
+
 onMounted(() => {
   const handleStorage = (e: StorageEvent) => {
     if (e.key === "translation_box" && e.newValue) {
       selectedLang.value = e.newValue
     }
   }
-
   const handleCustom = (e: CustomEvent) => {
     selectedLang.value = e.detail
   }
-
   window.addEventListener("storage", handleStorage)
   window.addEventListener("translation_box_updated", handleCustom as EventListener)
 
@@ -105,8 +139,14 @@ onMounted(() => {
   <div class="space-y-4">
     <!-- Language Selector -->
     <div class="flex flex-wrap gap-2">
-      <Button v-for="lang in Object.values(fieldData.languages)" :key="lang.code + selectedLang" :label="lang.name"
-        size="xxs" :type="selectedLang === lang.code ? 'primary' : 'tertiary'" @click="selectedLang = lang.code" />
+      <Button
+        v-for="lang in Object.values(fieldData.languages)"
+        :key="lang.code + selectedLang"
+        :label="lang.name"
+        size="xxs"
+        :type="selectedLang === lang.code ? 'primary' : 'tertiary'"
+        @click="selectedLang = lang.code"
+      />
     </div>
 
     <!-- Translation Input -->
@@ -116,13 +156,34 @@ onMounted(() => {
           Translation to {{ langLabel(selectedLang) }}
         </label>
 
-        <div>
-          <Button :label="'Generate from AI'" size="xxs" type="gray" :icon="faRobot" @click="()=>generateLanguagetranslateAI()" />
+        <div class="flex gap-2">
+          <!-- Single -->
+          <Button
+            :label="loadingOne ? 'Generating...' : 'Generate from AI'"
+            size="xxs"
+            type="gray"
+            :icon="faRobot"
+            :disabled="loadingOne || loadingAll"
+            @click="generateLanguagetranslateAI"
+          />
+
+          <!-- All -->
+          <Button
+            :label="loadingAll ? 'Translating All...' : 'Translate All'"
+            size="xxs"
+            type="primary"
+            :icon="faRobot"
+            :disabled="loadingOne || loadingAll"
+            @click="generateAllTranslationsAI"
+          />
         </div>
       </div>
 
-      <input type="text" v-model="langBuffers[selectedLang]"
-        class="w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+      <input
+        type="text"
+        v-model="langBuffers[selectedLang]"
+        class="w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+      />
     </div>
   </div>
 </template>
