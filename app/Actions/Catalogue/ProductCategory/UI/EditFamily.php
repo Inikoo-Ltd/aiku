@@ -90,6 +90,12 @@ class EditFamily extends OrgAction
             'EditModel',
             [
                 'title'       => __('family'),
+                'warning' => $family->masterProductCategory ? [
+                    'type'  =>  'warning',
+                    'title' =>  'warning',
+                    'text'  =>  __('Changing name or description may affect master family.'),
+                    'icon'  => ['fas', 'fa-exclamation-triangle']
+                ] : null,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $family,
                     $request->route()->getName(),

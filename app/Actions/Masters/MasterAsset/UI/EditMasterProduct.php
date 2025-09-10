@@ -73,6 +73,12 @@ class EditMasterProduct extends GrpAction
             'EditModel',
             [
                 'title'       => __('master product'),
+                'warning' => $masterAsset->products ? [
+                    'type'  =>  'warning',
+                    'title' =>  'warning',
+                    'text'  =>  __('Changing name or description may affect multiple products in various shops.'),
+                    'icon'  => ['fas', 'fa-exclamation-triangle']
+                ] : null,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $masterAsset,
                     $request->route()->getName(),

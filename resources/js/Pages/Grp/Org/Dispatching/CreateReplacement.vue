@@ -23,7 +23,7 @@ import {
     faFilePdf,
     faExclamationTriangle
 } from "@fal";
-import { faArrowRight, faCheck } from "@fas";
+import { faArrowRight, faCheck, faSave } from "@fas";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import { capitalize } from "@/Composables/capitalize";
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
@@ -46,7 +46,7 @@ import Message from 'primevue/message';
 import { debounce } from "lodash-es";
 
 
-library.add(faSmileWink, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck);
+library.add(faSmileWink, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faSave);
 
 const props = defineProps<{
     title: string,
@@ -240,13 +240,10 @@ const onCreateReplacement = (action: any) => {
     <Head :title="capitalize(title)" />
 
     <PageHeading :data="pageHead" isButtonGroupWithBorder>
-
-
         <template #button-action-replacement="{action}">
             <Button @click="() => onCreateReplacement(action)" :label="action.label" :icon="action.icon"
                 :type="action.type" :disabled="isReplacementDisabled" :loading="loadingCreateReplacement" />
         </template>
-
     </PageHeading>
 
     <div v-if="alert?.status" class="p-2 pb-0">

@@ -58,6 +58,12 @@ class EditSubDepartment extends OrgAction
             'EditModel',
             [
                 'title'       => __('Sub-department'),
+                'warning' => $subDepartment->masterProductCategory ? [
+                    'type'  =>  'warning',
+                    'title' =>  'warning',
+                    'text'  =>  __('Changing name or description may affect master sub department.'),
+                    'icon'  => ['fas', 'fa-exclamation-triangle']
+                ] : null,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $subDepartment,
                     $request->route()->getName(),
