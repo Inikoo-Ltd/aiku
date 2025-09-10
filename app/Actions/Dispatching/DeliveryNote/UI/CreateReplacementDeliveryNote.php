@@ -112,8 +112,9 @@ class CreateReplacementDeliveryNote extends OrgAction
                 'type'    => 'button',
                 'style'   => 'save',
                 'tooltip' => __('create replacement'),
-                'label'   => __('create replacement'),
-                'key'     => 'action',
+                'label'   => __('Create Replacement'),
+                'key'     => 'action_replacement',
+                'icon'    => 'fal fa-plus',
                 'route'   => [
                     'method'     => 'post',
                     'name'       => 'grp.models.order.replacement_delivery_note.store',
@@ -439,7 +440,7 @@ class CreateReplacementDeliveryNote extends OrgAction
             $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'quantity_dispatched', label: __('Quantity Dispatched'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
-            $table->column(key: 'quantity_to_resend', label: __('Quantity Resend'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            $table->column(key: 'quantity_to_resend', label: __('Quantity Resend'), canBeHidden: false, sortable: false, searchable: true, align: 'right');
         };
     }
 

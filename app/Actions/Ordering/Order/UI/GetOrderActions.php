@@ -144,7 +144,7 @@ class GetOrderActions
                         //          ]
                         //      ]
                         //  ],
-                     app()->isLocal() ? [
+                     [
                          'type'    => 'button',
                          'style'   => 'save',
                          'icon'    => 'fal fa-plus',
@@ -160,7 +160,7 @@ class GetOrderActions
                                  'order' => $order->slug
                              ]
                          ]
-                     ] : [],
+                     ],
                  ],
 
                 default => []
