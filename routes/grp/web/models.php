@@ -222,13 +222,16 @@ use App\Actions\Masters\MasterCollection\DetachModelFromMasterCollection;
 use App\Actions\Masters\MasterProductCategory\AttachMasterFamiliesToMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\DetachFamilyToMasterSubDepartment;
 use App\Actions\Masters\MasterCollection\StoreMasterCollection;
+use App\Actions\Masters\MasterProductCategory\DeleteImageFromMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\StoreMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\StoreMasterFamily;
 use App\Actions\Masters\MasterProductCategory\StoreMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\StoreMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategory;
+use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategoryImages;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategoryTranslations;
 use App\Actions\Masters\MasterProductCategory\UploadImageMasterProductCategory;
+use App\Actions\Masters\MasterProductCategory\UploadImagesToMasterProductCategory;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Purge\StorePurge;
 use App\Actions\Ordering\Purge\UpdatePurge;
@@ -379,6 +382,9 @@ Route::prefix('master-shops/{masterShop:id}')->as('master_shops.')->group(functi
 });
 
 Route::prefix('master-product-category/{masterProductCategory:id}')->name('master_product_category.')->group(function () {
+    Route::post('upload-images', UploadImagesToMasterProductCategory::class)->name('upload_images');
+    Route::patch('update-images', UpdateMasterProductCategoryImages::class)->name('update_images');
+    Route::delete('delete-images/{media:id}', DeleteImageFromMasterProductCategory::class)->name('delete_images')->withoutScopedBindings();
     Route::post('master-collection', [StoreMasterCollection::class, 'inMasterProductCategory'])->name('master_collection.store');
     Route::post('master-collection/{masterCollection:id}/attach', AttachMasterCollectionToModel::class)->name('master_collection.attach');
     Route::delete('master-collection/{masterCollection:id}/detach', DetachMasterCollectionFromModel::class)->name('master_collection.detach');

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Retina\Ecom\Orders;
 
+use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
 use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexTransactions;
@@ -110,9 +111,11 @@ class ShowRetinaEcomOrder extends RetinaAction
 
 
                 ],
-
+                'summary'               => $this->getOrderBoxStats($order),
+                'address_management' => GetOrderDeliveryAddressManagement::run(order: $order, isRetina: true),
                 'timelines' => $finalTimeline,
                 'box_stats' => $this->getOrderBoxStats($order),
+                'balance'        => $this->customer->balance,
                 'currency'  => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'      => OrderResource::make($order),
                 'is_notes_editable' => false,  // TODO: make it dynamic, only disable on 'after' state

@@ -182,14 +182,14 @@ const isReplacementDisabled = computed(() => {
 const onCreateReplacement = (action: any) => {
     loadingCreateReplacement.value = true
     // Filter items have quantity > 0
-    const products = Object.entries(quantityToResendData.value)
+    const delivery_note_items = Object.entries(quantityToResendData.value)
         .filter(([itemId, quantity]) => quantity > 0)
         .map(([itemId, quantity]) => ({
             id: parseInt(itemId),
             quantity: quantity
         }));
 
-    if (products.length === 0) {
+    if (delivery_note_items.length === 0) {
         notify({
             title: trans("No items selected"),
             text: trans("Please select at least one item with quantity to resend"),
@@ -198,7 +198,7 @@ const onCreateReplacement = (action: any) => {
         return;
     }
 
-    const payload = { products };
+    const payload = { delivery_note_items };
 
     console.log('Creating replacement with payload:', payload);
 

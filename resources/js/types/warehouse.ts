@@ -29,4 +29,5 @@ export interface DeliveryNote {
     customer_slug: string | null
     customer_name: string | null
     number_items: number | null
+    is_premium_dispatch: boolean
 }

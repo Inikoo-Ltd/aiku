@@ -68,6 +68,7 @@ class OrdersResource extends JsonResource
             'shop_code'              => $this->shop_code,
             'shop_slug'              => $this->shop_slug,
             'created_at'             => $this->created_at,
+            'is_premium_dispatch'    => $this->is_premium_dispatch,
             'updated_by_customer_at' => $this->updated_by_customer_at,
         ];
     }

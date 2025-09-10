@@ -25,7 +25,7 @@ import {
     faExclamation,
     faExclamationTriangle
 } from "@fal";
-import { faArrowRight, faCheck } from "@fas";
+import { faArrowRight, faCheck, faStar } from "@fas";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import { capitalize } from "@/Composables/capitalize";
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
@@ -57,7 +57,7 @@ import PureAddress from "@/Components/Pure/PureAddress.vue"
 import Message from 'primevue/message';
 
 
-library.add(faSmileWink, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck);
+library.add(faSmileWink, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faStar);
 
 const props = defineProps<{
     title: string,
@@ -181,23 +181,23 @@ const isLoadingData = ref<string | boolean>(false);
 const formTrackingNumber = useForm({shipping_id: "", tracking_number: ""});
 const isModalShipment = ref(false);
 const optionShippingList = ref([]);
-const onOpenModalTrackingNumber = async () => {
-    isLoadingData.value = "addTrackingNumber";
-    try {
-        const xxx = await axios.get(
-            route(props.shipments.fetch_route.name, props.shipments.fetch_route.parameters)
-        );
-        optionShippingList.value = xxx?.data?.data || [];
-    } catch (error) {
-        console.error(error);
-        notify({
-            title: trans("Something went wrong."),
-            text: trans("Failed to retrieve shipper list"),
-            type: "error"
-        });
-    }
-    isLoadingData.value = false;
-};
+// const onOpenModalTrackingNumber = async () => {
+//     isLoadingData.value = "addTrackingNumber";
+//     try {
+//         const xxx = await axios.get(
+//             route(props.shipments.fetch_route.name, props.shipments.fetch_route.parameters)
+//         );
+//         optionShippingList.value = xxx?.data?.data || [];
+//     } catch (error) {
+//         console.error(error);
+//         notify({
+//             title: trans("Something went wrong."),
+//             text: trans("Failed to retrieve shipper list"),
+//             type: "error"
+//         });
+//     }
+//     isLoadingData.value = false;
+// };
 const onSubmitShipment = () => {
     formTrackingNumber
         .transform((data) => ({
@@ -276,7 +276,7 @@ const listError = ref({
 });
 provide("listError", listError.value);
 
-const isModalEditAddress = ref(false)
+// const isModalEditAddress = ref(false)
 const xxxCopyAddress = ref({...props.address.delivery})
 
 // ✅ Toggle for picking view — with localStorage persistence
@@ -332,6 +332,10 @@ onMounted(() => {
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" isButtonGroupWithBorder>
+        <template #afterTitle2>
+            <FontAwesomeIcon v-if="delivery_note.is_premium_dispatch" v-tooltip="trans('Priority dispatch')" icon="fas fa-star" class="text-yellow-500" fixed-width aria-hidden="true" />
+        </template>
+
         <template #otherBefore v-if="!box_stats.is_replacement">
             <!-- Button: Download PDF -->
             <div class="flex items-center gap-3 bg-gray-50 border border-gray-200 px-4 py-2 rounded-md">

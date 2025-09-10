@@ -14,10 +14,13 @@ import Icon from "@/Components/Icon.vue";
 import { useLocaleStore } from "@/Stores/locale";
 
 import { faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle } from "@fal";
+import { faStar } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { RouteParams } from "@/types/route-params";
+import { trans } from "laravel-vue-i18n"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
-library.add(faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle);
+library.add(faStar, faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle);
 
 defineProps<{
   data: {
@@ -143,6 +146,9 @@ function customerRoute(order: Order) {
       <Link :href="orderRoute(order) as unknown as string" class="primaryLink">
         {{ order["reference"] }}
       </Link>
+      
+      <FontAwesomeIcon v-if="order.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" icon="fas fa-star" class="text-yellow-500" fixed-width aria-hidden="true" />
+
     </template>
 
     <template #cell(customer_name)="{ item: order }">

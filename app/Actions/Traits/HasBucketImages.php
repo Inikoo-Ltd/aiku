@@ -11,6 +11,7 @@ namespace App\Actions\Traits;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
+use App\Models\Masters\MasterProductCategory;
 
 trait HasBucketImages
 {
@@ -133,6 +134,25 @@ trait HasBucketImages
                 'dimensions' => [
                     'width' => $model->lifestyleImage->width ?? 0,
                     'height' => $model->lifestyleImage->height ?? 0
+                ]
+            ],
+        ];
+
+
+    }
+
+    public function getSingleImageData(MasterProductCategory $model): array
+    {
+        return [
+            [
+                'label' => __('Main'),
+                'type'  => 'image',
+                'column_in_db' => 'image_id',
+                'id' => $model->image_id,
+                'images' => $model->imageSources(),
+                'dimensions' => [
+                    'width' => $model->image->width ?? 0,
+                    'height' => $model->image->height ?? 0
                 ]
             ],
         ];

@@ -2,7 +2,7 @@
 import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPlus } from "@fas"
+import { faPlus, faStar } from "@fas"
 import TagPallet from "@/Components/TagPallet.vue"
 import Icon from "@/Components/Icon.vue"
 import { inject } from "vue"
@@ -11,8 +11,9 @@ import { RouteParams } from "@/types/route-params"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
-library.add(faPlus)
+library.add(faPlus, faStar)
 
 defineProps<{
     data: object,
@@ -57,8 +58,9 @@ function orderRoute(order) {
             <!-- Column: Reference -->
             <template #cell(reference)="{ item }">
                 <Link :href="(orderRoute(item) as string)" class="primaryLink">
-                {{ item["reference"] }}
+                    {{ item["reference"] }}
                 </Link>
+                <FontAwesomeIcon v-if="item.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" icon="fas fa-star" class="text-yellow-500" fixed-width aria-hidden="true" />
             </template>
 
             <!-- <template #cell(client_name)="{ item }">

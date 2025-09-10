@@ -161,7 +161,7 @@ const updateCollectionNotes = () => {
 }
 
 onMounted(() => {
-    isCollection.value = Boolean(props.address_management.addresses.collection_address_id)
+    isCollection.value = Boolean(props.address_management?.addresses?.collection_address_id)
 });
 
 </script>
