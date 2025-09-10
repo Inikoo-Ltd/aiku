@@ -397,7 +397,7 @@ console.log('dddd', props)
                                     </p>
 
                                     <!-- Tag PrimeVue untuk sub_scope -->
-                                    <Tag v-if="item?.sub_scope" :label="capitalize(item.sub_scope + ' side')"
+                                    <Tag v-if="item?.sub_scope" :label="capitalize(item.sub_scope + (item.sub_scope != 'main' ? ' side' : ''))"
                                         :size="'xxs'" />
                                 </div>
 
