@@ -893,7 +893,7 @@ const toggleElipsis = (e: Event) => {
                     </dl>
 
                     <!-- Collection Toggle -->
-                    <div v-if="props.data?.data?.state != 'dispatched'"
+                    <div v-if="props.data?.data?.state !== 'dispatched'"
                         class="!mt-2 pl-1 flex items w-full flex-none gap-x-2 items-center">
                         <FontAwesomeIcon icon='fal fa-map-marker-alt' class='text-gray-400' fixed-width
                             aria-hidden='true' />
@@ -960,6 +960,7 @@ const toggleElipsis = (e: Event) => {
                             </dd>
                         </dl>
                     </div>
+
                 </div>
             </div>
         </BoxStatPallet>

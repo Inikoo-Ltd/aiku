@@ -5,7 +5,7 @@ import { trans } from "laravel-vue-i18n"
 import { Address } from "@/types/PureComponent/Address"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faBarcodeRead } from "@fal"
+import { faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faBarcodeRead, faMapMarkerAlt } from "@fal"
 import { faCubes } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Link, router } from "@inertiajs/vue3"
@@ -18,12 +18,12 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { Fieldset, InputNumber } from "primevue"
+import { Fieldset, InputNumber, ToggleSwitch } from "primevue"
 import Icon from "@/Components/Icon.vue"
 import axios from "axios"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 
-library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes, faBarcodeRead)
+library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes, faBarcodeRead, faMapMarkerAlt)
 
 const props = defineProps<{
     boxStats: {
@@ -91,6 +91,7 @@ const props = defineProps<{
             fetch_route: routeType
             delete_route: routeType
         }
+        shipping_notes?: string
     }
     routes: {
         pickers_list: routeType
@@ -99,12 +100,12 @@ const props = defineProps<{
     }
     deliveryNote: {
         state: string
+        id: number
     }
-
     updateRoute: routeType
 }>()
 
-/* console.log(props.boxStats) */
+// console.log(props.boxStats) 
 
 const locale = inject('locale', aikuLocaleStructure)
 
@@ -149,6 +150,44 @@ const onSubmitParcels = () => {
 
 const listError = inject('listError', {})
 
+// Section: Collection toggle feature
+const isCollection = ref<boolean>(props.boxStats?.is_collection || false)
+
+const updateCollection = async (e: Event) => {
+    const target = e.target as HTMLInputElement
+    const payload = {
+        is_collection: target.checked
+    }
+    try {
+        router.patch(route(props.routes.update.name, props.routes.update.parameters), {
+            ...payload
+        }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Collection status updated successfully"),
+                    type: "success",
+                })
+            },
+            onError: () => {
+                notify({
+                    title: trans("Something went wrong."),
+                    text: trans("Failed to update collection status"),
+                    type: "error",
+                })
+            }
+        })
+    } catch (error) {
+        console.error(error)
+        notify({
+            title: trans("Something went wrong."),
+            text: trans("Failed to update to collection"),
+            type: "error",
+        })
+    }
+}
+
 
 </script>
 
@@ -164,43 +203,42 @@ const listError = inject('listError', {})
                 <div class="space-y-0.5 pl-1">
                     <!-- Field: Order reference -->
                     <Link v-if="boxStats?.order"
-                          :href="route(boxStats?.order?.route?.name, boxStats?.order?.route?.parameters)"
-                          class="w-fit flex items-center gap-3 gap-x-1.5 primaryLink cursor-pointer">
-                        <dt class="flex-none">
-                            <FontAwesomeIcon icon='fal fa-shopping-cart' fixed-width aria-hidden='true'
-                                             class="text-gray-500"/>
-                        </dt>
-                        <dd class="text-gray-500 " v-tooltip="trans('Order')">
-                            {{ boxStats?.order?.reference }}
-                        </dd>
+                        :href="route(boxStats?.order?.route?.name, boxStats?.order?.route?.parameters)"
+                        class="w-fit flex items-center gap-3 gap-x-1.5 primaryLink cursor-pointer">
+                    <dt class="flex-none">
+                        <FontAwesomeIcon icon='fal fa-shopping-cart' fixed-width aria-hidden='true'
+                            class="text-gray-500" />
+                    </dt>
+                    <dd class="text-gray-500 " v-tooltip="trans('Order')">
+                        {{ boxStats?.order?.reference }}
+                    </dd>
                     </Link>
                     <!-- Field: Reference Number -->
-                    <Link as="a"
-                          v-if="boxStats?.customer.reference"
-                          :href="route(boxStats?.customer.route.name, boxStats?.customer.route.parameters)"
-                          class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer secondaryLink">
-                        <dt v-tooltip="'Company name'" class="flex-none">
-                            <FontAwesomeIcon icon="fal fa-id-card-alt" class="text-gray-400" fixed-width
-                                             aria-hidden="true"/>
-                        </dt>
-                        <dd class="text-gray-500" v-tooltip="'Reference'">
-                            #{{ boxStats?.customer.reference }}
-                        </dd>
+                    <Link as="a" v-if="boxStats?.customer.reference"
+                        :href="route(boxStats?.customer.route.name, boxStats?.customer.route.parameters)"
+                        class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer secondaryLink">
+                    <dt v-tooltip="'Company name'" class="flex-none">
+                        <FontAwesomeIcon icon="fal fa-id-card-alt" class="text-gray-400" fixed-width
+                            aria-hidden="true" />
+                    </dt>
+                    <dd class="text-gray-500" v-tooltip="'Reference'">
+                        #{{ boxStats?.customer.reference }}
+                    </dd>
                     </Link>
                     <!-- Field: Contact name -->
                     <div v-if="boxStats?.customer.contact_name" class="pl-1 flex items-center w-full flex-none gap-x-2"
-                         v-tooltip="trans('Contact name')">
+                        v-tooltip="trans('Contact name')">
                         <dt class="flex-none">
-                            <FontAwesomeIcon icon="fal fa-user" class="text-gray-400" fixed-width aria-hidden="true"/>
+                            <FontAwesomeIcon icon="fal fa-user" class="text-gray-400" fixed-width aria-hidden="true" />
                         </dt>
                         <dd class="text-gray-500">{{ boxStats?.customer.contact_name }}</dd>
                     </div>
                     <!-- Field: Company name -->
                     <div v-if="boxStats?.customer.company_name" class="pl-1 flex items-center w-full flex-none gap-x-2"
-                         v-tooltip="trans('Company name')">
+                        v-tooltip="trans('Company name')">
                         <dt class="flex-none">
                             <FontAwesomeIcon icon="fal fa-building" class="text-gray-400" fixed-width
-                                             aria-hidden="true"/>
+                                aria-hidden="true" />
                         </dt>
                         <dd class="text-gray-500">{{ boxStats?.customer.company_name }}</dd>
                     </div>
@@ -208,31 +246,38 @@ const listError = inject('listError', {})
                     <div v-if="boxStats?.customer.email" class="pl-1 flex items-center w-full flex-none gap-x-2">
                         <dt v-tooltip="'Email'" class="flex-none">
                             <FontAwesomeIcon icon="fal fa-envelope" class="text-gray-400" fixed-width
-                                             aria-hidden="true"/>
+                                aria-hidden="true" />
                         </dt>
                         <a :href="`mailto:${boxStats?.customer.email}`" v-tooltip="'Click to send email'"
-                           class="text-gray-500 hover:text-gray-700 truncate">{{ boxStats?.customer.email }}</a>
+                            class="text-gray-500 hover:text-gray-700 truncate">{{ boxStats?.customer.email }}</a>
                     </div>
                     <!-- Field: Phone -->
                     <div v-if="boxStats?.customer.phone" class="pl-1 flex items-center w-full flex-none gap-x-2">
                         <dt v-tooltip="'Phone'" class="flex-none">
-                            <FontAwesomeIcon icon="fal fa-phone" class="text-gray-400" fixed-width aria-hidden="true"/>
+                            <FontAwesomeIcon icon="fal fa-phone" class="text-gray-400" fixed-width aria-hidden="true" />
                         </dt>
                         <a :href="`tel:${boxStats?.customer.phone}`" v-tooltip="'Click to make a phone call'"
-                           class="text-gray-500 hover:text-gray-700">{{ boxStats?.customer.phone }}</a>
+                            class="text-gray-500 hover:text-gray-700">{{ boxStats?.customer.phone }}</a>
                     </div>
                     <!-- Field: Channel -->
                     <dl v-if="boxStats?.platform?.name" class="pl-1 flex items-center w-full gap-x-2">
                         <dt class="flex-none">
                             <div class="block w-full rounded h-[18px]">
                                 <img :src="boxStats?.platform?.logo" :alt="boxStats?.platform?.name"
-                                     class="w-full h-full object-contain rounded"/>
+                                    class="w-full h-full object-contain rounded" />
                             </div>
                         </dt>
                         <dt class="text-gray-500 hover:text-gray-700">
                             {{ boxStats?.platform?.name }}
                         </dt>
                     </dl>
+                    <!-- Section: Collection Toggle -->
+                    <div v-if="boxStats.is_replacement" class="!mt-2 flex items w-full flex-none gap-x-2 items-center pl-1">
+                        <FontAwesomeIcon icon='fal fa-map-marker-alt' class='text-gray-400' fixed-width
+                            aria-hidden='true' />
+                        <ToggleSwitch v-model="isCollection" @change="updateCollection" />
+                        <span class="text-sm text-gray-500">Collection</span>
+                    </div>
                 </div>
             </div>
         </BoxStatPallet>
@@ -264,7 +309,7 @@ const listError = inject('listError', {})
                                 </div>
                             </div>
                             <div v-html="boxStats.delivery_address.formatted_address"
-                                 class="xtext-xs text-gray-600 leading-snug">
+                                class="xtext-xs text-gray-600 leading-snug">
                             </div>
                         </div>
                     </div>
@@ -295,7 +340,7 @@ const listError = inject('listError', {})
                                 {{ boxStats?.picker?.contact_name }}
                             </dd>
                         </dl>
-                        <div class="mt-2 border-t border-gray-300 w-full"/>
+                        <div class="mt-2 border-t border-gray-300 w-full" />
                     </div>
 
                     <!-- Current State -->
@@ -306,7 +351,7 @@ const listError = inject('listError', {})
                                 fixed-width
                                 aria-hidden="true"
                                 class="text-gray-500" /> -->
-                            <Icon :data="boxStats?.state_icon"/>
+                            <Icon :data="boxStats?.state_icon" />
                         </dt>
                         <dd class="text-gray-500">
                             {{ boxStats.state_label }}
@@ -317,7 +362,7 @@ const listError = inject('listError', {})
                     <dl class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
                         <dt class="flex-none">
                             <FontAwesomeIcon v-tooltip="trans('Total items')" icon="fal fa-cube" fixed-width
-                                             aria-hidden="true" class="text-gray-500"/>
+                                aria-hidden="true" class="text-gray-500" />
                         </dt>
                         <dd class="text-gray-500">
                             {{ locale.number(boxStats.products?.number_items || 0) }} items
@@ -328,7 +373,7 @@ const listError = inject('listError', {})
                     <dl class="flex items-center w-fit pr-3 flex-none gap-x-1.5">
                         <dt class="flex-none">
                             <FontAwesomeIcon v-tooltip="trans('Estimated weight of all items')" icon="fal fa-weight"
-                                             fixed-width aria-hidden="true" class="text-gray-500"/>
+                                fixed-width aria-hidden="true" class="text-gray-500" />
                         </dt>
                         <dd class="text-gray-500">
                             {{ locale.number(boxStats?.products.estimated_weight) || '-' }} kilograms
@@ -337,11 +382,9 @@ const listError = inject('listError', {})
 
                     <!-- Section: Parcels -->
                     <div v-if="['packed', 'dispatched', 'finalised'].includes(deliveryNote?.state)"
-                         class="flex gap-x-1 py-0.5"
-                         :class="listError.box_stats_parcel ? 'errorShake' : ''">
+                        class="flex gap-x-1 py-0.5" :class="listError.box_stats_parcel ? 'errorShake' : ''">
                         <FontAwesomeIcon v-tooltip="trans('Parcels')" icon='fas fa-cubes' class='mt-1 text-gray-400'
-                                         fixed-width
-                                         aria-hidden='true'/>
+                            fixed-width aria-hidden='true' />
                         <div class=" group w-full">
                             <div class="leading-4 xtext-base flex justify-between w-full py-1">
                                 <div>{{ trans("Parcels") }} ({{ boxStats?.parcels?.length ?? 0 }})</div>
@@ -349,22 +392,21 @@ const listError = inject('listError', {})
                                 <!-- Can't edit Parcels if Shipment has set AND already dispatched-->
                                 <template v-if="!(boxStats?.shipments?.length > 1) && deliveryNote?.state === 'packed'">
                                     <div v-if="boxStats?.parcels?.length"
-                                         @click="async () => (isModalParcels = true, parcelsCopy = [...props.boxStats?.parcels || []])"
-                                         class="cursor-pointer text-gray-400 hover:text-gray-600">
+                                        @click="async () => (isModalParcels = true, parcelsCopy = [...props.boxStats?.parcels || []])"
+                                        class="cursor-pointer text-gray-400 hover:text-gray-600">
                                         {{ trans("Edit") }}
                                         <FontAwesomeIcon icon="fal fa-pencil" size="sm" class="text-gray-400"
-                                                         fixed-width
-                                                         aria-hidden="true"/>
+                                            fixed-width aria-hidden="true" />
                                     </div>
                                     <div v-else-if="!isLoadingSubmitParcels"
-                                         @click="async () => (parcelsCopy = [{ weight: 1, dimensions: [5, 5, 5] }], onSubmitParcels())"
-                                         class="cursor-pointer text-gray-400 hover:text-gray-600">
+                                        @click="async () => (parcelsCopy = [{ weight: 1, dimensions: [5, 5, 5] }], onSubmitParcels())"
+                                        class="cursor-pointer text-gray-400 hover:text-gray-600">
                                         {{ trans("Add") }}
                                         <FontAwesomeIcon icon="fas fa-plus" size="sm" class="text-gray-400" fixed-width
-                                                         aria-hidden="true"/>
+                                            aria-hidden="true" />
                                     </div>
                                     <div v-else>
-                                        <LoadingIcon/>
+                                        <LoadingIcon />
                                     </div>
                                 </template>
                             </div>
@@ -372,16 +414,16 @@ const listError = inject('listError', {})
                             <ul v-if="boxStats?.parcels?.length" class="list-disc pl-4 ">
                                 <li v-for="(parcel, parcelIdx) in boxStats?.parcels" :key="parcelIdx"
                                     class="xtabular-nums">
-									<span class="truncate">
-										{{ parcel.weight }} kg
-									</span>
+                                    <span class="truncate">
+                                        {{ parcel.weight }} kg
+                                    </span>
 
                                     <span class="text-gray-500 truncate">
-										({{ parcel.dimensions?.[0] }}x{{
-                                            parcel.dimensions?.[1]
+                                        ({{ parcel.dimensions?.[0] }}x{{
+                                        parcel.dimensions?.[1]
                                         }}x{{ parcel.dimensions?.[2] }}
-										cm)
-									</span>
+                                        cm)
+                                    </span>
                                 </li>
                             </ul>
                         </div>
@@ -392,43 +434,39 @@ const listError = inject('listError', {})
                         class="flex items-xcenter w-full pr-3 flex-none gap-x-1.5">
                         <dt class="flex-none mt-1">
                             <FontAwesomeIcon v-tooltip="trans('Shipment')" icon="fal fa-shipping-fast" fixed-width
-                                             aria-hidden="true" class="text-gray-500"/>
+                                aria-hidden="true" class="text-gray-500" />
                         </dt>
                         <dd class="text-gray-500 w-full">
-                            <ShipmentSection
-                                :shipments="boxStats.shipments"
-                                :shipments_routes="boxStats.shipments_routes"
-                                :address="boxStats.address"
+                            <ShipmentSection :shipments="boxStats.shipments"
+                                :shipments_routes="boxStats.shipments_routes" :address="boxStats.address"
                                 :updateAddressRoute="{
 									name:'grp.models.delivery_note.update_address',
 									parameters: {
 										deliveryNote: props.deliveryNote.id,
 									},
-								}"
-                            />
+								}" />
                         </dd>
                     </dl>
+
                 </div>
                 <div v-else class="space-y-0.5 pl-1">
                     <!-- Field: Delivery notes reference -->
                     <Link v-if="boxStats?.order && boxStats?.delivery_note"
-                          :href="route(boxStats?.delivery_note?.route?.name, boxStats?.delivery_note?.route?.parameters)"
-                          class="w-fit flex items-center gap-3 gap-x-1.5 primaryLink cursor-pointer">
-                        <dt class="flex-none">
-                            <FontAwesomeIcon icon='fal fa-truck' fixed-width aria-hidden='true'
-                                             class="text-gray-500"/>
-                        </dt>
-                        <dd class="text-gray-500 " v-tooltip="trans('Delivery Note')">
-                            {{ boxStats?.delivery_note?.reference }}
-                        </dd>
+                        :href="route(boxStats?.delivery_note?.route?.name, boxStats?.delivery_note?.route?.parameters)"
+                        class="w-fit flex items-center gap-3 gap-x-1.5 primaryLink cursor-pointer">
+                    <dt class="flex-none">
+                        <FontAwesomeIcon icon='fal fa-truck' fixed-width aria-hidden='true' class="text-gray-500" />
+                    </dt>
+                    <dd class="text-gray-500 " v-tooltip="trans('Delivery Note')">
+                        {{ boxStats?.delivery_note?.reference }}
+                    </dd>
                     </Link>
                 </div>
             </div>
         </BoxStatPallet>
 
         <!-- Modal: Parcels -->
-        <Modal v-if="true" :isOpen="isModalParcels" @onClose="isModalParcels = false"
-               width="w-full max-w-lg">
+        <Modal v-if="true" :isOpen="isModalParcels" @onClose="isModalParcels = false" width="w-full max-w-lg">
             <div class="text-center font-bold mb-4">
                 {{ trans('Add shipment') }}
             </div>
@@ -442,11 +480,11 @@ const listError = inject('listError', {})
                         </div>
 
                         <div class="col-span-2 flex items-center space-x-1">
-                            <FontAwesomeIcon icon="fal fa-weight" class="" fixed-width aria-hidden="true"/>
+                            <FontAwesomeIcon icon="fal fa-weight" class="" fixed-width aria-hidden="true" />
                             <span>kg</span>
                         </div>
                         <div class="col-span-9 flex items-center space-x-1">
-                            <FontAwesomeIcon icon="fal fa-ruler-triangle" class="" fixed-width aria-hidden="true"/>
+                            <FontAwesomeIcon icon="fal fa-ruler-triangle" class="" fixed-width aria-hidden="true" />
                             <span>cm</span>
                         </div>
                     </div>
@@ -456,25 +494,25 @@ const listError = inject('listError', {})
                         <!-- {{parcelsCopy.length}} xx {{ boxStats.parcels.length }} -->
                         <TransitionGroup v-if="parcelsCopy?.length" name="list">
                             <div v-for="(parcel, parcelIndex) in parcelsCopy" :key="parcelIndex"
-                                 class="grid grid-cols-12 items-center gap-x-6">
+                                class="grid grid-cols-12 items-center gap-x-6">
                                 <div @click="() => onDeleteParcel(parcelIndex)" class="flex justify-center">
                                     <FontAwesomeIcon icon="fal fa-trash-alt"
-                                                     class="text-red-400 hover:text-red-600 cursor-pointer" fixed-width
-                                                     aria-hidden="true"/>
+                                        class="text-red-400 hover:text-red-600 cursor-pointer" fixed-width
+                                        aria-hidden="true" />
                                 </div>
                                 <div class="col-span-2 flex items-center space-x-2">
                                     <InputNumber :min="0.001" v-model="parcel.weight" class="w-16" size="small"
-                                                 placeholder="0" fluid/>
+                                        placeholder="0" fluid />
                                 </div>
                                 <div class="col-span-9 flex items-center gap-x-1 font-light">
                                     <InputNumber :min="0.001" v-model="parcel.dimensions[0]" class="w-16" size="small"
-                                                 placeholder="0" fluid/>
+                                        placeholder="0" fluid />
                                     <div class="text-gray-400">x</div>
                                     <InputNumber :min="0.001" v-model="parcel.dimensions[1]" class="w-16" size="small"
-                                                 placeholder="0" fluid/>
+                                        placeholder="0" fluid />
                                     <div class="text-gray-400">x</div>
                                     <InputNumber :min="0.001" v-model="parcel.dimensions[2]" class="w-16" size="small"
-                                                 placeholder="0" fluid/>
+                                        placeholder="0" fluid />
                                     <!-- <button class="text-gray-600">≡</button> -->
 
                                     <!-- <Popover>
@@ -506,8 +544,8 @@ const listError = inject('listError', {})
                     <div class=" grid grid-cols-12 mt-2">
                         <div></div>
                         <div @click="() => parcelsCopy.push({ weight: 1, dimensions: [5, 5, 5] })"
-                             class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
-                            <FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true"/>
+                            class="hover:bg-gray-200 cursor-pointer border border-dashed border-gray-400 col-span-11 text-center py-1.5 text-xs rounded">
+                            <FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
                             {{ trans("Add another parcel") }}
                         </div>
                     </div>
@@ -516,9 +554,15 @@ const listError = inject('listError', {})
                 <div class="flex justify-end mt-3">
                     <Button :style="'save'" :loading="isLoadingSubmitParcels" :label="'save'" xdisabled="
 							!formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id.api_shipper ? true : formTrackingNumber.tracking_number)
-						" full @click="() => onSubmitParcels()"/>
+						" full @click="() => onSubmitParcels()" />
                 </div>
             </div>
         </Modal>
     </div>
 </template>
+
+<style scoped>
+.p-toggleswitch {
+    --p-toggleswitch-checked-background: #3b82f6;
+}
+</style>

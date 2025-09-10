@@ -125,6 +125,7 @@ const props = defineProps<{
     }
 }>();
 
+// console.log(props);
 
 const currentTab = ref(props.tabs?.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
@@ -496,7 +497,7 @@ const onCreateReplacement = (action: any) => {
 
 
     <BoxStatsDeliveryNote v-if="box_stats && pickingView" :boxStats="box_stats" :routes :deliveryNote="delivery_note"
-        :updateRoute="routes.update" :shipments :is_collection />
+        :updateRoute="routes.update" :shipments />
 
     <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
 
