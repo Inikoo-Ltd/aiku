@@ -447,4 +447,10 @@ class Product extends Model implements Auditable, HasMedia
     {
         return $this->hasOne(Media::class, 'id', 'size_comparison_image_id');
     }
+
+    public function lifestyleImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'lifestyle_image_id');
+    }
+
 }

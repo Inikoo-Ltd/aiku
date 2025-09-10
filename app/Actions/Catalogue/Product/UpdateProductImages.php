@@ -22,6 +22,7 @@ class UpdateProductImages extends OrgAction
 
     public function handle(Product $product, array $modelData)
     {
+
         $imageTypeMapping = [
             'image_id' => 'main',
             'front_image_id' => 'front',
@@ -32,6 +33,7 @@ class UpdateProductImages extends OrgAction
             'top_image_id' => 'top',
             'bottom_image_id' => 'bottom',
             'size_comparison_image_id' => 'size_comparison',
+            'lifestyle_image_id' => 'lifestyle',
         ];
 
         $imageKeys = collect($imageTypeMapping)
@@ -79,6 +81,7 @@ class UpdateProductImages extends OrgAction
             'top_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
             'bottom_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
             'size_comparison_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
+            'lifestyle_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
             'video_url' => ['sometimes', 'nullable'],
         ];
     }

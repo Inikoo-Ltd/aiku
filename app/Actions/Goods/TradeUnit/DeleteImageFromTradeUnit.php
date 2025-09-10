@@ -22,6 +22,8 @@ class DeleteImageFromTradeUnit extends GrpAction
             'back_image_id',
             'bottom_image_id',
             'size_comparison_image_id',
+            'lifestyle_image_id',
+            'top_image_id'
         ];
 
         $updateData = [];
