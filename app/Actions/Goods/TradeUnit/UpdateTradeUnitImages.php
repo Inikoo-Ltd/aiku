@@ -32,6 +32,7 @@ class UpdateTradeUnitImages extends GrpAction
             'top_image_id' => 'top',
             'bottom_image_id' => 'bottom',
             'size_comparison_image_id' => 'size_comparison',
+            'lifestyle_image_id' => 'lifestyle',
         ];
 
         $imageKeys = collect($imageTypeMapping)
@@ -81,6 +82,7 @@ class UpdateTradeUnitImages extends GrpAction
             'bottom_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
             'size_comparison_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
             'video_url' => ['sometimes', 'nullable'],
+            'lifestyle_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
         ];
     }
 
