@@ -30,6 +30,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -96,6 +97,10 @@ class StoreReplacementDeliveryNote extends OrgAction
 
                 $quantity = collect($items)
                     ->where('id', $deliveryNoteItem->id)->value('quantity');
+
+                if ($deliveryNoteItem->quantity_dispatched < $quantity) {
+                    throw ValidationException::withMessages(['message' => __('Quantity exceeds the dispatched quantity.')]);
+                }
 
                 foreach ($product->orgStocks as $orgStock) {
                     $deliveryNoteItemData = [

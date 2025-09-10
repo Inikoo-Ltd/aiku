@@ -33,9 +33,9 @@ class SetSnapshotToBanner extends OrgAction
 
         if ($banner->state === BannerStateEnum::LIVE) {
             $snapshotConditions['live_snapshot_id'] = $snapshot->id;
-        } else {
-            $snapshotConditions['unpublished_snapshot_id'] = $snapshot->id;
         }
+
+        $snapshotConditions['unpublished_snapshot_id'] = $snapshot->id;
 
         $banner->update(
             [
