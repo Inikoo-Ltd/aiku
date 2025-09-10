@@ -164,6 +164,7 @@ class CreateReplacementDeliveryNote extends OrgAction
             'state_label'      => $deliveryNote->state->labels()[$deliveryNote->state->value],
             'is_collection' => (bool) $deliveryNote->orders()->first()->collection_address_id,
             'is_replacement' => true,
+            'is_create_replacement' => true,
             'delivery_note'            => [
                 'reference' => $deliveryNote->reference,
                 'route'     => [
