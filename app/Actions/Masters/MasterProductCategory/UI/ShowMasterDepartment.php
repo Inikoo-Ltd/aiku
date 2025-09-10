@@ -131,6 +131,10 @@ class ShowMasterDepartment extends GrpAction
                     fn () => DepartmentsResource::collection(IndexDepartments::run($masterDepartment))
                     : Inertia::lazy(fn () => DepartmentsResource::collection(IndexDepartments::run($masterDepartment))),
 
+                MasterDepartmentTabsEnum::IMAGES->value => $this->tab == MasterDepartmentTabsEnum::IMAGES->value ?
+                    fn () =>  GetMasterProductCategoryImages::run($masterDepartment)
+                    : Inertia::lazy(fn () => GetMasterProductCategoryImages::run($masterDepartment)),
+
                 MasterDepartmentTabsEnum::HISTORY->value => $this->tab == MasterDepartmentTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($masterDepartment))
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($masterDepartment))),
