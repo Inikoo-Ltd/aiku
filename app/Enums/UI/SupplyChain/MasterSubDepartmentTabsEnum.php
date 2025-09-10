@@ -44,8 +44,8 @@ enum MasterSubDepartmentTabsEnum: string
                 'title' => __('overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
-            
-            MasterFamilyTabsEnum::IMAGES => [
+
+            MasterSubDepartmentTabsEnum::IMAGES => [
                 'title' => __('media'),
                 'icon'  => 'fal fa-camera-retro',
                 'type'  => 'icon',
