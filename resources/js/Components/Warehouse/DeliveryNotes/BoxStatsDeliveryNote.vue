@@ -105,7 +105,7 @@ const props = defineProps<{
     updateRoute: routeType
 }>()
 
-// console.log(props.boxStats) 
+console.log(props.boxStats) 
 
 const locale = inject('locale', aikuLocaleStructure)
 
@@ -156,7 +156,7 @@ const isCollection = ref<boolean>(props.boxStats?.is_collection || false)
 const updateCollection = async (e: Event) => {
     const target = e.target as HTMLInputElement
     const payload = {
-        is_collection: target.checked
+        collection_address_id: target.checked ? props.boxStats.customer.address.id : null
     }
     try {
         router.patch(route(props.routes.update.name, props.routes.update.parameters), {
