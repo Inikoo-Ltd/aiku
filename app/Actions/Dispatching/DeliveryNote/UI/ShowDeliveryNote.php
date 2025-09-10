@@ -248,7 +248,13 @@ class ShowDeliveryNote extends OrgAction
                     'type'    => 'button',
                     'style'   => 'save',
                     'tooltip' => __('Finalised'),
-                    'label'   => $deliveryNote->collection_address_id ? __('Finalise and set as Collected') : __('Finalise and Dispatch'),
+                    'label' => match (true) {
+                        $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT && !$deliveryNote->collection_address_id => __('Dispatch'),
+                        $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT && $deliveryNote->collection_address_id => __('set as collected'),
+                        $deliveryNote->type !== DeliveryNoteTypeEnum::REPLACEMENT && !$deliveryNote->collection_address_id => __('Finalise and Dispatch'),
+                        (bool) $deliveryNote->collection_address_id => __('Finalise and set as Collected'),
+                        default => __('Finalise and Dispatch')
+                    },
                     'key'     => 'action',
                     'route'   => [
                         'method'     => 'patch',
@@ -441,7 +447,9 @@ class ShowDeliveryNote extends OrgAction
                 continue;
             }
 
-
+            if ($deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT && $case == DeliveryNoteStateEnum::FINALISED) {
+                continue;
+            }
 
             $timestamp = match ($case) {
                 DeliveryNoteStateEnum::UNASSIGNED => $deliveryNote->created_at,

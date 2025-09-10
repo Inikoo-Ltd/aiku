@@ -138,36 +138,41 @@ function onSubmitVideoUrl() {
    Drag & Drop Handlers
 ---------------------------- */
 function onDropImage(event: DragEvent, categoryBox: any) {
-    const dataRowImage = JSON.parse(event.dataTransfer?.getData("application/json") || "{}")
-    console.log('dataRowImage', dataRowImage)
-    let payload = {}
-    if (dataRowImage?.id  && !dataRowImage?.sub_scope) {
-        payload = { [categoryBox.column_in_db]: dataRowImage ? dataRowImage.id : null }
-        onSubmitImage(payload, categoryBox)
+    const dataRowImage = JSON.parse(event.dataTransfer?.getData("application/json") || "{}");
+    console.log("dataRowImage", dataRowImage);
 
-        // If the dragged image came from another category, clear that one
-        if (selectedDragImage.value?.id == dataRowImage.id) {
-            payload = { 
-                [categoryBox.column_in_db]: dataRowImage ? dataRowImage.id : null,
-                [selectedDragImage.value.column_in_db] : null 
-            }
-            onSubmitImage(payload, categoryBox)
-        }
-    }else if (dataRowImage?.sub_scope) {
-    const foundItem = props.data.images_category_box.find(item => item.id === dataRowImage.id);
-    console.log('foundItem', foundItem);
-
-    if (foundItem) {
-        payload = { 
-            [categoryBox.column_in_db]: dataRowImage.id,
-            [foundItem.column_in_db]: null  // ✅ clear the old category column
-        }
-        // if you want to actually submit:
-        onSubmitImage(payload, categoryBox)
+    if (!dataRowImage?.id) {
+        activeCategory.value = null;
+        return;
     }
+
+    let payload: Record<string, any> = {
+        [categoryBox.column_in_db]: dataRowImage.id
+    };
+
+    // Case 1: No sub_scope → clear old category if dragging from another
+    if (!dataRowImage.sub_scope && selectedDragImage.value?.id === dataRowImage.id) {
+        if (selectedDragImage.value?.column_in_db) {
+            payload[selectedDragImage.value.column_in_db] = null;
+        }
+    }
+
+    // Case 2: Has sub_scope → clear category from found item
+    if (dataRowImage.sub_scope) {
+        const foundItem = props.data.images_category_box.find(item => item.id === dataRowImage.id);
+        console.log("foundItem", foundItem);
+
+        if (foundItem?.column_in_db) {
+            payload[foundItem.column_in_db] = null;
+        }
+    }
+
+    console.log("payload", payload);
+    onSubmitImage(payload, categoryBox);
+
+    activeCategory.value = null;
 }
-    activeCategory.value = null
-}
+
 
 function onStartDrag(event: DragEvent, img: any, fromCategory?: any) {
     selectedDragImage.value = { ...img, fromCategory }
@@ -368,14 +373,12 @@ console.log('dddd', props)
                 <!-- List of images -->
                 <div v-else>
                     <article v-for="item in props.data.images" :key="item.id" class="group flex items-center justify-between gap-3 p-1 bg-white mb-1 border
-           hover:shadow-md hover:border-blue-400 transition" 
-                        @dragstart="onStartDrag($event, item)"
-                        @dragend="onEndDrag($event)"
-                        >
+         hover:shadow-md hover:border-blue-400 transition" draggable="true" @dragstart="onStartDrag($event, item)"
+                        @dragend="onEndDrag($event)">
                         <!-- Image + Info -->
                         <div class="flex items-center gap-3 min-w-0 flex-1">
                             <div class="relative flex h-14 w-14 flex-shrink-0 items-center justify-center
-                    overflow-hidden bg-gray-100 group-hover:bg-gray-50 transition">
+                overflow-hidden bg-gray-100 group-hover:bg-gray-50 transition">
                                 <Image v-if="item?.image" :src="item?.image"
                                     class="max-h-full max-w-full object-contain" />
                                 <div v-else class="text-gray-400">
@@ -404,7 +407,7 @@ console.log('dddd', props)
 
                         <!-- Delete -->
                         <button @click="onDeleteFilesInList(item)" class="ml-2 flex-shrink-0 rounded-full p-1.5 
-                                text-gray-400 hover:text-red-600 hover:bg-red-50 transition" v-tooltip="trans('Delete')">
+           text-gray-400 hover:text-red-600 hover:bg-red-50 transition" v-tooltip="trans('Delete')">
                             <FontAwesomeIcon icon="fal fa-trash-alt" class="text-sm text-red-400" />
                         </button>
                     </article>

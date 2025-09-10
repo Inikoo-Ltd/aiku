@@ -37,6 +37,7 @@ const props = defineProps<{
         }
         is_collection?: boolean
         is_replacement?: boolean
+        is_create_replacement?: boolean
         delivery_note: {
             reference?: string
             route: routeType
@@ -105,7 +106,7 @@ const props = defineProps<{
     updateRoute: routeType
 }>()
 
-// console.log(props.boxStats) 
+// console.log(props.boxStats)
 
 const locale = inject('locale', aikuLocaleStructure)
 
@@ -156,7 +157,7 @@ const isCollection = ref<boolean>(props.boxStats?.is_collection || false)
 const updateCollection = async (e: Event) => {
     const target = e.target as HTMLInputElement
     const payload = {
-        is_collection: target.checked
+        collection_address_id: target.checked ? props.boxStats.customer.address.id : null
     }
     try {
         router.patch(route(props.routes.update.name, props.routes.update.parameters), {
@@ -272,7 +273,7 @@ const updateCollection = async (e: Event) => {
                         </dt>
                     </dl>
                     <!-- Section: Collection Toggle -->
-                    <div v-if="boxStats.is_replacement" class="!mt-2 flex items w-full flex-none gap-x-2 items-center pl-1">
+                    <div v-if="boxStats.is_replacement && boxStats?.state !== 'dispatched'" class="!mt-2 flex items w-full flex-none gap-x-2 items-center pl-1">
                         <FontAwesomeIcon icon='fal fa-map-marker-alt' class='text-gray-400' fixed-width
                             aria-hidden='true' />
                         <ToggleSwitch v-model="isCollection" @change="updateCollection" />
@@ -329,7 +330,7 @@ const updateCollection = async (e: Event) => {
                     {{ trans("Delivery Note") }}
                 </div>
 
-                <div class="space-y-0.5 pl-2" v-if="!boxStats?.is_replacement">
+                <div class="space-y-0.5 pl-2" v-if="!boxStats?.is_create_replacement">
                     <div v-if="boxStats?.picker?.contact_name">
                         <dl v-tooltip="trans('Picker name')"
                             class=" border-l-4 border-indigo-300 bg-indigo-100 pl-1 flex items-center w-fit pr-3 flex-none gap-x-1.5">
