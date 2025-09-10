@@ -30,7 +30,7 @@ import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 import MasterProductShowcase from "@/Components/Showcases/Grp/MasterProductShowcase.vue";
 import {PageHeading as PageHeadingTypes} from "@/types/PageHeading";
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue";
-import TradeUnitImagesManagement from "@/Components/Goods/TradeUnitImagesManagement.vue"
+import TradeUnitImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 
 library.add(faChartLine, faCheckCircle, faFolderTree, faFolder, faCube, faShoppingCart, faFileInvoice, faStickyNote,
     faMoneyBillWave, faFolderOpen, faAtom

@@ -13,6 +13,29 @@ class DeleteImageFromTradeUnit extends GrpAction
     {
         $tradeUnit->images()->detach($media->id);
 
+
+        $imageColumns = [
+            'image_id',
+            'front_image_id',
+            '34_image_id',
+            'right_image_id',
+            'back_image_id',
+            'bottom_image_id',
+            'size_comparison_image_id',
+        ];
+
+        $updateData = [];
+
+        foreach ($imageColumns as $column) {
+            if ($tradeUnit->{$column} == $media->id) {
+                $updateData[$column] = null;
+            }
+        }
+
+        if (!empty($updateData)) {
+            $tradeUnit->update($updateData);
+        }
+
         return $tradeUnit;
     }
 

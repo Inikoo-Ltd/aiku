@@ -23,7 +23,7 @@ import TableStocks from "@/Components/Tables/Grp/Goods/TableStocks.vue"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 import type { Navigation } from "@/types/Tabs"
 import { Images } from "@/types/Images"
-import TradeUnitImagesManagement from "@/Components/Goods/TradeUnitImagesManagement.vue"
+import TradeUnitImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 
 library.add(faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faGripHorizontal)
 
