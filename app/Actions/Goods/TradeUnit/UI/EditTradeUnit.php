@@ -230,7 +230,7 @@ class EditTradeUnit extends OrgAction
                                  'brands' => [
                                     'type'  => 'brands-trade-unit',
                                     'label' => __('Brands'),
-                                    'value' => $tradeUnit->brand()->id,
+                                    'value' => $tradeUnit->brand()?->id,
                                     'brand_routes' =>  $brandRoute
                                 ],
                             ],
