@@ -28,6 +28,7 @@ class UpdateRetinaOrderPremiumDispatch extends RetinaAction
 
     public function handle(Order $order, array $modelData): Order
     {
+        dd($modelData);
         $order = UpdateOrderPremiumDispatch::make()->action($order, $modelData);
 
         return $order;
@@ -35,7 +36,7 @@ class UpdateRetinaOrderPremiumDispatch extends RetinaAction
 
     public function authorize(ActionRequest $request): bool
     {
-        return $this->order->customer_id == $request->user()->id;
+        return $this->order->customer_id == $request->user()->customer_id;
     }
 
     public function rules(): array

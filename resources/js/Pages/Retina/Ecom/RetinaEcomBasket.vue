@@ -347,9 +347,8 @@ const blackListProductIds = computed(() => {
 
 const isLoadingPriorityDispatch = ref(false)
 const onChangePriorityDispatch = async (val: boolean) => {
-    // Section: Submit
-    router[props.routes.update_route.method || 'patch'](
-        route(props.routes.update_route.name, props.routes.update_route.parameters),
+    router.patch(
+        route('retina.models.order.update_premium_dispatch', props.order.id),
         {
             is_premium_dispatch: val
         },
@@ -430,9 +429,9 @@ const onChangePriorityDispatch = async (val: boolean) => {
             />
             
             <!-- Section: Priority Dispatch -->
-            <div class="flex gap-4 my-4 justify-end pr-6">
+            <div v-if="layout.app.environment === 'local'" class="flex gap-4 my-4 justify-end pr-6">
                 <div class="px-2 flex justify-end relative" :class="order.is_premium_dispatch ? 'text-green-500' : ''">
-                    For the same day dispatch of your order before 12pm <span class="hidden">(£7.50)</span>
+                    {{ trans("For the same day dispatch of your order before 12pm") }} <span class="hidden">(£7.50)</span>
                 </div>
 
                 <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
