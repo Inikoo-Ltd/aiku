@@ -49,7 +49,7 @@ import AlertMessage from "@/Components/Utils/AlertMessage.vue"
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
 import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
-import { faExclamationTriangle, faExclamation, faUndo } from "@fas"
+import { faExclamationTriangle, faExclamation, faUndo, faStar } from "@fas"
 import {
     faDollarSign,
     faIdCardAlt,
@@ -83,7 +83,7 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import { ToggleSwitch } from "primevue"
 import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
 
-library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faPlus)
+library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faPlus)
 
 interface UploadSection {
     title: {
@@ -105,7 +105,9 @@ const props = defineProps<{
     products?: TableTS
 
     data?: {
-        data: PalletDelivery
+        data: {
+            is_premium_dispatch: boolean
+        }
     }
 
     pageHead: PageHeadingTypes
@@ -595,7 +597,12 @@ const toggleElipsis = (e: Event) => {
             <FontAwesomeIcon :icon="faExclamationTriangle" class="text-xl text-orange-500" />
         </template>
     </ConfirmDialog>
+
     <PageHeading :data="pageHead">
+        <template #afterTitle2>
+            <FontAwesomeIcon v-if="data?.data.is_premium_dispatch" v-tooltip="trans('Priority dispatch')" icon="fas fa-star" class="text-yellow-500" fixed-width aria-hidden="true" />
+        </template>
+
         <template #button-add-products="{ action }">
             <div class="relative">
                 <Button :style="action.style" :label="action.label" :icon="action.icon" @click="() => openModal(action)"

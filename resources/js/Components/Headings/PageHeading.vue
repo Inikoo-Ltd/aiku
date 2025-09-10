@@ -153,6 +153,7 @@ const setError = (e) => {
                             </div>
 
                         </slot>
+                        <slot name="afterTitle2" />
                     </div>
                 </div>
             </div>

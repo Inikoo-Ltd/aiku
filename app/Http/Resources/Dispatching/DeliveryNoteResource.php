@@ -30,6 +30,7 @@ class DeliveryNoteResource extends JsonResource
             'type'           => $deliverNote->type,
             'weight'         => $deliverNote->weight,
             'created_at'     => $deliverNote->created_at,
+            'is_premium_dispatch'     => $deliverNote->is_premium_dispatch,
             'updated_at'     => $deliverNote->updated_at,
         ];
     }

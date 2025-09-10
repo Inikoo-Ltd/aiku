@@ -41,7 +41,6 @@ class UpdateRetinaOrder extends RetinaAction
         return [
             'customer_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
             'shipping_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'is_premium_dispatch'   => ['sometimes', 'boolean'],
             'collection_address_id' => ['sometimes', 'nullable', Rule::exists('addresses', 'id')]
         ];
     }
