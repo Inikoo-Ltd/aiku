@@ -18,19 +18,12 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotes
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithModelAddressActions;
-use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
-use App\Models\Catalogue\Product;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Ordering\Order;
-use App\Rules\IUnique;
-use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Enum;
-use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -44,6 +37,7 @@ class StoreReplacementDeliveryNote extends OrgAction
     use WithModelAddressActions;
 
     private Order $order;
+
     /**
      * @throws \Throwable
      */
@@ -53,8 +47,9 @@ class StoreReplacementDeliveryNote extends OrgAction
             $modelData['delivery_address'] = $order->deliveryAddress;
         }
 
-
         $deliveryAddress = Arr::pull($modelData, 'delivery_address');
+
+        data_set($modelData, 'date', now());
 
         data_set($modelData, 'shop_id', $order->shop_id);
         data_set($modelData, 'customer_id', $order->customer_id);
@@ -63,56 +58,51 @@ class StoreReplacementDeliveryNote extends OrgAction
         data_set($modelData, 'type', DeliveryNoteTypeEnum::REPLACEMENT);
 
 
-        $items = Arr::pull($modelData, 'products');
-        $itemIds = collect($items)->where('quantity', '>', 0)->pluck('id');
+        $items   = Arr::pull($modelData, 'delivery_note_items');
 
-        $deliveryNote = DB::transaction(function () use ($order, $modelData, $deliveryAddress, $itemIds, $items) {
-            /** @var DeliveryNote $deliveryNote */
-            $deliveryNote = $order->deliveryNotes()->create($modelData);
+        $deliveryNote = DB::transaction(function () use ($order, $modelData, $deliveryAddress, $items) {
+            /** @var DeliveryNote $replacement */
+            $replacement = $order->deliveryNotes()->create($modelData);
 
-            if ($deliveryNote->delivery_locked) {
+            if ($replacement->delivery_locked) {
                 $this->createFixedAddress(
-                    $deliveryNote,
+                    $replacement,
                     $deliveryAddress,
                     'Ordering',
                     'delivery',
                     'address_id'
                 );
-                $deliveryNote->updateQuietly(
+                $replacement->updateQuietly(
                     [
-                        'delivery_country_id' => $deliveryNote->address->country_id
+                        'delivery_country_id' => $replacement->address->country_id
                     ]
                 );
             } else {
-                StoreDeliveryNoteAddress::make()->action($deliveryNote, [
+                StoreDeliveryNoteAddress::make()->action($replacement, [
                     'address' => $deliveryAddress
                 ]);
             }
 
-            $deliveryNoteItems = DeliveryNoteItem::whereIn('id', $itemIds)->get();
 
-            foreach ($deliveryNoteItems as $deliveryNoteItem) {
-                $transaction = $deliveryNoteItem->transaction;
-                $product = Product::find($transaction->model_id);
+            foreach ($items as $itemData) {
+                $deliveryNoteItems = DeliveryNoteItem::where('id', $itemData['id'])->first();
+                if ($deliveryNoteItems && $itemData['quantity'] > 0) {
 
-                $quantity = collect($items)
-                    ->where('id', $deliveryNoteItem->id)->value('quantity');
-
-                if ($deliveryNoteItem->quantity_dispatched < $quantity) {
-                    throw ValidationException::withMessages(['message' => __('Quantity exceeds the dispatched quantity.')]);
-                }
-
-                foreach ($product->orgStocks as $orgStock) {
                     $deliveryNoteItemData = [
-                        'org_stock_id' => $orgStock->id,
-                        'transaction_id' => $transaction->id,
-                        'quantity_required' => $quantity
+                        'org_stock_id'      => $deliveryNoteItems->org_stock_id,
+                        'transaction_id'    => $deliveryNoteItems->transaction_id,
+                        'quantity_required' => $itemData['quantity']
                     ];
-                    StoreDeliveryNoteItem::make()->action($deliveryNote, $deliveryNoteItemData);
+
+                    StoreDeliveryNoteItem::make()->action($replacement, $deliveryNoteItemData);
                 }
+
+
             }
 
-            return $deliveryNote;
+
+
+            return $replacement;
         });
         $deliveryNote->refresh();
 
@@ -128,63 +118,22 @@ class StoreReplacementDeliveryNote extends OrgAction
         return $deliveryNote;
     }
 
-    public function htmlResponse(DeliveryNote $deliveryNote)
+    public function htmlResponse(DeliveryNote $deliveryNote): \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
     {
         return Redirect::route('grp.org.warehouses.show.dispatching.delivery_notes.show', [
             'organisation' => $deliveryNote->organisation->slug,
-            'warehouse' => $deliveryNote->warehouse->slug,
-            'deliveryNote'  => $deliveryNote->slug
+            'warehouse'    => $deliveryNote->warehouse->slug,
+            'deliveryNote' => $deliveryNote->slug
         ]);
     }
 
     public function rules(): array
     {
-        $rules = [
-            'reference'                 => [
-                'required',
-                'max:64',
-                'string',
-                new IUnique(
-                    table: 'delivery_notes',
-                    extraConditions: [
-                        ['column' => 'organisation_id', 'value' => $this->organisation->id],
-                    ]
-                ),
-            ],
-            'email'                     => ['sometimes', 'nullable', $this->strict ? 'email' : 'string'],
-            'phone'                     => ['sometimes', 'nullable', 'string'],
-            'date'                      => ['required', 'date'],
-            'warehouse_id'              => [
-                'required',
-                Rule::exists('warehouses', 'id')
-                    ->where('organisation_id', $this->organisation->id),
-            ],
-            'delivery_locked'           => ['sometimes', 'boolean'],
-            'weight'                    => ['sometimes', 'nullable', 'integer', 'min:0'],
-            'customer_client_id'        => ['sometimes', 'nullable'],
-            'customer_sales_channel_id' => ['sometimes', 'nullable'],
-            'platform_id'               => ['sometimes', 'nullable'],
-            'products'                  => ['required', 'array']
+        return [
+            'delivery_note_items' => ['required', 'array'],
+            'warehouse_id'        => ['required', 'integer'],
+            'reference'           => ['required', 'max:64', 'string']
         ];
-
-        if (!$this->strict) {
-            $rules['state'] = [
-                'sometimes',
-                'required',
-                new Enum(DeliveryNoteStateEnum::class)
-            ];
-
-
-            $rules['delivery_address'] = ['required', new ValidAddress()];
-            $rules['reference']        = ['required', 'string', 'max:255'];
-            $rules['fetched_at']       = ['sometimes', 'date'];
-            $rules['created_at']       = ['sometimes', 'date'];
-            $rules['cancelled_at']     = ['sometimes', 'date'];
-            $rules['submitted_at']     = ['sometimes', 'date'];
-            $rules['source_id']        = ['sometimes', 'string', 'max:64'];
-        }
-
-        return $rules;
     }
 
     /**
@@ -203,10 +152,14 @@ class StoreReplacementDeliveryNote extends OrgAction
         return $this->handle($order, $this->validatedData);
     }
 
-    public function asController(Order $order, ActionRequest $request)
+    /**
+     * @throws \Throwable
+     */
+    public function asController(Order $order, ActionRequest $request): DeliveryNote
     {
         $this->order = $order;
         $this->initialisationFromShop($order->shop, $request);
+
         return $this->handle($order, $this->validatedData);
     }
 
@@ -218,15 +171,15 @@ class StoreReplacementDeliveryNote extends OrgAction
         }
 
         if (!$this->has('reference')) {
-            $baseReference = $this->order->reference . '-R';
-            $existingRefs = $this->order->deliveryNotes
+            $baseReference = $this->order->reference.'-r';
+            $existingRefs  = $this->order->deliveryNotes
                 ->where('type', DeliveryNoteTypeEnum::REPLACEMENT)
                 ->pluck('reference')
                 ->filter(function ($ref) use ($baseReference) {
                     return str_starts_with($ref, $baseReference);
                 })
                 ->map(function ($ref) use ($baseReference) {
-                    return (int) str_replace($baseReference, '', $ref);
+                    return (int)str_replace($baseReference, '', $ref);
                 })
                 ->filter(function ($num) {
                     return $num > 0;
@@ -234,11 +187,7 @@ class StoreReplacementDeliveryNote extends OrgAction
 
             $nextIncrement = $existingRefs->max() + 1 ?? 1;
 
-            $this->set('reference', $baseReference . $nextIncrement);
-        }
-
-        if (!$this->has('date')) {
-            $this->set('date', now());
+            $this->set('reference', $baseReference.$nextIncrement);
         }
     }
 }
