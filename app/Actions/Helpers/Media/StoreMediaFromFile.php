@@ -44,7 +44,7 @@ class StoreMediaFromFile
             ->toMediaCollection($collection);
 
         UpdateIsAnimatedMedia::run($media, $imageData['path']);
-        MediaHydrateDimension::run($media);
+        MediaHydrateDimension::run($media); //Dimensions
         return $media;
     }
 }
