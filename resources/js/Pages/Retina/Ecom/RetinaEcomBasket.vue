@@ -9,6 +9,7 @@ import axios from "axios"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faTag } from "@fas"
+import { faCheck } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { debounce } from 'lodash-es'
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
@@ -25,7 +26,9 @@ import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelect
 // import RecommendersLuigi1Iris from '@/Components/CMS/Webpage/SeeAlso1/RecommendersLuigi1Iris.vue'
 import BasketRecommendations from '@/Components/Retina/BasketRecommendations.vue'
 import { AddressManagement } from '@/types/PureComponent/Address'
-library.add(faTag)
+import { ToggleSwitch } from 'primevue'
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
+library.add(faTag, faCheck)
 
 const props = defineProps<{
     pageHead: PageHeadingTS
@@ -341,6 +344,49 @@ const blackListProductIds = computed(() => {
         })
         .filter(Boolean)
 })
+
+const isLoadingPriorityDispatch = ref(false)
+const onChangePriorityDispatch = async (val: boolean) => {
+    // Section: Submit
+    router[props.routes.update_route.method || 'patch'](
+        route(props.routes.update_route.name, props.routes.update_route.parameters),
+        {
+            is_premium_dispatch: val
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingPriorityDispatch.value = true
+            },
+            onSuccess: () => {
+                if (val) {
+                    notify({
+                        title: trans("Success"),
+                        text: trans("The order is changed to priority dispatch!"),
+                        type: "success"
+                    })
+                } else {
+                    notify({
+                        title: trans("Success"),
+                        text: trans("The order is no longer on priority dispatch."),
+                        type: "success"
+                    })
+                }
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to update priority dispatch, try again."),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingPriorityDispatch.value = false
+            },
+        }
+    )
+}
 </script>
 
 <template>
@@ -382,7 +428,32 @@ const blackListProductIds = computed(() => {
                 :data="transactions"
                 :updateRoute="routes.update_route"
             />
+            
+            <!-- Section: Priority Dispatch -->
+            <div class="flex gap-4 my-4 justify-end pr-6">
+                <div class="px-2 flex justify-end relative" :class="order.is_premium_dispatch ? 'text-green-500' : ''">
+                    For the same day dispatch of your order before 12pm <span class="hidden">(£7.50)</span>
+                </div>
+
+                <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
+                    <ToggleSwitch
+                        :modelValue="order.is_premium_dispatch"
+                        @update:modelValue="(e) => (onChangePriorityDispatch(e))"
+                        xdisabled="isLoadingPriorityDispatch"
+                    >
+                        <template #handle="{ checked }">
+                            <LoadingIcon v-if="isLoadingPriorityDispatch" xclass="text-sm text-gray-500" />
+                            <template v-else>
+                                <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
+                            </template>
+                        </template>
+                    </ToggleSwitch>
+                </div>
+            </div>
+                
         </div>
+        
         <div class="w-full px-4 mt-8">
             <div v-if="total_products > 0" class="flex justify-end px-6 gap-x-4">
                 <div class="grid grid-cols-3 gap-x-4 w-full">

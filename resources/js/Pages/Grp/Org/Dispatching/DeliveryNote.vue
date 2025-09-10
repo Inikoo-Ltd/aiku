@@ -38,7 +38,7 @@ import { computed, provide, ref, watch, onMounted } from "vue";
 import type { Component } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
 import BoxStatsDeliveryNote from "@/Components/Warehouse/DeliveryNotes/BoxStatsDeliveryNote.vue";
-import TableDeliveryNoteItems from "@/Components/Warehouse/Replacement/TableDeliveryNoteItems.vue";
+import TableDeliveryNoteItems from "@/Components/Warehouse/DeliveryNotes/TableDeliveryNoteItems.vue";
 import TablePickings from "@/Components/Warehouse/DeliveryNotes/TablePickings.vue";
 import { routeType } from "@/types/route";
 import Tabs from "@/Components/Navigation/Tabs.vue";
@@ -50,12 +50,11 @@ import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfi
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { notify } from "@kyvg/vue3-notification";
 import axios from "axios";
-import { get, set } from 'lodash-es';
+import { get, debounce } from 'lodash-es';
 import PureInput from "@/Components/Pure/PureInput.vue";
 import ToggleSwitch from 'primevue/toggleswitch';
 import PureAddress from "@/Components/Pure/PureAddress.vue"
 import Message from 'primevue/message';
-import { debounce } from "lodash-es";
 
 
 library.add(faSmileWink, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck);
@@ -125,7 +124,6 @@ const props = defineProps<{
     }
 }>();
 
-// console.log(props);
 
 const currentTab = ref(props.tabs?.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
@@ -327,82 +325,6 @@ onMounted(() => {
     console.log('Subscribed to channel for porto ID:', props.delivery_note.id, 'Channel:', channel)
 })
 
-// Section: Handle quantity to resend changes
-const quantityToResendData = ref<{ [key: string]: number }>({});
-const validationErrorsData = ref<{ [key: string]: boolean }>({});
-
-const handleQuantityToResendUpdate = (itemId: string | number, value: number) => {
-    quantityToResendData.value[itemId] = value;
-};
-
-const handleValidationError = (itemId: string | number, hasError: boolean) => {
-    if (hasError) {
-        validationErrorsData.value[itemId] = true;
-    } else {
-        delete validationErrorsData.value[itemId];
-    }
-};
-
-// Computed property to check if replacement button should be disabled
-const isReplacementDisabled = computed(() => {
-    const quantities = Object.values(quantityToResendData.value);
-    const hasValidationErrors = Object.keys(validationErrorsData.value).length > 0;
-    
-    // Disable if:
-    // 1. No quantities or all quantities are 0
-    // 2. There are validation errors
-    return (quantities.length === 0 || quantities.every(quantity => quantity === 0)) || hasValidationErrors;
-});
-
-// Section: Create Replacement
-const onCreateReplacement = (action: any) => {
-    // Filter items yang memiliki quantity > 0
-    const products = Object.entries(quantityToResendData.value)
-        .filter(([itemId, quantity]) => quantity > 0)
-        .map(([itemId, quantity]) => ({
-            id: parseInt(itemId),
-            quantity: quantity
-        }));
-
-    if (products.length === 0) {
-        notify({
-            title: trans("No items selected"),
-            text: trans("Please select at least one item with quantity to resend"),
-            type: "warning"
-        });
-        return;
-    }
-
-    const payload = { products };
-
-    console.log('Creating replacement with payload:', payload);
-
-    // Submit replacement request
-    router[action.route.method](
-        route(action.route.name, action.route.parameters),
-        payload,
-        {
-            preserveState: true,
-            preserveScroll: true,
-            onSuccess: () => {
-                notify({
-                    title: trans("Success"),
-                    text: trans("Replacement delivery note created successfully"),
-                    type: "success"
-                });
-                // Reset quantity data after successful submission
-                quantityToResendData.value = {};
-            },
-            onError: (error) => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: error.message || trans("Failed to create replacement delivery note"),
-                    type: "error"
-                });
-            }
-        }
-    );
-};
 
 </script>
 
@@ -417,7 +339,7 @@ const onCreateReplacement = (action: any) => {
 
                 <div class="flex items-center justify-between w-full">
                     <span class="text-sm text-gray-700 font-medium mx-2">
-                        Picking View
+                        {{trans('Picking View')}}
                     </span>
 
                     <ToggleSwitch v-model="pickingView" />
@@ -431,17 +353,7 @@ const onCreateReplacement = (action: any) => {
                 <Button class="flex items-center" icon="fal fa-file-pdf" type="tertiary" />
             </a>
 
-            <!-- Button: Shipment -->
-            <!-- <Button
-                v-if="['packed', 'finalised', 'dispatched'].includes(delivery_note_state.value) && !(box_stats?.shipments?.length)"
-                @click="() => box_stats.parcels?.length ? (isModalShipment = true, onOpenModalTrackingNumber()) : set(listError, 'box_stats_parcel', true)"
-                v-tooltip="box_stats.parcels?.length ? '' : trans('Please add at least one parcel')"
-                :label="trans('Shipment')" icon="fal fa-shipping-fast" type="tertiary" /> -->
-        </template>
 
-        <template #button-action-replacement="{action}">
-            <Button @click="() => onCreateReplacement(action)" :label="action.label" :icon="action.icon"
-                :type="action.type" :disabled="isReplacementDisabled" />
         </template>
 
         <template #button-to-queue="{ action }">

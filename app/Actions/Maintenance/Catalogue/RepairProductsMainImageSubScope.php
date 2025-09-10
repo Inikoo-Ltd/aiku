@@ -27,6 +27,12 @@ class RepairProductsMainImageSubScope
 
     public function handle(Product $product): void
     {
+        DB::table('model_has_media')
+            ->where('media_id', $product->image_id)
+            ->where('model_type', 'Product')
+            ->where('model_id', $product->id)
+            ->where('sub_scope', 'main')
+            ->update(['sub_scope' => null]);
 
         DB::table('model_has_media')
             ->where('media_id', $product->image_id)

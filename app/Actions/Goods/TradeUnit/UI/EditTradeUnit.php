@@ -171,6 +171,7 @@ class EditTradeUnit extends OrgAction
                                     'type'  => 'input_translation',
                                     'label' => __('translate name'),
                                     'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($tradeUnit->group->extra_languages),
+                                    'main' => $tradeUnit->name,
                                     'value' => $tradeUnit->getTranslations('name_i8n')
                                 ],
                                 'description_title' => [
@@ -182,6 +183,7 @@ class EditTradeUnit extends OrgAction
                                     'type'  => 'input_translation',
                                     'label' => __('translate description title'),
                                     'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($tradeUnit->group->extra_languages),
+                                    'main' => $tradeUnit->description_title,
                                     'value' => $tradeUnit->getTranslations('description_title_i8n')
                                 ],
                                 'description' => [
@@ -193,6 +195,7 @@ class EditTradeUnit extends OrgAction
                                     'type'  => 'textEditor_translation',
                                     'label' => __('translate description'),
                                     'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($tradeUnit->group->extra_languages),
+                                    'main' => $tradeUnit->description,
                                     'value' => $tradeUnit->getTranslations('description_i8n')
                                 ],
                                 'description_extra' => [
@@ -204,6 +207,7 @@ class EditTradeUnit extends OrgAction
                                     'type'  => 'textEditor_translation',
                                     'label' => __('translate description extra'),
                                     'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($tradeUnit->group->extra_languages),
+                                    'main' => $tradeUnit->description_extra,
                                     'value' => $tradeUnit->getTranslations('description_extra_i8n')
                                 ],
                                 'gross_weight' => [

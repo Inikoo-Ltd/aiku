@@ -29,64 +29,43 @@ const isModalShippingAddress = ref(false)
 </script>
 
 <template>
-    <div class="py-4 grid grid-cols-3 px-4">
-        <div>
-            <!-- Section: Current balance -->
-            <!-- <dl class="ml-5 mb-6 relative isolate bg-indigo-50 border border-indigo-200 rounded shadow px-4 py-5 sm:px-5 sm:py-3 overflow-hidden grid items-center max-w-72">
-                <div class="-z-10 absolute  top-1/2 -translate-y-1/2 transform-gpu blur-2xl" aria-hidden="true">
-                    <div class="aspect-[577/310] w-[36.0625rem] bg-gradient-to-r from-[#ff80b5] to-[#9089fc] opacity-30" style="clip-path: polygon(74.8% 41.9%, 97.2% 73.2%, 100% 34.9%, 92.5% 0.4%, 87.5% 0%, 75% 28.6%, 58.5% 54.6%, 50.1% 56.8%, 46.9% 44%, 48.3% 17.4%, 24.7% 53.9%, 0% 27.9%, 11.9% 74.2%, 24.9% 54.1%, 68.6% 100%, 74.8% 41.9%)" />
-                </div>
-
-                <dt class="text-base font-normal opacity-70">
-                    {{ trans("Current balance") }}
-                </dt>
-
-                <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
-                    <div class="flex items-baseline text-2xl font-semibold text-indigo-600">
-                        {{ locale.currencyFormat(summary.order_summary?.currency?.data?.code, balance ?? 0) }}
-                    </div>
-                </dd>
-            </dl> -->
-
-            <!-- Section: Invoice Address -->
-            <div class="">
-                <div class="font-semibold">
-                    <FontAwesomeIcon :icon="faDollarSign" class="" fixed-width aria-hidden="true" />
-                    {{ trans("Billing Address") }}
-                </div>
-                <div v-if="summary?.customer?.addresses?.billing?.formatted_address" class="pl-6 pr-3" v-html="summary?.customer?.addresses?.billing?.formatted_address">
-            
-                </div>
-                <div v-else class="text-gray-400 italic pl-6 pr-3">
-                    {{ trans("No billing address") }}
-                </div>
+    <div class="py-4 grid grid-cols-3 px-4 ">
+        <!-- Section: Billing Address -->
+        <div class="">
+            <div class="font-semibold">
+                <FontAwesomeIcon :icon="faDollarSign" class="" fixed-width aria-hidden="true" />
+                {{ trans("Billing Address") }}
+            </div>
+            <div v-if="summary?.customer?.addresses?.billing?.formatted_address" class="pl-6 pr-3" v-html="summary?.customer?.addresses?.billing?.formatted_address">
+        
+            </div>
+            <div v-else class="text-gray-400 italic pl-6 pr-3">
+                {{ trans("No billing address") }}
             </div>
         </div>
         
-        <div>
-            <!-- Section: Delivery Address -->
-            <div class="">
-                <div class="font-semibold">
-                    <FontAwesomeIcon :icon="faClipboard" class="" fixed-width aria-hidden="true" />
-                    {{ trans("Delivery Address") }}
-                </div>
+        <!-- Section: Delivery Address -->
+        <div class="">
+            <div class="font-semibold">
+                <FontAwesomeIcon :icon="faClipboard" class="" fixed-width aria-hidden="true" />
+                {{ trans("Delivery Address") }}
+            </div>
 
-                <div v-if="summary?.customer?.addresses?.delivery?.formatted_address" class="pl-6 pr-3" v-html="summary?.customer?.addresses?.delivery?.formatted_address">
-                </div>
+            <div v-if="summary?.customer?.addresses?.delivery?.formatted_address" class="pl-6 pr-3" v-html="summary?.customer?.addresses?.delivery?.formatted_address">
+            </div>
 
-                <div v-else class="text-gray-400 italic pl-6 pr-3">
-                    {{ trans("No delivery address") }}
-                </div>
+            <div v-else class="text-gray-400 italic pl-6 pr-3">
+                {{ trans("No delivery address") }}
+            </div>
 
-                <div v-if="address_management?.address_update_route" @click="isModalShippingAddress = true"
-                    class="pl-6 pr-3 w-fit underline cursor-pointer hover:text-gray-700">
-                    {{ trans("Edit") }}
-                    <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true"/>
-                </div>
+            <div v-if="address_management?.address_update_route" @click="isModalShippingAddress = true"
+                class="pl-6 pr-3 w-fit underline cursor-pointer hover:text-gray-700">
+                {{ trans("Edit") }}
+                <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true"/>
             </div>
         </div>
 
-        <!-- Summary -->
+        <!-- Section: balance, charges, shipping, tax -->
         <div>
             <div class="border-b border-gray-200 pb-0.5 flex justify-between pl-1.5 pr-4 mb-1.5">
                 <div class="">{{ trans("Current balance") }}:</div>
@@ -103,7 +82,7 @@ const isModalShippingAddress = ref(false)
             </div>
         </div>
 
-        <!-- Section: Delivery address -->
+        <!-- Section: Edit Delivery address -->
         <Modal v-if="address_management"
             :isOpen="isModalShippingAddress"
             @onClose="() => (isModalShippingAddress = false)"
@@ -120,3 +99,74 @@ const isModalShippingAddress = ref(false)
         </Modal>
     </div>
 </template>
+
+<style lang="scss">
+
+@property --a { /* must register --a to animate it */
+	syntax: '<angle>';
+	initial-value: 0deg;
+	/* used only on pseudo, nowhere to be inherited, 
+	 * better perf if set false, see 
+	 * https://www.bram.us/2024/10/03/benchmarking-the-performance-of-css-property/ */
+	inherits: false
+}
+
+.vvvvvv {
+	/* hide outer part of glow */
+	overflow: hidden;
+	/* needed for absolutely positioned pseudo */
+	position: relative;
+	/* adjust width as needed IF it's even necessary to set */
+	width: Min(12.5em, 80vmin);
+	/* adjust aspect-ratio OR height IF height not given by content */
+	aspect-ratio: 1;
+	/* round outer card corners */
+	border-radius: .5em;
+	
+	/* text & layout styles below just for prettifying */
+	place-self: center;
+	place-content: center;
+	padding: .5em;
+	color: #ededed;
+	font: clamp(1em, 2vw + 2vh, 2em) sans-serif;
+	text-align: center;
+	text-transform: uppercase;
+	text-wrap: balance
+}
+
+.vvvvvv::before {
+	/* grid doesn't work for stacking when a stacked item is text node */
+	position: absolute;
+	/* place behind card content, so card text is selectable, etc */
+	z-index: -1;
+	/* best if inset is at least half the border-width with minus */
+	inset: -1em;
+	/* reserve space for border */
+	border: solid 1.25em;
+	border-image: 
+		/* adjust gradient as needed, I just used a random palette */
+		conic-gradient(from var(--a), #669900, #99cc33, #ccee66, 
+				#006699, #3399cc, #990066, #cc3399, 
+				#ff6600, #ff9900, #ffcc00, #669900) 1;
+	/* blur this pseudo */
+	filter: blur(.75em);
+	/* tweak animation duration as necessary */
+	animation: a 4s linear infinite;
+	/* needed so pseudo is displayed */
+	content: ''
+}
+
+/* animate --a from its initial-value 0deg to 1turn */
+@keyframes a { to { --a: 1turn } }
+
+
+
+body {
+	background: /* just to illustrate card transparency */
+		url(https://images.unsplash.com/photo-1729824346255-52a8f898fe84?w=1400) 
+			50%/ cover #212121;
+	/* darken image (multiplying its RGB channels with 
+	 * those of background-color) for better text contrast */
+	background-blend-mode: multiply
+
+}</style>

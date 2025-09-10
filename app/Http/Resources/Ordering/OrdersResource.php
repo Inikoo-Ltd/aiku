@@ -58,7 +58,7 @@ class OrdersResource extends JsonResource
             'customer_slug'          => $this->customer_slug,
             'payment_state'          => $this->payment_state,
             'payment_status'         => $this->payment_status,
-            'pay_detailed_status'    => $this->pay_detailed_status->labels()[$this->pay_detailed_status->value],
+            'pay_detailed_status'    => $this->pay_detailed_status?$this->pay_detailed_status->labels()[$this->pay_detailed_status->value]:'',
             'currency_code'          => $this->currency_code,
             'currency_id'            => $this->currency_id,
             'organisation_name'      => $this->organisation_name,

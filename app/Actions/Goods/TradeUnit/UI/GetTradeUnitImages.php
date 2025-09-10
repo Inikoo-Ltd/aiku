@@ -25,7 +25,7 @@ class GetTradeUnitImages
     {
         return [
             'id'                  => $tradeUnit->id,
-            'bucket_images'        => $tradeUnit->bucket_images,
+            'bucket_images'       => $tradeUnit->bucket_images,
             'images_category_box' => $this->getImagesData($tradeUnit),
             'images_update_route' => [
                 'method'     => 'patch',
