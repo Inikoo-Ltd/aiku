@@ -298,6 +298,11 @@ class MasterAsset extends Model implements Auditable, HasMedia
         return $this->hasOne(Media::class, 'id', 'top_image_id');
     }
 
+    public function lifestyleImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'lifestyle_image_id');
+    }
+
     public function bottomImage(): HasOne
     {
         return $this->hasOne(Media::class, 'id', 'bottom_image_id');
