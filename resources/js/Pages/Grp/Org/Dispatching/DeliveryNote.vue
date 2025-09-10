@@ -282,7 +282,7 @@ const isModalEditAddress = ref(false)
 const xxxCopyAddress = ref({...props.address.delivery})
 
 // ✅ Toggle for picking view — with localStorage persistence
-const pickingView = ref(false);
+const pickingView = ref(props.box_stats?.is_replacement ? true : false);
 
 // ✅ Get initial value from localStorage
 const storedPickingView = localStorage.getItem('delivery-note:pickingView');
@@ -329,11 +329,30 @@ onMounted(() => {
 
 // Section: Handle quantity to resend changes
 const quantityToResendData = ref<{ [key: string]: number }>({});
+const validationErrorsData = ref<{ [key: string]: boolean }>({});
 
 const handleQuantityToResendUpdate = (itemId: string | number, value: number) => {
     quantityToResendData.value[itemId] = value;
-    console.log('Quantity to resend updated:', { itemId, value, allData: quantityToResendData.value });
 };
+
+const handleValidationError = (itemId: string | number, hasError: boolean) => {
+    if (hasError) {
+        validationErrorsData.value[itemId] = true;
+    } else {
+        delete validationErrorsData.value[itemId];
+    }
+};
+
+// Computed property to check if replacement button should be disabled
+const isReplacementDisabled = computed(() => {
+    const quantities = Object.values(quantityToResendData.value);
+    const hasValidationErrors = Object.keys(validationErrorsData.value).length > 0;
+    
+    // Disable if:
+    // 1. No quantities or all quantities are 0
+    // 2. There are validation errors
+    return (quantities.length === 0 || quantities.every(quantity => quantity === 0)) || hasValidationErrors;
+});
 
 // Section: Create Replacement
 const onCreateReplacement = (action: any) => {
@@ -390,8 +409,9 @@ const onCreateReplacement = (action: any) => {
 <template>
 
     <Head :title="capitalize(title)" />
+    {{ quantityToResendData }}
     <PageHeading :data="pageHead" isButtonGroupWithBorder>
-        <template #otherBefore>
+        <template #otherBefore v-if="!box_stats.is_replacement">
             <!-- Button: Download PDF -->
             <div class="flex items-center gap-3 bg-gray-50 border border-gray-200 px-4 py-2 rounded-md">
                 <FontAwesomeIcon :icon="faBoxOpen" class="text-gray-400" fixed-width />
@@ -422,7 +442,7 @@ const onCreateReplacement = (action: any) => {
 
         <template #button-action-replacement="{action}">
             <Button @click="() => onCreateReplacement(action)" :label="action.label" :icon="action.icon"
-                :type="action.type" />
+                :type="action.type" :disabled="isReplacementDisabled" />
         </template>
 
         <template #button-to-queue="{ action }">
@@ -475,7 +495,7 @@ const onCreateReplacement = (action: any) => {
 
 
     <!-- Section: Box Note -->
-    <div v-if="pickingView" class="relative">
+    <div v-if="pickingView && !box_stats.is_replacement" class="relative">
         <Transition name="headlessui">
             <div xv-if="notes?.note_list?.some(item => !!(item?.note?.trim()))"
                 class="p-2 grid grid-cols-2 sm:grid-cols-4 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
@@ -503,7 +523,8 @@ const onCreateReplacement = (action: any) => {
 
     <div class="pb-12">
         <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" :routes
-            :state="delivery_note.state" @update:quantity-to-resend="handleQuantityToResendUpdate" />
+            :state="delivery_note.state" @update:quantity-to-resend="handleQuantityToResendUpdate" 
+            @validation-error="handleValidationError" />
     </div>
 
     <!-- Modal: Select picker -->
