@@ -449,7 +449,10 @@ onMounted(() => {
 
         <!-- Section: Delivery address -->
         <Modal v-if="address_management" :isOpen="isModalShippingAddress"
-            @onClose="() => (isModalShippingAddress = false)" width="w-full max-w-lg">
+            @onClose="() => (isModalShippingAddress = false)"
+            width="w-full max-w-lg"
+            closeButton
+        >
             <AddressEditModal :addresses="address_management.addresses"
                 :address="summary?.customer?.addresses?.delivery"
                 :updateRoute="address_management.address_update_route"
