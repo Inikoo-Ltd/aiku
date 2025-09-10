@@ -78,7 +78,7 @@ const isModalShippingAddress = ref(false)
                     {{ trans("No delivery address") }}
                 </div>
 
-                <div v-if="address_management?.updateRoute" @click="isModalShippingAddress = true"
+                <div v-if="address_management?.address_update_route" @click="isModalShippingAddress = true"
                     class="pl-6 pr-3 w-fit underline cursor-pointer hover:text-gray-700">
                     {{ trans("Edit") }}
                     <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true"/>
@@ -104,12 +104,18 @@ const isModalShippingAddress = ref(false)
         </div>
 
         <!-- Section: Delivery address -->
-        <Modal v-if="address_management" :isOpen="isModalShippingAddress" @onClose="() => (isModalShippingAddress = false)" width="w-full max-w-4xl">
-            <AddressEditModal :addresses="address_management.addresses"
+        <Modal v-if="address_management"
+            :isOpen="isModalShippingAddress"
+            @onClose="() => (isModalShippingAddress = false)"
+            width="w-full max-w-lg"
+            closeButton
+        >
+            <AddressEditModal
+                :addresses="address_management.addresses"
                 :address="summary?.customer?.addresses?.delivery"
                 :updateRoute="address_management.address_update_route"
-                :address_modal_title="address_management.address_modal_title"
-                @onDone="() => (isModalShippingAddress = false)"
+                @submitted="() => (isModalShippingAddress = false)"
+                closeButton
             />
         </Modal>
     </div>

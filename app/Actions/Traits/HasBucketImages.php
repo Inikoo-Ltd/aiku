@@ -93,7 +93,7 @@ trait HasBucketImages
                 'type'  => 'image',
                 'column_in_db' => 'lifestyle_image_id',
                 'id' => $model->lifestyle_image_id,
-                'images' => $model->imageSources(getImage:'LifestyleImage'),
+                'images' => $model->imageSources(getImage:'lifestyleImage'),
             ],
         ];
 
