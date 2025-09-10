@@ -259,7 +259,9 @@ console.log('dddd', props)
         <!-- Left: Drop Areas -->
         <div v-if="props.data.images_category_box?.length" class="rounded-xl bg-white p-5 lg:col-span-2">
             <h3 class="mb-4 text-base font-semibold text-gray-700">
-                {{ trans("Media") }} <FontAwesomeIcon v-if="data.bucket_images" :icon="faStarChristmas" class="text-yellow-400"  v-tooltip="'Use images bucket'"/>
+                {{ trans("Media") }}
+                <FontAwesomeIcon v-if="data.bucket_images" :icon="faStarChristmas" class="text-yellow-400"
+                    v-tooltip="'Use images bucket'" />
             </h3>
 
             <TransitionGroup name="fade-move" tag="ul"
@@ -397,14 +399,23 @@ console.log('dddd', props)
                                     </p>
 
                                     <!-- Tag PrimeVue untuk sub_scope -->
-                                    <Tag v-if="item?.sub_scope" :label="capitalize(item.sub_scope + (item.sub_scope != 'main' ? ' side' : ''))"
+                                    <Tag v-if="item?.sub_scope"
+                                        :label="capitalize(item.sub_scope + (item.sub_scope != 'main' ? ' side' : ''))"
                                         :size="'xxs'" />
                                 </div>
 
-                                <span class="truncate max-w-[160px] block text-[11px] text-gray-500 italic"
-                                    :title="item?.size">
-                                    {{ item?.size }}
-                                </span>
+                                <div class="flex items-center gap-2">
+                                    <span class="truncate max-w-[160px] block text-[11px] text-gray-500 italic"
+                                        :title="item?.size">
+                                        {{ item?.size }}
+                                    </span>
+                                    <span class="block font-medium text-[11px] text-gray-500 italic"
+                                        :title="item?.size">
+                                        <template v-if="item?.dimensions?.height && item?.dimensions?.width">
+                                            {{ item.dimensions.height + 'x' + item.dimensions.width }}
+                                        </template>
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
