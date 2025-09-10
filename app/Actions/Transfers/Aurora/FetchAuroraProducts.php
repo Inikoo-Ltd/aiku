@@ -10,7 +10,6 @@ namespace App\Actions\Transfers\Aurora;
 
 use App\Actions\Catalogue\Product\StoreProduct;
 use App\Actions\Catalogue\Product\UpdateProduct;
-use App\Actions\Helpers\Media\SaveModelImages;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Transfers\SourceOrganisationService;
@@ -22,7 +21,7 @@ use Throwable;
 
 class FetchAuroraProducts extends FetchAuroraAction
 {
-    public string $commandSignature = 'fetch:products {organisations?*} {--s|source_id=} {--S|shop= : Shop slug} {--N|only_new : Fetch only new}  {--d|db_suffix=} {--r|reset}';
+    public string $commandSignature = 'fetch:products {organisations?*} {--s|source_id=} {--S|shop= : Shop slug} {--N|only_new : Fetch only new} {--d|db_suffix=} {--r|reset}';
 
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?Product
     {
@@ -98,30 +97,6 @@ class FetchAuroraProducts extends FetchAuroraAction
         }
 
         $sourceData = explode(':', $product->source_id);
-
-
-        //        if (count($productData['product']['images']) > 0) {
-        //            foreach ($productData['product']['images'] as $imageData) {
-        //                if (isset($imageData['image_path']) and isset($imageData['filename'])) {
-        //                    try {
-        //                        SaveModelImages::run(
-        //                            model: $product,
-        //                            mediaData: [
-        //                                'path' => $imageData['image_path'],
-        //                                'originalName' => $imageData['filename'],
-        //
-        //                            ],
-        //                            mediaScope: 'product_images',
-        //                            modelHasMediaData: [
-        //                                'scope' => 'photo'
-        //                            ]
-        //                        );
-        //                    } catch (Exception $e) {
-        //                        $this->recordError($organisationSource, $e, $imageData, 'Image', 'store');
-        //                    }
-        //                }
-        //            }
-        //        }
 
 
         foreach (

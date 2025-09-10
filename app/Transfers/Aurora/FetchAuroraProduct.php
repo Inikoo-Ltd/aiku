@@ -149,10 +149,6 @@ class FetchAuroraProduct extends FetchAurora
         ];
 
 
-        //        if ($grossWeight && $grossWeight < 500) {
-        //            $this->parsedData['product']['gross_weight'] = (int)ceil($grossWeight * 1000);
-        //        }
-
 
         if ($this->auroraModelData->{'is_variant'} == 'Yes') {
             $this->parsedData['product']['is_main'] = false;
@@ -165,20 +161,10 @@ class FetchAuroraProduct extends FetchAurora
         }
 
         $this->parsedData['au_data'] = $this->auroraModelData;
-        $this->parsedData['images']  = $this->parseImages();
+
     }
 
-    private function parseImages(): array
-    {
-        $images = $this->getModelImagesCollection(
-            'Product',
-            $this->auroraModelData->{'Product ID'}
-        )->map(function ($auroraImage) {
-            return $this->fetchImage($auroraImage);
-        });
 
-        return $images->toArray();
-    }
 
 
     protected function fetchData($id): object|null

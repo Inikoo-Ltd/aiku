@@ -18,6 +18,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $size
  * @property mixed $name
  * @property mixed $id
+ * @property mixed $sub_scope
  */
 class TradeUnitImagesResource extends JsonResource
 {

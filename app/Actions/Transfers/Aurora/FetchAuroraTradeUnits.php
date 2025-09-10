@@ -181,9 +181,9 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
 
 
                 // now let process the product images
-                $this->fetchTradeUnitImages(
-                    $tradeUnit,
-                );
+//                $this->fetchTradeUnitImages(
+//                    $tradeUnit,
+//                );
 
                 $this->fetchTradeUnitProductPropertiesInfo(
                     $tradeUnit,
