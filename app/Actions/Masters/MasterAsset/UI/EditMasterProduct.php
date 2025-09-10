@@ -252,6 +252,7 @@ class EditMasterProduct extends GrpAction
                     'description_title_i8n' => [
                         'type'  => 'input_translation',
                         'label' => __('translate description title'),
+                        'main'  => $masterProduct->description_title,
                         'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
                         'value' => $masterProduct->getTranslations('description_title_i8n')
                     ],
@@ -259,12 +260,14 @@ class EditMasterProduct extends GrpAction
                         'type'  => 'textEditor_translation',
                         'label' => __('translate description'),
                         'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
+                        'main'  => $masterProduct->description,
                         'value' => $masterProduct->getTranslations('description_i8n')
                     ],
                     'description_extra_i8n' => [
                         'type'  => 'textEditor_translation',
                         'label' => __('translate description extra'),
                         'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
+                        'main' => $masterProduct->description_extra,
                         'value' => $masterProduct->getTranslations('description_extra_i8n')
                     ],
                 ]
