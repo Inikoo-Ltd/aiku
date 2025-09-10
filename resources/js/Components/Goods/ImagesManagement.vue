@@ -15,11 +15,14 @@ import { capitalize } from "lodash"
 // Types
 import { Image as ImageTS } from "@/types/Image"
 import { routeType } from "@/types/route"
+import { faStar } from "@far"
+import { faStarAndCrescent, faStarChristmas } from "@fas"
 
 const props = defineProps<{
     data: {
         id: {}
         images: {}
+        bucket_images?: boolean
         images_update_route: routeType
         upload_images_route: routeType
         delete_images_route: routeType
@@ -256,7 +259,7 @@ console.log('dddd', props)
         <!-- Left: Drop Areas -->
         <div v-if="props.data.images_category_box?.length" class="rounded-xl bg-white p-5 lg:col-span-2">
             <h3 class="mb-4 text-base font-semibold text-gray-700">
-                {{ trans("Media") }}
+                {{ trans("Media") }} <FontAwesomeIcon v-if="data.bucket_images" :icon="faStarChristmas" class="text-yellow-400"  v-tooltip="'Use images bucket'"/>
             </h3>
 
             <TransitionGroup name="fade-move" tag="ul"
