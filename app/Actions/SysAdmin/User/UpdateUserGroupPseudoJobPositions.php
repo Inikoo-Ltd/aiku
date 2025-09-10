@@ -34,17 +34,16 @@ class UpdateUserGroupPseudoJobPositions extends OrgAction
     {
         $jobPositionsIds = $this->getJobPositionsFromCodes($this->group, Arr::get($modelData, 'job_position_codes', []));
 
-
         $currentJobPositions = $user->pseudoJobPositions()->where('scope', 'group')->pluck('job_positions.id')->all();
-        $newJobPositionsIds = array_diff($jobPositionsIds, $currentJobPositions);
-        $removeJobPositions = array_diff($currentJobPositions, $jobPositionsIds);
+        $newJobPositionsIds  = array_diff($jobPositionsIds, $currentJobPositions);
+        $removeJobPositions  = array_diff($currentJobPositions, $jobPositionsIds);
 
         $user->pseudoJobPositions()->detach($removeJobPositions);
         foreach ($newJobPositionsIds as $jobPositionId) {
             $user->pseudoJobPositions()->attach(
                 [
                     $jobPositionId => [
-                        'group_id'        => $user->group_id,
+                        'group_id' => $user->group_id,
                     ]
                 ],
             );

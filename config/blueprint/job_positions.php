@@ -66,6 +66,16 @@ return [
             ],
             'organisation_types' => []
         ],
+        'gp-mas'    => [
+            'code'               => 'gp-mas',
+            'name'               => 'Masters Manager',
+            'scope'              => JobPositionScopeEnum::GROUP          ,
+            'department'         => 'masters',
+            'roles'              => [
+                RolesEnum::MASTERS_MANAGER
+            ],
+            'organisation_types' => []
+        ],
 
         'org-admin'    => [
             'code'               => 'org-admin',
