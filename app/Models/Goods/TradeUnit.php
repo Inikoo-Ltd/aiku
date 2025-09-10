@@ -108,6 +108,8 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $description_title
  * @property string|null $description_extra
  * @property string|null $cost_price
+ * @property int|null $lifestyle_image_id
+ * @property bool|null $bucket_images images following the buckets
  * @property-read MediaCollection<int, Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Media|null $backImage

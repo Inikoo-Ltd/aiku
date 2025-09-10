@@ -25,6 +25,7 @@ class StoreTradeUnit extends OrgAction
 
     public function handle(Group $group, array $modelData): TradeUnit
     {
+        data_set($modelData, 'bucket_images', $this->strict);
         /** @var TradeUnit $tradeUnit */
         $tradeUnit = $group->tradeUnits()->create($modelData);
         $tradeUnit->stats()->create();

@@ -4,7 +4,7 @@ import { router } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faImage, faPencil, faUpload, faVideo } from "@fal"
+import { faImage, faPencil, faUnlink, faUpload, faVideo } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@/Components/Image.vue"
 import axios from "axios"
@@ -57,15 +57,17 @@ function notifyError(msg: string) {
 /* ---------------------------
    Image & Video Handlers
 ---------------------------- */
-function onSubmitImage(dataRow: any, categoryBox: any) {
+function onSubmitImage(payload: any, categoryBox: any) {
     router[props.data.images_update_route.method || "patch"](
         route(props.data.images_update_route.name, props.data.images_update_route.parameters),
-        { [categoryBox.column_in_db]: dataRow ? dataRow.id : null },
+        payload,
         {
             preserveScroll: true,
             preserveState: true,
             only: ["images_category_box"],
-            onStart: () => (loadingSubmit.value = categoryBox.column_in_db),
+            onStart: () => (
+                loadingSubmit.value = categoryBox.column_in_db
+            ),
             onSuccess: () => {
                 router.reload({ only: ["images"] })
                 notifySuccess(
@@ -137,15 +139,33 @@ function onSubmitVideoUrl() {
 ---------------------------- */
 function onDropImage(event: DragEvent, categoryBox: any) {
     const dataRowImage = JSON.parse(event.dataTransfer?.getData("application/json") || "{}")
-    console.log(dataRowImage)
-    if (dataRowImage?.id) {
-        onSubmitImage(dataRowImage, categoryBox)
+    console.log('dataRowImage', dataRowImage)
+    let payload = {}
+    if (dataRowImage?.id  && !dataRowImage?.sub_scope) {
+        payload = { [categoryBox.column_in_db]: dataRowImage ? dataRowImage.id : null }
+        onSubmitImage(payload, categoryBox)
 
         // If the dragged image came from another category, clear that one
-        if (selectedDragImage.value?.id === dataRowImage.id && selectedDragImage.value?.fromCategory) {
-            onSubmitImage(null, selectedDragImage.value.fromCategory)
+        if (selectedDragImage.value?.id == dataRowImage.id) {
+            payload = { 
+                [categoryBox.column_in_db]: dataRowImage ? dataRowImage.id : null,
+                [selectedDragImage.value.column_in_db] : null 
+            }
+            onSubmitImage(payload, categoryBox)
         }
+    }else if (dataRowImage?.sub_scope) {
+    const foundItem = props.data.images_category_box.find(item => item.id === dataRowImage.id);
+    console.log('foundItem', foundItem);
+
+    if (foundItem) {
+        payload = { 
+            [categoryBox.column_in_db]: dataRowImage.id,
+            [foundItem.column_in_db]: null  // ✅ clear the old category column
+        }
+        // if you want to actually submit:
+        onSubmitImage(payload, categoryBox)
     }
+}
     activeCategory.value = null
 }
 
@@ -200,7 +220,8 @@ function onDropFile(event: DragEvent) {
 }
 
 function onDeletefilesInBox(categoryBox: any) {
-    onSubmitImage(null, categoryBox)
+    let payload = { [categoryBox.column_in_db]: null }
+    onSubmitImage(payload, categoryBox)
 }
 
 function onDeleteFilesInList(categoryBox: any) {
@@ -263,9 +284,9 @@ console.log('dddd', props)
                                 selectedVideoToUpdate = { ...categoryBox }
                                 isModalEditVideo = true
                             }" :icon="faPencil" class="text-gray-400 hover:text-gray-600" fixed-width />
-                            <FontAwesomeIcon v-if="categoryBox.images || categoryBox.url" icon="fal fa-trash-alt"
+                            <FontAwesomeIcon v-if="categoryBox.images || categoryBox.url" :icon="faUnlink"
                                 @click="() => onDeletefilesInBox(categoryBox)"
-                                class="text-gray-400 text-red-600 cursor-pointer" />
+                                class="text-gray-400 text-red-600 cursor-pointer text-xs" />
                         </div>
                     </div>
 
@@ -346,13 +367,15 @@ console.log('dddd', props)
 
                 <!-- List of images -->
                 <div v-else>
-                    <article v-for="item in props.data.images" :key="item.id" class="group flex items-center justify-between gap-3 p-1  bg-white mb-1 border
-               hover:shadow-md hover:border-blue-400 transition" draggable="true"
-                        @dragstart="onStartDrag($event, item)" @dragend="onEndDrag($event)">
+                    <article v-for="item in props.data.images" :key="item.id" class="group flex items-center justify-between gap-3 p-1 bg-white mb-1 border
+           hover:shadow-md hover:border-blue-400 transition" 
+                        @dragstart="onStartDrag($event, item)"
+                        @dragend="onEndDrag($event)"
+                        >
                         <!-- Image + Info -->
                         <div class="flex items-center gap-3 min-w-0 flex-1">
                             <div class="relative flex h-14 w-14 flex-shrink-0 items-center justify-center
-                   overflow-hidden bg-gray-100 group-hover:bg-gray-50 transition">
+                    overflow-hidden bg-gray-100 group-hover:bg-gray-50 transition">
                                 <Image v-if="item?.image" :src="item?.image"
                                     class="max-h-full max-w-full object-contain" />
                                 <div v-else class="text-gray-400">
@@ -368,7 +391,8 @@ console.log('dddd', props)
                                     </p>
 
                                     <!-- Tag PrimeVue untuk sub_scope -->
-                                    <Tag v-if="item?.sub_scope" :label="capitalize(item.sub_scope  +  ' side')"  :size="'xxs'" />
+                                    <Tag v-if="item?.sub_scope" :label="capitalize(item.sub_scope + ' side')"
+                                        :size="'xxs'" />
                                 </div>
 
                                 <span class="truncate max-w-[160px] block text-[11px] text-gray-500 italic"
@@ -376,15 +400,15 @@ console.log('dddd', props)
                                     {{ item?.size }}
                                 </span>
                             </div>
-
                         </div>
 
                         <!-- Delete -->
                         <button @click="onDeleteFilesInList(item)" class="ml-2 flex-shrink-0 rounded-full p-1.5 
-                 text-gray-400 hover:text-red-600 hover:bg-red-50 transition" v-tooltip="trans('Delete')">
+                                text-gray-400 hover:text-red-600 hover:bg-red-50 transition" v-tooltip="trans('Delete')">
                             <FontAwesomeIcon icon="fal fa-trash-alt" class="text-sm text-red-400" />
                         </button>
                     </article>
+
                 </div>
             </div>
         </div>
