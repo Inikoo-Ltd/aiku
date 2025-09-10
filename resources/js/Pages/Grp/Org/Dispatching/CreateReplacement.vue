@@ -153,6 +153,7 @@ onMounted(() => {
 // Section: Handle quantity to resend changes
 const quantityToResendData = ref<{ [key: string]: number }>({});
 const validationErrorsData = ref<{ [key: string]: boolean }>({});
+const loadingCreateReplacement = ref(false)
 
 const handleQuantityToResendUpdate = (itemId: string | number, value: number) => {
     quantityToResendData.value[itemId] = value;
@@ -179,6 +180,7 @@ const isReplacementDisabled = computed(() => {
 
 // Section: Create Replacement
 const onCreateReplacement = (action: any) => {
+    loadingCreateReplacement.value = true
     // Filter items have quantity > 0
     const delivery_note_items = Object.entries(quantityToResendData.value)
         .filter(([itemId, quantity]) => quantity > 0)
@@ -215,6 +217,7 @@ const onCreateReplacement = (action: any) => {
                 });
                 // Reset quantity data after successful submission
                 quantityToResendData.value = {};
+                loadingCreateReplacement.value = false
             },
             onError: (error) => {
                 notify({
@@ -222,6 +225,9 @@ const onCreateReplacement = (action: any) => {
                     text: error.message || trans("Failed to create replacement delivery note"),
                     type: "error"
                 });
+            }, 
+            onFinish: () => {
+                loadingCreateReplacement.value = false
             }
         }
     );
@@ -238,11 +244,8 @@ const onCreateReplacement = (action: any) => {
 
         <template #button-action-replacement="{action}">
             <Button @click="() => onCreateReplacement(action)" :label="action.label" :icon="action.icon"
-                :type="action.type" :disabled="isReplacementDisabled" />
+                :type="action.type" :disabled="isReplacementDisabled" :loading="loadingCreateReplacement" />
         </template>
-
-
-
 
     </PageHeading>
 

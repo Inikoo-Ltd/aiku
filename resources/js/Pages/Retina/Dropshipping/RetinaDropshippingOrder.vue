@@ -45,7 +45,7 @@ import {Currency} from '@/types/LayoutRules'
 import TableInvoices from '@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue'
 import TableProductList from '@/Components/Tables/Grp/Helpers/TableProductList.vue'
 import {faSpinnerThird} from '@far'
-import DSCheckoutSummary from '@/Components/Retina/Dropshipping/DSCheckoutSummary.vue'
+import DropshippingSummaryOrder from '@/Components/Retina/Dropshipping/DropshippingSummaryOrder.vue'
 import Timeline from '@/Components/Utils/Timeline.vue'
 import {Message} from 'primevue'
 import {FontAwesomeIcon} from '@fortawesome/vue-fontawesome'
@@ -222,9 +222,10 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes
         </div>
     </Message>
 
-    <DSCheckoutSummary :is-order="true" :address_management="{addresses: {
-        collection_address_id: address_management.addresses.collection_address_id
-    }}" :summary="box_stats"/>
+    <DropshippingSummaryOrder
+        :address_management
+        :summary="box_stats"
+    />
 
     <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation"
           @update:tab="handleTabUpdate"/>

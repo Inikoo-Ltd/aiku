@@ -13,7 +13,6 @@ import { ref, onMounted, reactive, computed } from "vue";
 import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl } from "@fal";
 import { faSkull } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { InputNumber } from "primevue"
 import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 
 library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl);
@@ -30,10 +29,7 @@ const emit = defineEmits<{
     'validation-error': [itemId: string | number, hasError: boolean]
 }>();
 
-
-
 function orgStockRoute(deliveryNoteItem: DeliverNoteItem) {
-
     switch (route().current()) {
         case "grp.org.warehouses.show.dispatching.delivery_notes.show":
             return route(
@@ -44,12 +40,10 @@ function orgStockRoute(deliveryNoteItem: DeliverNoteItem) {
     }
 }
 
-
 const isMounted = ref(false);
 onMounted(() => {
     isMounted.value = true;
 });
-
 
 const innerWidth = ref(0)
 onMounted(() => {
@@ -58,55 +52,80 @@ onMounted(() => {
 
 // Section: Validation for quantity_to_resend
 const validationErrors = reactive<{ [key: string]: string[] }>({});
+const inputRef = ref()
 
 const validateQuantityToResend = (item: any, value: number) => {
     const errors: string[] = [];
     const itemId = item.id;
-    
+
     // Clear previous errors
     delete validationErrors[itemId];
-   
-    
+
     // Validation rules
     if (value < 0) {
         errors.push(trans('Quantity cannot be negative'));
     }
-    
+
     if (value > item.quantity_dispatched) {
         errors.push(trans('Quantity cannot exceed dispatched quantity'));
     }
-    
-    // // Store errors if any
+
+    // Store errors if any
     if (errors.length > 0) {
         validationErrors[itemId] = errors;
     }
-    
+
     return errors.length === 0;
 };
 
 const isQuantityToResendInvalid = computed(() => {
     return (item: any) => {
         // Safe guard: pastikan validationErrors dan item.id ada
-        if (!validationErrors.value || !item?.id) {
+        if (!validationErrors || !item?.id) {
             return false;
         }
 
-        const errors = validationErrors.value[item.id];
+        const errors = validationErrors[item.id];
         return errors && errors.length > 0;
     };
 });
 
-const onQuantityToResendInput = (item: any, value: number) => {
+const onQuantityToResendInput = (item: any, event: Event) => {
+    const target = event.target as HTMLInputElement;
+    const value = parseFloat(target.value) || 0;
+
     emit('update:quantity-to-resend', item.id, value);
     const isValid = validateQuantityToResend(item, value);
     emit('validation-error', item.id, !isValid);
 };
 
+const onFractionClick = (item: any) => {
+    const maxValue = item.quantity_dispatched || 0;
+
+    // Update the item value to max dispatched quantity
+    item.quantity_to_resend = maxValue;
+    inputRef.value = parseFloat(maxValue)
+
+    console.log(inputRef.value);
+    emit('update:quantity-to-resend', item.id, maxValue);
+    const isValid = validateQuantityToResend(item, maxValue);
+    emit('validation-error', item.id, !isValid);
+};
+
+// Dynamic classes for input
+const getInputClasses = (item: any) => {
+    const baseClasses = "w-full px-3 py-2 text-sm border rounded-l-md focus:outline-none focus:ring-2 focus:ring-opacity-50";
+    const invalidClasses = "bg-red-50 border-red-500 text-red-900 placeholder-red-700 focus:ring-red-500 focus:border-red-500";
+    const validClasses = "bg-white border-gray-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500";
+
+    return `${baseClasses} ${isQuantityToResendInvalid.value(item) ? invalidClasses : validClasses}`;
+};
+
+
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5" rowAlignTop>
-
 
         <!-- Column: Reference -->
         <template #cell(org_stock_code)="{ item: deliveryNoteItem }">
@@ -115,24 +134,21 @@ const onQuantityToResendInput = (item: any, value: number) => {
             </Link>
         </template>
 
-        <template #cell(quantity_dispatched)="{ item: item, proxyItem }">
-            <FractionDisplay v-if="item.quantity_dispatched_fractional"
-                             :fractionData="item.quantity_dispatched_fractional" />
+        <template #cell(quantity_dispatched)="{ item: item }">
+            <FractionDisplay v-if="item.quantity_dispatched_fractional" @click="onFractionClick(item)" class="cursor-pointer"
+                :fractionData="item.quantity_dispatched_fractional" />
             <span v-else>{{ item.quantity_dispatched }}</span>
-
         </template>
 
-
-        <template #cell(quantity_to_resend)="{ item: item, proxyItem }">
+        <template #cell(quantity_to_resend)="{ item: item }">
             <div class="space-y-1">
-                <InputNumber :min="0"  :invalid="isQuantityToResendInvalid(item)"
-                    mode="decimal" showButtons size="small"
-                    @input="(event: any) => onQuantityToResendInput(item, event.value)" />
+                <div class="flex items-center justify-end">
+                    <!-- Input Field -->
+                    <input v-model="inputRef" type="number" :min="0" :class="getInputClasses(item)" class="rounded-md !w-28"
+                        @input="onQuantityToResendInput(item, $event)" placeholder="0" />
+                </div>
             </div>
         </template>
 
-
     </Table>
-
-
 </template>
