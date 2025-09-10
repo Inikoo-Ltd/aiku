@@ -2,12 +2,8 @@
 
 namespace App\Actions\Catalogue\Product\UI;
 
-use App\Actions\Goods\TradeUnit\IndexTradeUnitImages;
-use App\Http\Resources\Helpers\ImageResource;
 use App\Http\Resources\Helpers\ImagesResource;
-use App\Http\Resources\Helpers\TradeUnitImagesResource;
 use App\Models\Catalogue\Product;
-use App\Models\Goods\TradeUnit;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetProductImagesShowcase
@@ -43,7 +39,7 @@ class GetProductImagesShowcase
                 ],
             ],
             'images' => ImagesResource::collection(IndexProductImages::run($product))->resolve(),
-            
+
         ];
     }
 

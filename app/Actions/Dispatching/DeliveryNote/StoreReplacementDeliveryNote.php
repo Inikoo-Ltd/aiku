@@ -22,6 +22,7 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Ordering\Order;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
@@ -82,13 +83,16 @@ class StoreReplacementDeliveryNote extends OrgAction
                     'address' => $deliveryAddress
                 ]);
             }
-            $transactions = $order->transactions()->whereIn('model_id', Arr::get($modelData, 'products'))
-                ->where('model_type', 'Product')->get();
+
+            $itemIds = collect(Arr::get($modelData, 'products'))->pluck('id');
+            $transactionIds = DeliveryNoteItem::whereIn('id', $itemIds)->pluck('transaction_id');
+
+            $transactions = $order->transactions()->whereIn('transactions.id', $transactionIds)->get();
 
             /** @var Transaction $transaction */
             foreach ($transactions as $transaction) {
                 $product = Product::find($transaction->model_id);
-                $quantity = Arr::get($modelData, 'quantity.' .  $product->id);
+                $quantity = collect(Arr::get($modelData, 'products'))->where('id', $product->id)->first()->quantity;
 
                 foreach ($product->orgStocks as $orgStock) {
 
@@ -154,7 +158,7 @@ class StoreReplacementDeliveryNote extends OrgAction
             'customer_client_id'        => ['sometimes', 'nullable'],
             'customer_sales_channel_id' => ['sometimes', 'nullable'],
             'platform_id'               => ['sometimes', 'nullable'],
-            'products'               => ['sometimes', 'array']
+            'products'                  => ['required', 'array']
         ];
 
         if (!$this->strict) {

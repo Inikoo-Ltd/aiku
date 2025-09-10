@@ -60,6 +60,9 @@ class StoreDeliveryNote extends OrgAction
         data_set($modelData, 'public_notes', $order->public_notes);
         data_set($modelData, 'shipping_notes', $order->shipping_notes);
 
+        if ($this->strict) {
+            data_set($modelData, 'delivery_locked', true);
+        }
 
         $deliveryNote = DB::transaction(function () use ($order, $modelData, $deliveryAddress) {
             /** @var DeliveryNote $deliveryNote */

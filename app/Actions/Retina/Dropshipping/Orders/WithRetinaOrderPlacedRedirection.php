@@ -18,7 +18,7 @@ trait WithRetinaOrderPlacedRedirection
     {
         $itemsToPushTolayer = [];
         foreach ($arr['order']?->transactions as $index => $transaction) {
-            if($transaction->model_type != 'Product') {
+            if ($transaction->model_type != 'Product') {
                 continue;
             }
 
@@ -30,14 +30,14 @@ trait WithRetinaOrderPlacedRedirection
                 'quantity'  => (float) $transaction->quantity_ordered,
             ];
         }
-        
+
         if ($arr['success']) {
             $notification = [
                 'status'  => 'success',
                 'title'   => __('Success!'),
                 'description' => __('Your order has been submitted.'),
             ];
-            
+
             $gtm = [
                 'key'               => 'retina_dropshipping_order_placed',
                 'event'             => 'purchase',

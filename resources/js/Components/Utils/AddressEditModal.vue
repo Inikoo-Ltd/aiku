@@ -7,7 +7,6 @@ import { ref } from "vue"
 import { routeType } from "@/types/route"
 import { trans } from "laravel-vue-i18n"
 import { Address, AddressManagement } from "@/types/PureComponent/Address"
-// import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheckCircle as faCheckCircleSolid } from "@fas"
 import { faThumbtack, faPencil, faHouse, faTrashAlt, faTruck, faTruckCouch, faCheckCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -23,7 +22,6 @@ const props = defineProps<{
     address_modal_title?: string
 }>()
 
-console.log('eweqw', props.address)
 
 const emits = defineEmits<{
     (e: "onDone"): void
@@ -82,23 +80,6 @@ const onSubmitEditAddress = (address: Address) => {
     )
 }
 
-// Method: Select address history
-// const isSelectAddressLoading = ref<number | boolean | null | undefined>(false)
-// const onSelectAddress = (selectedAddress: Address) => {
-//     router.patch(
-//         route(props.addresses.routes_list.switch_route.name, props.addresses.routes_list.switch_route.parameters),
-//         {
-//             delivery_address_id: selectedAddress.id
-//         },
-//         {
-//             onStart: () => isSelectAddressLoading.value = selectedAddress.id,
-//             onSuccess: () => {
-//                 emits("onHasChange")
-//             },
-//             onFinish: () => isSelectAddressLoading.value = false
-//         }
-//     )
-// }
 
 </script>
 
@@ -144,7 +125,7 @@ const onSubmitEditAddress = (address: Address) => {
                     <div v-html="selectedAddress?.formatted_address" class="px-3 py-2"></div>
                 </div>
 
-                <!-- Form: Edit address -->
+                <!-- Form: Edit address Address -->
                 <div class="relative bg-gray-100 p-4 rounded-md">
                     <PureAddress v-model="selectedAddress" :options="addresses.options" fieldLabel />
                     <div class="mt-6 flex justify-center">

@@ -119,7 +119,7 @@ class CreateReplacementDeliveryNote extends OrgAction
                     'method'     => 'post',
                     'name'       => 'grp.models.order.replacement_delivery_note.store',
                     'parameters' => [
-                        'deliveryNote' => $deliveryNote->id
+                        'order' => $deliveryNote->orders->first()->id
                     ]
                 ]
             ]

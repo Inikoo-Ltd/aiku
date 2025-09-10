@@ -10,7 +10,7 @@
 
 namespace App\Actions\Retina\Ecom\Basket\UI;
 
-use App\Actions\Ordering\Order\UI\GetOrderAddressManagement;
+use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
 use App\Actions\Retina\Ecom\Orders\IndexRetinaEcomOrders;
 use App\Actions\RetinaAction;
 use App\Http\Resources\Fulfilment\RetinaEcomBasketTransactionsResources;
@@ -129,7 +129,7 @@ class ShowRetinaEcomBasket extends RetinaAction
                         ],
                     ]
                 ],
-                'address_management' => GetOrderAddressManagement::run(order: $order, isRetina: true),
+                'address_management' => GetOrderDeliveryAddressManagement::run(order: $order, isRetina: true),
                 'balance'        => $this->customer->balance,
                 'is_in_basket'   => true,
                 'total_to_pay'   => $order ? max(0, $order->total_amount - $order->customer->balance) : 0,

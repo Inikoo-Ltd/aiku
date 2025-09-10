@@ -10,7 +10,6 @@ namespace App\Actions\Goods\TradeUnit\UI;
 
 use App\Actions\OrgAction;
 use App\InertiaTable\InertiaTable;
-use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
 use App\Services\QueryBuilder;

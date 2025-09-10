@@ -11,7 +11,6 @@ namespace App\Actions\Masters\MasterAsset;
 
 use App\Actions\GrpAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Media;
 use App\Models\Masters\MasterAsset;
 use Illuminate\Support\Arr;
@@ -42,17 +41,18 @@ class UpdateMasterProductImages extends GrpAction
 
         foreach ($imageKeys as $imageKey) {
             $mediaId = $modelData[$imageKey];
-            
+
             if ($mediaId === null) {
                 $masterAsset->images()->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
-                    ->updateExistingPivot($masterAsset->images()
+                    ->updateExistingPivot(
+                        $masterAsset->images()
                         ->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
-                        ->first()?->id, 
+                        ->first()?->id,
                         ['sub_scope' => null]
                     );
             } else {
                 $media = Media::find($mediaId);
-                
+
                 if ($media) {
                     $masterAsset->images()->updateExistingPivot(
                         $media->id,

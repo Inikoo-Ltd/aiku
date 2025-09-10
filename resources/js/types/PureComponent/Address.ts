@@ -63,6 +63,7 @@ export interface AddressManagement {
 	current_selected_address_id: number
 	isCannotSelect: boolean
 	selected_delivery_addresses_id: number[]
+  address_update_route: routeType
 	routes_list: {
 		switch_route: routeType
 		pinned_route: routeType
@@ -72,4 +73,5 @@ export interface AddressManagement {
 	collection_address_id?: number
 	updateRoute: routeType
 	addresses: any
+  address_modal_title: string
 }

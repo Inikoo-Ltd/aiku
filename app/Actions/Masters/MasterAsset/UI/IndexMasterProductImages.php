@@ -10,7 +10,6 @@ namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\OrgAction;
 use App\InertiaTable\InertiaTable;
-use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Media;
 use App\Models\Masters\MasterAsset;
 use App\Services\QueryBuilder;
@@ -34,7 +33,8 @@ class IndexMasterProductImages extends OrgAction
         $queryBuilder
             ->defaultSort('media.id')
             ->select([
-                'media.*'
+                'media.*',
+                'model_has_media.sub_scope as sub_scope',
             ]);
 
         return $queryBuilder->allowedSorts(['size', 'name'])

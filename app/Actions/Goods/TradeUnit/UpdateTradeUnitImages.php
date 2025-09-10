@@ -41,17 +41,18 @@ class UpdateTradeUnitImages extends GrpAction
 
         foreach ($imageKeys as $imageKey) {
             $mediaId = $modelData[$imageKey];
-            
+
             if ($mediaId === null) {
                 $tradeUnit->images()->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
-                    ->updateExistingPivot($tradeUnit->images()
+                    ->updateExistingPivot(
+                        $tradeUnit->images()
                         ->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
-                        ->first()?->id, 
+                        ->first()?->id,
                         ['sub_scope' => null]
                     );
             } else {
                 $media = Media::find($mediaId);
-                
+
                 if ($media) {
                     $tradeUnit->images()->updateExistingPivot(
                         $media->id,

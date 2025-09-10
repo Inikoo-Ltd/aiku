@@ -37,8 +37,8 @@ class TradeUnitImagesResource extends JsonResource
             'id'    => $this->id,
             'name'  => $this->name,
             'size'  => NaturalLanguage::make()->fileSize($this->size, 1, 'MB'),
-            'image' => $imageSources
-
+            'image' => $imageSources,
+            'sub_scope' => $this->sub_scope,
 
         ];
     }
