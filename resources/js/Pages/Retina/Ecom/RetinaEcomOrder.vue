@@ -31,7 +31,6 @@ import { Currency } from '@/types/LayoutRules'
 import TableInvoices from '@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue'
 import TableProductList from '@/Components/Tables/Grp/Helpers/TableProductList.vue'
 import { faSpinnerThird } from '@far'
-import DSCheckoutSummary from '@/Components/Retina/Dropshipping/DSCheckoutSummary.vue'
 import Timeline from '@/Components/Utils/Timeline.vue'
 import { Message } from 'primevue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -226,7 +225,6 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes
         :balance
         :address_management
     />
-    <!-- <DSCheckoutSummary :summary="box_stats" /> -->
 
     <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation"
         @update:tab="handleTabUpdate" />

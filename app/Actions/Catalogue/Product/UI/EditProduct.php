@@ -103,6 +103,12 @@ class EditProduct extends OrgAction
             'EditModel',
             [
                 'title'       => __('goods'),
+                'warning' => [
+                    'type'  =>  'warning',
+                    'title' =>  'warning',
+                    'text'  =>  __('Changing name or description may affect SEO and existing links.'),
+                    'icon'  => ['fas', 'fa-exclamation-triangle']
+                ],
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $product,
                     $request->route()->getName(),

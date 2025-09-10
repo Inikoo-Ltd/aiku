@@ -55,12 +55,15 @@ import {
     faAtom,
     faMoneyBill
 } from "@fal"
+import { faExclamationTriangle } from "@fas"
 import { faBan } from "@far"
 import { Head, usePage } from "@inertiajs/vue3"
 import axios from "axios"
 import { router } from "@inertiajs/vue3"
+import Message from 'primevue/message';
 
 library.add(
+    faExclamationTriangle,
     faAtom,
     faTag,
     faMicrophoneAltSlash,
@@ -104,6 +107,12 @@ library.add(
 
 const props = defineProps<{
     title: string
+    warning?: {
+        text: string
+        title: string
+        icon: string
+        type: string
+    }
     pageHead: {
         title: string
         exitEdit: {
@@ -234,24 +243,69 @@ function connectToPlatform(routeName, parameters) {
         window.location.href = response.data
     })
 }
+
+const showWarningMessage = ref(true)
+
+const severityMap: Record<string, string> = {
+  warning: "warn",
+  success: "success",
+  info: "info",
+  error: "error"
+}
+
+const getSeverity = (type?: string) => {
+  return type ? severityMap[type.toLowerCase()] || "info" : "info"
+}
 </script>
+
 
 <template>
 
-    <Head :title="capitalize(title)"/>
-    <PageHeading :data="pageHead"/>
+    <Head :title="capitalize(title)" />
+    <PageHeading :data="pageHead" />
+
+    <div v-if="warning && showWarningMessage">
+        <Message v-if="warning && showWarningMessage" :severity="getSeverity(warning.type)" :closable="true"
+            @close="showWarningMessage = false">
+            <div class="flex items-start gap-3">
+                <!-- Icon -->
+                <FontAwesomeIcon v-if="warning.icon" :icon="warning.icon" class="w-4 h-4 flex-shrink-0 mt-0.5" :class="[
+                    getSeverity(warning.type) === 'warn' ? 'text-yellow-800' :
+                        getSeverity(warning.type) === 'success' ? 'text-green-800' :
+                            getSeverity(warning.type) === 'error' ? 'text-red-800' :
+                                'text-blue-500'
+                ]" />
+
+                <!-- Content -->
+                <div class="flex flex-col">
+                    <div class="text-sm font-semibold">
+                        {{ warning?.title }}
+                    </div>
+                    <div v-if="warning?.text" :class="[
+                        getSeverity(warning.type) === 'warn' ? 'text-yellow-500' :
+                            getSeverity(warning.type) === 'success' ? 'text-green-500' :
+                                getSeverity(warning.type) === 'error' ? 'text-red-500' :
+                                    'text-blue-500'
+                    ]" class="text-xs ">
+                        {{ warning?.text }}
+                    </div>
+                </div>
+            </div>
+        </Message>
+
+    </div>
 
     <!-- If overflow-hidden, affect to Multiselect on Address -->
     <div class="rounded-lg shadow">
         <div v-if="!isMobile"
-             class="divide-y divide-gray-200 lg:grid grid-flow-col lg:grid-cols-12 lg:divide-y-0 lg:divide-x">
+            class="divide-y divide-gray-200 lg:grid grid-flow-col lg:grid-cols-12 lg:divide-y-0 lg:divide-x">
             <!-- Tab: Navigation -->
             <aside v-if="!formData.fullLayout" class="bg-gray-50/50 py-0 lg:col-span-3 lg:h-full">
                 <div class="sticky top-16">
                     <template v-for="(sectionData, key) in formData.blueprint">
                         <!-- If Section: all fields is not hidden -->
                         <div v-if="!(Object.values(sectionData.fields).every((field: any) => field.hidden))"
-                             @click="switchTab(key)" :class="[
+                            @click="switchTab(key)" :class="[
 								key == currentTab ? `navigationSecondActive` : `navigationSecond`,
 								'cursor-pointer group px-3 py-2 flex items-center text-sm font-medium',
 							]" :style="[
@@ -264,16 +318,15 @@ function connectToPlatform(routeName, parameters) {
 									: { 'border-left': `4px solid transparent` },
 							]">
                             <FontAwesomeIcon v-if="sectionData.icon" aria-hidden="true"
-                                             class="flex-shrink-0 -ml-1 mr-2 h-4 w-4" :class="[
+                                class="flex-shrink-0 -ml-1 mr-2 h-4 w-4" :class="[
 									tabActive[key]
 										? 'text-gray-400 group-hover:text-gray-500'
 										: 'text-gray-400',
-								]" :icon="sectionData.icon"/>
+								]" :icon="sectionData.icon" />
                             <span class="truncate">{{ sectionData.label }}</span>
                             <FontAwesomeIcon v-if="sectionData.information" v-tooltip="sectionData.information"
-                                             icon="fal fa-info-circle" class="ml-1 text-gray-400 hover:text-gray-700"
-                                             fixed-width
-                                             aria-hidden="true"/>
+                                icon="fal fa-info-circle" class="ml-1 text-gray-400 hover:text-gray-700" fixed-width
+                                aria-hidden="true" />
                             <!-- {{ tabActive }} -- {{ key == currentTab }} -->
                         </div>
                     </template>
@@ -288,12 +341,12 @@ function connectToPlatform(routeName, parameters) {
                 <!-- Section: Error in models -->
                 <Transition name="spin-to-down">
                     <div v-if="usePage().props?.errors?.error_in_models"
-                         class="mt-3 flex gap-x-1 items-center bg-red-500 w-full p-3 text-white rounded">
+                        class="mt-3 flex gap-x-1 items-center bg-red-500 w-full p-3 text-white rounded">
                         <FontAwesomeIcon v-if="
 								usePage().props?.errors?.error_in_models?.match(
 									/^(\d{3}):\s(.+)$/
 								)?.[1] === '403'
-							" icon="far fa-ban" class="text-lg" fixed-width aria-hidden="true"/>
+							" icon="far fa-ban" class="text-lg" fixed-width aria-hidden="true" />
                         <div class="">{{ usePage().props.errors.error_in_models }}</div>
                     </div>
                 </Transition>
@@ -302,10 +355,10 @@ function connectToPlatform(routeName, parameters) {
                     <!-- If Section: all fields is not hidden -->
                     <template v-if="!(Object.values(sectionData.fields).every((field: any) => field.hidden))">
                         <div v-show="sectionIdx == currentTab" class="pt-4">
-                            <div class="sr-only absolute -top-16" :id="`field${sectionIdx}`"/>
+                            <div class="sr-only absolute -top-16" :id="`field${sectionIdx}`" />
                             <!-- Title -->
                             <div v-if="sectionData.title || sectionData.subtitle" class="mb-4 flex items-center gap-x-2"
-                                 ref="_buttonRefs">
+                                ref="_buttonRefs">
                                 <h3 v-if="sectionData.title"
                                     class="text-lg leading-6 font-medium text-gray-700 capitalize">
                                     {{ sectionData.title }}
@@ -317,26 +370,17 @@ function connectToPlatform(routeName, parameters) {
 
                             <!-- Looping Field -->
                             <div class="my-2 space-y-5 transition-all duration-1000 ease-in-out"
-                                 :class="fieldGroupAnimateSection">
+                                :class="fieldGroupAnimateSection">
                                 <template v-for="(fieldData, fieldName, index) in sectionData.fields" :key="index">
                                     <!-- Field: is not hidden and skip price when TBC -->
 
-                                    <div
-                                        v-if="!fieldData?.hidden && !( ['price','territories'].includes(fieldName) && sectionData.fields?.price?.value?.type === 'TBC')"
+                                    <div v-if="!fieldData?.hidden && !( ['price','territories'].includes(fieldName) && sectionData.fields?.price?.value?.type === 'TBC')"
                                         class="py-2 mt-1 flex text-sm text-gray-700 sm:mt-0">
 
-                                        <Action
-                                            v-if="fieldData.type === 'action'"
-                                            :action="fieldData.action"
-                                            :dataToSubmit="fieldData.action?.data"/>
-                                        <FieldForm
-                                            v-else
-                                            :key="fieldName + index"
-                                            ref="_fieldForm"
-                                            :field="fieldName"
-                                            :fieldData="fieldData"
-                                            :args="formData.args"
-                                            :refForms="_fieldForm"/>
+                                        <Action v-if="fieldData.type === 'action'" :action="fieldData.action"
+                                            :dataToSubmit="fieldData.action?.data" />
+                                        <FieldForm v-else :key="fieldName + index" ref="_fieldForm" :field="fieldName"
+                                            :fieldData="fieldData" :args="formData.args" :refForms="_fieldForm" />
                                     </div>
                                 </template>
                             </div>
@@ -346,7 +390,7 @@ function connectToPlatform(routeName, parameters) {
 
                 <!-- For button Authorize -->
                 <div class="py-2 px-3 flex justify-end max-w-2xl" v-if="formData.blueprint?.[currentTab]?.button"
-                     :id="formData.title">
+                    :id="formData.title">
                     <component :is="'button'" @click="
 							connectToPlatform(
 								formData.blueprint[currentTab].button.route.name,
@@ -371,20 +415,19 @@ function connectToPlatform(routeName, parameters) {
                     class="group font-medium" :aria-current="key === currentTab ? 'page' : undefined">
                     <div class="bg-gray-200 py-3 pl-5 flex items-center">
                         <FontAwesomeIcon v-if="sectionData.icon" aria-hidden="true" :icon="sectionData.icon"
-                                         class="flex-shrink-0 mr-3 h-5 w-5"
-                                         :class="[key === currentTab ? 'text-gray-400' : 'text-gray-500']"/>
+                            class="flex-shrink-0 mr-3 h-5 w-5"
+                            :class="[key === currentTab ? 'text-gray-400' : 'text-gray-500']" />
                         <span class="capitalize truncate">{{ sectionData.label }}</span>
                     </div>
                     <div class="px-5">
                         <template v-for="(fieldData, fieldName, index) in formData.blueprint[key].fields">
                             <!-- Field: is not hidden and skip price when TBC -->
-                            <div
-                                v-if="!fieldData?.hidden && !(['price', 'territories'].includes(fieldName) && sectionData.fields?.price?.value?.type === 'TBC')"
+                            <div v-if="!fieldData?.hidden && !(['price', 'territories'].includes(fieldName) && sectionData.fields?.price?.value?.type === 'TBC')"
                                 class="py-4">
                                 <Action v-if="fieldData.type === 'action'" :action="fieldData.action"
-                                        :dataToSubmit="fieldData.action?.data"/>
+                                    :dataToSubmit="fieldData.action?.data" />
                                 <FieldForm v-else :key="index" :field="fieldName" :fieldData="fieldData"
-                                           :args="formData.args" :id="fieldData.name" :refForms="_fieldForm"/>
+                                    :args="formData.args" :id="fieldData.name" :refForms="_fieldForm" />
                             </div>
                         </template>
                     </div>

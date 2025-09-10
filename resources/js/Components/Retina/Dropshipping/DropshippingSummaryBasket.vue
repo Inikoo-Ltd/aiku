@@ -14,6 +14,7 @@ import { faFilePdf, faIdCardAlt, faTruck, faWeight, faMapPin } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import ToggleSwitch from 'primevue/toggleswitch';
 import { notify } from "@kyvg/vue3-notification"
+import { routeType } from "@/types/route"
 
 library.add(faIdCardAlt, faWeight, faMapPin)
 
@@ -57,7 +58,6 @@ const props = defineProps<{
     dataPalletReturn?: {
         is_collection: boolean
     }
-    isOrder?: boolean
     boxStats?: {
         fulfilment_customer?: {
             address?: {
@@ -70,6 +70,8 @@ const props = defineProps<{
     listError?: {
         box_stats_delivery_address?: boolean
     }
+    updateOrderRoute: routeType
+    isCollection?: boolean
 }>()
 
 const locale = inject('locale', {})
@@ -77,10 +79,7 @@ const locale = inject('locale', {})
 const isModalShippingAddress = ref(false)
 
 // Collection feature reactive variables
-const isDeliveryAddressManagementModal = ref(false)
 const isCollection = ref(false)
-const collectionBy = ref('myself')
-const textValue = ref<string | null>('')
 
 // Collection feature methods
 const updateCollection = async (e: Event) => {
@@ -89,7 +88,7 @@ const updateCollection = async (e: Event) => {
         collection_address_id: target.checked ? props.address_management.addresses.current_selected_address_id : null
     }
     try {
-        router.patch(route(props.address_management.updateRoute.name, props.address_management.updateRoute.parameters), {
+        router.patch(route(props.updateOrderRoute?.name, props.updateOrderRoute.parameters), {
             ...payload
         })
     } catch (error) {
@@ -103,65 +102,8 @@ const updateCollection = async (e: Event) => {
 }
 
 
-const updateCollectionType = () => {
-    const payload: Record<string, any> = {
-        collection_by: collectionBy.value,
-    }
-
-    if (collectionBy.value === 'myself') {
-        payload.shipping_notes = null
-        textValue.value = null // also clear in frontend
-    }
-
-    router.patch(
-        route(props.address_management.updateRoute.name, props.address_management.updateRoute.parameters),
-        payload,
-        {
-            preserveScroll: true,
-            onSuccess: () => {
-                notify({
-                    title: trans("Success"),
-                    text: trans("Collection type updated successfully"),
-                    type: "success",
-                })
-            },
-            onError: () => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to update collection type"),
-                    type: "error",
-                })
-            },
-        }
-    )
-}
-
-const updateCollectionNotes = () => {
-    router.patch(
-        route(props.address_management.updateRoute.name, props.address_management.updateRoute.parameters),
-        {shipping_notes: textValue.value},
-        {
-            preserveScroll: true,
-            onSuccess: () => {
-                notify({
-                    title: trans("Success"),
-                    text: trans("Text updated successfully"),
-                    type: "success",
-                })
-            },
-            onError: () => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to update text"),
-                    type: "error",
-                })
-            },
-        }
-    )
-}
-
 onMounted(() => {
-    isCollection.value = Boolean(props.address_management?.addresses?.collection_address_id)
+    isCollection.value = props.isCollection
 });
 
 </script>
@@ -218,7 +160,7 @@ onMounted(() => {
                     <FontAwesomeIcon icon='fal fa-envelope' class='text-gray-400' fixed-width aria-hidden='true'/>
                 </div>
                 <a :href="`mailto:${summary?.customer_client.email}`" v-tooltip="'Click to send email'"
-                   class="text-sm text-gray-500 hover:text-gray-700 truncate">{{ summary?.customer_client.email }}</a>
+                    class="text-sm text-gray-500 hover:text-gray-700 truncate">{{ summary?.customer_client.email }}</a>
             </div>
 
             <!-- Field: Phone -->
@@ -227,48 +169,26 @@ onMounted(() => {
                     <FontAwesomeIcon icon='fal fa-phone' class='text-gray-400' fixed-width aria-hidden='true'/>
                 </div>
                 <a :href="`tel:${summary?.customer_client.phone}`" v-tooltip="'Click to make a phone call'"
-                   class="text-sm text-gray-500 hover:text-gray-700">{{ summary?.customer_client.phone }}</a>
+                    class="text-sm text-gray-500 hover:text-gray-700">{{ summary?.customer_client.phone }}</a>
             </div>
 
             <!-- Collection Toggle -->
-            <div class="mt-2 pl-1 flex items w-full flex-none gap-x-2" v-if="!isOrder || isCollection">
+            <div class="mt-2 pl-1 flex items w-full flex-none gap-x-2">
                 <FontAwesomeIcon icon='fal fa-map-pin' class='text-gray-400' fixed-width aria-hidden='true'/>
-                <ToggleSwitch v-if="!isOrder" @change="updateCollection"
-                              v-model="isCollection"/>
+                <ToggleSwitch @change="updateCollection" v-model="isCollection"/>
                 <span class="text-sm text-gray-500">Collection</span>
             </div>
 
             <!-- Collection Options -->
-            <div class="mt-2 pl-1 flex items w-full flex-none gap-x-2">
-                <div v-if="isCollection && !isOrder" class="w-full">
-                    <span class="block mb-1">{{ trans("Collection by:") }}</span>
-                    <div class="flex space-x-4">
-                        <label class="inline-flex items-center">
-                            <input type="radio" value="myself" v-model="collectionBy" @change="updateCollectionType"
-                                   class="form-radio"/>
-                            <span class="ml-2">{{ trans("My Self") }}</span>
-                        </label>
-                        <label class="inline-flex items-center">
-                            <input type="radio" value="thirdParty" v-model="collectionBy" @change="updateCollectionType"
-                                   class="form-radio"/>
-                            <span class="ml-2">{{ trans("Third Party") }}</span>
-                        </label>
-                    </div>
+            <div v-if="!isCollection" class="mt-2 pl-1 flex items w-full flex-none gap-x-2">
 
-                    <div v-if="collectionBy === 'thirdParty'" class="mt-3">
-                        <textarea v-model="textValue" @blur="updateCollectionNotes" rows="5"
-                                  class="w-full border border-gray-300 rounded-md p-2"
-                                  placeholder="Type additional notes..."></textarea>
-                    </div>
-                </div>
-
-                <div v-else-if="!isCollection" class="w-full text-xs text-gray-500"
-                     :class="listError?.box_stats_delivery_address ? 'errorShake' : ''">
+                <div class="w-full text-xs text-gray-500"
+                    :class="listError?.box_stats_delivery_address ? 'errorShake' : ''">
                     <dd
                         class="w-full text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
                         <div v-html="summary?.customer?.addresses?.delivery?.formatted_address"></div>
                         <div v-if="address_management?.address_update_route" @click="isModalShippingAddress = true"
-                             class="underline cursor-pointer hover:text-gray-700">
+                            class="underline cursor-pointer hover:text-gray-700">
                             {{ trans("Edit") }}
                             <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true"/>
                         </div>
