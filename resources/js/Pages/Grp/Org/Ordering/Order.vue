@@ -1085,7 +1085,7 @@ const toggleElipsis = (e: Event) => {
                                 }}
                                 </Link>
                                 <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
-                                    <Icon :data="note?.state" />
+                                    {{ trans(note?.state?.tooltip) }} <Icon :data="note?.state" />
                                 </span>
                             </div>
 
