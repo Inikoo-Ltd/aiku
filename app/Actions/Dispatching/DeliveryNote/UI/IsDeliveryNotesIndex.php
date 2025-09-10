@@ -117,7 +117,7 @@ trait IsDeliveryNotesIndex
                   ->whereColumn('picking_session_has_delivery_notes.delivery_note_id', 'delivery_notes.id');
         };
 
-        return $query->defaultSort('-delivery_notes.date')
+        return $query->defaultSort('delivery_notes.created_at')
             ->select([
                 'delivery_notes.id',
                 'delivery_notes.reference',

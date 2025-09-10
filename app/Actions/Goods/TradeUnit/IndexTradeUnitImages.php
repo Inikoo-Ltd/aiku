@@ -65,7 +65,7 @@ class IndexTradeUnitImages extends OrgAction
 
 
             $table
-                ->column(key: 'grabable_area', label: '', canBeHidden: false, sortable: false, searchable: false, type: 'icon')
+                ->column(key: 'grabbable_area', label: '', canBeHidden: false, type: 'icon')
                 ->column(key: 'image', label: __('Image'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'size', label: __('Size'), canBeHidden: false, sortable: true, searchable: true);
 

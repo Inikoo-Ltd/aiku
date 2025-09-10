@@ -763,7 +763,7 @@ const toggleElipsis = (e: Event) => {
                         key="1"
                         v-tooltip="trans('Create replacement')"
                     />
-                    
+
                 </template>
 
                 <template #btn-yes="{ isLoadingdelete, clickYes}">
@@ -1069,7 +1069,6 @@ const toggleElipsis = (e: Event) => {
                         class="mt-4 border rounded-lg p-4 pt-3 bg-white shadow-sm">
                         <!-- Section Title -->
                         <div class="flex items-center gap-2 border-b border-gray-200 pb-2 mb-3">
-                            <FontAwesomeIcon :icon="faTruck" class="text-blue-500" fixed-width />
                             <div class="text-sm font-semibold text-gray-800">
                                 {{ trans('Delivery Notes') }}
                             </div>
@@ -1080,13 +1079,13 @@ const toggleElipsis = (e: Event) => {
                             class="mb-3 pb-3 border-b border-dashed last:border-0 last:mb-0 last:pb-0">
 
                             <div class="flex items-center gap-2 text-sm text-gray-700 mb-1">
-                                <span class="font-medium">Ref:</span>
+                                <FontAwesomeIcon :icon="faTruck" :class="note.type === 'replacement' ? 'text-red-500' : 'text-blue-500'" fixed-width />
                                 <Link :href="generateRouteDeliveryNote(note?.slug)" class="secondaryLink">{{
                                 note?.reference
                                 }}
                                 </Link>
                                 <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
-                                    <Icon :data="note?.state" />
+                                    {{ trans(note?.state?.tooltip) }} <Icon :data="note?.state" />
                                 </span>
                             </div>
 
@@ -1116,9 +1115,9 @@ const toggleElipsis = (e: Event) => {
                                 </ul>
                             </div>
 
-                            <div v-else class="mt-1 text-xs italic text-gray-400">
+<!--                            <div v-else class="mt-1 text-xs italic text-gray-400">
                                 {{ trans('No shipments') }}
-                            </div>
+                            </div>-->
                         </div>
                     </div>
                 </div>

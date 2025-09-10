@@ -104,11 +104,12 @@ trait IsOrder
         $deliveryNotesData = [];
 
         if ($deliveryNotes) {
-            foreach ($deliveryNotes as $deliveryNote) {
+            foreach ($deliveryNotes->sortBy('created_at') as $deliveryNote) {
                 $deliveryNotesData[] = [
                     'id'        => $deliveryNote->id,
                     'slug'        => $deliveryNote->slug,
                     'reference' => $deliveryNote->reference,
+                    'type' => $deliveryNote->type,
                     'state'     => $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
                     'shipments' => $deliveryNote?->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null
                 ];
