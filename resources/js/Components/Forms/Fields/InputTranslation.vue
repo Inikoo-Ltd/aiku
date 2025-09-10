@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onBeforeUnmount } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import { faRobot } from "@far";
+import {router} from "@inertiajs/vue3"
 
 const props = defineProps<{
   form: any
@@ -58,6 +60,25 @@ watch(
   { immediate: true }
 )
 
+
+const generateLanguagetranslateAI = () => {
+  router.post(
+    route("grp.models.translate", { language: selectedLang.value }),
+    {
+      text: props.fieldData.main
+    },
+    {
+      onSuccess: () => {
+        console.log("Translation success");
+        // you can add your follow-up logic here
+      },
+      onError: (errors) => {
+        console.error("Translation failed", errors);
+      }
+    }
+  )
+}
+
 // Listen to cross-tab + same-tab updates
 onMounted(() => {
   const handleStorage = (e: StorageEvent) => {
@@ -84,26 +105,24 @@ onMounted(() => {
   <div class="space-y-4">
     <!-- Language Selector -->
     <div class="flex flex-wrap gap-2">
-      <Button
-        v-for="lang in Object.values(fieldData.languages)"
-        :key="lang.code + selectedLang"
-        :label="lang.name"
-        size="xxs"
-        :type="selectedLang === lang.code ? 'primary' : 'tertiary'"
-        @click="selectedLang = lang.code"
-      />
+      <Button v-for="lang in Object.values(fieldData.languages)" :key="lang.code + selectedLang" :label="lang.name"
+        size="xxs" :type="selectedLang === lang.code ? 'primary' : 'tertiary'" @click="selectedLang = lang.code" />
     </div>
 
     <!-- Translation Input -->
     <div v-if="selectedLang" class="mt-3">
-      <label class="block mb-1 font-medium text-sm">
-        Translation to {{ langLabel(selectedLang) }}
-      </label>
-      <input
-        type="text"
-        v-model="langBuffers[selectedLang]"
-        class="w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-      />
+      <div class="flex justify-between items-center mb-1">
+        <label class="block mb-1 font-medium text-sm">
+          Translation to {{ langLabel(selectedLang) }}
+        </label>
+
+        <div>
+          <Button :label="'Generate from AI'" size="xxs" type="gray" :icon="faRobot" @click="()=>generateLanguagetranslateAI()" />
+        </div>
+      </div>
+
+      <input type="text" v-model="langBuffers[selectedLang]"
+        class="w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
     </div>
   </div>
 </template>
