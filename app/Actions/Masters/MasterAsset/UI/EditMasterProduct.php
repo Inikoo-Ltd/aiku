@@ -246,6 +246,7 @@ class EditMasterProduct extends GrpAction
                         'type'  => 'input_translation',
                         'label' => __('translate name'),
                         'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
+                        'main'  => $masterProduct->name,
                         'value' => $masterProduct->getTranslations('name_i8n')
                     ],
                     'description_title_i8n' => [
