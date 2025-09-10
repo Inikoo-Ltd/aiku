@@ -9,18 +9,23 @@
 
 namespace App\Actions\Goods\TradeUnit;
 
+use App\Actions\Catalogue\Product\UpdateProductImages;
 use App\Actions\GrpAction;
+use App\Actions\Masters\MasterAsset\UpdateMasterProductImages;
 use App\Actions\Traits\WithActionUpdate;
+use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Media;
+use App\Models\Masters\MasterAsset;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateTradeUnitImages extends GrpAction
 {
     use WithActionUpdate;
 
-    public function handle(TradeUnit $tradeUnit, array $modelData)
+    public function handle(TradeUnit $tradeUnit, array $modelData, bool $updateDependants=true): TradeUnit
     {
         $imageTypeMapping = [
             'image_id' => 'main',
@@ -65,6 +70,26 @@ class UpdateTradeUnitImages extends GrpAction
 
         data_set($modelData, 'bucket_images', true);
         $this->update($tradeUnit, $modelData);
+
+        if($updateDependants){
+            foreach (DB::table('model_has_trade_units')->select('model_type', 'model_id')->where('trade_unit_id', $tradeUnit->id)->whereIn('model_type', ['MasterAsset','Product'])->get() as $modelsData) {
+                if ($modelsData->model_type == 'MasterAsset') {
+                    $masterAsset = MasterAsset::find($modelsData->model_id);
+                    if ($masterAsset) {
+                        UpdateMasterProductImages::run($masterAsset, $modelsData);
+                    }
+                } elseif ($modelsData->model_type == 'Product') {
+                    $product = Product::find($modelsData->model_id);
+                    if ($product) {
+                        UpdateProductImages::run($product, $modelsData);
+                    }
+                }
+            }
+        }
+
+
+
+
 
         return $tradeUnit;
     }

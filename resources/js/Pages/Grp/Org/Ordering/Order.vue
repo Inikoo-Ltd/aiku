@@ -747,33 +747,7 @@ const toggleElipsis = (e: Event) => {
         <template #button-replacement="{ action }">
             <Button @click="() =>onCreateReplacement(action)" :label="trans('Replacement')" xsize="xs" type="secondary"
                 icon="fal fa-plus" key="1" :disabled="replacementLoading"
-                v-tooltip="trans('Create replacement if the user requests replacement of items')" />
-            <!-- <ModalConfirmation
-                :routeYes="action.route"
-                :title="trans('Create Replacement Order?')"
-                :description="trans('This will create a replacement for the current Delivery Note (do this when the user requests replacement of items)')"
-            >
-                <template #default="{ changeModel }">
-                    <Button
-                        @click="() => changeModel()"
-                        :label="trans('Replacement')"
-                        xsize="xs"
-                        type="secondary"
-                        icon="fal fa-plus"
-                        key="1"
-                        v-tooltip="trans('Create replacement')"
-                    />
-
-                </template>
-
-                <template #btn-yes="{ isLoadingdelete, clickYes}">
-                    <Button
-                        :loading="isLoadingdelete"
-                        @click="() => clickYes()"
-                        :label="trans('Yes, Create Replacement')"
-                    />
-                </template>
-            </ModalConfirmation> -->
+                v-tooltip="trans('Create replacement')" />
         </template>
     </PageHeading>
 

@@ -163,52 +163,6 @@ onMounted(() => {
     innerWidth.value = window.innerWidth
 })
 
-// Section: Validation for quantity_to_resend
-const validationErrors = reactive<{ [key: string]: string[] }>({});
-
-const validateQuantityToResend = (item: any, value: number) => {
-    const errors: string[] = [];
-    const itemId = item.id;
-    
-    // Clear previous errors
-    delete validationErrors[itemId];
-   
-    
-    // Validation rules
-    if (value < 0) {
-        errors.push(trans('Quantity cannot be negative'));
-    }
-    
-    if (value > item.quantity_dispatched) {
-        errors.push(trans('Quantity cannot exceed dispatched quantity'));
-    }
-    
-    // // Store errors if any
-    if (errors.length > 0) {
-        validationErrors[itemId] = errors;
-    }
-    
-    return errors.length === 0;
-};
-
-const isQuantityToResendInvalid = computed(() => {
-    return (item: any) => {
-        // Safe guard: pastikan validationErrors dan item.id ada
-        if (!validationErrors.value || !item?.id) {
-            return false;
-        }
-
-        const errors = validationErrors.value[item.id];
-        return errors && errors.length > 0;
-    };
-});
-
-const onQuantityToResendInput = (item: any, value: number) => {
-    emit('update:quantity-to-resend', item.id, value);
-    const isValid = validateQuantityToResend(item, value);
-    emit('validation-error', item.id, !isValid);
-};
-
 </script>
 
 <template>
@@ -258,13 +212,6 @@ const onQuantityToResendInput = (item: any, value: number) => {
                 :fractionData="item.quantity_dispatched_fractional" />
             <span v-else>{{ item.quantity_dispatched }}</span>
 
-        </template>
-        <template #cell(quantity_to_resend)="{ item: item, proxyItem }">
-            <div class="space-y-1">
-                <InputNumber :min="0" :step="0.1" :minFractionDigits="1" :invalid="isQuantityToResendInvalid(item)"
-                    mode="decimal" showButtons size="small"
-                    @input="(event: any) => onQuantityToResendInput(item, event.value)" />
-            </div>
         </template>
 
         <template #cell(quantity_picked)="{ item: item, proxyItem }">
