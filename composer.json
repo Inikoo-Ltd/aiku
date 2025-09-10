@@ -97,6 +97,7 @@
     "treblle/treblle-laravel": "^5.0",
     "tuupola/base32": "^2.0",
     "vemcogroup/laravel-translation": "^3.0",
+    "vildanbina/laravel-auto-translation": "^1.5",
     "vlucas/phpdotenv": "^5.4",
     "webklex/laravel-imap": "^6.2",
     "xendit/xendit-php": "^5.0"
