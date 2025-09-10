@@ -104,12 +104,12 @@ const isModalShippingAddress = ref(false)
         </div>
 
         <!-- Section: Delivery address -->
-        <Modal v-if="address_management" :isOpen="isModalShippingAddress" @onClose="() => (isModalShippingAddress = false)" width="w-full max-w-4xl">
-            <AddressEditModal :addresses="address_management.addresses"
+        <Modal v-if="address_management" :isOpen="isModalShippingAddress" @onClose="() => (isModalShippingAddress = false)" width="w-full max-w-lg">
+            <AddressEditModal
+                :addresses="address_management.addresses"
                 :address="summary?.customer?.addresses?.delivery"
                 :updateRoute="address_management.address_update_route"
-                :address_modal_title="address_management.address_modal_title"
-                @onDone="() => (isModalShippingAddress = false)"
+                @submitted="() => (isModalShippingAddress = false)"
             />
         </Modal>
     </div>
