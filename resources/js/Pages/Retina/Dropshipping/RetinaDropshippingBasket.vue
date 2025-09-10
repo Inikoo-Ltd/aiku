@@ -56,7 +56,7 @@ import TableInvoices from '@/Components/Tables/Grp/Org/Accounting/TableInvoices.
 import TableProductList from '@/Components/Tables/Grp/Helpers/TableProductList.vue'
 import {faSpinnerThird} from '@far'
 import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
-import DSCheckoutSummary from '@/Components/Retina/Dropshipping/DSCheckoutSummary.vue'
+import DropshippingSummaryBasket from '@/Components/Retina/Dropshipping/DropshippingSummaryBasket.vue'
 
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird)
 
@@ -291,10 +291,12 @@ console.log('basket ds', props)
         </template>
     </PageHeading>
 
-    <DSCheckoutSummary
+    <DropshippingSummaryBasket
+        :isCollection="data.data.is_collection"
         :summary="box_stats"
         :balance="balance"
         :address_management
+        :updateOrderRoute="routes?.update_route"
     />
 
     <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation"

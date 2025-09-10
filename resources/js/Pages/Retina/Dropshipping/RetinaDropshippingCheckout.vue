@@ -11,7 +11,7 @@ import { faArrowLeft, faCreditCardFront, faUniversity, faInfoCircle } from "@fal
 import { faExclamationTriangle } from "@fas"
 import { Head } from "@inertiajs/vue3"
 import { routeType } from "@/types/route"
-import DSCheckoutSummary from "@/Components/Retina/Dropshipping/DSCheckoutSummary.vue"
+import DropshippingSummaryCheckout from "@/Components/Retina/Dropshipping/DropshippingSummaryCheckout.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
@@ -101,7 +101,7 @@ const component = computed(() => {
             <span class="text-gray-500">{{ trans("Order number") }}</span> <span class="font-bold">#{{ order.reference }}</span>
         </div>
         
-        <DSCheckoutSummary
+        <DropshippingSummaryCheckout
             :summary="box_stats"
             :balance
         />
