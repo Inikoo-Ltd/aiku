@@ -11,6 +11,7 @@
 namespace App\Actions\Goods\TradeUnit\UI;
 
 use App\Actions\Goods\TradeUnit\IndexTradeUnitImages;
+use App\Actions\Traits\HasBucketImages;
 use App\Http\Resources\Helpers\TradeUnitImagesResource;
 use App\Models\Goods\TradeUnit;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -18,11 +19,12 @@ use Lorisleiva\Actions\Concerns\AsObject;
 class GetTradeUnitImages
 {
     use AsObject;
+    use HasBucketImages;
 
     public function handle(TradeUnit $tradeUnit): array
     {
         return [
-            'id' => $tradeUnit->id,
+            'id'                  => $tradeUnit->id,
             'images_category_box' => $this->getImagesData($tradeUnit),
             'images_update_route' => [
                 'method'     => 'patch',
@@ -43,91 +45,13 @@ class GetTradeUnitImages
                 'name'       => 'grp.models.trade-unit.detach_image',
                 'parameters' => [
                     'tradeUnit' => $tradeUnit->id,
-                    'media'   => ''
+                    'media'     => ''
                 ],
             ],
-            'images' => TradeUnitImagesResource::collection(IndexTradeUnitImages::run($tradeUnit))->resolve(),
+            'images'              => TradeUnitImagesResource::collection(IndexTradeUnitImages::run($tradeUnit))->resolve(),
 
         ];
     }
 
-    public function getImagesData(TradeUnit $tradeUnit): array
-    {
-
-        return [
-            [
-        'label' => __('Main'),
-        'type'  => 'image',
-        'column_in_db' => 'image_id',
-        'id' => $tradeUnit->image_id,
-        'images' => $tradeUnit->imageSources(),
-            ],
-            [
-        'label' => __('Video'),
-        'type'  => 'video',
-        'information' => __('You can use YouTube or Vimeo links'),
-        'column_in_db' => 'video_url',
-        'url' => $tradeUnit->video_url,
-            ],
-            [
-        'label' => __('Front side'),
-        'type'  => 'image',
-        'column_in_db' => 'front_image_id',
-        'id' => $tradeUnit->front_image_id,
-        'images' => $tradeUnit->imageSources(getImage:'frontImage'),
-            ],
-            [
-        'label' => __('Left side'),
-        'type'  => 'image',
-        'column_in_db' => 'left_image_id',
-        'id' => $tradeUnit->left_image_id,
-        'images' => $tradeUnit->imageSources(getImage:'leftImage'),
-            ],
-            [
-        'label' => __('3/4 angle side'),
-        'type'  => 'image',
-        'column_in_db' => '34_image_id',
-        'id' => $tradeUnit->{'34_image_id'},
-        'images' => $tradeUnit->imageSources(getImage:'threeQuarterImage'),
-            ],
-            [
-        'label' => __('Right side'),
-        'type'  => 'image',
-        'column_in_db' => 'right_image_id',
-        'id' => $tradeUnit->right_image_id,
-        'images' => $tradeUnit->imageSources(getImage:'rightImage'),
-            ],
-            [
-        'label' => __('Back side'),
-        'type'  => 'image',
-        'column_in_db' => 'back_image_id',
-        'id' => $tradeUnit->back_image_id,
-        'images' => $tradeUnit->imageSources(getImage:'backImage'),
-            ],
-            [
-        'label' => __('Top side'),
-        'type'  => 'image',
-        'column_in_db' => 'top_image_id',
-        'id' => $tradeUnit->top_image_id,
-        'images' => $tradeUnit->imageSources(getImage:'topImage'),
-            ],
-            [
-        'label' => __('Bottom side'),
-        'type'  => 'image',
-        'column_in_db' => 'bottom_image_id',
-        'id' => $tradeUnit->bottom_image_id,
-        'images' => $tradeUnit->imageSources(getImage:'bottomImage'),
-            ],
-            [
-        'label' => __('Comparison image'),
-        'type'  => 'image',
-        'column_in_db' => 'size_comparison_image_id',
-        'id' => $tradeUnit->size_comparison_image_id,
-        'images' => $tradeUnit->imageSources(getImage:'sizeComparisonImage'),
-            ],
-        ];
-
-
-    }
 
 }
