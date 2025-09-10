@@ -76,12 +76,12 @@ class UpdateTradeUnitImages extends GrpAction
                 if ($modelsData->model_type == 'MasterAsset') {
                     $masterAsset = MasterAsset::find($modelsData->model_id);
                     if ($masterAsset) {
-                        UpdateMasterProductImages::run($masterAsset, $modelsData);
+                        UpdateMasterProductImages::run($masterAsset, $modelData);
                     }
                 } elseif ($modelsData->model_type == 'Product') {
                     $product = Product::find($modelsData->model_id);
                     if ($product) {
-                        UpdateProductImages::run($product, $modelsData);
+                        UpdateProductImages::run($product, $modelData);
                     }
                 }
             }
