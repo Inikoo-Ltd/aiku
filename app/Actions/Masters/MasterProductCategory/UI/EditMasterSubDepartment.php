@@ -50,6 +50,12 @@ class EditMasterSubDepartment extends OrgAction
         return Inertia::render(
             'EditModel',
             [
+                'warning' => $masterProductCategory->productCategories ? [
+                    'type'  =>  'warning',
+                    'title' =>  'warning',
+                    'text'  =>  __('Changing name or description may affect multiple sub departments in various shops.'),
+                    'icon'  => ['fas', 'fa-exclamation-triangle']
+                ] : null,
                  'breadcrumbs' => $this->getBreadcrumbs(
                      $masterProductCategory,
                      $request->route()->getName(),
