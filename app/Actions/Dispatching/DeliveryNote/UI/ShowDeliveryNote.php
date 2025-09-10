@@ -311,7 +311,7 @@ class ShowDeliveryNote extends OrgAction
                                 'order' => $deliveryNote->orders->first()->id
                             ]
                         ]
-                    ] : []
+                    ] : [],
             ],
             default => []
         };
