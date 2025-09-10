@@ -411,8 +411,8 @@ class CreateReplacementDeliveryNote extends OrgAction
 
 
         $inertiaResponse = Inertia::render(
-            'Org/Dispatching/DeliveryNote',
-            $props
+            'Org/Dispatching/CreateReplacement',
+            $props,
         );
 
         $inertiaResponse->table($this->tableStructure(parent: $deliveryNote, prefix: DeliveryNoteTabsEnum::ITEMS->value));
