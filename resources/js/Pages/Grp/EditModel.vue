@@ -55,6 +55,7 @@ import {
     faAtom,
     faMoneyBill
 } from "@fal"
+import { faExclamationTriangle } from "@fas"
 import { faBan } from "@far"
 import { Head, usePage } from "@inertiajs/vue3"
 import axios from "axios"
@@ -62,6 +63,7 @@ import { router } from "@inertiajs/vue3"
 import Message from 'primevue/message';
 
 library.add(
+    faExclamationTriangle,
     faAtom,
     faTag,
     faMicrophoneAltSlash,
