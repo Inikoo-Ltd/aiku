@@ -25,8 +25,8 @@ trait HasBucketImages
                 'id' => $model->image_id,
                 'images' => $model->imageSources(),
                 'dimensions' => [
-                    'width' => $model->image->width,
-                    'height' => $model->image->height
+                    'width' => $model->image->width ?? 0,
+                    'height' => $model->image->height ?? 0
                 ]
             ],
             [
@@ -43,8 +43,8 @@ trait HasBucketImages
                 'id' => $model->front_image_id,
                 'images' => $model->imageSources(getImage:'frontImage'),
                 'dimensions' => [
-                    'width' => $model->frontImage->width,
-                    'height' => $model->frontImage->height
+                    'width' => $model->frontImage->width ?? 0,
+                    'height' => $model->frontImage->height ?? 0
                 ]
             ],
             [
@@ -54,8 +54,8 @@ trait HasBucketImages
                 'id' => $model->left_image_id,
                 'images' => $model->imageSources(getImage:'leftImage'),
                 'dimensions' => [
-                    'width' => $model->leftImage->width,
-                    'height' => $model->leftImage->height
+                    'width' => $model->leftImage->width ?? 0,
+                    'height' => $model->leftImage->height ?? 0
                 ]
             ],
             [
@@ -65,8 +65,8 @@ trait HasBucketImages
                 'id' => $model->{'34_image_id'},
                 'images' => $model->imageSources(getImage:'threeQuarterImage'),
                 'dimensions' => [
-                    'width' => $model->threeQuarterImage->width,
-                    'height' => $model->threeQuarterImage->height
+                    'width' => $model->threeQuarterImage->width ?? 0,
+                    'height' => $model->threeQuarterImage->height ?? 0
                 ]
             ],
             [
@@ -76,8 +76,8 @@ trait HasBucketImages
                 'id' => $model->right_image_id,
                 'images' => $model->imageSources(getImage:'rightImage'),
                 'dimensions' => [
-                    'width' => $model->rightImage->width,
-                    'height' => $model->rightImage->height
+                    'width' => $model->rightImage->width ?? 0,
+                    'height' => $model->rightImage->height ?? 0
                 ]
             ],
             [
@@ -87,8 +87,8 @@ trait HasBucketImages
                 'id' => $model->back_image_id,
                 'images' => $model->imageSources(getImage:'backImage'),
                 'dimensions' => [
-                    'width' => $model->backImage->width,
-                    'height' => $model->backImage->height
+                    'width' => $model->backImage->width ?? 0,
+                    'height' => $model->backImage->height ?? 0
                 ]
             ],
             [
@@ -98,8 +98,8 @@ trait HasBucketImages
                 'id' => $model->top_image_id,
                 'images' => $model->imageSources(getImage:'topImage'),
                 'dimensions' => [
-                    'width' => $model->topImage->width,
-                    'height' => $model->topImage->height
+                    'width' => $model->topImage->width ?? 0,
+                    'height' => $model->topImage->height ?? 0
                 ]
             ],
             [
@@ -109,8 +109,8 @@ trait HasBucketImages
                 'id' => $model->bottom_image_id,
                 'images' => $model->imageSources(getImage:'bottomImage'),
                 'dimensions' => [
-                    'width' => $model->bottomImage->width,
-                    'height' => $model->bottomImage->height
+                    'width' => $model->bottomImage->width ?? 0,
+                    'height' => $model->bottomImage->height ?? 0
                 ]
             ],
             [
@@ -120,8 +120,8 @@ trait HasBucketImages
                 'id' => $model->size_comparison_image_id,
                 'images' => $model->imageSources(getImage:'sizeComparisonImage'),
                 'dimensions' => [
-                    'width' => $model->sizeComparisonImage->width,
-                    'height' => $model->sizeComparisonImage->height
+                    'width' => $model->sizeComparisonImage->width ?? 0,
+                    'height' => $model->sizeComparisonImage->height ?? 0
                 ]
             ],
             [
@@ -131,8 +131,8 @@ trait HasBucketImages
                 'id' => $model->lifestyle_image_id,
                 'images' => $model->imageSources(getImage:'lifestyleImage'),
                 'dimensions' => [
-                    'width' => $model->lifestyleImage->width,
-                    'height' => $model->lifestyleImage->height
+                    'width' => $model->lifestyleImage->width ?? 0,
+                    'height' => $model->lifestyleImage->height ?? 0
                 ]
             ],
         ];
