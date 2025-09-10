@@ -13,17 +13,27 @@ class DeleteImageFromMasterProduct extends GrpAction
     {
         $masterAsset->images()->detach($media->id);
 
-        if ($masterAsset->image_id == $media->id) {
-            $masterAsset->update([
-                'image_id' => null,
-            ]);
-        }
-        if ($masterAsset->front_image_id == $media->id) {
-            $masterAsset->update([
-                'front_image_id' => null,
-            ]);
+        $imageColumns = [
+            'image_id',
+            'front_image_id',
+            '34_image_id',
+            'right_image_id',
+            'back_image_id',
+            'bottom_image_id',
+            'size_comparison_image_id',
+        ];
+
+        $updateData = [];
+
+        foreach ($imageColumns as $column) {
+            if ($masterAsset->{$column} == $media->id) {
+                $updateData[$column] = null;
+            }
         }
 
+        if (!empty($updateData)) {
+            $masterAsset->update($updateData);
+        }
 
         return $masterAsset;
     }

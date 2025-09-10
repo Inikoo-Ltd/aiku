@@ -31,7 +31,7 @@ import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 import TableImages from "@/Components/Tables/Grp/Helpers/TableImages.vue"
 import ProductTranslation from '@/Components/Showcases/Grp/ProductTranslation.vue'
 import { routeType } from '@/types/route'
-import TradeUnitImagesManagement from "@/Components/Goods/TradeUnitImagesManagement.vue"
+import TradeUnitImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 
 
 library.add(

@@ -81,6 +81,8 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $bottom_image_id
  * @property int|null $size_comparison_image_id
  * @property string|null $video_url
+ * @property int|null $lifestyle_image_id
+ * @property bool|null $bucket_images images following the buckets
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Media|null $backImage
  * @property-read Media|null $bottomImage

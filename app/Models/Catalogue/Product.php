@@ -146,6 +146,8 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $mark_for_discontinued_at
  * @property string|null $discontinued_at
  * @property string|null $cost_price_ratio
+ * @property int|null $lifestyle_image_id
+ * @property bool|null $bucket_images images following the buckets
  * @property-read \App\Models\Catalogue\Asset|null $asset
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Media|null $backImage
