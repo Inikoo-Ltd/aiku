@@ -573,7 +573,7 @@ const onCreateReplacement = (action: any) => {
             onError: () => {
                 notify({
                     title: trans("Something went wrong"),
-                    text: trans("Failed to update text"),
+                    text: trans("Failed to create replacement"),
                     type: "error",
                 })
             },
