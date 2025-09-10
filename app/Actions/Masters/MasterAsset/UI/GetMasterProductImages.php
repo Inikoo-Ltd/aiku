@@ -10,6 +10,7 @@
 
 namespace App\Actions\Masters\MasterAsset\UI;
 
+use App\Actions\Traits\HasBucketImages;
 use App\Http\Resources\Helpers\ImagesResource;
 use App\Models\Masters\MasterAsset;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -17,6 +18,7 @@ use Lorisleiva\Actions\Concerns\AsObject;
 class GetMasterProductImages
 {
     use AsObject;
+    use HasBucketImages;
 
     public function handle(MasterAsset $masterAsset): array
     {
@@ -49,91 +51,4 @@ class GetMasterProductImages
 
         ];
     }
-
-    public function getImagesData(MasterAsset $masterAsset): array
-    {
-
-        return [
-            [
-                'label' => __('Main'),
-                'type'  => 'image',
-                'column_in_db' => 'image_id',
-                'id' => $masterAsset->image_id,
-                'images' => $masterAsset->imageSources(),
-            ],
-            [
-                'label' => __('Video'),
-                'type'  => 'video',
-                'information' => __('You can use YouTube or Vimeo links'),
-                'column_in_db' => 'video_url',
-                'url' => $masterAsset->video_url,
-            ],
-            [
-                'label' => __('Front side'),
-                'type'  => 'image',
-                'column_in_db' => 'front_image_id',
-                'id' => $masterAsset->front_image_id,
-                'images' => $masterAsset->imageSources(getImage:'frontImage'),
-            ],
-            [
-                'label' => __('Left side'),
-                'type'  => 'image',
-                'column_in_db' => 'left_image_id',
-                'id' => $masterAsset->left_image_id,
-                'images' => $masterAsset->imageSources(getImage:'leftImage'),
-            ],
-            [
-                'label' => __('3/4 angle side'),
-                'type'  => 'image',
-                'column_in_db' => '34_image_id',
-                'id' => $masterAsset->{'34_image_id'},
-                'images' => $masterAsset->imageSources(getImage:'threeQuarterImage'),
-            ],
-            [
-                'label' => __('Right side'),
-                'type'  => 'image',
-                'column_in_db' => 'right_image_id',
-                'id' => $masterAsset->right_image_id,
-                'images' => $masterAsset->imageSources(getImage:'rightImage'),
-            ],
-            [
-                'label' => __('Back side'),
-                'type'  => 'image',
-                'column_in_db' => 'back_image_id',
-                'id' => $masterAsset->back_image_id,
-                'images' => $masterAsset->imageSources(getImage:'backImage'),
-            ],
-            [
-                'label' => __('Top side'),
-                'type'  => 'image',
-                'column_in_db' => 'top_image_id',
-                'id' => $masterAsset->top_image_id,
-                'images' => $masterAsset->imageSources(getImage:'topImage'),
-            ],
-            [
-                'label' => __('Bottom side'),
-                'type'  => 'image',
-                'column_in_db' => 'bottom_image_id',
-                'id' => $masterAsset->bottom_image_id,
-                'images' => $masterAsset->imageSources(getImage:'bottomImage'),
-            ],
-            [
-                'label' => __('Comparison image'),
-                'type'  => 'image',
-                'column_in_db' => 'size_comparison_image_id',
-                'id' => $masterAsset->size_comparison_image_id,
-                'images' => $masterAsset->imageSources(getImage:'sizeComparisonImage'),
-            ],
-            [
-                'label' => __('Lifestyle image'),
-                'type'  => 'image',
-                'column_in_db' => 'lifestyle_image_id',
-                'id' => $masterAsset->lifestyle_image_id,
-                'images' => $masterAsset->imageSources(getImage:'LifestyleImage'),
-            ],
-        ];
-
-
-    }
-
 }
