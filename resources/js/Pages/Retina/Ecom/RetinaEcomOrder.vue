@@ -21,7 +21,7 @@ import '@vuepic/vue-datepicker/dist/main.css'
 import '@/Composables/Icon/PalletDeliveryStateEnum'
 import TableDeliveryNotes from "@/Components/Tables/Grp/Org/Dispatching/TableDeliveryNotes.vue"
 import OrderProductTable from '@/Components/Dropshipping/Orders/OrderProductTable.vue'
-import { Address } from "@/types/PureComponent/Address"
+import { Address, AddressManagement } from "@/types/PureComponent/Address"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import { faExclamationTriangle as fadExclamationTriangle } from '@fad'
@@ -39,6 +39,7 @@ import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 import { debounce } from 'lodash-es'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
+import EcomCheckoutSummary from '@/Components/Retina/Ecom/EcomCheckoutSummary.vue'
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird)
 
 
@@ -58,7 +59,16 @@ const props = defineProps<{
     timelines: {
     }
     is_notes_editable: boolean
-
+    summary: {
+        net_amount: string
+        gross_amount: string
+        tax_amount: string
+        goods_amount: string
+        services_amount: string
+        charges_amount: string
+    }
+    balance: string
+    address_management: AddressManagement
     box_stats: {
         customer: {
             reference: string
@@ -186,8 +196,10 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes
     <PageHeading :data="pageHead">
     </PageHeading>
 
-    <div class="mt-4 sm:mt-0 border-b border-gray-200 pb-2 max-w-5xl">
-        <Timeline v-if="timelines" :options="timelines" :state="props.data?.data?.state" :slidesPerView="6" />
+    <div v-if="timelines"  class="mt-4 py-3 sm:mt-0 border-b border-gray-200 w-full">
+        <div class="max-w-5xl mx-auto">
+            <Timeline :options="timelines" :state="props.data?.data?.state" :slidesPerView="6" />
+        </div>
     </div>
 
     <!-- Section: Alert if unpaid -->
@@ -209,7 +221,12 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes
         </div>
     </Message>
 
-    <DSCheckoutSummary :summary="box_stats" />
+    <EcomCheckoutSummary
+        :summary
+        :balance
+        :address_management
+    />
+    <!-- <DSCheckoutSummary :summary="box_stats" /> -->
 
     <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation"
         @update:tab="handleTabUpdate" />
