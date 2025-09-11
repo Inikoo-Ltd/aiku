@@ -181,8 +181,8 @@ class StoreMasterAsset extends OrgAction
             'type'                     => ['required', Rule::enum(MasterAssetTypeEnum::class)],
             'shop_products'            => ['sometimes', 'array'],
             'units'                  => ['sometimes'],
-            'description_title'      => ['sometimes', 'string'],
-            'description_extra'      => ['sometimes', 'string'],
+            'description_title'      => ['sometimes', 'string', 'nullable'],
+            'description_extra'      => ['sometimes', 'string', 'nullable'],
             'marketing_weight'       => ['sometimes', 'numeric', 'min:0'],
 
         ];

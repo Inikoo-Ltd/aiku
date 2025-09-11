@@ -101,9 +101,12 @@ const allChecked = computed({
             <table class="w-full border-collapse text-xs">
                 <thead>
                     <tr class="bg-gray-50 text-left font-medium text-gray-600 border-b border-gray-200">
-                        <th class="px-2 py-1">Code</th>
-                        <th class="px-2 py-1">Name</th>
-                        <th class="px-2 py-1">Stock</th>
+                        <th class="px-2 py-1">Shop</th>
+                        <th class="px-2 py-1 text-center">
+                            <div class="flex items-center justify-center gap-1">
+                                <span>Stock</span>
+                            </div>
+                        </th>
                         <th class="px-2 py-1 text-center">
                             <div class="flex items-center justify-center gap-1">
                                 <span>Create Webpage?</span>
@@ -123,9 +126,6 @@ const allChecked = computed({
                 </thead>
                 <tbody>
                     <tr v-for="item in modelValue.data" :key="item.id" class="transition-colors">
-                        <td class="px-2 py-1 border-b border-gray-100 text-gray-600">
-                            {{ item.code || "-" }}
-                        </td>
                         <td class="px-2 py-1 border-b border-gray-100 font-medium text-gray-700">
                             {{ item.name }}
                         </td>
@@ -150,7 +150,7 @@ const allChecked = computed({
                             <div class="flex items-center gap-2">
                                 <InputNumber v-model="item.product.price" mode="currency"
                                     :currency="item?.product?.org_currency ? item.product.org_currency : item.currency"
-                                    :step="0.25" :showButtons="true" inputClass="w-full text-xs" :min="0"
+                                    :step="0.25" :showButtons="true" inputClass="w-full text-xs" 
                                     @input="emits('change', modelValue)" />
                             </div>
                         </td>
@@ -167,7 +167,7 @@ const allChecked = computed({
                             <div class="flex items-center gap-2">
                                 <InputNumber v-model="item.product.rrp" mode="currency"
                                     :currency="item?.product?.org_currency ? item.product.org_currency : item.currency"
-                                    :step="0.25" :showButtons="true" inputClass="w-full text-xs" :min="0"
+                                    :step="0.25" :showButtons="true" inputClass="w-full text-xs" 
                                     @input="emits('change', modelValue)" />
                             </div>
                         </td>
