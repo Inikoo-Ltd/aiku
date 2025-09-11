@@ -70,7 +70,23 @@ class GetTradeUnitsImagesFromAurora
             //dd($tradeUnit->images);
             DB::table('model_has_media')->where('model_id', $tradeUnit->id)->where('model_type', 'TradeUnit')->delete();
 
+            $tradeUnit->update([
+                'image_id'                 => null,
+                'front_image_id'           => null,
+                '34_image_id'              => null,
+                'left_image_id'            => null,
+                'right_image_id'           => null,
+                'back_image_id'            => null,
+                'top_image_id'             => null,
+                'bottom_image_id'          => null,
+                'size_comparison_image_id' => null,
+                'lifestyle_image_id'       => null,
+            ]);
+
+
             $subScope = 'main';
+
+        //    dd($productImages);
 
             foreach ($productImages as $imageData) {
                 SaveModelImages::run(
@@ -156,9 +172,9 @@ class GetTradeUnitsImagesFromAurora
         $this->setSource($organisation);
 
 
-        //        $tradeUnits = TradeUnit::find(10844);
-        //        $this->handle($tradeUnits, $command);
-        //        exit;
+//        $tradeUnits = TradeUnit::find(10844);
+//        $this->handle($tradeUnits, $command);
+//        exit;
 
         if ($command->argument('status') == 'active') {
             $total = DB::table('trade_units')->where('status', TradeUnitStatusEnum::ACTIVE)->count();
