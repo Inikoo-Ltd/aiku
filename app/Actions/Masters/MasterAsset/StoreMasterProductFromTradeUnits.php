@@ -62,30 +62,6 @@ class StoreMasterProductFromTradeUnits extends GrpAction
 
             $masterAsset = StoreMasterAsset::make()->action($parent, $data);
 
-            if(Arr::has($modelData, 'image')){
-                $medias = UploadImagesToMasterProduct::run($masterAsset, 'image', [
-                    'images' => [
-                        Arr::get($modelData, 'image')
-                    ]
-                ]);
-
-                UpdateMasterProductImages::run($masterAsset, [
-                    'image_id' => Arr::get($medias, '0.id')
-                ]);
-            } else {
-                $tradeUnit = TradeUnit::find(Arr::get($tradeUnits, '0.id'));
-                if ($tradeUnit && $tradeUnit->image) {
-                    $this->attachMediaToModel(
-                        $masterAsset,
-                        $tradeUnit->image,
-                        'image',
-                    );
-
-                    UpdateMasterProductImages::run($masterAsset, [
-                        'image_id' => $tradeUnit->image_id
-                    ]);
-                }
-            }
 
             $masterAsset->refresh();
             return $masterAsset;
