@@ -62,7 +62,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
 
             $masterAsset = StoreMasterAsset::make()->action($parent, $data);
 
-            if(Arr::has($modelData, 'image') && $masterAsset->is_single_trade_unit){
+            if(Arr::has($modelData, 'image') && !$masterAsset->is_single_trade_unit){
                 $medias = UploadImagesToMasterProduct::run($masterAsset, 'image', [
                     'images' => [
                         Arr::get($modelData, 'image')
