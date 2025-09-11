@@ -257,7 +257,7 @@ const onCreateReplacement = (action: any) => {
                 :type="action.type" :disabled="isReplacementDisabled" :loading="loadingCreateReplacement" />
         </template>
         <template #otherBefore>
-            <Button type="secondary" label="Replace All" @click="onReplaceAll" />
+            <Button type="secondary" :label="trans('Replace All')" @click="onReplaceAll" />
         </template>
     </PageHeading>
 
