@@ -16,6 +16,7 @@ import { routeType } from "@/types/route";
 import TableSetPriceProduct from "@/Components/TableSetPriceProduct.vue";
 import axios from "axios";
 import SideEditorInputHTML from "./CMS/Fields/SideEditorInputHTML.vue";
+import PureInputDimension from "./Pure/PureInputDimension.vue";
 // FontAwesome
 import { library } from "@fortawesome/fontawesome-svg-core";
 import {
@@ -90,6 +91,13 @@ const form = useForm({
     description: "",
     description_title: "",
     description_extra: "",
+    /* dimensions: {
+        h: 0,
+        l: 0,
+        w: 0,
+        type: "sphere",
+        units: "cm"
+    } */
 });
 
 // Image upload states
@@ -310,9 +318,10 @@ const toggleFull = () => {
 
                 <div v-if="detailsVisible" class="grid grid-cols-[140px_1fr] gap-6 mt-4 bg-white">
                     <!-- Image Upload Box -->
+
                     <div class="flex">
                         <div class="relative w-32 h-32 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-gray-50 hover:bg-gray-100 cursor-pointer transition shadow-sm"
-                            @click="chooseImage">
+                            @click="(e)=> form.trade_units.length > 1 ?  chooseImage(e) : null">
 
                             <!-- Gambar baru (upload preview) -->
                             <img v-if="previewUrl" :src="previewUrl" alt="Preview"
@@ -329,14 +338,14 @@ const toggleFull = () => {
                             </div>
 
                             <!-- Tombol remove -->
-                            <button v-if="previewUrl || form.image" @click.stop="resetImage"
+                            <button v-if="previewUrl || form.image && form.trade_units.length > 1 " @click.stop="resetImage"
                                 class="absolute top-1 right-1 bg-white text-gray-500 rounded-full p-1 shadow hover:text-red-500">
                                 <FontAwesomeIcon :icon="faXmark" class="w-3 h-3" />
                             </button>
                         </div>
 
 
-                        <input type="file" accept="image/*" ref="fileInput" class="hidden" @change="previewImage" />
+                        <input type="file" v-if="form.trade_units.length > 1" accept="image/*" ref="fileInput" class="hidden" @change="previewImage" />
                     </div>
 
                     <!-- Form Fields -->
@@ -425,6 +434,16 @@ const toggleFull = () => {
                                 {{ form.errors.description_extra.join(", ") }}
                             </small>
                         </div>
+                        <!-- <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Dimension</label>
+                            <PureInputDimension :rows="4" v-model="form.dimensions"
+                                @update:model-value="form.errors.dimensions = null" class="w-full" />
+                            <small v-if="form.errors.dimensions"
+                                class="text-red-500 text-xs flex items-center gap-1 mt-1">
+                                <FontAwesomeIcon :icon="faCircleExclamation" />
+                                {{ form.errors.dimensions.join(", ") }}
+                            </small>
+                        </div> -->
                     </div>
                 </div>
             </div>

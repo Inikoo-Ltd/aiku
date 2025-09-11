@@ -68,7 +68,7 @@ const props = defineProps<{
     masterProductCategory?:number
     images?:object
 }>()
-console.log('family',props)
+
 const currentTab = ref(props.tabs.current)
 
 

@@ -25,7 +25,7 @@ class UpdateTradeUnitImages extends GrpAction
 {
     use WithActionUpdate;
 
-    public function handle(TradeUnit $tradeUnit, array $modelData, bool $updateDependants = true): TradeUnit
+    public function handle(TradeUnit $tradeUnit, array $modelData, bool $updateDependants = false): TradeUnit
     {
         $imageTypeMapping = [
             'image_id' => 'main',
@@ -72,26 +72,31 @@ class UpdateTradeUnitImages extends GrpAction
         $this->update($tradeUnit, $modelData);
 
         if ($updateDependants) {
-            foreach (DB::table('model_has_trade_units')->select('model_type', 'model_id')->where('trade_unit_id', $tradeUnit->id)->whereIn('model_type', ['MasterAsset','Product'])->get() as $modelsData) {
-                if ($modelsData->model_type == 'MasterAsset') {
-                    $masterAsset = MasterAsset::find($modelsData->model_id);
-                    if ($masterAsset) {
-                        UpdateMasterProductImages::run($masterAsset, $modelData);
-                    }
-                } elseif ($modelsData->model_type == 'Product') {
-                    $product = Product::find($modelsData->model_id);
-                    if ($product) {
-                        UpdateProductImages::run($product, $modelData);
-                    }
+           $this->updateDependencies($tradeUnit, $modelData);
+        }
+
+        return $tradeUnit;
+    }
+
+    public function updateDependencies(TradeUnit $tradeUnit, array $modelData): void
+    {
+        foreach (DB::table('model_has_trade_units')
+            ->select('model_type', 'model_id')
+            ->where('trade_unit_id', $tradeUnit->id)
+            ->whereIn('model_type', ['MasterAsset','Product'])
+            ->get() as $modelsData) {
+            if ($modelsData->model_type == 'MasterAsset') {
+                $masterAsset = MasterAsset::find($modelsData->model_id);
+                if ($masterAsset) {
+                    UpdateMasterProductImages::run($masterAsset, $modelData);
+                }
+            } elseif ($modelsData->model_type == 'Product') {
+                $product = Product::find($modelsData->model_id);
+                if ($product) {
+                    UpdateProductImages::run($product, $modelData);
                 }
             }
         }
-
-
-
-
-
-        return $tradeUnit;
     }
 
     public function rules(): array
@@ -116,6 +121,6 @@ class UpdateTradeUnitImages extends GrpAction
     {
         $this->initialisation($tradeUnit->group, $request);
 
-        $this->handle($tradeUnit, $this->validatedData);
+        $this->handle($tradeUnit, $this->validatedData,true);
     }
 }
