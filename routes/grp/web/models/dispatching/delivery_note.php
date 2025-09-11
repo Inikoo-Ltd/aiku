@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Dispatching\DeliveryNote\CancelDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\RollbackDispatchedDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\FinaliseDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\PickDeliveryNoteAsEmployee;
@@ -38,6 +39,7 @@ Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(
         Route::patch('packed', SetDeliveryNoteStateAsPacked::class)->name('packed');
         Route::patch('finalised', FinaliseDeliveryNote::class)->name('finalised');
         Route::patch('dispatched', DispatchDeliveryNote::class)->name('dispatched');
+        Route::patch('rollback', RollbackDispatchedDeliveryNote::class)->name('rollback');
         Route::patch('finalise-and-dispatch', FinaliseAndDispatchDeliveryNote::class)->name('finalise_and_dispatch');
         Route::patch('cancel', CancelDeliveryNote::class)->name('cancel');
     });
