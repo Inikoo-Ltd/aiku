@@ -138,6 +138,6 @@ const validImages = computed(() =>
 			</div>
 		</div>
 		<!-- tradeUnit Summary -->
-		<ProductSummary :data="data.data" :video="videoSetup.url" />
+		<ProductSummary :data="data.data" :video="videoSetup?.url" />
 	</div>
 </template>
