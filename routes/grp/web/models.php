@@ -66,6 +66,9 @@ use App\Actions\CRM\Customer\DeleteCustomerDeliveryAddress;
 use App\Actions\Accounting\CreditTransaction\IncreaseCreditTransactionCustomer;
 use App\Actions\Billables\Charge\UpdateCharge;
 use App\Actions\Catalogue\Product\UpdateProductImages;
+use App\Actions\Catalogue\ProductCategory\DeleteImageFromProductCategory;
+use App\Actions\Catalogue\ProductCategory\UpdateProductCategoryImages;
+use App\Actions\Catalogue\ProductCategory\UploadImagesToProductCategory;
 use App\Actions\CRM\Customer\RejectCustomer;
 use App\Actions\CRM\Customer\StoreCustomer;
 use App\Actions\CRM\Customer\UpdateBalanceCustomer;
@@ -428,6 +431,9 @@ Route::prefix('/product_category/{productCategory:id}')->name('product_category.
     Route::patch('update', UpdateProductCategory::class)->name('update');
     Route::delete('delete', DeleteProductCategory::class)->name('delete');
     Route::patch('translations', UpdateProductCategoryTranslations::class)->name('translations.update');
+    Route::post('upload-images', UploadImagesToProductCategory::class)->name('upload_images');
+    Route::patch('update-images', UpdateProductCategoryImages::class)->name('update_images');
+    Route::delete('delete-images/{media:id}', DeleteImageFromProductCategory::class)->name('delete_images')->withoutScopedBindings();
 });
 
 Route::prefix('sub-department/{productCategory:id}')->name('sub-department.')->group(function () {
@@ -978,7 +984,7 @@ Route::patch('snapshot/{snapshot:id}/update', UpdateSnapshot::class)->name('snap
 
 Route::post('master-product-category/{masterProductCategory:id}/trade-units-for-creation', GetTradeUnitDataForMasterProductCreation::class)->name('master_product_category.product_creation_data')->withoutScopedBindings();
 
-Route::post('translate/{language}', Translate::class)->name('translate');;
+Route::post('translate/{language}', Translate::class)->name('translate');
 
 Route::prefix('charge/{charge:id}')->name('charge.')->group(function () {
     Route::patch('update', UpdateCharge::class)->name('update');

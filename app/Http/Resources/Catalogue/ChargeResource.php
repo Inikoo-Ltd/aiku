@@ -12,7 +12,6 @@ use App\Models\Billables\Charge;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
 
-
 class ChargeResource extends JsonResource
 {
     public function toArray($request): array

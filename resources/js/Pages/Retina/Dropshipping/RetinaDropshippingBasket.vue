@@ -61,6 +61,7 @@ import { inject } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { ToggleSwitch } from 'primevue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
+import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird)
 
@@ -124,25 +125,26 @@ const props = defineProps<{
     transactions: {}
     currency: Currency
 
-    attachments?: {}
-    invoices?: {}
 
-    is_in_basket: boolean  // true if Order state is 'created'
     upload_spreadsheet: UploadPallet
     balance: string
     total_to_pay: number
     address_management: AddressManagement
     total_products: number
+    premium_dispatch?: {
+        label: string
+        name: string
+        description: string
+    }
 }>()
-console.log('prozps', props)
 const layout = inject('layout', retinaLayoutStructure)
 
 const isModalUploadOpen = ref(false)
 const isModalProductListOpen = ref(false)
 
+
 const currentTab = ref(props.tabs?.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
-
 const component = computed(() => {
     const components: Component = {
         transactions: OrderProductTable,
@@ -155,8 +157,6 @@ const component = computed(() => {
     return components[currentTab.value]
 })
 
-
-const currentAction = ref(null);
 
 
 const noteToSubmit = ref(props?.data?.data?.customer_notes || '')
@@ -321,7 +321,6 @@ const onChangePriorityDispatch = async (val: boolean) => {
                     class="rounded-none border-0"
                 />
                 <Button
-                    v-if="is_in_basket"
                     @click="() => isModalProductListOpen = true"
                     :label="trans('Add products')"
                     type="tertiary"
@@ -351,13 +350,13 @@ const onChangePriorityDispatch = async (val: boolean) => {
                    detachRoute="attachmentRoutes?.detachRoute"
                    :fetchRoute="routes?.products_list"
                    :modalOpen="isModalUploadOpen"
-                   :action="currentAction"
                    @update:tab="handleTabUpdate"/>
 
         <!-- Section: Priority Dispatch -->
-        <div v-if="layout.app.environment === 'local'" class="flex gap-4 my-4 justify-end pr-6">
-            <div class="px-2 flex justify-end relative" :class="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
-                {{ trans("For the same day dispatch of your order before 12pm") }} <span class="hidden">(£7.50)</span>
+        <div v-if="layout.app.environment === 'local' && premium_dispatch" class="flex gap-4 my-4 justify-end pr-6">
+            <div class="px-2 flex justify-end items-center gap-x-1 relative" :class="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
+                {{ premium_dispatch?.label ?? premium_dispatch?.name }}
+                <InformationIcon :information="premium_dispatch?.description" />
             </div>
 
             <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
@@ -414,7 +413,6 @@ const onChangePriorityDispatch = async (val: boolean) => {
                     @update:modelValue="() => debounceDeliveryInstructions()"
                     :placeholder="trans('Add if needed')"
                     rows="4"
-                    :disabled="!is_in_basket"
                     :loading="isLoadingNote.includes('shipping_notes')"
                     :isSuccess="recentlySuccessNote.includes('shipping_notes')"
                     :isError="recentlyErrorNote"
@@ -433,7 +431,6 @@ const onChangePriorityDispatch = async (val: boolean) => {
                     @update:modelValue="() => debounceSubmitNote()"
                     :placeholder="trans('Add if needed')"
                     rows="4"
-                    :disabled="!is_in_basket"
                     :loading="isLoadingNote.includes('customer_notes')"
                     :isSuccess="recentlySuccessNote.includes('customer_notes')"
                     :isError="recentlyErrorNote"

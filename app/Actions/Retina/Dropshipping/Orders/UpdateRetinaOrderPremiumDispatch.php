@@ -18,7 +18,7 @@ class UpdateRetinaOrderPremiumDispatch extends RetinaAction
 {
     public function handle(Order $order, array $modelData): Order
     {
-        return UpdateOrderPremiumDispatch::make()->action($order, $modelData);
+        return UpdateOrderPremiumDispatch::run($order, $modelData);
     }
 
     public function authorize(ActionRequest $request): bool

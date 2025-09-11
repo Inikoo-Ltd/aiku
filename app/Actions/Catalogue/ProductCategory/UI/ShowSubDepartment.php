@@ -197,6 +197,9 @@ class ShowSubDepartment extends OrgAction
                     fn () => HistoryResource::collection(IndexHistory::run($subDepartment))
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($subDepartment))),
 
+                DepartmentTabsEnum::IMAGES->value => $this->tab == DepartmentTabsEnum::IMAGES->value ?
+                    fn () =>  GetProductCategoryImages::run($subDepartment)
+                    : Inertia::lazy(fn () => GetProductCategoryImages::run($subDepartment)),
 
             ]
         )->table(
