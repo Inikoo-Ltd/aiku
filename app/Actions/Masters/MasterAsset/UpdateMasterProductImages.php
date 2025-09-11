@@ -9,18 +9,22 @@
 
 namespace App\Actions\Masters\MasterAsset;
 
+use App\Actions\Catalogue\Product\UpdateProductImages;
+use App\Actions\Goods\TradeUnit\UpdateTradeUnitImages;
 use App\Actions\GrpAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Models\Catalogue\Product;
 use App\Models\Helpers\Media;
 use App\Models\Masters\MasterAsset;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateMasterProductImages extends GrpAction
 {
     use WithActionUpdate;
 
-    public function handle(MasterAsset $masterAsset, array $modelData)
+    public function handle(MasterAsset $masterAsset, array $modelData, bool $updateDependants = false): MasterAsset
     {
         $imageTypeMapping = [
             'image_id' => 'main',
@@ -65,8 +69,38 @@ class UpdateMasterProductImages extends GrpAction
 
         $this->update($masterAsset, $modelData);
 
+        if($updateDependants && $masterAsset->is_single_trade_unit){
+            $this->updateDependants($masterAsset, $modelData);
+        }
+
+
         return $masterAsset;
     }
+
+    public function updateDependants(MasterAsset $seedMasterAsset, array $modelData): void
+    {
+        $tradeUnit = $seedMasterAsset->tradeUnits->first();
+        UpdateTradeUnitImages::run($tradeUnit, $modelData,false);
+
+        foreach (DB::table('model_has_trade_units')
+            ->select('model_type', 'model_id')
+            ->where('trade_unit_id', $tradeUnit->id)
+            ->whereIn('model_type', ['MasterAsset','Product'])
+            ->get() as $modelsData) {
+            if ($modelsData->model_type == 'MasterAsset' && $modelsData->model_id != $seedMasterAsset->id) {
+                $masterAsset = MasterAsset::find($modelsData->model_id);
+                if ($masterAsset) {
+                    UpdateMasterProductImages::run($masterAsset, $modelData);
+                }
+            } elseif ($modelsData->model_type == 'Product') {
+                $product = Product::find($modelsData->model_id);
+                if ($product) {
+                    UpdateProductImages::run($product, $modelData);
+                }
+            }
+        }
+    }
+
 
     public function rules(): array
     {
@@ -90,6 +124,6 @@ class UpdateMasterProductImages extends GrpAction
     {
         $this->initialisation($masterAsset->group, $request);
 
-        $this->handle($masterAsset, $this->validatedData);
+        $this->handle($masterAsset, $this->validatedData,true);
     }
 }
