@@ -20,6 +20,7 @@ import { trans } from "laravel-vue-i18n"
 import Modal from "@/Components/Utils/Modal.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import NotesDisplay from "@/Components/NotesDisplay.vue"
 
 const props = defineProps<{
     data: TableTS,
@@ -146,44 +147,41 @@ const onClickPick = () => {
         </template>
 
         <template #cell(reference)="{ item: deliveryNote }">
-            <Link :href="deliveryNoteRoute(deliveryNote)" class="primaryLink">
+            <div class="flex gap-4 flex-wrap items-center">
+                <Link :href="deliveryNoteRoute(deliveryNote)" class="primaryLink">
                 {{ deliveryNote["reference"] }}
-            </Link>
-            <FontAwesomeIcon v-if="deliveryNote.is_premium_dispatch" v-tooltip="trans('Priority dispatch')" icon="fas fa-star" class="text-yellow-500" fixed-width aria-hidden="true" />
-            <FontAwesomeIcon v-if="deliveryNote.has_extra_packing" v-tooltip="trans('Extra packing')" icon="fas fa-box-heart" class="text-yellow-500" fixed-width aria-hidden="true" />
+                </Link>
+                <NotesDisplay :item="deliveryNote" reference-field="reference" />
+            </div>
+
+            <FontAwesomeIcon v-if="deliveryNote.is_premium_dispatch" v-tooltip="trans('Priority dispatch')"
+                icon="fas fa-star" class="text-yellow-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-if="deliveryNote.has_extra_packing" v-tooltip="trans('Extra packing')"
+                icon="fas fa-box-heart" class="text-yellow-500" fixed-width aria-hidden="true" />
         </template>
 
         <template #cell(date)="{ item }">
             {{ useFormatTime(item.date, {
-                formatTime: 'EEE, do MMM yy, HH:mm',
+            formatTime: 'EEE, do MMM yy, HH:mm',
             }) }}
         </template>
-        
+
         <template #cell(effective_weight)="{ item: deliveryNote }">
             {{ deliveryNote.effective_weight }} g
         </template>
-        
+
         <template #cell(customer_name)="{ item: deliveryNote }">
             <Link :href="customerRoute(deliveryNote)" class="secondaryLink">
-                {{ deliveryNote["customer_name"] }}
+            {{ deliveryNote["customer_name"] }}
             </Link>
         </template>
-        
+
         <template #cell(action)="{ item: deliveryNote }">
-            <Button
-                @click="() => isModalPick = deliveryNote"
-                type="secondary"
-                :label="trans('Pick')"
-                size="xs"
-            />
+            <Button @click="() => isModalPick = deliveryNote" type="secondary" :label="trans('Pick')" size="xs" />
         </template>
     </Table>
 
-    <Modal
-        :isOpen="!!isModalPick"
-        @close="isModalPick = null, isErrorPicker = null"
-        width="w-full max-w-lg"
-    >
+    <Modal :isOpen="!!isModalPick" @close="isModalPick = null, isErrorPicker = null" width="w-full max-w-lg">
         <div class="sm:flex sm:items-start w-full">
             <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                 <DialogTitle as="h3" class="text-base font-semibold">
@@ -191,26 +189,17 @@ const onClickPick = () => {
                 </DialogTitle>
                 <div class="mt-2">
                     <p class="text-sm text-gray-500">
-                        {{ trans("This action will pick the delivery note") }} <strong>{{ isModalPick?.reference }}</strong> {{ trans('with') }} {{ isModalPick?.number_items }} {{ trans('items') }}
+                        {{ trans("This action will pick the delivery note") }} <strong>{{ isModalPick?.reference
+                            }}</strong> {{ trans('with') }} {{ isModalPick?.number_items }} {{ trans('items') }}
                     </p>
-                </div>                
-                
+                </div>
+
 
                 <div class="mt-5 sm:flex sm:flex-row-reverse gap-x-2">
-                    <Button
-                        :loading="isLoadingPick"
-                        @click="() => onClickPick()"
-                        :label="trans('Yes')"
-                        full
-                    />
+                    <Button :loading="isLoadingPick" @click="() => onClickPick()" :label="trans('Yes')" full />
 
-                    <Button
-                        type="tertiary"
-                        icccon="far fa-arrow-left"
-                        :label="trans('cancel')"
-                        
-                        @click="() => (isModalPick = null)"
-                    />
+                    <Button type="tertiary" icccon="far fa-arrow-left" :label="trans('cancel')"
+                        @click="() => (isModalPick = null)" />
                 </div>
 
                 <p v-if="isErrorPicker" class="mt-2 text-xs text-red-500 italic">
