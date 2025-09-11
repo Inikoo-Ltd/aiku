@@ -30,7 +30,7 @@ class UpdateOrderPremiumDispatch extends OrgAction
     use WithOrderingEditAuthorisation;
 
 
-    public function handle(Order $order, array $modelData): Order
+    public function handle(Order $order, array $modelData): void
     {
         $order = $this->update($order, $modelData);
         $charge = $order->shop->charges()->where('type', ChargeTypeEnum::PREMIUM)->where('state', ChargeStateEnum::ACTIVE)->first();
@@ -60,7 +60,7 @@ class UpdateOrderPremiumDispatch extends OrgAction
 
         }
 
-        return $order;
+        // return $order;
     }
 
 
@@ -103,19 +103,19 @@ class UpdateOrderPremiumDispatch extends OrgAction
     }
 
 
-    public function action(Order $order, array $modelData): Order
+    public function action(Order $order, array $modelData): void
     {
         $this->asAction = true;
         $this->initialisationFromShop($order->shop, []);
 
-        return $this->handle($order, $modelData);
+        $this->handle($order, $modelData);
     }
 
 
-    public function asController(Order $order, ActionRequest $request): Order
+    public function asController(Order $order, ActionRequest $request): void
     {
         $this->initialisationFromShop($order->shop, $request);
 
-        return $this->handle($order, $this->validatedData);
+        $this->handle($order, $this->validatedData);
     }
 }

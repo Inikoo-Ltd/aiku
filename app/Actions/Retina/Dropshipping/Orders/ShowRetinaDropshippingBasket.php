@@ -185,8 +185,10 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                 'address_management' => GetOrderDeliveryAddressManagement::run(order: $order, isRetina: true),
 
 
-                'premium_dispatch' => $premiumDispatch ? ChargeResource::make($premiumDispatch)->toArray(request()) : null,
-                'extra_packing'   => $extraPacking ? ChargeResource::make($extraPacking)->toArray(request()) : null,
+                'charges' => [
+                    'premium_dispatch' => $premiumDispatch ? ChargeResource::make($premiumDispatch)->toArray(request()) : null,
+                    'extra_packing'   => $extraPacking ? ChargeResource::make($extraPacking)->toArray(request()) : null,
+                ],
 
                 'box_stats'      => $this->getDropshippingBasketBoxStats($order),
                 'currency'       => CurrencyResource::make($order->currency)->toArray(request()),
