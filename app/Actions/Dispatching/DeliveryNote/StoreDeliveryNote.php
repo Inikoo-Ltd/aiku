@@ -70,10 +70,12 @@ class StoreDeliveryNote extends OrgAction
             /** @var DeliveryNote $deliveryNote */
             $deliveryNote = $order->deliveryNotes()->create($modelData);
 
-            if ($deliveryNote->type == DeliveryNoteTypeEnum::ORDER) {
-                $deliveryNote->updateQuietly([
+            $deliveryNote->refresh();
+
+            if ($deliveryNote->type === DeliveryNoteTypeEnum::ORDER) {
+                $deliveryNote->update([
                     'is_premium_dispatch' => $order->is_premium_dispatch,
-                    'has_extra_packing'   => $order->has_extra_packing,
+                    'has_extra_packing'   => $order->has_extra_packing
                 ]);
             }
 
