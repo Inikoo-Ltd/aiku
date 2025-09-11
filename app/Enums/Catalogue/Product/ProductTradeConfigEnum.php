@@ -20,8 +20,6 @@ enum ProductTradeConfigEnum: string
 {
     use EnumHelperTrait;
 
-    //enum('Online Force Out of Stock','Online Auto','Offline','Online Force For Sale')
-
     case AUTO = 'auto';
     case FORCE_OFFLINE = 'force-offline';
     case FORCE_OUT_OF_STOCK = 'force-out-of-stock';

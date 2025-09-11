@@ -8,6 +8,11 @@
 
 namespace App\Actions\Maintenance\Goods;
 
+use App\Actions\Catalogue\Product\CloneProductImagesFromTradeUnits;
+use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitHydrateImages;
+use App\Actions\Helpers\Media\SaveModelImages;
+use App\Actions\Masters\MasterAsset\CloneMasterAssetImagesFromTradeUnits;
+use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Actions\Traits\WithOrganisationSource;
 use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Models\Catalogue\Product;
@@ -34,45 +39,77 @@ class GetTradeUnitsImagesFromAurora
     private $organisation;
 
 
-    public function handle(TradeUnit $tradeUnit,Command $command): void
+    public function handle(TradeUnit $tradeUnit, Command $command): void
     {
+        $productImages = [];
+        $products      = $tradeUnit->products()->where('is_main', true)->where('shop_id', 1)->get();
 
-        $productImages=[];
-        $products=$tradeUnit->products()->where('is_main',true)->where('shop_id',1)->get();
-
-        if($products->count()>1){
-
-            $products=$tradeUnit->products()->where('is_main',true)
+        if ($products->count() > 1) {
+            $products = $tradeUnit->products()->where('is_main', true)
                 ->whereRaw("lower(code) = lower(?)", [$tradeUnit->code])
-                ->where('shop_id',1)->get();
-
+                ->where('shop_id', 1)->get();
         }
 
 
-//       foreach ($products as $product) {
-//           print $product->code."\n";
-//       }
+        //       foreach ($products as $product) {
+        //           print $product->code."\n";
+        //       }
 
 
-        if($products->count() ==1) {
+        if ($products->count() == 1) {
             foreach ($products as $product) {
-
                 $productImages = $this->fetchAuroraProductImages($product);
             }
         }
 
-        if(count($productImages)==0){
-
-            if($tradeUnit->status==TradeUnitStatusEnum::ACTIVE){
+        if (count($productImages) == 0) {
+            if ($tradeUnit->status == TradeUnitStatusEnum::ACTIVE) {
                 $command->error("No images found for trade unit $tradeUnit->slug");
             }
+        } else {
+            //dd($tradeUnit->images);
+            DB::table('model_has_media')->where('model_id', $tradeUnit->id)->where('model_type', 'TradeUnit')->delete();
 
+            $subScope = 'main';
 
-        }else{
-          //  $command->line("Found ".count($productImages)." images for trade unit $tradeUnit->slug");
+            foreach ($productImages as $imageData) {
+                SaveModelImages::run(
+                    model: $tradeUnit,
+                    mediaData: [
+                        'path'         => $imageData['image_path'],
+                        'originalName' => $imageData['filename'],
+
+                    ],
+                    mediaScope: 'product_images',
+                    modelHasMediaData: [
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                        'fetched_at' => now(),
+                        'source_id'  => $imageData['source_id'],
+                        'scope'      => 'photo',
+                        'is_public'  => $imageData['is_public'],
+                        'caption'    => $imageData['caption'] ?? '',
+                        'position'   => $this->organisation->id * 1000 + $imageData['position'],
+                        'sub_scope'  => $subScope,
+
+                    ]
+                );
+                $subScope = null;
+            }
+            TradeUnitHydrateImages::run($tradeUnit);
+
+            foreach ($tradeUnit->products as $product) {
+                ModelHydrateSingleTradeUnits::run($product);
+                $product->refresh();
+                CloneProductImagesFromTradeUnits::run($product);
+            }
+
+            foreach ($tradeUnit->masterAssets as $masterAsset) {
+                ModelHydrateSingleTradeUnits::run($masterAsset);
+                $masterAsset->refresh();
+                CloneMasterAssetImagesFromTradeUnits::run($masterAsset);
+            }
         }
-
-
     }
 
     private function fetchAuroraProductImages(Product $product): array
@@ -87,7 +124,6 @@ class GetTradeUnitsImagesFromAurora
             'Product',
             $sourceData[1]
         )->map(function ($auroraImage) {
-
             return $this->fetchImage($auroraImage);
         });
 
@@ -106,7 +142,7 @@ class GetTradeUnitsImagesFromAurora
 
     public function getCommandSignature(): string
     {
-        return 'trade_units:get_images';
+        return 'trade_units:get_images {status}';
     }
 
     /**
@@ -114,45 +150,57 @@ class GetTradeUnitsImagesFromAurora
      */
     public function asCommand(Command $command): int
     {
-
-
-        $organisation=Organisation::where('id',1)->first();
-        $this->organisation=$organisation;
+        $organisation       = Organisation::where('id', 1)->first();
+        $this->organisation = $organisation;
 
         $this->setSource($organisation);
 
 
-//        $tradeUnits = TradeUnit::find(40526);
-//        $this->handle($tradeUnits,$command);
-//        exit;
+        //        $tradeUnits = TradeUnit::find(10844);
+        //        $this->handle($tradeUnits, $command);
+        //        exit;
 
-        $total = DB::table('trade_units')->count();
+        if ($command->argument('status') == 'active') {
+            $total = DB::table('trade_units')->where('status', TradeUnitStatusEnum::ACTIVE)->count();
+        } else {
+            $total = DB::table('trade_units')->where('status', '!=', TradeUnitStatusEnum::ACTIVE)->count();
+        }
+
+
         $command->info("Repairing main image sub_scope for $total trade units...");
-//        $start = microtime(true);
-//        $processed = 0;
-//
-//        $bar = new ProgressBar($command->getOutput(), $total);
-//        $bar->setFormat('verbose');
-//        $bar->start();
+        $start     = microtime(true);
+        $processed = 0;
 
-        DB::table('trade_units')
-            ->select('id')
+        $bar = new ProgressBar($command->getOutput(), $total);
+        $bar->setFormat('debug');
+        $bar->start();
+
+        $query = DB::table('trade_units')
+            ->select('id');
+        if ($command->argument('status') == 'active') {
+            $query->where('status', TradeUnitStatusEnum::ACTIVE);
+        } else {
+            $query->where('status', '!=', TradeUnitStatusEnum::ACTIVE);
+        }
+
+
+        $query
             ->orderBy('id')
-            ->chunkById(1000, function ($tradeUnitRows) use (&$processed,$command) {
+            ->chunkById(1000, function ($tradeUnitRows) use (&$processed, $bar, $command) {
                 foreach ($tradeUnitRows as $row) {
                     $tradeUnit = TradeUnit::find($row->id);
                     if ($tradeUnit) {
-                        $this->handle($tradeUnit,$command);
+                        $this->handle($tradeUnit, $command);
                     }
                     $processed++;
-                   // $bar->advance();
+                    $bar->advance();
                 }
             }, 'id');
 
-//        $bar->finish();
-//        $command->newLine(2);
-//        $duration = microtime(true) - $start;
-//        $command->info("Done. Processed $processed/$total trade units in ".gmdate('H:i:s', (int) $duration).".");
+        $bar->finish();
+        $command->newLine(2);
+        $duration = microtime(true) - $start;
+        $command->info("Done. Processed $processed/$total trade units in ".gmdate('H:i:s', (int)$duration).".");
 
         return 0;
     }
