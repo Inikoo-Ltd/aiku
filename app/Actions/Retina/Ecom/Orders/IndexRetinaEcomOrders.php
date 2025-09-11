@@ -52,6 +52,7 @@ class IndexRetinaEcomOrders extends RetinaAction
             'orders.state',
             'orders.customer_reference',
             'orders.is_premium_dispatch',
+            'orders.has_extra_packing',
             'order_stats.number_item_transactions as number_item_transactions',
             'orders.date',
             'orders.total_amount',

@@ -124,6 +124,7 @@ trait IsDeliveryNotesIndex
                 'delivery_notes.date',
                 'delivery_notes.state',
                 'delivery_notes.is_premium_dispatch',
+                'delivery_notes.has_extra_packing',
                 'delivery_notes.created_at',
                 'delivery_notes.updated_at',
                 'delivery_notes.slug',

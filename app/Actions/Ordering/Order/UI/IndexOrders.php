@@ -222,6 +222,7 @@ class IndexOrders extends OrgAction
                 'orders.created_at',
                 'orders.updated_at',
                 'orders.is_premium_dispatch',
+                'orders.has_extra_packing',
                 'orders.slug',
                 'orders.net_amount',
                 'orders.total_amount',
