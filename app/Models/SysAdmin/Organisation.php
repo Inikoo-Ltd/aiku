@@ -136,6 +136,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $deleted_at
  * @property string|null $source_id
  * @property string|null $colour
+ * @property array<array-key, mixed>|null $forbidden_dispatch_countries
  * @property-read \App\Models\SysAdmin\OrganisationAccountingStats|null $accountingStats
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses

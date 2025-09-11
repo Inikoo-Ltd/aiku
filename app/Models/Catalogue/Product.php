@@ -169,6 +169,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
  * @property-read Media|null $leftImage
+ * @property-read Media|null $lifestyleImage
  * @property-read Product|null $mainProduct
  * @property-read MasterAsset|null $masterProduct
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
