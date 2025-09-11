@@ -9,7 +9,7 @@ import { Link } from "@inertiajs/vue3";
 import Table from "@/Components/Table/Table.vue";
 import type { Table as TableTS } from "@/types/Table";
 import { trans } from "laravel-vue-i18n";
-import { ref, onMounted, reactive, computed } from "vue";
+import { ref, onMounted, reactive, computed, watch } from "vue";
 import { faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl } from "@fal";
 import { faSkull } from "@fas";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -17,10 +17,11 @@ import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 
 library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl);
 
-defineProps<{
+const props = defineProps<{
     data: TableTS
     tab?: string
     state: string
+    triggerReplaceAll?: number
 }>();
 
 const emit = defineEmits<{
@@ -122,6 +123,35 @@ const onFractionClick = (item: any) => {
     const isValid = validateQuantityToResend(item, maxValue);
     emit('validation-error', item.id, !isValid);
 };
+
+const onReplaceAll = () => {
+    // Get all items from the table data
+    const items = props.data?.data || [];
+    
+    items.forEach((item: any) => {
+        const maxValue = parseFloat(item.quantity_dispatched) || 0;
+        const itemId = item.id;
+
+        // Update the input field using its ref
+        const inputElement = inputRefs.value[itemId];
+       
+        if (inputElement) {
+            inputElement.value = maxValue.toString();
+        }
+        
+        // Emit events for each item
+        emit('update:quantity-to-resend', item.id, maxValue);
+        const isValid = validateQuantityToResend(item, maxValue);
+        emit('validation-error', item.id, !isValid);
+    });
+};
+
+// Watch for triggerReplaceAll prop changes
+watch(() => props.triggerReplaceAll, (newValue) => {
+    if (newValue && newValue > 0) {
+        onReplaceAll();
+    }
+});
 
 // Dynamic classes for input
 const getInputClasses = computed(() => {

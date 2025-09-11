@@ -246,6 +246,24 @@ class EditShop extends OrgAction
                                 ]
                             ],
                         ],
+                        [
+                            'label'  => __('Shipping'),
+                            'icon'   => 'fa-light fa-truck',
+                            'fields' => [
+                                'forbidden_dispatch_countries' => [
+                                    'type'          => 'multiselect-tags',
+                                    'label'         => __('Forbidden Countries'),
+                                    'placeholder'   => __('Select countries'),
+                                    'required'      => true,
+                                    'value'         => array_merge($shop->organisation->forbidden_dispatch_countries ?? [], $shop->forbidden_dispatch_countries ?? []),
+                                    'options'       => GetCountriesOptions::run(),
+                                    'searchable'    => true,
+                                    'mode'          => 'tags',
+                                    'labelProp'     => 'label',
+                                    'valueProp' => 'id'
+                                ]
+                            ],
+                        ],
                     ],
                     'args'      => [
                         'updateRoute' => [

@@ -270,6 +270,7 @@ class Organisation extends Model implements HasMedia, Auditable
         'settings' => 'array',
         'source'   => 'array',
         'location' => 'array',
+        'forbidden_dispatch_countries' => 'array',
         'type'     => OrganisationTypeEnum::class
     ];
 
@@ -277,7 +278,8 @@ class Organisation extends Model implements HasMedia, Auditable
         'data'     => '{}',
         'settings' => '{}',
         'source'   => '{}',
-        'location' => '{}'
+        'location' => '{}',
+        'forbidden_dispatch_countries' => '{}'
     ];
 
     protected $guarded = [];

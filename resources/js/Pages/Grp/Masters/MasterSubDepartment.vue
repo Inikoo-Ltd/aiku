@@ -34,6 +34,7 @@ import { routeType } from "@/types/route";
 import FormCreateMasterFamily from "@/Components/Master/FormCreateMasterFamily.vue"
 import { sub } from "date-fns";
 import TableSubDepartments from "@/Components/Tables/Grp/Org/Catalogue/TableSubDepartments.vue";
+import ImagesManagement from "@/Components/Goods/ImagesManagement.vue";
 
 library.add(
     faFolder,
@@ -72,6 +73,7 @@ const props = defineProps<{
     sub_departments?: {}
     storeRoute: routeType
     shopsData: {}
+    images?:object
 }>();
 
 let currentTab = ref(props.tabs.current);
@@ -85,7 +87,8 @@ const component: Component = computed(() => {
         customers: TableCustomers,
         sub_departments: TableSubDepartments,
         details: ModelDetails,
-        history: ModelChangelog
+        history: ModelChangelog,
+        images: ImagesManagement
     };
     return components[currentTab.value];
 
