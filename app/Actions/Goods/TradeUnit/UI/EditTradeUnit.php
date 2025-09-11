@@ -167,48 +167,20 @@ class EditTradeUnit extends OrgAction
                                     'label' => __('name'),
                                     'value' => $tradeUnit->name
                                 ],
-                                'name_i8n' => [
-                                    'type'  => 'input_translation',
-                                    'label' => __('translate name'),
-                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($tradeUnit->group->extra_languages),
-                                    'main' => $tradeUnit->name,
-                                    'value' => $tradeUnit->getTranslations('name_i8n')
-                                ],
                                 'description_title' => [
                                     'type'  => 'input',
                                     'label' => __('description title'),
                                     'value' => $tradeUnit->description_title
-                                ],
-                                'description_title_i8n' => [
-                                    'type'  => 'input_translation',
-                                    'label' => __('translate description title'),
-                                    'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($tradeUnit->group->extra_languages),
-                                    'main' => $tradeUnit->description_title,
-                                    'value' => $tradeUnit->getTranslations('description_title_i8n')
                                 ],
                                 'description' => [
                                     'type'  => 'textarea',
                                     'label' => __('description'),
                                     'value' => $tradeUnit->description
                                 ],
-                                'description_i8n' => [
-                                    'type'  => 'textEditor_translation',
-                                    'label' => __('translate description'),
-                                    'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($tradeUnit->group->extra_languages),
-                                    'main' => $tradeUnit->description,
-                                    'value' => $tradeUnit->getTranslations('description_i8n')
-                                ],
                                 'description_extra' => [
                                     'type'  => 'textEditor',
                                     'label' => __('Extra description'),
                                     'value' => $tradeUnit->description_extra
-                                ],
-                                'description_extra_i8n' => [
-                                    'type'  => 'textEditor_translation',
-                                    'label' => __('translate description extra'),
-                                    'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($tradeUnit->group->extra_languages),
-                                    'main' => $tradeUnit->description_extra,
-                                    'value' => $tradeUnit->getTranslations('description_extra_i8n')
                                 ],
                                 'gross_weight' => [
                                     'type'  => 'input',
@@ -232,6 +204,40 @@ class EditTradeUnit extends OrgAction
                                     'label' => __('Brands'),
                                     'value' => $tradeUnit->brand()?->id,
                                     'brand_routes' =>  $brandRoute
+                                ],
+                            ],
+                        ],
+                        [
+                            'label'  => __('translate'),
+                            'icon'   => 'fa-light fa-language',
+                            'fields' => [
+                                'name_i8n' => [
+                                    'type'  => 'input_translation',
+                                    'label' => __('translate name'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($tradeUnit->group->extra_languages),
+                                    'main' => $tradeUnit->name,
+                                    'value' => $tradeUnit->getTranslations('name_i8n')
+                                ],
+                                'description_title_i8n' => [
+                                    'type'  => 'input_translation',
+                                    'label' => __('translate description title'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($tradeUnit->group->extra_languages),
+                                    'main' => $tradeUnit->description_title,
+                                    'value' => $tradeUnit->getTranslations('description_title_i8n')
+                                ],
+                                'description_i8n' => [
+                                    'type'  => 'textEditor_translation',
+                                    'label' => __('translate description'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($tradeUnit->group->extra_languages),
+                                    'main' => $tradeUnit->description,
+                                    'value' => $tradeUnit->getTranslations('description_i8n')
+                                ],
+                                'description_extra_i8n' => [
+                                    'type'  => 'textEditor_translation',
+                                    'label' => __('translate description extra'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($tradeUnit->group->extra_languages),
+                                    'main' => $tradeUnit->description_extra,
+                                    'value' => $tradeUnit->getTranslations('description_extra_i8n')
                                 ],
                             ],
                         ],

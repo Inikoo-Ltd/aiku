@@ -41,8 +41,8 @@ const props = withDefaults(defineProps<{
 const emits = defineEmits<{
   (e: "update:modelValue", val: Portfolio[]): void
   (e: "close"): void
-  (e: "after-delete") : void
-  (e: "on-select") : void
+  (e: "after-delete"): void
+  (e: "on-select"): void
 }>()
 
 interface Portfolio {
@@ -96,10 +96,17 @@ const getPortfoliosList = async (url?: string) => {
   isLoadingFetch.value = true
   try {
     const tabRoute = props.tabs?.[activeTab.value]?.routeFetch || props.routeFetch
-    const urlToFetch = url || route(tabRoute.name, {
-      ...tabRoute.parameters,
-      'filter[global]': queryPortfolio.value
-    })
+    const currentTab = props.tabs?.[activeTab.value]
+
+    const params: Record<string, any> = { ...tabRoute.parameters }
+
+    // ✅ Only append search if tab has "search: true"
+    if (currentTab?.search && queryPortfolio.value) {
+      params['filter[global]'] = queryPortfolio.value
+    }
+
+    const urlToFetch = url || route(tabRoute.name, params)
+
     const response = await axios.get(urlToFetch)
     list.value = response.data.data
     meta.value = response?.data.meta || null
@@ -115,6 +122,7 @@ const getPortfoliosList = async (url?: string) => {
     isLoadingFetch.value = false
   }
 }
+
 
 const debounceGetPortfoliosList = debounce(() => (getPortfoliosList()), 500)
 
@@ -207,7 +215,7 @@ const clearAll = () => {
               <div class="flex justify-beetween mt-1 gap-5">
                 <div class="text-xs text-gray-500">{{ item.code || '-' }}</div>
                 <div v-if="item.value" class="text-xs text-gray-500">
-                  {{ locale.currencyFormat(layout.app?.currency?.code, item.value || 0)}}
+                  {{ locale.currencyFormat(layout.app?.currency?.code, item.value || 0) }}
                 </div>
               </div>
             </div>
@@ -220,7 +228,7 @@ const clearAll = () => {
               @update:modelValue="(val: number) => { item[props.key_quantity] = val; emits('update:modelValue', [...committedProducts]) }"
               noUndoButton noSaveButton parentClass="w-min" />
             <button class="text-red-500 hover:text-red-700 px-4"
-              @click="committedProducts = committedProducts.filter(p => p.id !== item.id); emits('update:modelValue', [...committedProducts]),  emits('after-delete')">
+              @click="committedProducts = committedProducts.filter(p => p.id !== item.id); emits('update:modelValue', [...committedProducts]), emits('after-delete')">
               <FontAwesomeIcon :icon="faTrashAlt" />
             </button>
           </div>
@@ -236,8 +244,7 @@ const clearAll = () => {
     </div>
 
     <!-- Dialog -->
-    <Dialog v-model:visible="showDialog" modal header="Select Products"
-      :style="{ width: '80vw', maxWidth: '1200px' }"
+    <Dialog v-model:visible="showDialog" modal header="Select Products" :style="{ width: '80vw', maxWidth: '1200px' }"
       :content-style="{ overflow: 'hidden', paddingLeft: '20px', paddingRight: '20px', }" @hide="$emit('close')">
 
       <div class="relative isolate">
@@ -249,19 +256,21 @@ const clearAll = () => {
         <!-- Tabs -->
         <div v-if="tabs?.length" class="flex gap-4 mb-4 border-b">
           <div v-for="(tab, index) in tabs" :key="index" @click="changeTab(index)"
-            class="cursor-pointer px-4 py-2 -mb-px font-medium border-b-2"
-            :class="activeTab === index
-                ? 'text-indigo-600 border-indigo-600'
-                : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'">
+            class="cursor-pointer px-4 py-2 -mb-px font-medium border-b-2" :class="activeTab === index
+              ? 'text-indigo-600 border-indigo-600'
+              : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'">
             {{ trans(tab.label) }}
           </div>
         </div>
 
         <!-- search -->
         <div class="mb-2">
-          <PureInput v-model="queryPortfolio" @update:modelValue="() => debounceGetPortfoliosList()"
-            :placeholder="trans('Input to search')">
-          </PureInput>
+          <!-- search -->
+          <div v-if="tabs?.length && tabs[activeTab]?.search" class="mb-2">
+            <PureInput v-model="queryPortfolio" @update:modelValue="() => debounceGetPortfoliosList()"
+              :placeholder="trans('Input to search')" />
+          </div>
+
         </div>
 
         <!-- list + pagination -->
@@ -294,20 +303,16 @@ const clearAll = () => {
                 <template v-if="!isLoadingFetch">
                   <template v-if="list.length > 0">
                     <div v-for="(item, index) in list" :key="index" @click="selectProduct(item)"
-                      class="relative h-fit rounded cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
-                      :class="compSelectedProduct.includes(item.id)
-                          ? 'bg-indigo-100 border-indigo-300'
-                          : 'bg-white hover:bg-gray-200 border-gray-300'">
+                      class="relative h-fit rounded cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border" :class="compSelectedProduct.includes(item.id)
+                        ? 'bg-indigo-100 border-indigo-300'
+                        : 'bg-white hover:bg-gray-200 border-gray-300'">
 
-                      <FontAwesomeIcon v-if="compSelectedProduct.includes(item.id)"
-                        icon="fas fa-check-circle"
-                        class="bottom-2 right-2 absolute text-green-500" fixed-width
-                        aria-hidden="true" />
+                      <FontAwesomeIcon v-if="compSelectedProduct.includes(item.id)" icon="fas fa-check-circle"
+                        class="bottom-2 right-2 absolute text-green-500" fixed-width aria-hidden="true" />
 
                       <slot name="product" :item="item">
                         <Image v-if="item.image" :src="item.image?.thumbnail"
-                          class="w-16 h-16 overflow-hidden mx-auto md:mx-0 mb-4 md:mb-0"
-                          imageCover :alt="item.name" />
+                          class="w-16 h-16 overflow-hidden mx-auto md:mx-0 mb-4 md:mb-0" imageCover :alt="item.name" />
                         <div class="flex flex-col justify-between w-full">
                           <div class="flex items-center gap-2">
                             <div class="font-semibold leading-none mb-1">{{ item.name || 'no name' }}</div>
@@ -321,10 +326,9 @@ const clearAll = () => {
                           <div v-if="item.gross_weight" class="text-xs text-gray-400 italic">
                             {{ item.gross_weight }}
                           </div>
-                          <div v-if="!item.no_price && item.price"
-                            class="text-xs text-gray-x500">
+                          <div v-if="!item.no_price && item.price" class="text-xs text-gray-x500">
                             {{ locale?.currencyFormat(item.currency_code || 'usd',
-                                item.price || 0) }}
+                              item.price || 0) }}
                           </div>
                           <NumberWithButtonSave v-if="withQuantity"
                             :modelValue="selectedProduct.find(p => p.id === item.id)?.[props.key_quantity] || 1"

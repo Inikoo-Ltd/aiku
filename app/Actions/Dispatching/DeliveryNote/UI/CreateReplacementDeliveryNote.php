@@ -111,7 +111,7 @@ class CreateReplacementDeliveryNote extends OrgAction
             [
                 'type'  => 'button',
                 'style' => 'exitEdit',
-                'label' => __('cancel'),
+                'label' => __('Back'),
                 'route' => [
                     'name'       => 'grp.org.shops.show.ordering.orders.show',
                     'parameters' => array_values($request->route()->originalParameters())
