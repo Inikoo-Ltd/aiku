@@ -120,9 +120,7 @@ library.add(
 const locale = inject("locale", aikuLocaleStructure)
 const showFullWarnings = ref(false)
 const showFullInstructions = ref(false)
-const showFullDescriptionTitle = ref(false)
 const showFullDescription = ref(false)
-const showFullDescriptionExtra = ref(false)
 
 
 
@@ -263,44 +261,18 @@ console.log('product summary : ', props)
 						</dd>
 					</div>
 
-					<!-- Description Title -->
-					<div v-if="data?.description_title" class="space-y-2">
-						<dt class="text-gray-500">{{ trans("Description Title") }}</dt>
-						<dd class="font-medium">
-							<div class="bg-gray-50 border border-gray-200 rounded-lg p-3">
-								<div v-if="!showFullDescriptionTitle && data?.description_title.length > 150">
-									<div class="text-sm text-gray-700 leading-relaxed" 
-										 v-html="data?.description_title.substring(0, 150) + '...'">
-									</div>
-									<button @click="showFullDescriptionTitle = true"
-										class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1 mt-2">
-										<FontAwesomeIcon icon="fal fa-chevron-down" />
-										{{ trans("Read more") }}
-									</button>
-								</div>
-								<div v-else>
-									<div class="text-sm text-gray-700 leading-relaxed" 
-										 v-html="data?.description_title">
-									</div>
-									<button v-if="data?.description_title.length > 150"
-										@click="showFullDescriptionTitle = false"
-										class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1 mt-2">
-										<FontAwesomeIcon icon="fal fa-chevron-up" />
-										{{ trans("Read less") }}
-									</button>
-								</div>
-							</div>
-						</dd>
-					</div>
-
-					<!-- Description -->
-					<div v-if="data?.description" class="space-y-2">
+					<!-- Combined Description -->
+					<div v-if="data?.description_title || data?.description || data?.description_extra" class="space-y-2">
 						<dt class="text-gray-500">{{ trans("Description") }}</dt>
 						<dd class="font-medium">
 							<div class="bg-gray-50 border border-gray-200 rounded-lg p-3">
-								<div v-if="!showFullDescription && data?.description.length > 200">
-									<div class="text-sm text-gray-700 leading-relaxed" 
-										 v-html="data?.description.substring(0, 200) + '...'">
+								<div v-if="!showFullDescription && data?.description_extra">
+									<!-- Show title and description, hide extra -->
+									<div v-if="data?.description_title" class="text-base font-semibold text-gray-700 leading-relaxed mb-3" 
+										 v-html="data?.description_title">
+									</div>
+									<div v-if="data?.description" class="text-sm text-gray-700 leading-relaxed" 
+										 v-html="data?.description">
 									</div>
 									<button @click="showFullDescription = true"
 										class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1 mt-2">
@@ -309,41 +281,18 @@ console.log('product summary : ', props)
 									</button>
 								</div>
 								<div v-else>
-									<div class="text-sm text-gray-700 leading-relaxed" 
+									<!-- Show all content -->
+									<div v-if="data?.description_title" class="text-base font-semibold text-gray-700 leading-relaxed mb-3" 
+										 v-html="data?.description_title">
+									</div>
+									<div v-if="data?.description" class="text-sm text-gray-700 leading-relaxed mb-3" 
 										 v-html="data?.description">
 									</div>
-									<button v-if="data?.description.length > 200"
-										@click="showFullDescription = false"
-										class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1 mt-2">
-										<FontAwesomeIcon icon="fal fa-chevron-up" />
-										{{ trans("Read less") }}
-									</button>
-								</div>
-							</div>
-						</dd>
-					</div>
-
-					<!-- Description Extra -->
-					<div v-if="data?.description_extra" class="space-y-2">
-						<dt class="text-gray-500">{{ trans("Description Extra") }}</dt>
-						<dd class="font-medium">
-							<div class="bg-gray-50 border border-gray-200 rounded-lg p-3">
-								<div v-if="!showFullDescriptionExtra && data?.description_extra.length > 200">
-									<div class="text-sm text-gray-700 leading-relaxed" 
-										 v-html="data?.description_extra.substring(0, 200) + '...'">
-									</div>
-									<button @click="showFullDescriptionExtra = true"
-										class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1 mt-2">
-										<FontAwesomeIcon icon="fal fa-chevron-down" />
-										{{ trans("Read more") }}
-									</button>
-								</div>
-								<div v-else>
-									<div class="text-sm text-gray-700 leading-relaxed" 
+									<div v-if="data?.description_extra" class="text-sm text-gray-700 leading-relaxed" 
 										 v-html="data?.description_extra">
 									</div>
-									<button v-if="data?.description_extra.length > 200"
-										@click="showFullDescriptionExtra = false"
+									<button v-if="data?.description_extra"
+										@click="showFullDescription = false"
 										class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1 mt-2">
 										<FontAwesomeIcon icon="fal fa-chevron-up" />
 										{{ trans("Read less") }}
