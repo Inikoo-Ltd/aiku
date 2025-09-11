@@ -90,6 +90,7 @@ const props = defineProps<{
     total_products: number
     is_in_basket: boolean
     address_management: AddressManagement
+    is_unable_dispatch: boolean
 }>()
 
 console.log(props.transactions)
@@ -419,6 +420,7 @@ const onChangePriorityDispatch = async (val: boolean) => {
         :summary
         :balance
         :address_management
+        :is_unable_dispatch
     />
     
     <template v-if="order">
@@ -494,7 +496,7 @@ const onChangePriorityDispatch = async (val: boolean) => {
                         />
                     </div>
                 </div>
-                <div class="w-72 pt-5">
+                <div v-if="!is_unable_dispatch" class="w-72 pt-5">
                     <!-- Place Order -->
                     <template v-if="Number(total_to_pay) === 0 && Number(balance) > 0">
                         <ButtonWithLink
@@ -526,6 +528,9 @@ const onChangePriorityDispatch = async (val: boolean) => {
                         class="w-full"
                         full
                     />
+                </div>
+                <div v-else class="w-72 pt-5 text-sm">
+                    <div class="text-red-500">*{{ trans("We cannot deliver to :country. Please update the address or contact support.", { country: summary?.customer?.addresses?.delivery?.country?.name}) }}</div>
                 </div>
             </div>
         </div>

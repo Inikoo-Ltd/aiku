@@ -20,6 +20,7 @@ const props = defineProps<{
     }
     balance?: string
     address_management?: AddressManagement
+    is_unable_dispatch?: boolean
 }>()
 
 const locale = inject('locale', {})
@@ -53,7 +54,6 @@ const isModalShippingAddress = ref(false)
 
             <div v-if="summary?.customer?.addresses?.delivery?.formatted_address" class="pl-6 pr-3" v-html="summary?.customer?.addresses?.delivery?.formatted_address">
             </div>
-
             <div v-else class="text-gray-400 italic pl-6 pr-3">
                 {{ trans("No delivery address") }}
             </div>
@@ -62,6 +62,10 @@ const isModalShippingAddress = ref(false)
                 class="pl-6 pr-3 w-fit underline cursor-pointer hover:text-gray-700">
                 {{ trans("Edit") }}
                 <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true"/>
+            </div>
+            
+            <div v-if="is_unable_dispatch" class="pl-6 pr-4 text-red-500 mt-2 text-xs">
+                <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />{{ trans("We cannot deliver to :country, please update the address or contact support.", { country: summary?.customer?.addresses?.delivery?.country?.name }) }}
             </div>
         </div>
 
