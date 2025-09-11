@@ -18,6 +18,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliv
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Ordering\Order;
 use App\Rules\IUnique;
@@ -60,6 +61,7 @@ class StoreDeliveryNote extends OrgAction
         data_set($modelData, 'public_notes', $order->public_notes);
         data_set($modelData, 'shipping_notes', $order->shipping_notes);
 
+
         if ($this->strict) {
             data_set($modelData, 'delivery_locked', true);
         }
@@ -67,6 +69,14 @@ class StoreDeliveryNote extends OrgAction
         $deliveryNote = DB::transaction(function () use ($order, $modelData, $deliveryAddress) {
             /** @var DeliveryNote $deliveryNote */
             $deliveryNote = $order->deliveryNotes()->create($modelData);
+
+            if ($deliveryNote->type == DeliveryNoteTypeEnum::ORDER) {
+                $deliveryNote->updateQuietly([
+                    'is_premium_dispatch' => $order->is_premium_dispatch,
+                    'has_extra_packing'   => $order->has_extra_packing,
+                ]);
+            }
+
 
             if ($deliveryNote->delivery_locked) {
                 $this->createFixedAddress(

@@ -13,7 +13,7 @@ use App\Models\Helpers\Media;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class MediaHydrateDimension implements ShouldBeUnique
+class MediaHydrateDimensions implements ShouldBeUnique
 {
     use AsAction;
     use WithActionUpdate;
