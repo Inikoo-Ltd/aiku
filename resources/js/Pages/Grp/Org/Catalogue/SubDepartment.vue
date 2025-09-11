@@ -37,6 +37,7 @@ import { routeType } from '@/types/route'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faOctopusDeploy } from '@fortawesome/free-brands-svg-icons'
+import ImagesManagement from '@/Components/Goods/ImagesManagement.vue'
 
 
 library.add(
@@ -74,6 +75,7 @@ const props = defineProps<{
     mailshots: {}
     products: {}
     history?: {}
+    images?:object
 }>()
 
 let currentTab = ref(props.tabs.current)
@@ -87,6 +89,7 @@ const component: Component = computed(() => {
         customers: TableCustomers,
         details: ModelDetails,
         history: TableHistories,
+        images :ImagesManagement
     }
     return components[currentTab.value]
 
