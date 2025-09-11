@@ -2,7 +2,6 @@
 
 namespace App\Actions\Catalogue\ProductCategory;
 
-use App\Actions\GrpAction;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithAttachMediaToModel;

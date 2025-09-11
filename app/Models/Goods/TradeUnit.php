@@ -122,6 +122,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read MediaCollection<int, Media> $images
  * @property-read Collection<int, \App\Models\Goods\Ingredient> $ingredients
  * @property-read Media|null $leftImage
+ * @property-read Media|null $lifestyleImage
  * @property-read MediaCollection<int, Media> $media
  * @property-read Collection<int, OrgStock> $orgStocks
  * @property-read Collection<int, Product> $products

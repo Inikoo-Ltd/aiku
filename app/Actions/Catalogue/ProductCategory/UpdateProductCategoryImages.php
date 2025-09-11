@@ -9,7 +9,6 @@
 
 namespace App\Actions\Catalogue\ProductCategory;
 
-use App\Actions\GrpAction;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\ProductCategory;

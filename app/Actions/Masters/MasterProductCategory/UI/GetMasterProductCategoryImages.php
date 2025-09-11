@@ -12,7 +12,6 @@ namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\Traits\HasBucketImages;
 use App\Http\Resources\Helpers\ImagesResource;
-use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use Lorisleiva\Actions\Concerns\AsObject;
 

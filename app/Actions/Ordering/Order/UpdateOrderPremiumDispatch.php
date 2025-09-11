@@ -35,9 +35,9 @@ class UpdateOrderPremiumDispatch extends OrgAction
         $order = $this->update($order, $modelData);
         $charge = $order->shop->charges()->where('type', ChargeTypeEnum::PREMIUM)->where('state', ChargeStateEnum::ACTIVE)->first();
 
-        if($charge){
+        if ($charge) {
 
-            $chargeApplies=Arr::get($modelData,'is_premium_dispatch',false);
+            $chargeApplies = Arr::get($modelData, 'is_premium_dispatch', false);
             $chargeTransaction   = null;
             $chargeTransactionID = DB::table('transactions')->where('order_id', $order->id)
                 ->leftJoin('charges', 'transactions.model_id', '=', 'charges.id')

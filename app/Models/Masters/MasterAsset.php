@@ -83,6 +83,8 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $video_url
  * @property int|null $lifestyle_image_id
  * @property bool|null $bucket_images images following the buckets
+ * @property string|null $description_title
+ * @property string|null $description_extra
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Media|null $backImage
  * @property-read Media|null $bottomImage
@@ -91,6 +93,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
  * @property-read Media|null $leftImage
+ * @property-read Media|null $lifestyleImage
  * @property-read MasterAsset|null $mainMasterProduct
  * @property-read \App\Models\Masters\MasterProductCategory|null $masterDepartment
  * @property-read \App\Models\Masters\MasterProductCategory|null $masterFamily

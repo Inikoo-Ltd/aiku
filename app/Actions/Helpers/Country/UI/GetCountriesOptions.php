@@ -23,6 +23,7 @@ class GetCountriesOptions
             $selectOptions[$country->id] =
                 [
                     'label' => $country->name.' ('.$country->code.')',
+                    'id' => $country->id
                 ];
         }
 
