@@ -1,9 +1,44 @@
 <script setup lang="ts">
-import ProductCategoryCard from "@/Components/ProductCategoryCard.vue";
-import { faImage } from "@fal";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import Image from "@/Components/Image.vue";
 
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { ref, computed } from "vue"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import {
+	faTrash as falTrash,
+	faEdit,
+	faExternalLink,
+	faPuzzlePiece,
+	faShieldAlt,
+	faInfoCircle,
+	faChevronDown,
+	faChevronUp,
+	faBox,
+	faVideo,
+} from "@fal"
+import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
+import ImageProducts from "@/Components/Product/ImageProducts.vue"
+import { faImage } from "@far"
+import ProductSummary from "@/Components/Product/ProductSummary.vue"
+
+
+
+library.add(
+	faCircle,
+	faTrash,
+	falTrash,
+	faEdit,
+	faExternalLink,
+	faPlay,
+	faPlus,
+	faBarcode,
+	faPuzzlePiece,
+	faShieldAlt,
+	faInfoCircle,
+	faChevronDown,
+	faChevronUp,
+	faBox,
+	faVideo
+)
 
 // Interfaces
 interface TradeUnit {
@@ -46,31 +81,63 @@ const props = defineProps<{
     data: ProductData;
   };
 }>();
+console.log(props)
+
+const imagesSetup = ref(
+	props.data.data.images
+		.filter(item => item.type === "image")
+		.map(item => ({
+			label: item.label,
+			column: item.column_in_db,
+			images: item.images,
+		}))
+)
+
+const videoSetup = ref(
+	props.data.data.images.find(item => item.type === "video") || null
+)
+
+const images = computed(() => props.data.data?.images ?? [])
+
+
+const validImages = computed(() =>
+  imagesSetup.value
+    .filter(item => item.images) // only keep if images exist
+    .flatMap(item => {
+      const images = Array.isArray(item.images) ? item.images : [item.images] // normalize to array
+      return images.map(img => ({
+        source: img,
+        thumbnail: img
+      }))
+    })
+)
+
+
 
 </script>
 
 
 <template>
-  <div class="px-4 pb-10 m-5 space-y-6">
-    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 gap-6">
-      <!-- Left Column -->
-      <div class="col-span-1 md:col-span-1 lg:col-span-2">
-        <ProductCategoryCard :data="data.data">
-          <template #image>
-            <Image
-              v-if="data?.data.image"
-              :src="data?.data.image.source"
-              class="w-full h-52 object-cover object-center rounded-t-lg"
-            />
-            <div
-              v-else
-              class="flex justify-center items-center bg-gray-100 w-full h-52 rounded-t-lg"
-            >
-              <FontAwesomeIcon :icon="faImage" class="w-10 h-10 text-gray-400" />
-            </div>
-          </template>
-        </ProductCategoryCard>
-      </div>
-    </div>
-  </div>
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mx-3 lg:mx-0 mt-2">
+		<!-- Sidebar -->
+		<div class="space-y-4 lg:space-y-6">
+			<!-- Image Preview & Thumbnails -->
+			<div class="bg-white rounded-xl  p-4 lg:p-5">
+				<ImageProducts v-if="validImages.length" :images="validImages" :breakpoints="{
+					0: { slidesPerView: 3 },
+					480: { slidesPerView: 4 },
+					640: { slidesPerView: 5 },
+					1024: { slidesPerView: 6 },
+				}" class="overflow-x-auto" />
+
+				<div v-else
+					class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg h-80">
+					<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
+					<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
+				</div>
+			</div>
+		</div>
+		<!-- tradeUnit Summary -->
+		<ProductSummary :data="data.data" :video="videoSetup.url" />
+	</div>
 </template>

@@ -125,9 +125,9 @@ const getTableData = (data) => {
         const finalDataTable: Record<number, { price: number | string }> = {}
         for (const tableDataItem of data.data) {
             finalDataTable[tableDataItem.id] = {
-                price: tableDataItem.product.price || 0,
+                price: tableDataItem.product.price || null,
                 has_org_stocks: tableDataItem.product.has_org_stocks,
-                rrp: tableDataItem.product.rrp
+                rrp: tableDataItem.product.rrp || null
             }
         }
 
@@ -140,6 +140,7 @@ const getTableData = (data) => {
                 { signal: abortController.signal }
             )
 
+            console.log("Response data:", response.data)
             for (const item of response.data) {
                 const index = tableData.value.data.findIndex((row: any) => row.id === item.id)
                 if (index !== -1) {
