@@ -387,7 +387,7 @@ const isModalEbayDuplicate = ref(false)
                         :iconRight="total_channels?.ebay ? '' : 'fal fa-external-link-alt'"
                         @click="() => total_channels?.ebay ? isModalEbay = true : onSubmitEbay()"
                     />
-                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
+<!--                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>-->
 
                 </div>
             </div>
