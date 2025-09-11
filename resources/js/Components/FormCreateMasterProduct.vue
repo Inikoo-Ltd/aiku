@@ -41,6 +41,7 @@ import { notify } from "@kyvg/vue3-notification";
 import { cloneDeep } from "lodash";
 import PureInputNumber from "./Pure/PureInputNumber.vue";
 import Image from "./Image.vue";
+import search from "@/Pages/Iris/Search.vue"
 
 library.add(
     faShapes,
@@ -246,21 +247,21 @@ const submitForm = async (redirect = true) => {
 
 const selectorTab = [
     {
-        label: "Recommended",
+        label: trans("To do"),
         routeFetch: {
             name: "grp.json.master-product-category.recommended-trade-units",
             parameters: { masterProductCategory: route().params["masterFamily"] },
         },
     },
     {
-        label: "Taken",
+        label: trans("Done"),
         routeFetch: {
             name: "grp.json.master-product-category.taken-trade-units",
             parameters: { masterProductCategory: route().params["masterFamily"] },
         },
     },
     {
-        label: "All",
+        label: trans("All"),
         search: true,
         routeFetch: {
             name: "grp.json.master-product-category.all-trade-units",
