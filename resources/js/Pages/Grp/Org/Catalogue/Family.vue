@@ -31,6 +31,7 @@ import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import { routeType } from "@/types/route";
 import FormCreateMasterProduct from "@/Components/FormCreateMasterProduct.vue"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
+import ImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 
 
 library.add(
@@ -64,6 +65,7 @@ const props = defineProps<{
     url_master?:routeType
     shopsData? :any
     masterProductCategory?:number
+    images?:object
 }>()
 console.log('family',props)
 const currentTab = ref(props.tabs.current)
@@ -79,7 +81,8 @@ const component = computed(() => {
         mailshots: TableMailshots,
         customers: TableCustomers,
         details: ModelDetails,
-        history: TableHistories
+        history: TableHistories,
+        images:ImagesManagement
     }
     return components[currentTab.value] ?? ModelDetails
 })
