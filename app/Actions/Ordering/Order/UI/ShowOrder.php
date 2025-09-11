@@ -236,10 +236,10 @@ class ShowOrder extends OrgAction
             $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
         }
 
-        $readonly = true;
-        if ($platform->type == PlatformTypeEnum::MANUAL) {
+        $readonly = false;
+        /*if ($platform->type == PlatformTypeEnum::MANUAL) {
             $readonly = false;
-        }
+        }*/
 
         return Inertia::render(
             'Org/Ordering/Order',
