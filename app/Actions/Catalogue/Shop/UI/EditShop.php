@@ -246,6 +246,21 @@ class EditShop extends OrgAction
                                 ]
                             ],
                         ],
+                        [
+                            'label'  => __('Tags'),
+                            'icon'   => 'fa-light fa-tag',
+                            'fields' => [
+                                'tags' => [
+                                    'type'  => 'multiselect-tags',
+                                    'label' => __('Tags'),
+                                    'value' => null,
+                                    'options_routes' => [
+                                        'name'       => 'grp.json.brands.index',
+                                        'parameters' => []
+                                    ],
+                                ],
+                            ],
+                        ],
                     ],
                     'args'      => [
                         'updateRoute' => [

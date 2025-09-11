@@ -33,7 +33,7 @@ import { computed, provide, ref, onMounted } from "vue";
 import type { Component } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
 import BoxStatsDeliveryNote from "@/Components/Warehouse/DeliveryNotes/BoxStatsDeliveryNote.vue";
-import TableDeliveryNoteItems from "@/Components/Warehouse/DeliveryNotes/TableDeliveryNoteItemsForReplacement.vue";
+import TableDeliveryNoteItemsForReplacement from "@/Components/Warehouse/DeliveryNotes/TableDeliveryNoteItemsForReplacement.vue";
 import TablePickings from "@/Components/Warehouse/DeliveryNotes/TablePickings.vue";
 import { routeType } from "@/types/route";
 import Tabs from "@/Components/Navigation/Tabs.vue";
@@ -104,7 +104,7 @@ const currentTab = ref(props.tabs?.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 const component = computed(() => {
     const components: Component = {
-        items: TableDeliveryNoteItems,
+        items: TableDeliveryNoteItemsForReplacement,
         pickings: TablePickings
     };
 
@@ -155,6 +155,9 @@ const quantityToResendData = ref<{ [key: string]: number }>({});
 const validationErrorsData = ref<{ [key: string]: boolean }>({});
 const loadingCreateReplacement = ref(false)
 
+// Trigger for replace all functionality
+const replaceAllTrigger = ref(0);
+
 const handleQuantityToResendUpdate = (itemId: string | number, value: number) => {
     quantityToResendData.value[itemId] = value;
 };
@@ -177,6 +180,15 @@ const isReplacementDisabled = computed(() => {
     // 2. There are validation errors
     return (quantities.length === 0 || quantities.every(quantity => quantity === 0)) || hasValidationErrors;
 });
+
+// Section: Replace All functionality
+const onReplaceAll = () => {
+    // Only trigger replace all if we're on the items tab
+    if (currentTab.value === 'items') {
+        // Increment trigger to notify child component
+        replaceAllTrigger.value++;
+    }
+};
 
 // Section: Create Replacement
 const onCreateReplacement = (action: any) => {
@@ -244,6 +256,9 @@ const onCreateReplacement = (action: any) => {
             <Button @click="() => onCreateReplacement(action)" :label="action.label" :icon="action.icon"
                 :type="action.type" :disabled="isReplacementDisabled" :loading="loadingCreateReplacement" />
         </template>
+        <template #otherBefore>
+            <Button type="secondary" label="Replace All" @click="onReplaceAll" />
+        </template>
     </PageHeading>
 
     <div v-if="alert?.status" class="p-2 pb-0">
@@ -285,8 +300,10 @@ const onCreateReplacement = (action: any) => {
     <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
 
     <div class="pb-12">
-        <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" :routes
-            :state="delivery_note.state" @update:quantity-to-resend="handleQuantityToResendUpdate" 
+        <component :is="component" 
+            :data="props[currentTab as keyof typeof props]" :tab="currentTab" :routes
+            :state="delivery_note.state" :triggerReplaceAll="replaceAllTrigger"
+            @update:quantity-to-resend="handleQuantityToResendUpdate" 
             @validation-error="handleValidationError" />
     </div>
 
