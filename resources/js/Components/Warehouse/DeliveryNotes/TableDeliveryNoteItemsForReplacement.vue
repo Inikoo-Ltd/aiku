@@ -17,7 +17,6 @@ import FractionDisplay from "@/Components/DataDisplay/FractionDisplay.vue"
 
 library.add(faSkull, faArrowDown, faDebug, faClipboardListCheck, faUndoAlt, faHandHoldingBox, faListOl);
 
-
 defineProps<{
     data: TableTS
     tab?: string
@@ -52,7 +51,16 @@ onMounted(() => {
 
 // Section: Validation for quantity_to_resend
 const validationErrors = reactive<{ [key: string]: string[] }>({});
-const inputRef = ref()
+const inputRefs = ref<{ [key: string]: HTMLInputElement }>({});
+
+// Helper function to set input ref
+const setInputRef = (itemId: string | number, el: HTMLInputElement | null) => {
+    if (el) {
+        inputRefs.value[itemId] = el;
+    } else {
+        delete inputRefs.value[itemId];
+    }
+};
 
 const validateQuantityToResend = (item: any, value: number) => {
     const errors: string[] = [];
@@ -100,27 +108,31 @@ const onQuantityToResendInput = (item: any, event: Event) => {
 };
 
 const onFractionClick = (item: any) => {
-    const maxValue = item.quantity_dispatched || 0;
+    const maxValue = parseFloat(item.quantity_dispatched) || 0;
+    const itemId = item.id;
 
-    // Update the item value to max dispatched quantity
-    item.quantity_to_resend = maxValue;
-    inputRef.value = parseFloat(maxValue)
 
-    console.log(inputRef.value);
+    // Update the specific input field using its ref
+    const inputElement = inputRefs.value[itemId];
+    if (inputElement) {
+        inputElement.value = maxValue.toString();
+    }
+    
     emit('update:quantity-to-resend', item.id, maxValue);
     const isValid = validateQuantityToResend(item, maxValue);
     emit('validation-error', item.id, !isValid);
 };
 
 // Dynamic classes for input
-const getInputClasses = (item: any) => {
-    const baseClasses = "w-full px-3 py-2 text-sm border rounded-l-md focus:outline-none focus:ring-2 focus:ring-opacity-50";
-    const invalidClasses = "bg-red-50 border-red-500 text-red-900 placeholder-red-700 focus:ring-red-500 focus:border-red-500";
-    const validClasses = "bg-white border-gray-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500";
+const getInputClasses = computed(() => {
+    return (item: any) => {
+        const baseClasses = "w-full px-3 py-2 text-sm border rounded-l-md focus:outline-none focus:ring-2 focus:ring-opacity-50";
+        const invalidClasses = "bg-red-50 border-red-500 text-red-900 placeholder-red-700 focus:ring-red-500 focus:border-red-500";
+        const validClasses = "bg-white border-gray-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500";
 
-    return `${baseClasses} ${isQuantityToResendInvalid.value(item) ? invalidClasses : validClasses}`;
-};
-
+        return `${baseClasses} ${isQuantityToResendInvalid.value(item) ? invalidClasses : validClasses}`;
+    };
+})
 
 </script>
 
@@ -143,9 +155,15 @@ const getInputClasses = (item: any) => {
         <template #cell(quantity_to_resend)="{ item: item }">
             <div class="space-y-1">
                 <div class="flex items-center justify-end">
-                    <!-- Input Field -->
-                    <input v-model="inputRef" type="number" :min="0" :class="getInputClasses(item)" class="rounded-md !w-28"
-                        @input="onQuantityToResendInput(item, $event)" placeholder="0" />
+                    <input 
+                        :ref="(el) => setInputRef(item.id, el as HTMLInputElement)"
+                        type="number" 
+                        :min="0" 
+                        :class="getInputClasses(item)" 
+                        class="rounded-md !w-28"
+                        @input="onQuantityToResendInput(item, $event)" 
+                        placeholder="0" 
+                    />
                 </div>
             </div>
         </template>

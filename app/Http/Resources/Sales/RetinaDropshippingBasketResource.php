@@ -22,6 +22,7 @@ class RetinaDropshippingBasketResource extends JsonResource
             'id'                        => $order->id,
             'reference'                 => $order->reference,
             'slug'                      => $order->slug,
+            'is_premium_dispatch'      => $order->is_premium_dispatch,
             'state'                     => $order->state->value,
             'state_label'               => $order->state->labels()[$order->state->value],
             'state_icon'                => $order->state->stateIcon()[$order->state->value],
