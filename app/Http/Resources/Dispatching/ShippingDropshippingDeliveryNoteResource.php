@@ -81,6 +81,9 @@ class ShippingDropshippingDeliveryNoteResource extends JsonResource
         }
 
         if ($toEmail == '') {
+            $toEmail = $customer->email;
+        }
+        if ($toEmail == '') {
             $toEmail = $shop->email;
         }
 
