@@ -25,7 +25,7 @@ class UpdateTradeUnitImages extends GrpAction
 {
     use WithActionUpdate;
 
-    public function handle(TradeUnit $tradeUnit, array $modelData, bool $updateDependants=true): TradeUnit
+    public function handle(TradeUnit $tradeUnit, array $modelData, bool $updateDependants = true): TradeUnit
     {
         $imageTypeMapping = [
             'image_id' => 'main',
@@ -71,7 +71,7 @@ class UpdateTradeUnitImages extends GrpAction
         data_set($modelData, 'bucket_images', true);
         $this->update($tradeUnit, $modelData);
 
-        if($updateDependants){
+        if ($updateDependants) {
             foreach (DB::table('model_has_trade_units')->select('model_type', 'model_id')->where('trade_unit_id', $tradeUnit->id)->whereIn('model_type', ['MasterAsset','Product'])->get() as $modelsData) {
                 if ($modelsData->model_type == 'MasterAsset') {
                     $masterAsset = MasterAsset::find($modelsData->model_id);
