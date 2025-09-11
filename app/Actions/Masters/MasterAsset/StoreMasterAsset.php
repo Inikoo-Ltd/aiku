@@ -93,6 +93,8 @@ class StoreMasterAsset extends OrgAction
             return ModelHydrateSingleTradeUnits::run($masterAsset);
         });
 
+        CloneMasterAssetImagesFromTradeUnits::run($masterAsset);
+
         GroupHydrateMasterAssets::dispatch($parent->group)->delay($this->hydratorsDelay);
         MasterShopHydrateMasterAssets::dispatch($masterAsset->masterShop)->delay($this->hydratorsDelay);
         if ($masterAsset->masterdepartment) {

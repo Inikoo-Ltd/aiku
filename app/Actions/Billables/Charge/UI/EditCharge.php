@@ -13,6 +13,7 @@ use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Models\Billables\Charge;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -35,6 +36,15 @@ class EditCharge extends OrgAction
 
     public function htmlResponse(Charge $charge, ActionRequest $request): Response
     {
+        $rules = Arr::get($charge->settings, 'rules', null);
+
+        $minOrder = null;
+        if ($rules && preg_match('/\d+/', $rules, $matches)) {
+            $minOrder = (int) $matches[0];
+        }
+
+        $hasRules = !empty(trim($rules ?? ''));
+
         return Inertia::render(
             'EditModel',
             [
@@ -69,6 +79,7 @@ class EditCharge extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
+                            'label'  => __('Properties'),
                             'title'  => __('edit charge'),
                             'fields' => [
                                 'name' => [
@@ -88,7 +99,30 @@ class EditCharge extends OrgAction
                                     'value' => $charge->description
                                 ],
                             ],
-                        ]
+                        ],
+                        [
+                            'label'  => __('Pricing'),
+                            'title'  => __('edit charge'),
+                            'fields' => $hasRules ? [
+                                'min_order' => [
+                                    'type'  => 'input_number',
+                                    'label' => __('min order'),
+                                    'value' => $minOrder
+                                ],
+                                'amount' => [
+                                    'type'  => 'input_number',
+                                    'label' => __('amount'),
+                                    'value' => Arr::get($charge->settings, 'amount')
+                                ],
+
+                            ] : [
+                                'amount' => [
+                                    'type'  => 'input_number',
+                                    'label' => __('amount'),
+                                    'value' => Arr::get($charge->settings, 'amount')
+                                ],
+                            ]
+                        ],
                     ],
 
                     'args' => [

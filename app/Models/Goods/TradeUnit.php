@@ -15,6 +15,7 @@ use App\Models\Helpers\Brand;
 use App\Models\Helpers\Media;
 use App\Models\Helpers\Tag;
 use App\Models\Inventory\OrgStock;
+use App\Models\Masters\MasterAsset;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasAttachments;
@@ -123,6 +124,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Collection<int, \App\Models\Goods\Ingredient> $ingredients
  * @property-read Media|null $leftImage
  * @property-read Media|null $lifestyleImage
+ * @property-read Collection<int, MasterAsset> $masterAssets
  * @property-read MediaCollection<int, Media> $media
  * @property-read Collection<int, OrgStock> $orgStocks
  * @property-read Collection<int, Product> $products
@@ -219,6 +221,11 @@ class TradeUnit extends Model implements HasMedia, Auditable
     public function products(): MorphToMany
     {
         return $this->morphedByMany(Product::class, 'model', 'model_has_trade_units')->withPivot(['quantity']);
+    }
+
+    public function masterAssets(): MorphToMany
+    {
+        return $this->morphedByMany(MasterAsset::class, 'model', 'model_has_trade_units')->withPivot(['quantity']);
     }
 
     public function orgStocks(): MorphToMany
