@@ -399,7 +399,7 @@ const onChangeExtraPacking = async (val: boolean) => {
                    @update:tab="handleTabUpdate"/>
 
         <!-- Section: Priority Dispatch -->
-        <div v-if="layout.app.environment === 'local' && charges.premium_dispatch" class="flex gap-4 my-4 justify-end pr-6">
+        <div v-if="charges.premium_dispatch" class="flex gap-4 my-4 justify-end pr-6">
             <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
                 <InformationIcon :information="charges.premium_dispatch?.description" />
                 {{ charges.premium_dispatch?.label ?? charges.premium_dispatch?.name }}
@@ -424,7 +424,7 @@ const onChangeExtraPacking = async (val: boolean) => {
         </div>
 
         <!-- Section: Extra Packing -->
-        <div v-if="layout.app.environment === 'local' && charges.extra_packing" class="flex gap-4 my-4 justify-end pr-6">
+        <div v-if="charges.extra_packing" class="flex gap-4 my-4 justify-end pr-6">
             <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.has_extra_packing ? 'text-green-500' : ''">
                 <InformationIcon :information="charges.extra_packing?.description" />
                 {{ charges.extra_packing?.label ?? charges.extra_packing?.name }}

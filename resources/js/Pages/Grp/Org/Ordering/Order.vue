@@ -601,8 +601,8 @@ const toggleElipsis = (e: Event) => {
 
     <PageHeading :data="pageHead">
         <template #afterTitle2>
-            <FontAwesomeIcon v-if="data?.data.is_premium_dispatch" v-tooltip="trans('Priority dispatch')" icon="fas fa-star" class="text-yellow-500" fixed-width aria-hidden="true" />
-            <FontAwesomeIcon v-if="data?.data.has_extra_packing" v-tooltip="trans('Extra packing')" icon="fal fa-box-heart" class="text-yellow-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-if="data?.data.is_premium_dispatch" v-tooltip="trans('Priority dispatch')" icon="fas fa-star" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-if="data?.data.has_extra_packing" v-tooltip="trans('Extra packing')" icon="fas fa-box-heart" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
         </template>
 
         <template #button-add-products="{ action }">
