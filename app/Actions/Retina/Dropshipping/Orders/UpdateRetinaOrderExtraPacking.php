@@ -16,9 +16,9 @@ use Lorisleiva\Actions\ActionRequest;
 
 class UpdateRetinaOrderExtraPacking extends RetinaAction
 {
-    public function handle(Order $order, array $modelData): Order
+    public function handle(Order $order, array $modelData): void
     {
-        return UpdateOrderExtraPacking::run($order, $modelData);
+        UpdateOrderExtraPacking::run($order, $modelData);
     }
 
     public function authorize(ActionRequest $request): bool
@@ -35,10 +35,10 @@ class UpdateRetinaOrderExtraPacking extends RetinaAction
         ];
     }
 
-    public function asController(Order $order, ActionRequest $request): Order
+    public function asController(Order $order, ActionRequest $request): void
     {
         $this->initialisation($request);
 
-        return $this->handle($order, $this->validatedData);
+        $this->handle($order, $this->validatedData);
     }
 }
