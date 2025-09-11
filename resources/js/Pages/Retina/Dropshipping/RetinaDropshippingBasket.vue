@@ -138,6 +138,7 @@ const props = defineProps<{
             currency_code: string
         }
     }
+    is_unable_dispatch: boolean
 }>()
 const layout = inject('layout', retinaLayoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
@@ -351,6 +352,8 @@ const onChangeExtraPacking = async (val: boolean) => {
         }
     )
 }
+
+console.log('ewew', props.address_management)
 </script>
 
 <template>
@@ -384,6 +387,7 @@ const onChangeExtraPacking = async (val: boolean) => {
         :balance="balance"
         :address_management
         :updateOrderRoute="routes?.update_route"
+        :is_unable_dispatch
     />
 
     <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation"
@@ -511,7 +515,8 @@ const onChangeExtraPacking = async (val: boolean) => {
         </div>
 
 
-        <div class="w-72 pt-5">
+        <!-- Button: Continue to checkout, Place Order -->
+        <div v-if="!is_unable_dispatch || data.data.is_collection" class="w-72 pt-5">
             <!-- Place Order -->
             <template v-if="total_to_pay == 0 && balance > 0">
                 <ButtonWithLink
@@ -545,6 +550,9 @@ const onChangeExtraPacking = async (val: boolean) => {
                 class="w-full"
                 full
             />
+        </div>
+        <div v-else class="w-72 pt-5 text-sm">
+            <div class="text-red-500">*{{ trans("We cannot deliver to :country. Please update the address or contact support.", { country: box_stats?.customer?.addresses?.delivery?.country?.name}) }}</div>
         </div>
     </div>
 

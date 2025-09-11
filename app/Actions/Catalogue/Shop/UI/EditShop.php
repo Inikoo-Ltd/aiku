@@ -264,6 +264,7 @@ class EditShop extends OrgAction
                                 'forbidden_dispatch_countries' => [
                                     'type'          => 'multiselect-tags',
                                     'placeholder'   => __('Select countries'),
+                                    'information'   => __('Customer cannot submit order that delivered to these countries'),
                                     'label'         => __('Forbidden Countries'),
                                     'required'      => true,
                                     'value'         => $result,

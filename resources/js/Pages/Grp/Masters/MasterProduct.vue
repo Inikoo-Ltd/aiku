@@ -68,6 +68,7 @@ const component = computed(() => {
 
 });
 
+console.log(props)
 </script>
 
 

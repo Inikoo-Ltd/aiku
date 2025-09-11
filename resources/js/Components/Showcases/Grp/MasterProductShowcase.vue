@@ -84,7 +84,7 @@ const props = defineProps<{
 console.log(props)
 
 const imagesSetup = ref(
-	props.data.data.images
+	props.data.images
 		.filter(item => item.type === "image")
 		.map(item => ({
 			label: item.label,
@@ -94,10 +94,10 @@ const imagesSetup = ref(
 )
 
 const videoSetup = ref(
-	props.data.data.images.find(item => item.type === "video") || null
+	props.data.images.find(item => item.type === "video") || null
 )
 
-const images = computed(() => props.data.data?.images ?? [])
+const images = computed(() => props.data?.images ?? [])
 
 
 const validImages = computed(() =>
@@ -138,6 +138,6 @@ const validImages = computed(() =>
 			</div>
 		</div>
 		<!-- tradeUnit Summary -->
-		<ProductSummary :data="data.data" :video="videoSetup?.url" />
+		<ProductSummary :data="data.masterProduct" :video="videoSetup?.url" />
 	</div>
 </template>

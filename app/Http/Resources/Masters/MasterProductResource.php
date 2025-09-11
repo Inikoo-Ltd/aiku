@@ -46,7 +46,6 @@ class MasterProductResource extends JsonResource
             'description'           => $this->description,
             'description_title'     => $this->description_title,
             'description_extra'     => $this->description_extra,
-            'images'               => $this->image_id ? $this->getImagesData($masterAsset) : ImageResource::collection($masterAsset->images)->resolve(),
             'trade_units'           => TradeUnitsForMasterResource::collection($this->tradeUnits)->resolve(),
             'name_i8n'              => $this->getTranslations('name_i8n'),
             'description_i8n'       => $this->getTranslations('description_i8n'),
