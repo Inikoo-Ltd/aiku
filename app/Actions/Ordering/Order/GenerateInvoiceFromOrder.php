@@ -161,11 +161,12 @@ class GenerateInvoiceFromOrder extends OrgAction
         $pickings = [];
         foreach ($transaction->deliveryNoteItems as $deliveryNoteItem) {
             if ($deliveryNoteItem->quantity_required == 0) {
-                $pickings[] = 1;
+                $ratioOfPicking =1;
+            }else{
+                $ratioOfPicking = $deliveryNoteItem->quantity_picked / $deliveryNoteItem->quantity_required;
             }
-
-            $ratioOfPicking = $deliveryNoteItem->quantity_picked / $deliveryNoteItem->quantity_required;
             $pickings[]     = $ratioOfPicking;
+
         }
         if (empty($pickings)) {
             //to check this or I will reget
