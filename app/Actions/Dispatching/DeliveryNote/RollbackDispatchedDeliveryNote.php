@@ -1,0 +1,44 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Tue, 20 Jun 2023 20:33:11 Malaysia Time, Pantai Lembeng, Bali, Indonesia
+ * Copyright (c) 2023, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\Dispatching\DeliveryNote;
+
+use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
+use App\Actions\OrgAction;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
+use App\Models\Dispatching\DeliveryNote;
+use Lorisleiva\Actions\ActionRequest;
+
+class RollbackDispatchedDeliveryNote extends OrgAction
+{
+    public function handle(DeliveryNote $deliveryNote): void
+    {
+        UpdateDeliveryNote::make()->action($deliveryNote, [
+            'state' => $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT ? DeliveryNoteStateEnum::PACKED : DeliveryNoteStateEnum::FINALISED,
+            'dispatched_at' => null,
+        ]);
+
+        foreach ($deliveryNote->deliveryNoteItems as $item) {
+            if ($item->state == DeliveryNoteItemStateEnum::DISPATCHED) {
+                UpdateDeliveryNoteItem::make()->action($item, [
+                    'state' => $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT ? DeliveryNoteItemStateEnum::PACKED : DeliveryNoteItemStateEnum::FINALISED,
+                    'dispatched_at' => null,
+                ]);
+            }
+        }
+    }
+
+    public function asController(DeliveryNote $deliveryNote, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($deliveryNote->shop, $request);
+
+        $this->handle($deliveryNote);
+    }
+}

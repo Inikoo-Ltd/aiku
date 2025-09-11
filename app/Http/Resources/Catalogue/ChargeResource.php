@@ -32,7 +32,8 @@ class ChargeResource extends JsonResource
             'created_at'    => $charge->created_at,
             'updated_at'    => $charge->updated_at,
             'amount'        => $amount,
-            'currency_code' => $charge->shop->currency->code
+            'currency_code' => $charge->shop->currency->code,
+            'settings'      => $charge->settings
         ];
     }
 }

@@ -66,11 +66,11 @@ function getMargin(item: ProductItem) {
     const cost = Number(item.product?.org_cost);
 
     if (isNaN(p) || p === 0) return 0.000;
-    if (isNaN(cost) || cost === 0) {
-        return p > 0 ? 100.000 : 0.000;
-    }
-    return Number((((p - cost) / cost) * 100).toFixed());
+    if (isNaN(cost) || cost === 0) return 100.000;
+
+    return Number((((p - cost) / p) * 100).toFixed(1));
 }
+
 
 // computed for "check all"
 const allChecked = computed({

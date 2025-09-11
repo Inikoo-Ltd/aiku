@@ -93,6 +93,8 @@ class StoreMasterAsset extends OrgAction
             return ModelHydrateSingleTradeUnits::run($masterAsset);
         });
 
+        CloneMasterAssetImagesFromTradeUnits::run($masterAsset);
+
         GroupHydrateMasterAssets::dispatch($parent->group)->delay($this->hydratorsDelay);
         MasterShopHydrateMasterAssets::dispatch($masterAsset->masterShop)->delay($this->hydratorsDelay);
         if ($masterAsset->masterdepartment) {
@@ -177,7 +179,10 @@ class StoreMasterAsset extends OrgAction
             'variant_is_visible'       => ['sometimes', 'required', 'boolean'],
             'trade_units'              => ['sometimes', 'array', 'nullable'],
             'type'                     => ['required', Rule::enum(MasterAssetTypeEnum::class)],
-            'shop_products'            => ['sometimes', 'array']
+            'shop_products'            => ['sometimes', 'array'],
+            'units'                  => ['sometimes'],
+            'description_title'      => ['sometimes', 'string'],
+            'description_extra'      => ['sometimes', 'string'],
 
         ];
 

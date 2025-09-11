@@ -68,7 +68,11 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
             $orgStocksData['shop_cost']     = round($orgStocksData['org_cost'] * GetCurrencyExchange::run($shop->organisation->currency, $shop->currency), 2);
             $orgStocksData['price']         = round($orgStocksData['shop_cost'] * $shop->cost_price_ratio, 2);
             $orgStocksData['rrp']           = round($orgStocksData['price'] * 2.4, 2);
-
+            $orgStocksData['gross_weight']  = $tradeUnits[0]['model']->gross_weight * $tradeUnits[0]['quantity'];
+            $organisationsData['images'] = $shop->organisation->media->map(fn($media) => [
+                'id'  => $media->id,
+                'url' => $media->getUrl()
+            ]);
             $orgStocksData['margin'] = ($orgStocksData['price'] > 0)
                 ? round((($orgStocksData['price'] - $orgStocksData['shop_cost']) / $orgStocksData['price']) * 100, 2)
                 : null;
