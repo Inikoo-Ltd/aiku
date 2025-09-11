@@ -17,7 +17,6 @@ import { routeType } from "@/types/route";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { onMounted, onUnmounted, ref, inject } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import { Invoice } from "@/types/invoice";
 import { RouteParams } from "@/types/route-params";
@@ -26,7 +25,7 @@ import { RouteParams } from "@/types/route-params";
 library.add(faOctopusDeploy, faConciergeBell, faGarage, faExclamationTriangle, faPencil);
 
 
-const props = defineProps<{
+defineProps<{
     data: {}
     tab?: string,
     routes: {
@@ -45,6 +44,7 @@ function productRoute(product: Product) {
     if (!product.slug) {
         return ''
     }
+
     switch (route().current()) {
         case "grp.org.shops.show.catalogue.products.current_products.index":
             return route(
@@ -169,7 +169,12 @@ function productRoute(product: Product) {
                 "grp.org.shops.show.catalogue.products.current_products.show",
                 [product.organisation_slug, product.shop_slug, product.slug]);
         default:
-            return '';
+            return route(
+                "grp.helpers.redirect_asset",
+                [product.asset_id]);
+
+
+
     }
 }
 
