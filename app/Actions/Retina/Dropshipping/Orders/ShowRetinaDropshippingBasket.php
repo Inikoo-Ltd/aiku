@@ -68,6 +68,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
         $nonProductItems = NonProductItemsResource::collection(IndexNonProductItems::run($order));
 
         $premiumDispatch = $order->shop->charges()->where('type', ChargeTypeEnum::PREMIUM)->where('state', ChargeStateEnum::ACTIVE)->first();
+        $extraPacking    = $order->shop->charges()->where('type', ChargeTypeEnum::PACKING)->where('state', ChargeStateEnum::ACTIVE)->first();
 
         return Inertia::render(
             'Dropshipping/RetinaDropshippingBasket',
@@ -185,6 +186,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
 
 
                 'premium_dispatch' => $premiumDispatch ? ChargeResource::make($premiumDispatch)->toArray(request()) : null,
+                'extra_packing'   => $extraPacking ? ChargeResource::make($extraPacking)->toArray(request()) : null,
 
                 'box_stats'      => $this->getDropshippingBasketBoxStats($order),
                 'currency'       => CurrencyResource::make($order->currency)->toArray(request()),
@@ -195,8 +197,8 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                 'total_products' => $order->transactions->whereIn('model_type', ['Product', 'Service'])->count(),
 
                 BasketTabsEnum::TRANSACTIONS->value => $this->tab == BasketTabsEnum::TRANSACTIONS->value ?
-                    fn () => RetinaTransactionsInBasketResource::collection(IndexIndexTransactionsInBasket::run(order: $order, prefix: BasketTabsEnum::TRANSACTIONS->value))
-                    : Inertia::lazy(fn () => RetinaTransactionsInBasketResource::collection(IndexIndexTransactionsInBasket::run(order: $order, prefix: BasketTabsEnum::TRANSACTIONS->value))),
+                    fn() => RetinaTransactionsInBasketResource::collection(IndexIndexTransactionsInBasket::run(order: $order, prefix: BasketTabsEnum::TRANSACTIONS->value))
+                    : Inertia::lazy(fn() => RetinaTransactionsInBasketResource::collection(IndexIndexTransactionsInBasket::run(order: $order, prefix: BasketTabsEnum::TRANSACTIONS->value))),
 
 
             ]
