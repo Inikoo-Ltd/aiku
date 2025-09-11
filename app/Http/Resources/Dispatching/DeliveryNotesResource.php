@@ -66,6 +66,10 @@ class DeliveryNotesResource extends JsonResource
             'has_extra_packing'      => $this->has_extra_packing,
             'picking_sessions_count' => $this->picking_sessions_count,
             'picking_session_ids'    => $this->picking_session_ids,
+            'customer_notes'         => $this->customer_notes,
+            'internal_notes'         => $this->internal_notes,
+            'public_notes'           => $this->public_notes,
+            'shipping_notes'        => $this->shipping_notes,
             'employee_pick_route'    => [
                 'name'       => 'grp.models.delivery_note.employee.pick',
                 'parameters' => [

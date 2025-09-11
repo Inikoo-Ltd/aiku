@@ -141,6 +141,10 @@ trait IsDeliveryNotesIndex
                 'shops.slug as shop_slug',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
+                'delivery_notes.customer_notes',
+                'delivery_notes.internal_notes',
+                'delivery_notes.public_notes',
+                'delivery_notes.shipping_notes',
             ])
             ->selectSub($pickingSessionsCountSubquery, 'picking_sessions_count')
             ->selectSub($pickingSessionIdsSubquery, 'picking_session_ids')
