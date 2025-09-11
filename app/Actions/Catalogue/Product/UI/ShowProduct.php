@@ -139,12 +139,12 @@ class ShowProduct extends OrgAction
             $family = [
                 'label'   => $product->family->code,
                 'tooltip' => $product->family->code,
-                 'name'   => $product->family->name,
+                'name'    => $product->family->name,
                 'route'   => match ($routeName) {
                     'grp.org.shops.show.catalogue.departments.show.families.show.products.show' => [
                         'name'       => 'grp.org.shops.show.catalogue.departments.show.families.show',
                         'parameters' => [
-                            'organisation' => $this->parent->slug,
+                            'organisation' => $product->organisation->slug,
                             'shop'         => $product->shop->slug,
                             'department'   => $product->family->department->slug,
                             'family'       => $product->family->slug
@@ -154,7 +154,7 @@ class ShowProduct extends OrgAction
                     default => [
                         'name'       => 'grp.org.shops.show.catalogue.families.show',
                         'parameters' => [
-                            'organisation' => $this->parent->slug,
+                            'organisation' => $product->organisation->slug,
                             'shop'         => $product->shop->slug,
                             'family'       => $product->family->slug
                         ]
@@ -168,7 +168,7 @@ class ShowProduct extends OrgAction
         if ($product->department) {
             $department = [
                 'label'   => $product->department->code,
-                'name'   => $product->department->name,
+                'name'    => $product->department->name,
                 'tooltip' => $product->department->name,
                 'route'   => [
                     'name'       => 'grp.org.shops.show.catalogue.departments.show',
@@ -191,7 +191,6 @@ class ShowProduct extends OrgAction
 
     public function htmlResponse(Product $product, ActionRequest $request): Response
     {
-
         $hasMaster = $product->master_product_id;
 
         return Inertia::render(
@@ -219,16 +218,16 @@ class ShowProduct extends OrgAction
                     'afterTitle' => [
                         'label' => $product->name
                     ],
-                    'iconRight' => $product->state->stateIcon()[$product->state->value],
+                    'iconRight'  => $product->state->stateIcon()[$product->state->value],
                     'actions'    => [
                         $product->webpage
                             ?
                             [
-                                'type'    => 'button',
-                                'style'   => 'edit',
-                                'label'   => __('Webpage'),
-                                'icon'    => ["fal", "fa-browser"],
-                                'route'   => [
+                                'type'  => 'button',
+                                'style' => 'edit',
+                                'label' => __('Webpage'),
+                                'icon'  => ["fal", "fa-browser"],
+                                'route' => [
                                     'name'       => 'grp.org.shops.show.web.webpages.show',
                                     'parameters' => [
                                         'organisation' => $this->organisation->slug,
@@ -254,7 +253,7 @@ class ShowProduct extends OrgAction
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
-                            'label'   => __('Edit'),
+                            'label' => __('Edit'),
                             'route' => [
                                 'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
@@ -263,11 +262,11 @@ class ShowProduct extends OrgAction
 
                     ]
                 ],
-                'master' => $hasMaster,
+                'master'      => $hasMaster,
                 'masterRoute' => $hasMaster ? [
-                    'name' => 'grp.masters.master_shops.show.master_products.show',
+                    'name'       => 'grp.masters.master_shops.show.master_products.show',
                     'parameters' => [
-                        'masterShop' => $product->masterProduct->masterShop->slug,
+                        'masterShop'    => $product->masterProduct->masterShop->slug,
                         'masterProduct' => $product->masterProduct->slug
                     ]
                 ] : [],
@@ -279,34 +278,33 @@ class ShowProduct extends OrgAction
 
 
                 ProductTabsEnum::SHOWCASE->value => $this->tab == ProductTabsEnum::SHOWCASE->value ?
-                    fn () => GetProductShowcase::run($product)
-                    : Inertia::lazy(fn () => GetProductShowcase::run($product)),
-
+                    fn() => GetProductShowcase::run($product)
+                    : Inertia::lazy(fn() => GetProductShowcase::run($product)),
 
 
                 ProductTabsEnum::FAVOURITES->value => $this->tab == ProductTabsEnum::FAVOURITES->value ?
-                    fn () => ProductFavouritesResource::collection(IndexProductFavourites::run($product))
-                    : Inertia::lazy(fn () => ProductFavouritesResource::collection(IndexProductFavourites::run($product))),
+                    fn() => ProductFavouritesResource::collection(IndexProductFavourites::run($product))
+                    : Inertia::lazy(fn() => ProductFavouritesResource::collection(IndexProductFavourites::run($product))),
 
                 ProductTabsEnum::REMINDERS->value => $this->tab == ProductTabsEnum::REMINDERS->value ?
-                    fn () => ProductBackInStockRemindersResource::collection(IndexProductBackInStockReminders::run($product))
-                    : Inertia::lazy(fn () => ProductBackInStockRemindersResource::collection(IndexProductBackInStockReminders::run($product))),
+                    fn() => ProductBackInStockRemindersResource::collection(IndexProductBackInStockReminders::run($product))
+                    : Inertia::lazy(fn() => ProductBackInStockRemindersResource::collection(IndexProductBackInStockReminders::run($product))),
 
                 ProductTabsEnum::TRADE_UNITS->value => $this->tab == ProductTabsEnum::TRADE_UNITS->value ?
-                    fn () => TradeUnitsResource::collection(IndexTradeUnitsInProduct::run($product))
-                    : Inertia::lazy(fn () => TradeUnitsResource::collection(IndexTradeUnitsInProduct::run($product))),
+                    fn() => TradeUnitsResource::collection(IndexTradeUnitsInProduct::run($product))
+                    : Inertia::lazy(fn() => TradeUnitsResource::collection(IndexTradeUnitsInProduct::run($product))),
 
                 ProductTabsEnum::STOCKS->value => $this->tab == ProductTabsEnum::STOCKS->value ?
-                    fn () => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))
-                    : Inertia::lazy(fn () => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))),
+                    fn() => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))
+                    : Inertia::lazy(fn() => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))),
 
                 ProductTabsEnum::IMAGES->value => $this->tab == ProductTabsEnum::IMAGES->value ?
-                    fn () => GetProductImagesShowcase::run($product)
-                    : Inertia::lazy(fn () => GetProductImagesShowcase::run($product)),
+                    fn() => GetProductImagesShowcase::run($product)
+                    : Inertia::lazy(fn() => GetProductImagesShowcase::run($product)),
 
                 ProductTabsEnum::HISTORY->value => $this->tab == ProductTabsEnum::HISTORY->value ?
-                                    fn () => HistoryResource::collection(IndexHistory::run($product))
-                                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($product))),
+                    fn() => HistoryResource::collection(IndexHistory::run($product))
+                    : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run($product))),
 
 
             ]
