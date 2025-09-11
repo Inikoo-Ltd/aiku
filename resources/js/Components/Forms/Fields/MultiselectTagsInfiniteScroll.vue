@@ -1,14 +1,11 @@
 <script setup lang="ts">
 import MultiSelect from 'primevue/multiselect'
-import { onMounted, ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { trans } from 'laravel-vue-i18n'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { notify } from '@kyvg/vue3-notification'
 import Tag from '@/Components/Tag.vue'
-import axios from 'axios'
-import { routeType } from '@/types/route'
 import { faPlus } from '@fas'
 import { faTrashAlt } from '@fal'
 
@@ -18,46 +15,35 @@ const props = defineProps<{
     form: any
     fieldName: string
     fieldData?: {
-        options_routes?: {
-            index_tag: routeType
-            store_tag: routeType
-            update_tag: routeType
-        }
-        tags: {}[]
+        options?: any[] | Record<string, any>
+        labelProp?: string
+        valueProp?: string
+        placeholder?: string
     }
 }>()
 
-// Modal create new tag
+// Modal ref
 const _multiselect_tags = ref(null)
 
+// Normalisasi options → selalu array
+const normalizedOptions = computed(() => {
+    const opts = props.fieldData?.options
+    const labelProp = props.fieldData?.labelProp || 'name'
+    const valueProp = props.fieldData?.valueProp || 'id'
 
-// Fetch tags
-const isLoadingMultiselect = ref(false)
-const optionsList = ref<any[]>([])
+    if (!opts) return []
 
-const fetchProductList = async (url?: string) => {
-    isLoadingMultiselect.value = true
-    const urlToFetch =
-        url ||
-        route(
-            props.fieldData?.options_routes.name,
-            props.fieldData?.options_routes.parameters
-        )
+    // Sudah array
+    if (Array.isArray(opts)) return opts
 
-    try {
-        const res = await axios.get(urlToFetch)
-        optionsList.value = res?.data?.data
-    } catch {
-        notify({
-            title: trans('Something went wrong.'),
-            text: trans('Failed to fetch tag list'),
-            type: 'error',
-        })
-    }
-    isLoadingMultiselect.value = false
-}
+    // Kalau object, ubah jadi array
+    return Object.keys(opts).map(key => ({
+        [valueProp]: opts[key][valueProp],
+        [labelProp]: opts[key][labelProp],
+    }))
+})
 
-// Attach/Detach tags directly on parent form
+// Attach/Detach options langsung di parent form
 const formSelectedTags = computed({
     get: () => props.form[props.fieldName] || [],
     set: (val) => {
@@ -65,59 +51,64 @@ const formSelectedTags = computed({
     },
 })
 
-watch(
-    () => props.fieldData?.tags,
-    (newTags) => {
-        optionsList.value = newTags || []
-    }
-)
-
-
-
-// Utility: find tag by ID safely
-const findTagById = (id: number) => {
-    return optionsList.value.find((t) => t.id === id)
+// Cari option by ID
+const findTagById = (id: number | string) => {
+    const valueProp = props.fieldData?.valueProp || 'id'
+    return normalizedOptions.value.find((t) => String(t[valueProp]) === String(id))
 }
-
-onMounted(() => {
-    fetchProductList()
-})
 </script>
 
 <template>
     <div class="w-full max-w-md py-4">
-        <!-- Tags list (sync with form value) -->
+        <!-- Selected tags -->
         <div v-if="formSelectedTags.length" class="flex flex-wrap mb-2 gap-x-2 gap-y-1">
-            <Tag v-for="tagId in formSelectedTags" :key="tagId" :label="findTagById(tagId)?.name" stringToColor
-                style="cursor: pointer">
+            <Tag
+                v-for="tagId in formSelectedTags"
+                :key="tagId"
+                :label="findTagById(tagId)?.[fieldData?.labelProp || 'name']"
+                stringToColor
+                style="cursor: pointer"
+            >
                 <template #closeButton>
-                    <div @click="formSelectedTags = formSelectedTags.filter((id) => id !== tagId)"
-                        class="cursor-pointer bg-white/60 hover:bg-black/10 px-1 text-red-500 rounded-sm">
+                    <div
+                        @click="formSelectedTags = formSelectedTags.filter((id) => id !== tagId)"
+                        class="cursor-pointer bg-white/60 hover:bg-black/10 px-1 text-red-500 rounded-sm"
+                    >
                         <FontAwesomeIcon icon="fal fa-trash-alt" class="text-xs" aria-hidden="true" />
                     </div>
                 </template>
             </Tag>
         </div>
 
-        <!-- Multiselect tags -->
-        <div v-if="props.fieldData?.options_routes?.name" class="w-full max-w-64">
-            <MultiSelect ref="_multiselect_tags" v-model="formSelectedTags"
-                :options="optionsList.length ? optionsList : props.fieldData?.tags" optionLabel="name" optionValue="id"
-                placeholder="Select Tags" :maxSelectedLabels="3" filter class="w-full md:w-80">
-                <template #footer="{ value, options }">
-                    <div v-if="isLoadingMultiselect"
-                        class="absolute inset-0 bg-black/30 rounded flex justify-center items-center text-white text-4xl">
-                        <LoadingIcon></LoadingIcon>
-                    </div>
-                    <div
-                        class="cursor-pointer border-t border-gray-300 p-2 flex flex-col gap-y-2 justify-center items-center text-center">
-                        <Button @click="() => (_multiselect_tags?.hide())"
-                            :label="formSelectedTags.isDirty ? trans('Save and close') : trans('Close')"
-                            xicon="fas fa-plus" full :key="`${formSelectedTags.isDirty}`"
-                            :type="formSelectedTags.isDirty ? 'secondary' : 'tertiary'" />
+        <!-- Multiselect -->
+        <div v-if="normalizedOptions.length" class="w-full max-w-64">
+            <MultiSelect
+                ref="_multiselect_tags"
+                v-model="formSelectedTags"
+                :options="normalizedOptions"
+                :optionLabel="fieldData?.labelProp || 'name'"
+                :optionValue="fieldData?.valueProp || 'id'"
+                :placeholder="fieldData?.placeholder || trans('Select Tags')"
+                :maxSelectedLabels="3"
+                filter
+                class="w-full md:w-80"
+            >
+                <template #footer>
+                    <div class="cursor-pointer border-t border-gray-300 p-2 flex justify-center items-center text-center">
+                        <Button
+                            @click="() => (_multiselect_tags?.hide())"
+                            :label="trans('Close')"
+                            full
+                            type="tertiary"
+                        />
                     </div>
                 </template>
             </MultiSelect>
+        </div>
+
+        <!-- Empty state -->
+        <div v-else class="text-gray-400 text-sm italic">
+            {{ trans('No options available') }}
         </div>
     </div>
 </template>

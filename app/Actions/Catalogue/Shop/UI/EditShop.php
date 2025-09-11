@@ -252,15 +252,15 @@ class EditShop extends OrgAction
                             'fields' => [
                                 'forbidden_dispatch_countries' => [
                                     'type'          => 'multiselect-tags',
-                                    'label'         => __('Forbidden Countries'),
                                     'placeholder'   => __('Select countries'),
+                                    'label'         => __('Forbidden Countries'),
                                     'required'      => true,
                                     'value'         => array_merge($shop->organisation->forbidden_dispatch_countries ?? [], $shop->forbidden_dispatch_countries ?? []),
                                     'options'       => GetCountriesOptions::run(),
                                     'searchable'    => true,
                                     'mode'          => 'tags',
                                     'labelProp'     => 'label',
-                                    'valueProp' => 'id'
+                                    'valueProp'     => 'id'
                                 ]
                             ],
                         ],
