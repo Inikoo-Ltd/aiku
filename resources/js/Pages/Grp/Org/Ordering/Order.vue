@@ -753,7 +753,7 @@ const toggleElipsis = (e: Event) => {
 
         <template #button-replacement="{ action }">
             <Button @click="() =>onCreateReplacement(action)" :label="trans('Replacement')" xsize="xs" type="secondary"
-                icon="fal fa-plus" key="1" :disabled="replacementLoading"
+                icon="fal fa-plus" key="1" :disabled="replacementLoading" :loading="replacementLoading"
                 v-tooltip="trans('Create replacement')" />
         </template>
     </PageHeading>
