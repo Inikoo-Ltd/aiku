@@ -57,6 +57,10 @@ import TableProductList from '@/Components/Tables/Grp/Helpers/TableProductList.v
 import {faSpinnerThird} from '@far'
 import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
 import DropshippingSummaryBasket from '@/Components/Retina/Dropshipping/DropshippingSummaryBasket.vue'
+import { inject } from 'vue'
+import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
+import { ToggleSwitch } from 'primevue'
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird)
 
@@ -78,7 +82,6 @@ const props = defineProps<{
         }
     }
     pageHead: PageHeadingTypes
-    order: {}
     // upload_spreadsheet: UploadPallet
 
     box_stats: {
@@ -120,9 +123,6 @@ const props = defineProps<{
 
     transactions: {}
     currency: Currency
-    delivery_notes: {
-        data: Array<any>
-    }
 
     attachments?: {}
     invoices?: {}
@@ -134,7 +134,8 @@ const props = defineProps<{
     address_management: AddressManagement
     total_products: number
 }>()
-
+console.log('prozps', props)
+const layout = inject('layout', retinaLayoutStructure)
 
 const isModalUploadOpen = ref(false)
 const isModalProductListOpen = ref(false)
@@ -263,6 +264,47 @@ const onNoStructureUpload = () => {
 
 console.log('basket ds', props)
 
+const isLoadingPriorityDispatch = ref(false)
+const onChangePriorityDispatch = async (val: boolean) => {
+    router.patch(
+        route('retina.models.order.update_premium_dispatch', props.data.data?.id),
+        {
+            is_premium_dispatch: val
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingPriorityDispatch.value = true
+            },
+            onSuccess: () => {
+                if (val) {
+                    notify({
+                        title: trans("Success"),
+                        text: trans("The order is changed to priority dispatch!"),
+                        type: "success"
+                    })
+                } else {
+                    notify({
+                        title: trans("Success"),
+                        text: trans("The order is no longer on priority dispatch."),
+                        type: "success"
+                    })
+                }
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to update priority dispatch, try again."),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingPriorityDispatch.value = false
+            },
+        }
+    )
+}
 </script>
 
 <template>
@@ -311,6 +353,29 @@ console.log('basket ds', props)
                    :modalOpen="isModalUploadOpen"
                    :action="currentAction"
                    @update:tab="handleTabUpdate"/>
+
+        <!-- Section: Priority Dispatch -->
+        <div v-if="layout.app.environment === 'local'" class="flex gap-4 my-4 justify-end pr-6">
+            <div class="px-2 flex justify-end relative" :class="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
+                {{ trans("For the same day dispatch of your order before 12pm") }} <span class="hidden">(£7.50)</span>
+            </div>
+
+            <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
+                <ToggleSwitch
+                    :modelValue="data?.data?.is_premium_dispatch"
+                    @update:modelValue="(e) => (onChangePriorityDispatch(e))"
+                    xdisabled="isLoadingPriorityDispatch"
+                >
+                    <template #handle="{ checked }">
+                        <LoadingIcon v-if="isLoadingPriorityDispatch" xclass="text-sm text-gray-500" />
+                        <template v-else>
+                            <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
+                            <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
+                        </template>
+                    </template>
+                </ToggleSwitch>
+            </div>
+        </div>
     </div>
 
     <div v-if="total_products > 0" class="flex justify-end px-6 gap-x-4">
