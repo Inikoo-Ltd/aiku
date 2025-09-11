@@ -14,12 +14,17 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Dispatching\DeliveryNote;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class RollbackDispatchedDeliveryNote extends OrgAction
 {
     public function handle(DeliveryNote $deliveryNote): void
     {
+        if ($deliveryNote->orders?->first()?->invoices?->count()) {
+            throw ValidationException::withMessages(['message' => __('You need to delete invoice before rollback the delivery notes')]);
+        }
+
         UpdateDeliveryNote::make()->action($deliveryNote, [
             'state' => $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT ? DeliveryNoteStateEnum::PACKED : DeliveryNoteStateEnum::FINALISED,
             'dispatched_at' => null,
