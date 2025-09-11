@@ -256,9 +256,6 @@ const onCreateReplacement = (action: any) => {
             <Button @click="() => onCreateReplacement(action)" :label="action.label" :icon="action.icon"
                 :type="action.type" :disabled="isReplacementDisabled" :loading="loadingCreateReplacement" />
         </template>
-        <template #otherBefore>
-            <Button type="secondary" :label="trans('Replace All')" @click="onReplaceAll" />
-        </template>
     </PageHeading>
 
     <div v-if="alert?.status" class="p-2 pb-0">
@@ -295,7 +292,7 @@ const onCreateReplacement = (action: any) => {
 
 
     <BoxStatsDeliveryNote v-if="box_stats" :boxStats="box_stats" :routes :deliveryNote="delivery_note"
-        :updateRoute="routes.update" :shipments />
+        :updateRoute="routes.update" :shipments @replace-all="onReplaceAll" />
 
     <Tabs :current="currentTab" :navigation="tabs?.navigation" @update:tab="handleTabUpdate" />
 

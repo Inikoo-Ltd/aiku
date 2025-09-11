@@ -12,8 +12,9 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Helpers\Media;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Sentry;
 
-class MediaHydrateDimension implements ShouldBeUnique
+class MediaHydrateDimensions implements ShouldBeUnique
 {
     use AsAction;
     use WithActionUpdate;
@@ -25,9 +26,13 @@ class MediaHydrateDimension implements ShouldBeUnique
 
     public function handle(Media $media): void
     {
-        $path = $media->getPath();
-        list($width, $height) = getimagesize($path);
-        $this->update($media, ['width' => $width, 'height' => $height]);
+        try {
+            $path = $media->getPath();
+            list($width, $height) = getimagesize($path);
+            $this->update($media, ['width' => $width, 'height' => $height]);
+        } catch (\Exception $e) {
+            Sentry::captureException($e);
+        }
     }
 
 

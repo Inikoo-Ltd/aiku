@@ -148,7 +148,7 @@ function customerRoute(order: Order) {
       </Link>
       
       <FontAwesomeIcon v-if="order.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" icon="fas fa-star" class="text-yellow-500" fixed-width aria-hidden="true" />
-
+      <FontAwesomeIcon v-if="order.has_extra_packing" v-tooltip="trans('Extra packing')" icon="fal fa-box-heart" class="text-yellow-500" fixed-width aria-hidden="true" />
     </template>
 
     <template #cell(customer_name)="{ item: order }">

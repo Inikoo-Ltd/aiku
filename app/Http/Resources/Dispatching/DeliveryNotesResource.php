@@ -63,8 +63,13 @@ class DeliveryNotesResource extends JsonResource
             'organisation_slug'      => $this->organisation_slug,
             'shop_name'              => $this->shop_name,
             'is_premium_dispatch'    => $this->is_premium_dispatch,
+            'has_extra_packing'      => $this->has_extra_packing,
             'picking_sessions_count' => $this->picking_sessions_count,
             'picking_session_ids'    => $this->picking_session_ids,
+            'customer_notes'         => $this->customer_notes,
+            'internal_notes'         => $this->internal_notes,
+            'public_notes'           => $this->public_notes,
+            'shipping_notes'        => $this->shipping_notes,
             'employee_pick_route'    => [
                 'name'       => 'grp.models.delivery_note.employee.pick',
                 'parameters' => [

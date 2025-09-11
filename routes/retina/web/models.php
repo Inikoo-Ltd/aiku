@@ -56,6 +56,7 @@ use App\Actions\Retina\Dropshipping\Orders\Transaction\StoreRetinaEcomBasketTran
 use App\Actions\Retina\Dropshipping\Orders\Transaction\StoreRetinaTransaction;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\UpdateRetinaTransaction;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrder;
+use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderExtraPacking;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderPremiumDispatch;
 use App\Actions\Retina\Dropshipping\Portfolio\BatchDeleteRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Portfolio\DeleteRetinaPortfolio;
@@ -206,6 +207,7 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
 Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::patch('/', UpdateRetinaOrder::class)->name('update');
     Route::patch('update-premium-dispatch', UpdateRetinaOrderPremiumDispatch::class)->name('update_premium_dispatch');
+    Route::patch('update-extra-packing', UpdateRetinaOrderExtraPacking::class)->name('update_extra_packing');
     Route::delete('delete-basket', DeleteRetinaBasket::class)->name('delete_basket');
     Route::patch('submit', SubmitRetinaOrder::class)->name('submit');
     Route::patch('pay-with-balance', PayRetinaOrderWithBalance::class)->name('pay_with_balance');
