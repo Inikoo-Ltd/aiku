@@ -85,6 +85,11 @@ class ShowCharge extends OrgAction
                         'navigation' => ChargeTabsEnum::navigation()
 
                     ],
+
+                    ChargeTabsEnum::SHOWCASE->value => $this->tab == ChargeTabsEnum::SHOWCASE->value ?
+                    fn () => GetChargeShowcase::make($charge)
+                    : Inertia::lazy(fn () => GetChargeShowcase::make($charge)),
+
             ]
         );
     }

@@ -5,17 +5,16 @@
 
 <script setup lang="ts">
 import { router, useForm } from "@inertiajs/vue3";
-import { ref, computed, inject, toRaw } from "vue";
+import { ref, computed, inject } from "vue";
 import Drawer from "primevue/drawer";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import PureInput from "@/Components/Pure/PureInput.vue";
-import ListSelector from "@/Components/ListSelector.vue";
 import { trans } from "laravel-vue-i18n";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { routeType } from "@/types/route";
-import { InputNumber, Textarea } from "primevue";
-import TableSetPriceProduct from "@/Components/TableSetPriceProduct.vue";
+import {Textarea } from "primevue";
 import axios from "axios";
+import SideEditorInputHTML from "@/Components/CMS/Fields/SideEditorInputHTML.vue";
 
 
 import { faChevronUp, faChevronDown } from "@far";
@@ -85,7 +84,6 @@ const submitForm = async (redirect = true) => {
 
             }))
         } else {
-            console.log(props.shopsData)
             tableData.value.data = cloneDeep(props.shopsData.data);
             form.reset()
             key.value = ulid()
@@ -184,7 +182,7 @@ console.log(props)
                     <!-- Description: Title -->
                     <div class="col-span-2">
                         <label class="font-medium block mb-1 text-sm">Description Title</label>
-                        <Textarea rows="3" v-model="form.description_title" @update:model-value="form.errors.description_title = null"
+                        <PureInput  v-model="form.description_title" @update:model-value="form.errors.description_title = null"
                             class="w-full" />
                         <small v-if="form.errors.description_title" class="text-red-500 text-xs flex items-center gap-1 mt-1">
                             <FontAwesomeIcon :icon="faExclamationCircle" />
@@ -195,7 +193,7 @@ console.log(props)
                     <!-- Description -->
                     <div class="col-span-2">
                         <label class="font-medium block mb-1 text-sm">Description</label>
-                        <Textarea rows="3" v-model="form.description" @update:model-value="form.errors.description = null"
+                        <SideEditorInputHTML rows="3" v-model="form.description" @update:model-value="form.errors.description = null"
                             class="w-full" />
                         <small v-if="form.errors.description" class="text-red-500 text-xs flex items-center gap-1 mt-1">
                             <FontAwesomeIcon :icon="faExclamationCircle" />
@@ -206,7 +204,7 @@ console.log(props)
                     <!-- Description: Extra -->
                     <div class="col-span-2">
                         <label class="font-medium block mb-1 text-sm">Description Extra</label>
-                        <Textarea rows="3" v-model="form.description_extra" @update:model-value="form.errors.description_extra = null"
+                        <SideEditorInputHTML rows="3" v-model="form.description_extra" @update:model-value="form.errors.description_extra = null"
                             class="w-full" />
                         <small v-if="form.errors.description_extra" class="text-red-500 text-xs flex items-center gap-1 mt-1">
                             <FontAwesomeIcon :icon="faExclamationCircle" />
