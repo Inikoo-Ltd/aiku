@@ -380,7 +380,6 @@ const isModalEbayDuplicate = ref(false)
                 <div class="w-full flex justify-end">
 
                     <Button
-                        v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
                         :label="trans('Connect')"
                         xtype="primary"
                         :type="total_channels?.ebay ? 'tertiary' : 'primary'"
@@ -479,7 +478,7 @@ const isModalEbayDuplicate = ref(false)
                 }"
                 @keydown.enter="() => onCreateStoreShopify()"
             />
-            
+
             <div class="mt-1 text-xs text-gray-500">
                 {{ trans("Not sure which is your Shopify store name?") }} <a href="https://drive.google.com/file/d/1bdq3cQUvc3bussJfIMen5b4P4X-qw0W-/view" target="_blank" class="underline hover:text-gray-700">Click here</a>
             </div>
