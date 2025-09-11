@@ -61,6 +61,7 @@ function orderRoute(order) {
                     {{ item["reference"] }}
                 </Link>
                 <FontAwesomeIcon v-if="item.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" icon="fas fa-star" class="text-yellow-500" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-if="item.has_extra_packing" v-tooltip="trans('Extra packing')" icon="fas fa-box-heart" class="text-yellow-500" fixed-width aria-hidden="true" />
             </template>
 
             <!-- <template #cell(client_name)="{ item }">

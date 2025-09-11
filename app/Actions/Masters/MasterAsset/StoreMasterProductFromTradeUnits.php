@@ -13,7 +13,9 @@ use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterAssets;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
+use App\Actions\Traits\WithAttachMediaToModel;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
+use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Rules\AlphaDashDot;
@@ -26,6 +28,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
 {
     use WithNoStrictRules;
     use WithMastersEditAuthorisation;
+    use WithAttachMediaToModel;
 
     /**
      * @throws \Throwable
@@ -40,6 +43,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
         }
 
 
+
         $masterAsset = DB::transaction(function () use ($parent, $modelData, $tradeUnits, $shopProducts) {
             $data        = [
                 'code'    => Arr::get($modelData, 'code'),
@@ -49,6 +53,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
                 'description_title'       => Arr::get($modelData, 'description_title'),
                 'description_extra'       => Arr::get($modelData, 'description_extra'),
                 'units'                   => Arr::get($modelData, 'units', 1),
+                'marketing_weight'        => Arr::get($modelData, 'marketing_weight', 0),
                 'is_main' => true,
                 'type'    => MasterAssetTypeEnum::PRODUCT,
                 'trade_units'  => $tradeUnits,
@@ -56,6 +61,32 @@ class StoreMasterProductFromTradeUnits extends GrpAction
             ];
 
             $masterAsset = StoreMasterAsset::make()->action($parent, $data);
+
+            if(Arr::has($modelData, 'image')){
+                $medias = UploadImagesToMasterProduct::run($masterAsset, 'image', [
+                    'images' => [
+                        Arr::get($modelData, 'image')
+                    ]
+                ]);
+
+                UpdateMasterProductImages::run($masterAsset, [
+                    'image_id' => Arr::get($medias, '0.id')
+                ]);
+            } else {
+                $tradeUnit = TradeUnit::find(Arr::get($tradeUnits, '0.id'));
+                if ($tradeUnit && $tradeUnit->image) {
+                    $this->attachMediaToModel(
+                        $masterAsset,
+                        $tradeUnit->image,
+                        'image',
+                    );
+
+                    UpdateMasterProductImages::run($masterAsset, [
+                        'image_id' => $tradeUnit->image_id
+                    ]);
+                }
+            }
+
             $masterAsset->refresh();
             return $masterAsset;
         });
@@ -89,6 +120,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
             'description_title'      => ['sometimes', 'string'],
             'description_extra'      => ['sometimes', 'string'],
             'price'                  => ['sometimes', 'numeric', 'min:0'],
+            'marketing_weight'       => ['sometimes', 'numeric', 'min:0'],
             'trade_units'            => [
                 'required',
                 'array'
@@ -103,7 +135,8 @@ class StoreMasterProductFromTradeUnits extends GrpAction
                 'numeric',
                 'min:1'
             ],
-            'shop_products' => ['sometimes', 'array']
+            'shop_products' => ['sometimes', 'array'],
+            'image' => ["sometimes", "mimes:jpg,png,jpeg,gif", "max:50000"]
         ];
     }
 
