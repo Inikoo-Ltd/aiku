@@ -30,15 +30,16 @@ import {
     faArrowTrendDown,
     faTags,
     faMinimize,
-    faExpand
+    faExpand,
+    faXmark,
+    faCamera
 } from "@fortawesome/free-solid-svg-icons";
 import { faChevronUp, faChevronDown } from "@far";
 import { ulid } from "ulid";
 import { notify } from "@kyvg/vue3-notification";
 import { cloneDeep } from "lodash";
-import Image from "./Image.vue";
-import { faCamera } from "@fal";
 import PureInputNumber from "./Pure/PureInputNumber.vue";
+import Image from "./Image.vue";
 
 library.add(
     faShapes,
@@ -52,7 +53,9 @@ library.add(
     faArrowTrendDown,
     faTags,
     faMinimize,
-    faExpand
+    faExpand,
+    faXmark,
+    faCamera
 );
 
 const props = defineProps<{
@@ -83,27 +86,40 @@ const form = useForm({
     trade_units: [],
     image: null,
     shop_products: null,
-    marketing_weight : 0,
-    description : "",
-    description_title : "",
-    description_extra : "",
+    marketing_weight: 0,
+    description: "",
+    description_title: "",
+    description_extra: "",
 });
 
-const getTableData = (data) => {
-    console.log(data)
-    // clear debounce kalau ada
-    if (debounceTimer) {
-        clearTimeout(debounceTimer)
+// Image upload states
+const fileInput = ref<HTMLInputElement | null>(null)
+const previewUrl = ref<string | null>(null)
+
+const chooseImage = () => {
+    fileInput.value?.click()
+}
+
+const previewImage = (e: Event) => {
+    const target = e.target as HTMLInputElement
+    const file = target.files?.[0]
+    if (file) {
+        previewUrl.value = URL.createObjectURL(file)
+        form.image = file // hanya kirim file kalau user pilih
     }
+}
 
-    // set debounce 500ms
+const resetImage = () => {
+    previewUrl.value = null
+    form.image = null
+    if (fileInput.value) fileInput.value.value = ""
+}
+
+const getTableData = (data) => {
+    if (debounceTimer) clearTimeout(debounceTimer)
+
     debounceTimer = setTimeout(async () => {
-        // cancel request sebelumnya kalau masih jalan
-        if (abortController) {
-            abortController.abort()
-        }
-
-        // bikin abortController baru
+        if (abortController) abortController.abort()
         abortController = new AbortController()
 
         const finalDataTable: Record<number, { price: number | string }> = {}
@@ -115,61 +131,46 @@ const getTableData = (data) => {
             }
         }
 
-
         try {
-            console.log("Loading mulai…")
             const response = await axios.post(
                 route("grp.models.master_product_category.product_creation_data", {
                     masterProductCategory: props.masterProductCategory,
                 }),
                 { trade_units: form.trade_units, shop_products: finalDataTable },
-                {
-                    signal: abortController.signal, // attach abort signal
-                }
+                { signal: abortController.signal }
             )
 
-
-            console.log("Success:", response)
             for (const item of response.data) {
                 const index = tableData.value.data.findIndex((row: any) => row.id === item.id)
                 if (index !== -1) {
                     tableData.value.data[index].product = {
                         ...tableData.value.data[index].product,
                         ...item.org_stocks_data,
-                        /* margin : Math.floor(Math.random() * 100) */
                     }
                 }
             }
         } catch (error: any) {
-            if (axios.isCancel(error)) {
-                console.log("Request dibatalkan")
-            } else if (error.name === "CanceledError") {
-                console.log("Request dibatalkan (AbortController)")
-            } else {
+            if (!(axios.isCancel(error) || error.name === "CanceledError")) {
                 console.error("Terjadi error:", error)
             }
-        } finally {
-            console.log("Loading selesai.")
         }
-    }, 500) // delay debounce
+    }, 500)
 }
 
 const ListSelectorChange = (value) => {
     if (value.length >= 1) {
-        form.name = value[0].name;
-        form.code = value[0].code;
-        form.unit = value[0].type;
-        form.image = value[0].image.source;
-        form.marketing_weight = value[0].weight,
-        form.description = value[0].description,
-        form.description_title = value[0].description_title,
-        form.description_extra = value[0].description_extra,
+        form.name = value[0].name
+        form.code = value[0].code
+        form.unit = value[0].type
+        form.image = value[0].image.source || null
+        form.marketing_weight = value[0].weight
+        form.description = value[0].description
+        form.description_title = value[0].description_title
+        form.description_extra = value[0].description_extra
         form.units = value[0]?.units || null
     }
     getTableData(tableData.value)
-};
-
-
+}
 
 const submitForm = async (redirect = true) => {
     form.processing = true
@@ -184,46 +185,45 @@ const submitForm = async (redirect = true) => {
         }
     }
 
-    form.shop_products = finalDataTable
+    // Build payload manual
+    const payload: any = {
+        ...form.data(),
+        shop_products: finalDataTable
+    }
 
+    // Hapus image kalau tidak diganti user
+    if (!(form.image instanceof File)) {
+        delete payload.image
+    }
 
+    console.log("Payload to submit:", payload)
     try {
         const response = await axios.post(
             route(props.storeProductRoute.name, props.storeProductRoute.parameters),
-            form.data(), // <-- same as inertia form payload
+            payload,
+            { headers: { "Content-Type": "multipart/form-data" } }
         )
 
-        console.log("pppp", response.data, route().params)
-
         if (redirect) {
-            // If you need redirect, you can call router.visit() here
             router.visit(route('grp.masters.master_shops.show.master_families.master_products.show', {
                 masterShop: route().params['masterShop'],
                 masterFamily: route().params['masterFamily'],
                 masterProduct: response.data.slug
-
             }))
         } else {
-            console.log(props.shopsData)
             tableData.value.data = cloneDeep(props.shopsData.data);
             form.reset()
             key.value = ulid()
-            notify({
-                title: trans("success"),
-                text: "success to create product",
-                type: "success"
-            })
-
+            previewUrl.value = null
+            notify({ title: trans("success"), text: "success to create product", type: "success" })
         }
     } catch (error: any) {
         if (error.response && error.response.status === 422) {
-            // Laravel validation errors → hydrate into inertia form
             form.errors = error.response.data.errors || {}
             if (form.errors.code || form.errors.unit || form.errors.name) {
                 detailsVisible.value = true
             }
         } else {
-            console.error("Unexpected error:", error)
             notify({
                 title: trans("Something went wrong"),
                 text: error.message || trans("Please try again"),
@@ -235,7 +235,6 @@ const submitForm = async (redirect = true) => {
     }
 }
 
-// Tabs
 const selectorTab = [
     {
         label: "Recommended",
@@ -269,12 +268,6 @@ const drawerVisible = computed({
 const toggleFull = () => {
     isFull.value = !isFull.value;
 };
-
-const previewUrl = ref<string | null>(null)
-
-
-
-console.log(props)
 </script>
 
 <template>
@@ -284,7 +277,6 @@ console.log(props)
             <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2 flex-1">
                 {{ trans("Create Product") }}
             </h2>
-            <!-- Tombol Toggle Fullscreen -->
             <button @click="toggleFull" class="text-gray-500 hover:text-gray-700 mx-3">
                 <FontAwesomeIcon :icon="isFull ? faMinimize : faExpand" />
             </button>
@@ -308,62 +300,46 @@ console.log(props)
 
             <!-- Product Details & Price -->
             <div v-if="form.trade_units.length" class="pt-4">
-                <!-- Toggle -->
                 <button
                     class="w-full flex items-center justify-between border-b pb-2 text-sm font-semibold text-gray-600 hover:text-gray-800"
                     @click="detailsVisible = !detailsVisible">
-                    <span>
-                        {{ trans("Product Details") }}
-                    </span>
+                    <span>{{ trans("Product Details") }}</span>
                     <FontAwesomeIcon :icon="detailsVisible ? faChevronUp : faChevronDown" class="text-xs" />
                 </button>
 
-                <!-- Details Form -->
-                <div v-if="detailsVisible"
-                    class="grid grid-cols-[140px_1fr] gap-6 mt-4  bg-white ">
-
+                <div v-if="detailsVisible" class="grid grid-cols-[140px_1fr] gap-6 mt-4 bg-white">
                     <!-- Image Upload Box -->
-                    <!-- <div class="flex">
+                    <div class="flex">
                         <div class="relative w-32 h-32 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-gray-50 hover:bg-gray-100 cursor-pointer transition shadow-sm"
                             @click="chooseImage">
+
+                            <!-- Gambar baru (upload preview) -->
                             <img v-if="previewUrl" :src="previewUrl" alt="Preview"
                                 class="w-full h-full object-cover rounded-xl" />
 
+                            <!-- Gambar lama dari DB (string link) -->
+                            <Image v-else-if="form.image" :src="form.image"
+                                alt="Existing" class="w-full h-full object-cover rounded-xl" />
+
+                            <!-- Kalau kosong -->
                             <div v-else class="flex flex-col items-center text-gray-400 text-xs">
                                 <FontAwesomeIcon :icon="faCamera" class="text-lg mb-1" />
                                 <span>Upload</span>
                             </div>
 
-                            <button v-if="previewUrl" @click.stop="resetImage"
+                            <!-- Tombol remove -->
+                            <button v-if="previewUrl || form.image" @click.stop="resetImage"
                                 class="absolute top-1 right-1 bg-white text-gray-500 rounded-full p-1 shadow hover:text-red-500">
                                 <FontAwesomeIcon :icon="faXmark" class="w-3 h-3" />
                             </button>
                         </div>
 
+
                         <input type="file" accept="image/*" ref="fileInput" class="hidden" @change="previewImage" />
-                    </div> -->
-
-
-                    <div class="flex">
-                        <div
-                            class="relative w-36 h-36 border border-gray-200 rounded-xl flex items-center justify-center bg-gray-50 shadow-sm overflow-hidden">
-                            <!-- Jika ada gambar -->
-                            <Image v-if="form.image" :src="form.image" alt="Preview"
-                                class="w-full h-full object-contain rounded-xl" />
-
-                            <!-- Jika tidak ada gambar -->
-                            <div v-else class="flex flex-col items-center text-gray-400 text-xs">
-                                <FontAwesomeIcon :icon="faCamera" class="text-lg mb-1" />
-                                <span>Preview</span>
-                            </div>
-                        </div>
                     </div>
-
-
 
                     <!-- Form Fields -->
                     <div class="grid grid-cols-2 gap-5">
-                        <!-- Code -->
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">Code</label>
                             <PureInput type="text" v-model="form.code" @update:model-value="form.errors.code = null"
@@ -374,7 +350,6 @@ console.log(props)
                             </small>
                         </div>
 
-                        <!-- Name -->
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">Name</label>
                             <PureInput type="text" v-model="form.name" @update:model-value="form.errors.name = null"
@@ -385,7 +360,6 @@ console.log(props)
                             </small>
                         </div>
 
-                        <!-- Unit -->
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">Unit</label>
                             <PureInput v-model="form.unit" @update:model-value="form.errors.unit = null"
@@ -399,7 +373,7 @@ console.log(props)
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">Units</label>
                             <PureInputNumber v-model="form.units" @update:model-value="form.errors.units = null"
-                                class="w-full"  :suffix="'g'"/>
+                                class="w-full" />
                             <small v-if="form.errors.units" class="text-red-500 text-xs flex items-center gap-1 mt-1">
                                 <FontAwesomeIcon :icon="faCircleExclamation" />
                                 {{ form.errors.units.join(", ") }}
@@ -408,9 +382,11 @@ console.log(props)
 
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">Marketing Weight</label>
-                            <PureInputNumber v-model="form.marketing_weight" @update:model-value="form.errors.marketing_weight = null"
-                                class="w-full" />
-                            <small v-if="form.errors.unit" class="text-red-500 text-xs flex items-center gap-1 mt-1">
+                            <PureInputNumber v-model="form.marketing_weight"
+                                @update:model-value="form.errors.marketing_weight = null" class="w-full"
+                                :suffix="'g'" />
+                            <small v-if="form.errors.marketing_weight"
+                                class="text-red-500 text-xs flex items-center gap-1 mt-1">
                                 <FontAwesomeIcon :icon="faCircleExclamation" />
                                 {{ form.errors.marketing_weight.join(", ") }}
                             </small>
@@ -418,19 +394,21 @@ console.log(props)
 
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">Description title</label>
-                            <PureInput type="text" v-model="form.description_title" @update:model-value="form.errors.description_title = null"
-                                class="w-full" />
-                            <small v-if="form.errors.description_title" class="text-red-500 text-xs flex items-center gap-1 mt-1">
+                            <PureInput type="text" v-model="form.description_title"
+                                @update:model-value="form.errors.description_title = null" class="w-full" />
+                            <small v-if="form.errors.description_title"
+                                class="text-red-500 text-xs flex items-center gap-1 mt-1">
                                 <FontAwesomeIcon :icon="faCircleExclamation" />
                                 {{ form.errors.description_title.join(", ") }}
                             </small>
                         </div>
 
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Description </label>
-                            <SideEditorInputHTML :rows="4" v-model="form.description" @update:model-value="form.errors.description = null"
-                                class="w-full" />
-                            <small v-if="form.errors.description" class="text-red-500 text-xs flex items-center gap-1 mt-1">
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                            <SideEditorInputHTML :rows="4" v-model="form.description"
+                                @update:model-value="form.errors.description = null" class="w-full" />
+                            <small v-if="form.errors.description"
+                                class="text-red-500 text-xs flex items-center gap-1 mt-1">
                                 <FontAwesomeIcon :icon="faCircleExclamation" />
                                 {{ form.errors.description.join(", ") }}
                             </small>
@@ -438,31 +416,27 @@ console.log(props)
 
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">Description extra</label>
-                            <SideEditorInputHTML :rows="4" v-model="form.description_extra" @update:model-value="form.errors.description_extra = null"
-                                class="w-full" />
-                            <small v-if="form.errors.description_extra" class="text-red-500 text-xs flex items-center gap-1 mt-1">
+                            <SideEditorInputHTML :rows="4" v-model="form.description_extra"
+                                @update:model-value="form.errors.description_extra = null" class="w-full" />
+                            <small v-if="form.errors.description_extra"
+                                class="text-red-500 text-xs flex items-center gap-1 mt-1">
                                 <FontAwesomeIcon :icon="faCircleExclamation" />
                                 {{ form.errors.description_extra.join(", ") }}
                             </small>
                         </div>
                     </div>
                 </div>
-
             </div>
 
             <!-- Table Product Section -->
-            <div v-if="form.trade_units.length" class="">
-                <!-- Toggle -->
+            <div v-if="form.trade_units.length">
                 <button
                     class="w-full flex items-center justify-between border-b pb-2 text-sm font-semibold text-gray-600 hover:text-gray-800"
                     @click="tableVisible = !tableVisible">
-                    <span>
-                        {{ trans("Shop Product") }}
-                    </span>
+                    <span>{{ trans("Shop Product") }}</span>
                     <FontAwesomeIcon :icon="tableVisible ? faChevronUp : faChevronDown" class="text-xs" />
                 </button>
 
-                <!-- Table -->
                 <div v-if="tableVisible" class="mt-4">
                     <TableSetPriceProduct v-model="tableData" :key="key" :currency="currency.code" />
                     <small v-if="form.errors.shop_products" class="text-red-500 flex items-center gap-1">
