@@ -35,6 +35,7 @@ import { routeType } from "@/types/route";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons";
 import TableDepartments from "@/Components/Tables/Grp/Org/Catalogue/TableDepartments.vue";
+import ImagesManagement from "@/Components/Goods/ImagesManagement.vue";
 
 library.add(
     faFolder,
@@ -67,6 +68,7 @@ const props = defineProps<{
     departments?: object
     showcase?: object
     url_master?:routeType
+    images?:object
 }>();
 
 let currentTab = ref(props.tabs.current);
@@ -81,7 +83,8 @@ const component = computed(() => {
         mailshots: TableMailshots,
         customers: TableCustomers,
         details: ModelDetails,
-        history: TableHistories
+        history: TableHistories,
+        images: ImagesManagement
     };
     return components[currentTab.value];
 
