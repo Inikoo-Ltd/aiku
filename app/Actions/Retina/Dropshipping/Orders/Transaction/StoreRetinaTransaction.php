@@ -38,9 +38,31 @@ class StoreRetinaTransaction extends RetinaAction
 
         $historicAsset = HistoricAsset::find($historicAssetId);
 
-        return StoreTransaction::make()->action($order, $historicAsset, [
+        $transaction =  StoreTransaction::make()->action($order, $historicAsset, [
             'quantity_ordered' => Arr::get($modelData, 'quantity')
         ]);
+
+        
+        // Luigi: emit event 'add_to_cart' basket
+        $gtm = [
+            'ecommerce' => [
+                'transaction_id'    => $order->id,
+                'value'             => (float) $order->total_amount,
+                'currency'          => $order->shop->currency->code,
+                'items'             => [
+                    [
+                        'item_id' => $historicAsset?->model?->getLuigiIdentity()
+                    ]
+                ]
+            ]
+        ];
+        request()->session()->flash('gtm', [
+            'key'               => 'retina_dropshipping_add_to_cart',
+            'event'             => 'add_to_cart',
+            'data_to_submit'    => $gtm
+        ]);
+        
+        return $transaction;
     }
 
     public function rules(): array
