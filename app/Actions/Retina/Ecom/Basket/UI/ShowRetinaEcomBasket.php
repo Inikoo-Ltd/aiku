@@ -129,6 +129,9 @@ class ShowRetinaEcomBasket extends RetinaAction
                         ],
                     ]
                 ],
+
+                'is_unable_dispatch' => in_array($order->deliveryAddress->country_id, array_merge($order->organisation->forbidden_dispatch_countries ?? [], $order->shop->forbidden_dispatch_countries ?? [])),
+
                 'address_management' => GetOrderDeliveryAddressManagement::run(order: $order, isRetina: true),
                 'balance'        => $this->customer->balance,
                 'is_in_basket'   => true,
