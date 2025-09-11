@@ -208,7 +208,10 @@ class EditMasterProduct extends GrpAction
                     'marketing_weight'       => [
                         'type'     => 'input_number',
                         'label'    => __('marketing weight'),
-                        'value'    => $masterProduct->marketing_weight
+                        'value'    => $masterProduct->marketing_weight,
+                        'bind'     =>[
+                                'suffix' => 'g'
+                        ]
                     ],
                 ]
             ],
