@@ -84,6 +84,7 @@ class UpdateCharge extends OrgAction
                 ),
             ],
             'name'        => ['sometimes', 'required', 'max:250', 'string'],
+            'label'        => ['sometimes', 'string'],
             'description' => ['sometimes', 'max:1024', 'string'],
 
             'data'     => ['sometimes', 'array'],
