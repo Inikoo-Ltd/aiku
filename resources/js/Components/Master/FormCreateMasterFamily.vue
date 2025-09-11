@@ -7,25 +7,23 @@
 import { router, useForm } from "@inertiajs/vue3";
 import { ref, computed, inject } from "vue";
 import Drawer from "primevue/drawer";
+import Image from "primevue/image"; // ✅ added
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import PureInput from "@/Components/Pure/PureInput.vue";
 import { trans } from "laravel-vue-i18n";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { routeType } from "@/types/route";
-import {Textarea } from "primevue";
+import { Textarea } from "primevue";
 import axios from "axios";
 import SideEditorInputHTML from "@/Components/CMS/Fields/SideEditorInputHTML.vue";
 
-
-import { faChevronUp, faChevronDown } from "@far";
+import { faChevronUp, faChevronDown, faExpand, faMinimize, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faCamera } from "@fortawesome/free-solid-svg-icons"; // ✅ camera here
+import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 import { ulid } from "ulid";
 import { notify } from "@kyvg/vue3-notification";
 import { cloneDeep } from "lodash";
-import { faMinus, faPlus, faTags, faExpand } from "@fal"
-import { faExclamationCircle } from "@fas"
-import { faArrowTrendDown, faArrowTrendUp, faMinimize } from "@fortawesome/free-solid-svg-icons"
-import TableSetFamilyInMasterCreate from "./TableSetFamilyInMasterCreate.vue"
-
+import TableSetFamilyInMasterCreate from "./TableSetFamilyInMasterCreate.vue";
 
 const props = defineProps<{
     storeProductRoute: routeType
@@ -37,8 +35,8 @@ const emits = defineEmits(["update:showDialog"]);
 const tableData = ref(cloneDeep(props.shopsData));
 const detailsVisible = ref(true);
 const tableVisible = ref(true);
-const isFull = ref(false); // <-- state untuk toggle full screen
-const key = ref(ulid())
+const isFull = ref(false);
+const key = ref(ulid());
 const layout = inject('layout', {});
 
 // Inertia form
@@ -49,10 +47,31 @@ const form = useForm({
     description_title: "",
     description_extra: "",
     price: 0,
-    shop_family: null
-})
+    shop_family: null,
+    image: null
+});
 
+const fileInput = ref<HTMLInputElement | null>(null);
+const previewUrl = ref<string | null>(null);
 
+const chooseImage = () => {
+    fileInput.value?.click();
+};
+
+const previewImage = (e: Event) => {
+    const target = e.target as HTMLInputElement;
+    const file = target.files?.[0];
+    if (file) {
+        previewUrl.value = URL.createObjectURL(file);
+        form.image = file;
+    }
+};
+
+const resetImage = () => {
+    previewUrl.value = null;
+    form.image = null;
+    if (fileInput.value) fileInput.value.value = "";
+};
 
 const submitForm = async (redirect = true) => {
     form.processing = true
@@ -61,27 +80,34 @@ const submitForm = async (redirect = true) => {
     const finalDataTable: Record<number, { price: number | string }> = {}
     for (const tableDataItem of tableData.value.data) {
         finalDataTable[tableDataItem.id] = {
-            create_webpage: tableDataItem.create_webpage || false
+            create_webpage: tableDataItem.product.has_org_stocks,
         }
     }
 
-    form.shop_family = finalDataTable
+    // Build payload manual
+    const payload: any = {
+        ...form.data(),
+        shop_products: finalDataTable
+    }
 
+    // Hapus image kalau tidak diganti user
+    if (!(form.image instanceof File)) {
+        delete payload.image
+    }
 
     try {
         const response = await axios.post(
             route(props.storeProductRoute.name, props.storeProductRoute.parameters),
-            form.data(), // <-- same as inertia form payload
+            payload,
+            { headers: { "Content-Type": "multipart/form-data" } }
         )
-
-        console.log("pppp", response.data, route().params)
 
         if (redirect) {
             // If you need redirect, you can call router.visit() here
             router.visit(route('grp.masters.master_shops.show.master_families.show', {
                 masterShop: route().params['masterShop'],
                 masterFamily: response.data.slug
-
+  
             }))
         } else {
             tableData.value.data = cloneDeep(props.shopsData.data);
@@ -96,13 +122,11 @@ const submitForm = async (redirect = true) => {
         }
     } catch (error: any) {
         if (error.response && error.response.status === 422) {
-            // Laravel validation errors → hydrate into inertia form
             form.errors = error.response.data.errors || {}
-            if (form.errors.code || form.errors.description || form.errors.name) {
+            if (form.errors.code || form.errors.unit || form.errors.name) {
                 detailsVisible.value = true
             }
         } else {
-            console.error("Unexpected error:", error)
             notify({
                 title: trans("Something went wrong"),
                 text: error.message || trans("Please try again"),
@@ -122,8 +146,6 @@ const drawerVisible = computed({
 const toggleFull = () => {
     isFull.value = !isFull.value;
 };
-
-console.log(props)
 </script>
 
 <template>
@@ -155,63 +177,100 @@ console.log(props)
                 </button>
 
                 <!-- Details Form -->
-                <div v-if="detailsVisible"
-                    class="grid grid-cols-2 gap-6 mt-4">
-                    <!-- Code -->
-                    <div>
-                        <label class="font-medium block mb-1 text-sm">Code</label>
-                        <PureInput type="text" v-model="form.code" @update:model-value="form.errors.code = null"
-                            class="w-full" />
-                        <small v-if="form.errors.code" class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                            <FontAwesomeIcon :icon="faExclamationCircle" />
-                            {{ form.errors.code.join(", ") }}
-                        </small>
-                    </div>
+                <div v-if="detailsVisible" class="mt-4">
+                    <div class="flex flex-col md:flex-row gap-6">
+                        <!-- Kolom kiri: Gambar -->
+                        <div class="flex-shrink-0 flex justify-center md:justify-start">
+                            <div class="relative w-32 h-32 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-gray-50 hover:bg-gray-100 cursor-pointer transition shadow-sm"
+                                @click="(e) => chooseImage(e)">
+                                <!-- Gambar baru (upload preview) -->
+                                <img v-if="previewUrl" :src="previewUrl" alt="Preview"
+                                    class="w-full h-full object-cover rounded-xl" />
 
-                    <!-- Name -->
-                    <div>
-                        <label class="font-medium block mb-1 text-sm">Name</label>
-                        <PureInput type="text" v-model="form.name" @update:model-value="form.errors.name = null"
-                            class="w-full" />
-                        <small v-if="form.errors.name" class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                            <FontAwesomeIcon :icon="faExclamationCircle" />
-                            {{ form.errors.name.join(", ") }}
-                        </small>
-                    </div>
+                                <!-- Gambar lama dari DB -->
+                                <Image v-else-if="form.image" :src="form.image" alt="Existing"
+                                    class="w-full h-full object-cover rounded-xl" />
 
-                    <!-- Description: Title -->
-                    <div class="col-span-2">
-                        <label class="font-medium block mb-1 text-sm">Description Title</label>
-                        <PureInput  v-model="form.description_title" @update:model-value="form.errors.description_title = null"
-                            class="w-full" />
-                        <small v-if="form.errors.description_title" class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                            <FontAwesomeIcon :icon="faExclamationCircle" />
-                            {{ form.errors.description_title.join(", ") }}
-                        </small>
-                    </div>
+                                <!-- Kalau kosong -->
+                                <div v-else class="flex flex-col items-center text-gray-400 text-xs">
+                                    <FontAwesomeIcon :icon="faCamera" class="text-lg mb-1" />
+                                    <span>Upload</span>
+                                </div>
 
-                    <!-- Description -->
-                    <div class="col-span-2">
-                        <label class="font-medium block mb-1 text-sm">Description</label>
-                        <SideEditorInputHTML rows="3" v-model="form.description" @update:model-value="form.errors.description = null"
-                            class="w-full" />
-                        <small v-if="form.errors.description" class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                            <FontAwesomeIcon :icon="faExclamationCircle" />
-                            {{ form.errors.description.join(", ") }}
-                        </small>
-                    </div>
+                                <!-- Tombol remove -->
+                                <button v-if="previewUrl || form.image" @click.stop="resetImage"
+                                    class="absolute top-1 right-1 bg-white text-gray-500 rounded-full p-1 shadow hover:text-red-500">
+                                    <FontAwesomeIcon :icon="faXmark" class="w-3 h-3" />
+                                </button>
+                            </div>
+                            <input type="file" accept="image/*" ref="fileInput" class="hidden" @change="previewImage" />
+                        </div>
 
-                    <!-- Description: Extra -->
-                    <div class="col-span-2">
-                        <label class="font-medium block mb-1 text-sm">Description Extra</label>
-                        <SideEditorInputHTML rows="3" v-model="form.description_extra" @update:model-value="form.errors.description_extra = null"
-                            class="w-full" />
-                        <small v-if="form.errors.description_extra" class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                            <FontAwesomeIcon :icon="faExclamationCircle" />
-                            {{ form.errors.description_extra.join(", ") }}
-                        </small>
+                        <!-- Kolom kanan: Form -->
+                        <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Code -->
+                            <div>
+                                <label class="font-medium block mb-1 text-sm">Code</label>
+                                <PureInput type="text" v-model="form.code" @update:model-value="form.errors.code = null"
+                                    class="w-full" />
+                                <small v-if="form.errors.code"
+                                    class="text-red-500 text-xs flex items-center gap-1 mt-1">
+                                    <FontAwesomeIcon :icon="faExclamationCircle" />
+                                    {{ form.errors.code.join(", ") }}
+                                </small>
+                            </div>
+
+                            <!-- Name -->
+                            <div>
+                                <label class="font-medium block mb-1 text-sm">Name</label>
+                                <PureInput type="text" v-model="form.name" @update:model-value="form.errors.name = null"
+                                    class="w-full" />
+                                <small v-if="form.errors.name"
+                                    class="text-red-500 text-xs flex items-center gap-1 mt-1">
+                                    <FontAwesomeIcon :icon="faExclamationCircle" />
+                                    {{ form.errors.name.join(", ") }}
+                                </small>
+                            </div>
+
+                            <!-- Description: Title -->
+                            <div class="md:col-span-2">
+                                <label class="font-medium block mb-1 text-sm">Description Title</label>
+                                <PureInput v-model="form.description_title"
+                                    @update:model-value="form.errors.description_title = null" class="w-full" />
+                                <small v-if="form.errors.description_title"
+                                    class="text-red-500 text-xs flex items-center gap-1 mt-1">
+                                    <FontAwesomeIcon :icon="faExclamationCircle" />
+                                    {{ form.errors.description_title.join(", ") }}
+                                </small>
+                            </div>
+
+                            <!-- Description -->
+                            <div class="md:col-span-2">
+                                <label class="font-medium block mb-1 text-sm">Description</label>
+                                <SideEditorInputHTML rows="3" v-model="form.description" :key="key"
+                                    @update:model-value="form.errors.description = null" class="w-full" />
+                                <small v-if="form.errors.description"
+                                    class="text-red-500 text-xs flex items-center gap-1 mt-1">
+                                    <FontAwesomeIcon :icon="faExclamationCircle" />
+                                    {{ form.errors.description.join(", ") }}
+                                </small>
+                            </div>
+
+                            <!-- Description Extra -->
+                            <div class="md:col-span-2">
+                                <label class="font-medium block mb-1 text-sm">Description Extra</label>
+                                <SideEditorInputHTML rows="3" v-model="form.description_extra" :key="key"
+                                    @update:model-value="form.errors.description_extra = null" class="w-full" />
+                                <small v-if="form.errors.description_extra"
+                                    class="text-red-500 text-xs flex items-center gap-1 mt-1">
+                                    <FontAwesomeIcon :icon="faExclamationCircle" />
+                                    {{ form.errors.description_extra.join(", ") }}
+                                </small>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
             </div>
 
             <!-- Table Product Section -->
@@ -239,27 +298,12 @@ console.log(props)
         <!-- Footer -->
         <template #footer>
             <div class="flex justify-end gap-3 border-t pt-3">
-                <Button
-                    :label="trans('Cancel')"
-                    type="negative"
-                    class="!px-5"
-                    @click="emits('update:showDialog', false)"
-                />
-                <Button
-                    type="secondary"
-                    :loading="form.processing"
-                    class="!px-6"
-                    icon="fas fa-plus"
-                    :label="'save & create another one'"
-                    @click="submitForm(false)"
-                />
+                <Button :label="trans('Cancel')" type="negative" class="!px-5"
+                    @click="emits('update:showDialog', false)" />
+                <Button type="secondary" :loading="form.processing" class="!px-6" icon="fas fa-plus"
+                    :label="'save & create another one'" @click="submitForm(false)" />
 
-                <Button
-                    type="save"
-                    :loading="form.processing"
-                    class="!px-6"
-                    @click="submitForm"
-                />
+                <Button type="save" :loading="form.processing" class="!px-6" @click="submitForm" />
             </div>
         </template>
     </Drawer>
