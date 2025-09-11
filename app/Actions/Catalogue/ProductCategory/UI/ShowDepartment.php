@@ -137,6 +137,10 @@ class ShowDepartment extends OrgAction
                         )
                     )),
 
+                DepartmentTabsEnum::IMAGES->value => $this->tab == DepartmentTabsEnum::IMAGES->value ?
+                    fn () =>  GetProductCategoryImages::run($department)
+                    : Inertia::lazy(fn () => GetProductCategoryImages::run($department)),
+
                 DepartmentTabsEnum::HISTORY->value => $this->tab == DepartmentTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($department))
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($department))),

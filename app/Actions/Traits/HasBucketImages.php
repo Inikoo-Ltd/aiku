@@ -9,6 +9,7 @@
 namespace App\Actions\Traits;
 
 use App\Models\Catalogue\Product;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
@@ -141,7 +142,7 @@ trait HasBucketImages
 
     }
 
-    public function getSingleImageData(MasterProductCategory $model): array
+    public function getSingleImageData(MasterProductCategory|ProductCategory $model): array
     {
         return [
             [

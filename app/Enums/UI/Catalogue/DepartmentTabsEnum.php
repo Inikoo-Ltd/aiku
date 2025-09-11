@@ -55,7 +55,7 @@ enum DepartmentTabsEnum: string
                 'icon'  => 'fal fa-project-diagram',
             ],
             DepartmentTabsEnum::IMAGES => [
-                'title' => __('images'),
+                'title' => __('media'),
                 'icon'  => 'fal fa-camera-retro',
                 'type'  => 'icon',
                 'align' => 'right',
