@@ -183,6 +183,7 @@ class StoreMasterAsset extends OrgAction
             'units'                  => ['sometimes'],
             'description_title'      => ['sometimes', 'string'],
             'description_extra'      => ['sometimes', 'string'],
+            'marketing_weight'       => ['sometimes', 'numeric', 'min:0'],
 
         ];
 
