@@ -114,7 +114,7 @@ class EditCharge extends OrgAction
                                     'label' => __('amount'),
                                     'value' => Arr::get($charge->settings, 'amount')
                                 ],
-                                
+
                             ] : [
                                 'amount' => [
                                     'type'  => 'input_number',

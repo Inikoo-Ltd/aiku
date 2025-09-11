@@ -60,7 +60,6 @@ class CloneMasterAssetImagesFromTradeUnits implements ShouldBeUnique
             'bottom_image_id'          => $tradeUnit->bottom_image_id,
             'size_comparison_image_id' => $tradeUnit->size_comparison_image_id,
             'lifestyle_image_id'       => $tradeUnit->lifestyle_image_id,
-            'video_url'                => $tradeUnit->video_url,
         ]);
 
     }
