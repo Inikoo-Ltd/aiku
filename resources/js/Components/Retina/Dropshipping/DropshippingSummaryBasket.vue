@@ -72,6 +72,7 @@ const props = defineProps<{
     }
     updateOrderRoute: routeType
     isCollection?: boolean
+    is_unable_dispatch?: boolean
 }>()
 
 const locale = inject('locale', {})
@@ -90,6 +91,9 @@ const updateCollection = async (e: Event) => {
     try {
         router.patch(route(props.updateOrderRoute?.name, props.updateOrderRoute.parameters), {
             ...payload
+        }, {
+            preserveScroll: true,
+            preserveState: true,
         })
     } catch (error) {
         console.error(error)
@@ -193,6 +197,9 @@ onMounted(() => {
                             <FontAwesomeIcon icon="fal fa-pencil" class="" fixed-width aria-hidden="true"/>
                         </div>
                     </dd>
+                    <div v-if="is_unable_dispatch" class="text-red-500 mt-2 text-xs">
+                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="mr-1" fixed-width aria-hidden="true" />{{ trans("We cannot deliver to :country, please update the address or contact support.", { country: summary?.customer?.addresses?.delivery?.country?.name }) }}
+                    </div>
                 </div>
             </div>
         </div>
