@@ -334,7 +334,7 @@ onMounted(() => {
     <PageHeading :data="pageHead" isButtonGroupWithBorder>
         <template #afterTitle2>
             <FontAwesomeIcon v-if="delivery_note.is_premium_dispatch" v-tooltip="trans('Priority dispatch')" icon="fas fa-star" class="text-yellow-500" fixed-width aria-hidden="true" />
-            <FontAwesomeIcon v-if="delivery_note.has_extra_packing" v-tooltip="trans('Extra packing')" icon="fal fa-box-heart" class="text-yellow-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-if="delivery_note.has_extra_packing" v-tooltip="trans('Extra packing')" icon="fas fa-box-heart" class="text-yellow-500" fixed-width aria-hidden="true" />
         </template>
 
         <template #otherBefore v-if="!box_stats.is_replacement">
