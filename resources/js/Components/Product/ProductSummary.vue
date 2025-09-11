@@ -120,6 +120,7 @@ library.add(
 const locale = inject("locale", aikuLocaleStructure)
 const showFullWarnings = ref(false)
 const showFullInstructions = ref(false)
+const showFullDescription = ref(false)
 
 
 
@@ -208,6 +209,10 @@ console.log('product summary : ', props)
 						<dd class="font-medium">{{ data?.code }}</dd>
 					</div>
 					<div class="flex justify-between flex-wrap gap-1">
+						<dt class="text-gray-500">{{ trans("Product Name") }}</dt>
+						<dd class="font-medium max-w-[236px] text-right">{{ data?.name }}</dd>
+					</div>
+					<div class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("CPNP Number") }}</dt>
 						<dd class="font-medium">-</dd>
 					</div>
@@ -253,6 +258,47 @@ console.log('product summary : ', props)
 						<dt class="text-gray-500">{{ trans("Dimension") }}</dt>
 						<dd class="font-medium">
 							{{ data?.product?.data?.spesifications?.dimenison[0] ?? '-' }}
+						</dd>
+					</div>
+
+					<!-- Combined Description -->
+					<div v-if="data?.description_title || data?.description || data?.description_extra" class="space-y-2">
+						<dt class="text-gray-500">{{ trans("Description") }}</dt>
+						<dd class="font-medium">
+							<div class="bg-gray-50 border border-gray-200 rounded-lg p-3">
+								<div v-if="!showFullDescription && data?.description_extra">
+									<!-- Show title and description, hide extra -->
+									<div v-if="data?.description_title" class="text-base font-semibold text-gray-700 leading-relaxed mb-3" 
+										 v-html="data?.description_title">
+									</div>
+									<div v-if="data?.description" class="text-sm text-gray-700 leading-relaxed" 
+										 v-html="data?.description">
+									</div>
+									<button @click="showFullDescription = true"
+										class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1 mt-2">
+										<FontAwesomeIcon icon="fal fa-chevron-down" />
+										{{ trans("Read more") }}
+									</button>
+								</div>
+								<div v-else>
+									<!-- Show all content -->
+									<div v-if="data?.description_title" class="text-base font-semibold text-gray-700 leading-relaxed mb-3" 
+										 v-html="data?.description_title">
+									</div>
+									<div v-if="data?.description" class="text-sm text-gray-700 leading-relaxed mb-3" 
+										 v-html="data?.description">
+									</div>
+									<div v-if="data?.description_extra" class="text-sm text-gray-700 leading-relaxed" 
+										 v-html="data?.description_extra">
+									</div>
+									<button v-if="data?.description_extra"
+										@click="showFullDescription = false"
+										class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1 mt-2">
+										<FontAwesomeIcon icon="fal fa-chevron-up" />
+										{{ trans("Read less") }}
+									</button>
+								</div>
+							</div>
 						</dd>
 					</div>
 				</div>

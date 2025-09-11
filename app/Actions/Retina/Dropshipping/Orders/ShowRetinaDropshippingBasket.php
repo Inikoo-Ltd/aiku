@@ -190,7 +190,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                     'extra_packing'   => $extraPacking ? ChargeResource::make($extraPacking)->toArray(request()) : null,
                 ],
 
-                'is_able_dispatch' => ! in_array($order->deliveryAddress->country_id, array_merge($order->organisation->forbidden_dispatch_countries ?? [], $order->shop->forbidden_dispatch_countries ?? [])),
+                'is_unable_dispatch' => in_array($order->deliveryAddress->country_id, array_merge($order->organisation->forbidden_dispatch_countries ?? [], $order->shop->forbidden_dispatch_countries ?? [])),
 
                 'box_stats'      => $this->getDropshippingBasketBoxStats($order),
                 'currency'       => CurrencyResource::make($order->currency)->toArray(request()),
