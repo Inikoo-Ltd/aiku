@@ -71,10 +71,20 @@ class EditCharge extends OrgAction
                         [
                             'title'  => __('edit charge'),
                             'fields' => [
-                                'code' => [
+                                'name' => [
                                     'type'  => 'input',
                                     'label' => __('name'),
                                     'value' => $charge->name
+                                ],
+                                'label' => [
+                                    'type'  => 'input',
+                                    'label' => __('label'),
+                                    'value' => $charge->label
+                                ],
+                                'description' => [
+                                    'type'  => 'textarea',
+                                    'label' => __('description'),
+                                    'value' => $charge->description
                                 ],
                             ],
                         ]
@@ -82,8 +92,10 @@ class EditCharge extends OrgAction
 
                     'args' => [
                         'updateRoute' => [
-                            'name'       => 'grp.models.stock.update',
-                            'parameters' => $charge->id
+                            'name'       => 'grp.models.charge.update',
+                            'parameters' => [
+                                'charge' => $charge->id
+                            ]
 
                         ],
                     ]

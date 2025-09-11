@@ -64,6 +64,7 @@ use App\Actions\CRM\Customer\ApproveCustomer;
 use App\Actions\Accounting\CreditTransaction\DecreaseCreditTransactionCustomer;
 use App\Actions\CRM\Customer\DeleteCustomerDeliveryAddress;
 use App\Actions\Accounting\CreditTransaction\IncreaseCreditTransactionCustomer;
+use App\Actions\Billables\Charge\UpdateCharge;
 use App\Actions\Catalogue\Product\UpdateProductImages;
 use App\Actions\CRM\Customer\RejectCustomer;
 use App\Actions\CRM\Customer\StoreCustomer;
@@ -979,6 +980,9 @@ Route::post('master-product-category/{masterProductCategory:id}/trade-units-for-
 
 Route::post('translate/{language}', Translate::class)->name('translate');;
 
+Route::prefix('charge/{charge:id}')->name('charge.')->group(function () {
+    Route::patch('update', UpdateCharge::class)->name('update');
+});
 
 require __DIR__ . "/models/inventory/warehouse.php";
 require __DIR__ . "/models/inventory/location_org_stock.php";
