@@ -11,44 +11,32 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 
 use App\Actions\Ordering\Order\UpdateOrderPremiumDispatch;
 use App\Actions\RetinaAction;
-use App\Actions\Traits\WithActionUpdate;
 use App\Models\Ordering\Order;
-use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class UpdateRetinaOrderPremiumDispatch extends RetinaAction
 {
-    use AsAction;
-    use WithAttributes;
-    use WithActionUpdate;
-
-    private Order $order;
-
     public function handle(Order $order, array $modelData): Order
     {
-        dd($modelData);
-        $order = UpdateOrderPremiumDispatch::make()->action($order, $modelData);
-
-        return $order;
+        return UpdateOrderPremiumDispatch::make()->action($order, $modelData);
     }
 
     public function authorize(ActionRequest $request): bool
     {
-        return $this->order->customer_id == $request->user()->customer_id;
+        $order = $request->route('order');
+
+        return $order->customer_id == $this->customer->id;
     }
 
     public function rules(): array
     {
         return [
-            'is_premium_dispatch'   => ['required', 'boolean'],
+            'is_premium_dispatch' => ['required', 'boolean'],
         ];
     }
 
     public function asController(Order $order, ActionRequest $request): Order
     {
-        $this->order = $order;
         $this->initialisation($request);
 
         return $this->handle($order, $this->validatedData);

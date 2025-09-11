@@ -15,9 +15,13 @@ use App\Actions\Ordering\Transaction\UI\IndexIndexTransactionsInBasket;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\RetinaAction;
+use App\Enums\Catalogue\Charge\ChargeStateEnum;
+use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Ordering\BasketTabsEnum;
 use App\Helpers\NaturalLanguage;
+use App\Http\Resources\Catalogue\ChargeResource;
+use App\Http\Resources\Catalogue\ChargesResource;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Helpers\AddressResource;
@@ -64,6 +68,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
     {
         $nonProductItems = NonProductItemsResource::collection(IndexNonProductItems::run($order));
 
+        $premiumDispatch = $order->shop->charges()->where('type', ChargeTypeEnum::PREMIUM)->where('state', ChargeStateEnum::ACTIVE)->first();
 
         return Inertia::render(
             'Dropshipping/RetinaDropshippingBasket',
@@ -179,6 +184,9 @@ class ShowRetinaDropshippingBasket extends RetinaAction
 
                 'address_management' => GetOrderDeliveryAddressManagement::run(order: $order, isRetina: true),
 
+
+                'premium_dispatch' => $premiumDispatch ? ChargeResource::make($premiumDispatch)->toArray(request()) : null,
+
                 'box_stats'      => $this->getDropshippingBasketBoxStats($order),
                 'currency'       => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'           => RetinaDropshippingBasketResource::make($order),
@@ -188,8 +196,8 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                 'total_products' => $order->transactions->whereIn('model_type', ['Product', 'Service'])->count(),
 
                 BasketTabsEnum::TRANSACTIONS->value => $this->tab == BasketTabsEnum::TRANSACTIONS->value ?
-                    fn () => RetinaTransactionsInBasketResource::collection(IndexIndexTransactionsInBasket::run(order: $order, prefix: BasketTabsEnum::TRANSACTIONS->value))
-                    : Inertia::lazy(fn () => RetinaTransactionsInBasketResource::collection(IndexIndexTransactionsInBasket::run(order: $order, prefix: BasketTabsEnum::TRANSACTIONS->value))),
+                    fn() => RetinaTransactionsInBasketResource::collection(IndexIndexTransactionsInBasket::run(order: $order, prefix: BasketTabsEnum::TRANSACTIONS->value))
+                    : Inertia::lazy(fn() => RetinaTransactionsInBasketResource::collection(IndexIndexTransactionsInBasket::run(order: $order, prefix: BasketTabsEnum::TRANSACTIONS->value))),
 
 
             ]
