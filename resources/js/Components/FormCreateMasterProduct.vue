@@ -79,7 +79,7 @@ const form = useForm({
     code: "",
     name: "",
     unit: '',
-    units: 1,
+    units: null,
     trade_units: [],
     image: null,
     shop_products: null,
@@ -164,7 +164,7 @@ const ListSelectorChange = (value) => {
         form.description = value[0].description,
         form.description_title = value[0].description_title,
         form.description_extra = value[0].description_extra,
-        form.units = value[0]?.units || 1
+        form.units = value[0]?.units || null
     }
     getTableData(tableData.value)
 };
@@ -399,7 +399,7 @@ console.log(props)
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">Units</label>
                             <PureInputNumber v-model="form.units" @update:model-value="form.errors.units = null"
-                                class="w-full" />
+                                class="w-full"  :suffix="'g'"/>
                             <small v-if="form.errors.units" class="text-red-500 text-xs flex items-center gap-1 mt-1">
                                 <FontAwesomeIcon :icon="faCircleExclamation" />
                                 {{ form.errors.units.join(", ") }}
