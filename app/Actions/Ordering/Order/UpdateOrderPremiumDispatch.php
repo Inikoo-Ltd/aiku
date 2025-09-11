@@ -8,23 +8,19 @@
 
 namespace App\Actions\Ordering\Order;
 
-use App\Actions\Comms\Email\SendNewOrderEmailToCustomer;
-use App\Actions\Comms\Email\SendNewOrderEmailToSubscribers;
-use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
-use App\Actions\CRM\Customer\Hydrators\CustomerHydrateTrafficSource;
-use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBasket;
-use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
+use App\Actions\Ordering\Transaction\DestroyTransaction;
+use App\Actions\Ordering\Transaction\StoreTransaction;
+use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Ordering\Order\OrderPayStatusEnum;
-use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Enums\Ordering\Order\OrderStatusEnum;
-use App\Enums\Ordering\Transaction\TransactionStateEnum;
-use App\Enums\Ordering\Transaction\TransactionStatusEnum;
+use App\Enums\Catalogue\Charge\ChargeStateEnum;
+use App\Enums\Catalogue\Charge\ChargeTypeEnum;
+use App\Models\Billables\Charge;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
-use Illuminate\Validation\Validator;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateOrderPremiumDispatch extends OrgAction
@@ -33,14 +29,70 @@ class UpdateOrderPremiumDispatch extends OrgAction
     use HasOrderHydrators;
     use WithOrderingEditAuthorisation;
 
-    /**
-     * @throws \Throwable
-     */
+
     public function handle(Order $order, array $modelData): Order
     {
         $order = $this->update($order, $modelData);
+        $charge = $order->shop->charges()->where('type', ChargeTypeEnum::PREMIUM)->where('state', ChargeStateEnum::ACTIVE)->first();
+
+        if($charge){
+
+            $chargeApplies=Arr::get($modelData,'is_premium_dispatch',false);
+            $chargeTransaction   = null;
+            $chargeTransactionID = DB::table('transactions')->where('order_id', $order->id)
+                ->leftJoin('charges', 'transactions.model_id', '=', 'charges.id')
+                ->where('model_type', 'Charge')->where('charges.type', ChargeTypeEnum::PREMIUM->value)->value('transactions.id');
+
+            if ($chargeTransactionID) {
+                $chargeTransaction = Transaction::find($chargeTransactionID);
+            }
+
+            if ($chargeApplies) {
+                $chargeAmount = Arr::get($charge->settings, 'amount');
+                if ($chargeTransaction) {
+                    $this->updateChargeTransaction($chargeTransaction, $charge, $chargeAmount);
+                } else {
+                    $this->storeChargeTransaction($order, $charge, $chargeAmount);
+                }
+            } elseif ($chargeTransaction) {
+                DestroyTransaction::run($chargeTransaction);
+            }
+
+        }
 
         return $order;
+    }
+
+
+    private function storeChargeTransaction(Order $order, Charge $charge, $chargeAmount): Transaction
+    {
+        return StoreTransaction::run(
+            $order,
+            $charge->historicAsset,
+            [
+                'quantity_ordered' => 1,
+                'gross_amount'     => $chargeAmount,
+                'net_amount'       => $chargeAmount,
+
+            ],
+            false
+        );
+    }
+
+
+    private function updateChargeTransaction(Transaction $transaction, Charge $charge, $chargeAmount): Transaction
+    {
+        return UpdateTransaction::run(
+            $transaction,
+            [
+                'model_id'          => $charge->id,
+                'asset_id'          => $charge->asset_id,
+                'historic_asset_id' => $charge->historicAsset->id,
+                'gross_amount'      => $chargeAmount ?? 0,
+                'net_amount'        => $chargeAmount ?? 0,
+            ],
+            false
+        );
     }
 
     public function rules(): array
@@ -50,24 +102,18 @@ class UpdateOrderPremiumDispatch extends OrgAction
         ];
     }
 
-    /**
-     * @throws \Throwable
-     */
+
     public function action(Order $order, array $modelData): Order
     {
         $this->asAction = true;
-        $this->order    = $order;
         $this->initialisationFromShop($order->shop, []);
 
         return $this->handle($order, $modelData);
     }
 
-    /**
-     * @throws \Throwable
-     */
+
     public function asController(Order $order, ActionRequest $request): Order
     {
-        $this->order = $order;
         $this->initialisationFromShop($order->shop, $request);
 
         return $this->handle($order, $this->validatedData);

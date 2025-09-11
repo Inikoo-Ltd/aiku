@@ -236,10 +236,8 @@ class ShowOrder extends OrgAction
             $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
         }
 
-        $readonly = true;
-        if ($platform->type == PlatformTypeEnum::MANUAL) {
-            $readonly = false;
-        }
+        $readonly = false;
+
 
         return Inertia::render(
             'Org/Ordering/Order',
@@ -276,7 +274,7 @@ class ShowOrder extends OrgAction
                     'navigation' => OrderTabsEnum::navigation()
                 ],
                 'routes'      => [
-                    'updateOrderRoute' => [
+                    'updateOrderRoute'  => [
                         'method'     => 'patch',
                         'name'       => 'grp.models.order.update',
                         'parameters' => [
@@ -290,19 +288,19 @@ class ShowOrder extends OrgAction
                             'order' => $order->id
                         ]
                     ],
-                    'products_list'    => [
+                    'products_list'     => [
                         'name'       => 'grp.json.order.products',
                         'parameters' => [
                             'order' => $order->id
                         ]
                     ],
-                    'delivery_note'    => $deliveryNoteRoute
+                    'delivery_note'     => $deliveryNoteRoute
                 ],
 
                 'notes'                       => $this->getOrderNotes($order),
                 'timelines'                   => $finalTimeline,
                 'readonly'                    => $readonly,
-                'delivery_address_management' =>  GetOrderDeliveryAddressManagement::run(order: $order),
+                'delivery_address_management' => GetOrderDeliveryAddressManagement::run(order: $order),
 
                 'box_stats'     => $this->getOrderBoxStats($order),
                 'currency'      => CurrencyResource::make($order->currency)->toArray(request()),
@@ -373,24 +371,24 @@ class ShowOrder extends OrgAction
                 ],
 
                 OrderTabsEnum::TRANSACTIONS->value => $this->tab == OrderTabsEnum::TRANSACTIONS->value ?
-                    fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
-                    : Inertia::lazy(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
+                    fn() => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
+                    : Inertia::lazy(fn() => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
 
                 OrderTabsEnum::INVOICES->value => $this->tab == OrderTabsEnum::INVOICES->value ?
-                    fn () => InvoicesResource::collection(IndexInvoices::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
-                    : Inertia::lazy(fn () => InvoicesResource::collection(IndexInvoices::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
+                    fn() => InvoicesResource::collection(IndexInvoices::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
+                    : Inertia::lazy(fn() => InvoicesResource::collection(IndexInvoices::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
 
                 OrderTabsEnum::DELIVERY_NOTES->value => $this->tab == OrderTabsEnum::DELIVERY_NOTES->value ?
-                    fn () => DeliveryNotesResource::collection(IndexDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))
-                    : Inertia::lazy(fn () => DeliveryNotesResource::collection(IndexDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))),
+                    fn() => DeliveryNotesResource::collection(IndexDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))
+                    : Inertia::lazy(fn() => DeliveryNotesResource::collection(IndexDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))),
 
                 OrderTabsEnum::ATTACHMENTS->value => $this->tab == OrderTabsEnum::ATTACHMENTS->value ?
-                    fn () => AttachmentsResource::collection(IndexAttachments::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))
-                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))),
+                    fn() => AttachmentsResource::collection(IndexAttachments::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))
+                    : Inertia::lazy(fn() => AttachmentsResource::collection(IndexAttachments::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))),
 
                 OrderTabsEnum::PAYMENTS->value => $this->tab == OrderTabsEnum::PAYMENTS->value ?
-                    fn () => PaymentsResource::collection(IndexPayments::run(parent: $order, prefix: OrderTabsEnum::PAYMENTS->value))
-                    : Inertia::lazy(fn () => PaymentsResource::collection(IndexPayments::run(parent: $order, prefix: OrderTabsEnum::PAYMENTS->value))),
+                    fn() => PaymentsResource::collection(IndexPayments::run(parent: $order, prefix: OrderTabsEnum::PAYMENTS->value))
+                    : Inertia::lazy(fn() => PaymentsResource::collection(IndexPayments::run(parent: $order, prefix: OrderTabsEnum::PAYMENTS->value))),
 
             ]
         )

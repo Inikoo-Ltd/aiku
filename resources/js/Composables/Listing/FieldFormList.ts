@@ -58,6 +58,7 @@ import Teritory_zone from '@/Components/Forms/Fields/Teritory_zone.vue'
 import SelectPrinter from '@/Components/Forms/Fields/SelectPrinter.vue'
 import ListSelectorFrom from '@/Components/Forms/Fields/ListSelectorFrom.vue'
 import BrandsTradeUnit from '@/Components/Forms/Fields/BrandsTradeUnit.vue'
+import MultiselectTagsInfiniteScroll from '@/Components/Forms/Fields/MultiselectTagsInfiniteScroll.vue'
 
 
 export const componentsList: {[key: string]: Component} = {
@@ -117,7 +118,8 @@ export const componentsList: {[key: string]: Component} = {
     'list-selector' : ListSelectorFrom,
     'edit-trade-unit-shop' : FormEditTradeUnit,
     'tags-trade-unit' : TagsTradeUnits,
-    'brands-trade-unit' : BrandsTradeUnit
+    'brands-trade-unit' : BrandsTradeUnit,
+    'multiselect-tags' : MultiselectTagsInfiniteScroll
 }
 
 export const getComponent = (componentName: string) => {
