@@ -63,6 +63,7 @@ class DeliveryNotesResource extends JsonResource
             'organisation_slug'      => $this->organisation_slug,
             'shop_name'              => $this->shop_name,
             'is_premium_dispatch'    => $this->is_premium_dispatch,
+            'has_extra_packing'      => $this->has_extra_packing,
             'picking_sessions_count' => $this->picking_sessions_count,
             'picking_session_ids'    => $this->picking_session_ids,
             'employee_pick_route'    => [

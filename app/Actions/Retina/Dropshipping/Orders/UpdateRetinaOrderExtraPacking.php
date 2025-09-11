@@ -9,16 +9,16 @@
 
 namespace App\Actions\Retina\Dropshipping\Orders;
 
-use App\Actions\Ordering\Order\UpdateOrderPremiumDispatch;
+use App\Actions\Ordering\Order\UpdateOrderExtraPacking;
 use App\Actions\RetinaAction;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateRetinaOrderPremiumDispatch extends RetinaAction
+class UpdateRetinaOrderExtraPacking extends RetinaAction
 {
     public function handle(Order $order, array $modelData): void
     {
-        UpdateOrderPremiumDispatch::run($order, $modelData);
+        UpdateOrderExtraPacking::run($order, $modelData);
     }
 
     public function authorize(ActionRequest $request): bool
@@ -31,7 +31,7 @@ class UpdateRetinaOrderPremiumDispatch extends RetinaAction
     public function rules(): array
     {
         return [
-            'is_premium_dispatch' => ['required', 'boolean'],
+            'has_extra_packing' => ['required', 'boolean'],
         ];
     }
 

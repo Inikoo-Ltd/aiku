@@ -150,6 +150,7 @@ const onClickPick = () => {
                 {{ deliveryNote["reference"] }}
             </Link>
             <FontAwesomeIcon v-if="deliveryNote.is_premium_dispatch" v-tooltip="trans('Priority dispatch')" icon="fas fa-star" class="text-yellow-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-if="deliveryNote.has_extra_packing" v-tooltip="trans('Extra packing')" icon="fal fa-box-heart" class="text-yellow-500" fixed-width aria-hidden="true" />
         </template>
 
         <template #cell(date)="{ item }">

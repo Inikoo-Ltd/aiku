@@ -45,6 +45,17 @@ class EditShop extends OrgAction
      */
     public function htmlResponse(Shop $shop, ActionRequest $request): Response
     {
+        $merged = array_merge(
+            $shop->organisation->forbidden_dispatch_countries ?? [],
+            $shop->forbidden_dispatch_countries ?? []
+        );
+
+        $result = array_reduce($merged, function ($carry, $item) {
+            if (!in_array($item, $carry)) {
+                $carry[] = $item;
+            }
+            return $carry;
+        }, []);
 
         return Inertia::render(
             'EditModel',
@@ -255,7 +266,7 @@ class EditShop extends OrgAction
                                     'placeholder'   => __('Select countries'),
                                     'label'         => __('Forbidden Countries'),
                                     'required'      => true,
-                                    'value'         => array_merge($shop->organisation->forbidden_dispatch_countries ?? [], $shop->forbidden_dispatch_countries ?? []),
+                                    'value'         => $result,
                                     'options'       => GetCountriesOptions::run(),
                                     'searchable'    => true,
                                     'mode'          => 'tags',
