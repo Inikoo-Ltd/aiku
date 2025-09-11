@@ -190,6 +190,8 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                     'extra_packing'   => $extraPacking ? ChargeResource::make($extraPacking)->toArray(request()) : null,
                 ],
 
+                'is_able_dispatch' => ! in_array($order->deliveryAddress->country_id, $order->shop->forbidden_dispatch_countries ?? []),
+
                 'box_stats'      => $this->getDropshippingBasketBoxStats($order),
                 'currency'       => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'           => RetinaDropshippingBasketResource::make($order),

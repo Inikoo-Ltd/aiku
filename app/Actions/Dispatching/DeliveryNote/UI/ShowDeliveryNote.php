@@ -150,8 +150,34 @@ class ShowDeliveryNote extends OrgAction
         $startPickingLabel    = __('Start picking');
         $generateInvoiceLabel = __('Generate Invoice');
 
+        $showCancel = true;
 
-        return match ($deliveryNote->state) {
+        if (in_array($deliveryNote->state, [
+            DeliveryNoteStateEnum::CANCELLED,
+            DeliveryNoteStateEnum::DISPATCHED,
+            DeliveryNoteStateEnum::FINALISED
+        ])) {
+            $showCancel = false;
+        }
+
+        $cancelActions = [];
+        if ($showCancel) {
+            $cancelActions = [
+                'type' => 'button',
+                'style' => 'cancel',
+                'key' => 'cancel',
+                'label' => __('Cancel'),
+                'route' => [
+                    'method' => 'patch',
+                    'name' => 'grp.models.delivery_note.state.cancel',
+                    'parameters' => [
+                        'deliveryNote' => $deliveryNote->id
+                    ]
+                ]
+            ];
+        }
+
+        $actions = match ($deliveryNote->state) {
             DeliveryNoteStateEnum::UNASSIGNED => [
                 [
                     'type'      => 'button',
@@ -312,9 +338,25 @@ class ShowDeliveryNote extends OrgAction
                             ]
                         ]
                     ] : [],
+                  [
+                      'type'    => 'button',
+                      'style'   => 'cancel',
+                      'tooltip' => __('Undispatch'),
+                      'label'   => __('Undispatch'),
+                      'key'     => 'undispatch',
+                      'route'   => [
+                          'method'     => 'patch',
+                          'name'       => 'grp.models.delivery_note.state.rollback',
+                          'parameters' => [
+                              'deliveryNote' => $deliveryNote->id
+                          ]
+                      ]
+                  ],
             ],
             default => []
         };
+
+        return [...$actions, $cancelActions];
     }
 
     public function getInvoiceButton(DeliveryNote $deliveryNote): array
