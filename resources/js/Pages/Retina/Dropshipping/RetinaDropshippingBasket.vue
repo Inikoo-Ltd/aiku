@@ -36,25 +36,11 @@ import {FontAwesomeIcon} from '@fortawesome/vue-fontawesome'
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import {faExclamationTriangle as fadExclamationTriangle} from '@fad'
 import {faExclamationTriangle, faExclamation} from '@fas'
-import {
-    faDollarSign,
-    faIdCardAlt,
-    faShippingFast,
-    faIdCard,
-    faEnvelope,
-    faPhone,
-    faWeight,
-    faStickyNote,
-    faTruck,
-    faFilePdf,
-    faPaperclip,
-    faTimes,
-    faInfoCircle,
-} from '@fal'
+import { faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, } from '@fal'
 import {Currency} from '@/types/LayoutRules'
 import TableInvoices from '@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue'
 import TableProductList from '@/Components/Tables/Grp/Helpers/TableProductList.vue'
-import {faSpinnerThird} from '@far'
+import {faSpinnerThird, faCheck} from '@far'
 import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
 import DropshippingSummaryBasket from '@/Components/Retina/Dropshipping/DropshippingSummaryBasket.vue'
 import { inject } from 'vue'
@@ -62,14 +48,17 @@ import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { ToggleSwitch } from 'primevue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
+import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 
-library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird)
+library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird, faCheck)
 
 const props = defineProps<{
     title: string
     tabs: TSTabs
     data: {
         data: {
+            is_premium_dispatch: boolean
+            has_extra_packing: boolean
             id: number
             slug: string
             reference: string
@@ -131,13 +120,27 @@ const props = defineProps<{
     total_to_pay: number
     address_management: AddressManagement
     total_products: number
-    premium_dispatch?: {
-        label: string
-        name: string
-        description: string
+    charges: {
+        premium_dispatch?: {
+            label: string
+            name: string
+            description: string
+            state: string
+            amount: number
+            currency_code: string
+        }
+        extra_packing?: {
+            label: string
+            name: string
+            description: string
+            state: string
+            amount: number
+            currency_code: string
+        }
     }
 }>()
 const layout = inject('layout', retinaLayoutStructure)
+const locale = inject('locale', aikuLocaleStructure)
 
 const isModalUploadOpen = ref(false)
 const isModalProductListOpen = ref(false)
@@ -305,6 +308,49 @@ const onChangePriorityDispatch = async (val: boolean) => {
         }
     )
 }
+
+// Section: Extra Packing
+const isLoadingExtraPacking = ref(false)
+const onChangeExtraPacking = async (val: boolean) => {
+    router.patch(
+        route('retina.models.order.update_extra_packing', props.data.data?.id),
+        {
+            has_extra_packing: val
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isLoadingExtraPacking.value = true
+            },
+            onSuccess: () => {
+                if (val) {
+                    notify({
+                        title: trans("Success"),
+                        text: trans("The order is changed to extra packing!"),
+                        type: "success"
+                    })
+                } else {
+                    notify({
+                        title: trans("Success"),
+                        text: trans("The order is no longer on extra packing."),
+                        type: "success"
+                    })
+                }
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to update extra packing, try again."),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingExtraPacking.value = false
+            },
+        }
+    )
+}
 </script>
 
 <template>
@@ -353,10 +399,11 @@ const onChangePriorityDispatch = async (val: boolean) => {
                    @update:tab="handleTabUpdate"/>
 
         <!-- Section: Priority Dispatch -->
-        <div v-if="layout.app.environment === 'local' && premium_dispatch" class="flex gap-4 my-4 justify-end pr-6">
-            <div class="px-2 flex justify-end items-center gap-x-1 relative" :class="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
-                {{ premium_dispatch?.label ?? premium_dispatch?.name }}
-                <InformationIcon :information="premium_dispatch?.description" />
+        <div v-if="layout.app.environment === 'local' && charges.premium_dispatch" class="flex gap-4 my-4 justify-end pr-6">
+            <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
+                <InformationIcon :information="charges.premium_dispatch?.description" />
+                {{ charges.premium_dispatch?.label ?? charges.premium_dispatch?.name }}
+                <span class="text-gray-400">({{ locale.currencyFormat(charges.premium_dispatch?.currency_code, charges.premium_dispatch?.amount) }})</span>
             </div>
 
             <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
@@ -367,6 +414,31 @@ const onChangePriorityDispatch = async (val: boolean) => {
                 >
                     <template #handle="{ checked }">
                         <LoadingIcon v-if="isLoadingPriorityDispatch" xclass="text-sm text-gray-500" />
+                        <template v-else>
+                            <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
+                            <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
+                        </template>
+                    </template>
+                </ToggleSwitch>
+            </div>
+        </div>
+
+        <!-- Section: Extra Packing -->
+        <div v-if="layout.app.environment === 'local' && charges.extra_packing" class="flex gap-4 my-4 justify-end pr-6">
+            <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.has_extra_packing ? 'text-green-500' : ''">
+                <InformationIcon :information="charges.extra_packing?.description" />
+                {{ charges.extra_packing?.label ?? charges.extra_packing?.name }}
+                <span class="text-gray-400">({{ locale.currencyFormat(charges.extra_packing?.currency_code, charges.extra_packing?.amount) }})</span>
+            </div>
+
+            <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
+                <ToggleSwitch
+                    :modelValue="data?.data?.has_extra_packing"
+                    @update:modelValue="(e) => (onChangeExtraPacking(e))"
+                    xdisabled="isLoadingExtraPacking"
+                >
+                    <template #handle="{ checked }">
+                        <LoadingIcon v-if="isLoadingExtraPacking" xclass="text-sm text-gray-500" />
                         <template v-else>
                             <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
                             <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
