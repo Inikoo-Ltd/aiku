@@ -249,6 +249,7 @@ class Shop extends Model implements HasMedia, Auditable
         'settings'        => 'array',
         'location'        => 'array',
         'extra_languages' => 'array',
+        'forbidden_dispatch_countries' => 'array',
         'type'            => ShopTypeEnum::class,
         'state'           => ShopStateEnum::class,
         'fetched_at'      => 'datetime',
@@ -259,7 +260,8 @@ class Shop extends Model implements HasMedia, Auditable
         'data'     => '{}',
         'settings' => '{}',
         'location' => '{}',
-        'extra_languages' => '{}'
+        'extra_languages' => '{}',
+        'forbidden_dispatch_countries' => '{}'
     ];
 
     protected $guarded = [];
