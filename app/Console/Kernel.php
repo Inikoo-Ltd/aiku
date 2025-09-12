@@ -73,12 +73,12 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('fetch:dispatched_emails -w full -D 2 -N')->everySixHours(15)
             ->timezone('UTC')->sentryMonitor(
-                monitorSlug: 'FetchOrdersInBasket',
+                monitorSlug: 'FetchDispatchedEmails',
             );
 
         $schedule->command('fetch:email_tracking_events -N -D 2')->twiceDaily(11, 23)->timezone('UTC')
             ->sentryMonitor(
-                monitorSlug: 'FetchOrdersInBasket',
+                monitorSlug: 'FetchEmailTrackingEvents',
             );
 
 
@@ -112,8 +112,6 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'SaveWebsitesSitemap',
         );
 
-        // TODO: We dont need this because we already have fetch orders scheduler above
-        // $schedule->command('schedule:platform-orders')->everyMinute()->timezone('UTC')->sentryMonitor('GetPlatformOrders');
     }
 
 
