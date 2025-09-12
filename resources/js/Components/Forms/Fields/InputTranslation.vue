@@ -156,26 +156,34 @@ onMounted(() => {
     window.removeEventListener("translation_box_updated", handleCustom as EventListener)
   })
 })
+
+
 </script>
 
 <template>
   <div class="space-y-3">
-    <div class="flex justify-end mt-3  px-3">
-      <Button :label="loadingAll ? 'Translating...' : 'Translate All'" size="xxs" type="rainbow" :icon="faRobot"
-        :disabled="isDisabled" @click="generateAllTranslationsAI" :loading="loadingAll" />
-    </div>
-
-    <!-- Language Selector -->
-    <div class="flex flex-wrap gap-1">
+    <!-- Language Selector + Translate All -->
+    <div class="flex flex-wrap items-center gap-1 px-3">
+      <!-- Language buttons -->
       <Button v-for="lang in Object.values(fieldData.languages)" :key="lang.code + selectedLang" :label="lang.name"
-        size="xxs" :type="selectedLang === lang.code ? 'primary' : 'gray'" @click="selectedLang = lang.code">
+        size="xs" :type="selectedLang === lang.code ? 'primary' : 'gray'" @click="selectedLang = lang.code">
         <template #icon>
-          <FontAwesomeIcon :icon="langBuffers[lang.code] ? faCheckCircle : faCircle" class="w-3.5 h-3.5"
-            :class="langBuffers[lang.code] ? 'text-green-500' : 'text-gray-400'" aria-hidden="true" />
+         
+          <!-- Check/empty circle -->
+          <FontAwesomeIcon :icon="langBuffers[lang.code] ? faCheckCircle : faCircle"
+            :class="langBuffers[lang.code] ? 'text-green-500' : 'text-gray-400'" 
+            aria-hidden="true" />
+
+          <img v-if="lang.flag" :src="`/flags/${lang.flag}`" alt="" class="" />
         </template>
       </Button>
-    </div>
 
+
+      <!-- Translate All button -->
+      <Button class="ml-auto" :label="loadingAll ? 'Translating...' : 'Translate All'" size="xxs" type="rainbow"
+        :icon="faRobot" :disabled="loadingAll || loadingOne || isDisabled" @click="generateAllTranslationsAI"
+        :loading="loadingAll" />
+    </div>
 
     <!-- Translation Section -->
     <div v-if="selectedLang" class="space-y-3">
