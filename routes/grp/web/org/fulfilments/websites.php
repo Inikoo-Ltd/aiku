@@ -18,6 +18,7 @@ use App\Actions\Web\Redirect\UI\ShowRedirect;
 use App\Actions\Web\Webpage\UI\CreateWebpage;
 use App\Actions\Web\Webpage\UI\EditWebpage;
 use App\Actions\Web\Webpage\UI\IndexWebpages;
+use App\Actions\Web\Webpage\UI\ShowSidebarWorkshop;
 use App\Actions\Web\Webpage\UI\ShowWebpageWorkshopPreview;
 use App\Actions\Web\Webpage\UI\ShowWorkshopBlueprint;
 use App\Actions\Web\Webpage\UI\ShowFooterWorkshop;
@@ -51,6 +52,7 @@ Route::name('websites.')->group(function () {
                     Route::get('footer', [ShowFooterWorkshop::class, 'inFulfilment'])->name('.footer');
                     Route::get('header', [ShowHeaderWorkshop::class, 'inFulfilment'])->name('.header');
                     Route::get('menu', [ShowMenuWorkshop::class, 'inFulfilment'])->name('.menu');
+                    Route::get('menu', [ShowSidebarWorkshop::class, 'inFulfilment'])->name('.sidebar');
                 });
 
             Route::name('redirect')->prefix('redirect')
