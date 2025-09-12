@@ -160,7 +160,7 @@ onMounted(() => {
 
 <template>
   <div class="space-y-3">
-    <div class="flex justify-end mt-3">
+    <div class="flex justify-end mt-3 px-3">
       <Button :label="loadingAll ? 'Translating...' : 'Translate All'" size="xxs" type="rainbow" :icon="faRobot"
         :disabled="loadingOne || loadingAll || isDisabled" @click="generateAllTranslationsAI" />
     </div>
