@@ -45,6 +45,7 @@ const props = defineProps<{
 const links = ref([
     { label: trans("Edit Header"), route_target: props.data.layout.headerRoute, icon: faPencil },
     { label: trans("Edit Menu"), route_target: props.data.layout.menuRoute, icon: faPencil },
+    { label: trans("Edit Sidebar"), route_target: props.data.layout.footerRoute, icon: faPencil, disabled: true },
     { label: trans("Edit Footer"), route_target: props.data.layout.footerRoute, icon: faPencil }
 ]);
 
@@ -138,7 +139,7 @@ const dateAdd30MinutesLastReindex = computed(() => {
 
                     <div v-for="(item, index) in links" :key="index" class="px-2 py-1">
                         <ButtonWithLink :routeTarget="item.route_target" full :icon="item.icon" :label="item.label"
-                            type="secondary" />
+                            type="secondary" :disabled="item?.disabled" />
                     </div>
 
                     <div class="p-2 space-y-2">
