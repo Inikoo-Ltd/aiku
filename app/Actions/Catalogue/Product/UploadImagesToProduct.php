@@ -35,7 +35,10 @@ class UploadImagesToProduct extends OrgAction
     public function updateDependants(Product $seedProduct, array $modelData, array $medias, string $scope): void
     {
         $tradeUnit = $seedProduct->tradeUnits->first();
-        UploadImagesToTradeUnit::run($tradeUnit, $scope, $modelData, false);
+        foreach ($medias as $media) {
+            $this->attachMediaToModel($tradeUnit, $media, $scope);
+        }
+
 
         foreach (DB::table('model_has_trade_units')
             ->select('model_type', 'model_id')
