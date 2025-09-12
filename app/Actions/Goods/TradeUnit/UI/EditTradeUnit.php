@@ -154,14 +154,20 @@ class EditTradeUnit extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'label'  => __('Name/Description'),
-                            'icon'   => 'fa-light fa-tag',
+                            'label'  => __('Id'),
+                            'icon'   => 'fa-light fa-fingerprint',
                             'fields' => [
                                 'code' => [
                                     'type'  => 'input',
                                     'label' => __('code'),
                                     'value' => $tradeUnit->code
                                 ],
+                            ],
+                        ],
+                        [
+                            'label'  => __('Name/Description'),
+                            'icon'   => 'fa-light fa-tag',
+                            'fields' => [
                                 'name' => [
                                     'type'  => 'input',
                                     'label' => __('name'),
@@ -186,24 +192,6 @@ class EditTradeUnit extends OrgAction
                                     'type'  => 'input',
                                     'label' => __('gross weight'),
                                     'value' => $tradeUnit->gross_weight
-                                ],
-                            ],
-                        ],
-                        [
-                            'label'  => __('Tags & Brands'),
-                            'icon'   => 'fa-light fa-tag',
-                            'fields' => [
-                                'tags' => [
-                                    'type'  => 'tags-trade-unit',
-                                    'label' => __('Tags'),
-                                    'value' => $tradeUnit->tags->pluck('id')->toArray(),
-                                    'tag_routes' => $tagRoute
-                                ],
-                                 'brands' => [
-                                    'type'  => 'brands-trade-unit',
-                                    'label' => __('Brands'),
-                                    'value' => $tradeUnit->brand()?->id,
-                                    'brand_routes' =>  $brandRoute
                                 ],
                             ],
                         ],
@@ -238,6 +226,24 @@ class EditTradeUnit extends OrgAction
                                     'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($tradeUnit->group->extra_languages),
                                     'main' => $tradeUnit->description_extra,
                                     'value' => $tradeUnit->getTranslations('description_extra_i8n')
+                                ],
+                            ],
+                        ],
+                        [
+                            'label'  => __('Tags & Brands'),
+                            'icon'   => 'fa-light fa-tag',
+                            'fields' => [
+                                'tags' => [
+                                    'type'  => 'tags-trade-unit',
+                                    'label' => __('Tags'),
+                                    'value' => $tradeUnit->tags->pluck('id')->toArray(),
+                                    'tag_routes' => $tagRoute
+                                ],
+                                 'brands' => [
+                                    'type'  => 'brands-trade-unit',
+                                    'label' => __('Brands'),
+                                    'value' => $tradeUnit->brand()?->id,
+                                    'brand_routes' =>  $brandRoute
                                 ],
                             ],
                         ],
