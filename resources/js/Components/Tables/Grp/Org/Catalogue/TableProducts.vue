@@ -223,19 +223,8 @@ function shopRoute(invoice: Invoice) {
             ]);
     }
 
-    if (route().current() == "grp.masters.master_shops.show.master_families.master_products.show") {
-        console.log('here')
-        return route(
-            "grp.org.shops.show.catalogue.products.current_products.show",
-            [
-                invoice.organisation_slug,
-                invoice.shop_slug,
-                invoice.slug
-            ]);
-    }
-
     return route(
-        "grp.org.shops.show.catalogue.products.current_products.index",
+        "grp.org.shops.show.catalogue.dashboard",
         [
             invoice.organisation_slug,
             invoice.shop_slug

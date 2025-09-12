@@ -193,9 +193,15 @@ function customerRoute(deliveryNote: DeliveryNote) {
 
         <template #cell(reference)="{ item: deliveryNote }">
             <div class="flex gap-4 flex-wrap items-center">
-                <Link :href="deliveryNoteRoute(deliveryNote)" class="primaryLink">
-                {{ deliveryNote["reference"] }}
-                </Link>
+                <span>
+                    <Link :href="deliveryNoteRoute(deliveryNote)" class="primaryLink">
+                    {{ deliveryNote["reference"] }}
+                    </Link>
+                    <FontAwesomeIcon v-if="deliveryNote.is_premium_dispatch" v-tooltip="trans('Priority dispatch')"
+                        icon="fas fa-star" class="text-yellow-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-if="deliveryNote.has_extra_packing" v-tooltip="trans('Extra packing')"
+                        icon="fas fa-box-heart" class="text-yellow-500" fixed-width aria-hidden="true" />
+                </span>
                 <NotesDisplay :item="deliveryNote" reference-field="reference" />
             </div>
 

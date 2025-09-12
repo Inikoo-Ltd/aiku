@@ -69,7 +69,7 @@ trait WithWooCommerceApiRequest
             $this->initWooCommerceApi();
         }
 
-        return $this->woocommerceApiUrl . '/wp-json/' . $this->woocommerceApiVersion;
+        return rtrim($this->woocommerceApiUrl, '/') . '/wp-json/' . $this->woocommerceApiVersion;
     }
 
     /**
