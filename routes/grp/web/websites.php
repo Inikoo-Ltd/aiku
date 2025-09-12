@@ -9,6 +9,7 @@
 
 use App\Actions\Web\Webpage\UI\ShowFooterPreview;
 use App\Actions\Web\Webpage\UI\ShowHeaderPreview;
+use App\Actions\Web\Webpage\UI\ShowSidebarPreview;
 use App\Actions\Web\Webpage\UI\ShowWebpageWorkshopPreview;
 use App\Actions\Web\Webpage\UI\ShowWebsitePreview;
 
