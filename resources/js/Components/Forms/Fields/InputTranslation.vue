@@ -4,6 +4,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import { faRobot, faCircle, faCheckCircle } from "@far"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 const props = defineProps<{
   form: any
@@ -147,29 +148,21 @@ onMounted(() => {
 <template>
   <div class="space-y-3">
     <div class="flex justify-end mt-3  px-3">
-      <Button
-        :label="loadingAll ? 'Translating...' : 'Translate All'"
-        size="xxs"
-        type="rainbow"
-        :icon="faRobot"
-        :disabled="isDisabled"
-        @click="generateAllTranslationsAI"
-      />
+      <Button :label="loadingAll ? 'Translating...' : 'Translate All'" size="xxs" type="rainbow" :icon="faRobot"
+        :disabled="isDisabled" @click="generateAllTranslationsAI" />
     </div>
 
     <!-- Language Selector -->
     <div class="flex flex-wrap gap-1">
-      <Button
-        v-for="lang in Object.values(fieldData.languages)"
-        :key="lang.code + selectedLang"
-        :label="lang.name"
-        size="xxs"
-        :type="selectedLang === lang.code ? 'primary' : 'gray'"
-        :icon="langBuffers[lang.code] ? faCheckCircle : faCircle"
-        :disabled="isDisabled"
-        @click="selectedLang = lang.code"
-      />
+      <Button v-for="lang in Object.values(fieldData.languages)" :key="lang.code + selectedLang" :label="lang.name"
+        size="xxs" :type="selectedLang === lang.code ? 'primary' : 'gray'" @click="selectedLang = lang.code">
+        <template #icon>
+          <FontAwesomeIcon :icon="langBuffers[lang.code] ? faCheckCircle : faCircle" class="w-3.5 h-3.5"
+            :class="langBuffers[lang.code] ? 'text-green-500' : 'text-gray-400'" aria-hidden="true" />
+        </template>
+      </Button>
     </div>
+
 
     <!-- Translation Section -->
     <div v-if="selectedLang" class="space-y-3">
@@ -180,7 +173,7 @@ onMounted(() => {
             Original ({{ fieldData.mainLang || "en" }})
           </p>
           <p class="text-sm text-gray-700 whitespace-pre-wrap py-4">
-            {{ fieldData.main  ? fieldData.main : 'No content available' }}
+            {{ fieldData.main ? fieldData.main : 'No content available' }}
           </p>
         </div>
 
@@ -190,23 +183,13 @@ onMounted(() => {
             <p class="text-xs font-semibold text-gray-500 mb-1">
               {{ langLabel(selectedLang) }}
             </p>
-            <Button
-              :label="loadingOne ? 'Generating...' : 'Generate AI'"
-              size="xxs"
-              type="rainbow"
-              :icon="faRobot"
-              :disabled="isDisabled"
-              @click="generateLanguagetranslateAI"
-            />
+            <Button :label="loadingOne ? 'Generating...' : 'Generate AI'" size="xxs" type="rainbow" :icon="faRobot"
+              :disabled="isDisabled" @click="generateLanguagetranslateAI" />
           </div>
 
-          <input
-            type="text"
-            v-model="langBuffers[selectedLang]"
+          <input type="text" v-model="langBuffers[selectedLang]"
             class="w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-            :disabled="isDisabled"
-            placeholder="Enter translation..."
-          />
+            :disabled="isDisabled" placeholder="Enter translation..." />
         </div>
       </div>
     </div>

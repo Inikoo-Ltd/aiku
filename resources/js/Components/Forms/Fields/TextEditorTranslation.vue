@@ -7,6 +7,7 @@ import { uniqueId } from "lodash"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import { faRobot, faCircle, faCheckCircle } from "@far"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 const props = defineProps<{
   form: any
@@ -173,9 +174,12 @@ onMounted(() => {
     <!-- Language Selector -->
     <div class="flex flex-wrap gap-1">
       <Button v-for="lang in Object.values(fieldData.languages)" :key="lang.code + selectedLang" :label="lang.name"
-        size="xxs" :type="selectedLang === lang.code ? 'primary' : 'gray'"
-        :icon="langBuffers[lang.code] ? faCheckCircle : faCircle" @click="selectedLang = lang.code"
-        :disabled="isDisabled" />
+        size="xxs" :type="selectedLang === lang.code ? 'primary' : 'gray'" @click="selectedLang = lang.code">
+        <template #icon>
+          <FontAwesomeIcon :icon="langBuffers[lang.code] ? faCheckCircle : faCircle" class="w-3.5 h-3.5"
+            :class="langBuffers[lang.code] ? 'text-green-500' : 'text-gray-400'" aria-hidden="true" />
+        </template>
+      </Button>
     </div>
 
     <!-- Translation Section -->
