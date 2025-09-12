@@ -228,11 +228,17 @@ const submitForm = async (redirect = true) => {
             notify({ title: trans("success"), text: "success to create product", type: "success" })
         }
     } catch (error: any) {
+        console.log("Error response:", error.response)
         if (error.response && error.response.status === 422) {
             form.errors = error.response.data.errors || {}
             if (form.errors.code || form.errors.unit || form.errors.name) {
                 detailsVisible.value = true
             }
+             notify({
+                title: trans("Something went wrong"),
+                text: error.response.data.message || trans("Please try again"),
+                type: 'error'
+            })
         } else {
             notify({
                 title: trans("Something went wrong"),
@@ -459,7 +465,7 @@ const toggleFull = () => {
                 </button>
 
                 <div v-if="tableVisible" class="mt-4">
-                    <TableSetPriceProduct v-model="tableData" :key="key" :currency="currency.code" />
+                    <TableSetPriceProduct v-model="tableData" :key="key" :currency="currency.code" :form="form"  />
                     <small v-if="form.errors.shop_products" class="text-red-500 flex items-center gap-1">
                         {{ form.errors.shop_products.join(", ") }}
                     </small>
