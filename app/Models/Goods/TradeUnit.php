@@ -334,6 +334,31 @@ class TradeUnit extends Model implements HasMedia, Auditable
     {
         return $this->hasOne(Media::class, 'id', 'lifestyle_image_id');
     }
+    
+    public function art1Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'art1_image_id');
+    }
+
+    public function art2Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'art2_image_id');
+    }
+
+    public function art3Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'art3_image_id');
+    }
+
+    public function art4Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'art4_image_id');
+    }
+
+    public function art5Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'art5_image_id');
+    }
 
 
 
