@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterProductCategory;
 
+use App\Actions\Catalogue\ProductCategory\CloneProductCategoryImagesFromMaster;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
 use App\Actions\GrpAction;
@@ -63,13 +64,15 @@ class StoreFamilyFromMasterFamily extends GrpAction
                     $family = StoreProductCategory::run($shop, $data);
                 }
                 $family->refresh();
-
+                
                 if ($createWebpage) {
                     $webpage = StoreProductCategoryWebpage::run($family);
                     PublishWebpage::make()->action($webpage, [
                         'comment' => 'first publish'
                     ]);
                 }
+
+                CloneProductCategoryImagesFromMaster::run($family);
             }
         }
     }

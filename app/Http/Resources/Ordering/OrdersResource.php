@@ -71,6 +71,10 @@ class OrdersResource extends JsonResource
             'is_premium_dispatch'    => $this->is_premium_dispatch,
             'has_extra_packing'      => $this->has_extra_packing,
             'updated_by_customer_at' => $this->updated_by_customer_at,
+            'customer_notes'         => $this->customer_notes,
+            'internal_notes'         => $this->internal_notes,
+            'public_notes'           => $this->public_notes,
+            'shipping_notes'        => $this->shipping_notes,
         ];
     }
 }
