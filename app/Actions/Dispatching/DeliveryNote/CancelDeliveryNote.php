@@ -16,6 +16,7 @@ use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemCancelStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
@@ -82,6 +83,12 @@ class CancelDeliveryNote extends OrgAction
                 'cancel_state' => DeliveryNoteItemCancelStateEnum::RETURNED
             ]);
         }
+
+        if($deliveryNote->type == DeliveryNoteTypeEnum::ORDER){
+            $order= $deliveryNote->orders->first();
+            RollBackOrderAfterDeliveryNoteCancellaton::make()->action($order);
+        }
+
 
         OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
             ->delay($this->hydratorsDelay);
