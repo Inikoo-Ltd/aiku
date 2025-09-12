@@ -34,7 +34,7 @@ class PayOrder extends OrgAction
         $payment = StorePayment::make()->action($order->customer, $paymentAccount, $modelData);
 
 
-        if($paymentAccount->is_accounts) {
+        if ($paymentAccount->is_accounts) {
             $creditTransactionData = [
                 'amount'     => -$payment->amount,
                 'type'       => CreditTransactionTypeEnum::PAYMENT,
@@ -47,8 +47,8 @@ class PayOrder extends OrgAction
 
         AttachPaymentToOrder::make()->action($order, $payment, []);
 
-        $invoice=$order->invoices()->where('invoices.type',InvoiceTypeEnum::INVOICE)->first();
-        if($invoice){
+        $invoice = $order->invoices()->where('invoices.type', InvoiceTypeEnum::INVOICE)->first();
+        if ($invoice) {
             AttachPaymentToInvoice::make()->action($invoice, $payment, []);
         }
 

@@ -38,7 +38,7 @@ class CancelDeliveryNote extends OrgAction
         $cancelledCount = DB::table('delivery_notes')
                 ->where('reference', 'like', $deliveryNote->reference . '-CANCELLED%')
                 ->count();
-        
+
         $newCancelledRef = $cancelledRef . ($cancelledCount > 0 ? '-' . ($cancelledCount + 1) : '');
 
         data_set($modelData, 'reference', $newCancelledRef);
@@ -95,8 +95,8 @@ class CancelDeliveryNote extends OrgAction
             ]);
         }
 
-        if($deliveryNote->type == DeliveryNoteTypeEnum::ORDER){
-            $order= $deliveryNote->orders->first();
+        if ($deliveryNote->type == DeliveryNoteTypeEnum::ORDER) {
+            $order = $deliveryNote->orders->first();
             RollbackOrderAfterDeliveryNoteCancellation::make()->action($order);
         }
 

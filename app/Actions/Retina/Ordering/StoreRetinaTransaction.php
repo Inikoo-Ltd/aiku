@@ -27,7 +27,7 @@ class StoreRetinaTransaction extends RetinaAction
 
         $existingTransaction = $order->transactions()->where('historic_asset_id', $historicAssetId)->first();
 
-        if($existingTransaction) {
+        if ($existingTransaction) {
             return UpdateRetinaTransaction::run(
                 $existingTransaction,
                 [

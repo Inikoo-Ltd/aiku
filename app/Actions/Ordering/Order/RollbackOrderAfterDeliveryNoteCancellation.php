@@ -18,19 +18,19 @@ class RollbackOrderAfterDeliveryNoteCancellation extends OrgAction
 {
     public function handle(Order $order): void
     {
-       $order = UpdateOrder::make()->action($order, [
-            'state' => OrderStateEnum::SUBMITTED,
-            'in_warehouse_at' => null,
-            'handling_at' => null,
-            'packed_at' => null,
-            'finalised_at' => null,
-            'settled_at' => null,
-            'dispatched_at' => null
-        ], 0, false);
+        $order = UpdateOrder::make()->action($order, [
+             'state' => OrderStateEnum::SUBMITTED,
+             'in_warehouse_at' => null,
+             'handling_at' => null,
+             'packed_at' => null,
+             'finalised_at' => null,
+             'settled_at' => null,
+             'dispatched_at' => null
+         ], 0, false);
 
         $order->refresh();
 
-        foreach($order->transactions as $transaction) {
+        foreach ($order->transactions as $transaction) {
             UpdateTransaction::make()->action($transaction, [
                 'state' => TransactionStateEnum::SUBMITTED,
                 'in_warehouse_at' => null,

@@ -64,7 +64,7 @@ class StoreFamilyFromMasterFamily extends GrpAction
                     $family = StoreProductCategory::run($shop, $data);
                 }
                 $family->refresh();
-                
+
                 if ($createWebpage) {
                     $webpage = StoreProductCategoryWebpage::run($family);
                     PublishWebpage::make()->action($webpage, [

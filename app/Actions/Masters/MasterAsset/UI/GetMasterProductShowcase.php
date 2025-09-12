@@ -12,11 +12,7 @@ namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\Traits\HasBucketImages;
 use App\Helpers\NaturalLanguage;
-use App\Http\Resources\Catalogue\TagsResource;
-use App\Http\Resources\Goods\IngredientsResource;
-use App\Http\Resources\Goods\TradeUnitResource;
 use App\Http\Resources\Masters\MasterProductResource;
-use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
 use Lorisleiva\Actions\Concerns\AsObject;
 

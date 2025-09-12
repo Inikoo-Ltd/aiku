@@ -84,7 +84,7 @@ test('create shipper', function () {
     $arrayData = [
         'code' => 'ABC',
         'name' => 'ABC Shipping',
-        'trade_as'=>'abc'
+        'trade_as' => 'abc'
     ];
 
     $createdShipper = StoreShipper::make()->action($this->organisation, $arrayData);

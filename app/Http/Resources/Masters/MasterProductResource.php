@@ -12,7 +12,6 @@ namespace App\Http\Resources\Masters;
 use App\Actions\Traits\HasBucketImages;
 use App\Http\Resources\Goods\TradeUnitsForMasterResource;
 use App\Http\Resources\HasSelfCall;
-use App\Http\Resources\Helpers\ImageResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -36,12 +35,11 @@ class MasterProductResource extends JsonResource
 
     public function toArray($request): array
     {
-        $masterAsset = $this->resource;
         return [
-            'slug'                   => $this->slug,
-            'code'                   => $this->code,
-            'name'                   => $this->name,
-            'currency'              =>  $this->group->currency->code,
+            'slug'                  => $this->slug,
+            'code'                  => $this->code,
+            'name'                  => $this->name,
+            'currency'              => $this->group->currency->code,
             'price'                 => $this->price,
             'description'           => $this->description,
             'description_title'     => $this->description_title,
@@ -51,11 +49,11 @@ class MasterProductResource extends JsonResource
             'description_i8n'       => $this->getTranslations('description_i8n'),
             'description_title_i8n' => $this->getTranslations('description_title_i8n'),
             'description_extra_i8n' => $this->getTranslations('description_extra_i8n'),
-            'translation_box' => [
-                'title' => __('Multi-language Translations'),
+            'translation_box'       => [
+                'title'      => __('Multi-language Translations'),
                 'save_route' => [
-                'name'       => 'grp.models.master-product.translations.update',
-                'parameters' => []
+                    'name'       => 'grp.models.master-product.translations.update',
+                    'parameters' => []
                 ],
             ],
 

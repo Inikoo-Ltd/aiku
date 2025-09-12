@@ -86,7 +86,7 @@ class GetTradeUnitsImagesFromAurora
 
             $subScope = 'main';
 
-        //    dd($productImages);
+            //    dd($productImages);
 
             foreach ($productImages as $imageData) {
                 SaveModelImages::run(
@@ -172,9 +172,9 @@ class GetTradeUnitsImagesFromAurora
         $this->setSource($organisation);
 
 
-//        $tradeUnits = TradeUnit::find(10844);
-//        $this->handle($tradeUnits, $command);
-//        exit;
+        //        $tradeUnits = TradeUnit::find(10844);
+        //        $this->handle($tradeUnits, $command);
+        //        exit;
 
         if ($command->argument('status') == 'active') {
             $total = DB::table('trade_units')->where('status', TradeUnitStatusEnum::ACTIVE)->count();

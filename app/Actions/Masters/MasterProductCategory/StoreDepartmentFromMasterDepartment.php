@@ -48,7 +48,7 @@ class StoreDepartmentFromMasterDepartment extends GrpAction
 
                 $department = StoreProductCategory::run($shop, $data);
                 $department->refresh();
-                
+
                 if ($createWebpage) {
                     $webpage = StoreProductCategoryWebpage::run($department);
                     PublishWebpage::make()->action($webpage, [

@@ -8,13 +8,8 @@
 
 namespace App\Actions\Billables\Charge\UI;
 
-use App\Actions\SysAdmin\User\GetUserGroupScopeJobPositionsData;
-use App\Actions\SysAdmin\User\GetUserOrganisationScopeJobPositionsData;
-use App\Actions\Traits\UI\WithPermissionsPictogram;
-use App\Actions\Utils\GetLocationFromIp;
 use App\Http\Resources\Catalogue\ChargeResource;
 use App\Models\Billables\Charge;
-use App\Models\SysAdmin\Guest;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetChargeShowcase

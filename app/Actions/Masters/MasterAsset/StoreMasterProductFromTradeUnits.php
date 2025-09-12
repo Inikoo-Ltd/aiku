@@ -15,7 +15,6 @@ use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithAttachMediaToModel;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
-use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Rules\AlphaDashDot;
@@ -62,7 +61,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
 
             $masterAsset = StoreMasterAsset::make()->action($parent, $data);
 
-            if(Arr::has($modelData, 'image') && !$masterAsset->is_single_trade_unit){
+            if (Arr::has($modelData, 'image') && !$masterAsset->is_single_trade_unit) {
                 $medias = UploadImagesToMasterProduct::run($masterAsset, 'image', [
                     'images' => [
                         Arr::get($modelData, 'image')

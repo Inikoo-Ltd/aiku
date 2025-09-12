@@ -69,7 +69,7 @@ class UpdateMasterProductImages extends GrpAction
 
         $this->update($masterAsset, $modelData);
 
-        if($updateDependants && $masterAsset->is_single_trade_unit){
+        if ($updateDependants && $masterAsset->is_single_trade_unit) {
             $this->updateDependants($masterAsset, $modelData);
         }
 
@@ -80,7 +80,7 @@ class UpdateMasterProductImages extends GrpAction
     public function updateDependants(MasterAsset $seedMasterAsset, array $modelData): void
     {
         $tradeUnit = $seedMasterAsset->tradeUnits->first();
-        UpdateTradeUnitImages::run($tradeUnit, $modelData,false);
+        UpdateTradeUnitImages::run($tradeUnit, $modelData, false);
 
         foreach (DB::table('model_has_trade_units')
             ->select('model_type', 'model_id')
@@ -124,6 +124,6 @@ class UpdateMasterProductImages extends GrpAction
     {
         $this->initialisation($masterAsset->group, $request);
 
-        $this->handle($masterAsset, $this->validatedData,true);
+        $this->handle($masterAsset, $this->validatedData, true);
     }
 }

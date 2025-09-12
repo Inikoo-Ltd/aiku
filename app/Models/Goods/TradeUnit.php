@@ -111,6 +111,11 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $cost_price
  * @property int|null $lifestyle_image_id
  * @property bool|null $bucket_images images following the buckets
+ * @property-read Media|null $art1Image
+ * @property-read Media|null $art2Image
+ * @property-read Media|null $art3Image
+ * @property-read Media|null $art4Image
+ * @property-read Media|null $art5Image
  * @property-read MediaCollection<int, Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Media|null $backImage
@@ -334,7 +339,7 @@ class TradeUnit extends Model implements HasMedia, Auditable
     {
         return $this->hasOne(Media::class, 'id', 'lifestyle_image_id');
     }
-    
+
     public function art1Image(): HasOne
     {
         return $this->hasOne(Media::class, 'id', 'art1_image_id');

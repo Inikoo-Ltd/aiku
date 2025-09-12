@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Fri, 12 Sept 2025 13:09:42 Malaysia Time, Kuala Lumpur, Malaysia
@@ -18,7 +19,30 @@ class UploadImagesToTradeUnit extends GrpAction
 
     public function handle(TradeUnit $model, string $scope, array $modelData): array
     {
-        return $this->uploadImages($model, $scope, $modelData);
+        $medias = $this->uploadImages($model, $scope, $modelData);
+
+        return $medias;
+    }
+
+    public function updateDependencies(TradeUnit $tradeUnit, array $modelData): void
+    {
+        foreach (DB::table('model_has_trade_units')
+            ->select('model_type', 'model_id')
+            ->where('trade_unit_id', $tradeUnit->id)
+            ->whereIn('model_type', ['MasterAsset','Product'])
+            ->get() as $modelsData) {
+            if ($modelsData->model_type == 'MasterAsset') {
+                $masterAsset = MasterAsset::find($modelsData->model_id);
+                if ($masterAsset) {
+                    UpdateMasterProductImages::run($masterAsset, $modelData);
+                }
+            } elseif ($modelsData->model_type == 'Product') {
+                $product = Product::find($modelsData->model_id);
+                if ($product) {
+                    UpdateProductImages::run($product, $modelData);
+                }
+            }
+        }
     }
 
     public function rules(): array
@@ -30,6 +54,6 @@ class UploadImagesToTradeUnit extends GrpAction
     {
         $this->initialisation($tradeUnit->group, $request);
 
-        $this->handle($tradeUnit, 'image', $this->validatedData);
+        $this->handle($tradeUnit, 'image', $this->validatedData, true);
     }
 }

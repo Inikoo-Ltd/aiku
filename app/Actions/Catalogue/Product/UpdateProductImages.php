@@ -70,7 +70,7 @@ class UpdateProductImages extends OrgAction
 
         $this->update($product, $modelData);
 
-        if($updateDependants && $product->is_single_trade_unit){
+        if ($updateDependants && $product->is_single_trade_unit) {
             $this->updateDependants($product, $modelData);
         }
 
@@ -80,14 +80,14 @@ class UpdateProductImages extends OrgAction
     public function updateDependants(Product $seedProduct, array $modelData): void
     {
         $tradeUnit = $seedProduct->tradeUnits->first();
-        UpdateTradeUnitImages::run($tradeUnit, $modelData,false);
+        UpdateTradeUnitImages::run($tradeUnit, $modelData, false);
 
         foreach (DB::table('model_has_trade_units')
             ->select('model_type', 'model_id')
             ->where('trade_unit_id', $tradeUnit->id)
             ->whereIn('model_type', ['MasterAsset','Product'])
             ->get() as $modelsData) {
-            if ($modelsData->model_type == 'MasterAsset' ) {
+            if ($modelsData->model_type == 'MasterAsset') {
                 $masterAsset = MasterAsset::find($modelsData->model_id);
                 if ($masterAsset) {
                     UpdateMasterProductImages::run($masterAsset, $modelData);
@@ -124,6 +124,6 @@ class UpdateProductImages extends OrgAction
     {
         $this->initialisationFromShop($product->shop, $request);
 
-        $this->handle($product, $this->validatedData,true);
+        $this->handle($product, $this->validatedData, true);
     }
 }

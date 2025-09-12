@@ -9,7 +9,6 @@
 namespace App\Actions\Catalogue\ProductCategory;
 
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateImages;
-use App\Actions\Catalogue\ProductCategory\UpdateProductCategoryWebImages;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;

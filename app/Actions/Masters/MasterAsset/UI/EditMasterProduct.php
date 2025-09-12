@@ -23,7 +23,6 @@ use App\Models\Masters\MasterShop;
 
 class EditMasterProduct extends GrpAction
 {
-    private MasterProductCategory $parent;
 
     public function handle(MasterAsset $masterAsset): MasterAsset
     {
@@ -257,7 +256,7 @@ class EditMasterProduct extends GrpAction
                         'type'     => 'input_number',
                         'label'    => __('marketing weight'),
                         'value'    => $masterProduct->marketing_weight,
-                        'bind'     =>[
+                        'bind'     => [
                                 'suffix' => 'g'
                         ]
                     ],

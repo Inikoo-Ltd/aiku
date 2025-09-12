@@ -85,6 +85,11 @@ use Spatie\Translatable\HasTranslations;
  * @property bool|null $bucket_images images following the buckets
  * @property string|null $description_title
  * @property string|null $description_extra
+ * @property-read Media|null $art1Image
+ * @property-read Media|null $art2Image
+ * @property-read Media|null $art3Image
+ * @property-read Media|null $art4Image
+ * @property-read Media|null $art5Image
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Media|null $backImage
  * @property-read Media|null $bottomImage

@@ -72,7 +72,7 @@ class UpdateTradeUnitImages extends GrpAction
         $this->update($tradeUnit, $modelData);
 
         if ($updateDependants) {
-           $this->updateDependencies($tradeUnit, $modelData);
+            $this->updateDependencies($tradeUnit, $modelData);
         }
 
         return $tradeUnit;
@@ -121,6 +121,6 @@ class UpdateTradeUnitImages extends GrpAction
     {
         $this->initialisation($tradeUnit->group, $request);
 
-        $this->handle($tradeUnit, $this->validatedData,true);
+        $this->handle($tradeUnit, $this->validatedData, true);
     }
 }

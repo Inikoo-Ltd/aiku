@@ -148,6 +148,11 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $cost_price_ratio
  * @property int|null $lifestyle_image_id
  * @property bool|null $bucket_images images following the buckets
+ * @property-read Media|null $art1Image
+ * @property-read Media|null $art2Image
+ * @property-read Media|null $art3Image
+ * @property-read Media|null $art4Image
+ * @property-read Media|null $art5Image
  * @property-read \App\Models\Catalogue\Asset|null $asset
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Media|null $backImage
