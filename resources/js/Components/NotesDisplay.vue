@@ -35,6 +35,8 @@ const props = defineProps<{
     }>
 }>()
 
+// console.log(props);
+
 // Default note field mappings
 const defaultNoteFields = {
     shipping: 'shipping_notes',
