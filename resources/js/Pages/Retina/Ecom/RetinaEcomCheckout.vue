@@ -58,7 +58,6 @@ const currentTab = ref({
 })
 
 const layout = inject('layout', retinaLayoutStructure)
-console.log('layout', layout.retina.type)
 
 const component = computed(() => {
     const components: Component = {
@@ -88,6 +87,9 @@ const component = computed(() => {
 //     //     }
 //     // })
 // }
+onMounted(() => {
+    layout.root_active = 'retina.ecom.basket.'
+})
 </script>
 
 <template>
