@@ -9,6 +9,7 @@
 
 use App\Actions\Web\Webpage\UI\ShowFooterPreview;
 use App\Actions\Web\Webpage\UI\ShowHeaderPreview;
+use App\Actions\Web\Webpage\UI\ShowSidebarPreview;
 use App\Actions\Web\Webpage\UI\ShowWebpageWorkshopPreview;
 use App\Actions\Web\Webpage\UI\ShowWebsitePreview;
 
@@ -16,3 +17,4 @@ Route::get('{website}/webpages/{webpage}/workshop/preview', [ShowWebpageWorkshop
 Route::get('{website}/webpages/{webpage}/website/preview', ShowWebsitePreview::class)->name('preview');
 Route::get('{website}/footer/preview', ShowFooterPreview::class)->name('footer.preview');
 Route::get('{website}/header/preview', ShowHeaderPreview::class)->name('header.preview');
+Route::get('{website}/sidebar/preview', ShowSidebarPreview::class)->name('sidebar.preview');
