@@ -71,6 +71,34 @@ class AutosaveWebsiteMarginal extends OrgAction
                     'menu' => $layout
                 ]
             ]);
+        } elseif ($marginal == 'sidebar') {
+            if (!$website->unpublishedMenuSnapshot) {
+                $menuSnapshot = StoreWebsiteSnapshot::run(
+                    $website,
+                    [
+                        'scope'  => SnapshotScopeEnum::MENU,
+                        'publisher_id'   => Arr::get($modelData, 'publisher_id'),
+                        'publisher_type' => Arr::get($modelData, 'publisher_type'),
+                        'layout' => []
+                    ]
+                );
+
+                $website->update(
+                    [
+                        'unpublished_menu_snapshot_id' => $menuSnapshot->id
+                    ]
+                );
+                $website->refresh();
+            }
+
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedMenuSnapshot->layout;
+
+
+            $this->update($website->unpublishedMenuSnapshot, [
+                'layout' => [
+                    'sidebar' => $layout
+                ]
+            ]);
         } elseif ($marginal == 'department') {
             if (!$website->unpublishedDepartmentSnapshot) {
                 $departmentSnapshot = StoreWebsiteSnapshot::run(
@@ -276,6 +304,12 @@ class AutosaveWebsiteMarginal extends OrgAction
     {
         $this->initialisationFromShop($website->shop, $request);
         $this->handle($website, 'menu', $this->validatedData);
+    }
+
+    public function sidebar(Website $website, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website, 'sidebar', $this->validatedData);
     }
 
     public function department(Website $website, ActionRequest $request): void
