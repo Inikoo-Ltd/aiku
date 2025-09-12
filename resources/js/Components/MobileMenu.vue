@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import Drawer from 'primevue/drawer';
-import { ref, inject, onMounted, onUnmounted } from 'vue';
+import { ref, inject, onMounted, onUnmounted, computed } from 'vue';
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue';
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faSignIn, faSignOut, faTimesCircle } from '@fas';
-import { library } from '@fortawesome/fontawesome-svg-core'
+// import { library } from '@fortawesome/fontawesome-svg-core'
 import { faBars, faChevronCircleDown } from '@fal';
 import { getStyles } from "@/Composables/styles";
 import { isNull } from 'lodash-es';
-import { trans } from 'laravel-vue-i18n';
+// import { trans } from 'laravel-vue-i18n';
 import Button from './Elements/Buttons/Button.vue';
 import { faChevronRight, faExternalLink } from '@far';
 
@@ -27,6 +27,35 @@ const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false));
 const isMobile = ref(false);
 const activeIndex = ref(null); // active category
 const activeSubIndex = ref(null); // active subdepartment
+
+// Computed properties for sorted data
+const sortedProductCategories = computed(() => {
+    if (!props.productCategories) return [];
+    return [...props.productCategories].sort((a, b) => 
+        (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' })
+    );
+});
+
+const sortedNavigation = computed(() => {
+    if (!props.menu?.navigation) return [];
+    return [...props.menu.navigation].sort((a, b) => 
+        (a.label || '').localeCompare(b.label || '', undefined, { sensitivity: 'base' })
+    );
+});
+
+const sortedSubDepartments = computed(() => {
+    if (activeIndex.value === null || !sortedProductCategories.value[activeIndex.value]?.sub_departments) return [];
+    return [...sortedProductCategories.value[activeIndex.value].sub_departments].sort((a, b) => 
+        (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' })
+    );
+});
+
+const sortedFamilies = computed(() => {
+    if (activeSubIndex.value === null || !sortedSubDepartments.value[activeSubIndex.value]?.families) return [];
+    return [...sortedSubDepartments.value[activeSubIndex.value].families].sort((a, b) => 
+        (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' })
+    );
+});
 
 // reset subdepartment when category changes
 const setActiveCategory = (index: number) => {
@@ -69,7 +98,7 @@ console.log('layout', layout)
 
             <div v-if="isMobile" class="menu-container-mobile">
                 <div class="menu-content">
-                    <div v-for="(item, index) in props.menu?.navigation" :key="index">
+                    <div v-for="(item, index) in sortedNavigation" :key="index">
                         <!-- MULTIPLE TYPE WITH DROPDOWN -->
                         <Disclosure v-if="item.type === 'multiple'" v-slot="{ open }">
                             <DisclosureButton class="w-full text-left p-4 font-semibold text-gray-600 border-b">
@@ -98,7 +127,7 @@ console.log('layout', layout)
                                     </a>
 
                                     <div v-if="submenu.links" class="space-y-2 mt-2 ml-4 pl-4  border-gray-200">
-                                        <a v-for="(menu, menuIndex) in submenu.links" :key="menuIndex"
+                                        <a v-for="(menu, menuIndex) in [...submenu.links].sort((a, b) => (a.label || '').localeCompare(b.label || '', undefined, { sensitivity: 'base' }))" :key="menuIndex"
                                             :href="menu.link?.href" :target="menu.link?.target"
                                             :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
                                             class="block text-sm text-gray-700 relative hover:text-primary transition-all">
@@ -145,7 +174,7 @@ console.log('layout', layout)
                     </div>
 
                     <!-- List -->
-                    <div v-for="(item, index) in productCategories" :key="index" class="p-2 px-4 flex items-center justify-between cursor-pointer transition-colors duration-200"
+                    <div v-for="(item, index) in sortedProductCategories" :key="index" class="p-2 px-4 flex items-center justify-between cursor-pointer transition-colors duration-200"
                         :class="[
                             activeIndex === index
                                 ? `bg-gray-100 font-semibold text-[${layout.iris.theme.color[0]}]`
@@ -164,8 +193,8 @@ console.log('layout', layout)
                     </div>
 
                     <div class="overflow-y-auto">
-                    <div v-if="productCategories[activeIndex]?.sub_departments?.length">
-                        <div v-for="(sub, sIndex) in productCategories[activeIndex].sub_departments" :key="sIndex"
+                    <div v-if="sortedSubDepartments.length">
+                        <div v-for="(sub, sIndex) in sortedSubDepartments" :key="sIndex"
                             class="p-2 px-4 flex items-center justify-between cursor-pointer transition-colors duration-200"
                             :class="[
                                 activeSubIndex === sIndex
@@ -176,7 +205,7 @@ console.log('layout', layout)
                             <FontAwesomeIcon :icon="faChevronRight" class="transition-transform duration-200 text-xs" />
                         </div>
                         <div class="p-2 px-4  cursor-pointer font-bold">
-                            <a :href="'/' + productCategories[activeIndex].url">
+                            <a :href="'/' + sortedProductCategories[activeIndex].url">
                                 <Button label="View all" :icon="faExternalLink" size="xs" />
                             </a>
                         </div>
@@ -195,13 +224,13 @@ console.log('layout', layout)
                     </div>
 
                     <div v-if="activeSubIndex !== null" class="overflow-y-auto">
-                    <div v-if="productCategories[activeIndex]?.sub_departments?.[activeSubIndex]?.families?.length">
-                        <div v-for="(child, cIndex) in productCategories[activeIndex].sub_departments[activeSubIndex].families"
+                    <div v-if="sortedFamilies.length">
+                        <div v-for="(child, cIndex) in sortedFamilies"
                             :key="cIndex" class="p-2 px-4  cursor-pointer hover:bg-gray-50">
                             <a :href="'/' + child.url">{{ child.name }}</a>
                         </div>
                         <div class="p-2 px-4  cursor-pointer hover:bg-gray-50 font-bold">
-                            <a :href="'/' + productCategories[activeIndex].sub_departments?.[activeSubIndex].url">
+                            <a :href="'/' + sortedSubDepartments[activeSubIndex].url">
                                 <Button label="View all" :icon="faExternalLink" size="xs" />
                             </a>
                         </div>

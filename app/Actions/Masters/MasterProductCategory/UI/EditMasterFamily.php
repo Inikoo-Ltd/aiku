@@ -111,14 +111,20 @@ class EditMasterFamily extends OrgAction
                 'formData'    => [
                     'blueprint' => [
                         [
-                            'label'  => __('Name/Description'),
-                            'icon'   => 'fa-light fa-tag',
+                            'label'  => __('Id'),
+                            'icon'   => 'fa-light fa-fingerprint',
                             'fields' => [
                                 'code' => [
                                     'type'  => 'input',
                                     'label' => __('code'),
                                     'value' => $masterProductCategory->code
                                 ],
+                            ]
+                        ],
+                        [
+                            'label'  => __('Name/Description'),
+                            'icon'   => 'fa-light fa-tag',
+                            'fields' => [
                                 'name' => [
                                     'type'  => 'input',
                                     'label' => __('name'),
@@ -138,6 +144,36 @@ class EditMasterFamily extends OrgAction
                                     'type'  => 'textEditor',
                                     'label' => __('Extra description'),
                                     'value' => $masterProductCategory->description_extra
+                                ],
+                            ]
+                        ],
+                        [
+                            'label'  => __('Translations'),
+                            'icon'   => 'fa-light fa-language',
+                            'fields' => [
+                                'name_i8n' => [
+                                    'type'  => 'input_translation',
+                                    'label' => __('translate name'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
+                                    'value' => $masterProductCategory->getTranslations('name_i8n')
+                                ],
+                                'description_title_i8n' => [
+                                    'type'  => 'input_translation',
+                                    'label' => __('translate description title'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
+                                    'value' => $masterProductCategory->getTranslations('description_title_i8n')
+                                ],
+                                'description_i8n' => [
+                                    'type'  => 'textEditor_translation',
+                                    'label' => __('translate description'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
+                                    'value' => $masterProductCategory->getTranslations('description_i8n')
+                                ],
+                                'description_extra_i8n' => [
+                                    'type'  => 'textEditor_translation',
+                                    'label' => __('translate description extra'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
+                                    'value' => $masterProductCategory->getTranslations('description_extra_i8n')
                                 ],
                             ]
                         ],
@@ -202,37 +238,6 @@ class EditMasterFamily extends OrgAction
                             ],
 
                         ],
-                        [
-                            'label'  => __('Translations'),
-                            'icon'   => 'fa-light fa-language',
-                            'fields' => [
-                                'name_i8n' => [
-                                    'type'  => 'input_translation',
-                                    'label' => __('translate name'),
-                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
-                                    'value' => $masterProductCategory->getTranslations('name_i8n')
-                                ],
-                                'description_title_i8n' => [
-                                    'type'  => 'input_translation',
-                                    'label' => __('translate description title'),
-                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
-                                    'value' => $masterProductCategory->getTranslations('description_title_i8n')
-                                ],
-                                'description_i8n' => [
-                                    'type'  => 'textEditor_translation',
-                                    'label' => __('translate description'),
-                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
-                                    'value' => $masterProductCategory->getTranslations('description_i8n')
-                                ],
-                                'description_extra_i8n' => [
-                                    'type'  => 'textEditor_translation',
-                                    'label' => __('translate description extra'),
-                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
-                                    'value' => $masterProductCategory->getTranslations('description_extra_i8n')
-                                ],
-                            ]
-                        ],
-
                     ],
                     'args'      => [
                         'updateRoute' => [
