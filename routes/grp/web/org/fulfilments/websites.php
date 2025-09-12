@@ -52,7 +52,7 @@ Route::name('websites.')->group(function () {
                     Route::get('footer', [ShowFooterWorkshop::class, 'inFulfilment'])->name('.footer');
                     Route::get('header', [ShowHeaderWorkshop::class, 'inFulfilment'])->name('.header');
                     Route::get('menu', [ShowMenuWorkshop::class, 'inFulfilment'])->name('.menu');
-                    Route::get('menu', [ShowSidebarWorkshop::class, 'inFulfilment'])->name('.sidebar');
+                    Route::get('sidebar', [ShowSidebarWorkshop::class, 'inFulfilment'])->name('.sidebar');
                 });
 
             Route::name('redirect')->prefix('redirect')
