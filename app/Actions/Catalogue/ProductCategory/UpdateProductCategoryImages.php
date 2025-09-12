@@ -9,6 +9,7 @@
 
 namespace App\Actions\Catalogue\ProductCategory;
 
+use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategoryImages;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Catalogue\ProductCategory;
@@ -20,7 +21,7 @@ class UpdateProductCategoryImages extends OrgAction
 {
     use WithActionUpdate;
 
-    public function handle(ProductCategory $productCategory, array $modelData)
+    public function handle(ProductCategory $productCategory, array $modelData, bool $updateDependants = false): ProductCategory
     {
         $imageTypeMapping = [
             'image_id' => 'main',
@@ -38,8 +39,8 @@ class UpdateProductCategoryImages extends OrgAction
                 $productCategory->images()->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
                     ->updateExistingPivot(
                         $productCategory->images()
-                        ->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
-                        ->first()?->id,
+                            ->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
+                            ->first()?->id,
                         ['sub_scope' => null]
                     );
             } else {
@@ -56,8 +57,24 @@ class UpdateProductCategoryImages extends OrgAction
 
         $this->update($productCategory, $modelData);
 
+        if ($updateDependants && $productCategory->masterProductCategory) {
+            $this->updateDependants($productCategory, $modelData);
+        }
+
         return $productCategory;
     }
+
+    public function updateDependants(ProductCategory $seedProductCategory, array $modelData): void
+    {
+        UpdateMasterProductCategoryImages::run($seedProductCategory->masterProductCategory, $modelData, false);
+
+        foreach ($seedProductCategory->masterProductCategory->productCategories as $productCategory) {
+            if ($productCategory->id != $seedProductCategory->id) {
+                UpdateProductCategoryImages::run($productCategory, $modelData, false);
+            }
+        }
+    }
+
 
     public function rules(): array
     {
@@ -71,6 +88,6 @@ class UpdateProductCategoryImages extends OrgAction
     {
         $this->initialisationFromShop($productCategory->shop, $request);
 
-        $this->handle($productCategory, $this->validatedData);
+        $this->handle($productCategory, $this->validatedData, true);
     }
 }

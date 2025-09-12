@@ -25,13 +25,13 @@ class UploadImagesToProduct extends OrgAction
     {
         $medias = $this->uploadImages($model, $scope, $modelData);
         if ($updateDependants && $model->is_single_trade_unit) {
-            $this->updateDependants($model, $modelData, $medias, $scope);
+            $this->updateDependants($model, $medias, $scope);
         }
 
         return $medias;
     }
 
-    public function updateDependants(Product $seedProduct, array $modelData, array $medias, string $scope): void
+    public function updateDependants(Product $seedProduct, array $medias, string $scope): void
     {
         $tradeUnit = $seedProduct->tradeUnits->first();
         foreach ($medias as $media) {
@@ -39,11 +39,13 @@ class UploadImagesToProduct extends OrgAction
         }
 
 
-        foreach (DB::table('model_has_trade_units')
-            ->select('model_type', 'model_id')
-            ->where('trade_unit_id', $tradeUnit->id)
-            ->whereIn('model_type', ['MasterAsset','Product'])
-            ->get() as $modelsData) {
+        foreach (
+            DB::table('model_has_trade_units')
+                ->select('model_type', 'model_id')
+                ->where('trade_unit_id', $tradeUnit->id)
+                ->whereIn('model_type', ['MasterAsset', 'Product'])
+                ->get() as $modelsData
+        ) {
             if ($modelsData->model_type == 'MasterAsset') {
                 $masterAsset = MasterAsset::find($modelsData->model_id);
                 if ($masterAsset && $masterAsset->is_single_trade_unit) {
@@ -70,7 +72,6 @@ class UploadImagesToProduct extends OrgAction
 
     public function asController(Product $product, ActionRequest $request): void
     {
-
         $this->initialisationFromShop($product->shop, $request);
 
         $this->handle($product, 'image', $this->validatedData, true);

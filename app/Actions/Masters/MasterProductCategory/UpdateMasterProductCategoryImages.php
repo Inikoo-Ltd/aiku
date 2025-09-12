@@ -9,6 +9,7 @@
 
 namespace App\Actions\Masters\MasterProductCategory;
 
+use App\Actions\Catalogue\ProductCategory\UpdateProductCategoryImages;
 use App\Actions\GrpAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Helpers\Media;
@@ -20,7 +21,7 @@ class UpdateMasterProductCategoryImages extends GrpAction
 {
     use WithActionUpdate;
 
-    public function handle(MasterProductCategory $masterProductCategory, array $modelData)
+    public function handle(MasterProductCategory $masterProductCategory, array $modelData, bool $updateDependants = false)
     {
         $imageTypeMapping = [
             'image_id' => 'main',
@@ -38,8 +39,8 @@ class UpdateMasterProductCategoryImages extends GrpAction
                 $masterProductCategory->images()->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
                     ->updateExistingPivot(
                         $masterProductCategory->images()
-                        ->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
-                        ->first()?->id,
+                            ->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
+                            ->first()?->id,
                         ['sub_scope' => null]
                     );
             } else {
@@ -56,7 +57,18 @@ class UpdateMasterProductCategoryImages extends GrpAction
 
         $this->update($masterProductCategory, $modelData);
 
+        if ($updateDependants) {
+            $this->updateDependants($masterProductCategory, $modelData);
+        }
+
         return $masterProductCategory;
+    }
+
+    public function updateDependants(MasterProductCategory $seedMasterProductCategory, array $modelData): void
+    {
+        foreach ($seedMasterProductCategory->productCategories as $productCategory) {
+            UpdateProductCategoryImages::run($productCategory, $modelData, false);
+        }
     }
 
     public function rules(): array
@@ -71,6 +83,6 @@ class UpdateMasterProductCategoryImages extends GrpAction
     {
         $this->initialisation($masterProductCategory->group, $request);
 
-        $this->handle($masterProductCategory, $this->validatedData);
+        $this->handle($masterProductCategory, $this->validatedData, true);
     }
 }
