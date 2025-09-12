@@ -62,10 +62,10 @@ class DeliveryNoteItemsResource extends JsonResource
             'quantity_dispatched'          => $this->quantity_dispatched,
             'quantity_dispatched_fractional'   => riseDivisor(divideWithRemainder(findSmallestFactors($quantityDispatched)), $packedIn),
             'quantity_picked'              => $this->quantity_picked,
-            'quantity_picked_fractional'   => riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_picked)), $packedIn),
+            'quantity_picked_fractional'   => riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_picked ?? 0)), $packedIn),
 
             'quantity_packed'              => $this->quantity_packed,
-            'quantity_packed_fractional'   => riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_packed)), $packedIn),
+            'quantity_packed_fractional'   => riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_packed ?? 0)), $packedIn),
 
 
             'org_stock_code'               => $this->org_stock_code,

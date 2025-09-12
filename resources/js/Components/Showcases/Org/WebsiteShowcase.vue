@@ -45,6 +45,7 @@ const props = defineProps<{
 const links = ref([
     { label: trans("Edit Header"), route_target: props.data.layout.headerRoute, icon: faPencil },
     { label: trans("Edit Menu"), route_target: props.data.layout.menuRoute, icon: faPencil },
+    { label: trans("Edit Sidebar"), route_target: props.data.layout.sidebarRoute, icon: faPencil },
     { label: trans("Edit Footer"), route_target: props.data.layout.footerRoute, icon: faPencil }
 ]);
 
@@ -62,7 +63,7 @@ window.reindexwebsite = async () => {
 
         console.log('success reindex website', response.data)
         if (response.status !== 200) {
-            
+
         }
     } catch (error: any) {
         notify({
@@ -82,7 +83,7 @@ const isAbleReindex = computed(() => {
 })
 const dateAdd30MinutesLastReindex = computed(() => {
     const dateLastReindex = new Date(props.luigi_data.last_reindexed)
-    return dateLastReindex.setMinutes(dateLastReindex.getMinutes() + 30) 
+    return dateLastReindex.setMinutes(dateLastReindex.getMinutes() + 30)
 })
 
 
@@ -138,7 +139,7 @@ const dateAdd30MinutesLastReindex = computed(() => {
 
                     <div v-for="(item, index) in links" :key="index" class="px-2 py-1">
                         <ButtonWithLink :routeTarget="item.route_target" full :icon="item.icon" :label="item.label"
-                            type="secondary" />
+                            type="secondary" :disabled="item?.disabled" />
                     </div>
 
                     <div class="p-2 space-y-2">
