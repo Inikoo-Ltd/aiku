@@ -123,24 +123,36 @@ class EditMasterSubDepartment extends OrgAction
                                 'name_i8n' => [
                                     'type'  => 'input_translation',
                                     'label' => __('translate name'),
+                                    'language_from' => 'en',
+                                    'full' => true,
+                                    'main' => $masterProductCategory->name,
                                     'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
                                     'value' => $masterProductCategory->getTranslations('name_i8n')
                                 ],
                                 'description_title_i8n' => [
                                     'type'  => 'input_translation',
                                     'label' => __('translate description title'),
+                                    'language_from' => 'en',
+                                    'full' => true,
+                                    'main' => $masterProductCategory->description_title,
                                     'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
                                     'value' => $masterProductCategory->getTranslations('description_title_i8n')
                                 ],
                                 'description_i8n' => [
                                     'type'  => 'textEditor_translation',
                                     'label' => __('translate description'),
+                                    'language_from' => 'en',
+                                    'full' => true,
+                                    'main' => $masterProductCategory->description,
                                     'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
                                     'value' => $masterProductCategory->getTranslations('description_i8n')
                                 ],
                                 'description_extra_i8n' => [
                                     'type'  => 'textEditor_translation',
                                     'label' => __('translate description extra'),
+                                    'language_from' => 'en',
+                                    'full' => true,
+                                    'main' => $masterProductCategory->description_extra,
                                     'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
                                     'value' => $masterProductCategory->getTranslations('description_extra_i8n')
                                 ],

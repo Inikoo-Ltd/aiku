@@ -165,7 +165,7 @@ class EditFamily extends OrgAction
                                     ],
                                 ]
                             ],
-                            !$family->master_product_category_id ? [
+                            /* !$family->master_product_category_id ? [
                                 'label'  => __('Translations'),
                                 'icon'   => 'fa-light fa-language',
                                 'main' => $family->name,
@@ -196,7 +196,7 @@ class EditFamily extends OrgAction
                                         'value' => $family->getTranslations('description_extra_i8n')
                                     ],
                                 ]
-                            ] : null,
+                            ] : null, */
                             [
                                 'label'  => __('Pricing'),
                                 'title'  => __('id'),

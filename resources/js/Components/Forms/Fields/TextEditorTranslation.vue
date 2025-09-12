@@ -71,7 +71,7 @@ const generateLanguagetranslateAI = async () => {
       langBuffers.value[selectedLang.value] = response.data
     }
 
-     key.value = uniqueId("editor-")
+    key.value = uniqueId("editor-")
   } catch (error: any) {
     notify({
       title: "Translation Error",
@@ -84,17 +84,27 @@ const generateLanguagetranslateAI = async () => {
 }
 
 // all translations
+// all translations
 const generateAllTranslationsAI = async () => {
   if (isDisabled.value) return
   loadingAll.value = true
   const langs = Object.values(props.fieldData.languages).map((l: any) => l.code)
 
   for (const lang of langs) {
-    if (lang === "main" || lang === props.fieldData.mainLang) continue
+    if (
+      lang === "main" ||
+      lang === props.fieldData.mainLang ||
+      langBuffers.value[lang] // ✅ skip if already translated
+    ) {
+      continue
+    }
 
     try {
       const response = await axios.post(
-        route("grp.models.translate", { languageFrom: props.fieldData.language_from || 'en', languageTo: lang }),
+        route("grp.models.translate", {
+          languageFrom: props.fieldData.language_from || "en",
+          languageTo: lang,
+        }),
         { text: props.fieldData.main }
       )
 
@@ -117,7 +127,7 @@ const generateAllTranslationsAI = async () => {
   key.value = uniqueId("editor-")
   notify({
     title: "Translation Complete",
-    text: "All available translations have been updated.",
+    text: "All missing translations have been updated.",
     type: "success",
   })
 }
@@ -166,21 +176,27 @@ onMounted(() => {
 
 <template>
   <div class="space-y-3">
-    <div class="flex justify-end mt-3 px-3">
-      <Button :label="loadingAll ? 'Translating...' : 'Translate All'" size="xxs" type="rainbow" :icon="faRobot"
-        :disabled="loadingOne || loadingAll || isDisabled" @click="generateAllTranslationsAI" />
-    </div>
-
     <!-- Language Selector -->
-    <div class="flex flex-wrap gap-1">
+    <div class="flex flex-wrap items-center gap-1 px-3">
+      <!-- Language buttons -->
       <Button v-for="lang in Object.values(fieldData.languages)" :key="lang.code + selectedLang" :label="lang.name"
         size="xxs" :type="selectedLang === lang.code ? 'primary' : 'gray'" @click="selectedLang = lang.code">
         <template #icon>
-          <FontAwesomeIcon :icon="langBuffers[lang.code] ? faCheckCircle : faCircle" class="w-3.5 h-3.5"
+          <FontAwesomeIcon :icon="langBuffers[lang.code] ? faCheckCircle : faCircle"
             :class="langBuffers[lang.code] ? 'text-green-500' : 'text-gray-400'" aria-hidden="true" />
+
+          <img v-if="lang.flag" :src="`/flags/${lang.flag}`" alt="" class="" />
         </template>
       </Button>
+
+      <!-- Translate All button -->
+      <Button class="ml-auto" :label="loadingAll ? 'Translating...' : 'Translate All'" size="xxs" type="rainbow"
+        :icon="faRobot" :disabled="loadingAll || loadingOne || isDisabled" @click="generateAllTranslationsAI"
+        :loading="loadingAll" />
+
+
     </div>
+
 
     <!-- Translation Section -->
     <div v-if="selectedLang" class="space-y-3">
@@ -203,7 +219,8 @@ onMounted(() => {
               {{ langLabel(selectedLang) }}
             </p>
             <Button :label="loadingOne ? 'Generating...' : 'Generate AI'" size="xxs" type="rainbow" :icon="faRobot"
-              :disabled="loadingOne || loadingAll || isDisabled" @click="generateLanguagetranslateAI" />
+              :disabled="loadingOne || loadingAll || isDisabled" @click="generateLanguagetranslateAI"
+              :loading="loadingOne" />
           </div>
 
           <EditorV2 v-model="langBuffers[selectedLang]" :key="selectedLang + key">

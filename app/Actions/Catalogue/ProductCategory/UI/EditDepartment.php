@@ -124,7 +124,7 @@ class EditDepartment extends OrgAction
                                     ],
                                 ]
                             ],
-                            !$department->master_product_category_id ? [
+                            /* !$department->master_product_category_id ? [
                                 'label'  => __('Translations'),
                                 'icon'   => 'fa-light fa-language',
                                 'main' => $department->name,
@@ -155,7 +155,7 @@ class EditDepartment extends OrgAction
                                         'value' => $department->getTranslations('description_extra_i8n')
                                     ],
                                 ]
-                            ] : null,
+                            ] : null, */
                             [
                                 'label'  => __('Pricing'),
                                 'icon'   => 'fa-light fa-money-bill',

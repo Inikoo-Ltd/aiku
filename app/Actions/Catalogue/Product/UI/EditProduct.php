@@ -257,7 +257,7 @@ class EditProduct extends OrgAction
                         ],
                     ]
                 ],
-                !$product->master_product_id ? [
+                /* !$product->master_product_id ? [
                     'label'  => __('Translations'),
                     'icon'   => 'fa-light fa-language',
                     'fields' => [
@@ -290,7 +290,7 @@ class EditProduct extends OrgAction
                             'value' => $product->getTranslations('description_extra_i8n')
                         ],
                     ]
-                ]: null,
+                ]: null, */
                 [
                     'label'  => __('Pricing'),
                     'icon'   => 'fa-light fa-money-bill',
