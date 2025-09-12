@@ -80,7 +80,7 @@ const submitForm = async (redirect = true) => {
     const finalDataTable: Record<number, { price: number | string }> = {}
     for (const tableDataItem of tableData.value.data) {
         finalDataTable[tableDataItem.id] = {
-            create_webpage: tableDataItem.product.has_org_stocks,
+            create_webpage: tableDataItem.create_webpage,
         }
     }
 
