@@ -12,6 +12,7 @@ namespace App\Actions\Dispatching\DeliveryNote;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\Dispatching\Picking\StoreNotPickPicking;
 use App\Actions\Dispatching\Picking\StorePicking;
+use App\Actions\Ordering\Order\RollbackOrderAfterDeliveryNoteCancellation;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
@@ -23,6 +24,7 @@ use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Inventory\LocationOrgStock;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class CancelDeliveryNote extends OrgAction
@@ -31,6 +33,15 @@ class CancelDeliveryNote extends OrgAction
 
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
+        $cancelledRef = $deliveryNote->reference . '-CANCELLED';
+
+        $cancelledCount = DB::table('delivery_notes')
+                ->where('reference', 'like', $deliveryNote->reference . '-CANCELLED%')
+                ->count();
+        
+        $newCancelledRef = $cancelledRef . ($cancelledCount > 0 ? '-' . ($cancelledCount + 1) : '');
+
+        data_set($modelData, 'reference', $newCancelledRef);
         data_set($modelData, 'cancelled_at', now());
         data_set($modelData, 'state', DeliveryNoteStateEnum::CANCELLED);
 
@@ -80,13 +91,13 @@ class CancelDeliveryNote extends OrgAction
         foreach ($deliveryNote->deliveryNoteItems as $item) {
             UpdateDeliveryNoteItem::make()->action($item, [
                 'state' => DeliveryNoteItemStateEnum::CANCELLED,
-                'cancel_state' => DeliveryNoteItemCancelStateEnum::RETURNED
+                'cancel_state' => DeliveryNoteItemCancelStateEnum::RETURNED,
             ]);
         }
 
         if($deliveryNote->type == DeliveryNoteTypeEnum::ORDER){
             $order= $deliveryNote->orders->first();
-            RollBackOrderAfterDeliveryNoteCancellaton::make()->action($order);
+            RollbackOrderAfterDeliveryNoteCancellation::make()->action($order);
         }
 
 
