@@ -42,7 +42,7 @@ class ShowSidebarWorkshop extends OrgAction
         $sidebarLayout   = Arr::get($website->published_layout, 'sidebar');
         $isMenuActive = Arr::get($sidebarLayout, 'status');
         return Inertia::render(
-            'Org/Web/Workshop/Sidebar/SideMenuWorkshop',
+            'Org/Web/Workshop/Sidebar/MenuWorkshopForSidebar',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),

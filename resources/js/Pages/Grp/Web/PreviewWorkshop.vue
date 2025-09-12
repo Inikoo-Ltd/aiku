@@ -35,7 +35,8 @@ const props = defineProps<{
     }
     layout: {
 
-    }
+    },
+    sidebar: {}
 }>()
 const layout: any = inject("layout", {});
 const isPreviewLoggedIn = ref(false)

@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { faFragile, faGlobe, faLink, faSearch, faPencil } from "@fal"
-import { computed, ref } from "vue"
+import { computed, ref, inject } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
@@ -29,7 +29,7 @@ const props = defineProps<{
         status: string
         created_at: string
         updated_at: string
-        layout: string
+        layout: any
         stats: StatsBoxTS[]
         content_blog_stats: StatsBoxTS[]
     }
@@ -42,10 +42,12 @@ const props = defineProps<{
     }
 }>()
 
+const layout = inject('layout')
+
 const links = ref([
     { label: trans("Edit Header"), route_target: props.data.layout.headerRoute, icon: faPencil },
     { label: trans("Edit Menu"), route_target: props.data.layout.menuRoute, icon: faPencil },
-    { label: trans("Edit Sidebar"), route_target: props.data.layout.sidebarRoute, icon: faPencil },
+    { label: trans("Edit Sidebar"), route_target: props.data.layout.sidebarRoute, icon: faPencil, disabled: layout?.app.environment !== 'local' },
     { label: trans("Edit Footer"), route_target: props.data.layout.footerRoute, icon: faPencil }
 ]);
 

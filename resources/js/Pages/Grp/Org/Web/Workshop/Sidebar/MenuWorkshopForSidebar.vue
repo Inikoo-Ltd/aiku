@@ -12,7 +12,7 @@ import ProgressSpinner from "primevue/progressspinner"
 import { routeType } from "@/types/route"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import SideMenuWorkshop from "./SideMenuWorkshop.vue"
+import SideMenuWorkshop from "./SideMenuWorkshopForSidebar.vue"
 import {
 	faChevronRight,
 	faSignOutAlt,
@@ -51,6 +51,8 @@ const props = defineProps<{
 	domain: string
 }>()
 
+console.log(props);
+
 const Navigation = ref(props.data.menu)
 const isLoading = ref(false)
 const status = ref(props.status)
@@ -58,7 +60,7 @@ const comment = ref("")
 const isIframeLoading = ref(true)
 const iframeClass = ref("w-full h-full")
 const _iframe = ref<IframeHTMLAttributes | null>(null)
-const iframeSrc = ref(route("grp.websites.header.preview", [route().params["website"]]))
+const iframeSrc = ref(route("grp.websites.sidebar.preview", [route().params["website"]]))
 
 
 const onPublish = async (action: routeType, popover: Funcition) => {
@@ -131,12 +133,12 @@ watch(currentView, (newValue) => {
 	<div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
 		<!-- SIDEBAR -->
 		<div  class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
-			<SideMenuWorkshop 
+			<!-- <SideMenuWorkshop 
 				:data="data?.menu" 
 				:webBlockTypes="webBlockTypes" 
 				:autosaveRoute="autosaveRoute"
 				@sendToIframe="sendToIframe"
-			/>
+			/> -->
 		</div>
 
 		<!-- PREVIEW SECTION -->
@@ -147,7 +149,7 @@ watch(currentView, (newValue) => {
 			</div>
 
 			<!-- Iframe Preview -->
-			<div v-if="data.menu?.code" class="relative flex-1 overflow-hidden">
+			<div v-if="data.sidebar" class="relative flex-1 overflow-hidden">
 				<div v-if="isIframeLoading" class="loading-overlay">
 					<ProgressSpinner />
 				</div>
