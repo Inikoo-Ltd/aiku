@@ -180,7 +180,7 @@ onMounted(() => {
             Original ({{ fieldData.mainLang || "en" }})
           </p>
           <p class="text-sm text-gray-700 whitespace-pre-wrap py-4">
-            {{ fieldData.main }}
+            {{ fieldData.main  ? fieldData.main : 'No content available' }}
           </p>
         </div>
 
