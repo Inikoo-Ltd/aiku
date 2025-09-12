@@ -53,8 +53,6 @@ use App\Actions\Retina\Dropshipping\Orders\StoreRetinaPlatformOrder;
 use App\Actions\Retina\Dropshipping\Orders\SubmitRetinaOrder;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\DeleteRetinaTransaction;
 use App\Actions\Retina\Dropshipping\Orders\Transaction\StoreRetinaEcomBasketTransaction;
-use App\Actions\Retina\Dropshipping\Orders\Transaction\StoreRetinaTransaction;
-use App\Actions\Retina\Dropshipping\Orders\Transaction\UpdateRetinaTransaction;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrder;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderExtraPacking;
 use App\Actions\Retina\Dropshipping\Orders\UpdateRetinaOrderPremiumDispatch;
@@ -109,7 +107,10 @@ use App\Actions\Retina\Fulfilment\StoredItem\UpdateRetinaStoredItem;
 use App\Actions\Retina\Media\AttachRetinaAttachmentToModel;
 use App\Actions\Retina\Media\DetachRetinaAttachmentFromModel;
 use App\Actions\Retina\Media\DownloadRetinaAttachment;
+use App\Actions\Retina\Ordering\AddRetinaProductToBasket;
+use App\Actions\Retina\Ordering\StoreRetinaTransaction;
 use App\Actions\Retina\Ordering\UpdateRetinaOrderDeliveryAddress;
+use App\Actions\Retina\Ordering\UpdateRetinaTransaction;
 use App\Actions\Retina\Shopify\CreateRetinaNewAllPortfoliosToShopify;
 use App\Actions\Retina\Shopify\CreateRetinaNewBulkPortfoliosToShopify;
 use App\Actions\Retina\Shopify\MatchRetinaBulkPortfoliosToCurrentShopifyProduct;
@@ -191,7 +192,6 @@ Route::post('stored-items', StoreRetinaStoredItem::class)->name('stored-items.st
 Route::patch('stored-items/{storedItem:id}', UpdateRetinaStoredItem::class)->name('stored-items.update');
 
 Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
-
     Route::patch('update', UpdateRetinaCustomer::class)->name('update');
 
     Route::patch('address/update', UpdateRetinaCustomerAddress::class)->name('address.update');
@@ -219,7 +219,8 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
 
     Route::name('transaction.')->prefix('transaction')->group(function () {
         Route::post('upload', ImportRetinaOrderTransaction::class)->name('upload');
-        Route::post('/', StoreRetinaTransaction::class)->name('store');
+        Route::post('add', AddRetinaProductToBasket::class)->name('add');
+        Route::post('', StoreRetinaTransaction::class)->name('store');
     });
 });
 
@@ -229,7 +230,6 @@ Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(funct
 });
 
 Route::name('fulfilment_customer.')->prefix('fulfilment-customer/{fulfilmentCustomer:id}')->group(function () {
-
     Route::post('delivery-address/store', AddRetinaDeliveryAddressToFulfilmentCustomer::class)->name('delivery_address.store');
 });
 

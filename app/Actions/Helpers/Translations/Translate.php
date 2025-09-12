@@ -23,13 +23,13 @@ class Translate extends OrgAction
     /**
      * @throws \Exception
      */
-    public function handle($text, Language $language): string
+    public function handle($text, Language $languageFrom, Language $languageTo): string
     {
-        if ($text == '' || $language->code == 'en') {
+        if ($text == '' || $languageFrom->code == $languageTo->code) {
             return $text;
         }
 
-        $translationEngineService = new TranslationEngineService();
+        $translationEngineService   = new TranslationEngineService();
         $translationWorkflowService = new TranslationWorkflowService($translationEngineService);
 
         $texts = [
@@ -38,34 +38,35 @@ class Translate extends OrgAction
 
         $translationWorkflowService->setInMemoryTexts($texts);
 
-        $translatedTexts = $translationWorkflowService->translate('en', $language->code, config('auto-translations.default_driver'));
+        $translatedTexts = $translationWorkflowService->translate($languageFrom->code, $languageTo->code, config('auto-translations.default_driver'));
 
         return Arr::get($translatedTexts, 'text_to_translate', $text);
     }
 
     public function getCommandSignature(): string
     {
-        return 'translate {language} {text}';
+        return 'translate {languageFrom} {languageTo} {text}';
     }
 
 
     public function rules(): array
     {
         return [
-            'text' => ['required','string']
+            'text' => ['required', 'string']
         ];
-
     }
 
     /**
      * @throws \Exception
      */
-    public function asController($language, ActionRequest $request): string
+    public function asController(string $languageFrom, string $languageTo, ActionRequest $request): string
     {
         $this->initialisationFromGroup(group(), $request);
-        $language = Language::where('code', $language)->first();
-        $text = Arr::get($this->validatedData, 'text');
-        return $this->handle($text, $language);
+        $languageFrom = Language::where('code', $languageFrom)->first();
+        $languageTo   = Language::where('code', $languageTo)->first();
+        $text         = Arr::get($this->validatedData, 'text');
+
+        return $this->handle($text, $languageFrom, $languageTo);
     }
 
     /**
@@ -73,12 +74,12 @@ class Translate extends OrgAction
      */
     public function asCommand($command): void
     {
-        $text = $command->argument('text');
-        $language = Language::where('code', $command->argument('language'))->firstOrFail();
+        $text         = $command->argument('text');
+        $languageTo   = Language::where('code', $command->argument('languageTo'))->firstOrFail();
+        $languageFrom = Language::where('code', $command->argument('languageFrom'))->firstOrFail();
 
-        $translation = $this->handle($text, $language);
+        $translation = $this->handle($text, $languageTo, $languageFrom);
         $command->info($text.' -> '.$translation);
-
     }
 
 
