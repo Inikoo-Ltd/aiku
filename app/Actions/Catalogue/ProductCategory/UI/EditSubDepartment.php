@@ -90,15 +90,20 @@ class EditSubDepartment extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'label'  => __('Name/Description'),
-                            'icon'   => 'fa-light fa-tag',
-                            'title'  => __('id'),
+                            'label'  => __('Id'),
+                            'icon'   => 'fa-light fa-fingerprint',
                             'fields' => [
                                 'code' => [
                                     'type'  => 'input',
                                     'label' => __('code'),
                                     'value' => $subDepartment->code
                                 ],
+                            ]
+                        ],
+                        [
+                            'label'  => __('Name/Description'),
+                            'icon'   => 'fa-light fa-tag',
+                            'fields' => [
                                 'name' => [
                                     'type'  => 'input',
                                     'label' => __('name'),
@@ -118,6 +123,38 @@ class EditSubDepartment extends OrgAction
                                     'type'  => 'textEditor',
                                     'label' => __('Extra description'),
                                     'value' => $subDepartment->description_extra
+                                ],
+                            ]
+                        ],
+                        [
+                            'label'  => __('Translations'),
+                            'icon'   => 'fa-light fa-language',
+                            'main' => $subDepartment->name,
+                            'languages_main' => $subDepartment->shop->language->code,
+                            'fields' => [
+                                'name_i8n' => [
+                                    'type'  => 'input_translation',
+                                    'label' => __('translate name'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($subDepartment->shop->extra_languages),
+                                    'value' => $subDepartment->getTranslations('name_i8n')
+                                ],
+                                'description_title_i8n' => [
+                                    'type'  => 'input_translation',
+                                    'label' => __('translate description title'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($subDepartment->shop->extra_languages),
+                                    'value' => $subDepartment->getTranslations('description_title_i8n')
+                                ],
+                                'description_i8n' => [
+                                    'type'  => 'textEditor_translation',
+                                    'label' => __('translate description'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($subDepartment->shop->extra_languages),
+                                    'value' => $subDepartment->getTranslations('description_i8n')
+                                ],
+                                'description_extra_i8n' => [
+                                    'type'  => 'textEditor_translation',
+                                    'label' => __('translate description extra'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($subDepartment->shop->extra_languages),
+                                    'value' => $subDepartment->getTranslations('description_extra_i8n')
                                 ],
                             ]
                         ],
@@ -178,36 +215,6 @@ class EditSubDepartment extends OrgAction
                                     'value'   => $subDepartment->department->id ?? null,
                                 ]
                             ],
-                        ],
-                        [
-                            'label'  => __('Translations'),
-                            'icon'   => 'fa-light fa-language',
-                            'fields' => [
-                                'name_i8n' => [
-                                    'type'  => 'input_translation',
-                                    'label' => __('translate name'),
-                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($subDepartment->shop->extra_languages),
-                                    'value' => $subDepartment->getTranslations('name_i8n')
-                                ],
-                                'description_title_i8n' => [
-                                    'type'  => 'input_translation',
-                                    'label' => __('translate description title'),
-                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($subDepartment->shop->extra_languages),
-                                    'value' => $subDepartment->getTranslations('description_title_i8n')
-                                ],
-                                'description_i8n' => [
-                                    'type'  => 'textEditor_translation',
-                                    'label' => __('translate description'),
-                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($subDepartment->shop->extra_languages),
-                                    'value' => $subDepartment->getTranslations('description_i8n')
-                                ],
-                                'description_extra_i8n' => [
-                                    'type'  => 'textEditor_translation',
-                                    'label' => __('translate description extra'),
-                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($subDepartment->shop->extra_languages),
-                                    'value' => $subDepartment->getTranslations('description_extra_i8n')
-                                ],
-                            ]
                         ],
 
 
