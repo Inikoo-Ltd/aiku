@@ -55,6 +55,7 @@ import PureInput from "@/Components/Pure/PureInput.vue";
 import ToggleSwitch from 'primevue/toggleswitch';
 import PureAddress from "@/Components/Pure/PureAddress.vue"
 import Message from 'primevue/message';
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 
 
 library.add(faSmileWink, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faStar);
@@ -375,6 +376,24 @@ onMounted(() => {
             <Button @click="isModalToQueue = true" :label="action.label" :icon="action.icon" type="tertiary" />
         </template>
 
+        <template #button-cancel="{ action}">
+            <ModalConfirmationDelete
+                :routeDelete="action.route"
+                :title="trans('Are you sure you want to cancel the delivery?')"
+                :description="trans('This will rollback the Order to submitted state as well as cancelling this Delivery Note. This action cannot be undone.')"
+                isFullLoading
+                :noLabel="trans('Yes, cancel delivery')"
+                noIcon="x"
+                :cancelLabel="trans('No, keep delivery')"
+            >
+                <template #default="{ isOpenModal, changeModel }">
+                    <Button @click="changeModel"
+                        :label="action.label"
+                        :type="action.style"
+                    />
+                </template>
+            </ModalConfirmationDelete>
+        </template>
 
     </PageHeading>
     <!-- Section: Pallet Warning -->
