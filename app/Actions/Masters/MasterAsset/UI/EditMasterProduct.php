@@ -171,6 +171,8 @@ class EditMasterProduct extends GrpAction
                     'name_i8n' => [
                         'type'  => 'input_translation',
                         'label' => __('translate name'),
+                        'language_from' => 'en',
+                        'full' => true,
                         'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
                         'main'  => $masterProduct->name,
                         'value' => $masterProduct->getTranslations('name_i8n')
@@ -180,17 +182,23 @@ class EditMasterProduct extends GrpAction
                         'label' => __('translate description title'),
                         'main'  => $masterProduct->description_title,
                         'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
-                        'value' => $masterProduct->getTranslations('description_title_i8n')
+                        'value' => $masterProduct->getTranslations('description_title_i8n'),
+                        'language_from' => 'en',
+                        'full' => true,
                     ],
                     'description_i8n' => [
                         'type'  => 'textEditor_translation',
                         'label' => __('translate description'),
                         'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
                         'main'  => $masterProduct->description,
+                        'language_from' => 'en',
+                        'full' => true,
                         'value' => $masterProduct->getTranslations('description_i8n')
                     ],
                     'description_extra_i8n' => [
                         'type'  => 'textEditor_translation',
+                        'language_from' => 'en',
+                        'full' => true,
                         'label' => __('translate description extra'),
                         'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
                         'main' => $masterProduct->description_extra,

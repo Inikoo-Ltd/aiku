@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Editor from '@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue'
 import { EditorContent } from '@tiptap/vue-3'
+import { get } from 'lodash-es'
 
 const props = defineProps<{
     form: any
@@ -27,6 +28,9 @@ const props = defineProps<{
       </template>
     </Editor>
   </div>
+    <p v-if="get(form, ['errors', `${fieldName}`])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">
+        {{ form.errors[fieldName] }}
+    </p>
 </template>
 
 <style scoped>
