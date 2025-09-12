@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Dropshipping\Orders\Transaction;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\RetinaAction;
 use App\Models\Catalogue\HistoricAsset;
+use App\Models\Catalogue\Product;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Http\RedirectResponse;
@@ -82,8 +83,27 @@ class StoreRetinaTransaction extends RetinaAction
         return true;
     }
 
+    public function prepareForValidation(ActionRequest $request): void
+    {
+
+        if($request->has('product_id')){
+
+            $product=Product::find($request->get('product_id'));
+            $request->merge(
+                [
+                    'historic_asset_id' => $product->currentHistoricProduct->id,
+
+                ]
+            );
+        }
+
+
+    }
+
+
     public function asController(Order $order, ActionRequest $request): Transaction
     {
+
         $this->initialisation($request);
 
         return $this->handle($order, $this->validatedData);
