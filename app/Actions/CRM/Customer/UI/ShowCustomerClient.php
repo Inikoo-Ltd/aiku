@@ -103,6 +103,7 @@ class ShowCustomerClient extends OrgAction
             }
         }
 
+
         return Inertia::render(
             'Org/Shop/CRM/CustomerClient',
             [
@@ -138,7 +139,7 @@ class ShowCustomerClient extends OrgAction
                                 'method'     => 'post',
                                 'name'       => 'grp.models.customer_client.order.store',
                                 'parameters' => [
-                                    'customerClient' => $this->parent->id
+                                    $customerClient->id
                                 ]
                             ],
                         ],

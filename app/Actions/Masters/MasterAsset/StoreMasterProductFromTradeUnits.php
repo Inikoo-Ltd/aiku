@@ -123,6 +123,11 @@ class StoreMasterProductFromTradeUnits extends GrpAction
                 'min:1'
             ],
             'shop_products' => ['sometimes', 'array'],
+            'shop_products.*.price'       => [
+                'required',
+                'numeric',
+                'min:0'
+            ],
             'image' => ["sometimes", "mimes:jpg,png,jpeg,gif", "max:50000"]
         ];
     }

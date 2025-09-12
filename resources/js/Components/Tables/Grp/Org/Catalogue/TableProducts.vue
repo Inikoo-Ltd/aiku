@@ -17,7 +17,6 @@ import { routeType } from "@/types/route";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { onMounted, onUnmounted, ref, inject } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import { Invoice } from "@/types/invoice";
 import { RouteParams } from "@/types/route-params";
@@ -26,7 +25,7 @@ import { RouteParams } from "@/types/route-params";
 library.add(faOctopusDeploy, faConciergeBell, faGarage, faExclamationTriangle, faPencil);
 
 
-const props = defineProps<{
+defineProps<{
     data: {}
     tab?: string,
     routes: {
@@ -42,9 +41,11 @@ const emits = defineEmits<{
 }>()
 
 function productRoute(product: Product) {
+    console.log(product)
     if (!product.slug) {
         return ''
     }
+
     switch (route().current()) {
         case "grp.org.shops.show.catalogue.products.current_products.index":
             return route(
@@ -168,8 +169,21 @@ function productRoute(product: Product) {
             return route(
                 "grp.org.shops.show.catalogue.products.current_products.show",
                 [product.organisation_slug, product.shop_slug, product.slug]);
+       /*  case "grp.masters.master_shops.show.master_families.master_products.show":
+            return route(
+                "grp.org.shops.show.catalogue.products.current_products.show",
+                [
+                    product.organisation_slug,
+                    product.shop_slug,
+                    product.slug
+                ]); */
         default:
-            return '';
+            return route(
+                "grp.helpers.redirect_asset",
+                [product.asset_id]);
+
+
+
     }
 }
 
@@ -195,7 +209,9 @@ function organisationRoute(invoice: Invoice) {
 
 function shopRoute(invoice: Invoice) {
     if (!invoice.organisation_slug || !invoice.shop_slug) {
-        return ''
+        return route(
+            "grp.helpers.redirect_asset",
+            [invoice.asset_id]);
     }
     if (route().current() == "grp.goods.trade-units.show") {
 
@@ -204,6 +220,17 @@ function shopRoute(invoice: Invoice) {
             [
                 invoice.organisation_slug,
                 invoice.shop_slug,
+            ]);
+    }
+
+    if (route().current() == "grp.masters.master_shops.show.master_families.master_products.show") {
+        console.log('here')
+        return route(
+            "grp.org.shops.show.catalogue.products.current_products.show",
+            [
+                invoice.organisation_slug,
+                invoice.shop_slug,
+                invoice.slug
             ]);
     }
 

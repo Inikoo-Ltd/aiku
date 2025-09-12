@@ -56,6 +56,7 @@ const emits = defineEmits<{
 
 const props = defineProps<{
     currency: string;
+    form: any;
 }>();
 
 const locale = inject("locale", {});
@@ -142,17 +143,21 @@ const allChecked = computed({
                         </td>
                         <td class="px-2 py-1 border-b border-gray-100">
                             <div class="flex justify-center items-center">
-                                {{ locale.currencyFormat(item.product?.org_currency || currency, item.product?.org_cost)
-                                }}
+                                {{ locale.currencyFormat(item.product?.org_currency || currency,
+                                item.product?.org_cost)}}
                             </div>
                         </td>
                         <td class="px-2 py-1 border-b w-48">
                             <div class="flex items-center gap-2">
                                 <InputNumber v-model="item.product.price" mode="currency"
                                     :currency="item?.product?.org_currency ? item.product.org_currency : item.currency"
-                                    :step="0.25" :showButtons="true" inputClass="w-full text-xs" 
+                                    :step="0.25" :showButtons="true" inputClass="w-full text-xs"
                                     @input="emits('change', modelValue)" />
                             </div>
+                             <small v-if="form?.errors[`shop_products.${item.id}.price`]"
+                                    class="text-red-500 flex items-center gap-1">
+                                    {{ form.errors[`shop_products.${item.id}.price`].join(", ") }}
+                            </small>
                         </td>
                         <td class="px-2 py-1 border-b border-gray-100 text-center">
                             <span :class="{
@@ -167,9 +172,13 @@ const allChecked = computed({
                             <div class="flex items-center gap-2">
                                 <InputNumber v-model="item.product.rrp" mode="currency"
                                     :currency="item?.product?.org_currency ? item.product.org_currency : item.currency"
-                                    :step="0.25" :showButtons="true" inputClass="w-full text-xs" 
+                                    :step="0.25" :showButtons="true" inputClass="w-full text-xs"
                                     @input="emits('change', modelValue)" />
                             </div>
+                            <small v-if="form?.errors[`shop_products.${item.id}.rrp`]"
+                                    class="text-red-500 flex items-center gap-1">
+                                    {{ form.errors[`shop_products.${item.id}.rrp`].join(", ") }}
+                            </small>
                         </td>
                     </tr>
                 </tbody>
