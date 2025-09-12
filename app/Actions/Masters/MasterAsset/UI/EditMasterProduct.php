@@ -258,15 +258,19 @@ class EditMasterProduct extends GrpAction
                 'fields' => [
                     'name_i8n' => [
                         'type'  => 'input_translation',
+                        'full' => true,
                         'label' => __('translate name'),
                         'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
                         'main'  => $masterProduct->name,
+                        'language_from' => 'en',
                         'value' => $masterProduct->getTranslations('name_i8n')
                     ],
                     'description_title_i8n' => [
                         'type'  => 'input_translation',
                         'label' => __('translate description title'),
                         'main'  => $masterProduct->description_title,
+                        'language_from' => 'en',
+                        'full' => true,
                         'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
                         'value' => $masterProduct->getTranslations('description_title_i8n')
                     ],
@@ -275,6 +279,8 @@ class EditMasterProduct extends GrpAction
                         'label' => __('translate description'),
                         'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
                         'main'  => $masterProduct->description,
+                        'language_from' => 'en',
+                        'full' => true,
                         'value' => $masterProduct->getTranslations('description_i8n')
                     ],
                     'description_extra_i8n' => [
@@ -282,6 +288,8 @@ class EditMasterProduct extends GrpAction
                         'label' => __('translate description extra'),
                         'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProduct->group->extra_languages),
                         'main' => $masterProduct->description_extra,
+                        'language_from' => 'en',
+                        'full' => true,
                         'value' => $masterProduct->getTranslations('description_extra_i8n')
                     ],
                 ]

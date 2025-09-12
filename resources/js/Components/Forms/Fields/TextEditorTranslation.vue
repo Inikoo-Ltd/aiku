@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onBeforeUnmount } from "vue"
+import { ref, watch, onMounted, onBeforeUnmount, computed } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import EditorV2 from "./BubleTextEditor/EditorV2.vue"
 import { EditorContent } from "@tiptap/vue-3"
-import { faRobot } from "@far"
 import { uniqueId } from "lodash"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
+import { faRobot, faCircle, faCheckCircle } from "@far"
 
 const props = defineProps<{
   form: any
@@ -25,6 +25,9 @@ const selectedLang = ref(initialLang)
 // loading states
 const loadingOne = ref(false)
 const loadingAll = ref(false)
+
+// ✅ disable state when no original content
+const isDisabled = computed(() => !props.fieldData?.main)
 
 // Ensure valid lang
 if (!Object.values(props.fieldData.languages).some(l => l.code === selectedLang.value)) {
@@ -50,23 +53,21 @@ const langLabel = (code: string) => {
 
 // single translation
 const generateLanguagetranslateAI = async () => {
+  if (isDisabled.value) return
   loadingOne.value = true
   try {
     const response = await axios.post(
-      route("grp.models.translate", { language: selectedLang.value }),
+      route("grp.models.translate", { languageFrom: props.fieldData.language_from || 'en', languageTo: selectedLang.value }),
       { text: props.fieldData.main }
     )
 
     if (response.data) {
       langBuffers.value[selectedLang.value] = response.data
-      key.value = uniqueId("editor-") // force re-render
     }
   } catch (error: any) {
     notify({
       title: "Translation Error",
-      text:
-        error.response?.data?.message ||
-        "Failed to generate translation. Please try again.",
+      text: error.response?.data?.message || "Failed to generate translation.",
       type: "error",
     })
   } finally {
@@ -76,6 +77,7 @@ const generateLanguagetranslateAI = async () => {
 
 // all translations
 const generateAllTranslationsAI = async () => {
+  if (isDisabled.value) return
   loadingAll.value = true
   const langs = Object.values(props.fieldData.languages).map((l: any) => l.code)
 
@@ -84,7 +86,7 @@ const generateAllTranslationsAI = async () => {
 
     try {
       const response = await axios.post(
-        route("grp.models.translate", { language: lang }),
+        route("grp.models.translate", { languageFrom: props.fieldData.language_from || 'en', languageTo: lang }),
         { text: props.fieldData.main }
       )
 
@@ -155,62 +157,78 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div class="space-y-3">
+    <div class="flex justify-end mt-3">
+      <Button
+        :label="loadingAll ? 'Translating...' : 'Translate All'"
+        size="xxs"
+        type="primary"
+        :icon="faRobot"
+        :disabled="loadingOne || loadingAll || isDisabled"
+        @click="generateAllTranslationsAI"
+      />
+    </div>
+
     <!-- Language Selector -->
-    <div class="flex flex-wrap gap-2">
+    <div class="flex flex-wrap gap-1">
       <Button
         v-for="lang in Object.values(fieldData.languages)"
         :key="lang.code + selectedLang"
         :label="lang.name"
         size="xxs"
-        :type="selectedLang === lang.code ? 'primary' : 'tertiary'"
+        :type="selectedLang === lang.code ? 'primary' : 'gray'"
+        :icon="langBuffers[lang.code] ? faCheckCircle : faCircle"
         @click="selectedLang = lang.code"
+        :disabled="isDisabled"
       />
     </div>
 
-    <!-- Translation Input -->
-    <div v-if="selectedLang" class="mt-3">
-      <div class="flex justify-between items-center mb-1">
-        <label class="block mb-1 font-medium text-sm">
-          Translation to {{ langLabel(selectedLang) }}
-        </label>
-
-        <div class="flex gap-2">
-          <!-- Single -->
-          <Button
-            :label="loadingOne ? 'Generating...' : 'Generate from AI'"
-            size="xxs"
-            type="gray"
-            :icon="faRobot"
-            :disabled="loadingOne || loadingAll"
-            @click="generateLanguagetranslateAI"
-          />
-
-          <!-- All -->
-          <Button
-            :label="loadingAll ? 'Translating All...' : 'Translate All'"
-            size="xxs"
-            type="primary"
-            :icon="faRobot"
-            :disabled="loadingOne || loadingAll"
-            @click="generateAllTranslationsAI"
-          />
+    <!-- Translation Section -->
+    <div v-if="selectedLang" class="space-y-3">
+      <!-- Compare: Original vs Translation -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <!-- Original -->
+        <div class="p-3 rounded-lg border bg-gray-50 shadow-sm">
+          <p class="text-xs font-semibold text-gray-500 mb-1">
+            Original ({{ fieldData.mainLang || "en" }})
+          </p>
+          <p class="text-sm text-gray-700 whitespace-pre-wrap py-4">
+            {{ fieldData.main || 'No content available' }}
+          </p>
         </div>
-      </div>
 
-      <EditorV2 v-model="langBuffers[selectedLang]" :key="selectedLang + key">
-        <template #editor-content="{ editor }">
-          <div
-            class="editor-wrapper border border-gray-300 rounded-md bg-white p-3 focus-within:border-blue-400 transition-all"
-          >
-            <EditorContent
-              :key="key"
-              :editor="editor"
-              class="editor-content focus:outline-none leading-6 min-h-[6rem]"
+        <!-- Translation -->
+        <div class="p-3 rounded-lg border shadow-sm">
+          <div class="flex justify-between items-center mb-1">
+            <p class="text-xs font-semibold text-gray-500 mb-1">
+              {{ langLabel(selectedLang) }}
+            </p>
+            <Button
+              :label="loadingOne ? 'Generating...' : 'Generate AI'"
+              size="xxs"
+              type="gray"
+              :icon="faRobot"
+              :disabled="loadingOne || loadingAll || isDisabled"
+              @click="generateLanguagetranslateAI"
             />
           </div>
-        </template>
-      </EditorV2>
+
+          <EditorV2 v-model="langBuffers[selectedLang]" :key="selectedLang + key">
+            <template #editor-content="{ editor }">
+              <div
+                class="editor-wrapper border border-gray-300 rounded-md bg-white p-3 focus-within:border-blue-400 transition-all"
+                :class="{ 'opacity-50 pointer-events-none': isDisabled }"
+              >
+                <EditorContent
+                  :key="key"
+                  :editor="editor"
+                  class="editor-content focus:outline-none leading-6 min-h-[6rem]"
+                />
+              </div>
+            </template>
+          </EditorV2>
+        </div>
+      </div>
     </div>
   </div>
 </template>
