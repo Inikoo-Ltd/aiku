@@ -24,6 +24,6 @@ export const isNavigationActive = (layoutRoute: string, routeRoot: string | unde
     const isCurrentRouteIncludesRouteRoot = layoutRoute.includes(routeRoot)
     const isRootActiveIncludesNavRoot = injectLayout?.root_active ? injectLayout?.root_active?.includes(routeRoot) : false
 
-    console.log('2 isRootActiveIncludesNavRoot', layoutRoute, injectLayout?.root_active, isRootActiveIncludesNavRoot)
+    // console.log('2 isRootActiveIncludesNavRoot', layoutRoute, injectLayout?.root_active, isRootActiveIncludesNavRoot)
     return isCurrentRouteIncludesRouteRoot || isRootActiveIncludesNavRoot
 }
