@@ -89,12 +89,12 @@ class UpdateProductImages extends OrgAction
             ->get() as $modelsData) {
             if ($modelsData->model_type == 'MasterAsset') {
                 $masterAsset = MasterAsset::find($modelsData->model_id);
-                if ($masterAsset) {
+                if ($masterAsset && $masterAsset->is_single_trade_unit) {
                     UpdateMasterProductImages::run($masterAsset, $modelData);
                 }
             } elseif ($modelsData->model_type == 'Product' && $modelsData->model_id != $seedProduct->id) {
                 $product = Product::find($modelsData->model_id);
-                if ($product) {
+                if ($product && $product->is_single_trade_unit) {
                     UpdateProductImages::run($product, $modelData);
                 }
             }

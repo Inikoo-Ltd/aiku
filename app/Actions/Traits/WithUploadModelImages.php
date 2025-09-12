@@ -15,21 +15,25 @@
 namespace App\Actions\Traits;
 
 use App\Actions\Helpers\Media\StoreMediaFromFile;
-use Illuminate\Database\Eloquent\Model;
+use App\Models\Catalogue\Product;
+use App\Models\Catalogue\ProductCategory;
+use App\Models\Catalogue\Shop;
+use App\Models\CRM\WebUser;
+use App\Models\Goods\TradeUnit;
+use App\Models\Masters\MasterAsset;
+use App\Models\Masters\MasterProductCategory;
+use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\Organisation;
+use App\Models\SysAdmin\User;
+use App\Models\Web\WebBlock;
+use App\Models\Web\Website;
 
 trait WithUploadModelImages
 {
     use WithAttachMediaToModel;
 
-    /**
-     * Process uploaded image files and attach them to the provided model.
-     *
-     * @param Model $model  Eloquent model to attach media to
-     * @param string $scope Media collection/scope name
-     * @param array $modelData Validated request data containing 'images' array
-     * @return array List of created Media models
-     */
-    public function uploadImages(Model $model, string $scope, array $modelData): array
+
+    public function uploadImages(Group|Organisation|Shop|User|Webuser|Website|WebBlock|Product|MasterProductCategory|TradeUnit|MasterAsset|ProductCategory $model, string $scope, array $modelData): array
     {
         $medias = [];
 
