@@ -192,8 +192,7 @@ function customerRoute(deliveryNote: DeliveryNote) {
         </template>
 
         <template #cell(reference)="{ item: deliveryNote }">
-            <div class="flex gap-4 flex-wrap items-center">
-                <span>
+            <div class="flex gap-2 flex-wrap items-center">
                     <Link :href="deliveryNoteRoute(deliveryNote)" class="primaryLink">
                     {{ deliveryNote["reference"] }}
                     </Link>
@@ -201,8 +200,7 @@ function customerRoute(deliveryNote: DeliveryNote) {
                         icon="fas fa-star" class="text-yellow-500" fixed-width aria-hidden="true" />
                     <FontAwesomeIcon v-if="deliveryNote.has_extra_packing" v-tooltip="trans('Extra packing')"
                         icon="fas fa-box-heart" class="text-yellow-500" fixed-width aria-hidden="true" />
-                </span>
-                <NotesDisplay :item="deliveryNote" reference-field="reference" />
+                    <NotesDisplay :item="deliveryNote" reference-field="reference" />
             </div>
 
             <template v-if="deliveryNote.picking_sessions_count > 0 && deliveryNote.picking_session_ids">
@@ -238,7 +236,7 @@ function customerRoute(deliveryNote: DeliveryNote) {
                 <div class="mt-2">
                     <p class="text-sm text-gray-500">
                         {{ trans("This action will pick the delivery note") }} <strong>{{ isModalPick?.reference
-                        }}</strong>
+                            }}</strong>
                         {{ trans('with') }} {{ isModalPick?.number_items }} {{ trans('items') }}
                     </p>
                 </div>
