@@ -91,20 +91,32 @@ const generateLanguagetranslateAI = async () => {
   }
 }
 
-// Translate ALL
+
+// Translate ALL (only empty ones)
 const generateAllTranslationsAI = async () => {
   if (isDisabled.value) return
   loadingAll.value = true
+
   const langs = Object.values(props.fieldData.languages).map((l: any) => l.code)
 
   for (const lang of langs) {
-    if (lang === "main" || lang === props.fieldData.mainLang) continue
+    if (
+      lang === "main" ||
+      lang === props.fieldData.mainLang ||
+      langBuffers.value[lang] // ✅ skip if already translated
+    ) {
+      continue
+    }
 
     try {
       const response = await axios.post(
-        route("grp.models.translate", { languageFrom: props.fieldData.language_from || 'en', languageTo: lang }),
+        route("grp.models.translate", {
+          languageFrom: props.fieldData.language_from || "en",
+          languageTo: lang,
+        }),
         { text: props.fieldData.main }
       )
+
       if (response.data) {
         langBuffers.value[lang] = response.data
       }
@@ -121,10 +133,11 @@ const generateAllTranslationsAI = async () => {
 
   notify({
     title: "Translation Complete",
-    text: "All available translations have been updated.",
+    text: "All missing translations have been updated.",
     type: "success",
   })
 }
+
 
 onMounted(() => {
   const handleStorage = (e: StorageEvent) => {
@@ -149,7 +162,7 @@ onMounted(() => {
   <div class="space-y-3">
     <div class="flex justify-end mt-3  px-3">
       <Button :label="loadingAll ? 'Translating...' : 'Translate All'" size="xxs" type="rainbow" :icon="faRobot"
-        :disabled="isDisabled" @click="generateAllTranslationsAI" />
+        :disabled="isDisabled" @click="generateAllTranslationsAI" :loading="loadingAll" />
     </div>
 
     <!-- Language Selector -->
@@ -184,7 +197,7 @@ onMounted(() => {
               {{ langLabel(selectedLang) }}
             </p>
             <Button :label="loadingOne ? 'Generating...' : 'Generate AI'" size="xxs" type="rainbow" :icon="faRobot"
-              :disabled="isDisabled" @click="generateLanguagetranslateAI" />
+              :disabled="isDisabled" @click="generateLanguagetranslateAI" :loading="loadingOne" />
           </div>
 
           <input type="text" v-model="langBuffers[selectedLang]"

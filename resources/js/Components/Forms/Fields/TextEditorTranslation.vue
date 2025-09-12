@@ -84,17 +84,27 @@ const generateLanguagetranslateAI = async () => {
 }
 
 // all translations
+// all translations
 const generateAllTranslationsAI = async () => {
   if (isDisabled.value) return
   loadingAll.value = true
   const langs = Object.values(props.fieldData.languages).map((l: any) => l.code)
 
   for (const lang of langs) {
-    if (lang === "main" || lang === props.fieldData.mainLang) continue
+    if (
+      lang === "main" ||
+      lang === props.fieldData.mainLang ||
+      langBuffers.value[lang] // ✅ skip if already translated
+    ) {
+      continue
+    }
 
     try {
       const response = await axios.post(
-        route("grp.models.translate", { languageFrom: props.fieldData.language_from || 'en', languageTo: lang }),
+        route("grp.models.translate", {
+          languageFrom: props.fieldData.language_from || "en",
+          languageTo: lang,
+        }),
         { text: props.fieldData.main }
       )
 
@@ -117,7 +127,7 @@ const generateAllTranslationsAI = async () => {
   key.value = uniqueId("editor-")
   notify({
     title: "Translation Complete",
-    text: "All available translations have been updated.",
+    text: "All missing translations have been updated.",
     type: "success",
   })
 }
@@ -168,7 +178,7 @@ onMounted(() => {
   <div class="space-y-3">
     <div class="flex justify-end mt-3 px-3">
       <Button :label="loadingAll ? 'Translating...' : 'Translate All'" size="xxs" type="rainbow" :icon="faRobot"
-        :disabled="loadingOne || loadingAll || isDisabled" @click="generateAllTranslationsAI" />
+        :disabled="loadingOne || loadingAll || isDisabled" @click="generateAllTranslationsAI" :loading="loadingAll" />
     </div>
 
     <!-- Language Selector -->
@@ -203,7 +213,7 @@ onMounted(() => {
               {{ langLabel(selectedLang) }}
             </p>
             <Button :label="loadingOne ? 'Generating...' : 'Generate AI'" size="xxs" type="rainbow" :icon="faRobot"
-              :disabled="loadingOne || loadingAll || isDisabled" @click="generateLanguagetranslateAI" />
+              :disabled="loadingOne || loadingAll || isDisabled" @click="generateLanguagetranslateAI"   :loading="loadingOne"/>
           </div>
 
           <EditorV2 v-model="langBuffers[selectedLang]" :key="selectedLang + key">

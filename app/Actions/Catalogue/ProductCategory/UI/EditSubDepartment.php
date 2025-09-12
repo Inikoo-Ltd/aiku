@@ -127,7 +127,7 @@ class EditSubDepartment extends OrgAction
                                     ],
                                 ]
                             ],
-                            !$subDepartment->master_product_category_id ? [
+                            /* !$subDepartment->master_product_category_id ? [
                                 'label'  => __('Translations'),
                                 'icon'   => 'fa-light fa-language',
                                 'main' => $subDepartment->name,
@@ -158,7 +158,7 @@ class EditSubDepartment extends OrgAction
                                         'value' => $subDepartment->getTranslations('description_extra_i8n')
                                     ],
                                 ]
-                            ] : null,
+                            ] : null, */
                             [
                                 'label'  => __('Properties'),
                                 'icon'   => 'fa-light fa-fingerprint',
