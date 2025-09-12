@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\WooCommerce\Product;
 use App\Actions\OrgAction;
 use App\Events\UploadProductToWooCommerceProgressEvent;
 use App\Models\Dropshipping\Portfolio;
+use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -19,17 +20,30 @@ class MatchPortfolioToCurrentWooProduct extends OrgAction
 {
     use AsAction;
 
-    public function handle(Portfolio $portfolio, array $modelData)
+    public function handle(Portfolio $portfolio, array $modelData): void
     {
+        /** @var WooCommerceUser $wooCommerceUser */
+        $wooCommerceUser = $portfolio->customerSalesChannel->user;
+
         $wooProductId = Arr::get($modelData, 'platform_product_id');
+
         $portfolio->update([
             'platform_product_id' => $wooProductId,
         ]);
 
         $portfolio->refresh();
+
+        /** @var Portfolio $portfolio */
         $portfolio = CheckWooPortfolio::run($portfolio);
 
-        UploadProductToWooCommerceProgressEvent::dispatch($portfolio->customerSalesChannel->user, $portfolio);
+        $quantity = $portfolio->item->available_quantity;
+        $wooCommerceUser->updateWooCommerceProduct($portfolio->platform_product_id, [
+            'manage_stock' => true,
+            'stock_quantity' => $quantity,
+            'stock_status' => $quantity > 0 ? 'instock' : 'outofstock'
+        ]);
+
+        UploadProductToWooCommerceProgressEvent::dispatch($wooCommerceUser, $portfolio);
     }
 
     public function rules(): array
