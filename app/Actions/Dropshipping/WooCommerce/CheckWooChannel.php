@@ -25,18 +25,26 @@ class CheckWooChannel
     {
         $platformStatus = $canConnectToPlatform = $existInPlatform = false;
 
-        if ($wooCommerceUser->checkConnection()) {
+        $webhooks = $wooCommerceUser->registerWooCommerceWebhooks();
+
+        if ($wooCommerceUser->checkConnection() && ! blank($webhooks)) {
             $platformStatus = true;
             $canConnectToPlatform = true;
             $existInPlatform = true;
         }
+
+        $this->update($wooCommerceUser, [
+            'settings' => array_merge($wooCommerceUser->settings, [
+                'webhooks' => $webhooks
+            ])
+        ]);
 
         return UpdateCustomerSalesChannel::run($wooCommerceUser->customerSalesChannel, [
             'state' => CustomerSalesChannelStateEnum::AUTHENTICATED,
             'name'                    => $wooCommerceUser->name,
             'platform_status'         => $platformStatus,
             'can_connect_to_platform' => $canConnectToPlatform,
-            'exist_in_platform'       => $existInPlatform,
+            'exist_in_platform'       => $existInPlatform
         ]);
     }
 
