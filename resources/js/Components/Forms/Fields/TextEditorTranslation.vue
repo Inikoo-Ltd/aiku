@@ -27,7 +27,12 @@ const loadingOne = ref(false)
 const loadingAll = ref(false)
 
 // ✅ disable state when no original content
-const isDisabled = computed(() => !props.fieldData?.main)
+const isDisabled = computed(() =>
+  props.fieldData?.disable ||
+  !props.fieldData?.main ||
+  loadingOne.value ||
+  loadingAll.value
+)
 
 // Ensure valid lang
 if (!Object.values(props.fieldData.languages).some(l => l.code === selectedLang.value)) {

@@ -9,7 +9,6 @@ const props = defineProps<{
   form: any
   fieldName: string
   fieldData: any
-  disable?: boolean
 }>()
 
 const emits = defineEmits(["update:form"])
@@ -24,11 +23,12 @@ const loadingAll = ref(false)
 
 // disable logic (prop + main null + loading)
 const isDisabled = computed(() =>
-  props.disable ||
+  props.fieldData?.disable ||
   !props.fieldData?.main ||
   loadingOne.value ||
   loadingAll.value
 )
+
 
 if (!Object.values(props.fieldData.languages).some(l => l.code === selectedLang.value)) {
   selectedLang.value = Object.values(props.fieldData.languages)[0]?.code || "en"
