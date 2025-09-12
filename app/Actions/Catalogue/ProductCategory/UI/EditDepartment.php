@@ -86,14 +86,20 @@ class EditDepartment extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'label'  => __('Name/Description'),
-                            'icon'   => 'fa-light fa-tag',
+                            'label'  => __('Id'),
+                            'icon'   => 'fa-light fa-fingerprint',
                             'fields' => [
                                 'code' => [
                                     'type'  => 'input',
                                     'label' => __('code'),
                                     'value' => $department->code
                                 ],
+                            ]
+                        ],
+                        [
+                            'label'  => __('Name/Description'),
+                            'icon'   => 'fa-light fa-tag',
+                            'fields' => [
                                 'name' => [
                                     'type'  => 'input',
                                     'label' => __('name'),
@@ -113,6 +119,38 @@ class EditDepartment extends OrgAction
                                     'type'  => 'textEditor',
                                     'label' => __('Extra description'),
                                     'value' =>  $department->description_extra
+                                ],
+                            ]
+                        ],
+                        [
+                            'label'  => __('Translations'),
+                            'icon'   => 'fa-light fa-language',
+                            'main' => $department->name,
+                            'languages_main' => $department->shop->language->code,
+                            'fields' => [
+                                'name_i8n' => [
+                                    'type'  => 'input_translation',
+                                    'label' => __('translate name'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($department->shop->extra_languages),
+                                    'value' => $department->getTranslations('name_i8n')
+                                ],
+                                'description_title_i8n' => [
+                                    'type'  => 'input_translation',
+                                    'label' => __('translate description title'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($department->shop->extra_languages),
+                                    'value' => $department->getTranslations('description_title_i8n')
+                                ],
+                                'description_i8n' => [
+                                    'type'  => 'textEditor_translation',
+                                    'label' => __('translate description'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($department->shop->extra_languages),
+                                    'value' => $department->getTranslations('description_i8n')
+                                ],
+                                'description_extra_i8n' => [
+                                    'type'  => 'textEditor_translation',
+                                    'label' => __('translate description extra'),
+                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($department->shop->extra_languages),
+                                    'value' => $department->getTranslations('description_extra_i8n')
                                 ],
                             ]
                         ],
@@ -152,37 +190,6 @@ class EditDepartment extends OrgAction
                                 ]
                             ]
                         ],
-                        [
-                            'label'  => __('Translations'),
-                            'icon'   => 'fa-light fa-language',
-                            'fields' => [
-                                'name_i8n' => [
-                                    'type'  => 'input_translation',
-                                    'label' => __('translate name'),
-                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($department->shop->extra_languages),
-                                    'value' => $department->getTranslations('name_i8n')
-                                ],
-                                'description_title_i8n' => [
-                                    'type'  => 'input_translation',
-                                    'label' => __('translate description title'),
-                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($department->shop->extra_languages),
-                                    'value' => $department->getTranslations('description_title_i8n')
-                                ],
-                                'description_i8n' => [
-                                    'type'  => 'textEditor_translation',
-                                    'label' => __('translate description'),
-                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($department->shop->extra_languages),
-                                    'value' => $department->getTranslations('description_i8n')
-                                ],
-                                'description_extra_i8n' => [
-                                    'type'  => 'textEditor_translation',
-                                    'label' => __('translate description extra'),
-                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($department->shop->extra_languages),
-                                    'value' => $department->getTranslations('description_extra_i8n')
-                                ],
-                            ]
-                        ],
-
                     ],
                     'args'      => [
                         'updateRoute' => [
