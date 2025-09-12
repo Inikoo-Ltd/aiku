@@ -741,6 +741,7 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::patch('autosave/header', [AutosaveWebsiteMarginal::class, 'header'])->name('autosave.header');
     Route::patch('autosave/footer', [AutosaveWebsiteMarginal::class, 'footer'])->name('autosave.footer');
     Route::patch('autosave/menu', [AutosaveWebsiteMarginal::class, 'menu'])->name('autosave.menu');
+    Route::patch('autosave/sidebar', [AutosaveWebsiteMarginal::class, 'sidebar'])->name('autosave.sidebar');
     Route::patch('autosave/department', [AutosaveWebsiteMarginal::class, 'department'])->name('autosave.department');
     Route::patch('autosave/sub_department', [AutosaveWebsiteMarginal::class, 'subDepartment'])->name('autosave.sub_department');
     Route::patch('autosave/family', [AutosaveWebsiteMarginal::class, 'family'])->name('autosave.family');
@@ -749,6 +750,7 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::patch('autosave/collection', [AutosaveWebsiteMarginal::class, 'collection'])->name('autosave.collection');
 
     Route::post('publish/menu', [PublishWebsiteMarginal::class, 'menu'])->name('publish.menu');
+    Route::post('publish/sidebar', [PublishWebsiteMarginal::class, 'sidebar'])->name('publish.sidebar');
     Route::post('publish/department', [PublishWebsiteMarginal::class, 'department'])->name('publish.department');
     Route::post('publish/sub_department', [PublishWebsiteMarginal::class, 'subDepartment'])->name('publish.sub_department');
     Route::post('publish/family', [PublishWebsiteMarginal::class, 'family'])->name('publish.family');

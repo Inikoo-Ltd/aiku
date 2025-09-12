@@ -36,6 +36,7 @@ use App\Actions\Web\Webpage\UI\ShowBlogWebpageWorkshop;
 use App\Actions\Web\Webpage\UI\ShowFooterWorkshop;
 use App\Actions\Web\Webpage\UI\ShowHeaderWorkshop;
 use App\Actions\Web\Webpage\UI\ShowMenuWorkshop;
+use App\Actions\Web\Webpage\UI\ShowSidebarWorkshop;
 use App\Actions\Web\Webpage\UI\ShowWebpage;
 use App\Actions\Web\Webpage\UI\ShowWebpagesTree;
 use App\Actions\Web\Webpage\UI\ShowWebpageWorkshop;
@@ -72,12 +73,14 @@ Route::name('websites.')->group(function () {
                     Route::get('footer', ShowFooterWorkshop::class)->name('.footer');
                     Route::get('header', ShowHeaderWorkshop::class)->name('.header');
                     Route::get('menu', ShowMenuWorkshop::class)->name('.menu');
+                    Route::get('sidebar', ShowSidebarWorkshop::class)->name('.sidebar');
 
                     Route::name('.snapshots')->prefix('snapshots')
                         ->group(function () {
                             Route::get('footer', [IndexSnapshots::class, 'inFooterWorkshop'])->name('.footer');
                             Route::get('header', [IndexSnapshots::class, 'inHeaderWorkshop'])->name('.header');
                             Route::get('menu', [IndexSnapshots::class, 'inMenuWorkshop'])->name('.menu');
+                            Route::get('sidebar', [IndexSnapshots::class, 'inSidebarWorkshop'])->name('.sidebar');
                         });
                 });
             Route::name('redirect')->prefix('redirect')

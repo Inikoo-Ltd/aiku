@@ -103,6 +103,14 @@ class GetWebsiteWorkshopLayout
                             'website'      => $website->slug
                         ]
                     ],
+                    'sidebarRoute'          => [
+                        'name'       => 'grp.org.shops.show.web.websites.workshop.sidebar',
+                        'parameters' => [
+                            'organisation' => $website->organisation->slug,
+                            'shop'         => $website->shop->slug,
+                            'website'      => $website->slug
+                        ]
+                    ],
                 ],
                 'updateColorRoute' => [
                         'name'       => 'grp.models.website.update.theme',
