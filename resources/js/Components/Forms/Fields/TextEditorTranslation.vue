@@ -64,6 +64,8 @@ const generateLanguagetranslateAI = async () => {
     if (response.data) {
       langBuffers.value[selectedLang.value] = response.data
     }
+
+     key.value = uniqueId("editor-")
   } catch (error: any) {
     notify({
       title: "Translation Error",
@@ -159,28 +161,16 @@ onMounted(() => {
 <template>
   <div class="space-y-3">
     <div class="flex justify-end mt-3">
-      <Button
-        :label="loadingAll ? 'Translating...' : 'Translate All'"
-        size="xxs"
-        type="primary"
-        :icon="faRobot"
-        :disabled="loadingOne || loadingAll || isDisabled"
-        @click="generateAllTranslationsAI"
-      />
+      <Button :label="loadingAll ? 'Translating...' : 'Translate All'" size="xxs" type="rainbow" :icon="faRobot"
+        :disabled="loadingOne || loadingAll || isDisabled" @click="generateAllTranslationsAI" />
     </div>
 
     <!-- Language Selector -->
     <div class="flex flex-wrap gap-1">
-      <Button
-        v-for="lang in Object.values(fieldData.languages)"
-        :key="lang.code + selectedLang"
-        :label="lang.name"
-        size="xxs"
-        :type="selectedLang === lang.code ? 'primary' : 'gray'"
-        :icon="langBuffers[lang.code] ? faCheckCircle : faCircle"
-        @click="selectedLang = lang.code"
-        :disabled="isDisabled"
-      />
+      <Button v-for="lang in Object.values(fieldData.languages)" :key="lang.code + selectedLang" :label="lang.name"
+        size="xxs" :type="selectedLang === lang.code ? 'primary' : 'gray'"
+        :icon="langBuffers[lang.code] ? faCheckCircle : faCircle" @click="selectedLang = lang.code"
+        :disabled="isDisabled" />
     </div>
 
     <!-- Translation Section -->
@@ -192,10 +182,10 @@ onMounted(() => {
           <p class="text-xs font-semibold text-gray-500 mb-1">
             Original ({{ fieldData.mainLang || "en" }})
           </p>
-          <p class="text-sm text-gray-700 whitespace-pre-wrap py-4">
-            {{ fieldData.main || 'No content available' }}
-          </p>
+          <div class="text-sm text-gray-700 whitespace-pre-wrap py-4"
+            v-html="fieldData.main || '<span class=text-gray-400>No content available</span>'" />
         </div>
+
 
         <!-- Translation -->
         <div class="p-3 rounded-lg border shadow-sm">
@@ -203,27 +193,17 @@ onMounted(() => {
             <p class="text-xs font-semibold text-gray-500 mb-1">
               {{ langLabel(selectedLang) }}
             </p>
-            <Button
-              :label="loadingOne ? 'Generating...' : 'Generate AI'"
-              size="xxs"
-              type="gray"
-              :icon="faRobot"
-              :disabled="loadingOne || loadingAll || isDisabled"
-              @click="generateLanguagetranslateAI"
-            />
+            <Button :label="loadingOne ? 'Generating...' : 'Generate AI'" size="xxs" type="rainbow" :icon="faRobot"
+              :disabled="loadingOne || loadingAll || isDisabled" @click="generateLanguagetranslateAI" />
           </div>
 
           <EditorV2 v-model="langBuffers[selectedLang]" :key="selectedLang + key">
             <template #editor-content="{ editor }">
               <div
                 class="editor-wrapper border border-gray-300 rounded-md bg-white p-3 focus-within:border-blue-400 transition-all"
-                :class="{ 'opacity-50 pointer-events-none': isDisabled }"
-              >
-                <EditorContent
-                  :key="key"
-                  :editor="editor"
-                  class="editor-content focus:outline-none leading-6 min-h-[6rem]"
-                />
+                :class="{ 'opacity-50 pointer-events-none': isDisabled }">
+                <EditorContent :key="key" :editor="editor"
+                  class="editor-content focus:outline-none leading-6 min-h-[6rem]" />
               </div>
             </template>
           </EditorV2>

@@ -150,7 +150,7 @@ onMounted(() => {
       <Button
         :label="loadingAll ? 'Translating...' : 'Translate All'"
         size="xxs"
-        type="primary"
+        type="rainbow"
         :icon="faRobot"
         :disabled="isDisabled"
         @click="generateAllTranslationsAI"
@@ -193,7 +193,7 @@ onMounted(() => {
             <Button
               :label="loadingOne ? 'Generating...' : 'Generate AI'"
               size="xxs"
-              type="gray"
+              type="rainbow"
               :icon="faRobot"
               :disabled="isDisabled"
               @click="generateLanguagetranslateAI"
