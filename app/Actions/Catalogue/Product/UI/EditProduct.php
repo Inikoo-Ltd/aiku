@@ -218,201 +218,209 @@ class EditProduct extends OrgAction
 
 
 
-        return [
+        return array_filter(
             [
-                'label'  => __('Name/Description'),
-                'icon'   => 'fa-light fa-tag',
-                'fields' => [
-                    'code' => [
-                        'type'  => 'input',
-                        'label' => __('code'),
-                        'value' => $product->code
-                    ],
-                    'name' => [
-                        'type'  => 'input',
-                        'label' => __('name'),
-                        'value' => $product->name
-                    ],
-                    'description_title' => [
-                        'type'  => 'input',
-                        'label' => __('description title'),
-                        'value' => $product->description_title
-                    ],
-                    'description' => [
-                        'type'  => 'textEditor',
-                        'label' => __('description'),
-                        'value' => $product->description
-                    ],
-                    'description_extra' => [
-                        'type'  => 'textEditor',
-                        'label' => __('Extra description'),
-                        'value' => $product->description_extra
-                    ],
-                ]
-            ],
-            [
-                'label'  => __('Pricing'),
-                'icon'   => 'fa-light fa-money-bill',
-                'fields' => [
-                    'cost_price_ratio' => [
-                        'type'          => 'input_number',
-                        'bind' => [
-                            'maxFractionDigits' => 3
+                [
+                    'label'  => __('Id'),
+                    'icon'   => 'fa-light fa-fingerprint',
+                    'fields' => [
+                        'code' => [
+                            'type'  => 'input',
+                            'label' => __('code'),
+                            'value' => $product->code
                         ],
-                        'label'         => __('pricing ratio'),
-                        'placeholder'   => __('Cost price ratio'),
-                        'required'      => true,
-                        'value'         => $product->cost_price_ratio,
-                        'min'           => 0
-                    ],
-                ]
-            ],
-            [
-                'label'  => __('Properties'),
-                'title'  => __('id'),
-                'icon'   => 'fa-light fa-fingerprint',
-                'fields' => [
-                    'unit'        => [
-                        'type'  => 'input',
-                        'label' => __('unit'),
-                        'value' => $product->unit,
-                    ],
-                    'units'       => [
-                        'type'  => 'input',
-                        'label' => __('units'),
-                        'value' => $product->units,
-                    ],
-                    'barcode'       => [
-                        'type'  => 'select',
-                        'label' => __('barcode'),
-                        'value' => $product->barcode,
-                        'readonly' => $product->tradeUnits->count() == 1,
-                        'options' => $barcodes->mapWithKeys(function ($barcode) {
-                            return [$barcode => $barcode];
-                        })->toArray()
-                    ],
-                    'price'       => [
-                        'type'     => 'input',
-                        'label'    => __('price'),
-                        'required' => true,
-                        'value'    => $product->price
-                    ],
-                    'state'       => [
-                        'type'     => 'select',
-                        'label'    => __('state'),
-                        'required' => true,
-                        'value'    => $product->state,
-                        'options'  => Options::forEnum(AssetStateEnum::class)
-                    ],
-                    //  'button'       => [
-                    //     'type'     => 'button',
-                    //     'label'    => __('off product'),
-                    //      'noSaveButton'          => true,
-                    //     'value'    => null,
-                    //     'icon'    => ['far', 'fa-power-off'],
-                    //     'type_button'   => 'negative',
-                    //     'label_button'    => __('off product'),
-                    //     'route'    => [
-                    //         'name'       => 'grp.models.product.offline',
-                    //         'parameters' => [
-                    //             'product' => $product->id
-                    //         ],
-                    //         'method'    => 'patch'
-                    //     ]
-                    // ],
-                ]
-            ],
-            [
-                'label'  => __('Parts'),
-                'icon' => 'fal fa-boxes',
-                'fields' => [
-                    'org_stocks' => [
-                        'type'         => 'product_parts',
-                        'label'        => __('Parts'),
-                        'full'         => true,
-                        'fetch_route'  => [
-                            'name'       => 'grp.json.org_stocks.index',
-                            'parameters' => [
-                                'organisation' => $product->organisation_id,
-                            ]
-                        ],
-                        'init_options' => OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
-                        'value'        => $value
-                    ],
-                ]
-            ],
-            [
-                'label' => __('Trade unit'),
-                'icon' => 'fa-light fa-atom',
-                'fields' => [
-                    'trade_units' => [
-                        'label'      => __('Trade Units'),
-                        'type' => 'edit-trade-unit-shop',
-                        'value' => null,
-                        'noSaveButton' => true,
-                        'trade_units' => $product->tradeUnits ? $this->getDataTradeUnit($product->tradeUnits) : []
                     ]
                 ],
-            ],
-            [
-                'label'  => __('Family'),
-                'icon'   => 'fa-light fa-folder',
-                'fields' => [
-                    'family_id' => [
-                        'type'       => 'select_infinite',
-                        'label'      => __('Family'),
-                        'options'    => [
-                            $familyOptions
+                [
+                    'label'  => __('Name/Description'),
+                    'icon'   => 'fa-light fa-tag',
+                    'fields' => [
+                        'name' => [
+                            'type'  => 'input',
+                            'label' => __('name'),
+                            'value' => $product->name
                         ],
-                        'fetchRoute' => [
-                            'name'       => 'grp.json.shop.families',
-                            'parameters' => [
-                                'shop' => $product->shop->id
-                            ]
+                        'description_title' => [
+                            'type'  => 'input',
+                            'label' => __('description title'),
+                            'value' => $product->description_title
                         ],
-                        'valueProp'  => 'id',
-                        'labelProp'  => 'code',
-                        'required'   => true,
-                        'value'      => $product->family->id ?? null,
-                        'type_label' => 'families'
+                        'description' => [
+                            'type'  => 'textEditor',
+                            'label' => __('description'),
+                            'value' => $product->description
+                        ],
+                        'description_extra' => [
+                            'type'  => 'textEditor',
+                            'label' => __('Extra description'),
+                            'value' => $product->description_extra
+                        ],
                     ]
                 ],
-            ],
-            [
-                'label'  => __('Translations'),
-                'icon'   => 'fa-light fa-language',
-                'fields' => [
-                    'name_i8n' => [
-                        'type'  => 'input_translation',
-                        'label' => __('translate name'),
-                        'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($product->shop->extra_languages),
-                        'main' => $product->name,
-                        'value' => $product->getTranslations('name_i8n')
+                !$product->master_product_id ? [
+                    'label'  => __('Translations'),
+                    'icon'   => 'fa-light fa-language',
+                    'fields' => [
+                        'name_i8n' => [
+                            'type'  => 'input_translation',
+                            'label' => __('translate name'),
+                            'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($product->shop->extra_languages),
+                            'main' => $product->name,
+                            'value' => $product->getTranslations('name_i8n')
+                        ],
+                        'description_title_i8n' => [
+                            'type'  => 'input_translation',
+                            'label' => __('translate description title'),
+                            'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($product->shop->extra_languages),
+                            'main' => $product->description_title,
+                            'value' => $product->getTranslations('description_title_i8n')
+                        ],
+                        'description_i8n' => [
+                            'type'  => 'textEditor_translation',
+                            'label' => __('translate description'),
+                            'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($product->shop->extra_languages),
+                            'main' => $product->description,
+                            'value' => $product->getTranslations('description_i8n')
+                        ],
+                        'description_extra_i8n' => [
+                            'type'  => 'textEditor_translation',
+                            'label' => __('translate description extra'),
+                            'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($product->shop->extra_languages),
+                            'main' => $product->description_extra,
+                            'value' => $product->getTranslations('description_extra_i8n')
+                        ],
+                    ]
+                ]: null,
+                [
+                    'label'  => __('Pricing'),
+                    'icon'   => 'fa-light fa-money-bill',
+                    'fields' => [
+                        'cost_price_ratio' => [
+                            'type'          => 'input_number',
+                            'bind' => [
+                                'maxFractionDigits' => 3
+                            ],
+                            'label'         => __('pricing ratio'),
+                            'placeholder'   => __('Cost price ratio'),
+                            'required'      => true,
+                            'value'         => $product->cost_price_ratio,
+                            'min'           => 0
+                        ],
+                    ]
+                ],
+                [
+                    'label'  => __('Properties'),
+                    'title'  => __('id'),
+                    'icon'   => 'fa-light fa-fingerprint',
+                    'fields' => [
+                        'unit'        => [
+                            'type'  => 'input',
+                            'label' => __('unit'),
+                            'value' => $product->unit,
+                        ],
+                        'units'       => [
+                            'type'  => 'input',
+                            'label' => __('units'),
+                            'value' => $product->units,
+                        ],
+                        'barcode'       => [
+                            'type'  => 'select',
+                            'label' => __('barcode'),
+                            'value' => $product->barcode,
+                            'readonly' => $product->tradeUnits->count() == 1,
+                            'options' => $barcodes->mapWithKeys(function ($barcode) {
+                                return [$barcode => $barcode];
+                            })->toArray()
+                        ],
+                        'price'       => [
+                            'type'     => 'input',
+                            'label'    => __('price'),
+                            'required' => true,
+                            'value'    => $product->price
+                        ],
+                        'state'       => [
+                            'type'     => 'select',
+                            'label'    => __('state'),
+                            'required' => true,
+                            'value'    => $product->state,
+                            'options'  => Options::forEnum(AssetStateEnum::class)
+                        ],
+                        //  'button'       => [
+                        //     'type'     => 'button',
+                        //     'label'    => __('off product'),
+                        //      'noSaveButton'          => true,
+                        //     'value'    => null,
+                        //     'icon'    => ['far', 'fa-power-off'],
+                        //     'type_button'   => 'negative',
+                        //     'label_button'    => __('off product'),
+                        //     'route'    => [
+                        //         'name'       => 'grp.models.product.offline',
+                        //         'parameters' => [
+                        //             'product' => $product->id
+                        //         ],
+                        //         'method'    => 'patch'
+                        //     ]
+                        // ],
+                    ]
+                ],
+                [
+                    'label'  => __('Parts'),
+                    'icon' => 'fal fa-boxes',
+                    'fields' => [
+                        'org_stocks' => [
+                            'type'         => 'product_parts',
+                            'label'        => __('Parts'),
+                            'full'         => true,
+                            'fetch_route'  => [
+                                'name'       => 'grp.json.org_stocks.index',
+                                'parameters' => [
+                                    'organisation' => $product->organisation_id,
+                                ]
+                            ],
+                            'init_options' => OrgStocksResource::collection(GetOrgStocksInProduct::run($product))->resolve(),
+                            'value'        => $value
+                        ],
+                    ]
+                ],
+                [
+                    'label' => __('Trade unit'),
+                    'icon' => 'fa-light fa-atom',
+                    'fields' => [
+                        'trade_units' => [
+                            'label'      => __('Trade Units'),
+                            'type' => 'edit-trade-unit-shop',
+                            'value' => null,
+                            'noSaveButton' => true,
+                            'trade_units' => $product->tradeUnits ? $this->getDataTradeUnit($product->tradeUnits) : []
+                        ]
                     ],
-                    'description_title_i8n' => [
-                        'type'  => 'input_translation',
-                        'label' => __('translate description title'),
-                        'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($product->shop->extra_languages),
-                        'main' => $product->description_title,
-                        'value' => $product->getTranslations('description_title_i8n')
+                ],
+                [
+                    'label'  => __('Family'),
+                    'icon'   => 'fa-light fa-folder',
+                    'fields' => [
+                        'family_id' => [
+                            'type'       => 'select_infinite',
+                            'label'      => __('Family'),
+                            'options'    => [
+                                $familyOptions
+                            ],
+                            'fetchRoute' => [
+                                'name'       => 'grp.json.shop.families',
+                                'parameters' => [
+                                    'shop' => $product->shop->id
+                                ]
+                            ],
+                            'valueProp'  => 'id',
+                            'labelProp'  => 'code',
+                            'required'   => true,
+                            'value'      => $product->family->id ?? null,
+                            'type_label' => 'families'
+                        ]
                     ],
-                    'description_i8n' => [
-                        'type'  => 'textEditor_translation',
-                        'label' => __('translate description'),
-                        'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($product->shop->extra_languages),
-                        'main' => $product->description,
-                        'value' => $product->getTranslations('description_i8n')
-                    ],
-                    'description_extra_i8n' => [
-                        'type'  => 'textEditor_translation',
-                        'label' => __('translate description extra'),
-                        'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($product->shop->extra_languages),
-                        'main' => $product->description_extra,
-                        'value' => $product->getTranslations('description_extra_i8n')
-                    ],
-                ]
-            ],
-        ];
+                ],
+            ]
+        );
     }
 
     private function getDataTradeUnit($tradeUnits): array

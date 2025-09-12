@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onBeforeUnmount } from "vue"
+import { ref, watch, onMounted, onBeforeUnmount, computed } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { faRobot } from "@far"
 import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
+import { faRobot, faCircle, faCheckCircle } from "@far"
 
 const props = defineProps<{
   form: any
   fieldName: string
   fieldData: any
+  disable?: boolean
 }>()
 
 const emits = defineEmits(["update:form"])
@@ -20,6 +21,14 @@ const selectedLang = ref(initialLang)
 // Loading states
 const loadingOne = ref(false)
 const loadingAll = ref(false)
+
+// disable logic (prop + main null + loading)
+const isDisabled = computed(() =>
+  props.disable ||
+  !props.fieldData?.main ||
+  loadingOne.value ||
+  loadingAll.value
+)
 
 if (!Object.values(props.fieldData.languages).some(l => l.code === selectedLang.value)) {
   selectedLang.value = Object.values(props.fieldData.languages)[0]?.code || "en"
@@ -60,13 +69,13 @@ watch(
 
 // Single translation
 const generateLanguagetranslateAI = async () => {
+  if (isDisabled.value) return
   loadingOne.value = true
   try {
     const response = await axios.post(
-      route("grp.models.translate", { language: selectedLang.value }),
+      route("grp.models.translate", { languageFrom: props.fieldData.language_from || 'en', languageTo: selectedLang.value }),
       { text: props.fieldData.main }
     )
-
     if (response.data) {
       langBuffers.value[selectedLang.value] = response.data
     }
@@ -83,6 +92,7 @@ const generateLanguagetranslateAI = async () => {
 
 // Translate ALL
 const generateAllTranslationsAI = async () => {
+  if (isDisabled.value) return
   loadingAll.value = true
   const langs = Object.values(props.fieldData.languages).map((l: any) => l.code)
 
@@ -91,10 +101,9 @@ const generateAllTranslationsAI = async () => {
 
     try {
       const response = await axios.post(
-        route("grp.models.translate", { language: lang }),
+        route("grp.models.translate", { languageFrom: props.fieldData.language_from || 'en', languageTo: lang }),
         { text: props.fieldData.main }
       )
-
       if (response.data) {
         langBuffers.value[lang] = response.data
       }
@@ -136,54 +145,70 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div class="space-y-3">
+    <div class="flex justify-end mt-3  px-3">
+      <Button
+        :label="loadingAll ? 'Translating...' : 'Translate All'"
+        size="xxs"
+        type="rainbow"
+        :icon="faRobot"
+        :disabled="isDisabled"
+        @click="generateAllTranslationsAI"
+      />
+    </div>
+
     <!-- Language Selector -->
-    <div class="flex flex-wrap gap-2">
+    <div class="flex flex-wrap gap-1">
       <Button
         v-for="lang in Object.values(fieldData.languages)"
         :key="lang.code + selectedLang"
         :label="lang.name"
         size="xxs"
-        :type="selectedLang === lang.code ? 'primary' : 'tertiary'"
+        :type="selectedLang === lang.code ? 'primary' : 'gray'"
+        :icon="langBuffers[lang.code] ? faCheckCircle : faCircle"
+        :disabled="isDisabled"
         @click="selectedLang = lang.code"
       />
     </div>
 
-    <!-- Translation Input -->
-    <div v-if="selectedLang" class="mt-3">
-      <div class="flex justify-between items-center mb-1">
-        <label class="block mb-1 font-medium text-sm">
-          Translation to {{ langLabel(selectedLang) }}
-        </label>
+    <!-- Translation Section -->
+    <div v-if="selectedLang" class="space-y-3">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <!-- Original -->
+        <div class="p-3 rounded-lg border bg-gray-50 shadow-sm">
+          <p class="text-xs font-semibold text-gray-500 mb-1">
+            Original ({{ fieldData.mainLang || "en" }})
+          </p>
+          <p class="text-sm text-gray-700 whitespace-pre-wrap py-4">
+            {{ fieldData.main }}
+          </p>
+        </div>
 
-        <div class="flex gap-2">
-          <!-- Single -->
-          <Button
-            :label="loadingOne ? 'Generating...' : 'Generate from AI'"
-            size="xxs"
-            type="gray"
-            :icon="faRobot"
-            :disabled="loadingOne || loadingAll"
-            @click="generateLanguagetranslateAI"
-          />
+        <!-- Translation -->
+        <div class="p-3 rounded-lg border shadow-sm">
+          <div class="flex justify-between items-center mb-1">
+            <p class="text-xs font-semibold text-gray-500 mb-1">
+              {{ langLabel(selectedLang) }}
+            </p>
+            <Button
+              :label="loadingOne ? 'Generating...' : 'Generate AI'"
+              size="xxs"
+              type="rainbow"
+              :icon="faRobot"
+              :disabled="isDisabled"
+              @click="generateLanguagetranslateAI"
+            />
+          </div>
 
-          <!-- All -->
-          <Button
-            :label="loadingAll ? 'Translating All...' : 'Translate All'"
-            size="xxs"
-            type="primary"
-            :icon="faRobot"
-            :disabled="loadingOne || loadingAll"
-            @click="generateAllTranslationsAI"
+          <input
+            type="text"
+            v-model="langBuffers[selectedLang]"
+            class="w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            :disabled="isDisabled"
+            placeholder="Enter translation..."
           />
         </div>
       </div>
-
-      <input
-        type="text"
-        v-model="langBuffers[selectedLang]"
-        class="w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-      />
     </div>
   </div>
 </template>

@@ -94,6 +94,10 @@ function shopRoute(family: Family) {
             return route(
                 "grp.org.shops.show.catalogue.dashboard",
                 [(route().params as RouteParams).organisation, family.shop_slug])
+        default:
+            return route(
+                "grp.org.shops.show.catalogue.dashboard",
+                [family.organisation_slug, family.shop_slug])
     }
 }
 function productRoute(family: Family) {

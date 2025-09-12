@@ -18,6 +18,7 @@ use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use phpDocumentor\Reflection\Types\Null_;
 
 class EditFamily extends OrgAction
 {
@@ -120,132 +121,146 @@ class EditFamily extends OrgAction
                 ],
 
                 'formData' => [
-                    'blueprint' => [
+                    'blueprint' => array_filter(
                         [
-                            'label'  => __('Name/Description'),
-                            'icon'   => 'fa-light fa-tag',
-                            'fields' => [
-                                'code' => [
-                                    'type'  => 'input',
-                                    'label' => __('code'),
-                                    'value' => $family->code
-                                ],
-                                'name_i8n' => [
-                                    'type'  => 'input',
-                                    'label' => __('name'),
-                                    'value' => $family->getTranslation('name_i8n', $family->shop->language->code) ?: $family->name
-                                ],
-                                'description_title_i8n' => [
-                                    'type'  => 'input',
-                                    'label' => __('description title'),
-                                    'value' => $family->getTranslation('description_title_i8n', $family->shop->language->code) ?: $family->description_title
-                                ],
-                                'description_i8n' => [
-                                    'type'  => 'textEditor',
-                                    'label' => __('description'),
-                                    'value' => $family->getTranslation('description_i8n', $family->shop->language->code) ?: $family->description
-                                ],
-                                'description_extra_i8n' => [
-                                    'type'  => 'textEditor',
-                                    'label' => __('Extra description'),
-                                    'value' => $family->getTranslation('description_extra_i8n', $family->shop->language->code) ?: $family->description_extra
-                                ],
-                            ]
-                        ],
-                        [
-                            'label'  => __('Pricing'),
-                            'title'  => __('id'),
-                            'icon'   => 'fa-light fa-money-bill',
-                            'fields' => [
-                                'cost_price_ratio' => [
-                                    'type'          => 'input_number',
-                                    'bind' => [
-                                        'maxFractionDigits' => 3
+                            [
+                                'label'  => __('Id'),
+                                'icon'   => 'fa-light fa-fingerprint',
+                                'fields' => [
+                                    'code' => [
+                                        'type'  => 'input',
+                                        'label' => __('code'),
+                                        'value' => $family->code
                                     ],
-                                    'label'         => __('pricing ratio'),
-                                    'placeholder'   => __('Cost price ratio'),
-                                    'required'      => true,
-                                    'value'         => $family->cost_price_ratio,
-                                    'min'           => 0
-                                ]
-                            ]
-                        ],
-                        [
-                            'label'  => __('Image'),
-                            'icon'   => 'fa-light fa-image',
-                            'title'  => __('Media'),
-                            'fields' => [
-                                "image"         => [
-                                    "type"    => "crop-image-full",
-                                    "label"   => __("Image"),
-                                    "value"   => $family->imageSources(720, 480),
-                                    "required" => false,
-                                    'noSaveButton' => true,
-                                    "full"         => true
-                                ],
-                                ...$departmentIdFormData
-                            ]
-                        ],
-                        [
-                            'label'  => __('Department'),
-                            'icon'   => 'fa-light fa-box',
-                            'fields' => [
-                                'department_id'  =>  [
-                                    'type'    => 'select_infinite',
-                                    'label'   => __('Department'),
-                                    'options'   => [
-                                        [
-                                            'id' => $family->department?->id,
-                                            'code' => $family->department?->code
-                                        ]
-                                    ],
-                                    'fetchRoute'    => [
-                                        'name'       => 'grp.org.shops.show.catalogue.departments.index',
-                                        'parameters' => [
-                                            'organisation' => $this->organisation->slug,
-                                            'shop' => $this->shop->slug
-                                        ]
-                                    ],
-                                    'valueProp' => 'id',
-                                    'labelProp' => 'code',
-                                    'required' => false,
-                                    'value'   => $family->department->id ?? null,
                                 ]
                             ],
-
+                            [
+                                'label'  => __('Name/Description'),
+                                'icon'   => 'fa-light fa-tag',
+                                'fields' => [
+                                    'code' => [
+                                        'type'  => 'input',
+                                        'label' => __('code'),
+                                        'value' => $family->code
+                                    ],
+                                    'name_i8n' => [
+                                        'type'  => 'input',
+                                        'label' => __('name'),
+                                        'value' => $family->getTranslation('name_i8n', $family->shop->language->code) ?: $family->name
+                                    ],
+                                    'description_title_i8n' => [
+                                        'type'  => 'input',
+                                        'label' => __('description title'),
+                                        'value' => $family->getTranslation('description_title_i8n', $family->shop->language->code) ?: $family->description_title
+                                    ],
+                                    'description_i8n' => [
+                                        'type'  => 'textEditor',
+                                        'label' => __('description'),
+                                        'value' => $family->getTranslation('description_i8n', $family->shop->language->code) ?: $family->description
+                                    ],
+                                    'description_extra_i8n' => [
+                                        'type'  => 'textEditor',
+                                        'label' => __('Extra description'),
+                                        'value' => $family->getTranslation('description_extra_i8n', $family->shop->language->code) ?: $family->description_extra
+                                    ],
+                                ]
+                            ],
+                            !$family->master_product_category_id ? [
+                                'label'  => __('Translations'),
+                                'icon'   => 'fa-light fa-language',
+                                'main' => $family->name,
+                                'languages_main' => $family->shop->language->code,
+                                'fields' => [
+                                    'name_i8n' => [
+                                        'type'  => 'input_translation',
+                                        'label' => __('translate name'),
+                                        'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($family->shop->extra_languages),
+                                        'value' => $family->getTranslations('name_i8n')
+                                    ],
+                                    'description_title_i8n' => [
+                                        'type'  => 'input_translation',
+                                        'label' => __('translate description title'),
+                                        'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($family->shop->extra_languages),
+                                        'value' => $family->getTranslations('description_title_i8n')
+                                    ],
+                                    'description_i8n' => [
+                                        'type'  => 'textEditor_translation',
+                                        'label' => __('translate description'),
+                                        'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($family->shop->extra_languages),
+                                        'value' => $family->getTranslations('description_i8n')
+                                    ],
+                                    'description_extra_i8n' => [
+                                        'type'  => 'textEditor_translation',
+                                        'label' => __('translate description extra'),
+                                        'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($family->shop->extra_languages),
+                                        'value' => $family->getTranslations('description_extra_i8n')
+                                    ],
+                                ]
+                            ] : null,
+                            [
+                                'label'  => __('Pricing'),
+                                'title'  => __('id'),
+                                'icon'   => 'fa-light fa-money-bill',
+                                'fields' => [
+                                    'cost_price_ratio' => [
+                                        'type'          => 'input_number',
+                                        'bind' => [
+                                            'maxFractionDigits' => 3
+                                        ],
+                                        'label'         => __('pricing ratio'),
+                                        'placeholder'   => __('Cost price ratio'),
+                                        'required'      => true,
+                                        'value'         => $family->cost_price_ratio,
+                                        'min'           => 0
+                                    ]
+                                ]
+                            ],
+                            [
+                                'label'  => __('Image'),
+                                'icon'   => 'fa-light fa-image',
+                                'title'  => __('Media'),
+                                'fields' => [
+                                    "image"         => [
+                                        "type"    => "crop-image-full",
+                                        "label"   => __("Image"),
+                                        "value"   => $family->imageSources(720, 480),
+                                        "required" => false,
+                                        'noSaveButton' => true,
+                                        "full"         => true
+                                    ],
+                                    ...$departmentIdFormData
+                                ]
+                            ],
+                            [
+                                'label'  => __('Department'),
+                                'icon'   => 'fa-light fa-box',
+                                'fields' => [
+                                    'department_id'  =>  [
+                                        'type'    => 'select_infinite',
+                                        'label'   => __('Department'),
+                                        'options'   => [
+                                            [
+                                                'id' => $family->department?->id,
+                                                'code' => $family->department?->code
+                                            ]
+                                        ],
+                                        'fetchRoute'    => [
+                                            'name'       => 'grp.org.shops.show.catalogue.departments.index',
+                                            'parameters' => [
+                                                'organisation' => $this->organisation->slug,
+                                                'shop' => $this->shop->slug
+                                            ]
+                                        ],
+                                        'valueProp' => 'id',
+                                        'labelProp' => 'code',
+                                        'required' => false,
+                                        'value'   => $family->department->id ?? null,
+                                    ]
+                                ],
+    
+                            ],
                         ],
-                        [
-                            'label'  => __('Translations'),
-                            'icon'   => 'fa-light fa-language',
-                            'fields' => [
-                                'name_i8n' => [
-                                    'type'  => 'input_translation',
-                                    'label' => __('translate name'),
-                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($family->shop->extra_languages),
-                                    'value' => $family->getTranslations('name_i8n')
-                                ],
-                                'description_title_i8n' => [
-                                    'type'  => 'input_translation',
-                                    'label' => __('translate description title'),
-                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($family->shop->extra_languages),
-                                    'value' => $family->getTranslations('description_title_i8n')
-                                ],
-                                'description_i8n' => [
-                                    'type'  => 'textEditor_translation',
-                                    'label' => __('translate description'),
-                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($family->shop->extra_languages),
-                                    'value' => $family->getTranslations('description_i8n')
-                                ],
-                                'description_extra_i8n' => [
-                                    'type'  => 'textEditor_translation',
-                                    'label' => __('translate description extra'),
-                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($family->shop->extra_languages),
-                                    'value' => $family->getTranslations('description_extra_i8n')
-                                ],
-                            ]
-                        ],
-
-                    ],
+                    ),
                     'args'      => [
                         'updateRoute' => [
                             'name'       => 'grp.models.product_category.update',

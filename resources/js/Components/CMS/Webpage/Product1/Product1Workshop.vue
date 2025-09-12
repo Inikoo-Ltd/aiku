@@ -35,6 +35,7 @@ const props = withDefaults(defineProps<{
 }>(), {
   templateEdit: 'webpage'
 })
+
 const layout = inject('layout',{})
 const locale = useLocaleStore()
 const isFavorite = ref(false)
@@ -89,9 +90,15 @@ defineOptions({
 
 const attrs = useAttrs()
 
+// ✅ helper for responsive classes
+function resolveResponsiveClass(
+  screenType: "mobile" | "tablet" | "desktop",
+  options: Record<string, string>
+) {
+  return options[screenType] || ""
+}
 
 onMounted(() => {
-  // Tunggu render selesai
   requestAnimationFrame(() => {
     if (contentRef?.value?.scrollHeight > 100) {
       showButton.value = true
@@ -99,7 +106,6 @@ onMounted(() => {
   })
 
   if(props.templateEdit != 'webpage') {
-    console.log('asdasd')
     layout.iris = {
         is_logged_in : true
     }
@@ -109,16 +115,27 @@ onMounted(() => {
 const toggleExpanded = () => {
   expanded.value = !expanded.value
 }
-
-
 </script>
 
 <template>
-    <div id="product-1" v-bind="attrs" :style="{
-			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-             marginLeft : 'auto', marginRight : 'auto'
-		}"
-        class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block">
+    <!-- Desktop / Tablet Layout -->
+    <div
+      id="product-1"
+      v-bind="attrs"
+      :style="{
+        ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+        marginLeft : 'auto',
+        marginRight : 'auto'
+      }"
+      :class="[
+        'mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6',
+        resolveResponsiveClass(screenType, {
+          mobile: 'hidden',
+          tablet: 'block',
+          desktop: 'block'
+        })
+      ]"
+    >
         <div class="grid grid-cols-12 gap-x-10 mb-2">
             <div class="col-span-7">
                 <div class="py-1 w-full">
@@ -143,11 +160,6 @@ const toggleExpanded = () => {
                         <h1 class="text-2xl font-bold text-gray-900">{{ modelValue.product.name }}</h1>
                         <div class="flex flex-wrap justify-between gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
                             <div>Product code: {{ modelValue.product.code }}</div>
-                            
-                            <!-- <div v-tooltip="trans('This is not work in workshop, try in website.')" class="flex items-center gap-[1px]">
-                                <FontAwesomeIcon icon="fas fa-file-download" class="opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />
-                                <span>Download (csv)</span>
-                            </div> -->
                         </div>
                         <div class="flex items-center gap-2 text-sm text-gray-600 mb-4">
                             <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
@@ -162,14 +174,13 @@ const toggleExpanded = () => {
                         </div>
                     </div>
                     <div class="h-full flex items-start">
-                        <!-- Favorite Icon -->
                         <template v-if="layout?.retina?.type != 'dropshipping' && layout.iris?.is_logged_in">
-                            <div v-if="isLoadingFavourite" class="xabsolute top-2 right-2 text-gray-500 text-2xl">
+                            <div v-if="isLoadingFavourite" class="text-gray-500 text-2xl">
                                 <LoadingIcon />
                             </div>
                             <div v-else
                                 @click="() => modelValue.product.is_favourite ? onUnselectFavourite(modelValue.product) : onAddFavourite(modelValue.product)"
-                                class="cursor-pointer xabsolute top-2 right-2 group text-2xl ">
+                                class="cursor-pointer group text-2xl ">
                                 <FontAwesomeIcon v-if="modelValue.product.is_favourite" :icon="fasHeart" fixed-width
                                     class="text-pink-500" />
                                 <FontAwesomeIcon v-else :icon="faHeart" fixed-width
@@ -199,7 +210,6 @@ const toggleExpanded = () => {
                     <span>{{`order ${formatNumber(modelValue?.product?.units)} for full pack`}}</span>
                 </div>
                 <div class="space-y-1">
-                    <!-- Description Title -->
                     <div class="text-sm font-medium text-gray-800" :style="getStyles(modelValue?.description?.description_title, screenType)">
                         <input v-if="templateEdit === 'webpage'" placeholder="Description title"
                             v-model="modelValue.product.description_title"
@@ -208,7 +218,6 @@ const toggleExpanded = () => {
                         <div v-else>{{ modelValue.product.description_title }}</div>
                     </div>
 
-                    <!-- Description Body -->
                     <div class="text-xs font-normal text-gray-700" :style="getStyles(modelValue?.description?.description_content, screenType)">
                         <EditorV2 v-if="templateEdit === 'webpage'" v-model="modelValue.product.description"
                             placeholder="Write product description..."
@@ -246,17 +255,24 @@ const toggleExpanded = () => {
             </button>
         </div>
 
-
         <ProductContents :product="props.modelValue.product" :styleData="modelValue.information_style"
             :setting="modelValue.setting" :templateEdit="templateEdit"/>
     </div>
 
     <!-- Mobile Layout -->
-    <div class="block sm:hidden px-4 py-6 text-gray-800">
+    <div
+      :class="[
+        'px-4 py-6 text-gray-800',
+        resolveResponsiveClass(screenType, {
+          mobile: 'block',
+          tablet: 'hidden',
+          desktop: 'hidden'
+        })
+      ]"
+    >
         <h2 class="text-xl font-bold mb-2">{{ modelValue.product.name }}</h2>
         <ImageProducts :images="modelValue.product.images" />
         <div class="flex justify-between items-start gap-4 mt-4">
-            <!-- Price + Unit Info -->
             <div v-if="layout.iris?.is_logged_in">
                 <div class="text-lg font-semibold">
                     {{ locale.currencyFormat(modelValue.product.currency_code, modelValue.product.price || 0) }}
@@ -269,14 +285,12 @@ const toggleExpanded = () => {
                 </div>
             </div>
 
-            <!-- Favorite Icon -->
             <div class="mt-1">
                 <FontAwesomeIcon :icon="faHeart" class="text-xl cursor-pointer transition-colors duration-300"
                     :class="{ 'text-red-500': isFavorite, 'text-gray-400 hover:text-red-500': !isFavorite }"
                     @click="toggleFavorite" />
             </div>
         </div>
-
 
         <div class="flex flex-wrap gap-2 mt-4">
             <div class="text-xs flex items-center gap-1 text-gray-500" v-for="(tag, index) in modelValue.product.tags"
@@ -287,8 +301,8 @@ const toggleExpanded = () => {
                 </div>
                 <span>{{ tag.name }}</span>
             </div>
-
         </div>
+
         <div class="mt-6 flex flex-col gap-2">
             <ButtonAddPortfolio :product="modelValue.product" />
         </div>
@@ -302,7 +316,6 @@ const toggleExpanded = () => {
                 <img v-for="logo in modelValue?.paymentData" :key="logo.code" v-tooltip="logo.code" :src="logo.image"
                     :alt="logo.code" class="h-4 px-1" />
             </div>
-
         </div>
 
         <div class="text-xs font-normal text-gray-700 my-6">
@@ -315,5 +328,4 @@ const toggleExpanded = () => {
         <ProductContents :product="props.modelValue.product" :styleData="modelValue.information_style"
             :setting="modelValue.setting" :templateEdit="templateEdit"/>
     </div>
-
 </template>

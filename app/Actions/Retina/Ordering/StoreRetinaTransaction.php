@@ -1,22 +1,22 @@
 <?php
 
 /*
- * Author: Artha <artha@aw-advantage.com>
- * Created: Fri, 09 May 2025 13:37:13 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 12 Sept 2025 11:57:49 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Retina\Dropshipping\Orders\Transaction;
+namespace App\Actions\Retina\Ordering;
 
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\RetinaAction;
 use App\Models\Catalogue\HistoricAsset;
+use App\Models\Catalogue\Product;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreRetinaTransaction extends RetinaAction
@@ -26,42 +26,44 @@ class StoreRetinaTransaction extends RetinaAction
         $historicAssetId = $modelData['historic_asset_id'];
 
         $existingTransaction = $order->transactions()->where('historic_asset_id', $historicAssetId)->first();
-        if ($existingTransaction) {
-            throw ValidationException::withMessages(
+
+        if($existingTransaction) {
+            return UpdateRetinaTransaction::run(
+                $existingTransaction,
                 [
-                        'message' => [
-                            'amount' => 'Item already exist in basket',
-                        ]
-                    ]
+                    'quantity_ordered' => Arr::get($modelData, 'quantity')
+                ]
             );
         }
 
         $historicAsset = HistoricAsset::find($historicAssetId);
 
-        $transaction =  StoreTransaction::make()->action($order, $historicAsset, [
+        $transaction = StoreTransaction::make()->action($order, $historicAsset, [
             'quantity_ordered' => Arr::get($modelData, 'quantity')
         ]);
 
-        
+
+        /** @var Product $product */
+        $product = $historicAsset->model;
         // Luigi: emit event 'add_to_cart' basket
         $gtm = [
             'ecommerce' => [
-                'transaction_id'    => $order->id,
-                'value'             => (float) $order->total_amount,
-                'currency'          => $order->shop->currency->code,
-                'items'             => [
+                'transaction_id' => $order->id,
+                'value'          => (float)$order->total_amount,
+                'currency'       => $order->shop->currency->code,
+                'items'          => [
                     [
-                        'item_id' => $historicAsset?->model?->getLuigiIdentity()
+                        'item_id' => $product->getLuigiIdentity()
                     ]
                 ]
             ]
         ];
         request()->session()->flash('gtm', [
-            'key'               => 'retina_dropshipping_add_to_cart',
-            'event'             => 'add_to_cart',
-            'data_to_submit'    => $gtm
+            'key'            => 'retina_add_to_cart',
+            'event'          => 'add_to_cart',
+            'data_to_submit' => $gtm
         ]);
-        
+
         return $transaction;
     }
 
@@ -79,8 +81,23 @@ class StoreRetinaTransaction extends RetinaAction
         if ($order->customer_id !== $this->customer->id) {
             return false;
         }
+
         return true;
     }
+
+    public function prepareForValidation(ActionRequest $request): void
+    {
+        if ($request->has('product_id')) {
+            $product = Product::find($request->get('product_id'));
+            $request->merge(
+                [
+                    'historic_asset_id' => $product->currentHistoricProduct->id,
+
+                ]
+            );
+        }
+    }
+
 
     public function asController(Order $order, ActionRequest $request): Transaction
     {

@@ -37,6 +37,7 @@ class IndexProductsInMasterProduct extends OrgAction
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->orderBy('products.state');
         $queryBuilder->leftJoin('shops', 'products.shop_id', 'shops.id');
+        $queryBuilder->leftJoin('organisations', 'products.organisation_id', 'organisations.id');
         $queryBuilder->where('products.is_main', true);
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
         $queryBuilder->where('products.master_product_id', $masterAsset->id);
@@ -56,6 +57,8 @@ class IndexProductsInMasterProduct extends OrgAction
                 'shops.name as shop_name',
                 'shops.code as shop_code',
                 'shops.slug as shop_slug',
+                'organisations.name as organisation_name',
+                'organisations.slug as organisation_slug',
             ])
             ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
 

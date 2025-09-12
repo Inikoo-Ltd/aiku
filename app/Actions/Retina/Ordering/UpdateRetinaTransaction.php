@@ -1,12 +1,12 @@
 <?php
 
 /*
- * Author: Artha <artha@aw-advantage.com>
- * Created: Fri, 09 May 2025 13:37:13 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 12 Sept 2025 12:05:53 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Retina\Dropshipping\Orders\Transaction;
+namespace App\Actions\Retina\Ordering;
 
 use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Actions\RetinaAction;
@@ -35,7 +35,10 @@ class UpdateRetinaTransaction extends RetinaAction
         return UpdateTransaction::make()->action($transaction, $modelData);
     }
 
-    public function prepareForValidation()
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function prepareForValidation(): void
     {
         if ($this->order->state != OrderStateEnum::CREATING) {
             throw ValidationException::withMessages([
