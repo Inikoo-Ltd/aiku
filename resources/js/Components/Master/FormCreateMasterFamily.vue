@@ -87,7 +87,7 @@ const submitForm = async (redirect = true) => {
     // Build payload manual
     const payload: any = {
         ...form.data(),
-        shop_products: finalDataTable
+        shop_family: finalDataTable
     }
 
     // Hapus image kalau tidak diganti user
