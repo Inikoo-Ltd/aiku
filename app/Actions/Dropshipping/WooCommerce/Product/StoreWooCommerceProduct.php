@@ -56,6 +56,7 @@ class StoreWooCommerceProduct extends RetinaAction
                 'manage_stock' => !is_null($product->available_quantity),
                 'stock_status' => Arr::get($product, 'stock_status', 'instock'),
                 'attributes' => Arr::get($product, 'attributes', []),
+                'sku' => $portfolio->sku,
                 'status' => $this->mapProductStateToWooCommerce($product->status->value)
             ];
 
