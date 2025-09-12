@@ -104,6 +104,12 @@ function shopRoute(family: Family) {
                 (route().params as RouteParams).organisation,
                 family.shop_slug])
     }
+
+    return route(
+        "grp.org.shops.show.catalogue.dashboard",
+        [
+            family.organisation_slug,
+            family.shop_slug])
 }
 
 function departmentRoute(family: Family) {
