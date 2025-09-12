@@ -2,46 +2,26 @@
 import { trans } from "laravel-vue-i18n"
 import InformationIcon from "../Utils/InformationIcon.vue"
 import { computed } from "vue"
-import Button from "../Elements/Buttons/Button.vue"
 
-
-// interface ProductItem {
-//     id: number
-//     name: string
-//     code?: string
-//     shop_id: number
-//     shop_name: string
-//     shop_currency: string
-//     price: number | string
-//     update_route: {
-//         name: string
-//         parameters: Record<string, any>
-//     }
-//     stock?: number
-//     create_webpage?: boolean
-//     currency?: string
-// }
-
-// interface ProductData {
-//     id: number
-//     name: string
-//     image?: {
-//         source: string
-//     }
-//     data: ProductItem[]
-// }
-
-// 👇 defineModel makes `v-model:data` available
 const modelValue = defineModel<{}>()
 
 const props = defineProps<{
     currency: string
     master_price: number
-}>();
+}>()
 
+// Check if all items are checked
 const isAllChecked = computed(() => {
-    return modelValue.value?.data?.every(item => item.create_webpage);
+    return modelValue.value?.data?.length > 0 &&
+        modelValue.value.data.every(item => item.create_webpage)
 })
+
+// Toggle check/uncheck all
+const toggleCheckAll = (value: boolean) => {
+    modelValue.value.data.forEach(item => {
+        item.create_webpage = value
+    })
+}
 </script>
 
 <template>
@@ -50,16 +30,6 @@ const isAllChecked = computed(() => {
             <h3 class="text-base font-semibold text-gray-800 flex items-center gap-2">
                 Shops ({{ modelValue.data.length }})
             </h3>
-
-            <Button
-                type="secondary"
-                @click="modelValue.data.forEach(item => item.create_webpage = true)"
-                :disabled="!modelValue.data.length || isAllChecked"
-                size="xxs"
-                
-            >
-                {{ trans('Check All') }}
-            </Button>
         </div>
         
         <div v-if="modelValue.data.length" class="overflow-x-auto">
@@ -69,8 +39,15 @@ const isAllChecked = computed(() => {
                         <th class="px-2 py-1">Code</th>
                         <th class="px-2 py-1">Name</th>
                         <th class="px-2 py-1 text-center">
-                            Create Webpage?
-                            <InformationIcon :information="trans('If checked, will create the family webpage')" />
+                            <div class="flex justify-center items-center gap-1">
+                                <input 
+                                    type="checkbox"
+                                    :checked="isAllChecked"
+                                    @change="toggleCheckAll(($event.target as HTMLInputElement).checked)"
+                                />
+                                {{ trans("Create Webpage?") }}
+                                <InformationIcon :information="trans('If checked, will create the family webpage')" />
+                            </div>
                         </th>
                     </tr>
                 </thead>
@@ -84,8 +61,11 @@ const isAllChecked = computed(() => {
                         </td>
                         <td class="px-2 py-2 border-b border-gray-100">
                             <div class="flex justify-center items-center">
-                                <input type="checkbox" v-model="item.create_webpage"
-                                    v-tooltip="item.create_webpage ? trans('Will create the webpage as well') : trans('family webpage will not created')" />
+                                <input 
+                                    type="checkbox" 
+                                    v-model="item.create_webpage"
+                                    v-tooltip="item.create_webpage ? trans('Will create the webpage as well') : trans('Family webpage will not be created')" 
+                                />
                             </div>
                         </td>
                     </tr>

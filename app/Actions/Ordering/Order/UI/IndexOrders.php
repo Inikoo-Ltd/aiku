@@ -240,6 +240,10 @@ class IndexOrders extends OrgAction
                 'organisations.slug as organisation_slug',
                 'customers.slug as customer_slug',
                 'customers.name as customer_name',
+                'orders.customer_notes',
+                'orders.internal_notes',
+                'orders.public_notes',
+                'orders.shipping_notes',
             ])
             ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
             ->allowedSorts(['id', 'reference', 'date', 'net_amount', 'customer_name', 'pay_detailed_status']) // Ensure `id` is the first sort column

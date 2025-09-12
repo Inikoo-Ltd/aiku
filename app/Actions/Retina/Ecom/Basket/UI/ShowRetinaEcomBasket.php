@@ -46,6 +46,8 @@ class ShowRetinaEcomBasket extends RetinaAction
     public function htmlResponse(Order|null $order): Response|RedirectResponse
     {
         $isOrder = $order instanceof Order;
+
+
         return Inertia::render(
             'Ecom/RetinaEcomBasket',
             [
@@ -60,20 +62,20 @@ class ShowRetinaEcomBasket extends RetinaAction
                 ],
 
                 'routes' => [
-                    'select_products'     => [
+                    'select_products'  => [
                         'name'       => $isOrder ? 'retina.dropshipping.select_products_for_basket' : 'retina.dropshipping.select_products_for_empty_basket',
                         'parameters' => $isOrder ? [
                             'order' => $order->id
                         ] : [],
                     ],
-                    'update_route' => [
+                    'update_route'     => [
                         'name'       => 'retina.models.order.update',
                         'parameters' => [
                             'order' => $order?->id
                         ],
                         'method'     => 'patch'
                     ],
-                    'submit_route' => [
+                    'submit_route'     => [
                         'name'       => 'retina.models.order.submit',
                         'parameters' => [
                             'order' => $order?->id
@@ -91,53 +93,55 @@ class ShowRetinaEcomBasket extends RetinaAction
 
                 'voucher' => [],
 
-                'order'          => $order ? OrderResource::make($order)->resolve() : null,
-                'summary'        => $order ? $this->getOrderBoxStats($order) : [
-                    'order_summary' => [
-                        [
+                'order'   => $order ? OrderResource::make($order)->resolve() : null,
+                'summary' => $order
+                    ? $this->getOrderBoxStats($order)
+                    : [
+                        'order_summary' => [
                             [
-                                'label'       => 'Items',
-                                'quantity'    => 0,
-                                'price_base'  => 'Multiple',
-                                'price_total' => 0
-                            ],
-                        ],
-                        [
-                            [
-                                'label'       => 'Charges',
-                                'information' => '',
-                                'price_total' => 0
+                                [
+                                    'label'       => 'Items',
+                                    'quantity'    => 0,
+                                    'price_base'  => 'Multiple',
+                                    'price_total' => 0
+                                ],
                             ],
                             [
-                                'label'       => 'Shipping',
-                                'information' => '',
-                                'price_total' => 0
-                            ]
-                        ],
-                        [
-                            [
-                                'label'       => 'Net',
-                                'information' => '',
-                                'price_total' => 0
+                                [
+                                    'label'       => 'Charges',
+                                    'information' => '',
+                                    'price_total' => 0
+                                ],
+                                [
+                                    'label'       => 'Shipping',
+                                    'information' => '',
+                                    'price_total' => 0
+                                ]
                             ],
-                        ],
-                        [
                             [
-                                'label'       => 'Total',
-                                'price_total' => 0
+                                [
+                                    'label'       => 'Net',
+                                    'information' => '',
+                                    'price_total' => 0
+                                ],
                             ],
-                        ],
-                    ]
-                ],
+                            [
+                                [
+                                    'label'       => 'Total',
+                                    'price_total' => 0
+                                ],
+                            ],
+                        ]
+                    ],
 
-                'is_unable_dispatch' => in_array($order->deliveryAddress->country_id, array_merge($order->organisation->forbidden_dispatch_countries ?? [], $order->shop->forbidden_dispatch_countries ?? [])),
+                'is_unable_dispatch' => $order && in_array($order->deliveryAddress->country_id, array_merge($order->organisation->forbidden_dispatch_countries ?? [], $order->shop->forbidden_dispatch_countries ?? [])),
 
-                'address_management' => GetOrderDeliveryAddressManagement::run(order: $order, isRetina: true),
-                'balance'        => $this->customer->balance,
-                'is_in_basket'   => true,
-                'total_to_pay'   => $order ? max(0, $order->total_amount - $order->customer->balance) : 0,
-                'total_products' => $order ? $order->transactions->whereIn('model_type', ['Product', 'Service'])->count() : 0,
-                'transactions'   => $order ? RetinaEcomBasketTransactionsResources::collection(IndexBasketTransactions::run($order)) : null,
+                'address_management' => $order ? GetOrderDeliveryAddressManagement::run(order: $order, isRetina: true) : [],
+                'balance'            => $this->customer->balance,
+                'is_in_basket'       => true,
+                'total_to_pay'       => $order ? max(0, $order->total_amount - $order->customer->balance) : 0,
+                'total_products'     => $order ? $order->transactions->whereIn('model_type', ['Product', 'Service'])->count() : 0,
+                'transactions'       => $order ? RetinaEcomBasketTransactionsResources::collection(IndexBasketTransactions::run($order)) : null,
             ]
         )->table(
             IndexBasketTransactions::make()->tableStructure()
