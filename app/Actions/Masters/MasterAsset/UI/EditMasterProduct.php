@@ -23,7 +23,6 @@ use App\Models\Masters\MasterShop;
 
 class EditMasterProduct extends GrpAction
 {
-
     public function handle(MasterAsset $masterAsset): MasterAsset
     {
         return $masterAsset;

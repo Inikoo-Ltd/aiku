@@ -26,12 +26,8 @@ return new class () extends Migration {
         }
     }
 
-    /**
-     * Reverse the migrations.
-     *
-     * @return void
-     */
-    public function down()
+
+    public function down(): void
     {
         $tables = ['master_assets', 'trade_units', 'products'];
 

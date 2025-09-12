@@ -8,7 +8,6 @@
 
 namespace App\Actions\Catalogue\Product;
 
-use App\Actions\Goods\TradeUnit\UploadImagesToTradeUnit;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithAttachMediaToModel;
 use App\Actions\Traits\WithUploadModelImages;
@@ -74,6 +73,6 @@ class UploadImagesToProduct extends OrgAction
 
         $this->initialisationFromShop($product->shop, $request);
 
-        $this->handle($product, 'image', $this->validatedData,true);
+        $this->handle($product, 'image', $this->validatedData, true);
     }
 }
