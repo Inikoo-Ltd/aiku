@@ -41,6 +41,7 @@ const emits = defineEmits<{
 }>()
 
 function productRoute(product: Product) {
+    console.log(product)
     if (!product.slug) {
         return ''
     }
@@ -168,6 +169,14 @@ function productRoute(product: Product) {
             return route(
                 "grp.org.shops.show.catalogue.products.current_products.show",
                 [product.organisation_slug, product.shop_slug, product.slug]);
+       /*  case "grp.masters.master_shops.show.master_families.master_products.show":
+            return route(
+                "grp.org.shops.show.catalogue.products.current_products.show",
+                [
+                    product.organisation_slug,
+                    product.shop_slug,
+                    product.slug
+                ]); */
         default:
             return route(
                 "grp.helpers.redirect_asset",
@@ -209,6 +218,16 @@ function shopRoute(invoice: Invoice) {
             [
                 invoice.organisation_slug,
                 invoice.shop_slug,
+            ]);
+    }
+
+    if (route().current() == "grp.masters.master_shops.show.master_families.master_products.show") {
+        return route(
+            "grp.org.shops.show.catalogue.products.current_products.show",
+            [
+                invoice.organisation_slug,
+                invoice.shop_slug,
+                invoice.slug
             ]);
     }
 
