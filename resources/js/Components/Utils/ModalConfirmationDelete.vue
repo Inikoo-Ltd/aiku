@@ -18,7 +18,7 @@ library.add(faTimes, faExclamationTriangle, faAsterisk)
 const props = defineProps<{
     description?: string
     icon?: Icon
-    yesLabel?: string
+    cancelLabel?: string
     noLabel?: string
     noIcon?: string
     routeDelete?: routeType
@@ -181,7 +181,7 @@ const messageDelete = ref('')
                                             <Button
                                                 type="tertiary"
                                                 icccon="far fa-arrow-left"
-                                                :label="trans('cancel')"
+                                                :label="cancelLabel ?? trans('cancel')"
                                                 full
                                                 @click="() => (isOpenModal = false, emits('onNo'))"
                                             />

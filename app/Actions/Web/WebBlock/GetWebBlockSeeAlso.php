@@ -47,7 +47,7 @@ class GetWebBlockSeeAlso
         }
 
 
-        // Section: Other Family
+        // Section: Another Family
         $dataOtherFamilyToWorkshop = null;
         $idOtherFamily = (int) Arr::get($webBlock, "{$settingsPath}.other_family.id");
         if ($idOtherFamily > 0 && ($modelOtherFamily = ProductCategory::find($idOtherFamily))) {
@@ -74,7 +74,7 @@ class GetWebBlockSeeAlso
             ->values()
             ->all();
 
-        $productsModel = Product::with(['images', 'category']) // eager-load to prevent N+1
+        $productsModel = Product::with(['images']) // eager-load to prevent N+1
             ->whereIn('id', $ids)
             ->get();
 
