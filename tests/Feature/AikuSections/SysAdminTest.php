@@ -113,7 +113,7 @@ test('group scoped job positions', function (Group $group) {
         'group' => $group->slug,
     ])->assertSuccessful();
 
-    expect($group->jobPositions()->count())->toBe(5)
+    expect($group->jobPositions()->count())->toBe(6)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 })->depends('create group');
 
