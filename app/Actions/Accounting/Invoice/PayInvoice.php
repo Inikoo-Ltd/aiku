@@ -87,7 +87,10 @@ class PayInvoice extends OrgAction
         }
 
         AttachPaymentToInvoice::make()->action($invoice, $payment, []);
-        AttachPaymentToOrder::make()->action($invoice->order, $payment, []);
+        if($invoice->order){
+            AttachPaymentToOrder::make()->action($invoice->order, $payment, []);
+        }
+
 
 
         //  }

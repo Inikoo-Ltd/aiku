@@ -330,7 +330,7 @@ test('update fulfilment settings (monthly cut off day)', function (Fulfilment $f
 })->depends('create fulfilment shop');
 
 test('get end date recurring bill (monthly)', function () {
-    $current = Carbon::now(); // store current time once
+    $current = Carbon::now(); // store the current time once
 
     $endDate = $this->getRecurringBillEndDate->getEndDate(
         $current,
@@ -353,7 +353,7 @@ test('get end date recurring bill (monthly)', function () {
 });
 
 test('get end date recurring bill (weekly)', function () {
-    $startDate = Carbon::create(2025, 10, 20); // 20 is monday
+    $startDate = Carbon::create(2025, 10, 20); // 20 is Monday
     $endDate   = $this->getRecurringBillEndDate->getEndDate(
         $startDate,
         [
@@ -365,7 +365,7 @@ test('get end date recurring bill (weekly)', function () {
     expect($endDate)->toBeInstanceOf(Carbon::class)
         ->toEqual(Carbon::create(2025, 10, 27));
 
-    $startDate = Carbon::create(2025, 11, 21); // 21 is friday
+    $startDate = Carbon::create(2025, 11, 21); // 21 is Friday
     $endDate   = $this->getRecurringBillEndDate->getEndDate(
         $startDate,
         [
@@ -2956,7 +2956,8 @@ test('pay invoice (full)', function ($fulfilmentCustomer) {
     expect($invoice->total_amount)->tobe($invoice->payment_amount)
         ->and($payment)->toBeInstanceOf(Payment::class)
         ->and($payment->status)->toBe(PaymentStatusEnum::SUCCESS)
-        ->and($payment->state)->toBe(PaymentStateEnum::COMPLETED);
+        ->and($payment->state)->toBe(PaymentStateEnum::COMPLETED)
+        ->and($invoice->customer->balance)->toBe("-402.00");
 
     return $fulfilmentCustomer;
 })->depends('update third rental agreement cause');
@@ -3042,10 +3043,12 @@ test('consolidate 3rd recurring bill', function ($fulfilmentCustomer) {
 })->depends('pay invoice (other half)');
 
 test('pay invoice (exceed)', function ($invoice) {
-    expect($invoice->total_amount)->toBe("140.00")
-        ->and($invoice->payment_amount)->toBe("0.00");
-
     $customer           = $invoice->customer;
+    expect($invoice->total_amount)->toBe("140.00")
+        ->and($invoice->payment_amount)->toBe("0.00")
+    ->and($customer->balance)->toBe("-542.00");
+
+
     $paymentAccountShop = $invoice->shop->paymentAccountShops()->first();
     $paymentAccount     = $paymentAccountShop->paymentAccount;
     $fulfilmentCustomer = $invoice->customer->fulfilmentCustomer;
@@ -3061,8 +3064,8 @@ test('pay invoice (exceed)', function ($invoice) {
         ->and($payment->status)->toBe(PaymentStatusEnum::SUCCESS)
         ->and($payment->state)->toBe(PaymentStateEnum::COMPLETED)
         ->and($customer->creditTransactions)->not->toBeNull()
-        ->and($customer->balance)->toBe("60.00")
-        ->and($customer->creditTransactions->first()->amount)->toBe("60.00");
+        ->and($customer->balance)->toBe("-682.00")
+        ->and($customer->creditTransactions->first()->amount)->toBe("-402.00");
 
     return $fulfilmentCustomer;
 })->depends('consolidate 3rd recurring bill');
