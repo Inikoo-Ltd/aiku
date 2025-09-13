@@ -95,7 +95,8 @@ class StoreMasterSubDepartment extends OrgAction
             ]);
         }
 
-        return Redirect::route('grp.masters.master_departments.show.master_sub_departments.show', [
+        return Redirect::route('grp.masters.master_shops.show.master_departments.show.master_sub_departments.show', [
+            'masterShop'          => $masterSubDepartment->masterShop->slug,
             'masterDepartment'    => $masterSubDepartment->parent->slug,
             'masterSubDepartment' => $masterSubDepartment->slug,
         ]);

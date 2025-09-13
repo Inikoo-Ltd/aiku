@@ -46,7 +46,7 @@ class GetRetinaDropshippingNavigation
                     'subSections' =>
                     [
                         [
-                            'label' => __(''),
+                            'label' => __('Catalogue'),
                             'icon'  => ['far', 'fa-books'],
                             'root'  => 'retina.catalogue.',
                             'route' => [
@@ -221,7 +221,7 @@ class GetRetinaDropshippingNavigation
             'icon'    => ['fal', 'fa-users-cog'],
             'root'    => 'retina.sysadmin.',
             'route'   => [
-                'name' => 'retina.sysadmin.dropshipping.dashboard'
+                'name' => 'retina.sysadmin.dashboard'
             ],
             'topMenu' => [
                 'subSections' => [

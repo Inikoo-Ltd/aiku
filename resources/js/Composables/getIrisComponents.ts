@@ -39,7 +39,7 @@ import ProductIris1Ecom from '@/Components/CMS/Webpage/Product1/ProductIris1Ecom
 import Carousel1Iris from '@/Components/CMS/Webpage/Carousel-1/Carousel1Iris.vue'
 import Products1Iris from '@/Components/CMS/Webpage/Products1/Products1Iris.vue'
 import Products1IrisEcom from '@/Components/CMS/Webpage/Products1/Products1IrisEcom.vue'
-import SubDepartments1Iris from '@/Components/CMS/Webpage/SubDepartement1/SubDepartementIris.vue'
+import SubDepartmentIris from '@/Components/CMS/Webpage/SubDepartment1/SubDepartmentIris.vue'
 import Collections1Iris from '@/Components/CMS/Webpage/Collections1/Collections1Iris.vue'
 import CTAVideo1Iris from '@/Components/CMS/Webpage/CtaVideo1/CtaVideo1Iris.vue'
 import Video1Iris from '@/Components/CMS/Webpage/Video/Video1Iris.vue'
@@ -77,12 +77,12 @@ const components = (shop_type?: string): Record<string, Component> => {
 
 
 
-        //departement
+        //department
         'department' : Department1Iris,
         'department-1' : Department1Iris,
 
-        //sub-departement
-        'sub-departments-1' : SubDepartments1Iris,
+        //sub-department
+        'sub-departments-1' : SubDepartmentIris,
 
         //family
         'family-1' : FamilyIris1,

@@ -117,11 +117,13 @@ class IndexProductsInCatalogue extends OrgAction
                 'products.name',
                 'products.state',
                 'products.price',
+                'products.rrp',
                 'products.created_at',
                 'products.updated_at',
                 'products.slug',
                 'available_quantity',
                 'units',
+                'master_product_id',
             ])
             ->selectRaw("'{$shop->currency->code}'  as currency_code")
             ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
@@ -133,6 +135,7 @@ class IndexProductsInCatalogue extends OrgAction
             'department_slug',
             'family_slug',
             'price',
+            'rrp',
             'units',
             'available_quantity'
         ])
@@ -185,7 +188,8 @@ class IndexProductsInCatalogue extends OrgAction
                 ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'units', label: __('units'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'rrp', label: __('RRP'), canBeHidden: false, sortable: true, searchable: true);
             if ($bucket != 'discontinued') {
                 $table->column(key: 'available_quantity', label: __('stock'), canBeHidden: false, sortable: true, searchable: true);
             }

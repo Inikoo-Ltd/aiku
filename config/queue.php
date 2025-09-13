@@ -74,7 +74,7 @@ return [
             'queue'        => env('REDIS_QUEUE', 'default'),
             'retry_after'  => 160,
             'block_for'    => null,
-            'after_commit' => false,
+            'after_commit' => true,
         ],
 
         'redis-long-running' => [
@@ -83,7 +83,7 @@ return [
             'queue'        => 'default-long',
             'retry_after'  => 7250,
             'block_for'    => null,
-            'after_commit' => false,
+            'after_commit' => true,
         ],
 
 

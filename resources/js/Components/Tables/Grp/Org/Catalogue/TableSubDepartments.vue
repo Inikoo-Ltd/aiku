@@ -30,6 +30,24 @@ function subDepartmentRoute(SubDepartment: SubDepartmentx) {
                 (route().params as RouteParams).shop,
                 (route().params as RouteParams).department,
                 SubDepartment.slug])
+    } else if (currentRoute === "grp.org.shops.show.catalogue.sub_departments.index") {
+        return route(
+            "grp.org.shops.show.catalogue.sub_departments.show",
+            [
+                (route().params as RouteParams).organisation,
+                (route().params as RouteParams).shop,
+                SubDepartment.slug
+            ]
+        )
+    } else {
+        return route(
+            "grp.org.shops.show.catalogue.sub_departments.show",
+            [
+                SubDepartment.organisation_slug,
+                SubDepartment.shop_slug,
+                SubDepartment.slug
+            ]
+        )
     }
 }
 
@@ -43,6 +61,15 @@ function familiesRoute(SubDepartment: SubDepartmentx) {
                 (route().params as RouteParams).shop,
                 (route().params as RouteParams).department,
                 SubDepartment.slug])
+    } else if (currentRoute === "grp.org.shops.show.catalogue.sub_departments.index") {
+        return route(
+            "grp.org.shops.show.catalogue.sub_departments.show.families.index",
+            [
+                (route().params as RouteParams).organisation,
+                (route().params as RouteParams).shop,
+                SubDepartment.slug
+            ]
+        )
     }
 }
 
@@ -56,6 +83,15 @@ function productsRoute(SubDepartment: SubDepartmentx) {
                 (route().params as RouteParams).shop,
                 (route().params as RouteParams).department,
                 SubDepartment.slug])
+    } else if (currentRoute === "grp.org.shops.show.catalogue.sub_departments.index") {
+        return route(
+            "grp.org.shops.show.catalogue.sub_departments.show.products.index",
+            [
+                (route().params as RouteParams).organisation,
+                (route().params as RouteParams).shop,
+                SubDepartment.slug
+            ]
+        )
     }
 }
 
@@ -68,6 +104,12 @@ function shopRoute(family: Family) {
                 (route().params as RouteParams).organisation,
                 family.shop_slug])
     }
+
+    return route(
+        "grp.org.shops.show.catalogue.dashboard",
+        [
+            family.organisation_slug,
+            family.shop_slug])
 }
 
 function departmentRoute(family: Family) {

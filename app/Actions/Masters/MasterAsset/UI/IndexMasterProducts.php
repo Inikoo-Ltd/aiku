@@ -32,6 +32,8 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
+use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 
 class IndexMasterProducts extends GrpAction
 {
@@ -176,6 +178,7 @@ class IndexMasterProducts extends GrpAction
         $afterTitle    = null;
         $iconRight     = null;
         $subNavigation = null;
+        $familyId = null;
 
         if ($this->parent instanceof Group) {
             $model      = '';
@@ -208,6 +211,7 @@ class IndexMasterProducts extends GrpAction
                 $subNavigation = $this->getMasterDepartmentSubNavigation($this->parent);
             }
             if ($this->parent->type == MasterProductCategoryTypeEnum::FAMILY) {
+                $familyId = $this->parent->id;
                 $subNavigation = $this->getMasterFamilySubNavigation($this->parent);
                 $title         = $this->parent->name;
                 $model         = '';
@@ -224,7 +228,7 @@ class IndexMasterProducts extends GrpAction
             }
         }
 
-
+        $isFamily = $this->parent instanceof MasterProductCategory && $this->parent->type == MasterProductCategoryTypeEnum::FAMILY;
         return Inertia::render(
             'Masters/MasterProducts',
             [
@@ -234,6 +238,14 @@ class IndexMasterProducts extends GrpAction
                     $request->route()->originalParameters()
                 ),
                 'title'       => $title,
+                'familyId'      => $familyId,
+                'currency' => $this->parent->group->currency->code,
+                'storeProductRoute' => $isFamily ? [
+                        'name'       => 'grp.models.master_family.store-assets',
+                        'parameters' => [
+                            'masterFamily' => $this->parent->id,
+                        ]
+                    ] : [],
                 'pageHead'    => [
                     'title'         => $title,
                     'icon'          => $icon,
@@ -241,8 +253,18 @@ class IndexMasterProducts extends GrpAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'subNavigation' => $subNavigation,
+                    'actions'       => $isFamily ? [
+                        [
+                            'type'    => 'button',
+                            'style'   => 'create',
+                            'tooltip' => __('Add a master product to this family'),
+                            'label'   => __('master product'),
+                        ],
+                    ] : [],
                 ],
                 'data'        => MasterProductsResource::collection($masterAssets),
+                'masterProductCategory' => $this->parent->id,
+                'shopsData' => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($this->masterShop, 'shops')),
 
             ]
         )->table($this->tableStructure($this->parent));
@@ -288,9 +310,11 @@ class IndexMasterProducts extends GrpAction
                 ),
             ),
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.master_products.index',
-            'grp.masters.master_shops.show.master_families.master_products.index' =>
+            'grp.masters.master_shops.show.master_families.master_products.index',
+            'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index',
+            'grp.masters.master_shops.show.master_sub_departments.master_families.master_products.index' =>
             array_merge(
-                ShowMasterFamily::make()->getBreadcrumbs($this->parent, $routeName, $routeParameters),
+                ShowMasterFamily::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
                 $headCrumb(
                     [
                         'name'       => $routeName,
@@ -338,7 +362,7 @@ class IndexMasterProducts extends GrpAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inMasterFamilyInMasterDepartment(MasterProductCategory $masterDepartment, MasterProductCategory $masterFamily, ActionRequest $request): LengthAwarePaginator
+    public function inMasterFamilyInMasterDepartmentInMasterShop(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterFamily, ActionRequest $request): LengthAwarePaginator
     {
         $group = group();
 
@@ -349,7 +373,17 @@ class IndexMasterProducts extends GrpAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inMasterFamilyInMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): LengthAwarePaginator
+    public function inMasterFamilyInMasterSubDepartmentInMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): LengthAwarePaginator
+    {
+        $group        = group();
+
+        $this->parent = $masterFamily;
+        $this->initialisation($group, $request);
+        return $this->handle($masterFamily, $request);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inMasterFamilyInMasterSubDepartment(MasterShop $masterShop, MasterProductCategory $masterSubDepartment, MasterProductCategory $masterFamily, ActionRequest $request): LengthAwarePaginator
     {
         $group        = group();
 

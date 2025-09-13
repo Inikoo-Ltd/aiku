@@ -12,6 +12,15 @@ use App\Actions\Dispatching\DeliveryNoteItem\UI\IndexDeliveryNoteItemsStateHandl
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @property mixed $delivery_note_id
+ * @property mixed $delivery_note_slug
+ * @property mixed $delivery_note_customer_notes
+ * @property mixed $delivery_note_public_notes
+ * @property mixed $delivery_note_internal_notes
+ * @property mixed $delivery_note_shipping_notes
+ * @property mixed $delivery_note_reference
+ */
 class PickingSessionDeliveryNoteItemsGroupedResource extends JsonResource
 {
     public function toArray($request): array

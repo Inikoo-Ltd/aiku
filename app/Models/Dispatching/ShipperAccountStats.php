@@ -5,8 +5,6 @@ namespace App\Models\Dispatching;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- *
- *
  * @property int $id
  * @property int $shipper_account_id
  * @property string|null $first_used_at

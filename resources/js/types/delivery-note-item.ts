@@ -8,6 +8,8 @@
 
 export interface DeliveryNoteItem {
     id:number,
+    delivery_note_slug: string,
+    org_stock_slug: string,
 
 
 }

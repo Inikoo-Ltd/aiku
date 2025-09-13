@@ -23,8 +23,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id
@@ -63,7 +61,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Feedback withoutTrashed()
  * @mixin \Eloquent
  */

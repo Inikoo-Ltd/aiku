@@ -23,8 +23,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexCustomerFavourites extends OrgAction
 {
-    private Customer $parent;
-
     public function handle(Customer $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -42,6 +40,7 @@ class IndexCustomerFavourites extends OrgAction
         $query = QueryBuilder::for(Favourite::class);
 
         $query->where('favourites.customer_id', $parent->id);
+        $query->whereNull('favourites.unfavourited_at');
 
         $query->leftJoin('products', 'favourites.product_id', '=', 'products.id');
         $query->leftJoin('webpages', function ($join) {
@@ -51,6 +50,7 @@ class IndexCustomerFavourites extends OrgAction
 
         return $query->defaultSort('products.code')
             ->select([
+                'favourites.id as favourite_id',
                 'products.id',
                 'products.slug',
                 'products.code',
@@ -58,7 +58,8 @@ class IndexCustomerFavourites extends OrgAction
                 'products.description',
                 'products.price',
                 'products.image_id',
-                'webpages.url as webpage_url'
+                'webpages.url as webpage_url',
+                'webpages.id as webpage_id',
             ])
             ->allowedSorts(['code', 'name'])
             ->allowedFilters([$globalSearch])
@@ -96,7 +97,7 @@ class IndexCustomerFavourites extends OrgAction
 
             $table->column(key: 'code', label: __('code'), canBeHidden: false, searchable: true);
             $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'actions', label: '', canBeHidden: false, sortable: false, searchable: false);
+            $table->column(key: 'actions', label: '', canBeHidden: false);
         };
     }
 

@@ -52,6 +52,7 @@ class IndexDeliveryNoteItemsInPickingSession extends OrgAction
             'delivery_note_items.is_handled',
             'org_stocks.id as org_stock_id',
             'org_stocks.code as org_stock_code',
+            'org_stocks.slug as org_stock_slug',
             'org_stocks.name as org_stock_name',
             'org_stocks.packed_in',
         ]);
@@ -83,8 +84,8 @@ class IndexDeliveryNoteItemsInPickingSession extends OrgAction
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'delivery_note_reference', label: __('Delivery Note'), canBeHidden: false, sortable: true, searchable: true);
 
-            $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'org_stock_code', label: __('SKU'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'org_stock_name', label: __('SKU Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'quantity_required', label: __('Quantity Required'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent->state != PickingSessionStateEnum::IN_PROCESS) {
                 $table->column(key: 'quantity_picked', label: __('Quantity Picked'), canBeHidden: false, sortable: true, searchable: true);

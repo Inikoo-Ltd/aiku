@@ -60,7 +60,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Fulfilment newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Fulfilment onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Fulfilment query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Fulfilment withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Fulfilment withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Fulfilment withoutTrashed()
  * @mixin \Eloquent
  */

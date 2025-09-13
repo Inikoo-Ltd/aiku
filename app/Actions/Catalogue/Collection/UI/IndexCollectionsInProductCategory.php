@@ -159,9 +159,7 @@ class IndexCollectionsInProductCategory extends OrgAction
 
 
         $title      = $productCategory->name;
-        // $iconRight  = [
-        //     'icon' => 'fal fa-album-collection',
-        // ];
+
         $iconRight  = $productCategory->state->stateIcon()[$productCategory->state->value];
 
         $afterTitle = [
@@ -194,6 +192,7 @@ class IndexCollectionsInProductCategory extends OrgAction
                 $routes = [
                     'grp.org.shops.show.catalogue.departments.show.collection.index'                                  => 'grp.org.shops.show.catalogue.departments.show.collection.create',
                     'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index'             => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.create',
+                    'grp.org.shops.show.catalogue.sub_departments.show.collection.index'                              => 'grp.org.shops.show.catalogue.sub_departments.show.collection.create',
                 ];
 
                 $currentRoute = $request->route()->getName();
@@ -302,6 +301,15 @@ class IndexCollectionsInProductCategory extends OrgAction
         return $this->handle(parent: $subDepartment);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $subDepartment;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle(parent: $subDepartment);
+    }
+
     public function getBreadcrumbs(ProductCategory $parent, string $routeName, array $routeParameters, string $suffix = null): array
     {
         $headCrumb = function (array $routeParameters, ?string $suffix) {
@@ -337,7 +345,7 @@ class IndexCollectionsInProductCategory extends OrgAction
             ),
 
             'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index' => array_merge(
-                ShowSubDepartment::make()->getBreadcrumbs($parent, $routeParameters),
+                ShowSubDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
                 $headCrumb(
                     [
                         'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.index',
@@ -345,6 +353,21 @@ class IndexCollectionsInProductCategory extends OrgAction
                             $routeParameters['organisation'],
                             $routeParameters['shop'],
                             $routeParameters['department'],
+                            $routeParameters['subDepartment']
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+
+            'grp.org.shops.show.catalogue.sub_departments.show.collection.index' => array_merge(
+                ShowSubDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.shops.show.catalogue.sub_departments.show.collection.index',
+                        'parameters' => [
+                            $routeParameters['organisation'],
+                            $routeParameters['shop'],
                             $routeParameters['subDepartment']
                         ]
                     ],

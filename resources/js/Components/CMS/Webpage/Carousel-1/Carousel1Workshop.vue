@@ -77,7 +77,7 @@ const getHref = (item: any) => !!item?.link?.href
           v-for="(card, index) in modelValue.carousel_data.cards"
           :key="index"
           class="flex flex-col"
-          :style="{ ...getStyles(modelValue?.carousel_data?.card_container?.properties, screenType), height: '100%' }"
+          :style="{  height: '100%' , overflow : 'auto', ...getStyles(modelValue?.carousel_data?.card_container?.properties, screenType)}"
         >
           <component
             :is="getHref(card) ? 'a' : 'div'"
@@ -91,7 +91,7 @@ const getHref = (item: any) => !!item?.link?.href
             >
               <div
                 :class="[
-                  !card?.image?.source && 'bg-gray-100 w-full  flex items-center justify-center overflow-auto',
+                  !card?.image?.source && 'w-full  flex items-center justify-center overflow-auto',
                   'overflow-hidden'
                 ]"
                 :style="getStyles(modelValue?.carousel_data?.card_container?.image_properties, screenType)"

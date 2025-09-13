@@ -32,20 +32,20 @@ class ShopHydrateOrderInBasketAtCustomerUpdateIntervals implements ShouldBeUniqu
     public function handle(Shop $shop, ?array $intervals = null, ?array $doPreviousPeriods = null): void
     {
         $shop->orderingIntervals()->update(
-            $this->getBasketCountStats('updated_at', $shop, $intervals, $doPreviousPeriods),
+            $this->getBasketCountStats('updated_by_customer_at', $shop, $intervals, $doPreviousPeriods),
         );
 
 
         $shop->salesIntervals()->update(
-            $this->getBasketNetAmountStats('updated_at', 'shop', $shop, $intervals, $doPreviousPeriods),
+            $this->getBasketNetAmountStats('updated_by_customer_at', 'shop', $shop, $intervals, $doPreviousPeriods),
         );
 
         $shop->salesIntervals()->update(
-            $this->getBasketNetAmountStats('updated_at', 'org', $shop, $intervals, $doPreviousPeriods),
+            $this->getBasketNetAmountStats('updated_by_customer_at', 'org', $shop, $intervals, $doPreviousPeriods),
         );
 
         $shop->salesIntervals()->update(
-            $this->getBasketNetAmountStats('updated_at', 'grp', $shop, $intervals, $doPreviousPeriods),
+            $this->getBasketNetAmountStats('updated_by_customer_at', 'grp', $shop, $intervals, $doPreviousPeriods),
         );
     }
 

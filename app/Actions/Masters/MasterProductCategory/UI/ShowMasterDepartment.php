@@ -10,6 +10,7 @@
 
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
+use App\Actions\Catalogue\ProductCategory\UI\IndexDepartments;
 use App\Actions\GrpAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
@@ -17,6 +18,7 @@ use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\UI\SupplyChain\MasterDepartmentTabsEnum;
+use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -68,7 +70,7 @@ class ShowMasterDepartment extends GrpAction
         $subNavigation = $this->getMasterDepartmentSubNavigation($masterDepartment);
 
         return Inertia::render(
-            'Org/Catalogue/Department',
+            'Masters/MasterDepartment',
             [
                 'title'       => $tittle,
                 'breadcrumbs' => $this->getBreadcrumbs(
@@ -88,7 +90,15 @@ class ShowMasterDepartment extends GrpAction
                         'title' => $tittle
                     ],
                     'actions'       => [
-                        [
+                         $this->canEdit ? [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'route' => [
+                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                                'parameters' => $request->route()->originalParameters()
+                            ]
+                        ] : false,
+                        /* [
                             'type'  => 'button',
                             'style' => 'edit',
                             'label' => 'blueprint',
@@ -96,7 +106,7 @@ class ShowMasterDepartment extends GrpAction
                                 'name'       => preg_replace('/show$/', 'blueprint', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
                             ]
-                        ],
+                        ], */
                         $this->canDelete ? [
                             'type'  => 'button',
                             'style' => 'delete',
@@ -117,6 +127,13 @@ class ShowMasterDepartment extends GrpAction
                     fn () => GetMasterProductCategoryShowcase::run($masterDepartment)
                     : Inertia::lazy(fn () => GetMasterProductCategoryShowcase::run($masterDepartment)),
 
+                MasterDepartmentTabsEnum::DEPARTMENTS->value => $this->tab == MasterDepartmentTabsEnum::DEPARTMENTS->value ?
+                    fn () => DepartmentsResource::collection(IndexDepartments::run($masterDepartment))
+                    : Inertia::lazy(fn () => DepartmentsResource::collection(IndexDepartments::run($masterDepartment))),
+
+                MasterDepartmentTabsEnum::IMAGES->value => $this->tab == MasterDepartmentTabsEnum::IMAGES->value ?
+                    fn () =>  GetMasterProductCategoryImages::run($masterDepartment)
+                    : Inertia::lazy(fn () => GetMasterProductCategoryImages::run($masterDepartment)),
 
                 MasterDepartmentTabsEnum::HISTORY->value => $this->tab == MasterDepartmentTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($masterDepartment))
@@ -125,6 +142,7 @@ class ShowMasterDepartment extends GrpAction
 
             ]
         )
+            ->table(IndexDepartments::make()->tableStructure(parent: $masterDepartment, prefix: MasterDepartmentTabsEnum::DEPARTMENTS->value, sales:false))
             ->table(IndexHistory::make()->tableStructure(prefix: MasterDepartmentTabsEnum::HISTORY->value));
     }
 
@@ -220,6 +238,7 @@ class ShowMasterDepartment extends GrpAction
             'grp.masters.master_shops.show.master_departments.show',
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.index',
             'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show',
+            'grp.masters.master_shops.show.master_departments.show.master_families.show.master_products.index',
             'grp.masters.master_shops.show.master_departments.show.master_families.index',
             'grp.masters.master_shops.show.master_departments.show.master_families.show',
             'grp.masters.master_shops.show.master_departments.show.master_products.index',

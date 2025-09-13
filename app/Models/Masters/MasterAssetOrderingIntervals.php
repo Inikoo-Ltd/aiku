@@ -11,8 +11,6 @@ namespace App\Models\Masters;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- *
- *
  * @property int $id
  * @property int $master_asset_id
  * @property int $invoices_all

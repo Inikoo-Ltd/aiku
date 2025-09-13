@@ -30,6 +30,8 @@ trait HasMarketingMedia
         $table->foreign('bottom_image_id')->references('id')->on('media')->nullOnDelete();
         $table->unsignedInteger('size_comparison_image_id')->nullable()->index();
         $table->foreign('size_comparison_image_id')->references('id')->on('media')->nullOnDelete();
+        $table->unsignedInteger('lifestyle_image_id')->nullable()->index();
+        $table->foreign('lifestyle_image_id')->references('id')->on('media')->nullOnDelete();
         $table->string('video_url')->nullable()->index();
     }
 

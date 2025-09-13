@@ -43,7 +43,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static Builder<static>|TaxNumber newQuery()
  * @method static Builder<static>|TaxNumber onlyTrashed()
  * @method static Builder<static>|TaxNumber query()
- * @method static Builder<static>|TaxNumber withTrashed()
+ * @method static Builder<static>|TaxNumber withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|TaxNumber withoutTrashed()
  * @mixin Eloquent
  */

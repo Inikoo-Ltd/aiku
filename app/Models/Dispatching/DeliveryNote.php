@@ -127,6 +127,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $shipping_notes
  * @property string|null $quantity_picked
  * @property string|null $quantity_packed
+ * @property int|null $collection_address_id
+ * @property bool $is_premium_dispatch
+ * @property bool|null $has_extra_packing
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -156,7 +159,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|DeliveryNote newQuery()
  * @method static Builder<static>|DeliveryNote onlyTrashed()
  * @method static Builder<static>|DeliveryNote query()
- * @method static Builder<static>|DeliveryNote withTrashed()
+ * @method static Builder<static>|DeliveryNote withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|DeliveryNote withoutTrashed()
  * @mixin Eloquent
  */

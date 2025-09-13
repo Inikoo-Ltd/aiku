@@ -53,19 +53,20 @@ const props = defineProps<{
         }
     },
     menuData: Object
+    productCategories : Array<any>
     screenType?: 'mobile' | 'tablet' | 'desktop'
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)
 const isLoggedIn = inject('isPreviewLoggedIn', false)
-
+console.log('menu',props)
 </script>
 
 <template>
     <div class="block md:hidden p-3">
         <div class="flex justify-between items-center">
             <!-- Section: Hamburger mobile -->
-            <MobileMenu :header="headerData" :menu="menuData" />
+            <MobileMenu :header="headerData" :menu="menuData" :productCategories="productCategories" />
 
             <!-- Section: Logo  -->
             <component :is="true ? Link : 'div'" :href="'/'" class="block w-full h-[65px] mb-1 rounded">

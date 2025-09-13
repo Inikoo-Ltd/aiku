@@ -49,6 +49,7 @@ const props = withDefaults(defineProps<{
 	screenType: 'mobile' | 'tablet' | 'desktop'
 }>(), {
 })
+
 const layout = inject('layout',{})
 const currency = layout?.iris?.currency
 const locale = useLocaleStore()
@@ -166,6 +167,21 @@ onMounted(() => {
             showButton.value = true
         }
     })
+
+    // Luigi: last_seen recommendations
+    console.log('iden', props.fieldValue.product.luigi_identity)
+    if (props.fieldValue?.product?.luigi_identity) {
+        window?.dataLayer?.push({
+            event: "view_item",
+            ecommerce: {
+                items: [
+                    {
+                        item_id: props.fieldValue?.product?.luigi_identity,
+                    }
+                ]
+            }
+        })
+    }
 })
 
 const toggleExpanded = () => {
@@ -203,13 +219,13 @@ const toggleExpanded = () => {
                         <div class="flex flex-wrap justify-between gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
                             <div>Product code: {{ fieldValue.product.code }}</div>
                             <div class="flex items-center gap-[1px]">
-                                <a
+                                <!-- <a
                                     :href="route().has('iris.catalogue.feeds.product.download') ? route('iris.catalogue.feeds.product.download', { product: fieldValue.product.slug }) : '#'"
                                     target="_blank"
                                     class="group hover:underline">
                                     <FontAwesomeIcon icon="fas fa-file-download" class="opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />
                                     <span>Download (csv)</span>
-                                </a>
+                                </a> -->
                             </div>
                         </div>
                         <div v-if="layout?.iris?.is_logged_in" class="flex items-center gap-2 text-sm text-gray-600 mb-4">

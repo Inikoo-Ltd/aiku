@@ -9,6 +9,8 @@
 
 namespace App\Http\Resources\Masters;
 
+use App\Actions\Traits\HasBucketImages;
+use App\Http\Resources\Goods\TradeUnitsForMasterResource;
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -29,27 +31,32 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class MasterProductResource extends JsonResource
 {
     use HasSelfCall;
+    use HasBucketImages;
 
     public function toArray($request): array
     {
         return [
-            'slug'                   => $this->slug,
-            'code'                   => $this->code,
-            'name'                   => $this->name,
+            'slug'                  => $this->slug,
+            'code'                  => $this->code,
+            'name'                  => $this->name,
+            'currency'              => $this->group->currency->code,
+            'price'                 => $this->price,
             'description'           => $this->description,
             'description_title'     => $this->description_title,
             'description_extra'     => $this->description_extra,
+            'trade_units'           => TradeUnitsForMasterResource::collection($this->tradeUnits)->resolve(),
             'name_i8n'              => $this->getTranslations('name_i8n'),
             'description_i8n'       => $this->getTranslations('description_i8n'),
             'description_title_i8n' => $this->getTranslations('description_title_i8n'),
             'description_extra_i8n' => $this->getTranslations('description_extra_i8n'),
-            'translation_box' => [
-                'title' => __('Multi-language Translations'),
+            'translation_box'       => [
+                'title'      => __('Multi-language Translations'),
                 'save_route' => [
-                'name'       => 'grp.models.master-product.translations.update',
-                'parameters' => []
+                    'name'       => 'grp.models.master-product.translations.update',
+                    'parameters' => []
                 ],
             ],
+
         ];
     }
 }

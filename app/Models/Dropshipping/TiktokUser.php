@@ -22,8 +22,6 @@ use Spatie\Permission\Traits\HasPermissions;
 use Spatie\Sluggable\SlugOptions;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id
@@ -60,7 +58,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TiktokUser onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TiktokUser permission($permissions, $without = false)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TiktokUser query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TiktokUser withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TiktokUser withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TiktokUser withoutPermission($permissions)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TiktokUser withoutTrashed()
  * @mixin \Eloquent

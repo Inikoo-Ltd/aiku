@@ -19,6 +19,7 @@ import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { RouteParams } from "@/types/route-params"
 
 library.add(faPlus)
 
@@ -87,17 +88,17 @@ function storedItemReturnRoute(palletReturn: PalletDelivery) {
             return route(
                 'grp.org.warehouses.show.dispatching.pallet-return-with-stored-items.show',
                 [
-                    route().params['organisation'],
-                    route().params['warehouse'],
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).warehouse,
                     palletReturn.slug
                 ]);
         case 'grp.org.fulfilments.show.crm.customers.show.pallet_returns.index':
             return route(
                 'grp.org.fulfilments.show.crm.customers.show.pallet_returns.with_stored_items.show',
                 [
-                    route().params['organisation'],
-                    route().params['fulfilment'],
-                    route().params['fulfilmentCustomer'],
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).fulfilment,
+                    (route().params as RouteParams).fulfilmentCustomer,
                     palletReturn.slug
                 ]);
         case 'grp.org.fulfilments.show.operations.pallet-returns.index':
@@ -110,8 +111,8 @@ function storedItemReturnRoute(palletReturn: PalletDelivery) {
             return route(
                 'grp.org.fulfilments.show.operations.pallet-return-with-stored-items.show',
                 [
-                    route().params['organisation'],
-                    route().params['fulfilment'],
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).fulfilment,
                     palletReturn.slug
                 ]);
         case 'retina.fulfilment.storage.pallet_returns.index':
@@ -130,14 +131,14 @@ function storedItemReturnRoute(palletReturn: PalletDelivery) {
             return route(
                 'retina.fulfilment.dropshipping.customer_sales_channels.basket.show',
                 [
-                    route().params['customerSalesChannel'],
+                    (route().params as RouteParams).customerSalesChannel,
                     palletReturn.slug
                 ]);
         case 'retina.fulfilment.dropshipping.customer_sales_channels.orders.index':
             return route(
                 'retina.fulfilment.dropshipping.customer_sales_channels.orders.show',
                 [
-                    route().params['customerSalesChannel'],
+                    (route().params as RouteParams).customerSalesChannel,
                     palletReturn.slug
                 ]);
         default:
@@ -179,7 +180,7 @@ const locale = inject('locale', aikuLocaleStructure)
 
         <!-- Column: State -->
         <template #cell(state)="{ item: palletReturn }">
-            <Icon :data="palletReturn['type_icon']" class="px-1"/>
+            <Icon :data="palletReturn['state_icon']" class="px-1"/>
             <TagPallet v-if="layout.app.name == 'retina'" :stateIcon="palletReturn.state_icon" />
         </template>
 

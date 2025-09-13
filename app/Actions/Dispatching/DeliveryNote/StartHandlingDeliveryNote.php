@@ -15,6 +15,7 @@ use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\SysAdmin\User;
@@ -45,7 +46,9 @@ class StartHandlingDeliveryNote extends OrgAction
         $deliveryNote = DB::transaction(function () use ($deliveryNote, $modelData) {
             UpdateDeliveryNote::run($deliveryNote, $modelData);
 
-            UpdateOrderStateToHandling::make()->action($deliveryNote->orders->first());
+            if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
+                UpdateOrderStateToHandling::make()->action($deliveryNote->orders->first());
+            }
 
             DB::table('delivery_note_items')
                 ->where('delivery_note_id', $deliveryNote->id)

@@ -15,8 +15,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 
 /**
- *
- *
  * @property int $id
  * @property int $shopify_user_id
  * @property int $model_id

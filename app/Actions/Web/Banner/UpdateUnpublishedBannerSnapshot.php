@@ -55,21 +55,10 @@ class UpdateUnpublishedBannerSnapshot extends OrgAction
             }
         }
 
-        $slidesULIDs = collect($slides)->keys();
-
-
-        $olsULIDs = $snapshot->slides()->pluck('ulid');
-        $olsULIDs->diff($slidesULIDs)->each(function (string $ulid) {
-            $slideToDelete = Slide::firstWhere('ulid', $ulid);
-            $slideToDelete?->delete();
-        });
-
-
         $snapshot = $this->update($snapshot, $modelData, ['layout']);
 
         /** @var Banner $banner */
         $banner = $snapshot->parent;
-
 
         $banner->update(
             [

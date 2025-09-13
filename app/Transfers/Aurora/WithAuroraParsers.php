@@ -22,7 +22,6 @@ use App\Actions\Transfers\Aurora\FetchAuroraDeletedLocations;
 use App\Actions\Transfers\Aurora\FetchAuroraDeletedStocks;
 use App\Actions\Transfers\Aurora\FetchAuroraDeletedSuppliers;
 use App\Actions\Transfers\Aurora\FetchAuroraDeliveryNotes;
-use App\Actions\Transfers\Aurora\FetchAuroraDepartments;
 use App\Actions\Transfers\Aurora\FetchAuroraDispatchedEmails;
 use App\Actions\Transfers\Aurora\FetchAuroraEmailBulkRuns;
 use App\Actions\Transfers\Aurora\FetchAuroraEmailOngoingRuns;
@@ -427,14 +426,8 @@ trait WithAuroraParsers
 
     public function parseDepartment(string $sourceId): ?ProductCategory
     {
-        $department = ProductCategory::where('type', ProductCategoryTypeEnum::DEPARTMENT)->where('source_department_id', $sourceId)->first();
-        // we no longer parsing departmetns
-        //        if (!$department) {
-        //            $sourceData = explode(':', $sourceId);
-        //            $department = FetchAuroraDepartments::run($this->organisationSource, $sourceData[1]);
-        //        }
+        return ProductCategory::where('type', ProductCategoryTypeEnum::DEPARTMENT)->where('source_department_id', $sourceId)->first();
 
-        return $department;
     }
 
     public function parseFamily(string $sourceId): ?ProductCategory

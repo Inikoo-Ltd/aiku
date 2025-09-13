@@ -71,17 +71,16 @@ class FetchAuroraProduct extends FetchAurora
             default => ProductStateEnum::ACTIVE
         };
 
+        $status = ProductStatusEnum::FOR_SALE;
 
         if ($this->auroraModelData->{'Product Status'} == 'InProcess') {
             $status = ProductStatusEnum::IN_PROCESS;
         } elseif ($this->auroraModelData->{'Product Status'} == 'Discontinued') {
             $status = ProductStatusEnum::DISCONTINUED;
-        } elseif ($this->auroraModelData->{'Product Web Configuration'} == 'Offline') {
+        } elseif ($this->auroraModelData->{'Product Status'} == 'Suspended' || $this->auroraModelData->{'Product Web Configuration'} == 'Offline') {
             $status = ProductStatusEnum::NOT_FOR_SALE;
         } elseif ($this->auroraModelData->{'Product Web Configuration'} == 'Online Force Out of Stock') {
             $status = ProductStatusEnum::OUT_OF_STOCK;
-        } elseif ($this->auroraModelData->{'Product Web Configuration'} == 'Online Force For Sale') {
-            $status = ProductStatusEnum::FOR_SALE;
         }
 
         $tradeConfig = match ($this->auroraModelData->{'Product Web Configuration'}) {
@@ -150,10 +149,6 @@ class FetchAuroraProduct extends FetchAurora
         ];
 
 
-        //        if ($grossWeight && $grossWeight < 500) {
-        //            $this->parsedData['product']['gross_weight'] = (int)ceil($grossWeight * 1000);
-        //        }
-
 
         if ($this->auroraModelData->{'is_variant'} == 'Yes') {
             $this->parsedData['product']['is_main'] = false;
@@ -166,20 +161,10 @@ class FetchAuroraProduct extends FetchAurora
         }
 
         $this->parsedData['au_data'] = $this->auroraModelData;
-        $this->parsedData['images']  = $this->parseImages();
+
     }
 
-    private function parseImages(): array
-    {
-        $images = $this->getModelImagesCollection(
-            'Product',
-            $this->auroraModelData->{'Product ID'}
-        )->map(function ($auroraImage) {
-            return $this->fetchImage($auroraImage);
-        });
 
-        return $images->toArray();
-    }
 
 
     protected function fetchData($id): object|null

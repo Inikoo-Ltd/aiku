@@ -8,7 +8,9 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
+use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -18,31 +20,14 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditDepartment extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
+
     public function handle(ProductCategory $department): ProductCategory
     {
         return $department;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->parent instanceof Organisation) {
-            $this->canEdit = $request->user()->authTo(
-                [
-                    'org-supervisor.'.$this->organisation->id,
-                ]
-            );
 
-            return $request->user()->authTo(
-                [
-                    'org-supervisor.'.$this->organisation->id,
-                    'shops-view'.$this->organisation->id,
-                ]
-            );
-        } else {
-            $this->canEdit = $request->user()->authTo("products.{$this->shop->id}.edit");
-            return $request->user()->authTo("products.{$this->shop->id}.view");
-        }
-    }
 
     public function inOrganisation(Organisation $organisation, ProductCategory $department, ActionRequest $request): ProductCategory
     {
@@ -65,6 +50,12 @@ class EditDepartment extends OrgAction
             'EditModel',
             [
                 'title'       => __('department'),
+                'warning' => $department->masterProductCategory ? [
+                    'type'  =>  'warning',
+                    'title' =>  'warning',
+                    'text'  =>  __('Changing name or description may affect master department.'),
+                    'icon'  => ['fas', 'fa-exclamation-triangle']
+                ] : null,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
@@ -93,57 +84,116 @@ class EditDepartment extends OrgAction
                 ],
 
                 'formData' => [
-                    'blueprint' => [
+                    'blueprint' =>
+                    array_filter(
                         [
-                            'label'  => __('Name/Description'),
-                            'icon'   => 'fa-light fa-tag',
-                            'fields' => [
-                                'code' => [
-                                    'type'  => 'input',
-                                    'label' => __('code'),
-                                    'value' => $department->code
-                                ],
-                                'name' => [
-                                    'type'  => 'input',
-                                    'label' => __('name'),
-                                    'value' => $department->name
-                                ],
-                                'description_title' => [
-                                    'type'  => 'input',
-                                    'label' => __('description title'),
-                                    'value' => $department->description_title
-                                ],
-                                'description' => [
-                                    'type'  => 'textEditor',
-                                    'label' => __('description'),
-                                    'value' => $department->description
-                                ],
-                                'description_extra' => [
-                                    'type'  => 'textEditor',
-                                    'label' => __('description extra'),
-                                    'value' => $department->description_extra
-                                ],
-                            ]
-                        ],
-                        [
-                            'label'  => __('Properties'),
-                            'icon'   => 'fa-light fa-fingerprint',
-                            'fields' => [
-                                'follow_master' => [
-                                    'type'  => 'toggle',
-                                    'label' => __('Follow Master'),
-                                    'value' => $department->follow_master
-                                ],
-                                "image"         => [
-                                    "type"    => "image_crop_square",
-                                    "label"   => __("Image"),
-                                    "value"   => $department->imageSources(720, 480),
-                                    "required" => false,
-                                ],
-                            ]
+                            [
+                                'label'  => __('Id'),
+                                'icon'   => 'fa-light fa-fingerprint',
+                                'fields' => [
+                                    'code' => [
+                                        'type'  => 'input',
+                                        'label' => __('code'),
+                                        'value' => $department->code
+                                    ],
+                                ]
+                            ],
+                            [
+                                'label'  => __('Name/Description'),
+                                'icon'   => 'fa-light fa-tag',
+                                'fields' => [
+                                    'name' => [
+                                        'type'  => 'input',
+                                        'label' => __('name'),
+                                        'value' =>  $department->name
+                                    ],
+                                    'description_title' => [
+                                        'type'  => 'input',
+                                        'label' => __('description title'),
+                                        'value' =>  $department->description_title
+                                    ],
+                                    'description' => [
+                                        'type'  => 'textEditor',
+                                        'label' => __('description'),
+                                        'value' => $department->description
+                                    ],
+                                    'description_extra' => [
+                                        'type'  => 'textEditor',
+                                        'label' => __('Extra description'),
+                                        'value' =>  $department->description_extra
+                                    ],
+                                ]
+                            ],
+                            /* !$department->master_product_category_id ? [
+                                'label'  => __('Translations'),
+                                'icon'   => 'fa-light fa-language',
+                                'main' => $department->name,
+                                'languages_main' => $department->shop->language->code,
+                                'fields' => [
+                                    'name_i8n' => [
+                                        'type'  => 'input_translation',
+                                        'label' => __('translate name'),
+                                        'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($department->shop->extra_languages),
+                                        'value' => $department->getTranslations('name_i8n')
+                                    ],
+                                    'description_title_i8n' => [
+                                        'type'  => 'input_translation',
+                                        'label' => __('translate description title'),
+                                        'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($department->shop->extra_languages),
+                                        'value' => $department->getTranslations('description_title_i8n')
+                                    ],
+                                    'description_i8n' => [
+                                        'type'  => 'textEditor_translation',
+                                        'label' => __('translate description'),
+                                        'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($department->shop->extra_languages),
+                                        'value' => $department->getTranslations('description_i8n')
+                                    ],
+                                    'description_extra_i8n' => [
+                                        'type'  => 'textEditor_translation',
+                                        'label' => __('translate description extra'),
+                                        'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($department->shop->extra_languages),
+                                        'value' => $department->getTranslations('description_extra_i8n')
+                                    ],
+                                ]
+                            ] : null, */
+                            [
+                                'label'  => __('Pricing'),
+                                'icon'   => 'fa-light fa-money-bill',
+                                'fields' => [
+                                    'cost_price_ratio' => [
+                                        'type'          => 'input_number',
+                                        'bind' => [
+                                            'maxFractionDigits' => 3
+                                        ],
+                                        'label'         => __('pricing ratio'),
+                                        'placeholder'   => __('Cost price ratio'),
+                                        'required'      => true,
+                                        'value'         => $department->cost_price_ratio,
+                                        'min'           => 0
+                                    ],
+                                ]
+                            ],
+                            [
+                                'label'  => __('Properties'),
+                                'icon'   => 'fa-light fa-fingerprint',
+                                'fields' => [
+                                    'follow_master' => [
+                                        'type'  => 'toggle',
+                                        'label' => __('Follow Master'),
+                                        'value' => $department->follow_master
+                                    ],
+                                    "image"         => [
+                                        "type"    => "crop-image-full",
+                                        "label"   => __("Image"),
+                                        "value"   => $department->imageSources(720, 480),
+                                        "required" => false,
+                                        'noSaveButton' => true,
+                                        "full"         => true
+                                    ]
+                                ]
+                            ],
                         ]
-
-                    ],
+                    ),
                     'args'      => [
                         'updateRoute' => [
                             'name'       => 'grp.models.product_category.update',

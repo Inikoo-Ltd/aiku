@@ -67,11 +67,21 @@ function familyRoute(family: Family) {
             return route(
                 "grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show",
                 [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, (route().params as RouteParams).department, (route().params as RouteParams).subDepartment, family.slug])
+        case "grp.org.shops.show.catalogue.sub_departments.show.families.index":
+            return route(
+                "grp.org.shops.show.catalogue.sub_departments.show.families.show",
+                [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, (route().params as RouteParams).subDepartment, family.slug])
         case "grp.masters.master_shops.show.master_collections.show":
             return route(
                 "grp.masters.master_shops.show.master_families.show",
                 [(route().params as RouteParams).masterShop, family.slug])
         case 'grp.overview.catalogue.families.index':
+            return route(
+                'grp.org.shops.show.catalogue.families.show',
+                [family.organisation_slug, family.shop_slug, family.slug])
+        case 'grp.masters.master_shops.show.master_departments.show.master_families.show':
+        case 'grp.masters.master_shops.show.master_families.show':
+        case 'grp.masters.master_shops.show.master_sub_departments.master_families.show':
             return route(
                 'grp.org.shops.show.catalogue.families.show',
                 [family.organisation_slug, family.shop_slug, family.slug])
@@ -84,6 +94,10 @@ function shopRoute(family: Family) {
             return route(
                 "grp.org.shops.show.catalogue.dashboard",
                 [(route().params as RouteParams).organisation, family.shop_slug])
+        default:
+            return route(
+                "grp.org.shops.show.catalogue.dashboard",
+                [family.organisation_slug, family.shop_slug])
     }
 }
 function productRoute(family: Family) {
@@ -114,7 +128,7 @@ function departmentRoute(family: Family) {
     }
 }
 
-function collectionRoute(shop_slug: string, collection: { id: string, name: string, code?: string }) {
+function collectionRoute(organisation_slug: string, shop_slug: string, collection: { id: string, name: string, code?: string }) {
     switch (route().current()) {
         case 'xxxxxxxxx':
             return route(
@@ -128,7 +142,7 @@ function collectionRoute(shop_slug: string, collection: { id: string, name: stri
             return route(
                 "grp.org.shops.show.catalogue.collections.show",
                 {
-                    organisation: (route().params as RouteParams).organisation,
+                    organisation: organisation_slug,
                     shop: shop_slug,
                     collection: collection.slug
                 })
@@ -221,7 +235,7 @@ const isLoadingDetach = ref<string[]>([])
             <div class="flex flex-col gap-2">
                 <ul>
                     <li v-for="collect in family.collections" :key="collect.id" class="list-disc">
-                        <Link :href="collectionRoute(family.shop_slug, collect)" class="secondaryLink w-fit">
+                        <Link :href="collectionRoute(family.organisation_slug, family.shop_slug, collect)" class="secondaryLink w-fit">
                             {{ collect.name }} <span v-if="collect.code" class="text-gray-400 italic">({{ collect.code }})</span>
                         </Link>
                     </li>

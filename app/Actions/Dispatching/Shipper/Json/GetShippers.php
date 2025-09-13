@@ -18,17 +18,17 @@ use App\Models\Dispatching\Shipper;
 
 class GetShippers extends OrgAction
 {
-    public function asController(Organisation $organisation, ActionRequest $request)
+    public function asController(Organisation $organisation, ActionRequest $request): \Illuminate\Database\Eloquent\Collection|\Illuminate\Http\Response
     {
         $this->initialisation($organisation, $request);
 
         return Shipper::where('organisation_id', $organisation->id)
             ->where('status', true)
-            ->orderBy('api_shipper', 'asc')
+            ->orderBy('api_shipper')
             ->get();
     }
 
-    public function jsonResponse($shipper)
+    public function jsonResponse($shipper): \Illuminate\Http\Resources\Json\AnonymousResourceCollection|\Illuminate\Http\Resources\Json\JsonResource
     {
         return ShippersResource::collection($shipper);
     }

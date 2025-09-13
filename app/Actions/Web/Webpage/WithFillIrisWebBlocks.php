@@ -24,6 +24,7 @@ trait WithFillIrisWebBlocks
 {
     public function fillWebBlock($webpage, $parsedWebBlocks, $key, $webBlock, bool $isLoggedIn)
     {
+
         $webBlockType = Arr::get($webBlock, 'type');
 
         if ($webBlockType === 'banner') {

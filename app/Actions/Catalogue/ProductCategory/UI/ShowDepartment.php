@@ -57,6 +57,16 @@ class ShowDepartment extends OrgAction
     public function htmlResponse(ProductCategory $department, ActionRequest $request): Response
     {
 
+        $urlMaster                              = null;
+        if ($department->master_product_category_id) {
+            $urlMaster = [
+                'name'       => 'grp.helpers.redirect_master_product_category',
+                'parameters' => [
+                    $department->masterProductCategory->id
+                ]
+            ];
+        }
+
         return Inertia::render(
             'Org/Catalogue/Department',
             [
@@ -102,6 +112,7 @@ class ShowDepartment extends OrgAction
                     ],
                     'subNavigation' => $this->getDepartmentSubNavigation($department)
                 ],
+                'url_master'       => $urlMaster,
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => DepartmentTabsEnum::navigation()
@@ -125,6 +136,10 @@ class ShowDepartment extends OrgAction
                             prefix: 'customers'
                         )
                     )),
+
+                DepartmentTabsEnum::IMAGES->value => $this->tab == DepartmentTabsEnum::IMAGES->value ?
+                    fn () =>  GetProductCategoryImages::run($department)
+                    : Inertia::lazy(fn () => GetProductCategoryImages::run($department)),
 
                 DepartmentTabsEnum::HISTORY->value => $this->tab == DepartmentTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($department))

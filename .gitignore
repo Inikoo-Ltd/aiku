@@ -109,3 +109,4 @@ rgb.icc
 /storage/app/data-feeds/**
 
 /slim_restore.sh
+/get_slim.sh

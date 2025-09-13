@@ -107,7 +107,7 @@ const autoSave = async () => {
     </div>
 
     <!-- Menu List -->
-    <draggable :list="data.data.fieldValue.navigation" ghost-class="ghost" chosen-class="chosen" drag-class="dragging"
+    <draggable :list="data.data?.fieldValue.navigation" ghost-class="ghost" chosen-class="chosen" drag-class="dragging"
         group="column" itemKey="id" class="space-y-2" :move="allowMove" :fallbackOnBody="true" @end="()=>autoSave()">
         <template #item="{ element, index }">
             <div @click="() => SetMenuActive(index)"
@@ -141,7 +141,7 @@ const autoSave = async () => {
     </draggable>
 
     <!-- Drawer for Menu Editing -->
-    <Drawer v-model:visible="visibleDrawer" :header="data.data.fieldValue.navigation[selectedMenu]?.label"
+    <Drawer v-model:visible="visibleDrawer" :header="data.data?.fieldValue.navigation[selectedMenu]?.label"
         position="right" :pt="{ root: { style: 'width: 40vw' } }">
         <EditMode v-model="data.data.fieldValue.navigation[selectedMenu]"
             @update:model-value="(data) => onChangeNavigation(data)" />

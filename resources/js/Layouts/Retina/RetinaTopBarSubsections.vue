@@ -48,8 +48,8 @@ const mainColor = computed(() => {
                 ]" :title="capitalize(subSection.tooltip ?? subSection.label ?? '')"
                 @start="() => isLoading = 'subSection' + idxSubSec" @finish="() => isLoading = false">
                 <LoadingIcon v-if="isLoading === 'subSection' + idxSubSec" class="h-4 w-4" />
-                <FontAwesomeIcon v-else-if="subSection.icon" :icon="subSection.icon" class="h-4 w-4" />
-                <FontAwesomeIcon v-else icon="fas fa-dot-circle" class="h-4 w-4" />
+                <FontAwesomeIcon v-else-if="subSection.icon" :icon="subSection.icon" fixed-width class="h-4 w-4" />
+                <FontAwesomeIcon v-else icon="fas fa-dot-circle" fixed-width class="h-4 w-4" />
                 <span class="whitespace-nowrap">
                     {{ capitalize(subSection.label || '') }}
                 </span>

@@ -56,6 +56,7 @@ export const retinaLayoutStructure = {
         id: number,
         avatar_thumbnail: Image,
         email: string,
+        customer_id: number,
         username: string,
         notifications: Notification[]
         customerSalesChannels : any

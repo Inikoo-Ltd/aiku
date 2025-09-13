@@ -12,8 +12,6 @@ namespace App\Models\Accounting;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- *
- *
  * @property int $id
  * @property int $invoice_category_id
  * @property int $number_invoices

@@ -28,16 +28,17 @@ class ShippersResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                  => $this->id,
-            'slug'                => $this->slug,
-            'code'                => $this->code,
-            'name'                => $this->name,
-            'trade_as'            => $this->trade_as,
-            'phone'               => $this->phone,
-            'website'             => $this->website,
-            'tracking_url'        => $this->tracking_url,
-            'api_shipper'         => $this->api_shipper,
-            'label'               => $this->label,
+            'id'           => $this->id,
+            'slug'         => $this->slug,
+            'code'         => $this->code,
+            'name'         => $this->name,
+            'trade_as'     => $this->trade_as,
+            'phone'        => $this->phone,
+            'website'      => $this->website,
+            'tracking_url' => $this->tracking_url,
+            'api_shipper'  => $this->api_shipper,
+            'label'        => $this->label,
+            'type'         => $this->api_shipper ? 'Api' : __('Manual')
         ];
     }
 }

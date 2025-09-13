@@ -18,6 +18,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $size
  * @property mixed $name
  * @property mixed $id
+ * @property mixed $sub_scope
  */
 class ImagesResource extends JsonResource
 {
@@ -25,21 +26,23 @@ class ImagesResource extends JsonResource
 
     public function toArray($request): array
     {
-
         $media = Media::find($this->id);
 
 
-        $image = $media->getImage()->resize(0, 100);
+        $image        = $media->getImage()->resize(0, 100);
         $imageSources = GetPictureSources::run($image);
 
 
         return [
-            'id'    => $this->id,
-            'name'  => $this->name,
-            'size'  => NaturalLanguage::make()->fileSize($this->size, 1, 'MB'),
-            'image' => $imageSources
-
-
+            'id'        => $this->id,
+            'name'      => $this->name,
+            'size'      => NaturalLanguage::make()->fileSize($this->size, 1, 'MB'),
+            'image'     => $imageSources,
+            'sub_scope' => $this->sub_scope,
+            'dimensions' => [
+                'width'  => $this->width ?? 0,
+                'height' => $this->height ?? 0
+            ],
         ];
     }
 }

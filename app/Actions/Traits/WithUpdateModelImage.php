@@ -8,6 +8,7 @@
 
 namespace App\Actions\Traits;
 
+use App\Actions\Helpers\Media\Hydrators\MediaHydrateDimensions;
 use App\Actions\Helpers\Media\UpdateIsAnimatedMedia;
 use App\Models\Comms\EmailTemplate;
 use App\Models\CRM\WebUser;
@@ -59,7 +60,7 @@ trait WithUpdateModelImage
                 ->toMediaCollection($collection);
             $media->refresh();
             UpdateIsAnimatedMedia::run($media, $imagePath);
-
+            MediaHydrateDimensions::run($media);
             $model->update([$field => $media->id]);
         }
 

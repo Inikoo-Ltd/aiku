@@ -97,7 +97,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Prospect newQuery()
  * @method static Builder<static>|Prospect onlyTrashed()
  * @method static Builder<static>|Prospect query()
- * @method static Builder<static>|Prospect withTrashed()
+ * @method static Builder<static>|Prospect withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Prospect withoutTrashed()
  * @mixin Eloquent
  */

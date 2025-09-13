@@ -2,7 +2,7 @@
 import { ref, watch } from "vue";
 import { trans } from "laravel-vue-i18n";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faExclamationCircle, faCheckCircle } from "@fas";
+import { faExclamationCircle, faCheckCircle, faTimes } from "@fas";
 import { faUndoAlt, faInfoCircle } from "@fal";
 import { faSpinnerThird } from "@fad";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -12,7 +12,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue";
 import { Cropper } from "vue-advanced-cropper";
 import "vue-advanced-cropper/dist/style.css";
 
-library.add(faSpinnerThird, faExclamationCircle, faCheckCircle, faUndoAlt, faInfoCircle);
+library.add(faSpinnerThird, faExclamationCircle, faCheckCircle, faUndoAlt, faInfoCircle, faTimes)
 
 const props = defineProps<{
     form: Record<string, any>,
@@ -120,7 +120,6 @@ watch(isOpenModalCrop, (val) => {
         </Dialog>
 
         <!-- Image Preview -->
-        <!-- Image Preview -->
         <div class="relative overflow-hidden h-40 min-w-32 aspect-square rounded-lg ring-1 ring-gray-500 shadow bg-gray-100"
             :class="form.errors[fieldName] ? 'errorShake' : ''">
             <img v-if="imgAfterCrop?.original" :src="imgAfterCrop.original" alt="Preview"
@@ -130,7 +129,7 @@ watch(isOpenModalCrop, (val) => {
             </div>
 
             <!-- Hover Actions -->
-            <label v-if="!imgAfterCrop?.original" for="input-avatar-large"
+            <label xv-if="!imgAfterCrop?.original" for="input-avatar-large"
                 class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-sm font-medium text-white opacity-0 hover:opacity-100 transition-opacity duration-200 cursor-pointer">
                 <span>{{ trans("Upload") }}</span>
                 <input id="input-avatar-large" type="file" accept="image/*"
@@ -141,7 +140,7 @@ watch(isOpenModalCrop, (val) => {
             <!-- Delete Button -->
             <button v-if="imgAfterCrop?.original && fieldData.required == false" @click="deleteImage" type="button"
                 class="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full shadow transition">
-                <FontAwesomeIcon :icon="['fas', 'times']" class="h-3 w-3" />
+                <FontAwesomeIcon :icon="['fas', 'times']" class="text-sm" />
             </button>
         </div>
 

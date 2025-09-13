@@ -1,7 +1,7 @@
 {
 	"slug": "cta4",
 	"code": "cta4",
-	"name": "CTA (with Image left)",
+	"name": "CTA (with Image right)",
 	"scope": "webpage",
 	"category": "block",
 	"icon": ["fal", "rectangle-wide"],

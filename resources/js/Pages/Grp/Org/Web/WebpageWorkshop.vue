@@ -58,6 +58,7 @@ const props = defineProps<{
   webpage: RootWebpage,
   webBlockTypes: Root
   url : string
+  luigi_tracker_id: string
 }>();
 console.log('ss', props.webpage)
 provide('isInWorkshop', true);
@@ -91,6 +92,7 @@ const MAX_HISTORY = 5;
 const undoStack = ref<any[]>(JSON.parse(localStorage.getItem('undoStack') || '[]'));
 const redoStack = ref<any[]>(JSON.parse(localStorage.getItem('redoStack') || '[]'));
 
+provide('webpage_luigi_tracker_id', props.luigi_tracker_id)
 provide('currentView', currentView);
 provide('openedBlockSideEditor', openedBlockSideEditor);
 provide('openedChildSideEditor', openedChildSideEditor);
@@ -191,8 +193,8 @@ const debounceSaveWorkshop = (block) => {
     const source = axios.CancelToken.source();
     cancelTokens.value[block.id] = source.cancel;
 
-    isLoadingBlock.value = block.id;
-    isSavingBlock.value = true;
+    isLoadingBlock.value = block.id;  // This made the state inside in the field will changes (like opened Select will closed)
+    isSavingBlock.value = true;  // This made the state inside in the field will changes (like opened Select will closed)
     //pushToHistory();
     try {
     const response =  await axios.patch(
@@ -250,6 +252,7 @@ const debouncedSaveSiteSettings = debounce(block => {
     { web_blocks: block },
     {
       preserveScroll: true,
+      preserveState: true,
       onStart: () => isSavingBlock.value = true,
       onFinish: () => isSavingBlock.value = false,
       onSuccess: () => {

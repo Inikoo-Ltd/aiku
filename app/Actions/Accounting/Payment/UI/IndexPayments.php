@@ -25,6 +25,7 @@ use App\Models\Accounting\OrgPaymentServiceProvider;
 use App\Models\Accounting\Payment;
 use App\Models\Accounting\PaymentAccount;
 use App\Models\Catalogue\Shop;
+use App\Models\CRM\Customer;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Group;
@@ -44,9 +45,9 @@ class IndexPayments extends OrgAction
     use WithPaymentAccountSubNavigation;
     use WithAccountingSubNavigation;
 
-    private Fulfilment|Group|Organisation|PaymentAccount|Shop|OrgPaymentServiceProvider|Invoice $parent;
+    private Fulfilment|Group|Organisation|PaymentAccount|Shop|OrgPaymentServiceProvider|Invoice|Customer $parent;
 
-    public function handle(Group|Fulfilment|Organisation|PaymentAccount|Shop|OrgPaymentServiceProvider|Invoice|Order $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Group|Fulfilment|Organisation|PaymentAccount|Shop|OrgPaymentServiceProvider|Invoice|Order|Customer $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -67,7 +68,9 @@ class IndexPayments extends OrgAction
         } elseif (class_basename($parent) == 'PaymentAccount') {
             $queryBuilder->where('payments.payment_account_id', $parent->id);
         } elseif (class_basename($parent) == 'Shop') {
-            $queryBuilder->where('payments.shop_id', $parent->id);
+            $queryBuilder->where('payments.payment_account_id', $parent->id);
+        } elseif (class_basename($parent) == 'Customer') {
+            $queryBuilder->where('payments.customer_id', $parent->id);
         } elseif (class_basename($parent) == 'Group') {
             $queryBuilder->where('payments.group_id', $parent->id);
         } elseif (class_basename($parent) == 'Fulfilment') {
@@ -120,14 +123,14 @@ class IndexPayments extends OrgAction
             ])
             ->leftJoin('payment_accounts', 'payments.payment_account_id', 'payment_accounts.id')
             ->leftJoin('payment_service_providers', 'payment_accounts.payment_service_provider_id', 'payment_service_providers.id')
-            ->allowedSorts(['reference', 'status', 'type' ,'date', 'amount', 'payment_account_name'])
+            ->allowedSorts(['reference', 'status', 'type', 'date', 'amount', 'payment_account_name'])
             ->withBetweenDates(['date'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    protected function getElementGroups(Group|Organisation|PaymentAccount|Shop|Fulfilment|OrgPaymentServiceProvider $parent): array
+    protected function getElementGroups(Group|Organisation|PaymentAccount|Shop|Fulfilment|OrgPaymentServiceProvider|Customer $parent): array
     {
 
         return [
@@ -148,13 +151,13 @@ class IndexPayments extends OrgAction
         ];
     }
 
-    public function tableStructure(Group|Fulfilment|Invoice|Shop|Organisation|OrgPaymentServiceProvider|PaymentAccount|Order $parent, ?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(Group|Fulfilment|Invoice|Shop|Organisation|OrgPaymentServiceProvider|PaymentAccount|Order|Customer $parent, ?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($modelOperations, $prefix, $parent) {
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
             $table->betweenDates(['date']);
 
@@ -166,7 +169,6 @@ class IndexPayments extends OrgAction
                         elements: $elementGroup['elements']
                     );
                 }
-
             } elseif (!($parent instanceof Order || $parent instanceof Invoice)) {
                 foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
                     $table->elementGroup(
@@ -188,8 +190,8 @@ class IndexPayments extends OrgAction
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, searchable: true);
                 $table->column(key: 'shop_name', label: __('shop'), canBeHidden: false, searchable: true);
             }
-            $table->column(key: 'amount', label: __('amount'), canBeHidden: false, sortable: true, searchable: true, type:'number');
-            $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, type:'number');
+            $table->column(key: 'amount', label: __('amount'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
+            $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, type: 'date_hms');
         };
     }
 

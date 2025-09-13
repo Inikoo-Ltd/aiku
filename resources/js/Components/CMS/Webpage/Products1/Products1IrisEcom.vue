@@ -396,7 +396,7 @@ const responsiveGridClass = computed(() => {
             </transition>
 
             <!-- Main Content -->
-            <main class="flex-1">
+            <div class="flex-1">
                 <!-- Search & Sort -->
                 <div class="px-4 pt-4 pb-2 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div class="flex items-center w-full md:w-1/3 gap-2">
@@ -499,7 +499,7 @@ const responsiveGridClass = computed(() => {
                         <template v-else>{{ trans("Load More") }}</template>
                     </Button>
                 </div>
-            </main>
+            </div>
 
             <!-- Mobile Filters Drawer -->
             <Drawer v-model:visible="isShowFilters" position="left" :modal="true" :dismissable="true"

@@ -83,6 +83,7 @@ onMounted(() => {
 
   checkScreenType()
   window.addEventListener('resize', checkScreenType)
+  window.listWebBlocks = props.web_blocks
 })
 
 
@@ -113,7 +114,11 @@ console.log(props)
 
 
   <div class="bg-white">
-      <div v-for="(web_block_data, web_block_data_idx) in props.web_blocks" :key="'block' + web_block_data.id" class="w-full">
+      <div v-for="(web_block_data, web_block_data_idx) in props.web_blocks"
+        :key="'block' + web_block_data.id"
+        class="w-full"
+        :id="`v-${web_block_data.type}`"
+      >
         <component
           :screenType="screenType"
           :is="getIrisComponent(web_block_data.type, {

@@ -13,7 +13,6 @@ use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\Dropshipping\Ebay\Traits\WithEbayApiRequest;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
@@ -79,10 +78,11 @@ class CallbackRetinaEbayUser extends OrgAction
                     'name' => Arr::get($userData, 'username'),
                 ]);
 
+                CheckEbayChannel::run($ebayUser);
+
                 UpdateCustomerSalesChannel::run($ebayUser->customerSalesChannel, [
                     'reference' => Arr::get($userData, 'username'),
-                    'name' => Arr::get($userData, 'username'),
-                    'state' => CustomerSalesChannelStateEnum::AUTHENTICATED
+                    'name' => Arr::get($userData, 'username')
                 ]);
 
                 UpdateEbayUserData::dispatch($ebayUser);

@@ -125,7 +125,7 @@ enum ProductCategoryStateEnum: string
         ];
     }
 
-    public static function countSubDepartment(Group|Organisation|ProductCategory $parent): array
+    public static function countSubDepartment(Shop|ProductCategory $parent): array
     {
         $stats = $parent->stats;
 

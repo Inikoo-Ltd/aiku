@@ -9,6 +9,7 @@
 namespace App\Actions\Helpers\Media;
 
 use App\Actions\Helpers\Avatars\GetDiceBearAvatar;
+use App\Actions\Helpers\Media\Hydrators\MediaHydrateDimensions;
 use App\Enums\Helpers\Avatars\DiceBearStylesEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\WebUser;
@@ -60,7 +61,7 @@ class StoreMediaFromIcon
                 ->usingFileName(hash('crc32b', $checksum).'.svg')
                 ->toMediaCollection('icon');
 
-
+            MediaHydrateDimensions::run($media);
             return $media;
         } catch (Exception) {
             return null;

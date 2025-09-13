@@ -45,8 +45,8 @@ const closeModal = () => {
                             :style="dialogStyle"
                         >
                             <!-- Button: Close -->
-                            <div v-if="closeButton" @click="emits('onClose')" class="group px-2 absolute right-5 top-4 cursor-pointer">
-                                <FontAwesomeIcon icon='fal fa-times' class='text-gray-400 group-hover:text-gray-600'
+                            <div v-if="closeButton" @click="emits('onClose')" class="group px-1 absolute text-white/70 hover:text-white text-lg -right-10 top-2 cursor-pointer">
+                                <FontAwesomeIcon icon='fal fa-times' class='' fixed-width
                                     aria-hidden='true' />
                             </div>
                             <slot />

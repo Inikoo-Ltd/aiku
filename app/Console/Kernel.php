@@ -5,6 +5,8 @@ namespace App\Console;
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\Dropshipping\Ebay\Orders\FetchEbayOrders;
 use App\Actions\Dropshipping\Ebay\Orders\FetchWooOrders;
+use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolios;
+use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInWooPortfolio;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomersHydrateStatus;
 use App\Actions\Fulfilment\UpdateCurrentRecurringBillsTemporalAggregates;
 use App\Actions\Helpers\Intervals\ResetDailyIntervals;
@@ -71,12 +73,12 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('fetch:dispatched_emails -w full -D 2 -N')->everySixHours(15)
             ->timezone('UTC')->sentryMonitor(
-                monitorSlug: 'FetchOrdersInBasket',
+                monitorSlug: 'FetchDispatchedEmails',
             );
 
         $schedule->command('fetch:email_tracking_events -N -D 2')->twiceDaily(11, 23)->timezone('UTC')
             ->sentryMonitor(
-                monitorSlug: 'FetchOrdersInBasket',
+                monitorSlug: 'FetchEmailTrackingEvents',
             );
 
 
@@ -84,8 +86,16 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'FetchEbayOrders',
         );
 
-        $schedule->job(FetchWooOrders::makeJob())->cron('2,12,22,32,42,52 * * * *')->sentryMonitor(
+        $schedule->job(FetchWooOrders::makeJob())->everyTenMinutes()->sentryMonitor(
             monitorSlug: 'FetchWooOrders',
+        );
+
+        $schedule->job(UpdateInventoryInWooPortfolio::makeJob())->hourly()->sentryMonitor(
+            monitorSlug: 'UpdateWooStockInventories',
+        );
+
+        $schedule->job(CheckShopifyPortfolios::makeJob())->dailyAt('03:00')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'CheckShopifyPortfolios',
         );
 
 
@@ -102,7 +112,6 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'SaveWebsitesSitemap',
         );
 
-        $schedule->command('schedule:platform-orders')->everyMinute()->timezone('UTC')->sentryMonitor('GetPlatformOrders');
     }
 
 

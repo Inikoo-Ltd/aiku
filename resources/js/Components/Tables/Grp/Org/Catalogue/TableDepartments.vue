@@ -31,7 +31,9 @@ defineProps<{
 const locale = inject('locale', aikuLocaleStructure)
 
 function departmentRoute(department: Department) {
-    switch (route().current()) {
+    const current = route().current();
+
+    switch (current) {
         case "grp.org.shops.show.catalogue.departments.index":
         case "grp.org.shops.show.catalogue.collections.show":
         case "grp.org.shops.show.catalogue.dashboard":
@@ -40,7 +42,10 @@ function departmentRoute(department: Department) {
                 [
                     (route().params as RouteParams).organisation,
                     (route().params as RouteParams).shop,
-                    department.slug]);
+                    department.slug
+                ]
+            );
+
         case "grp.org.shops.index":
         case "grp.overview.catalogue.departments.index":
             return route(
@@ -48,13 +53,25 @@ function departmentRoute(department: Department) {
                 [
                     (route().params as RouteParams).organisation,
                     department.shop_slug,
-                    department.slug]);
+                    department.slug
+                ]
+            );
 
+        case "grp.masters.master_shops.show.master_departments.show":
+            return route(
+                "grp.org.shops.show.catalogue.departments.show",
+                [
+                    department.organisation_slug,
+                    department.shop_slug,
+                    department.slug
+                ]
+            );
 
         default:
-            return null;
+            return '';
     }
 }
+
 
 function subDepartmentsRoute(department: Department) {
     if (route().current() === "grp.org.shops.show.catalogue.departments.index") {
@@ -154,12 +171,12 @@ const isLoadingDetach = ref<string[]>([]);
         </template>
 
         <template #cell(state)="{ item: department }">
-            <Icon :data="department.state">
+            <Icon :data="department.state" :title="department.state?.label">
             </Icon>
         </template>
         <template #cell(code)="{ item: department }">
             <div class="whitespace-nowrap">
-            <Link  :href="(masterDepartmentRoute(department) as string)"  v-tooltip="trans('Go to Master')" class="mr-1"  :class="[ department.master_product_category_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
+            <Link  :href="(masterDepartmentRoute(department) as string)"  v-tooltip="'Go to Master'" class="mr-1"  :class="[ department.master_product_category_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
                 <FontAwesomeIcon
                     icon="fab fa-octopus-deploy"
                     color="#4B0082"

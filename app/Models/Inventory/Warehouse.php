@@ -89,7 +89,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Warehouse newQuery()
  * @method static Builder<static>|Warehouse onlyTrashed()
  * @method static Builder<static>|Warehouse query()
- * @method static Builder<static>|Warehouse withTrashed()
+ * @method static Builder<static>|Warehouse withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Warehouse withoutTrashed()
  * @mixin Eloquent
  */
