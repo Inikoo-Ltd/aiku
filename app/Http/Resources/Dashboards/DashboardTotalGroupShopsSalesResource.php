@@ -52,7 +52,6 @@ class DashboardTotalGroupShopsSalesResource extends JsonResource
             ],
         ];
 
-
         $baskets_created_grp_currency       = $this->getDashboardTableColumn($group->salesIntervals, 'baskets_created_grp_currency', $routeTargets['inBasket']);
         $baskets_created_org_currency       = [
             'baskets_created_org_currency' => $baskets_created_grp_currency['baskets_created_grp_currency']
@@ -113,7 +112,6 @@ class DashboardTotalGroupShopsSalesResource extends JsonResource
             $sales_grp_currency_minified,
             $sales_grp_currency_delta
         );
-
 
         return [
             'slug'    => $group->slug,

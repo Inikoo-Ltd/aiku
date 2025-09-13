@@ -93,7 +93,7 @@ class UpdateWebsite extends OrgAction
         }
 
         if (Arr::has($changes, 'domain')) {
-            $key = config('iris.cache.website.prefix')."_$website->domain";
+            $key = config('iris.cache.website.prefix') . "_$website->domain";
             Cache::forget($key);
         }
 
@@ -229,7 +229,6 @@ class UpdateWebsite extends OrgAction
                     ]
                 )
             ];
-
         }
 
         return $rules;
