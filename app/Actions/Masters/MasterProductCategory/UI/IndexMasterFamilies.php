@@ -319,17 +319,19 @@ class IndexMasterFamilies extends OrgAction
             };
         }
 
-        $actions[] = [
-            'type'    => 'button',
-            'key'     => 'add-master-family',
-            'style'   => 'create',
-            'tooltip' => __('master new family'),
-            'label'   => __('master family'),
-            'route'   => [
-                'name'       => $createRoute,
-                'parameters' => $request->route()->originalParameters()
-            ]
-        ];
+        if ($this->parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT || $this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
+            $actions[] = [
+                'type'    => 'button',
+                'key'     => 'add-master-family',
+                'style'   => 'create',
+                'tooltip' => __('Create master family'),
+                'label'   => __('Master Family'),
+                'route'   => [
+                    'name'       => $createRoute,
+                    'parameters' => $request->route()->originalParameters()
+                ]
+            ];
+        }
 
 
         return $actions;

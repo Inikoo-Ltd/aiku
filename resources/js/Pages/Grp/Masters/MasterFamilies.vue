@@ -1,7 +1,7 @@
 <!--
-  -  Author: Jonathan Lopez <raul@inikoo.com>
-  -  Created: Wed, 12 Oct 2022 16:50:56 Central European Summer Time, Benalmádena, Malaga,Spain
-  -  Copyright (c) 2022, Jonathan Lopez
+  - Author: Raul Perusquia <raul@inikoo.com>
+  - Created: Sat, 13 Sept 2025 12:59:35 Malaysia Time, Kuala Lumpur, Malaysia
+  - Copyright (c) 2025, Raul A Perusquia Flores
   -->
 
 <script setup lang="ts">
@@ -13,13 +13,13 @@ import { ref } from "vue"
 import { faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome } from '@fal'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
-library.add(faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome)
 import FormCreateMasterFamily from "@/Components/Master/FormCreateMasterFamily.vue"
 import { trans } from 'laravel-vue-i18n'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
+library.add(faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome)
 
-const props = defineProps<{
+defineProps<{
     pageHead: PageHeadingTypes
     title: string
     data: {}
@@ -35,13 +35,13 @@ const showDialog = ref(false)
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #button-add-master-family>
-            <Button :label="trans('Master family')" @click="showDialog = true" :style="'create'" />
+            <Button :label="trans('Master Family')" @click="showDialog = true" :style="'create'" />
         </template>
     </PageHeading>
     <TableMasterFamilies :data="data" />
     <FormCreateMasterFamily
-        :showDialog="showDialog" 
-        :storeProductRoute="storeRoute" 
+        :showDialog="showDialog"
+        :storeProductRoute="storeRoute"
         @update:show-dialog="(value) => showDialog = value"
         :shopsData="shopsData"
     />
