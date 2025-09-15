@@ -413,54 +413,53 @@ console.log('ewew', props.address_management)
                    @update:tab="handleTabUpdate"/>
 
         <!-- Section: Priority Dispatch -->
-        <div v-if="charges.premium_dispatch" class="flex gap-4 my-4 justify-end pr-6">
-            <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
-                <InformationIcon :information="charges.premium_dispatch?.description" />
-                {{ charges.premium_dispatch?.label ?? charges.premium_dispatch?.name }}
-                <span class="text-gray-400">({{ locale.currencyFormat(charges.premium_dispatch?.currency_code, charges.premium_dispatch?.amount) }})</span>
-            </div>
-
-            <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
-                <ToggleSwitch
-                    :modelValue="data?.data?.is_premium_dispatch"
-                    @update:modelValue="(e) => (onChangePriorityDispatch(e))"
-                    xdisabled="isLoadingPriorityDispatch"
-                >
-                    <template #handle="{ checked }">
-                        <LoadingIcon v-if="isLoadingPriorityDispatch" xclass="text-sm text-gray-500" />
-                        <template v-else>
-                            <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
-                            <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
+        <template v-if="total_products > 0">
+            <div v-if="charges.premium_dispatch" class="flex gap-4 my-4 justify-end pr-6">
+                <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
+                    <InformationIcon :information="charges.premium_dispatch?.description" />
+                    {{ charges.premium_dispatch?.label ?? charges.premium_dispatch?.name }}
+                    <span class="text-gray-400">({{ locale.currencyFormat(charges.premium_dispatch?.currency_code, charges.premium_dispatch?.amount) }})</span>
+                </div>
+                <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
+                    <ToggleSwitch
+                        :modelValue="data?.data?.is_premium_dispatch"
+                        @update:modelValue="(e) => (onChangePriorityDispatch(e))"
+                        xdisabled="isLoadingPriorityDispatch"
+                    >
+                        <template #handle="{ checked }">
+                            <LoadingIcon v-if="isLoadingPriorityDispatch" xclass="text-sm text-gray-500" />
+                            <template v-else>
+                                <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
+                            </template>
                         </template>
-                    </template>
-                </ToggleSwitch>
+                    </ToggleSwitch>
+                </div>
             </div>
-        </div>
-
-        <!-- Section: Extra Packing -->
-        <div v-if="charges.extra_packing" class="flex gap-4 my-4 justify-end pr-6">
-            <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.has_extra_packing ? 'text-green-500' : ''">
-                <InformationIcon :information="charges.extra_packing?.description" />
-                {{ charges.extra_packing?.label ?? charges.extra_packing?.name }}
-                <span class="text-gray-400">({{ locale.currencyFormat(charges.extra_packing?.currency_code, charges.extra_packing?.amount) }})</span>
-            </div>
-
-            <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
-                <ToggleSwitch
-                    :modelValue="data?.data?.has_extra_packing"
-                    @update:modelValue="(e) => (onChangeExtraPacking(e))"
-                    xdisabled="isLoadingExtraPacking"
-                >
-                    <template #handle="{ checked }">
-                        <LoadingIcon v-if="isLoadingExtraPacking" xclass="text-sm text-gray-500" />
-                        <template v-else>
-                            <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
-                            <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
+            <!-- Section: Extra Packing -->
+            <div v-if="charges.extra_packing" class="flex gap-4 my-4 justify-end pr-6">
+                <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.has_extra_packing ? 'text-green-500' : ''">
+                    <InformationIcon :information="charges.extra_packing?.description" />
+                    {{ charges.extra_packing?.label ?? charges.extra_packing?.name }}
+                    <span class="text-gray-400">({{ locale.currencyFormat(charges.extra_packing?.currency_code, charges.extra_packing?.amount) }})</span>
+                </div>
+                <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
+                    <ToggleSwitch
+                        :modelValue="data?.data?.has_extra_packing"
+                        @update:modelValue="(e) => (onChangeExtraPacking(e))"
+                        xdisabled="isLoadingExtraPacking"
+                    >
+                        <template #handle="{ checked }">
+                            <LoadingIcon v-if="isLoadingExtraPacking" xclass="text-sm text-gray-500" />
+                            <template v-else>
+                                <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
+                            </template>
                         </template>
-                    </template>
-                </ToggleSwitch>
+                    </ToggleSwitch>
+                </div>
             </div>
-        </div>
+        </template>
     </div>
 
     <div v-if="total_products > 0" class="flex justify-end px-6 gap-x-4">

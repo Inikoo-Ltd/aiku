@@ -111,7 +111,7 @@ watch(() => usePage().props?.flash?.confetti, (newVal) => {
 
 // Flash: GTM
 watch(() => usePage().props?.flash?.gtm, (newValue) => {
-    // console.log('gtm ret', newValue)
+    console.log('gtm ret', newValue)
     if (!newValue) return
 
     window.dataLayer = window.dataLayer || [];
@@ -145,7 +145,7 @@ watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
 
 // Flash: Notification
 watch(() => usePage().props?.flash?.notification, (notification: Modal) => {
-    console.log('ret', notification)
+    // console.log('ret', notification)
     if (!notification) return
 
     setTimeout(() => {
