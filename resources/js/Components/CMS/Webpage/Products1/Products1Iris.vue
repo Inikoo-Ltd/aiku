@@ -16,17 +16,15 @@ import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure";
 import PureInput from "@/Components/Pure/PureInput.vue";
 import { useConfirm } from "primevue/useconfirm";
 import { faSearch } from "@fal";
-import { faExclamationTriangle, faLayerGroup } from "@far";
+import { faExclamationTriangle } from "@far";
 import ConfirmDialog from "primevue/confirmdialog";
 import { trans } from "laravel-vue-i18n"
-import FontSize from "tiptap-extension-font-size";
 import ButtonAddCategoryToPortfolio from "@/Components/Iris/Products/ButtonAddCategoryToPortfolio.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import InformationIcon from "@/Components/Utils/InformationIcon.vue"
-import CopyButton from "@/Components/Utils/CopyButton.vue"
+
 library.add(faFileDownload)
 
 const props = defineProps<{
@@ -451,23 +449,6 @@ const responsiveGridClass = computed(() => {
 
             <!-- Main Content -->
             <main class="flex-1 mt-4">
-                <!-- <div class="px-4 xpt-4 mb-2 text-base font-normal flex items-center gap-x-2">
-                    <div class="hidden">
-                        {{ fieldValue.model_type }}
-                    </div>
-                    <a
-                        v-if="route().has('iris.product_category.data_feed') && fieldValue.model_slug"
-                        :href="route('iris.product_category.data_feed', { productCategory: fieldValue.model_slug })"
-                        target="_blank"
-                        class="group hover:underline text-sm "
-                    >
-                        <FontAwesomeIcon v-tooltip="trans('Full products list without filtered')" icon="fas fa-file-download" class="opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />
-                        <span class="font-normal opacity-70 group-hover:opacity-100">Download products (csv)</span>
-                    </a>
-                    <CopyButton
-                        :text="route('iris.product_category.data_feed', { productCategory: fieldValue.model_slug })"
-                    />
-                </div> -->
 
                 <!-- Search & Sort -->
                 <div class="px-4 xpt-4 mb-2 flex flex-col md:flex-row justify-between items-center gap-4">
@@ -487,14 +468,6 @@ const responsiveGridClass = computed(() => {
 
                     <!-- Sort Tabs -->
                     <div class="flex items-center space-x-6 overflow-x-auto mt-2 md:mt-0 border-b border-gray-300">
-                        <!-- <button @click="toggleNewArrivals"
-                            class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1" :class="[
-                            isNewArrivals
-                                ? `border-b-2 text-[${layout?.app?.theme?.[0] || '#1F2937'}] border-[${layout?.app?.theme?.[0] || '#1F2937'}]`
-                                : `text-gray-600 hover:text-[${layout?.app?.theme?.[0] || '#1F2937'}]`
-                        ]">
-                            New Arrivals
-                        </button> -->
 
                         <button v-for="option in sortOptions" :key="option.value" @click="toggleSort(option.value)"
                             class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1" :class="[
@@ -524,10 +497,8 @@ const responsiveGridClass = computed(() => {
 
                     <div>
                         <ButtonAddCategoryToPortfolio
-                            xproduct="fieldValue.product"
                             :products
                             :categoryId
-                            xproductHasPortfolio="productExistenceInChannels"
                         />
                     </div>
                 </div>

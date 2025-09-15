@@ -3,7 +3,7 @@ import { faCube, faLink, faHeart } from "@fal"
 import { faCircle, faHeart as fasHeart, faDotCircle, faFilePdf, faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { ref, inject, onMounted} from "vue"
+import { ref, inject, onMounted, computed} from "vue"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import { useLocaleStore } from '@/Stores/locale'
 import ProductContentsIris from "./ProductContentIris.vue"
@@ -167,9 +167,6 @@ onMounted(() => {
             showButton.value = true
         }
     })
-
-    // Luigi: last_seen recommendations
-    console.log('iden', props.fieldValue.product.luigi_identity)
     if (props.fieldValue?.product?.luigi_identity) {
         window?.dataLayer?.push({
             event: "view_item",
@@ -188,6 +185,34 @@ const toggleExpanded = () => {
   expanded.value = !expanded.value
 }
 
+
+const imagesSetup = ref(
+	props.fieldValue.product.images
+		.filter(item => item.type === "image")
+		.map(item => ({
+			label: item.label,
+			column: item.column_in_db,
+			images: item.images,
+		}))
+)
+
+const videoSetup = ref(
+	props.fieldValue.product.images.find(item => item.type === "video") || null
+)
+
+
+const validImages = computed(() =>
+  imagesSetup.value
+    .filter(item => item.images) // only keep if images exist
+    .flatMap(item => {
+      const images = Array.isArray(item.images) ? item.images : [item.images] // normalize to array
+      return images.map(img => ({
+        source: img,
+        thumbnail: img
+      }))
+    })
+)
+
 </script>
 
 <template>
@@ -198,7 +223,7 @@ const toggleExpanded = () => {
         <div class="grid grid-cols-12 gap-x-10 mb-2"> 
             <div class="col-span-7">
                 <div class="py-1 w-full">
-                    <ImageProducts :images="fieldValue?.product?.images" />
+                    <ImageProducts  :images="validImages" />
                 </div>
                 <div class="flex gap-x-10 text-gray-400 mb-6 mt-4" v-if="fieldValue?.product?.tags?.length">
                     <div class="flex items-center gap-1 text-xs" v-for="(tag, index) in fieldValue.product.tags"
@@ -218,15 +243,7 @@ const toggleExpanded = () => {
                         <h1 class="text-2xl font-bold text-gray-900">{{ fieldValue.product.name }}</h1>
                         <div class="flex flex-wrap justify-between gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
                             <div>Product code: {{ fieldValue.product.code }}</div>
-                            <div class="flex items-center gap-[1px]">
-                                <!-- <a
-                                    :href="route().has('iris.catalogue.feeds.product.download') ? route('iris.catalogue.feeds.product.download', { product: fieldValue.product.slug }) : '#'"
-                                    target="_blank"
-                                    class="group hover:underline">
-                                    <FontAwesomeIcon icon="fas fa-file-download" class="opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />
-                                    <span>Download (csv)</span>
-                                </a> -->
-                            </div>
+                            <div class="flex items-center gap-[1px]"></div>
                         </div>
                         <div v-if="layout?.iris?.is_logged_in" class="flex items-center gap-2 text-sm text-gray-600 mb-4">
                             <FontAwesomeIcon :icon="faCircle" class="text-[10px]"

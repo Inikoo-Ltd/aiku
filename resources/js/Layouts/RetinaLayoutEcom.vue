@@ -120,16 +120,14 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 					</div>
 					
 					<div
-						xstyle="max-width: calc(1280px - 200px)"
-						class="pb-6 bg-white w-full mx-auto shadow-lg rounded-lg">
-						<div id="RetinaTopBarSubsections" class="pl-2 py-2 flex gap-x-2" />
+						class="w-full">
+						<div class="pb-6 bg-white shadow-lg rounded-lg">
+							<div id="RetinaTopBarSubsections" class="pl-2 py-2 flex gap-x-2" />
+							<!-- Main content of the page -->
+							<slot name="default" />
+						</div>
 
-						<!-- Main content of the page -->
-						<slot name="default" />
-					</div>
-
-					<div id="retina-end-of-main" class="w-full mt-6">
-	
+						<div id="retina-end-of-main" class="w-full mt-6" />
 					</div>
 				</div>
 			</main>

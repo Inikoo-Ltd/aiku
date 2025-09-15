@@ -44,11 +44,7 @@ class StoreMasterAsset extends OrgAction
         $tradeUnits   = Arr::pull($modelData, 'trade_units', []);
         $shopProducts = Arr::pull($modelData, 'shop_products', []);
 
-        if (count($tradeUnits) == 1) {
-            $units = $tradeUnits[array_key_first($tradeUnits)]['quantity'];
-        } else {
-            $units = 1;
-        }
+        $units = Arr::get($modelData, 'units', 1);
 
         data_set($modelData, 'units', $units);
 
