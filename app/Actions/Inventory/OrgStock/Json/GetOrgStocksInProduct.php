@@ -57,6 +57,7 @@ class GetOrgStocksInProduct extends OrgAction
                 'org_stocks.slug',
                 'org_stocks.code',
                 'org_stocks.name',
+                'org_stocks.state',
                 'org_stocks.unit_value',
                 'org_stocks.discontinued_in_organisation_at',
                 'org_stock_families.slug as family_slug',

@@ -3,7 +3,7 @@ import { faCube, faLink, faHeart } from "@fal"
 import { faCircle, faHeart as fasHeart, faDotCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { ref, inject, onMounted} from "vue"
+import { ref, inject, onMounted, computed } from "vue"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import { useLocaleStore } from '@/Stores/locale'
 import ProductContentsIris from "./ProductContentIris.vue"
@@ -164,6 +164,35 @@ const urlLoginWithRedirect = () => {
         return "/app/login"
     }
 }
+
+
+const imagesSetup = ref(
+	props.fieldValue.product.images
+		.filter(item => item.type === "image")
+		.map(item => ({
+			label: item.label,
+			column: item.column_in_db,
+			images: item.images,
+		}))
+)
+
+const videoSetup = ref(
+	props.fieldValue.product.images.find(item => item.type === "video") || null
+)
+
+
+const validImages = computed(() =>
+  imagesSetup.value
+    .filter(item => item.images) // only keep if images exist
+    .flatMap(item => {
+      const images = Array.isArray(item.images) ? item.images : [item.images] // normalize to array
+      return images.map(img => ({
+        source: img,
+        thumbnail: img
+      }))
+    })
+)
+
 </script>
 
 <template>
@@ -174,7 +203,7 @@ const urlLoginWithRedirect = () => {
         <div class="grid grid-cols-12 gap-x-10 mb-2">
             <div class="col-span-7">
                 <div class="py-1 w-full">
-                    <ImageProducts :images="fieldValue?.product?.images" />
+                    <ImageProducts  :images="validImages" />
                 </div>
                 <div class="flex gap-x-10 text-gray-400 mb-6 mt-4">
                     <div class="flex items-center gap-1 text-xs" v-for="(tag, index) in fieldValue.product.tags"
