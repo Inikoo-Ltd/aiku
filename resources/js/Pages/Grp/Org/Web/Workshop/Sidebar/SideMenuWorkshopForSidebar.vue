@@ -55,12 +55,12 @@ const emits = defineEmits<{
 	(e: 'sendToIframe', value: Object): void
 }>()
 
-const selectedTab = ref(props.data ? 1 : 0)
+const selectedTab = ref(props.data ? 0 : 0)
 
 const tabs = [
-	{ label: 'Templates', icon: faThLarge, tooltip: 'template' },
+	//{ label: 'Templates', icon: faThLarge, tooltip: 'template' },
 	{ label: 'Menu', icon: faList, tooltip: 'menu' },
-	{ label: 'Settings', icon: faPaintBrushAlt, tooltip: 'setting' }
+	// { label: 'Settings', icon: faPaintBrushAlt, tooltip: 'setting' }
 ]
 
 function changeTab(index: Number) {
@@ -121,21 +121,21 @@ const autoSave = async (value) => {
 			</Tab>
 		</TabList>
 		<TabPanels>
-			<TabPanel>
+			<!-- <TabPanel>
 				<WebBlockListDnd :webBlockTypes="webBlockTypes" @pick-block="onPickBlock"
 					:selectedWeblock="data.code" />
-			</TabPanel>
+			</TabPanel> -->
 			<TabPanel v-if="data">
 				<!-- need fix this components edit drawer -->
 				<SetMenuListWorkshop :data="data" :autosaveRoute="autosaveRoute" @auto-save="() => autoSave(data)" />
 			</TabPanel>
-			<TabPanel v-if="data">
+			<!-- <TabPanel  v-if="data">
 				<SideEditor 
 					v-model="data.data.fieldValue" 
 					:blueprint="Blueprint.blueprint"
 					@update:modelValue="(e) => { data.data.fieldValue = e , autoSave(data)}"
 					:uploadImageRoute="null" />
-			</TabPanel>
+			</TabPanel> -->
 		</TabPanels>
 	</TabGroup>
 </template>
