@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, IframeHTMLAttributes, watch, provide } from "vue"
+import { ref, IframeHTMLAttributes, watch, provide, onMounted } from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
 import Publish from "@/Components/Publish.vue"
@@ -133,12 +133,12 @@ watch(currentView, (newValue) => {
 	<div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
 		<!-- SIDEBAR -->
 		<div  class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
-			<!-- <SideMenuWorkshop 
-				:data="data?.menu" 
+			<SideMenuWorkshop 
+				:data="data?.sidebar" 
 				:webBlockTypes="webBlockTypes" 
 				:autosaveRoute="autosaveRoute"
 				@sendToIframe="sendToIframe"
-			/> -->
+			/>
 		</div>
 
 		<!-- PREVIEW SECTION -->
