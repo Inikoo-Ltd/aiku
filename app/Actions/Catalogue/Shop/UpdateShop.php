@@ -200,6 +200,7 @@ class UpdateShop extends OrgAction
             'required_approval'        => ['sometimes', 'boolean'],
             'invoice_footer'           => ['sometimes', 'string', 'max:10000'],
             'cost_price_ratio'         => ['sometimes', 'numeric', 'min:0'],
+            'price_rrp_ratio'         => ['sometimes', 'numeric', 'min:0'],
             'extra_languages'          => ['sometimes', 'array', 'nullable'],
             'forbidden_dispatch_countries'          => ['sometimes', 'array', 'nullable'],
             'image'                    => [
