@@ -87,6 +87,7 @@ const props = withDefaults(
     parts?: { id: number; name: string }[]
     type: string
 	video?: string
+	hide?:string[]
     properties?: {
       country_of_origin?: { code: string; name: string }
       tariff_code?: string
@@ -204,39 +205,39 @@ console.log('product summary : ', props)
 			</div>
 			<dl class="mt-4 space-y-6 text-sm">
 				<div class="space-y-3">
-					<div class="flex justify-between flex-wrap gap-1">
+					<div v-if="!hide?.includes('code')" class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("Code") }}</dt>
 						<dd class="font-medium">{{ data?.code }}</dd>
 					</div>
-					<div class="flex justify-between flex-wrap gap-1">
+					<div v-if="!hide?.includes('code')"  class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("Product Name") }}</dt>
 						<dd class="font-medium max-w-[236px] text-right">{{ data?.name }}</dd>
 					</div>
-					<div class="flex justify-between flex-wrap gap-1">
+					<div  v-if="!hide?.includes('cpnp')" class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("CPNP Number") }}</dt>
 						<dd class="font-medium">-</dd>
 					</div>
-					<div class="flex justify-between flex-wrap gap-1">
+					<div  v-if="!hide?.includes('ufi')" class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("UFI (Poison Centres)") }}</dt>
 						<dd class="font-medium">-</dd>
 					</div>
-					<div class="flex justify-between flex-wrap gap-1">
+					<div  v-if="!hide?.includes('created_at')" class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("Added date") }}</dt>
 						<dd class="font-medium">{{ useFormatTime(data?.created_at) }}</dd>
 					</div>
-					<div class="flex justify-between flex-wrap gap-1">
+					<div  v-if="!hide?.includes('stock')" class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("Stock") }}</dt>
 						<dd class="font-medium">
 							{{ data?.stock }} {{ data?.unit }}
 						</dd>
 					</div>
-					<div v-if="type == 'product'" class="flex justify-between flex-wrap gap-1">
+					<div v-if="type == 'product' && !hide?.includes('price')" class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("Price") }}</dt>
 						<dd class="font-semibold text-green-600">
 							{{ locale.currencyFormat(data?.currency_code, data?.price) }}
 						</dd>
 					</div>
-					<div v-if="type == 'product'" class="flex justify-between flex-wrap gap-1">
+					<div v-if="type == 'product' && !hide?.includes('rrp')" class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">RRP</dt>
 						<dd class="font-semibold">
 							{{ locale.currencyFormat(data?.currency_code, data?.rrp) }}
@@ -248,7 +249,7 @@ console.log('product summary : ', props)
 							</span>
 						</dd>
 					</div>
-					<div class="flex justify-between flex-wrap gap-1">
+					<div v-if="!hide?.includes('Weight')" class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("Weight") }}</dt>
 						<dd class="font-medium">
 							{{ locale.number(data?.specifications?.gross_weight) }} gr
