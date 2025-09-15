@@ -104,7 +104,7 @@ class StoreProduct extends OrgAction
             $product->stats()->create();
             $product->refresh();
 
-            $product=$this->createAsset($product);
+            $product = $this->createAsset($product);
             ProductHydrateAvailableQuantity::run($product);
             $product->refresh();
 
@@ -182,7 +182,7 @@ class StoreProduct extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'code'                      => [
+            'code'              => [
                 'required',
                 'max:32',
                 new AlphaDashDot(),
@@ -196,31 +196,34 @@ class StoreProduct extends OrgAction
                     ]
                 ),
             ],
-            'name'                      => ['required', 'max:250', 'string'],
-            'state'                     => ['sometimes', 'required', Rule::enum(ProductStateEnum::class)],
-            'family_id'                 => [
+            'name'              => ['required', 'max:250', 'string'],
+            'state'             => ['sometimes', 'required', Rule::enum(ProductStateEnum::class)],
+            'family_id'         => [
                 'sometimes',
                 'required',
                 Rule::exists('product_categories', 'id')
                     ->where('shop_id', $this->shop->id)
                     ->where('type', ProductCategoryTypeEnum::FAMILY)
             ],
-            'department_id'             => [
+            'department_id'     => [
                 'sometimes',
                 'required',
                 Rule::exists('product_categories', 'id')
                     ->where('shop_id', $this->shop->id)
                     ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
             ],
-            'price'                     => ['required', 'numeric', 'min:0'],
-            'unit_price'                => ['sometimes', 'numeric', 'min:0'],
-            'unit'                      => ['sometimes', 'required', 'string'],
-            'rrp'                       => ['sometimes', 'nullable', 'numeric', 'min:0'],
-            'description'               => ['sometimes', 'required', 'max:1500'],
-            'data'                      => ['sometimes', 'array'],
-            'settings'                  => ['sometimes', 'array'],
-            'is_main'                   => ['required', 'boolean'],
-            'units'                     => ['sometimes', 'numeric'],
+            'price'             => ['required', 'numeric', 'min:0'],
+            'unit_price'        => ['sometimes', 'numeric', 'min:0'],
+            'unit'              => ['sometimes', 'required', 'string'],
+            'rrp'               => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'description'       => ['sometimes', 'required', 'max:15000'],
+            'data'              => ['sometimes', 'array'],
+            'settings'          => ['sometimes', 'array'],
+            'is_main'           => ['required', 'boolean'],
+            'units'             => ['sometimes', 'numeric'],
+            'description_title' => ['sometimes', 'string', 'nullable', 'max:300'],
+            'description_extra' => ['sometimes', 'string', 'nullable', 'max:15000'],
+
             'main_product_id'           => [
                 'sometimes',
                 'nullable',
@@ -235,7 +238,7 @@ class StoreProduct extends OrgAction
                 'integer',
                 Rule::exists('customers', 'id')->where('shop__id', $this->shop->id)
             ],
-            'master_product_id' => ['sometimes']
+            'master_product_id'         => ['sometimes']
         ];
 
         if ($this->state == ProductStateEnum::DISCONTINUED) {
