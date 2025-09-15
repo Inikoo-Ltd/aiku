@@ -78,6 +78,7 @@ let debounceTimer: any = null
 const key = ref(ulid())
 const layout = inject('layout', {});
 const currency = props.masterCurrency ? props.masterCurrency : layout.group.currency;
+const loading = ref(null)
 
 // Inertia form
 const form = useForm({
@@ -186,6 +187,9 @@ const submitForm = async (redirect = true) => {
     form.processing = true
     form.errors = {}
 
+    if(redirect) loading.value = 'save'
+    else loading.value = 'create'
+
     const finalDataTable: Record<number, { price: number | string }> = {}
     for (const tableDataItem of tableData.value.data) {
         finalDataTable[tableDataItem.id] = {
@@ -248,6 +252,7 @@ const submitForm = async (redirect = true) => {
         }
     } finally {
         form.processing = false
+        loading.value = null
     }
 }
 
@@ -477,9 +482,9 @@ const toggleFull = () => {
         <template #footer>
             <div class="flex justify-end gap-3 border-t pt-3">
                 <Button label="Cancel" type="negative" class="!px-5" @click="emits('update:showDialog', false)" />
-                <Button type="create" :label="'save & create another one'" :loading="form.processing"
+                <Button type="create" :label="'save & create another one'" :loading="loading == 'create'"
                     :disabled="form.trade_units.length < 1" class="!px-6" @click="submitForm(false)" />
-                <Button type="save" :loading="form.processing" :disabled="form.trade_units.length < 1" class="!px-6"
+                <Button type="save" :loading="loading == 'save'" :disabled="form.trade_units.length < 1" class="!px-6"
                     @click="submitForm" />
             </div>
         </template>
