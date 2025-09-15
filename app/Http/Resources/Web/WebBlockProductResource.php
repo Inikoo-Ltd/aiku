@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Web;
 
+use App\Actions\Traits\HasBucketImages;
 use App\Helpers\NaturalLanguage;
 use App\Http\Resources\Catalogue\TagResource;
 use App\Http\Resources\HasSelfCall;
@@ -18,6 +19,8 @@ use App\Http\Resources\Helpers\ImageResource;
 class WebBlockProductResource extends JsonResource
 {
     use HasSelfCall;
+    use HasBucketImages;
+
 
     public function toArray($request): array
     {
@@ -72,7 +75,7 @@ class WebBlockProductResource extends JsonResource
             'web_images'        => $product->web_images,
             'created_at'        => $product->created_at,
             'updated_at'        => $product->updated_at,
-            'images'            => ImageResource::collection($product->images)->toArray($request),
+            'images'            => $product->image_id ? $this->getImagesData($product) : ImageResource::collection($product->images)->toArray($request),
             'tags'              => TagResource::collection($product->tradeUnitTagsViaTradeUnits())->toArray($request),
         ];
     }
