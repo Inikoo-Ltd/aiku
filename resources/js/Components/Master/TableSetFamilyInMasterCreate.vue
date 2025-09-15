@@ -36,7 +36,7 @@ const toggleCheckAll = (value: boolean) => {
             <table class="w-full border-collapse text-xs">
                 <thead>
                     <tr class="bg-gray-50 text-left font-medium text-gray-600 border-b border-gray-200">
-                        <th class="px-2 py-1">Code</th>
+                        <!-- <th class="px-2 py-1">Code</th> -->
                         <th class="px-2 py-1">Name</th>
                         <th class="px-2 py-1 text-center">
                             <div class="flex justify-center items-center gap-1">
@@ -53,9 +53,9 @@ const toggleCheckAll = (value: boolean) => {
                 </thead>
                 <tbody>
                     <tr v-for="item in modelValue.data" :key="item.id" class="transition-colors">
-                        <td class="px-2 py-2 border-b border-gray-100 text-gray-600">
+                        <!-- <td class="px-2 py-2 border-b border-gray-100 text-gray-600">
                             {{ item.code || "-" }}
-                        </td>
+                        </td> -->
                         <td class="px-2 py-2 border-b border-gray-100 font-medium">
                             {{ item.name }}
                         </td>

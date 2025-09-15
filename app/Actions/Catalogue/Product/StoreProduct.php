@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\Product;
 
 use App\Actions\Catalogue\Asset\StoreAsset;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateForSale;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateProductVariants;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTradeUnitsFields;
@@ -103,8 +104,11 @@ class StoreProduct extends OrgAction
             $product->stats()->create();
             $product->refresh();
 
+            $product=$this->createAsset($product);
+            ProductHydrateAvailableQuantity::run($product);
+            $product->refresh();
 
-            return $this->createAsset($product);
+            return $product;
         });
 
         ProductHydrateProductVariants::dispatch($product->mainProduct)->delay($this->hydratorsDelay);

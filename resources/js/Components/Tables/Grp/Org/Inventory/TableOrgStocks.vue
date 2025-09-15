@@ -10,6 +10,11 @@ import Table from "@/Components/Table/Table.vue";
 import { Stock } from "@/types/stock";
 import { inject } from "vue";
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
+import Icon from "@/Components/Icon.vue";
+import { faCheckCircle , faTimesCircle, faPauseCircle, faExclamationCircle } from "@fas";
+import { library } from "@fortawesome/fontawesome-svg-core";
+
+library.add(faCheckCircle, faTimesCircle, faPauseCircle, faExclamationCircle);
 
 defineProps<{
   data: object
@@ -83,6 +88,9 @@ function stockFamilyRoute(stock: Stock) {
 
 <template>
   <Table :resource="data" :name="tab" class="mt-5">
+      <template #cell(state)="{ item: stock }">
+          <Icon :data="stock.state"></Icon>
+      </template>
     <template #cell(code)="{ item: stock }">
       <Link :href="stockRoute(stock)" class="primaryLink">
         {{ stock["code"] }}

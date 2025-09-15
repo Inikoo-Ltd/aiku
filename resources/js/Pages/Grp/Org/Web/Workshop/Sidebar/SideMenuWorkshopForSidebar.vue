@@ -50,6 +50,7 @@ const props = defineProps<{
 		data: Array<any>
 	}
 }>()
+console.log(props)
 
 const emits = defineEmits<{
 	(e: 'sendToIframe', value: Object): void
@@ -108,6 +109,9 @@ const autoSave = async (value) => {
   }
 }
 
+const dataDummyMinimal = { data: { component: "SetMenuListWorkshop", fieldValue: { navigation: [] } } };
+const dataDummy = ref(dataDummyMinimal)
+
 
 </script>
 
@@ -127,7 +131,7 @@ const autoSave = async (value) => {
 			</TabPanel> -->
 			<TabPanel v-if="data">
 				<!-- need fix this components edit drawer -->
-				<SetMenuListWorkshop :data="data" :autosaveRoute="autosaveRoute" @auto-save="() => autoSave(data)" />
+				<SetMenuListWorkshop :data="dataDummy" :autosaveRoute="autosaveRoute" @auto-save="() => autoSave(data)" />
 			</TabPanel>
 			<!-- <TabPanel  v-if="data">
 				<SideEditor 

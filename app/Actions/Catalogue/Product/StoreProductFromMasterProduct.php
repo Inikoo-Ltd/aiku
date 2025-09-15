@@ -65,6 +65,7 @@ class StoreProductFromMasterProduct extends GrpAction
                     'price'             => $price,
                     'rrp'               => $rrp,
                     'unit'              => $masterAsset->unit,
+                    'units'             => $masterAsset->units,
                     'is_main'           => true,
                     'org_stocks'        => $orgStocks,
                     'master_product_id' => $masterAsset->id,

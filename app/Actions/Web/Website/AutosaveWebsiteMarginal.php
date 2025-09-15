@@ -91,10 +91,10 @@ class AutosaveWebsiteMarginal extends OrgAction
                 $website->refresh();
             }
 
-            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedMenuSnapshot->layout;
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedSidebarSnapshot->layout;
 
 
-            $this->update($website->unpublishedMenuSnapshot, [
+            $this->update($website->unpublishedSidebarSnapshot, [
                 'layout' => [
                     'sidebar' => $layout
                 ]
