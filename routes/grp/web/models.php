@@ -235,6 +235,7 @@ use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategoryImages;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategoryTranslations;
 use App\Actions\Masters\MasterProductCategory\UploadImageMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\UploadImagesToMasterProductCategory;
+use App\Actions\Masters\MasterShop\UpdateMasterShop;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Purge\StorePurge;
 use App\Actions\Ordering\Purge\UpdatePurge;
@@ -377,6 +378,7 @@ Route::name('stock.')->prefix('/stock')->group(function () {
 });
 
 Route::prefix('master-shops/{masterShop:id}')->as('master_shops.')->group(function () {
+    Route::patch('/', UpdateMasterShop::class)->name('update');
     Route::post('master-department', StoreMasterDepartment::class)->name('master_department.store');
     Route::post('master-sub-department', StoreMasterSubDepartment::class)->name('master_sub_department.store');
     Route::post('master-family', StoreMasterFamily::class)->name('master_family.store');

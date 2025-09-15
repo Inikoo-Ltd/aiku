@@ -50,7 +50,7 @@ const props = defineProps<{
 		data: Array<any>
 	}
 }>()
-console.log(props)
+console.log('wrpper',props)
 
 const emits = defineEmits<{
 	(e: 'sendToIframe', value: Object): void
@@ -108,9 +108,6 @@ const autoSave = async (value) => {
     })
   }
 }
-
-const dataDummyMinimal = { data: { component: "SetMenuListWorkshop", fieldValue: { navigation: [] } } };
-const dataDummy = ref(dataDummyMinimal)
 
 
 </script>
