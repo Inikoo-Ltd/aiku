@@ -50,6 +50,7 @@ const props = defineProps<{
 		data: Array<any>
 	}
 }>()
+console.log(props)
 
 const emits = defineEmits<{
 	(e: 'sendToIframe', value: Object): void
@@ -108,6 +109,9 @@ const autoSave = async (value) => {
   }
 }
 
+const dataDummyMinimal = { data: { component: "SetMenuListWorkshop", fieldValue: { navigation: [] } } };
+const dataDummy = ref(dataDummyMinimal)
+
 
 </script>
 
@@ -130,8 +134,8 @@ const autoSave = async (value) => {
 				<SetMenuListWorkshop :data="data" :autosaveRoute="autosaveRoute" @auto-save="() => autoSave(data)" />
 			</TabPanel>
 			<!-- <TabPanel  v-if="data">
-				<SideEditor 
-					v-model="data.data.fieldValue" 
+				<SideEditor
+					v-model="data.data.fieldValue"
 					:blueprint="Blueprint.blueprint"
 					@update:modelValue="(e) => { data.data.fieldValue = e , autoSave(data)}"
 					:uploadImageRoute="null" />

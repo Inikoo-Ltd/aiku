@@ -63,6 +63,7 @@ const addNavigation = () => {
         id: ulid(),
         type: "single",
     })
+    console.log(props.data.data.fieldValue.navigation);
     debouncedSendUpdate()
 }
 
