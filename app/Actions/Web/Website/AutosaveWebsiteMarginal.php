@@ -72,11 +72,11 @@ class AutosaveWebsiteMarginal extends OrgAction
                 ]
             ]);
         } elseif ($marginal == 'sidebar') {
-            if (!$website->unpublishedMenuSnapshot) {
-                $menuSnapshot = StoreWebsiteSnapshot::run(
+            if (!$website->unpublishedSidebarSnapshot) {
+                $sidebarSnapshot = StoreWebsiteSnapshot::run(
                     $website,
                     [
-                        'scope'  => SnapshotScopeEnum::MENU,
+                        'scope'  => SnapshotScopeEnum::SIDEBAR,
                         'publisher_id'   => Arr::get($modelData, 'publisher_id'),
                         'publisher_type' => Arr::get($modelData, 'publisher_type'),
                         'layout' => []
@@ -85,14 +85,13 @@ class AutosaveWebsiteMarginal extends OrgAction
 
                 $website->update(
                     [
-                        'unpublished_menu_snapshot_id' => $menuSnapshot->id
+                        'unpublished_sidebar_snapshot_id' => $sidebarSnapshot->id
                     ]
                 );
                 $website->refresh();
             }
 
-            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedSidebarSnapshot->layout;
-
+            $layout = Arr::get($modelData, 'layout');
 
             $this->update($website->unpublishedSidebarSnapshot, [
                 'layout' => [

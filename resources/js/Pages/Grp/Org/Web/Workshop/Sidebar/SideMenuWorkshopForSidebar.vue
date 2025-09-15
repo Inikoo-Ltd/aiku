@@ -131,11 +131,11 @@ const dataDummy = ref(dataDummyMinimal)
 			</TabPanel> -->
 			<TabPanel v-if="data">
 				<!-- need fix this components edit drawer -->
-				<SetMenuListWorkshop :data="dataDummy" :autosaveRoute="autosaveRoute" @auto-save="() => autoSave(data)" />
+				<SetMenuListWorkshop :data="data" :autosaveRoute="autosaveRoute" @auto-save="() => autoSave(data)" />
 			</TabPanel>
 			<!-- <TabPanel  v-if="data">
-				<SideEditor 
-					v-model="data.data.fieldValue" 
+				<SideEditor
+					v-model="data.data.fieldValue"
 					:blueprint="Blueprint.blueprint"
 					@update:modelValue="(e) => { data.data.fieldValue = e , autoSave(data)}"
 					:uploadImageRoute="null" />
