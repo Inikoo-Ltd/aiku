@@ -74,7 +74,7 @@ trait WithIrisInertia
                 ['product_categories' => GetIrisProductCategoryNavigation::run($website)]
             ),
             'sidebar'                 => array_merge(
-                $isSidebarActive == 'active' ? Arr::get($website->published_layout, 'sidebar') : [],
+                $isSidebarActive == 'active' ? Arr::get($website->published_layout, 'sidebar', []) : [],
                 ['product_categories' => GetIrisProductCategoryNavigation::run($website)]
             ),
             'shop'                 => [

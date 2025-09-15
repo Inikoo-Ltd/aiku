@@ -59,7 +59,7 @@ const props = defineProps<{
 
 const layout = inject('layout', retinaLayoutStructure)
 const isLoggedIn = inject('isPreviewLoggedIn', false)
-console.log('menu',props)
+
 </script>
 
 <template>

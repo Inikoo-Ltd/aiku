@@ -8,7 +8,6 @@
 
 namespace App\Actions\Web\Webpage\UI;
 
-use App\Actions\Catalogue\ProductCategory\Json\GetIrisProductCategoryNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Web\Website\GetWebsiteWorkshopHeader;
 use App\Actions\Web\Website\GetWebsiteWorkshopMenu;
@@ -37,8 +36,7 @@ class ShowSidebarPreview extends OrgAction
                 'header' => GetWebsiteWorkshopHeader::run($website),
                 'navigation' => GetWebsiteWorkshopMenu::run($website),
                 'sidebar' => GetWebsiteWorkshopSidebar::run($website),
-                'layout' => Arr::get($website->published_layout, 'theme'),
-                'productCategories' => GetIrisProductCategoryNavigation::run($website)
+                'layout' => Arr::get($website->published_layout, 'theme')
             ]
         );
     }
