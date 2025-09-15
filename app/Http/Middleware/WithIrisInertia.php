@@ -33,6 +33,8 @@ trait WithIrisInertia
         $isFooterActive = Arr::get($footerLayout, 'status');
         $menuLayout     = Arr::get($website->published_layout, 'menu');
         $isMenuActive   = Arr::get($menuLayout, 'status');
+        $sidebarLayout     = Arr::get($website->published_layout, 'menu');
+        $isSidebarActive   = Arr::get($sidebarLayout, 'status');
 
 
         $cartCount  = 0;
@@ -69,6 +71,10 @@ trait WithIrisInertia
             ),
             'menu'                 => array_merge(
                 $isMenuActive == 'active' ? Arr::get($website->published_layout, 'menu') : [],
+                ['product_categories' => GetIrisProductCategoryNavigation::run($website)]
+            ),
+            'sidebar'                 => array_merge(
+                $isSidebarActive == 'active' ? Arr::get($website->published_layout, 'sidebar') : [],
                 ['product_categories' => GetIrisProductCategoryNavigation::run($website)]
             ),
             'shop'                 => [

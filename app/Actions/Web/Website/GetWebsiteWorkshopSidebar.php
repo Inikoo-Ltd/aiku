@@ -21,12 +21,14 @@ class GetWebsiteWorkshopSidebar
         if (!Arr::get($website->unpublishedMenuSnapshot, 'layout.sidebar')) {
 
             return [
-                'sidebar'    => Arr::get($website->published_layout, 'sidebar', [])
+                'sidebar'    => Arr::get($website->published_layout, 'sidebar', []),
+                'menu'    => Arr::get($website->published_layout, 'menu', [])
             ];
         }
 
         return [
-            'sidebar'    => Arr::get($website->unpublishedMenuSnapshot, 'layout.sidebar', [])
+            'sidebar'    => Arr::get($website->unpublishedMenuSnapshot, 'layout.sidebar', []),
+            'menu'    => Arr::get($website->unpublishedMenuSnapshot, 'layout.menu', [])
         ];
     }
 }
