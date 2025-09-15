@@ -14,7 +14,7 @@ const layout = useIrisLayoutStore()
 provide('layout', layout)
 
 
-const isOpenMenuMobile = ref(true)
+const isOpenMenuMobile = ref(false)
 provide("isOpenMenuMobile", isOpenMenuMobile);
 </script>
 

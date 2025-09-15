@@ -38,6 +38,7 @@ const props = defineProps<{
     },
     sidebar: {}
 }>()
+const isOpenMenuMobile = inject('isOpenMenuMobile')
 const layout: any = inject("layout", {});
 const isPreviewLoggedIn = ref(false)
 const { mode } = route().params;
@@ -72,6 +73,7 @@ const updateData = (newVal) => {
     sendMessageToParent('autosave', newVal)
 }
 
+
 onMounted(() => {
     layout.app.theme = props.layout.color,
     layout.app.webpage_layout = props.layout
@@ -91,6 +93,9 @@ onMounted(() => {
     });
     checkScreenType()
     window.addEventListener('resize', checkScreenType)
+    if (props.sidebar) {
+        isOpenMenuMobile.value = true
+    }
 });
 
 

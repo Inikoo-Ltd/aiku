@@ -32,6 +32,12 @@ class FetchAuroraProduct extends FetchAurora
             return;
         }
 
+        if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
+            return;
+        }
+
+
+
         $this->parsedData['shop'] = $shop;
 
         $this->parsedData['parent'] = $this->parsedData['shop'];
