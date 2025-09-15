@@ -132,7 +132,9 @@ onBeforeUnmount(() => {
     <div class="py-4" id="basket-recommendations" >
         <Swiper :slides-per-view="slidesPerView ? Math.min(listProducts?.length || 0, slidesPerView || 0) : 4"
             :loop="false" :autoplay="false" :pagination="{ clickable: true }" :modules="[Autoplay]" class="w-full"
-            xstyle="getStyles(fieldValue?.value?.layout?.properties, screenType)" spaceBetween="12">
+            xstyle="getStyles(fieldValue?.value?.layout?.properties, screenType)" spaceBetween="12"
+            autoHeight
+        >
             <div v-if="isLoadingFetch" class="grid grid-cols-4 gap-x-4">
                 <div v-for="xx in 4" class="skeleton w-full h-64 rounded">
 
@@ -142,48 +144,50 @@ onBeforeUnmount(() => {
             <template v-else-if="listProducts?.length">
                 <SwiperSlide v-for="(product, index) in listProducts"
                     :key="index"
-                    class="w-full cursor-grab relative px-4 py-3 rounded flex flex-col justify-between h-full"
+                    class="w-full cursor-grab relative px-4 py-3 rounded !flex !flex-col !justify-between gap-y-4 min-h-full"
                     :class="Number(product.attributes?.stock_qty?.[0]) > 0 ? 'hover:bg-gray-500/10' : 'opacity-75'"
                 >
-                    <!-- Product Image - Always a link -->
-                    <component :is="product.attributes.web_url?.[0] ? Link : 'div'"
-                        :href="product.attributes.web_url?.[0]"
-                        class="block rounded aspect-[5/4] w-full overflow-hidden">
-                        <img :src="product.attributes.image_link" :alt="product.attributes.title"
-                            class="w-full h-full object-contain">
-                    </component>
-
-                    <!-- Title - Always a link -->
-                    <component :is="product.attributes.web_url?.[0] ? Link : 'div'"
-                        :href="product.attributes.web_url?.[0]"
-                        class="font-bold text-sm mt-2 mb-1">
-                        {{ product.attributes.title }}
-                    </component>
-                    <!-- SKU and RRP -->
-                    <div class="flex justify-between text-xs text-gray-500 mb-1 capitalize">
-                        <span>{{ product.attributes.product_code?.[0] }}</span>
-                    </div>
-                    <!-- Rating and Stock -->
-                    <div class="flex justify-between items-center text-xs mb-2">
-                        <div v-if="layout?.iris?.is_logged_in" v-tooltip="trans('Stock')"
-                            class="flex items-center gap-1"
-                            :class="Number(product.attributes?.stock_qty?.[0]) > 0 ? 'text-green-600' : 'text-red-600'">
-                            <FontAwesomeIcon :icon="faCircle" class="text-[8px]" />
-                            <span>{{ Number(product.attributes?.stock_qty?.[0]) > 0 ?
-                                locale.number(Number(product.attributes?.stock_qty?.[0])) : 0 }} {{ trans('available') }}</span>
+                    <div class="">
+                        <!-- Product Image - Always a link -->
+                        <component :is="product.attributes.web_url?.[0] ? Link : 'div'"
+                            :href="product.attributes.web_url?.[0]"
+                            class="block rounded aspect-[5/4] w-full overflow-hidden">
+                            <img :src="product.attributes.image_link" :alt="product.attributes.title"
+                                class="w-full h-full object-contain">
+                        </component>
+                        <!-- Title - Always a link -->
+                        <component :is="product.attributes.web_url?.[0] ? Link : 'div'"
+                            :href="product.attributes.web_url?.[0]"
+                            class="font-bold text-sm mt-2 mb-1">
+                            {{ product.attributes.title }}
+                        </component>
+                        
+                        <!-- SKU and RRP -->
+                        <div class="flex justify-between text-xs text-gray-500 mb-1 capitalize">
+                            <span>{{ product.attributes.product_code?.[0] }}</span>
                         </div>
-                    </div>
-                    <!-- Prices -->
-                    <div v-if="layout?.iris?.is_logged_in" class="mb-3">
-                        <div class="flex justify-between text-sm ">
-                            <span>{{ trans('Price') }}: <span class="font-semibold">{{
-                                    product.attributes.formatted_price }}</span></span>
-                            <!-- <span><span v-tooltip="trans('Recommended retail price')" >{{trans('RRP')}}</span>:  <span class="font-semibold">{{ locale.currencyFormat(layout.iris.currency.code,product.rrp) }}</span></span> -->
+                        <!-- Rating and Stock -->
+                        <div class="flex justify-between items-center text-xs mb-2">
+                            <div v-if="layout?.iris?.is_logged_in" v-tooltip="trans('Stock')"
+                                class="flex items-center gap-1"
+                                :class="Number(product.attributes?.stock_qty?.[0]) > 0 ? 'text-green-600' : 'text-red-600'">
+                                <FontAwesomeIcon :icon="faCircle" class="text-[8px]" />
+                                <span>{{ Number(product.attributes?.stock_qty?.[0]) > 0 ?
+                                    locale.number(Number(product.attributes?.stock_qty?.[0])) : 0 }} {{ trans('available') }}</span>
+                            </div>
+                        </div>
+                        <!-- Prices -->
+                        <div v-if="layout?.iris?.is_logged_in" class="">
+                            <div class="flex justify-between text-sm ">
+                                <span>{{ trans('Price') }}: <span class="font-semibold">{{
+                                        product.attributes.formatted_price }}</span></span>
+                                <!-- <span><span v-tooltip="trans('Recommended retail price')" >{{trans('RRP')}}</span>:  <span class="font-semibold">{{ locale.currencyFormat(layout.iris.currency.code,product.rrp) }}</span></span> -->
+                            </div>
                         </div>
                     </div>
 
                     <!-- Add to Basket Button -->
-                    <div v-if="product.attributes.product_id?.[0]">
+                    <div v-if="product.attributes.product_id?.[0]" class="">
                         <Button v-if="Number(product.attributes?.stock_qty?.[0]) > 0" @click="handleProductClick(product)"
                             :disabled="isProductLoading(product.attributes.product_id[0])" :label="isProductLoading(product.attributes.product_id[0]) ? trans('Adding...') :
                             trans('Add to Basket')" class="w-full justify-center" :loading="isProductLoading(product.attributes.product_id[0])"
