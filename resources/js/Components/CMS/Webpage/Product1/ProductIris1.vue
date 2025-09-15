@@ -15,7 +15,7 @@ import { trans } from "laravel-vue-i18n"
 import { router } from "@inertiajs/vue3"
 import { Image as ImageTS } from '@/types/Image'
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import { set } from "lodash-es"
+import { set, isArray } from "lodash-es"
 import { getStyles } from "@/Composables/styles"
 import axios from "axios"
 
@@ -185,10 +185,9 @@ const toggleExpanded = () => {
   expanded.value = !expanded.value
 }
 
-
-const imagesSetup = ref(
+const imagesSetup = ref(isArray(props.fieldValue.product.images) ? props.fieldValue.product.images :
 	props.fieldValue.product.images
-		.filter(item => item.type === "image")
+		.filter(item => item.type == "image")
 		.map(item => ({
 			label: item.label,
 			column: item.column_in_db,
@@ -201,17 +200,18 @@ const videoSetup = ref(
 )
 
 
-const validImages = computed(() =>
+const validImages = computed(() =>{
+  if(isArray(imagesSetup.value)) return imagesSetup.value
   imagesSetup.value
     .filter(item => item.images) // only keep if images exist
     .flatMap(item => {
-      const images = Array.isArray(item.images) ? item.images : [item.images] // normalize to array
+      const images = Array.isArray(item.images) ? item.images : [item.images] 
       return images.map(img => ({
         source: img,
         thumbnail: img
       }))
     })
-)
+})
 
 </script>
 
@@ -223,7 +223,7 @@ const validImages = computed(() =>
         <div class="grid grid-cols-12 gap-x-10 mb-2"> 
             <div class="col-span-7">
                 <div class="py-1 w-full">
-                    <ImageProducts  :images="validImages" />
+                    <ImageProducts v-if="validImages.length"  :images="validImages" />
                 </div>
                 <div class="flex gap-x-10 text-gray-400 mb-6 mt-4" v-if="fieldValue?.product?.tags?.length">
                     <div class="flex items-center gap-1 text-xs" v-for="(tag, index) in fieldValue.product.tags"
