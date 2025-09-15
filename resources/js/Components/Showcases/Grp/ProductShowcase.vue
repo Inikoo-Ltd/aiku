@@ -106,8 +106,6 @@ const videoSetup = ref(
 	props.data.images.find(item => item.type === "video") || null
 )
 
-const images = computed(() => props.data?.tradeUnit?.data?.images ?? [])
-
 
 const validImages = computed(() =>
   imagesSetup.value
