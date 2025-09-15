@@ -9,6 +9,8 @@
 namespace App\Http\Resources\Catalogue;
 
 use App\Http\Resources\HasSelfCall;
+use App\Http\Resources\Helpers\ImageResource;
+use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -53,9 +55,15 @@ class IrisProductsInWebpageResource extends JsonResource
             }
         }
 
+        $media = null;
+        if ($this->image_id) {
+            $media = Media::find($this->image_id);
+        }
+
         return [
             'id'         => $this->id,
             'image_id'   => $this->image_id,
+            'image'      => $this->image_id ? ImageResource::make($media)->getArray() : null,
             'code'       => $this->code,
             'name'       => $this->name,
             'stock'      => $this->available_quantity,
