@@ -177,7 +177,7 @@ const ListSelectorChange = (value) => {
         form.description = value[0].description
         form.description_title = value[0].description_title
         form.description_extra = value[0].description_extra
-        form.units = value[0]?.units || null
+        form.units = value[0]?.units || 1
     }
     getTableData(tableData.value)
 }
