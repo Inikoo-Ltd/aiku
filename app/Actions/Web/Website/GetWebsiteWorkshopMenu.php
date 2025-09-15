@@ -2,6 +2,7 @@
 
 namespace App\Actions\Web\Website;
 
+use App\Actions\Catalogue\ProductCategory\Json\GetIrisProductCategoryNavigation;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -17,12 +18,30 @@ class GetWebsiteWorkshopMenu
         if (!Arr::get($website->unpublishedMenuSnapshot, 'layout.menu')) {
 
             return [
-                'menu'    => Arr::get($website->published_layout, 'menu', [])
+
+                'menu' => array_merge(Arr::get($website->published_layout, 'menu', []), [
+                    'data' => array_merge(
+                        Arr::get($website->published_layout, 'menu.data', []),
+                        [
+                            'productCategory' => GetIrisProductCategoryNavigation::run($website)
+                        ]
+                    )
+                ])
+
             ];
         }
 
         return [
-            'menu'    => Arr::get($website->unpublishedMenuSnapshot, 'layout.menu', [])
+
+            'menu' => array_merge(Arr::get($website->unpublishedMenuSnapshot, 'layout.menu', []), [
+                'data' => array_merge(
+                    Arr::get($website->unpublishedMenuSnapshot, 'layout.menu.data', []),
+                    [
+                        'productCategory' => GetIrisProductCategoryNavigation::run($website)
+                    ]
+                )
+            ])
+
         ];
     }
 }
