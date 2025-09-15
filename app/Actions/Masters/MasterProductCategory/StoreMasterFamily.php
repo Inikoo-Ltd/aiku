@@ -26,10 +26,8 @@ use Lorisleiva\Actions\ActionRequest;
 class StoreMasterFamily extends OrgAction
 {
     /**
-     * @var \App\Models\Masters\MasterProductCategory|\App\Models\Masters\MasterShop
+     * @throws \Throwable
      */
-    private MasterShop|MasterProductCategory $parent;
-
     public function handle(MasterProductCategory|MasterShop $parent, array $modelData): MasterProductCategory
     {
         return DB::transaction(function () use ($parent, $modelData) {
@@ -61,9 +59,9 @@ class StoreMasterFamily extends OrgAction
                 ),
             ],
             'name'        => ['required', 'max:250', 'string'],
-            'description'       => ['sometimes', 'nullable', 'max:1500'],
-            'description_title' => ['sometimes', 'nullable', 'max:1500'],
-            'description_extra' => ['sometimes', 'nullable', 'max:1500'],
+            'description'       => ['sometimes', 'nullable', 'max:10000'],
+            'description_title' => ['sometimes', 'nullable', 'max:400'],
+            'description_extra' => ['sometimes', 'nullable', 'max:10000'],
             'image'       => [
                 'sometimes',
                 'nullable',
@@ -85,7 +83,6 @@ class StoreMasterFamily extends OrgAction
 
     public function asController(MasterShop $masterShop, ActionRequest $request): MasterProductCategory
     {
-        $this->parent = $masterShop;
         $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($masterShop, $this->validatedData);

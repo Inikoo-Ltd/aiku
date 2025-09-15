@@ -29,7 +29,6 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
-use Lorisleiva\Actions\ActionRequest;
 
 class StoreMasterProductCategory extends GrpAction
 {
@@ -45,6 +44,7 @@ class StoreMasterProductCategory extends GrpAction
      */
     public function handle(MasterProductCategory|MasterShop $parent, array $modelData): MasterProductCategory
     {
+
         $imageData = ['image' => Arr::pull($modelData, 'image')];
         data_set($modelData, 'group_id', $parent->group_id);
         if ($parent instanceof MasterProductCategory) {
@@ -187,13 +187,5 @@ class StoreMasterProductCategory extends GrpAction
         return $this->handle($parent, $this->validatedData);
     }
 
-    /**
-     * @throws \Throwable
-     */
-    public function inDepartment(MasterShop $masterShop, MasterProductCategory $masterProductCategory, ActionRequest $request): MasterProductCategory
-    {
-        $this->initialisation($masterShop->group, $request);
 
-        return $this->handle(parent: $masterProductCategory, modelData: $this->validatedData);
-    }
 }

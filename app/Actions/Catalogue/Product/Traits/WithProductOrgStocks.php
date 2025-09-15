@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Product\Traits;
 
 use App\Actions\Catalogue\Product\AttachTradeUnitToProduct;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
@@ -57,10 +58,7 @@ trait WithProductOrgStocks
     protected function syncOrgStocks(Product $product, array $orgStocksRaw): Product
     {
         $orgStocks = $this->processOrgStocks($orgStocksRaw);
-
         $product->orgStocks()->sync($orgStocks);
-
-
         return $product;
     }
 

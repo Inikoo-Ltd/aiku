@@ -254,14 +254,14 @@ class IndexMasterFamilies extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Departments'),
+                'title'       => __('Master Families'),
                 'pageHead'    => [
                     'title'         => $title,
                     'icon'          => $icon,
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
-                    'actions'       => $this->getActions($request),
+                    'actions'       => $this->getActions(),
                     'subNavigation' => $subNavigation,
                 ],
                 'storeRoute' =>  match ($this->parent::class) {
@@ -292,32 +292,9 @@ class IndexMasterFamilies extends OrgAction
         )->table($this->tableStructure($this->parent));
     }
 
-    public function getActions(ActionRequest $request): array
+    public function getActions(): array
     {
         $actions = [];
-
-
-        $createRoute = "grp.masters.master_shops.show.master_families.create";
-
-        if ($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
-            $createRoute = "grp.masters.master_sub_departments.show.master_families.create";
-        } elseif ($this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
-            match ($request->route()->getName()) {
-                'grp.masters.master_departments.show.master_families.index' =>
-                $createRoute = 'grp.masters.master_departments.show.master_families.create',
-                'grp.masters.master_shops.show.master_departments.show.master_families.index' =>
-                $createRoute = 'grp.masters.master_shops.show.master_departments.show.master_families.create',
-                default => $createRoute
-            };
-        } elseif ($this->parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
-            match ($request->route()->getName()) {
-                'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.index' =>
-                $createRoute = 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.create',
-                'grp.masters.master_departments.show.master_families.index' =>
-                $createRoute = 'grp.masters.master_departments.show.master_families.create',
-                default => $createRoute
-            };
-        }
 
         if ($this->parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT || $this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
             $actions[] = [
@@ -326,10 +303,6 @@ class IndexMasterFamilies extends OrgAction
                 'style'   => 'create',
                 'tooltip' => __('Create master family'),
                 'label'   => __('Master Family'),
-                'route'   => [
-                    'name'       => $createRoute,
-                    'parameters' => $request->route()->originalParameters()
-                ]
             ];
         }
 
