@@ -163,27 +163,27 @@ onMounted(() => {
 <template>
   <div class="space-y-3">
     <!-- Language Selector + Translate All -->
-    <div class="flex flex-wrap items-center gap-1 px-3">
-      <!-- Language buttons -->
-      <Button v-for="lang in Object.values(fieldData.languages)" :key="lang.code + selectedLang" :label="lang.name"
-        size="xs" :type="selectedLang === lang.code ? 'primary' : 'gray'" @click="selectedLang = lang.code">
-        <template #icon>
-         
-          <!-- Check/empty circle -->
-          <FontAwesomeIcon :icon="langBuffers[lang.code] ? faCheckCircle : faCircle"
-            :class="langBuffers[lang.code] ? 'text-green-500' : 'text-gray-400'" 
-            aria-hidden="true" />
+    <div class="flex gap-3 px-3">
+      <!-- Language buttons (kiri 50%) -->
+      <div class="flex flex-wrap gap-1 basis-[90%]">
+        <Button v-for="lang in Object.values(fieldData.languages)" :key="lang.code + selectedLang" :label="lang.name"
+          size="xxs" :type="selectedLang === lang.code ? 'primary' : 'gray'" @click="selectedLang = lang.code">
+          <template #icon>
+            <FontAwesomeIcon :icon="langBuffers[lang.code] ? faCheckCircle : faCircle"
+              :class="langBuffers[lang.code] ? 'text-green-500' : 'text-gray-400'" aria-hidden="true" />
+            <img v-if="lang.flag" :src="`/flags/${lang.flag}`" alt="" />
+          </template>
+        </Button>
+      </div>
 
-          <img v-if="lang.flag" :src="`/flags/${lang.flag}`" alt="" class="" />
-        </template>
-      </Button>
-
-
-      <!-- Translate All button -->
-      <Button class="ml-auto" :label="loadingAll ? 'Translating...' : 'Translate All'" size="xxs" type="rainbow"
-        :icon="faRobot" :disabled="loadingAll || loadingOne || isDisabled" @click="generateAllTranslationsAI"
-        :loading="loadingAll" />
+      <!-- Translate All button (kanan 50%) -->
+      <div class="flex justify-end items-start basis-[10%]">
+        <Button :label="loadingAll ? 'Translating...' : 'Translate All'" size="xxs" type="rainbow" :icon="faRobot"
+          :disabled="loadingAll || loadingOne || isDisabled" @click="generateAllTranslationsAI" :loading="loadingAll" />
+      </div>
     </div>
+
+
 
     <!-- Translation Section -->
     <div v-if="selectedLang" class="space-y-3">
@@ -191,10 +191,10 @@ onMounted(() => {
         <!-- Original -->
         <div class="p-3 rounded-lg border bg-gray-50 shadow-sm">
           <p class="text-xs font-semibold text-gray-500 mb-1">
-            Original ({{ fieldData.mainLang || "en" }})
+            {{ fieldData.mainLang || "en" }}
           </p>
           <p class="text-sm text-gray-700 whitespace-pre-wrap py-4">
-            {{ fieldData.main ? fieldData.main : 'No content available' }}
+            {{ fieldData.main }}
           </p>
         </div>
 
@@ -204,7 +204,7 @@ onMounted(() => {
             <p class="text-xs font-semibold text-gray-500 mb-1">
               {{ langLabel(selectedLang) }}
             </p>
-            <Button :label="loadingOne ? 'Generating...' : 'Generate AI'" size="xxs" type="rainbow" :icon="faRobot"
+            <Button :label="loadingOne ? 'Translate...' : 'Translate'" size="xxs" type="rainbow" :icon="faRobot"
               :disabled="isDisabled" @click="generateLanguagetranslateAI" :loading="loadingOne" />
           </div>
 
