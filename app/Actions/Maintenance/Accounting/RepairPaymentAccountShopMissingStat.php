@@ -2,11 +2,11 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 13 Aug 2025 10:34:13 Central European Summer Time, Torremolinos, Spain
+ * Created: Mon, 15 Sept 2025 12:58:57 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Maintenance\Catalogue;
+namespace App\Actions\Maintenance\Accounting;
 
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\PaymentAccountShop;
