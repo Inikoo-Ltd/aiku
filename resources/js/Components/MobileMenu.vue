@@ -31,28 +31,28 @@ const activeSubIndex = ref(null); // active subdepartment
 // Computed properties for sorted data
 const sortedProductCategories = computed(() => {
     if (!props.productCategories) return [];
-    return [...props.productCategories].sort((a, b) => 
+    return [...props.productCategories].sort((a, b) =>
         (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' })
     );
 });
 
 const sortedNavigation = computed(() => {
     if (!props.menu?.navigation) return [];
-    return [...props.menu.navigation].sort((a, b) => 
+    return [...props.menu.navigation].sort((a, b) =>
         (a.label || '').localeCompare(b.label || '', undefined, { sensitivity: 'base' })
     );
 });
 
 const sortedSubDepartments = computed(() => {
     if (activeIndex.value === null || !sortedProductCategories.value[activeIndex.value]?.sub_departments) return [];
-    return [...sortedProductCategories.value[activeIndex.value].sub_departments].sort((a, b) => 
+    return [...sortedProductCategories.value[activeIndex.value].sub_departments].sort((a, b) =>
         (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' })
     );
 });
 
 const sortedFamilies = computed(() => {
     if (activeSubIndex.value === null || !sortedSubDepartments.value[activeSubIndex.value]?.families) return [];
-    return [...sortedSubDepartments.value[activeSubIndex.value].families].sort((a, b) => 
+    return [...sortedSubDepartments.value[activeSubIndex.value].families].sort((a, b) =>
         (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' })
     );
 });
@@ -177,7 +177,7 @@ console.log('layout', layout)
                     <div v-for="(item, index) in sortedProductCategories" :key="index" class="p-2 px-4 flex items-center justify-between cursor-pointer transition-colors duration-200"
                         :class="[
                             activeIndex === index
-                                ? `bg-gray-100 font-semibold text-[${layout.iris.theme.color[0]}]`
+                                ? `bg-gray-100 font-semibold text-[${layout.iris.theme?.color[0]}]`
                                 : ' hover:bg-gray-50'
                         ]" @click="setActiveCategory(index)">
                         <div>{{ item.name }}</div>
@@ -198,7 +198,7 @@ console.log('layout', layout)
                             class="p-2 px-4 flex items-center justify-between cursor-pointer transition-colors duration-200"
                             :class="[
                                 activeSubIndex === sIndex
-                                    ? `bg-gray-100 font-semibold text-[${layout.iris.theme.color[0]}]`
+                                    ? `bg-gray-100 font-semibold text-[${layout.iris.theme?.color[0]}]`
                                     : 'hover:bg-gray-50 text-gray-700'
                             ]" @click="activeSubIndex = sIndex">
                             <div>{{ sub.name }}</div>

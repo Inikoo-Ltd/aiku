@@ -38,6 +38,7 @@ const props = defineProps<{
     },
     sidebar: {}
 }>()
+const isOpenMenuMobile = inject('isOpenMenuMobile')
 const layout: any = inject("layout", {});
 const isPreviewLoggedIn = ref(false)
 const { mode } = route().params;
@@ -50,7 +51,7 @@ const defaultCurrency = {
   symbol: "£",
   name: "British Pound"
 }
-
+console.log('asasddasd', props)
 // Update iris layout state
 const updateIrisLayout = (isLoggedIn: boolean) => {
   layout.iris = {
@@ -72,6 +73,7 @@ const updateData = (newVal) => {
     sendMessageToParent('autosave', newVal)
 }
 
+
 onMounted(() => {
     layout.app.theme = props.layout.color,
     layout.app.webpage_layout = props.layout
@@ -91,6 +93,9 @@ onMounted(() => {
     });
     checkScreenType()
     window.addEventListener('resize', checkScreenType)
+    if (props.sidebar) {
+        isOpenMenuMobile.value = true
+    }
 });
 
 
@@ -126,12 +131,12 @@ watch(isPreviewLoggedIn, (value) => {
 
         <div class="shadow-xl" :class="props.layout?.layout == 'fullscreen' ? 'w-full' : 'container max-w-7xl mx-auto'">
             <div>
-                <RenderHeaderMenu 
-                    v-if="header?.data" 
-                    :data="header.data" 
+                <RenderHeaderMenu
+                    v-if="header?.data"
+                    :data="header.data"
                     :menu="navigation"
-                    :loginMode="isPreviewLoggedIn" 
-                    @update:model-value="updateData(header.data)" 
+                    :loginMode="isPreviewLoggedIn"
+                    @update:model-value="updateData(header.data)"
                     :screenType="screenType"
                 />
             </div>
@@ -163,16 +168,16 @@ watch(isPreviewLoggedIn, (value) => {
 .is-not-mode-iris {
     .hover-dashed {
         @apply relative;
-    
+
         &::after {
             content: "";
             @apply absolute inset-0 hover:bg-gray-200/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
         }
     }
-    
+
     .hover-text-input {
         @apply relative isolate;
-    
+
         &::after {
             content: "";
             @apply -z-10 absolute inset-0 hover:bg-yellow-500/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;

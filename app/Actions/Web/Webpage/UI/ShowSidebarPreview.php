@@ -36,7 +36,7 @@ class ShowSidebarPreview extends OrgAction
                 'header' => GetWebsiteWorkshopHeader::run($website),
                 'navigation' => GetWebsiteWorkshopMenu::run($website),
                 'sidebar' => GetWebsiteWorkshopSidebar::run($website),
-                'layout' => Arr::get($website->published_layout, 'theme'),
+                'layout' => Arr::get($website->published_layout, 'theme')
             ]
         );
     }
