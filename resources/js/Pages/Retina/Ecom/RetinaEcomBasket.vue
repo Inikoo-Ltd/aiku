@@ -257,18 +257,20 @@ const onAddProducts = async (product: Product) => {
             onSuccess: () => {
                 // Luigi: event add to cart
                 if (!product?.transaction_id) {
-                    window?.dataLayer?.push({
-                        event: "add_to_cart",
-                        ecommerce: {
-                            currency: layout?.iris?.currency?.code,
-                            value: product.price,
-                            items: [
-                                {
-                                    item_id: product?.luigi_identity,
-                                }
-                            ]
-                        }
-                    })
+                    if (!product?.transaction_id) {
+                        window?.dataLayer?.push({
+                            event: "add_to_cart",
+                            ecommerce: {
+                                currency: layout?.iris?.currency?.code,
+                                value: product.price,
+                                items: [
+                                    {
+                                        item_id: product?.luigi_identity,
+                                    }
+                                ]
+                            }
+                        })
+                    }
                 }
                 listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'success'
             },
@@ -281,7 +283,7 @@ const onAddProducts = async (product: Product) => {
         })
 }
 
-const onAddProductFromRecommender = async (productId: string, productCode: string) => {
+const onAddProductFromRecommender = async (productId: string, productCode: string, productLuigi: {}) => {
     // Check if product already exists in transactions
     const existingTransaction = props.transactions?.data?.find(transaction => 
         transaction.asset_code === productCode
@@ -335,6 +337,20 @@ const onAddProductFromRecommender = async (productId: string, productCode: strin
                     text: trans("Product added to basket"),
                     type: "success"
                 })
+                
+                window?.dataLayer?.push({
+                    event: "add_to_cart",
+                    ecommerce: {
+                        currency: layout?.iris?.currency?.code,
+                        value: productLuigi?.attributes?.price || 0,
+                        items: [
+                            {
+                                item_id: productLuigi?.url,
+                            }
+                        ]
+                    }
+                })
+
                 listLoadingProducts.value[`recommender-${productId}`] = 'success'
             },
             onFinish: () => {
@@ -560,7 +576,7 @@ const onChangePriorityDispatch = async (val: boolean) => {
             <h2 class="text-2xl font-bold text-center p-4 mb-2">{{ trans('You might also like') }}</h2>
             <div class="bg-white p-4 rounded-md shadow-lg">
                 <BasketRecommendations
-                    @add-to-basket="(productId: string, productCode: string) => onAddProductFromRecommender(productId, productCode)"
+                    @add-to-basket="(productId: string, productCode: string, productLuigi: {}) => onAddProductFromRecommender(productId, productCode, productLuigi)"
                     :listLoadingProducts
                     :blacklistItems="blackListProductIds"
                 />
