@@ -80,7 +80,8 @@ class StoreMasterAsset extends OrgAction
             $this->processTradeUnits($masterAsset, $tradeUnits);
             $masterAsset->refresh();
 
-            if ($masterAsset->type == MasterAssetTypeEnum::PRODUCT) {
+            if ($masterAsset->type == MasterAssetTypeEnum::PRODUCT  && count($shopProducts) > 0) {
+
                 StoreProductFromMasterProduct::make()->action($masterAsset, [
                     'shop_products' => $shopProducts
                 ]);
@@ -104,7 +105,7 @@ class StoreMasterAsset extends OrgAction
         return $masterAsset;
     }
 
-    public function processTradeUnits(MasterAsset $masterAsset, array $tradeUnits)
+    public function processTradeUnits(MasterAsset $masterAsset, array $tradeUnits): void
     {
         $stocks = [];
         foreach ($tradeUnits as $item) {
