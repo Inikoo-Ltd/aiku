@@ -18,7 +18,7 @@ class GetWebsiteWorkshopSidebar
 
     public function handle(Website $website): array
     {
-        if (!Arr::get($website->unpublishedMenuSnapshot, 'layout.sidebar')) {
+        if (!Arr::get($website->unpublishedSidebarSnapshot, 'layout.sidebar')) {
 
             return [
                 'sidebar'    => Arr::get($website->published_layout, 'sidebar', []),
@@ -27,7 +27,7 @@ class GetWebsiteWorkshopSidebar
         }
 
         return [
-            'sidebar'    => Arr::get($website->unpublishedMenuSnapshot, 'layout.sidebar', []),
+            'sidebar'    => Arr::get($website->unpublishedSidebarSnapshot, 'layout.sidebar', []),
             'menu'    => Arr::get($website->unpublishedMenuSnapshot, 'layout.menu', [])
         ];
     }
