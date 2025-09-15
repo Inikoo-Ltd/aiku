@@ -66,7 +66,7 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
         foreach ($openShops as $shop) {
             $orgStocksData = $organisationsData[$shop->organisation_id]['org_stocks_data'];
 
-            if ($orgStocksData['org_cost'] ==- null) {
+            if ($orgStocksData['org_cost'] == - null) {
                 $shopCost = null;
                 $price    = null;
                 $rrp      = null;
@@ -81,7 +81,7 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
             $orgStocksData['price']         = $price;
             $orgStocksData['rrp']           = $rrp;
             $orgStocksData['gross_weight']  = $tradeUnits[0]['model']->gross_weight * $tradeUnits[0]['quantity'];
-            $organisationsData['images']    = $shop->organisation->media->map(fn($media) => [
+            $organisationsData['images']    = $shop->organisation->media->map(fn ($media) => [
                 'id'  => $media->id,
                 'url' => $media->getUrl()
             ]);

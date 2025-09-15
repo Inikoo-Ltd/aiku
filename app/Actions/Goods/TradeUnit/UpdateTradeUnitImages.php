@@ -28,21 +28,27 @@ class UpdateTradeUnitImages extends GrpAction
     public function handle(TradeUnit $tradeUnit, array $modelData, bool $updateDependants = false): TradeUnit
     {
         $imageTypeMapping = [
-            'image_id' => 'main',
-            'front_image_id' => 'front',
-            '34_image_id' => '34',
-            'left_image_id' => 'left',
-            'right_image_id' => 'right',
-            'back_image_id' => 'back',
-            'top_image_id' => 'top',
-            'bottom_image_id' => 'bottom',
+            'image_id'                 => 'main',
+            'front_image_id'           => 'front',
+            '34_image_id'              => '34',
+            'left_image_id'            => 'left',
+            'right_image_id'           => 'right',
+            'back_image_id'            => 'back',
+            'top_image_id'             => 'top',
+            'bottom_image_id'          => 'bottom',
             'size_comparison_image_id' => 'size_comparison',
-            'lifestyle_image_id' => 'lifestyle',
+            'lifestyle_image_id'       => 'lifestyle',
+            'art1_image_id'            => 'art1',
+            'art2_image_id'            => 'art2',
+            'art3_image_id'            => 'art3',
+            'art4_image_id'            => 'art4',
+            'art5_image_id'            => 'art5',
+
         ];
 
         $imageKeys = collect($imageTypeMapping)
             ->keys()
-            ->filter(fn ($key) => Arr::exists($modelData, $key))
+            ->filter(fn($key) => Arr::exists($modelData, $key))
             ->toArray();
 
         foreach ($imageKeys as $imageKey) {
@@ -52,8 +58,8 @@ class UpdateTradeUnitImages extends GrpAction
                 $tradeUnit->images()->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
                     ->updateExistingPivot(
                         $tradeUnit->images()
-                        ->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
-                        ->first()?->id,
+                            ->wherePivot('sub_scope', $imageTypeMapping[$imageKey])
+                            ->first()?->id,
                         ['sub_scope' => null]
                     );
             } else {
@@ -80,11 +86,13 @@ class UpdateTradeUnitImages extends GrpAction
 
     public function updateDependencies(TradeUnit $tradeUnit, array $modelData): void
     {
-        foreach (DB::table('model_has_trade_units')
-            ->select('model_type', 'model_id')
-            ->where('trade_unit_id', $tradeUnit->id)
-            ->whereIn('model_type', ['MasterAsset','Product'])
-            ->get() as $modelsData) {
+        foreach (
+            DB::table('model_has_trade_units')
+                ->select('model_type', 'model_id')
+                ->where('trade_unit_id', $tradeUnit->id)
+                ->whereIn('model_type', ['MasterAsset', 'Product'])
+                ->get() as $modelsData
+        ) {
             if ($modelsData->model_type == 'MasterAsset') {
                 $masterAsset = MasterAsset::find($modelsData->model_id);
                 if ($masterAsset && $masterAsset->is_single_trade_unit) {
@@ -102,17 +110,22 @@ class UpdateTradeUnitImages extends GrpAction
     public function rules(): array
     {
         return [
-            'image_id' => ['sometimes', 'nullable', 'exists:media,id'],
-            'front_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
-            '34_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
-            'left_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
-            'right_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
-            'back_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
-            'top_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
-            'bottom_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
+            'image_id'                 => ['sometimes', 'nullable', 'exists:media,id'],
+            'front_image_id'           => ['sometimes', 'nullable', 'exists:media,id'],
+            '34_image_id'              => ['sometimes', 'nullable', 'exists:media,id'],
+            'left_image_id'            => ['sometimes', 'nullable', 'exists:media,id'],
+            'right_image_id'           => ['sometimes', 'nullable', 'exists:media,id'],
+            'back_image_id'            => ['sometimes', 'nullable', 'exists:media,id'],
+            'top_image_id'             => ['sometimes', 'nullable', 'exists:media,id'],
+            'bottom_image_id'          => ['sometimes', 'nullable', 'exists:media,id'],
             'size_comparison_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
-            'video_url' => ['sometimes', 'nullable'],
-            'lifestyle_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
+            'art1_image_id'            => ['sometimes', 'nullable', 'exists:media,id'],
+            'art2_image_id'            => ['sometimes', 'nullable', 'exists:media,id'],
+            'art3_image_id'            => ['sometimes', 'nullable', 'exists:media,id'],
+            'art4_image_id'            => ['sometimes', 'nullable', 'exists:media,id'],
+            'art5_image_id'            => ['sometimes', 'nullable', 'exists:media,id'],
+            'video_url'                => ['sometimes', 'nullable'],
+            'lifestyle_image_id'       => ['sometimes', 'nullable', 'exists:media,id'],
         ];
     }
 

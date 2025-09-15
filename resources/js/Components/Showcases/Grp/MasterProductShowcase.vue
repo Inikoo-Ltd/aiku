@@ -20,6 +20,7 @@ import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import { faImage } from "@far"
 import ProductSummary from "@/Components/Product/ProductSummary.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { trans } from "laravel-vue-i18n"
 
 
 library.add(
@@ -150,20 +151,20 @@ const locale = inject("locale", aikuLocaleStructure)
 					<dt class="text-gray-500">{{ trans("Stock") }}</dt>
 					<dd class="flex items-center gap-2 font-medium">
 						<FontAwesomeIcon :icon="['fas', 'circle']" :class="[
-							data.product.data?.stock > 20
+							data.masterProduct.data?.stock > 20
 								? 'text-green-500'
-								: data.product.data?.stock > 0
+								: data.masterProduct.data?.stock > 0
 									? 'text-orange-500'
 									: 'text-red-500'
 						]" />
 						<span :class="[
-							data.product.data?.stock > 20
+							data.masterProduct.data?.stock > 20
 								? 'text-green-600'
-								: data.product.data?.stock > 0
+								: data.masterProduct.data?.stock > 0
 									? 'text-orange-600'
 									: 'text-red-600 font-semibold'
 						]">
-							{{ data.product.data?.stock }} {{ data.product.data?.unit }}
+							{{ data.masterProduct.data?.stock }} {{ data.masterProduct.data?.unit }}
 						</span>
 					</dd>
 				</div>
@@ -174,7 +175,7 @@ const locale = inject("locale", aikuLocaleStructure)
 				<div class="flex justify-between items-center flex-wrap gap-2">
 					<dt class="text-gray-500">{{ trans("Cost") }}</dt>
 					<dd class="font-medium text-blue-600">
-						{{ locale.currencyFormat(data.product.data?.currency_code, data.product.data?.cost) || '-' }}
+						{{ locale.currencyFormat(data.masterProduct.data?.currency_code, data.masterProduct.data?.cost) || '-' }}
 					</dd>
 				</div>
 
@@ -182,7 +183,7 @@ const locale = inject("locale", aikuLocaleStructure)
 				<div class="flex justify-between items-center flex-wrap gap-2">
 					<dt class="text-gray-500">{{ trans("Price") }}</dt>
 					<dd class="font-semibold text-green-600 text-lg">
-						{{ locale.currencyFormat(data.product.data?.currency_code, data.product.data?.price) }}
+						{{ locale.currencyFormat(data.masterProduct.data?.currency_code, data.masterProduct.data?.price) }}
 					</dd>
 				</div>
 
@@ -191,10 +192,10 @@ const locale = inject("locale", aikuLocaleStructure)
 					<dt class="text-gray-500">RRP</dt>
 					<dd class="flex items-center gap-2 font-semibold text-gray-700">
 						<span>
-							{{ locale.currencyFormat(data.product.data?.currency_code, data.product.data?.rrp) }}
+							{{ locale.currencyFormat(data.masterProduct.data?.currency_code, data.masterProduct.data?.rrp) }}
 						</span>
 						<span class="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600">
-							({{ ((data.product.data?.rrp - data.product.data?.price) / data.product.data?.price *
+							({{ ((data.masterProduct.data?.rrp - data.masterProduct.data?.price) / data.masterProduct.data?.price *
 								100).toFixed(2) }}%)
 						</span>
 					</dd>

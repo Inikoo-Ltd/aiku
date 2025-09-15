@@ -61,6 +61,11 @@ class CloneProductImagesFromTradeUnits implements ShouldBeUnique
             'top_image_id'             => $tradeUnit->top_image_id,
             'bottom_image_id'          => $tradeUnit->bottom_image_id,
             'size_comparison_image_id' => $tradeUnit->size_comparison_image_id,
+            'art1_image_id'            => $tradeUnit->art1_image_id,
+            'art2_image_id'            => $tradeUnit->art2_image_id,
+            'art3_image_id'            => $tradeUnit->art3_image_id,
+            'art4_image_id'            => $tradeUnit->art4_image_id,
+            'art5_image_id'            => $tradeUnit->art5_image_id,
             'lifestyle_image_id'       => $tradeUnit->lifestyle_image_id,
         ]);
 

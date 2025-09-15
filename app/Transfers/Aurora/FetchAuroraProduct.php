@@ -57,7 +57,7 @@ class FetchAuroraProduct extends FetchAurora
             $this->parsedData['parent'] = $family;
         }
 
-        if(  $this->parsedData['parent']===null){
+        if ($this->parsedData['parent'] === null) {
             $this->parsedData['shop'] = $shop;
         }
 
