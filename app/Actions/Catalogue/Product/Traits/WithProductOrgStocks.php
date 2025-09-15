@@ -9,7 +9,6 @@
 namespace App\Actions\Catalogue\Product\Traits;
 
 use App\Actions\Catalogue\Product\AttachTradeUnitToProduct;
-use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
