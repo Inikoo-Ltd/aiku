@@ -80,10 +80,11 @@ const submitForm = async (redirect = true) => {
     const finalDataTable: Record<number, { price: number | string }> = {}
     for (const tableDataItem of tableData.value.data) {
         finalDataTable[tableDataItem.id] = {
-            create_webpage: tableDataItem.create_webpage,
+            create_webpage: tableDataItem.create_webpage || false,
         }
     }
 
+ 
     // Build payload manual
     const payload: any = {
         ...form.data(),
