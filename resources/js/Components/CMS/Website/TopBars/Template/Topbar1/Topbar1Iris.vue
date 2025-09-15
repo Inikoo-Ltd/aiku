@@ -104,7 +104,7 @@ const urlLoginWithRedirect = () => {
 
             <!-- Section: Profile -->
             <ButtonWithLink v-if="checkVisible(model?.profile?.visible || null, isLoggedIn)"
-                v-tooltip="trans('Profile')" url="/app/profile" icon="fal fa-user" type="transparent" :noHover="true">
+                v-tooltip="trans('Profile')" :url="layout.retina?.type == 'b2b' ? '/app/dashboard' : '/app/profile'" icon="fal fa-user" type="transparent" :noHover="true">
                  <template #icon>
                     <FontAwesomeIcon icon="fal fa-user" :style="{ color: 'white' }" fixed-width
                         aria-hidden="true" />

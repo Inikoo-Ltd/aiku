@@ -30,6 +30,7 @@ const props = defineProps<{
     screenType: 'mobile' | 'tablet' | 'desktop'
     loginMode:Boolean
     previewMode?:Boolean
+    sidebar?:any
 }>()
 
 const { mode } = route().params;
@@ -37,7 +38,7 @@ const { mode } = route().params;
 const emits = defineEmits<{
     (e: 'update:modelValue', value: string | number): void
 }>()
-console.log('ssss',props)
+
 </script>
 
 <template>
@@ -83,6 +84,7 @@ console.log('ssss',props)
                 :menu-data="menu?.menu?.data?.fieldValue"
                 :productCategories="menu?.menu?.data.productCategory" 
                 :screenType="screenType" 
+                :sidebar
             />
         </div>
 </template>

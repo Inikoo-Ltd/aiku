@@ -15,7 +15,7 @@ import { trans } from "laravel-vue-i18n"
 import { router, Link } from "@inertiajs/vue3"
 import { Image as ImageTS } from '@/types/Image'
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import { set } from "lodash-es"
+import { set, isArray } from "lodash-es"
 import { getStyles } from "@/Composables/styles"
 import axios from "axios"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -166,9 +166,9 @@ const urlLoginWithRedirect = () => {
 }
 
 
-const imagesSetup = ref(
+const imagesSetup = ref(isArray(props.fieldValue.product.images) ? props.fieldValue.product.images :
 	props.fieldValue.product.images
-		.filter(item => item.type === "image")
+		.filter(item => item.type == "image")
 		.map(item => ({
 			label: item.label,
 			column: item.column_in_db,
@@ -181,18 +181,18 @@ const videoSetup = ref(
 )
 
 
-const validImages = computed(() =>
+const validImages = computed(() =>{
+  if(isArray(imagesSetup.value)) return imagesSetup.value
   imagesSetup.value
     .filter(item => item.images) // only keep if images exist
     .flatMap(item => {
-      const images = Array.isArray(item.images) ? item.images : [item.images] // normalize to array
+      const images = Array.isArray(item.images) ? item.images : [item.images] 
       return images.map(img => ({
         source: img,
         thumbnail: img
       }))
     })
-)
-
+})
 </script>
 
 <template>

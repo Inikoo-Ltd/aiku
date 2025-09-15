@@ -24,6 +24,7 @@ class GetMasterProductImages
     {
         return [
             'id' => $masterAsset->id,
+            'bucket_images'       => $masterAsset->bucket_images,
             'images_category_box' => $this->getImagesData($masterAsset),
             'images_update_route' => [
                 'method'     => 'patch',

@@ -163,7 +163,7 @@ class StoreMasterAsset extends OrgAction
             'price'                    => ['sometimes', 'numeric', 'min:0'],
             'unit'                     => ['sometimes', 'required', 'string'],
             'rrp'                      => ['sometimes', 'required', 'numeric', 'min:0'],
-            'description'              => ['sometimes', 'nullable', 'max:10000'],
+            'description'              => ['sometimes', 'nullable', 'max:15000'],
             'data'                     => ['sometimes', 'array'],
             'is_main'                  => ['sometimes', 'boolean'],
             'main_master_asset_id'     => [
@@ -178,8 +178,8 @@ class StoreMasterAsset extends OrgAction
             'type'                     => ['required', Rule::enum(MasterAssetTypeEnum::class)],
             'shop_products'            => ['sometimes', 'array'],
             'units'                  => ['sometimes'],
-            'description_title'      => ['sometimes', 'string', 'nullable'],
-            'description_extra'      => ['sometimes', 'string', 'nullable'],
+            'description_title'      => ['sometimes', 'string', 'nullable', 'max:300'],
+            'description_extra'      => ['sometimes', 'string', 'nullable', 'max:15000'],
             'marketing_weight'       => ['sometimes', 'numeric', 'min:0'],
 
         ];

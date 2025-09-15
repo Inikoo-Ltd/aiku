@@ -23,7 +23,7 @@ class GetWebBlockProduct
 
         $permissions =  [];
 
-        $resourceWebBlockProduct = null;
+
         if ($webpage->shop->type == ShopTypeEnum::B2B) {
             $resourceWebBlockProduct = WebBlockProductResourceEcom::make($webpage->model)->toArray(request());
         } else {

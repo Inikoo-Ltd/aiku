@@ -10,7 +10,6 @@
 namespace App\Actions\Inventory\OrgStock\UI;
 
 use App\Actions\OrgAction;
-use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Inventory\OrgStock;
@@ -72,7 +71,7 @@ class IndexOrgStocksInProduct extends OrgAction
                 ->defaultSort('code')
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations);
-                
+
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'code', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
 
