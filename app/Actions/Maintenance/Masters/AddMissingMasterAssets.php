@@ -86,6 +86,7 @@ class AddMissingMasterAssets
                     'price'       => $price
                 ]
             );
+
         } else {
             $foundMasterProduct = MasterAsset::find($foundMasterAssetData->id);
 
@@ -103,34 +104,36 @@ class AddMissingMasterAssets
             );
         }
 
-        if ($foundMasterProduct) {
-            $markForDiscontinued = false;
-            $status              = true;
-            $maskForDiscontinued = null;
-            $discontinuedAt      = null;
+
+        $markForDiscontinued = false;
+        $status              = true;
+        $maskForDiscontinued = null;
+        $discontinuedAt      = null;
 
 
-            if ($product->state == ProductStateEnum::DISCONTINUED) {
-                $status              = false;
-                $discontinuedAt      = $product->discontinued_at;
-                $maskForDiscontinued = $product->mark_for_discontinued_at;
-            }
-
-            if ($product->state == ProductCategoryStateEnum::DISCONTINUING) {
-                $markForDiscontinued = true;
-                $maskForDiscontinued = $product->mark_for_discontinued_at;
-            }
-
-            UpdateMasterProductCategory::run(
-                $foundMasterProduct,
-                [
-                    'status'                   => $status,
-                    'mark_for_discontinued'    => $markForDiscontinued,
-                    'mark_for_discontinued_at' => $maskForDiscontinued,
-                    'discontinued_at'          => $discontinuedAt,
-                ]
-            );
+        if ($product->state == ProductStateEnum::DISCONTINUED) {
+            $status              = false;
+            $discontinuedAt      = $product->discontinued_at;
+            $maskForDiscontinued = $product->mark_for_discontinued_at;
         }
+
+        if ($product->state == ProductCategoryStateEnum::DISCONTINUING) {
+            $markForDiscontinued = true;
+            $maskForDiscontinued = $product->mark_for_discontinued_at;
+        }
+
+
+
+        UpdateMasterAsset::run(
+            $foundMasterProduct,
+            [
+                'status'                   => $status,
+                'mark_for_discontinued'    => $markForDiscontinued,
+                'mark_for_discontinued_at' => $maskForDiscontinued,
+                'discontinued_at'          => $discontinuedAt,
+            ]
+        );
+
 
         return $foundMasterProduct;
     }
