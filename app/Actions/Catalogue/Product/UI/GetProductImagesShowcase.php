@@ -15,7 +15,8 @@ class GetProductImagesShowcase
     public function handle(Product $product): array
     {
         return [
-            'id' => $product->id,
+            'id'                  => $product->id,
+            'bucket_images'       => $product->bucket_images,
             'images_category_box' => $this->getImagesData($product),
             'images_update_route' => [
                 'method'     => 'patch',
@@ -36,11 +37,11 @@ class GetProductImagesShowcase
                 'name'       => 'grp.models.org.product.images.delete',
                 'parameters' => [
                     'organisation' => $product->organisation_id,
-                    'product' => $product->id,
-                    'media'   => ''
+                    'product'      => $product->id,
+                    'media'        => ''
                 ],
             ],
-            'images' => ImagesResource::collection(IndexProductImages::run($product))->resolve(),
+            'images'              => ImagesResource::collection(IndexProductImages::run($product))->resolve(),
 
         ];
     }

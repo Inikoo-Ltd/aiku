@@ -107,10 +107,25 @@ class StoreMasterFamily extends OrgAction
 
     public function htmlResponse(MasterProductCategory $masterProductCategory, ActionRequest $request): RedirectResponse
     {
-        return Redirect::route('grp.masters.master_shops.show.master_families.show', [
-            'masterShop' => $masterProductCategory->masterShop->slug,
-            'masterFamily' => $masterProductCategory->slug,
-        ]);
+        if($masterProductCategory->master_department_id && $masterProductCategory->master_sub_department_id) {
+            return Redirect::route('grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show', [
+                'masterShop' => $masterProductCategory->masterShop->slug,
+                'masterDepartment' => $masterProductCategory->masterDepartment->slug,
+                'masterSubDepartment' => $masterProductCategory->masterSubDepartment->slug,
+                'masterFamily' => $masterProductCategory->slug,
+            ]);
+        } elseif($masterProductCategory->master_department_id) {
+            return Redirect::route('grp.masters.master_shops.show.master_departments.show.master_families.show', [
+                'masterShop' => $masterProductCategory->masterShop->slug,
+                'masterDepartment' => $masterProductCategory->masterDepartment->slug,
+                'masterFamily' => $masterProductCategory->slug,
+            ]);
+        } else {
+            return Redirect::route('grp.masters.master_shops.show.master_families.show', [
+                'masterShop' => $masterProductCategory->masterShop->slug,
+                'masterFamily' => $masterProductCategory->slug,
+            ]);
+        }
 
     }
 

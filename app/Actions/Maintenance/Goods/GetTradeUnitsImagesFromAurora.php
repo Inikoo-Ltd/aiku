@@ -80,6 +80,11 @@ class GetTradeUnitsImagesFromAurora
                 'top_image_id'             => null,
                 'bottom_image_id'          => null,
                 'size_comparison_image_id' => null,
+                'art1_image_id'            => null,
+                'art2_image_id'            => null,
+                'art3_image_id'            => null,
+                'art4_image_id'            => null,
+                'art5_image_id'            => null,
                 'lifestyle_image_id'       => null,
             ]);
 

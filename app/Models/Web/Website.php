@@ -105,6 +105,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $published_collection_checksum
  * @property bool $is_migrating
  * @property bool $migrated
+ * @property int|null $unpublished_sidebar_snapshot_id
+ * @property int|null $live_sidebar_snapshot_id
+ * @property string|null $published_sidebar_checksum
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, Deployment> $deployments
  * @property-read Collection<int, \App\Models\Web\ExternalLink> $externalLinks
@@ -129,6 +132,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Snapshot|null $unpublishedMenuSnapshot
  * @property-read Snapshot|null $unpublishedProductSnapshot
  * @property-read Snapshot|null $unpublishedProductsSnapshot
+ * @property-read Snapshot|null $unpublishedSidebarSnapshot
  * @property-read Snapshot|null $unpublishedSubDepartmentSnapshot
  * @property-read Collection<int, \App\Models\Web\WebBlock> $webBlocks
  * @property-read \App\Models\Web\WebsiteStats|null $webStats

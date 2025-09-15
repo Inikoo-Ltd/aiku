@@ -38,6 +38,7 @@ const tableVisible = ref(true);
 const isFull = ref(false);
 const key = ref(ulid());
 const layout = inject('layout', {});
+const loading = ref(null)
 
 // Inertia form
 const form = useForm({
@@ -76,6 +77,8 @@ const resetImage = () => {
 const submitForm = async (redirect = true) => {
     form.processing = true
     form.errors = {}
+    if(redirect) loading.value = 'save'
+    else loading.value = 'create'
 
     const finalDataTable: Record<number, { price: number | string }> = {}
     for (const tableDataItem of tableData.value.data) {
@@ -84,7 +87,7 @@ const submitForm = async (redirect = true) => {
         }
     }
 
- 
+
     // Build payload manual
     const payload: any = {
         ...form.data(),
@@ -104,23 +107,47 @@ const submitForm = async (redirect = true) => {
         )
 
         if (redirect) {
-            // If you need redirect, you can call router.visit() here
-            router.visit(route('grp.masters.master_shops.show.master_families.show', {
-                masterShop: route().params['masterShop'],
-                masterFamily: response.data.slug
-  
-            }))
+            const { masterShop, masterDepartment, masterSubDepartment } = route().params
+            const slug = response.data.slug
+
+            if (masterDepartment && masterSubDepartment) {
+                router.visit(route("grp.masters.master_shops.show.master_families.show", {
+                    masterShop,
+                    masterDepartment,
+                    masterSubDepartment,
+                    masterFamily: slug,
+                }))
+            } else if (masterDepartment) {
+                router.visit(route("grp.masters.master_shops.show.master_departments.show.master_families.show", {
+                    masterShop,
+                    masterDepartment,
+                    masterFamily: slug,
+                }))
+            } else if (masterSubDepartment) {
+                router.visit(route("grp.masters.master_shops.show.master_sub_departments.master_families.show", {
+                    masterShop,
+                    masterDepartment,
+                    masterSubDepartment,
+                    masterFamily: slug,
+                }))
+            } else {
+                // Default
+                router.visit(route("grp.masters.master_shops.show.master_families.show", {
+                    masterShop,
+                    masterFamily: slug,
+                }))
+            }
         } else {
-            tableData.value.data = cloneDeep(props.shopsData.data);
+            tableData.value.data = cloneDeep(props.shopsData.data)
             form.reset()
             key.value = ulid()
             notify({
                 title: trans("Success!"),
                 text: trans("Master family has been created"),
-                type: "success"
+                type: "success",
             })
-
         }
+
     } catch (error: any) {
         if (error.response && error.response.status === 422) {
             form.errors = error.response.data.errors || {}
@@ -136,6 +163,7 @@ const submitForm = async (redirect = true) => {
         }
     } finally {
         form.processing = false
+        loading.value = null
     }
 }
 
@@ -147,6 +175,7 @@ const drawerVisible = computed({
 const toggleFull = () => {
     isFull.value = !isFull.value;
 };
+
 </script>
 
 <template>
@@ -301,10 +330,10 @@ const toggleFull = () => {
             <div class="flex justify-end gap-3 border-t pt-3">
                 <Button :label="trans('Cancel')" type="negative" class="!px-5"
                     @click="emits('update:showDialog', false)" />
-                <Button type="secondary" :loading="form.processing" class="!px-6" icon="fas fa-plus"
+                <Button type="secondary" :loading="loading == 'create'" class="!px-6" icon="fas fa-plus"
                     :label="'save & create another one'" @click="submitForm(false)" />
 
-                <Button type="save" :loading="form.processing" class="!px-6" @click="submitForm" />
+                <Button type="save" :loading="loading == 'save'" class="!px-6" @click="submitForm" />
             </div>
         </template>
     </Drawer>
