@@ -107,7 +107,25 @@ onUnmounted(() => {
     window.removeEventListener('resize', checkMobile);
 });
 
-// console.log('layout', layout)
+const getHref = (item) => {
+    if (item.type === 'external' && item.url !== null) {
+        if (item.url.startsWith('http://') || item.url.startsWith('https://')) {
+            return item.url;
+        }
+        return `https://${item.url}`;
+    }
+    return `/${item.url}`;
+}
+
+const getTarget = (item) => {
+    if (item.target) {
+        return item.target;
+    }
+    if (item.type === 'external') {
+        return '_blank';
+    }
+    return '_self';
+}
 </script>
 
 <template>
@@ -202,7 +220,7 @@ onUnmounted(() => {
                                 <DisclosurePanel class="disclosure-panel">
                                     <div v-for="(subDept, subDeptIndex) in customItem.sub_departments"
                                         :key="subDeptIndex" class="mb-6">
-                                        <a v-if="subDept.url !== undefined" :href="'/' + subDept.url"
+                                        <a v-if="subDept?.url !== null" :href="'/' + subDept.url"
                                             class="block text-base font-bold text-gray-700 mb-2"
                                             :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }">
                                             {{ subDept.name }}
@@ -211,22 +229,24 @@ onUnmounted(() => {
                                             :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }">
                                             {{ subDept.name }}
                                         </span>
-
                                         <div v-if="subDept.families" class="space-y-2 mt-2 ml-4 pl-4 border-gray-200">
-                                            <a v-for="(family, familyIndex) in subDept.families" :key="familyIndex"
-                                                v-if="family?.url !== undefined" :href="'/' + family?.url"
-                                                :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
-                                                class="block text-sm text-gray-700 relative hover:text-primary transition-all">
-                                                <span class="absolute left-0 -ml-4">–</span>
-                                                {{ family.name }}
-                                            </a>
-                                            <span v-for="(family, familyIndex) in subDept.families"
-                                                :key="'span-' + familyIndex" v-if="family?.url === undefined"
-                                                :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
-                                                class="block text-sm text-gray-700 relative">
-                                                <span class="absolute left-0 -ml-4">–</span>
-                                                {{ family.name }}
-                                            </span>
+                                            <div v-for="(family, familyIndex) in subDept.families" :key="familyIndex">
+                                                <a 
+                                                    v-if="family?.url !== null" :href="getHref(family)" :target="getTarget(family)"
+                                                    :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
+                                                    class="block text-sm text-gray-700 relative hover:text-primary transition-all">
+                                                    <span class="absolute left-0 -ml-4">–</span>
+                                                    {{ family.name }}
+                                                </a>
+                                                <span v-else
+                                                    :key="'span-' + familyIndex" v-if="family?.url === null"
+                                                    :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
+                                                    class="block text-sm text-gray-700 relative">
+                                                    <span class="absolute left-0 -ml-4">–</span>
+                                                    {{ family.name }}
+                                                </span>
+                                            </div>
+
                                         </div>
                                     </div>
                                 </DisclosurePanel>
@@ -234,11 +254,13 @@ onUnmounted(() => {
 
                             <!-- Custom Menu SINGLE LINK -->
                             <div v-else class="py-4 px-5 border-b">
-                                <a v-if="customItem?.url !== undefined" :href="'/' + customItem.url"
+                                <a v-if="customItem?.url !== null" :href="getHref(customItem)"
+                                    :target="getTarget(customItem)"
                                     :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
                                     class="font-bold text-gray-600 text-lg">
                                     {{ customItem.name }}
                                 </a>
+
                                 <span v-else
                                     :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
                                     class="font-bold text-gray-600 text-lg">{{ customItem.name }}</span>
@@ -292,8 +314,8 @@ onUnmounted(() => {
                             ]"
                             @click="customItem.sub_departments && customItem.sub_departments.length > 0 ? setActiveCustomCategory(customIndex) : null">
                             <div>
-                                <a v-if="(!customItem.sub_departments || customItem.sub_departments.length === 0) && customItem.url !== undefined"
-                                    :href="'/' + customItem.url" class="block">
+                                <a v-if="(!customItem.sub_departments || customItem.sub_departments.length === 0) && customItem.url !== null"
+                                    :href="getHref(customItem)" :target="getTarget(customItem)" class="block">
                                     {{ customItem.name }}
                                 </a>
                                 <span v-else>{{ customItem.name }}</span>
@@ -343,8 +365,8 @@ onUnmounted(() => {
                                         : 'hover:bg-gray-50 text-gray-700'
                                 ]" @click="activeCustomSubIndex = sIndex">
                                 <div>
-                                    <a v-if="(!sub.families || sub.families.length === 0) && sub.url !== undefined"
-                                        :href="'/' + sub.url" class="block">
+                                    <a v-if="(!sub.families || sub.families.length === 0) && sub.url !== null"
+                                        :href="getHref(sub)" :target="getTarget(sub)" class="block">
                                         {{ sub.name }}
                                     </a>
                                     <span v-else>{{ sub.name }}</span>
@@ -392,7 +414,8 @@ onUnmounted(() => {
                         <div v-if="activeCustomSubIndex !== null && customFamilies.length">
                             <div v-for="(child, cIndex) in customFamilies" :key="cIndex"
                                 class="p-2 px-4  cursor-pointer hover:bg-gray-50">
-                                <a v-if="child.url !== undefined" :href="'/' + child.url">{{ child.name }}</a>
+                                <a v-if="child.url !== null" :href="getHref(child)" :target="getTarget(child)">{{
+                                    child.name }}</a>
                                 <span v-else>{{ child.name }}</span>
                             </div>
                             <!-- <div class="p-2 px-4  cursor-pointer hover:bg-gray-50 font-bold">

@@ -274,22 +274,25 @@ const listType = [
         label: trans('Luigi: Top Trending'),
         value: 'luigi-trends',
         show_new_until: '2025-09-27',
-        is_disabled: false
+        is_disabled: true
     },
     {
         label: trans('Luigi: Customer Recently Ordered'),
         value: 'luigi-recently_ordered',
-        show_new_until: '2025-09-27'
+        show_new_until: '2025-09-27',
+        is_disabled: true
     },
     {
         label: trans('Luigi: Recently Viewed'),
         value: 'luigi-last_seen',
-        show_new_until: '2025-09-27'
+        show_new_until: '2025-09-27',
+        is_disabled: true
     },
     {
         label: trans('Luigi: You might also like'),
         value: 'luigi-item_detail_alternatives',
-        show_new_until: '2025-09-27'
+        show_new_until: '2025-09-27',
+        is_disabled: true
     }
 ]
 </script>
