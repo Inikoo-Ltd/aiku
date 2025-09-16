@@ -18,9 +18,9 @@ const emits = defineEmits<{
 }>()
 
 const createDefaultValue = () => ({
-  h: null,
-  l: null,
-  w: null,
+  h: 0,
+  l: 0,
+  w: 0,
   type: "rectangular",
   units: "mm"
 })
@@ -43,6 +43,7 @@ watch(
 watch(
   localValue,
   (val) => {
+    console.log(val)
     emits("update:modelValue", { ...val })
   },
   { deep: true }
