@@ -108,7 +108,6 @@ onUnmounted(() => {
 });
 
 const getHref = (item) => {
-    console.log(item);
     if (item.type === 'external' && item.url !== null) {
         // Jika URL sudah lengkap dengan protocol, gunakan apa adanya
         if (item.url.startsWith('http://') || item.url.startsWith('https://')) {

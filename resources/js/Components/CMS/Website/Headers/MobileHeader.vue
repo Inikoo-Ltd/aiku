@@ -131,8 +131,6 @@ watch(
     },
     { immediate: true, deep:true } // Add options for immediate and deep watching
 );
-
-console.log(props.menuData);
 </script>
 
 <template>
