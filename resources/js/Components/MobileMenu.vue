@@ -109,27 +109,21 @@ onUnmounted(() => {
 
 const getHref = (item) => {
     if (item.type === 'external' && item.url !== null) {
-        // Jika URL sudah lengkap dengan protocol, gunakan apa adanya
         if (item.url.startsWith('http://') || item.url.startsWith('https://')) {
             return item.url;
         }
-        // Jika tidak ada protocol, tambahkan https://
         return `https://${item.url}`;
     }
-    // Untuk internal link
     return `/${item.url}`;
 }
 
 const getTarget = (item) => {
-    // Jika ada target yang didefinisikan, gunakan itu
     if (item.target) {
         return item.target;
     }
-    // Untuk external link, buka di tab baru
     if (item.type === 'external') {
         return '_blank';
     }
-    // Untuk internal link, buka di tab yang sama
     return '_self';
 }
 </script>
