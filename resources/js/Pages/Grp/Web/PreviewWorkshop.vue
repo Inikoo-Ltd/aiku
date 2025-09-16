@@ -116,7 +116,7 @@ onBeforeUnmount(() => {
 
 provide('isPreviewLoggedIn', isPreviewLoggedIn)
 provide('isPreviewMode', isPreviewMode)
-const newCustomSidebarMenu = computed(() => props.sidebar.sidebar) // make the props reactive
+const newCustomSidebarMenu = computed(() => props?.sidebar?.sidebar) // make the props reactive
 provide('newCustomSidebarMenu', newCustomSidebarMenu)
 
 
@@ -124,7 +124,7 @@ watch(isPreviewLoggedIn, (value) => {
      updateIrisLayout(isPreviewLoggedIn.value)
 }, { immediate: true });
 
-
+console.log(newCustomSidebarMenu);
 
 </script>
 
