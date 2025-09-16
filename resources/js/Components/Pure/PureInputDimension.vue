@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from "vue"
+import { computed } from "vue"
 import NumberInput from "primevue/inputnumber"
 import Dropdown from "primevue/dropdown"
 
@@ -17,30 +17,19 @@ const emits = defineEmits<{
   (e: "update:modelValue", value: any): void
 }>()
 
-const localValue = ref({ ...props.modelValue })
-
-// sync with parent
-watch(
-  () => props.modelValue,
-  (newVal) => {
-    localValue.value = { ...newVal }
-  }
-)
-
-watch(
-  localValue,
-  (newVal) => {
-    emits("update:modelValue", newVal)
-  },
-  { deep: true }
-)
+// Use computed with getter/setter instead of watch
+const localValue = computed({
+  get: () => props.modelValue,
+  set: (val) => emits("update:modelValue", val)
+})
 
 // Options
 const typeOptions = [
-  { label: "Sphere", value: "sphere" },
-  { label: "Cube", value: "cube" },
-  { label: "Cylinder", value: "cylinder" },
-  { label: "Cone", value: "cone" }
+  { label: "Rectangular (L×W×H)", value: "rectangular" },
+  { label: "Sheet (L×W)", value: "sheet" },
+  { label: "Cylinder (H×D)", value: "cilinder" }, // sesuai backend
+  { label: "Sphere (D)", value: "sphere" },
+  { label: "String (L)", value: "string" }
 ]
 
 const unitOptions = [
@@ -53,39 +42,49 @@ const unitOptions = [
 
 <template>
   <div class="space-y-3">
-    <!-- Type dropdown on top -->
     <Dropdown
       v-model="localValue.type"
       :options="typeOptions"
       optionLabel="label"
       optionValue="value"
       placeholder="Select Type"
-      class="w-40"
     />
 
-    <!-- Dimensions + Units in one row -->
     <div class="flex flex-wrap items-center gap-3">
-      <NumberInput
-        v-model="localValue.h"
-        inputClass="w-20 text-center"
-        placeholder="h"
-        :suffix="localValue.units"
-      />
-      <span class="text-gray-500">×</span>
-      <NumberInput
-        v-model="localValue.l"
-        inputClass="w-20 text-center"
-        placeholder="l"
-        :suffix="localValue.units"
-      />
-      <span class="text-gray-500">×</span>
-      <NumberInput
-        v-model="localValue.w"
-        inputClass="w-20 text-center"
-        placeholder="w"
-        :suffix="localValue.units"
-      />
+      <!-- Rectangular -->
+      <template v-if="localValue.type === 'rectangular'">
+        <NumberInput v-model="localValue.l" inputClass="w-20 text-center" placeholder="L" :suffix="localValue.units" />
+        <span class="text-gray-500">×</span>
+        <NumberInput v-model="localValue.w" inputClass="w-20 text-center" placeholder="W" :suffix="localValue.units" />
+        <span class="text-gray-500">×</span>
+        <NumberInput v-model="localValue.h" inputClass="w-20 text-center" placeholder="H" :suffix="localValue.units" />
+      </template>
 
+      <!-- Sheet -->
+      <template v-else-if="localValue.type === 'sheet'">
+        <NumberInput v-model="localValue.l" inputClass="w-20 text-center" placeholder="L" :suffix="localValue.units" />
+        <span class="text-gray-500">×</span>
+        <NumberInput v-model="localValue.w" inputClass="w-20 text-center" placeholder="W" :suffix="localValue.units" />
+      </template>
+
+      <!-- Cylinder -->
+      <template v-else-if="localValue.type === 'cilinder'">
+        <NumberInput v-model="localValue.h" inputClass="w-20 text-center" placeholder="H" :suffix="localValue.units" />
+        <span class="text-gray-500">×</span>
+        <NumberInput v-model="localValue.w" inputClass="w-20 text-center" placeholder="D" :suffix="localValue.units" />
+      </template>
+
+      <!-- Sphere -->
+      <template v-else-if="localValue.type === 'sphere'">
+        <NumberInput v-model="localValue.h" inputClass="w-20 text-center" placeholder="D" :suffix="localValue.units" />
+      </template>
+
+      <!-- String -->
+      <template v-else-if="localValue.type === 'string'">
+        <NumberInput v-model="localValue.l" inputClass="w-20 text-center" placeholder="L" :suffix="localValue.units" />
+      </template>
+
+      <!-- Units selector -->
       <Dropdown
         v-model="localValue.units"
         :options="unitOptions"

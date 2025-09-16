@@ -62,39 +62,47 @@ const isLoggedIn = inject('isPreviewLoggedIn', false)
 const upcommingProductCategories = inject('newCustomSidebarMenu') //make sure the provide available on each layout
 
 
-const  convertToDepartmentStructure = (menusData) => {
-
+const convertToDepartmentStructure = (menusData) => {
     const dataArray = Array.isArray(menusData) ? menusData : [menusData];
 
     // Regex untuk menghapus awalan http:// atau https://
-    const removeProtocol = url => typeof url === 'string' ? url.replace(/^https?:\/\//, '') : undefined;
+    const removeProtocol = url => {
+        if (!url || typeof url !== 'string') return null;
+        return url.replace(/^https?:\/\//, '');
+    };
 
     return dataArray.map(menu => {
         const mainLinkHref = menu?.link?.href;
+        const mainLinkTarget = menu?.link?.type;
 
         const departmentStructure = {
             url: removeProtocol(mainLinkHref),
-            name: menu?.label || undefined,
+            name: menu?.label || null,
+            type: mainLinkTarget || null,
             sub_departments: []
         };
 
         if (Array.isArray(menu?.subnavs)) {
             menu.subnavs.forEach(subnav => {
                 const subLinkHref = subnav?.link?.href;
+                const subLinkTarget = subnav?.link?.type;
 
                 const subDepartment = {
                     url: removeProtocol(subLinkHref),
-                    name: subnav?.title || undefined,
+                    name: subnav?.title || null,
+                    type: subLinkTarget || null,
                     families: []
                 };
 
                 if (Array.isArray(subnav?.links)) {
                     subnav.links.forEach(link => {
                         const linkHref = link?.link?.href;
+                        const linkTarget = link?.link?.type;
 
                         const family = {
                             url: removeProtocol(linkHref),
-                            name: link?.label || undefined
+                            name: link?.label || null,
+                            type: linkTarget || null
                         };
 
                         subDepartment.families.push(family);
@@ -108,8 +116,6 @@ const  convertToDepartmentStructure = (menusData) => {
         return departmentStructure;
     });
 }
-
-
 const customMenus = ref([]); // Create a reactive ref to hold the new value
 
 watch(
@@ -125,7 +131,6 @@ watch(
     },
     { immediate: true, deep:true } // Add options for immediate and deep watching
 );
-
 </script>
 
 <template>

@@ -249,13 +249,13 @@ console.log('product summary : ', props)
 							</span>
 						</dd>
 					</div>
-					<div v-if="!hide?.includes('Weight')" class="flex justify-between flex-wrap gap-1">
+					<div v-if="!hide?.includes('weight')" class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("Weight") }}</dt>
 						<dd class="font-medium">
 							{{ locale.number(data?.specifications?.gross_weight) }} gr
 						</dd>
 					</div>
-					<div class="flex justify-between flex-wrap gap-1">
+					<div v-if="!hide?.includes('dimension')" class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("Dimension") }}</dt>
 						<dd class="font-medium">
 							{{ data?.product?.data?.spesifications?.dimenison[0] ?? '-' }}
