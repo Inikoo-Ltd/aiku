@@ -41,9 +41,7 @@ const sortedProductCategories = computed(() => {
 
 const sortedCustomMenus = computed(() => {
     if (!props.customMenus) return [];
-    return [...props.customMenus].sort((a, b) =>
-        (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' })
-    );
+    return props.customMenus;
 });
 
 const sortedNavigation = computed(() => {
@@ -62,9 +60,8 @@ const sortedSubDepartments = computed(() => {
 
 const sortedCustomSubDepartments = computed(() => {
     if (activeCustomIndex.value === null || !sortedCustomMenus.value[activeCustomIndex.value]?.sub_departments) return [];
-    return [...sortedCustomMenus.value[activeCustomIndex.value].sub_departments].sort((a, b) =>
-        (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' })
-    );
+    return sortedCustomMenus.value[activeCustomIndex.value].sub_departments;
+
 });
 
 const sortedFamilies = computed(() => {
@@ -76,9 +73,7 @@ const sortedFamilies = computed(() => {
 
 const sortedCustomFamilies = computed(() => {
     if (activeCustomSubIndex.value === null || !sortedCustomSubDepartments.value[activeCustomSubIndex.value]?.families) return [];
-    return [...sortedCustomSubDepartments.value[activeCustomSubIndex.value].families].sort((a, b) =>
-        (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' })
-    );
+    return sortedCustomSubDepartments.value[activeCustomSubIndex.value].families;
 });
 
 // reset subdepartment when category changes
@@ -205,20 +200,31 @@ onUnmounted(() => {
                                 <DisclosurePanel class="disclosure-panel">
                                     <div v-for="(subDept, subDeptIndex) in [...customItem.sub_departments].sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }))"
                                         :key="subDeptIndex" class="mb-6">
-                                        <a :href="'/' + subDept.url"
+                                        <a v-if="subDept.url !== undefined" :href="'/' + subDept.url"
                                             class="block text-base font-bold text-gray-700 mb-2"
                                             :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }">
                                             {{ subDept.name }}
                                         </a>
+                                        <span v-else class="block text-base font-bold text-gray-700 mb-2"
+                                            :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }">
+                                            {{ subDept.name }}
+                                        </span>
 
                                         <div v-if="subDept.families" class="space-y-2 mt-2 ml-4 pl-4 border-gray-200">
-                                            <a v-for="(family, familyIndex) in [...subDept.families].sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }))"
-                                                :key="familyIndex" :href="'/' + family.url"
+                                            <a v-for="(family, familyIndex) in subDept.families" :key="familyIndex"
+                                                v-if="family.url !== undefined" :href="'/' + family.url"
                                                 :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
                                                 class="block text-sm text-gray-700 relative hover:text-primary transition-all">
                                                 <span class="absolute left-0 -ml-4">–</span>
                                                 {{ family.name }}
                                             </a>
+                                            <span v-for="(family, familyIndex) in subDept.families"
+                                                :key="'span-' + familyIndex" v-if="family.url === undefined"
+                                                :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
+                                                class="block text-sm text-gray-700 relative">
+                                                <span class="absolute left-0 -ml-4">–</span>
+                                                {{ family.name }}
+                                            </span>
                                         </div>
                                     </div>
                                 </DisclosurePanel>
@@ -281,7 +287,7 @@ onUnmounted(() => {
                             ]"
                             @click="customItem.sub_departments && customItem.sub_departments.length > 0 ? setActiveCustomCategory(customIndex) : null">
                             <div>
-                                <a v-if="!customItem.sub_departments || customItem.sub_departments.length === 0"
+                                <a v-if="(!customItem.sub_departments || customItem.sub_departments.length === 0) && customItem.url !== undefined"
                                     :href="'/' + customItem.url" class="block">
                                     {{ customItem.name }}
                                 </a>
@@ -331,7 +337,13 @@ onUnmounted(() => {
                                         ? `bg-gray-100 font-semibold text-[${layout.iris.theme?.color[0]}]`
                                         : 'hover:bg-gray-50 text-gray-700'
                                 ]" @click="activeCustomSubIndex = sIndex">
-                                <div>{{ sub.name }}</div>
+                                <div>
+                                    <a v-if="(!sub.families || sub.families.length === 0) && sub.url !== undefined"
+                                        :href="'/' + sub.url" class="block">
+                                        {{ sub.name }}
+                                    </a>
+                                    <span v-else>{{ sub.name }}</span>
+                                </div>
                                 <FontAwesomeIcon :icon="faChevronRight"
                                     class="transition-transform duration-200 text-xs" />
                             </div>
@@ -375,7 +387,8 @@ onUnmounted(() => {
                         <div v-if="activeCustomSubIndex !== null && sortedCustomFamilies.length">
                             <div v-for="(child, cIndex) in sortedCustomFamilies" :key="cIndex"
                                 class="p-2 px-4  cursor-pointer hover:bg-gray-50">
-                                <a :href="'/' + child.url">{{ child.name }}</a>
+                                <a v-if="child.url !== undefined" :href="'/' + child.url">{{ child.name }}</a>
+                                <span v-else>{{ child.name }}</span>
                             </div>
                             <!-- <div class="p-2 px-4  cursor-pointer hover:bg-gray-50 font-bold">
                                 <a :href="'/' + sortedCustomSubDepartments[activeCustomSubIndex].url">
