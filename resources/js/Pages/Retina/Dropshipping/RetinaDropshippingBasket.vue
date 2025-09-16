@@ -240,21 +240,6 @@ const onAddProducts = async (product: { historic_asset_id: number }) => {
                 listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'error'
             },
             onSuccess: () => {
-                // Luigi: event add to cart
-                if (!product?.transaction_id) {
-                    window?.dataLayer?.push({
-                        event: "add_to_cart",
-                        ecommerce: {
-                            currency: layout?.iris?.currency?.code,
-                            value: product.price,
-                            items: [
-                                {
-                                    item_id: product?.luigi_identity,
-                                }
-                            ]
-                        }
-                    })
-                }
                 listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'success'
             },
             onFinish: () => {
