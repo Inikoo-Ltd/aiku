@@ -21,7 +21,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
 
-class RequestApiUploadProductEbay extends RetinaAction
+class StoreEbayProduct extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
@@ -126,11 +126,16 @@ class RequestApiUploadProductEbay extends RetinaAction
 
             $portfolio = UpdatePortfolio::run($portfolio, [
                 'platform_product_id' => Arr::get($publishedOffer, 'listingId'),
+                'platform_product_variant_id' => Arr::get($publishedOffer, 'listingId'),
                 'upload_warning' => null,
             ]);
 
             UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio);
         } catch (\Exception $e) {
+            UpdatePortfolio::run($portfolio, [
+                'errors_response' => [$e->getMessage()]
+            ]);
+
             Sentry::captureMessage("Failed to upload product due to: " . $e->getMessage());
         }
     }
