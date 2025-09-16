@@ -63,6 +63,8 @@ use App\Actions\Retina\Dropshipping\Portfolio\StoreRetinaPortfolioToAllChannels;
 use App\Actions\Retina\Dropshipping\Portfolio\StoreRetinaPortfolioToMultiChannels;
 use App\Actions\Retina\Dropshipping\Portfolio\UpdateRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Product\StoreRetinaProductManual;
+use App\Actions\Retina\Ebay\MatchRetinaPortfolioToCurrentEbayProduct;
+use App\Actions\Retina\Ebay\StoreRetinaNewProductToCurrentEbay;
 use App\Actions\Retina\Ecom\Basket\RetinaDeleteBasketTransaction;
 use App\Actions\Retina\Ecom\Basket\RetinaEcomUpdateTransaction;
 use App\Actions\Retina\Fulfilment\Dropshipping\Channel\Manual\StoreRetinaFulfilmentManualPlatform;
@@ -328,6 +330,9 @@ Route::post('portfolio/{portfolio:id}/store-new-shopify-product', StoreRetinaNew
 
 Route::post('portfolio/{portfolio:id}/match-to-existing-woo-product', MatchRetinaPortfolioToCurrentWooProduct::class)->name('portfolio.match_to_existing_woo_product');
 Route::post('portfolio/{portfolio:id}/store-new-woo-product', StoreRetinaNewProductToCurrentWoo::class)->name('portfolio.store_new_woo_product');
+
+Route::post('portfolio/{portfolio:id}/match-to-existing-ebay-product', MatchRetinaPortfolioToCurrentEbayProduct::class)->name('portfolio.match_to_existing_ebay_product');
+Route::post('portfolio/{portfolio:id}/store-new-ebay-product', StoreRetinaNewProductToCurrentEbay::class)->name('portfolio.store_new_ebay_product');
 
 Route::post('portfolio/product-category/{productCategory:id}/store', StoreRetinaPortfoliosFromProductCategoryToAllChannels::class)->name('portfolio.store_from_product_category')->withoutScopedBindings();
 Route::post('portfolio/all-channels/store', StoreRetinaPortfolioToAllChannels::class)->name('portfolio.store_to_all_channels');

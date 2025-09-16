@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\Ebay\Product;
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\EbayUser;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
@@ -45,6 +46,10 @@ class CheckIfProductExistInEbay extends RetinaAction
                     $result = $searchResult;
                     break;
                 }
+            }
+
+            if (Arr::has($result, 'error')) {
+                return [];
             }
 
             return $result;

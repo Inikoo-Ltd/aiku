@@ -51,7 +51,6 @@ class CheckEbayPortfolio
             $matchesLabels = Arr::pluck($matches, 'name');
         }
 
-
         $matchData = [
             'number_matches' => $numberMatches,
             'matches_labels' => $matchesLabels,

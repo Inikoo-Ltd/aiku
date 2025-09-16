@@ -264,6 +264,9 @@ class IndexRetinaPortfolios extends RetinaAction
                         PlatformTypeEnum::SHOPIFY => [
                             'name' => 'retina.json.dropshipping.customer_sales_channel.shopify_products'
                         ],
+                        PlatformTypeEnum::EBAY => [
+                            'name' => 'retina.json.dropshipping.customer_sales_channel.ebay_products'
+                        ],
                         default => false
                     },
                     'single_create_new' => match ($this->customerSalesChannel->platform->type) {
@@ -273,6 +276,9 @@ class IndexRetinaPortfolios extends RetinaAction
                         PlatformTypeEnum::SHOPIFY => [
                             'name' => 'retina.models.portfolio.store_new_shopify_product'
                         ],
+                        PlatformTypeEnum::EBAY => [
+                            'name' => 'retina.models.portfolio.store_new_ebay_product'
+                        ],
                         default => false
                     },
                     'single_match' => match ($this->customerSalesChannel->platform->type) {
@@ -281,6 +287,9 @@ class IndexRetinaPortfolios extends RetinaAction
                         ],
                         PlatformTypeEnum::SHOPIFY => [
                             'name' => 'retina.models.portfolio.match_to_existing_shopify_product'
+                        ],
+                        PlatformTypeEnum::EBAY => [
+                            'name' => 'retina.models.portfolio.match_to_existing_ebay_product'
                         ],
                         default => false
                     },

@@ -49,6 +49,7 @@ import BlogIris from '@/Components/CMS/Webpage/Blog/BlogIris.vue'
 import Cta4 from '@/Components/CMS/Webpage/Cta4/Cta4Iris.vue'
 
 import SeeAlso1WorkshopIris from '@/Components/CMS/Webpage/SeeAlso1/SeeAlso1Iris.vue'
+import LuigiTrends1Iris from '@/Components/CMS/Webpage/LuigiTrends1/LuigiTrends1Iris.vue'
 
 
 import UserSubscribeIris from '@/Components/CMS/Webpage/UserSubscribe/UserSubscribeIris.vue'
@@ -97,6 +98,9 @@ const components = (shop_type?: string): Record<string, Component> => {
 
         //see-also
         'see-also-1' : SeeAlso1WorkshopIris,
+
+        // Luigi
+        'luigi-trends-1' : LuigiTrends1Iris,
 
 
         'banner': WowsbarBannerIris,
