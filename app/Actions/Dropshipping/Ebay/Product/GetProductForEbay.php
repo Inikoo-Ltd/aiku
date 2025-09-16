@@ -27,16 +27,16 @@ class GetProductForEbay
     private function transformToStandardFormat($product): array
     {
         return [
-            'id' => $product['id'],
-            'name' => $product['name'],
-            'slug' => $product['slug'],
-            'images' => Arr::get($product, 'images.0')
+            'id' => $product['sku'],
+            'name' => Arr::get($product, 'product.title'),
+            'images' => Arr::get($product, 'product.imageUrls.0')
         ];
     }
 
     public function handle(EbayUser $ebayUser, $query = ''): array
     {
-        $products = $ebayUser->getProducts();
+        $rawProducts = $ebayUser->getProducts();
+        $products = Arr::get($rawProducts, 'inventoryItems');
 
         return array_map([$this, 'transformToStandardFormat'], $products);
     }
