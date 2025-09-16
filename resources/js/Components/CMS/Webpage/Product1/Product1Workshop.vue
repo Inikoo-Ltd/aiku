@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { faCube, faLink, faSeedling, faHeart } from "@fal"
-import { faBox, faPlus, faVial } from "@far"
-import { faCircle, faStar, faDotCircle, faFileDownload } from "@fas"
+import { faCube, faLink, faHeart } from "@fal"
+import { faBox } from "@far"
+import { faCircle, faDotCircle, faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { ref , inject, useAttrs, onMounted} from "vue"
+import { ref , inject, useAttrs, onMounted, computed} from "vue"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import { useLocaleStore } from '@/Stores/locale'
@@ -16,6 +16,7 @@ import InformationSideProduct from "./InformationSideProduct.vue"
 import Image from "@/Components/Image.vue"
 import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
 import { getStyles } from "@/Composables/styles"
+import { isArray } from "lodash-es"
 
 library.add(faCube, faLink, faFileDownload)
 
@@ -98,6 +99,36 @@ function resolveResponsiveClass(
   return options[screenType] || ""
 }
 
+const imagesSetup = ref(isArray(props.modelValue.fieldValue.product.images) ? props.modelValue.fieldValue.product.images :
+	props.modelValue.fieldValue.product.images
+		.filter(item => item.type == "image")
+		.map(item => ({
+			label: item.label,
+			column: item.column_in_db,
+			images: item.images,
+		}))
+)
+
+const videoSetup = ref(
+	props.modelValue.fieldValue.product.images.find(item => item.type === "video") || null
+)
+
+
+const validImages = computed(() => {
+  if (!imagesSetup.value) return []
+
+  return imagesSetup.value
+    .filter(item => item.images)
+    .flatMap(item => {
+      const images = Array.isArray(item.images) ? item.images : [item.images]
+      console.log("sdsd", images)
+      return images.map(img => ({
+        source: img,
+        thumbnail: img
+      }))
+    })
+})
+
 onMounted(() => {
   requestAnimationFrame(() => {
     if (contentRef?.value?.scrollHeight > 100) {
@@ -139,7 +170,7 @@ const toggleExpanded = () => {
         <div class="grid grid-cols-12 gap-x-10 mb-2">
             <div class="col-span-7">
                 <div class="py-1 w-full">
-                    <ImageProducts :images="modelValue.product.images" />
+                    <ImageProducts :images="validImages" :video="videoSetup.url" />
                 </div>
                 <div class="flex gap-x-10 text-gray-400 mb-6 mt-4">
                     <div class="flex items-center gap-1 text-xs" v-for="(tag,index) in modelValue.product.tags"
@@ -271,7 +302,7 @@ const toggleExpanded = () => {
       ]"
     >
         <h2 class="text-xl font-bold mb-2">{{ modelValue.product.name }}</h2>
-        <ImageProducts :images="modelValue.product.images" />
+        <ImageProducts  :images="validImages" :video="videoSetup"/>
         <div class="flex justify-between items-start gap-4 mt-4">
             <div v-if="layout.iris?.is_logged_in">
                 <div class="text-lg font-semibold">
