@@ -99,8 +99,8 @@ function resolveResponsiveClass(
   return options[screenType] || ""
 }
 
-const imagesSetup = ref(isArray(props.modelValue.fieldValue.product.images) ? props.modelValue.fieldValue.product.images :
-	props.modelValue.fieldValue.product.images
+const imagesSetup = ref(isArray(props.modelValue.product.images) ? props.modelValue.product.images :
+	props.modelValue.product.images
 		.filter(item => item.type == "image")
 		.map(item => ({
 			label: item.label,
@@ -110,7 +110,7 @@ const imagesSetup = ref(isArray(props.modelValue.fieldValue.product.images) ? pr
 )
 
 const videoSetup = ref(
-	props.modelValue.fieldValue.product.images.find(item => item.type === "video") || null
+	props.modelValue.product.images.find(item => item.type === "video") || null
 )
 
 
