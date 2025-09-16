@@ -65,6 +65,7 @@ class IrisProductsInWebpageResource extends JsonResource
             'image_id'   => $this->image_id,
             'image'      => $this->image_id ? ImageResource::make($media)->getArray() : null,
             'code'       => $this->code,
+            'luigi_identity' => $this->getLuigiIdentity(),
             'name'       => $this->name,
             'stock'      => $this->available_quantity,
             'price'      => $this->price,

@@ -73,6 +73,20 @@ const onAddToAllPortfolios = (product: ProductResource) => {
             preserveState: true,
             onStart: () => { 
                 isLoadingAllPortfolios.value = true
+                // Luigi: event add to cart
+                window?.dataLayer?.push({
+                    event: "add_to_cart",
+                    ecommerce: {
+                        currency: layout?.iris?.currency?.code,
+                        value: product.price,
+                        channel: 'all',
+                        items: [
+                            {
+                                item_id: product?.luigi_identity,
+                            }
+                        ]
+                    }
+                })
             },
             onSuccess: () => {
                 const keys = Object.keys(channelList).map(key => Number(key))
@@ -99,6 +113,7 @@ const onAddToAllPortfolios = (product: ProductResource) => {
 }
 
 // Section: Add to a specific Portfolios channel
+const isRecentlyAddPortfolio = ref(false)
 const isLoadingSpecificChannel = ref([])
 const onAddPortfoliosSpecificChannel = (product: ProductResource, channel: any) => {
     if (!channel || typeof channel.id === 'undefined') {
@@ -120,6 +135,20 @@ const onAddPortfoliosSpecificChannel = (product: ProductResource, channel: any) 
             preserveState: true,
             onStart: () => {
                 isLoadingSpecificChannel.value.push(channelId)
+                // Luigi: event add to cart
+                window?.dataLayer?.push({
+                        event: "add_to_cart",
+                        ecommerce: {
+                            currency: layout?.iris?.currency?.code,
+                            value: product.price,
+                            channel: channel?.platform_slug || null,
+                            items: [
+                                {
+                                    item_id: product?.luigi_identity,
+                                }
+                            ]
+                        }
+                    })
             },
             onSuccess: () => {
                 if (!productHasPortfolioList.value?.includes(channelId)) {

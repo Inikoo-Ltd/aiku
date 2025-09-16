@@ -95,8 +95,9 @@ const deleteNavigation = (index: Number) => {
 }; */
 
 
-const autoSave = async () => {
+const autoSave = async (event) => {
    emits('auto-save')
+   console.log(event);
 }
 
 </script>
@@ -109,7 +110,7 @@ const autoSave = async () => {
 
     <!-- Menu List -->
     <draggable :list="data.data?.fieldValue.navigation" ghost-class="ghost" chosen-class="chosen" drag-class="dragging"
-        group="column" itemKey="id" class="space-y-2" :move="allowMove" :fallbackOnBody="true" @end="()=>autoSave()">
+        group="column" itemKey="id" class="space-y-2" :move="allowMove" :fallbackOnBody="true" @end="autoSave">
         <template #item="{ element, index }">
             <div @click="() => SetMenuActive(index)"
                 class="group flex items-center bg-white border border-gray-200 rounded shadow-sm overflow-hidden transition-transform duration-200 cursor-pointer hover:ring-2 hover:ring-indigo-400">
