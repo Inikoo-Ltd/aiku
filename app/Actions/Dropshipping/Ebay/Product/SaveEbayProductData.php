@@ -14,6 +14,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\Portfolio;
 use Exception;
+use Illuminate\Support\Arr;
 use Sentry;
 
 class SaveEbayProductData extends RetinaAction
@@ -30,12 +31,18 @@ class SaveEbayProductData extends RetinaAction
         $ebayUser = $portfolio->customerSalesChannel->user;
 
         try {
-            $productID = $portfolio->sku;
+            $productID = $portfolio->platform_product_id;
 
-            $result = $ebayUser->getProduct($productID);
-
+            $offer = $ebayUser->getOffer($productID);
+            $result = $ebayUser->getProduct(Arr::get($offer, 'sku'));
             $data = $portfolio->data;
-            data_set($data, 'ebay_product', $result);
+
+            data_set($data, 'ebay_product', [
+                'offerId' => Arr::get($offer, 'id'),
+                'sku' => Arr::get($result, 'sku'),
+                'name' => Arr::get($result, 'product.title'),
+                'images' => Arr::get($result, 'product.imageUrls'),
+            ]);
 
             $dataToUpdate = [
                 'data' => $data

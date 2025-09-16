@@ -255,6 +255,27 @@ class EditProduct extends OrgAction
                             'label' => __('Extra description'),
                             'value' => $product->description_extra
                         ],
+                        'gross_weight' => [
+                            'type'  => 'input_number',
+                            'label' => __('gross weight'),
+                            'value' => $product->gross_weight,
+                            'bind'  =>[
+                                'suffix' => 'g'
+                            ]
+                        ],
+                        'marketing_weight' => [
+                            'type'  => 'input_number',
+                            'label' => __('marketing weight'),
+                            'value' => $product->marketing_weight,
+                            'bind'  =>[
+                                'suffix' => 'g'
+                            ]
+                        ],
+                        'marketing_dimensions' => [
+                            'type'  => 'input-dimension',
+                            'label' => __('marketing dimension'),
+                            'value' => $product->marketing_dimensions,
+                        ],
                     ]
                 ],
                 /* !$product->master_product_id ? [

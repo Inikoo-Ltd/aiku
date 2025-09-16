@@ -9,10 +9,11 @@
 namespace App\Actions\Dropshipping\Ebay\Product;
 
 use App\Actions\OrgAction;
-use App\Events\UploadProductToWooCommerceProgressEvent;
+use App\Events\UploadProductToEbayProgressEvent;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -27,8 +28,17 @@ class MatchPortfolioToCurrentEbayProduct extends OrgAction
 
         $ebayProductId = Arr::get($modelData, 'platform_product_id');
 
+        $listing = $ebayUser->getOffers([
+            'sku' => $ebayProductId
+        ]);
+
+        if (! Arr::has($listing, 'offers.0.listing.listingId')) {
+            throw ValidationException::withMessages(['message' => __('This product doesnt have any listing yet.')]);
+        }
+
         $portfolio->update([
-            'platform_product_id' => $ebayProductId,
+            'platform_product_id' => Arr::get($listing, 'offers.0.offerId'),
+            'platform_product_variant_id' => Arr::get($listing, 'offers.0.listing.listingId')
         ]);
 
         $portfolio->refresh();
@@ -36,7 +46,7 @@ class MatchPortfolioToCurrentEbayProduct extends OrgAction
         /** @var Portfolio $portfolio */
         $portfolio = CheckEbayPortfolio::run($portfolio);
 
-        UploadProductToWooCommerceProgressEvent::dispatch($ebayUser, $portfolio);
+        UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio);
     }
 
     public function rules(): array

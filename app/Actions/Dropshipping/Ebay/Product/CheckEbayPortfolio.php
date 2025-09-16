@@ -23,9 +23,9 @@ class CheckEbayPortfolio
             return $portfolio;
         }
 
-        $wooUser = $portfolio->customerSalesChannel->user;
+        $ebayUser = $portfolio->customerSalesChannel->user;
 
-        if (!$wooUser instanceof EbayUser) {
+        if (!$ebayUser instanceof EbayUser) {
             return $portfolio;
         }
 
@@ -34,7 +34,7 @@ class CheckEbayPortfolio
         $productExistsInEbay = false;
         $hasVariantAtLocation   = false;
         if ($hasValidProductId) {
-            $result = CheckIfProductExistInEbay::run($wooUser, $portfolio);
+            $result = CheckIfProductExistInEbay::run($ebayUser, $portfolio);
             $productExistsInEbay = ! blank($result);
             $hasVariantAtLocation   = $productExistsInEbay;
         }
@@ -44,7 +44,7 @@ class CheckEbayPortfolio
         $matches       = [];
 
         if (!$hasValidProductId || !$productExistsInEbay || !$hasVariantAtLocation) {
-            $result = CheckIfProductExistInEbay::run($wooUser, $portfolio);
+            $result = CheckIfProductExistInEbay::run($ebayUser, $portfolio);
 
             $matches       = $result;
             $numberMatches = count($matches);

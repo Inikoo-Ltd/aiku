@@ -125,7 +125,7 @@ class StoreEbayProduct extends RetinaAction
             }
 
             $portfolio = UpdatePortfolio::run($portfolio, [
-                'platform_product_id' => Arr::get($publishedOffer, 'listingId'),
+                'platform_product_id' => Arr::get($offer, 'offerId'),
                 'platform_product_variant_id' => Arr::get($publishedOffer, 'listingId'),
                 'upload_warning' => null,
             ]);
