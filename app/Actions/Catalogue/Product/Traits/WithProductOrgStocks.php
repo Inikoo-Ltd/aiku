@@ -14,6 +14,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
 use App\Models\Inventory\OrgStock;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 
 trait WithProductOrgStocks
 {
@@ -31,7 +32,7 @@ trait WithProductOrgStocks
             $orgStock              = OrgStock::find($orgStockId);
             $tradeUnitsPerOrgStock = null;
 
-            if ($orgStock->type == OrgStockStateEnum::ABNORMALITY) {
+            if ($orgStock->state == OrgStockStateEnum::ABNORMALITY) {
                 if ($orgStock->tradeUnits->count() == 1) {
                     $tradeUnitsPerOrgStock = $orgStock->tradeUnits->first()->pivot->quantity;
                 }
@@ -58,7 +59,17 @@ trait WithProductOrgStocks
     {
         $orgStocks = $this->processOrgStocks($orgStocksRaw);
         $product->orgStocks()->sync($orgStocks);
+        $product->refresh();
+
+
+
+        DB::table('model_has_trade_units')->where('model_type', 'Product')->where('model_id', $product->id)->delete();
+
+        $product = $this->associateTradeUnits($product);
+        $product->refresh();
+
         return $product;
+
     }
 
     protected function associateTradeUnits(Product $product): Product
@@ -66,11 +77,14 @@ trait WithProductOrgStocks
         $tradeUnits = [];
         foreach ($product->orgStocks as $orgStock) {
             foreach ($orgStock->tradeUnits as $tradeUnit) {
+
                 $tradeUnits[$tradeUnit->id] = [
                     'quantity' => $orgStock->pivot->quantity * $tradeUnit->pivot->quantity,
                 ];
             }
         }
+
+
 
         foreach ($tradeUnits as $tradeUnitId => $tradeUnitData) {
             $tradeUnit = TradeUnit::find($tradeUnitId);

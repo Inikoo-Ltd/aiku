@@ -333,6 +333,7 @@ class StoreWebpage extends OrgAction
         $this->hydratorsDelay = $hydratorsDelay;
         $this->parent         = $parent;
         $this->website        = $parent instanceof Website ? $parent : $parent->website;
+
         $this->initialisationFromShop($this->website->shop, $modelData);
 
         return $this->handle($parent, $this->validatedData);
