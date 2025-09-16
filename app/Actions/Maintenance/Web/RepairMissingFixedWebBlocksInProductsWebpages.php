@@ -74,6 +74,26 @@ class RepairMissingFixedWebBlocksInProductsWebpages
         }
 
 
+
+        $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'see-also-1');
+        if (count($countFamilyWebBlock) > 0) {
+            foreach ($countFamilyWebBlock as $webBlockData) {
+                DB::table('model_has_web_blocks')->where('id', $webBlockData->model_has_web_blocks_id)->delete();
+                DB::table('model_has_web_blocks')->where('web_block_id', $webBlockData->id)->delete();
+
+                DB::table('model_has_media')->where('model_type', 'WebBlock')->where('model_id', $webBlockData->id)->delete();
+                DB::table('web_block_has_models')->where('web_block_id', $webBlockData->id)->delete();
+
+                DB::table('web_blocks')->where('id', $webBlockData->id)->delete();
+            };
+        }
+
+        $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'luigi-trends-1');
+        if (count($countFamilyWebBlock) == 0) {
+            $this->createWebBlock($webpage, 'luigi-trends-1');
+        }
+
+
         $webpage->refresh();
         UpdateWebpageContent::run($webpage);
 

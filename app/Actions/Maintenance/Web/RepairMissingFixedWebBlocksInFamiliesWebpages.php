@@ -111,9 +111,9 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
             $this->createWebBlock($webpage, 'products-1');
         }
 
-        $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'see-also-1');
+        $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'luigi-trends-1');
         if (count($countFamilyWebBlock) == 0) {
-            $this->createWebBlock($webpage, 'see-also-1');
+            $this->createWebBlock($webpage, 'luigi-trends-1');
         }
 
 
