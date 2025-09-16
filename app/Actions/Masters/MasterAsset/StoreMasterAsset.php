@@ -17,14 +17,12 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterAssets;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Actions\Traits\Rules\WithNoStrictRules;
-use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
-use App\Models\Masters\MasterShop;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
@@ -37,9 +35,14 @@ class StoreMasterAsset extends OrgAction
     use WithMastersEditAuthorisation;
 
     /**
+     * @var \App\Models\Masters\MasterProductCategory
+     */
+    private MasterProductCategory $masterFamily;
+
+    /**
      * @throws \Throwable
      */
-    public function handle(MasterShop|MasterProductCategory $parent, array $modelData): MasterAsset
+    public function handle(MasterProductCategory $masterFamily, array $modelData): MasterAsset
     {
         $tradeUnits   = Arr::pull($modelData, 'trade_units', []);
         $shopProducts = Arr::pull($modelData, 'shop_products', []);
@@ -49,27 +52,22 @@ class StoreMasterAsset extends OrgAction
         data_set($modelData, 'units', $units);
 
 
-        data_set($modelData, 'group_id', $parent->group_id);
+        data_set($modelData, 'group_id', $masterFamily->group_id);
 
-        if ($parent instanceof MasterProductCategory) {
-            data_set($modelData, 'master_department_id', $parent->master_department_id);
-            data_set($modelData, 'master_shop_id', $parent->master_shop_id);
 
-            if ($parent->type == MasterProductCategoryTypeEnum::FAMILY) {
-                data_set($modelData, 'master_family_id', $parent->id);
-                if ($parent->master_sub_department_id) {
-                    data_set($modelData, 'master_sub_department_id', $parent->master_sub_department_id);
-                }
-            }
-            if ($parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
-                data_set($modelData, 'master_sub_department_id', $parent->id);
-            }
+        data_set($modelData, 'master_department_id', $masterFamily->master_department_id);
+        data_set($modelData, 'master_shop_id', $masterFamily->master_shop_id);
+        data_set($modelData, 'master_family_id', $masterFamily->id);
+        if ($masterFamily->master_sub_department_id) {
+            data_set($modelData, 'master_sub_department_id', $masterFamily->master_sub_department_id);
         }
+
+
         data_set($modelData, 'bucket_images', $this->strict);
 
-        $masterAsset = DB::transaction(function () use ($parent, $modelData, $tradeUnits, $shopProducts) {
+        $masterAsset = DB::transaction(function () use ($masterFamily, $modelData, $tradeUnits, $shopProducts) {
             /** @var MasterAsset $masterAsset */
-            $masterAsset = $parent->masterAssets()->create($modelData);
+            $masterAsset = $masterFamily->masterAssets()->create($modelData);
             $masterAsset->stats()->create();
             $masterAsset->orderingIntervals()->create();
             $masterAsset->salesIntervals()->create();
@@ -92,7 +90,7 @@ class StoreMasterAsset extends OrgAction
 
         CloneMasterAssetImagesFromTradeUnits::run($masterAsset);
 
-        GroupHydrateMasterAssets::dispatch($parent->group)->delay($this->hydratorsDelay);
+        GroupHydrateMasterAssets::dispatch($masterFamily->group)->delay($this->hydratorsDelay);
         MasterShopHydrateMasterAssets::dispatch($masterAsset->masterShop)->delay($this->hydratorsDelay);
         if ($masterAsset->masterdepartment) {
             MasterDepartmentHydrateMasterAssets::dispatch($masterAsset->masterDepartment)->delay($this->hydratorsDelay);
@@ -139,7 +137,7 @@ class StoreMasterAsset extends OrgAction
                 new IUnique(
                     table: 'master_assets',
                     extraConditions: [
-                        ['column' => 'group_id', 'value' => $this->group->id],
+                        ['column' => 'master_shop_id', 'value' => $this->masterFamily->master_shop_id],
                         ['column' => 'deleted_at', 'operator' => 'notNull'],
                     ]
                 ),
@@ -149,14 +147,14 @@ class StoreMasterAsset extends OrgAction
                 'sometimes',
                 'nullable',
                 Rule::exists('master_product_categories', 'id')
-                    ->where('group_id', $this->group->id)
+                    ->where('master_shop_id', $this->masterFamily->master_shop_id)
                     ->where('type', ProductCategoryTypeEnum::FAMILY)
             ],
             'master_sub_department_id' => [
                 'sometimes',
                 'nullable',
                 Rule::exists('master_product_categories', 'id')
-                    ->where('group_id', $this->group->id)
+                    ->where('master_shop_id', $this->masterFamily->master_shop_id)
                     ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
             ],
             'image_id'                 => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->group->id)],
@@ -195,19 +193,20 @@ class StoreMasterAsset extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(MasterShop|MasterProductCategory $parent, array $modelData, int $hydratorsDelay = 0, $strict = true, $audit = true): MasterAsset
+    public function action(MasterProductCategory $masterFamily, array $modelData, int $hydratorsDelay = 0, $strict = true, $audit = true): MasterAsset
     {
         if (!$audit) {
             MasterAsset::disableAuditing();
         }
 
+        $this->masterFamily = $masterFamily;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->asAction       = true;
         $this->strict         = $strict;
 
-        $this->initialisationFromGroup($parent->group, $modelData);
+        $this->initialisationFromGroup($masterFamily->group, $modelData);
 
-        return $this->handle($parent, $this->validatedData);
+        return $this->handle($masterFamily, $this->validatedData);
     }
 
 }
