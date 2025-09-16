@@ -125,7 +125,7 @@ console.log(props.video)
       <SwiperSlide v-for="(image, index) in props.images" :key="`thumb-${index}`"
         class="cursor-pointer rounded overflow-hidden border border-gray-300">
         <div class="aspect-square w-full">
-          <Image :src="image.thumbnail || image.source" :alt="`Thumbnail ${index + 1}`"
+          <Image :src="image.source" :alt="`Thumbnail ${index + 1}`"
             class="w-full h-full object-cover" />
         </div>
       </SwiperSlide>

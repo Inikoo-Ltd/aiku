@@ -2,9 +2,8 @@
 import PureInput from "@/Components/Pure/PureInput.vue"
 import { set, get } from 'lodash-es'
 import { checkVAT, countries } from 'jsvat-next';
-import { ref, watch } from "vue"
+import { ref } from "vue"
 import { debounce } from "lodash-es"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExclamationCircle, faCheckCircle } from '@fas'
 import { faCopy } from '@fal'
 import { faSpinnerThird } from '@fad'
@@ -60,13 +59,14 @@ const validateVAT = (vat: string) => {
     }
 
     // Handle country mismatch
-    if (props.fieldData?.country && validation.country?.isoCode.short) {
+   /*  if (props.fieldData?.country && validation.country?.isoCode.short) {
+        console.log(props.fieldData?.country,validation.country?.isoCode.short,validation.country.isoCode.short,props.fieldData.country)
         if (validation.country.isoCode.short !== props.fieldData.country) {
             set(props.form, ['errors', props.fieldName], 'VAT number does not match with the address.');
             props.form.reset();
             return;
         }
-    }
+    } */
 
     // Valid VAT and no mismatch, update the form value
     updateFormValue(validation);

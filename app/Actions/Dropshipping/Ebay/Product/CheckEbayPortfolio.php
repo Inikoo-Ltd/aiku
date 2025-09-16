@@ -31,19 +31,19 @@ class CheckEbayPortfolio
 
 
         $hasValidProductId      = CheckIfEbayProductIDIsValid::run($portfolio->platform_product_id);
-        $productExistsInWoo = false;
+        $productExistsInEbay = false;
         $hasVariantAtLocation   = false;
         if ($hasValidProductId) {
             $result = CheckIfProductExistInEbay::run($wooUser, $portfolio);
-            $productExistsInWoo = ! blank($result);
-            $hasVariantAtLocation   = $productExistsInWoo;
+            $productExistsInEbay = ! blank($result);
+            $hasVariantAtLocation   = $productExistsInEbay;
         }
 
         $numberMatches = 0;
         $matchesLabels = [];
         $matches       = [];
 
-        if (!$hasValidProductId || !$productExistsInWoo || !$hasVariantAtLocation) {
+        if (!$hasValidProductId || !$productExistsInEbay || !$hasVariantAtLocation) {
             $result = CheckIfProductExistInEbay::run($wooUser, $portfolio);
 
             $matches       = $result;
@@ -61,7 +61,7 @@ class CheckEbayPortfolio
 
         $portfolio->update([
             'has_valid_platform_product_id'    => $hasValidProductId,
-            'exist_in_platform'                => $productExistsInWoo,
+            'exist_in_platform'                => $productExistsInEbay,
             'platform_status'                  => $hasVariantAtLocation,
             'platform_possible_matches'        => $matchData,
             'number_platform_possible_matches' => $numberMatches
