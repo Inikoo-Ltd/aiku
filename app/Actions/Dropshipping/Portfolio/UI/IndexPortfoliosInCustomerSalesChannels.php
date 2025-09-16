@@ -161,6 +161,9 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                         PlatformTypeEnum::SHOPIFY => [
                             'name' => 'grp.json.dropshipping.customer_sales_channel.shopify_products'
                         ],
+                        PlatformTypeEnum::EBAY => [
+                            'name' => 'grp.json.dropshipping.customer_sales_channel.ebay_products'
+                        ],
                         default => false
                     },
                     'single_create_new' => match ($this->customerSalesChannel->platform->type) {
@@ -170,6 +173,9 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                         PlatformTypeEnum::SHOPIFY => [
                             'name' => 'grp.models.portfolio.store_new_shopify_product'
                         ],
+                        PlatformTypeEnum::EBAY => [
+                            'name' => 'grp.models.portfolio.store_new_ebay_product'
+                        ],
                         default => false
                     },
                     'single_match' => match ($this->customerSalesChannel->platform->type) {
@@ -178,6 +184,9 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                         ],
                         PlatformTypeEnum::SHOPIFY => [
                             'name' => 'grp.models.portfolio.match_to_existing_shopify_product'
+                        ],
+                        PlatformTypeEnum::EBAY => [
+                            'name' => 'grp.models.portfolio.match_to_existing_ebay_product'
                         ],
                         default => false
                     },
