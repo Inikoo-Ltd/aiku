@@ -17,6 +17,7 @@ const props = defineProps<{
     screenType: String
     productCategories: Array<any>
     menu?: { data: Array<any> }
+    customMenus?: Array<any>
 }>();
 
 const layout = inject("layout", {});
@@ -27,11 +28,20 @@ const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false));
 const isMobile = ref(false);
 const activeIndex = ref(null); // active category
 const activeSubIndex = ref(null); // active subdepartment
+const activeCustomIndex = ref(null); // active custom menu
+const activeCustomSubIndex = ref(null); // active custom menu subdepartment
 
 // Computed properties for sorted data
 const sortedProductCategories = computed(() => {
     if (!props.productCategories) return [];
     return [...props.productCategories].sort((a, b) =>
+        (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' })
+    );
+});
+
+const sortedCustomMenus = computed(() => {
+    if (!props.customMenus) return [];
+    return [...props.customMenus].sort((a, b) =>
         (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' })
     );
 });
@@ -50,6 +60,13 @@ const sortedSubDepartments = computed(() => {
     );
 });
 
+const sortedCustomSubDepartments = computed(() => {
+    if (activeCustomIndex.value === null || !sortedCustomMenus.value[activeCustomIndex.value]?.sub_departments) return [];
+    return [...sortedCustomMenus.value[activeCustomIndex.value].sub_departments].sort((a, b) =>
+        (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' })
+    );
+});
+
 const sortedFamilies = computed(() => {
     if (activeSubIndex.value === null || !sortedSubDepartments.value[activeSubIndex.value]?.families) return [];
     return [...sortedSubDepartments.value[activeSubIndex.value].families].sort((a, b) =>
@@ -57,9 +74,27 @@ const sortedFamilies = computed(() => {
     );
 });
 
+const sortedCustomFamilies = computed(() => {
+    if (activeCustomSubIndex.value === null || !sortedCustomSubDepartments.value[activeCustomSubIndex.value]?.families) return [];
+    return [...sortedCustomSubDepartments.value[activeCustomSubIndex.value].families].sort((a, b) =>
+        (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' })
+    );
+});
+
 // reset subdepartment when category changes
 const setActiveCategory = (index: number) => {
     activeIndex.value = index;
+    activeSubIndex.value = null;
+    // Reset custom menu states
+    activeCustomIndex.value = null;
+    activeCustomSubIndex.value = null;
+};
+
+const setActiveCustomCategory = (index: number) => {
+    activeCustomIndex.value = index;
+    activeCustomSubIndex.value = null;
+    // Reset product category states
+    activeIndex.value = null;
     activeSubIndex.value = null;
 };
 
@@ -75,7 +110,7 @@ onUnmounted(() => {
     window.removeEventListener('resize', checkMobile);
 });
 
-console.log('layout', layout)
+// console.log('layout', layout)
 </script>
 
 <template>
@@ -90,7 +125,8 @@ console.log('layout', layout)
             margin: 0,
             padding: 0,
             ...getStyles(props.menu?.container?.properties),
-            width: isMobile ? null : !isNull(activeIndex) ? !isNull(activeSubIndex) ? '60%' : '40%' : '20%'
+            width: isMobile ? null : !isNull(activeIndex) || !isNull(activeCustomIndex) ?
+                (!isNull(activeSubIndex) || !isNull(activeCustomSubIndex)) ? '60%' : '40%' : '20%'
         }">
             <template #header>
                 <img :src="header?.logo?.image?.source?.original" :alt="header?.logo?.alt" class="h-16" />
@@ -127,8 +163,8 @@ console.log('layout', layout)
                                     </a>
 
                                     <div v-if="submenu.links" class="space-y-2 mt-2 ml-4 pl-4  border-gray-200">
-                                        <a v-for="(menu, menuIndex) in [...submenu.links].sort((a, b) => (a.label || '').localeCompare(b.label || '', undefined, { sensitivity: 'base' }))" :key="menuIndex"
-                                            :href="menu.link?.href" :target="menu.link?.target"
+                                        <a v-for="(menu, menuIndex) in [...submenu.links].sort((a, b) => (a.label || '').localeCompare(b.label || '', undefined, { sensitivity: 'base' }))"
+                                            :key="menuIndex" :href="menu.link?.href" :target="menu.link?.target"
                                             :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
                                             class="block text-sm text-gray-700 relative hover:text-primary transition-all">
                                             <span class="absolute left-0 -ml-4">–</span>
@@ -149,6 +185,55 @@ console.log('layout', layout)
                             </a>
                         </div>
                     </div>
+
+                    <!-- Custom Menus Section for Mobile -->
+                    <div v-if="sortedCustomMenus && sortedCustomMenus.length > 0">
+                        <hr class="my-4 border-gray-300">
+                        <div v-for="(customItem, customIndex) in sortedCustomMenus" :key="'custom-' + customIndex">
+                            <!-- Custom Menu WITH Sub-departments -->
+                            <Disclosure v-if="customItem.sub_departments && customItem.sub_departments.length > 0"
+                                v-slot="{ open }">
+                                <DisclosureButton class="w-full text-left p-4 font-semibold text-gray-600 border-b">
+                                    <div class="flex justify-between items-center text-lg"
+                                        :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }">
+                                        <span>{{ customItem.name }}</span>
+                                        <FontAwesomeIcon :icon="faChevronCircleDown"
+                                            :class="{ 'rotate-180': open, 'transition-transform duration-300': true }" />
+                                    </div>
+                                </DisclosureButton>
+
+                                <DisclosurePanel class="disclosure-panel">
+                                    <div v-for="(subDept, subDeptIndex) in [...customItem.sub_departments].sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }))"
+                                        :key="subDeptIndex" class="mb-6">
+                                        <a :href="'/' + subDept.url"
+                                            class="block text-base font-bold text-gray-700 mb-2"
+                                            :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }">
+                                            {{ subDept.name }}
+                                        </a>
+
+                                        <div v-if="subDept.families" class="space-y-2 mt-2 ml-4 pl-4 border-gray-200">
+                                            <a v-for="(family, familyIndex) in [...subDept.families].sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }))"
+                                                :key="familyIndex" :href="'/' + family.url"
+                                                :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
+                                                class="block text-sm text-gray-700 relative hover:text-primary transition-all">
+                                                <span class="absolute left-0 -ml-4">–</span>
+                                                {{ family.name }}
+                                            </a>
+                                        </div>
+                                    </div>
+                                </DisclosurePanel>
+                            </Disclosure>
+
+                            <!-- Custom Menu SINGLE LINK -->
+                            <div v-else class="py-4 px-5 border-b">
+                                <a :href="'/' + customItem.url"
+                                    :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
+                                    class="font-bold text-gray-600 text-lg">
+                                    {{ customItem.name }}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div v-if="isMobile" class="login-section">
@@ -163,18 +248,18 @@ console.log('layout', layout)
             </div>
 
             <!-- Two-column menu -->
-
             <div v-else
-                :class="['menu-container grid h-full', activeIndex !== null && 'grid-cols-2', activeSubIndex !== null && 'grid-cols-3']">
-                <!-- Column 1: Categories -->
-                <div :class="[activeIndex !== null && 'border-r', 'overflow-y-auto']">
+                :class="['menu-container grid h-full', (activeIndex !== null || activeCustomIndex !== null) && 'grid-cols-2', (activeSubIndex !== null || activeCustomSubIndex !== null) && 'grid-cols-3']">
+                <!-- Column 1: Categories + Custom Menus -->
+                <div :class="[(activeIndex !== null || activeCustomIndex !== null) && 'border-r', 'overflow-y-auto']">
                     <!-- Header -->
                     <div class="flex items-center justify-between px-2 py-4 border-b">
                         <h3 class="font-semibold text-sm">Departments</h3>
                     </div>
 
-                    <!-- List -->
-                    <div v-for="(item, index) in sortedProductCategories" :key="index" class="p-2 px-4 flex items-center justify-between cursor-pointer transition-colors duration-200"
+                    <!-- Product Categories List -->
+                    <div v-for="(item, index) in sortedProductCategories" :key="index"
+                        class="p-2 px-4 flex items-center justify-between cursor-pointer transition-colors duration-200"
                         :class="[
                             activeIndex === index
                                 ? `bg-gray-100 font-semibold text-[${layout.iris.theme?.color[0]}]`
@@ -183,61 +268,127 @@ console.log('layout', layout)
                         <div>{{ item.name }}</div>
                         <FontAwesomeIcon :icon="faChevronRight" class="text-xs transition-transform duration-200" />
                     </div>
+
+                    <!-- Custom Menus Section for Desktop -->
+                    <div v-if="sortedCustomMenus && sortedCustomMenus.length > 0">
+                        <hr class="my-4 mx-4 border-gray-300">
+                        <div v-for="(customItem, customIndex) in sortedCustomMenus" :key="'custom-' + customIndex"
+                            class="p-2 px-4 flex items-center justify-between cursor-pointer transition-colors duration-200"
+                            :class="[
+                                activeCustomIndex === customIndex
+                                    ? `bg-gray-100 font-semibold text-[${layout.iris.theme?.color[0]}]`
+                                    : ' hover:bg-gray-50'
+                            ]"
+                            @click="customItem.sub_departments && customItem.sub_departments.length > 0 ? setActiveCustomCategory(customIndex) : null">
+                            <div>
+                                <a v-if="!customItem.sub_departments || customItem.sub_departments.length === 0"
+                                    :href="'/' + customItem.url" class="block">
+                                    {{ customItem.name }}
+                                </a>
+                                <span v-else>{{ customItem.name }}</span>
+                            </div>
+                            <FontAwesomeIcon v-if="customItem.sub_departments && customItem.sub_departments.length > 0"
+                                :icon="faChevronRight" class="text-xs transition-transform duration-200" />
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Column 2: Subdepartments -->
-                <div v-if="activeIndex !== null" :class="[activeSubIndex !== null && 'border-r']">
+                <div v-if="activeIndex !== null || activeCustomIndex !== null"
+                    :class="[(activeSubIndex !== null || activeCustomSubIndex !== null) && 'border-r']">
                     <!-- Header -->
                     <div class="flex items-center justify-between py-4 px-4">
                         <h3 class="font-semibold text-sm">Sub-Departments</h3>
                     </div>
 
                     <div class="overflow-y-auto">
-                    <div v-if="sortedSubDepartments.length">
-                        <div v-for="(sub, sIndex) in sortedSubDepartments" :key="sIndex"
-                            class="p-2 px-4 flex items-center justify-between cursor-pointer transition-colors duration-200"
-                            :class="[
-                                activeSubIndex === sIndex
-                                    ? `bg-gray-100 font-semibold text-[${layout.iris.theme?.color[0]}]`
-                                    : 'hover:bg-gray-50 text-gray-700'
-                            ]" @click="activeSubIndex = sIndex">
-                            <div>{{ sub.name }}</div>
-                            <FontAwesomeIcon :icon="faChevronRight" class="transition-transform duration-200 text-xs" />
+                        <!-- Product Categories Subdepartments -->
+                        <div v-if="activeIndex !== null && sortedSubDepartments.length">
+                            <div v-for="(sub, sIndex) in sortedSubDepartments" :key="sIndex"
+                                class="p-2 px-4 flex items-center justify-between cursor-pointer transition-colors duration-200"
+                                :class="[
+                                    activeSubIndex === sIndex
+                                        ? `bg-gray-100 font-semibold text-[${layout.iris.theme?.color[0]}]`
+                                        : 'hover:bg-gray-50 text-gray-700'
+                                ]" @click="activeSubIndex = sIndex">
+                                <div>{{ sub.name }}</div>
+                                <FontAwesomeIcon :icon="faChevronRight"
+                                    class="transition-transform duration-200 text-xs" />
+                            </div>
+                            <div class="p-2 px-4  cursor-pointer font-bold">
+                                <a :href="'/' + sortedProductCategories[activeIndex].url">
+                                    <Button label="View all" :icon="faExternalLink" size="xs" />
+                                </a>
+                            </div>
                         </div>
-                        <div class="p-2 px-4  cursor-pointer font-bold">
-                            <a :href="'/' + sortedProductCategories[activeIndex].url">
-                                <Button label="View all" :icon="faExternalLink" size="xs" />
-                            </a>
+
+                        <!-- Custom Menus Subdepartments -->
+                        <div v-if="activeCustomIndex !== null && sortedCustomSubDepartments.length">
+                            <div v-for="(sub, sIndex) in sortedCustomSubDepartments" :key="sIndex"
+                                class="p-2 px-4 flex items-center justify-between cursor-pointer transition-colors duration-200"
+                                :class="[
+                                    activeCustomSubIndex === sIndex
+                                        ? `bg-gray-100 font-semibold text-[${layout.iris.theme?.color[0]}]`
+                                        : 'hover:bg-gray-50 text-gray-700'
+                                ]" @click="activeCustomSubIndex = sIndex">
+                                <div>{{ sub.name }}</div>
+                                <FontAwesomeIcon :icon="faChevronRight"
+                                    class="transition-transform duration-200 text-xs" />
+                            </div>
+                            <!-- <div class="p-2 px-4  cursor-pointer font-bold">
+                                <a :href="'/' + sortedCustomMenus[activeCustomIndex].url">
+                                    <Button label="View all" :icon="faExternalLink" size="xs" />
+                                </a>
+                            </div> -->
                         </div>
-                    </div>
-                    <div v-else class="p-2 text-gray-400 italic">
-                        No subdepartments available
-                    </div>
+
+                        <!-- No subdepartments message -->
+                        <div v-if="(activeIndex !== null && !sortedSubDepartments.length) || (activeCustomIndex !== null && !sortedCustomSubDepartments.length)"
+                            class="p-2 text-gray-400 italic">
+                            No subdepartments available
+                        </div>
                     </div>
                 </div>
 
                 <!-- Column 3: Families -->
-                <div v-if="activeSubIndex !== null" >
+                <div v-if="activeSubIndex !== null || activeCustomSubIndex !== null">
                     <!-- Header -->
                     <div class="flex items-center justify-between p-4">
                         <h3 class="font-semibold text-sm">Families</h3>
                     </div>
 
-                    <div v-if="activeSubIndex !== null" class="overflow-y-auto">
-                    <div v-if="sortedFamilies.length">
-                        <div v-for="(child, cIndex) in sortedFamilies"
-                            :key="cIndex" class="p-2 px-4  cursor-pointer hover:bg-gray-50">
-                            <a :href="'/' + child.url">{{ child.name }}</a>
+                    <div class="overflow-y-auto">
+                        <!-- Product Categories Families -->
+                        <div v-if="activeSubIndex !== null && sortedFamilies.length">
+                            <div v-for="(child, cIndex) in sortedFamilies" :key="cIndex"
+                                class="p-2 px-4  cursor-pointer hover:bg-gray-50">
+                                <a :href="'/' + child.url">{{ child.name }}</a>
+                            </div>
+                            <div class="p-2 px-4  cursor-pointer hover:bg-gray-50 font-bold">
+                                <a :href="'/' + sortedSubDepartments[activeSubIndex].url">
+                                    <Button label="View all" :icon="faExternalLink" size="xs" />
+                                </a>
+                            </div>
                         </div>
-                        <div class="p-2 px-4  cursor-pointer hover:bg-gray-50 font-bold">
-                            <a :href="'/' + sortedSubDepartments[activeSubIndex].url">
-                                <Button label="View all" :icon="faExternalLink" size="xs" />
-                            </a>
+
+                        <!-- Custom Menus Families -->
+                        <div v-if="activeCustomSubIndex !== null && sortedCustomFamilies.length">
+                            <div v-for="(child, cIndex) in sortedCustomFamilies" :key="cIndex"
+                                class="p-2 px-4  cursor-pointer hover:bg-gray-50">
+                                <a :href="'/' + child.url">{{ child.name }}</a>
+                            </div>
+                            <!-- <div class="p-2 px-4  cursor-pointer hover:bg-gray-50 font-bold">
+                                <a :href="'/' + sortedCustomSubDepartments[activeCustomSubIndex].url">
+                                    <Button label="View all" :icon="faExternalLink" size="xs" />
+                                </a>
+                            </div> -->
                         </div>
-                    </div>
-                    </div>
-                    <div v-else class="p-2 text-gray-400 italic">
-                        No further items
+
+                        <!-- No families message -->
+                        <div v-if="(activeSubIndex !== null && !sortedFamilies.length) || (activeCustomSubIndex !== null && !sortedCustomFamilies.length)"
+                            class="p-2 text-gray-400 italic">
+                            No further items
+                        </div>
                     </div>
                 </div>
             </div>
@@ -248,84 +399,89 @@ console.log('layout', layout)
 
 <style scoped lang="scss">
 .menu-container-mobile {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  background: #fff;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: #fff;
 }
 
 .menu-container {
-  height: 100%;
-  background: #fff;
+    height: 100%;
+    background: #fff;
 }
 
 .menu-content {
-  flex: 1;
-  overflow-y: auto;
-  padding-bottom: 1rem;
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 1rem;
 }
 
 .login-section {
-  flex-shrink: 0;
-  padding: 1rem 1.25rem;
-  border-top: 1px solid #e5e5e5;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-
-  a, div {
+    flex-shrink: 0;
+    padding: 1rem 1.25rem;
+    border-top: 1px solid #e5e5e5;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-weight: 600;
-    font-size: 0.95rem;
-    transition: color 0.25s ease;
-  }
+    justify-content: flex-start;
 
-  a:hover {
-    color: #2563eb; /* primary hover */
-  }
+    a,
+    div {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: color 0.25s ease;
+    }
 
-  div:hover {
-    color: #dc2626; /* logout hover */
-  }
+    a:hover {
+        color: #2563eb;
+        /* primary hover */
+    }
+
+    div:hover {
+        color: #dc2626;
+        /* logout hover */
+    }
 }
 
 .disclosure-panel {
-  padding: 0.75rem 1rem 1rem;
+    padding: 0.75rem 1rem 1rem;
 }
 
 .disclosure-panel a {
-  display: block;
-  transition: color 0.2s ease;
+    display: block;
+    transition: color 0.2s ease;
 }
 
 .disclosure-panel a:hover {
-  text-decoration: underline;
-  color: #2563eb;
+    text-decoration: underline;
+    color: #2563eb;
 }
 
 /* ✅ Smooth width transition */
 .p-drawer {
-  transition: width 0.35s ease-in-out;
-  background: #fff;
+    transition: width 0.35s ease-in-out;
+    background: #fff;
 }
 
 .p-drawer-content {
-  padding: 0 !important;
-  transition: width 0.35s ease-in-out;
+    padding: 0 !important;
+    transition: width 0.35s ease-in-out;
 }
 
 /* Hover & active states */
 .menu-link {
-  @apply flex items-center justify-between px-4 py-2 cursor-pointer transition-colors duration-200 rounded-lg;
+    @apply flex items-center justify-between px-4 py-2 cursor-pointer transition-colors duration-200 rounded-lg;
 }
+
 .menu-link:hover {
-  background: #f9fafb;
+    background: #f9fafb;
 }
+
 .menu-link.active {
-  background: #f3f4f6;
-  font-weight: 600;
-  color: #2563eb;
+    background: #f3f4f6;
+    font-weight: 600;
+    color: #2563eb;
 }
 </style>

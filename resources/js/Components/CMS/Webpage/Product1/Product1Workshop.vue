@@ -99,8 +99,8 @@ function resolveResponsiveClass(
   return options[screenType] || ""
 }
 
-const imagesSetup = ref(isArray(props.modelValue.fieldValue.product.images) ? props.modelValue.fieldValue.product.images :
-	props.modelValue.fieldValue.product.images
+const imagesSetup = ref(isArray(props.modelValue.product.images) ? props.modelValue.product.images :
+	props.modelValue.product.images
 		.filter(item => item.type == "image")
 		.map(item => ({
 			label: item.label,
@@ -110,24 +110,31 @@ const imagesSetup = ref(isArray(props.modelValue.fieldValue.product.images) ? pr
 )
 
 const videoSetup = ref(
-	props.modelValue.fieldValue.product.images.find(item => item.type === "video") || null
+	props.modelValue.product.images.find(item => item.type === "video") || null
 )
 
 
 const validImages = computed(() => {
   if (!imagesSetup.value) return []
 
+  const hasType = imagesSetup.value.some(item => "type" in item)
+
+  if (hasType) {
+    return imagesSetup.value
+      .filter(item => item.images)
+      .flatMap(item => {
+        const images = Array.isArray(item.images) ? item.images : [item.images]
+        return images.map(img => ({
+          source: img,
+          thumbnail: img
+        }))
+      })
+  }
+
+  // berarti array of string/url
   return imagesSetup.value
-    .filter(item => item.images)
-    .flatMap(item => {
-      const images = Array.isArray(item.images) ? item.images : [item.images]
-      console.log("sdsd", images)
-      return images.map(img => ({
-        source: img,
-        thumbnail: img
-      }))
-    })
 })
+
 
 onMounted(() => {
   requestAnimationFrame(() => {
@@ -170,7 +177,7 @@ const toggleExpanded = () => {
         <div class="grid grid-cols-12 gap-x-10 mb-2">
             <div class="col-span-7">
                 <div class="py-1 w-full">
-                    <ImageProducts :images="validImages" :video="videoSetup.url" />
+                    <ImageProducts :images="validImages" :video="videoSetup?.url" />
                 </div>
                 <div class="flex gap-x-10 text-gray-400 mb-6 mt-4">
                     <div class="flex items-center gap-1 text-xs" v-for="(tag,index) in modelValue.product.tags"
@@ -302,7 +309,7 @@ const toggleExpanded = () => {
       ]"
     >
         <h2 class="text-xl font-bold mb-2">{{ modelValue.product.name }}</h2>
-        <ImageProducts  :images="validImages" :video="videoSetup"/>
+        <ImageProducts :images="validImages" :video="videoSetup?.url" />
         <div class="flex justify-between items-start gap-4 mt-4">
             <div v-if="layout.iris?.is_logged_in">
                 <div class="text-lg font-semibold">

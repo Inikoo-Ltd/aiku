@@ -55,7 +55,6 @@ const props = defineProps<{
     menuData: Object
     productCategories : Array<any>
     screenType?: 'mobile' | 'tablet' | 'desktop'
-    sidebar?:any
 }>()
 
 console.log('old menu sidebar', props);
@@ -67,72 +66,74 @@ const upcommingProductCategories = inject('newCustomSidebarMenu')
 
 
 // console.log('custom menu sidebar',  upcommingProductCategories);
-function convertToDepartmentStructure(aromatherapyDataArray) {
-    console.log(aromatherapyDataArray);
+const  convertToDepartmentStructure = (menusData) => {
+
     // If input is not an array, wrap it in an array
-    const dataArray = Array.isArray(aromatherapyDataArray) ? aromatherapyDataArray : [aromatherapyDataArray];
+    const dataArray = Array.isArray(menusData) ? menusData : [menusData];
 
     // Convert each aromatherapy item to department structure
-    return dataArray.map(aromatherapyData => {
-        // Extract the main aromatherapy link
-        const mainLink = aromatherapyData?.link;
+    return dataArray.map(menu => {
+        const mainLinkHref = menu?.link?.href;
 
-        // Create the main department structure
         const departmentStructure = {
-            url: mainLink?.href?.replace('https://', ''),
-            name: aromatherapyData.label,
+            url: typeof mainLinkHref === 'string' ? mainLinkHref.replace('https://', '') : undefined,
+            name: menu?.label || undefined,
             sub_departments: []
         };
 
-        // Convert each subnav to a sub_department
-        aromatherapyData?.subnavs?.forEach(subnav => {
-            const subDepartment = {
-                url: subnav?.link?.href.replace('https://', ''),
-                name: subnav.title,
-                families: []
-            };
-
-            // Convert each link in the subnav to a family
-            subnav?.links.forEach(link => {
-                const family = {
-                    url: link?.link?.href.replace('https://', ''),
-                    name: link?.label
+        if (Array.isArray(menu?.subnavs)) {
+            menu.subnavs.forEach(subnav => {
+                const subLinkHref = subnav?.link?.href;
+                const subDepartment = {
+                    url: typeof subLinkHref === 'string' ? subLinkHref.replace('https://', '') : undefined,
+                    name: subnav?.title || undefined,
+                    families: []
                 };
-                subDepartment.families.push(family);
+
+                if (Array.isArray(subnav?.links)) {
+                    subnav.links.forEach(link => {
+                        const linkHref = link?.link?.href;
+                        const family = {
+                            url: typeof linkHref === 'string' ? linkHref.replace('https://', '') : undefined,
+                            name: link?.label || undefined
+                        };
+                        subDepartment.families.push(family);
+                    });
+                }
+
+                departmentStructure.sub_departments.push(subDepartment);
             });
+        }
 
-            departmentStructure.sub_departments.push(subDepartment);
-        });
-
-        return departmentStructure ?? [];
+        return departmentStructure;
     });
 }
 
 
-const mergedProductCategories = ref([]); // Create a reactive ref to hold the new value
+
+const customMenus = ref([]); // Create a reactive ref to hold the new value
 
 watch(
-    () => props.sidebar,
+    () => upcommingProductCategories,
     (newValue) => {
         if (newValue) {
-            const converted = convertToDepartmentStructure(newValue?.sidebar?.data?.fieldValue.navigation);
-            mergedProductCategories.value = [...converted];
-            // console.log(newValue.sidebar);
+            const converted = convertToDepartmentStructure(newValue?.value?.sidebar?.data?.fieldValue.navigation);
+            customMenus.value = [...converted];
+            console.log(converted);
         } else {
-            mergedProductCategories.value = []; // Handle the case where the data is null or undefined
+            customMenus.value = []; // Handle the case where the data is null or undefined
         }
     },
-    { immediate: true } // Add options for immediate and deep watching
+    { immediate: true, deep:true } // Add options for immediate and deep watching
 );
 
 </script>
 
 <template>
-    <!-- <pre>{{ sidebar.sidebar }}</pre> -->
     <div class="block md:hidden p-3">
         <div class="flex justify-between items-center">
             <!-- Section: Hamburger mobile -->
-            <MobileMenu :header="headerData" :menu="menuData" :productCategories="mergedProductCategories" />
+            <MobileMenu :header="headerData" :menu="menuData" :productCategories="productCategories" :custom-menus="customMenus" />
 
             <!-- Section: Logo  -->
             <component :is="true ? Link : 'div'" :href="'/'" class="block w-full h-[65px] mb-1 rounded">

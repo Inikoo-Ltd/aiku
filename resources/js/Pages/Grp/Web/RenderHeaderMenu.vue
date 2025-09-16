@@ -84,7 +84,6 @@ const emits = defineEmits<{
                 :menu-data="menu?.menu?.data?.fieldValue"
                 :productCategories="menu?.menu?.data.productCategory" 
                 :screenType="screenType" 
-                :sidebar
             />
         </div>
 </template>

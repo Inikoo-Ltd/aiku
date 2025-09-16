@@ -13,6 +13,7 @@ import {
 } from '@fal'
 import { ulid } from 'ulid'
 import Image from '@/Components/Image.vue'
+import { faVideo } from '@fas'
 
 const props = defineProps<{
   images: { source: string; thumbnail: string }[]
@@ -74,9 +75,11 @@ onMounted(async () => {
   })
 })
 
+console.log(props.video)
 </script>
 
 <template>
+
   <div class="w-full flex flex-col items-center relative">
     <!-- Shared Navigation Buttons -->
     <div class="absolute inset-0 pointer-events-none z-50">
@@ -130,11 +133,15 @@ onMounted(async () => {
       <!-- Video thumbnail -->
       <SwiperSlide v-if="props.video" key="thumb-video"
         class="cursor-pointer rounded overflow-hidden border border-gray-300">
-        <div class="aspect-square w-full flex items-center justify-center bg-gray-200">
-         <iframe class="w-full h-full" :src="props.video" frameborder="0" allow="autoplay; fullscreen"
-            allowfullscreen></iframe>
+        <div class="aspect-square w-full flex items-center justify-center bg-gray-200 relative">
+          <!-- Thumbnail placeholder -->
+          <FontAwesomeIcon :icon=faVideo class="text-3xl text-gray-600" />
+          <span class="absolute bottom-2 text-xs text-gray-700 bg-white/70 px-2 py-0.5 rounded">
+            Video
+          </span>
         </div>
       </SwiperSlide>
+
     </Swiper>
 
 
