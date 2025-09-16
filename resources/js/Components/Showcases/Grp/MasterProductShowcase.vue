@@ -115,7 +115,7 @@ const validImages = computed(() =>
 
 
 const locale = inject("locale", aikuLocaleStructure)
-
+console.log(props)
 </script>
 
 

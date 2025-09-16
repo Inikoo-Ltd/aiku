@@ -414,6 +414,18 @@ const toggleFull = () => {
                             </small>
                         </div>
 
+
+                         <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Dimension</label>
+                            <PureInputDimension :rows="4" v-model="form.dimensions"
+                                @update:model-value="form.errors.dimensions = null" class="w-full" />
+                            <small v-if="form.errors.dimensions"
+                                class="text-red-500 text-xs flex items-center gap-1 mt-1">
+                                <FontAwesomeIcon :icon="faCircleExclamation" />
+                                {{ form.errors.dimensions.join(", ") }}
+                            </small>
+                        </div>
+
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">Description title</label>
                             <PureInput type="text" v-model="form.description_title"
@@ -422,17 +434,6 @@ const toggleFull = () => {
                                 class="text-red-500 text-xs flex items-center gap-1 mt-1">
                                 <FontAwesomeIcon :icon="faCircleExclamation" />
                                 {{ form.errors.description_title.join(", ") }}
-                            </small>
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Dimension</label>
-                            <PureInputDimension :rows="4" v-model="form.dimensions"
-                                @update:model-value="form.errors.dimensions = null" class="w-full" />
-                            <small v-if="form.errors.dimensions"
-                                class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                                <FontAwesomeIcon :icon="faCircleExclamation" />
-                                {{ form.errors.dimensions.join(", ") }}
                             </small>
                         </div>
 
