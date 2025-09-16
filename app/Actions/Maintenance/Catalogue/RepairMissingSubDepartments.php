@@ -9,6 +9,7 @@
 namespace App\Actions\Maintenance\Catalogue;
 
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
+use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategory;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
@@ -25,9 +26,33 @@ class RepairMissingSubDepartments
      */
     public function handle(ProductCategory $productCategory, array $modelData): void
     {
-        $this->update($productCategory, [
-            'sub_department_id' => $modelData['sub_department_id']
-        ]);
+
+       //
+        print_r([$productCategory->slug,$modelData]);
+      // return;
+//        return;
+        if ($productCategory->type == ProductCategoryTypeEnum::FAMILY and $productCategory->sub_department_id == null) {
+
+            try {
+                UpdateProductCategory::run($productCategory, [
+                    'sub_department_id' => $modelData['sub_department_id']
+                ]);
+                $productCategory->refresh();
+
+                $masterFamily = $productCategory->masterProductCategory;
+                if ($masterFamily) {
+                    $masterSubDepartment = $productCategory->subDepartment->masterProductCategory;
+
+                    if ($masterSubDepartment) {
+                        UpdateMasterProductCategory::run($masterFamily, [
+                            'master_sub_department_id' => $masterSubDepartment->id
+                        ]);
+                    }
+                }
+            }catch (\Exception $e){
+                print_r($e->getMessage());
+            }
+        }
     }
 
     public function getCommandSignature(): string
@@ -41,12 +66,13 @@ class RepairMissingSubDepartments
     public function asCommand(Command $command): int
     {
         $filePath = $command->argument('file');
- 
+
         if (!$filePath) {
             $filePath = $this->findLatestCsvFile($command);
             if (!$filePath) {
                 $command->error('No CSV file specified and no CSV files found in storage.');
                 $command->info('Usage: php artisan repair:missing_sub_departments [file_path]');
+
                 return 1;
             }
         }
@@ -54,23 +80,25 @@ class RepairMissingSubDepartments
         // Check if file exists
         if (!file_exists($filePath)) {
             $command->error("File not found: {$filePath}");
+
             return 1;
         }
 
         $command->info("Reading CSV file: {$filePath}");
-        
-        try {
+
+     //   try {
             $datas = $this->readCsvFile($filePath);
-            foreach($datas as $data) {
+            foreach ($datas as $data) {
                 $productCategory = ProductCategory::find($data['id']);
-                if($productCategory) {
+                if ($productCategory) {
                     $this->handle($productCategory, $data);
                 }
             }
-        } catch (\Exception $e) {
-            $command->error("Error reading CSV file: " . $e->getMessage());
-            return 1;
-        }
+//        } catch (\Exception $e) {
+//            $command->error("Error reading CSV file: ".$e->getMessage());
+//
+//            return 1;
+//        }
 
         return 0;
     }
@@ -78,35 +106,35 @@ class RepairMissingSubDepartments
     private function findLatestCsvFile(Command $command): ?string
     {
         $storageDir = storage_path('app');
-        $pattern = $storageDir . '/product_categories_sub_departments_*.csv';
-        $files = glob($pattern);
-        
+        $pattern    = $storageDir.'/product_categories_sub_departments_*.csv';
+        $files      = glob($pattern);
+
         if (empty($files)) {
             return null;
         }
 
-        usort($files, function($a, $b) {
+        usort($files, function ($a, $b) {
             return filemtime($b) - filemtime($a);
         });
 
         $latestFile = $files[0];
-        $command->info("Found latest CSV file: " . basename($latestFile));
-        
+        $command->info("Found latest CSV file: ".basename($latestFile));
+
         return $latestFile;
     }
 
     private function readCsvFile(string $filePath): array
     {
-        $data = [];
+        $data   = [];
         $handle = fopen($filePath, 'r');
-        
+
         if (!$handle) {
             throw new \Exception("Unable to open file: {$filePath}");
         }
 
         // Read header
         $header = fgetcsv($handle);
-        
+
         // Read data rows
         while (($row = fgetcsv($handle)) !== false) {
             if ($header) {
@@ -117,8 +145,9 @@ class RepairMissingSubDepartments
                 $data[] = $row;
             }
         }
-        
+
         fclose($handle);
+
         return $data;
     }
 }

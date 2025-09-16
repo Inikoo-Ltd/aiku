@@ -28,7 +28,6 @@ class RepairFamilyDepartment
                 dd($family->subDepartment);
             }
 
-            print "Fixing family $family->code \n";
             UpdateProductCategory::make()->action(
                 $family,
                 [

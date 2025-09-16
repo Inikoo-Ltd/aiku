@@ -65,7 +65,6 @@ class AddMissingMasterAssets
             ->where('type', MasterProductCategoryTypeEnum::FAMILY->value)
             ->whereRaw("lower(code) = lower(?)", [$code])->first();
 
-        $foundMasterProduct = null;
 
 
         if (!$foundMasterAssetData) {
@@ -75,6 +74,8 @@ class AddMissingMasterAssets
 
             $price = $product->price * $exchange;
 
+
+            //Todo this will only worl with parent is masterfamily
             $foundMasterProduct = StoreMasterAsset::make()->action(
                 $masterFamily ?? $masterShop,
                 [

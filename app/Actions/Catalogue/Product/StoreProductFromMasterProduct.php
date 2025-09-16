@@ -29,6 +29,7 @@ class StoreProductFromMasterProduct extends GrpAction
         if ($productCategories) {
             foreach ($productCategories as $productCategory) {
                 $shop = $productCategory->shop;
+
                 if (isset($modelData['shop_products']) && !array_key_exists($shop->id, $modelData['shop_products'])) {
                     continue;
                 }

@@ -149,6 +149,9 @@ class StoreMasterProductFromTradeUnits extends GrpAction
         return $this->handle($parent, $this->validatedData);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(MasterProductCategory $masterFamily, ActionRequest $request): MasterAsset
     {
         $this->initialisation($masterFamily->group, $request);

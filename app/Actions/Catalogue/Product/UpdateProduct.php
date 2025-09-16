@@ -267,6 +267,9 @@ class UpdateProduct extends OrgAction
             'description_title_i8n' => ['sometimes', 'array'],
             'description_i8n' => ['sometimes', 'array'],
             'description_extra_i8n' => ['sometimes', 'array'],
+            'gross_weight'                 => ['sometimes', 'numeric'],
+            'marketing_weight'             => ['sometimes', 'numeric'],
+            'marketing_dimensions'         => ['sometimes'],
         ];
 
 
