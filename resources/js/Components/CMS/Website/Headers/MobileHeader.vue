@@ -57,15 +57,11 @@ const props = defineProps<{
     screenType?: 'mobile' | 'tablet' | 'desktop'
 }>()
 
-console.log('old menu sidebar', props);
-// console.log('menu mobile', props.menuData);
-
 const layout = inject('layout', retinaLayoutStructure)
 const isLoggedIn = inject('isPreviewLoggedIn', false)
-const upcommingProductCategories = inject('newCustomSidebarMenu')
+const upcommingProductCategories = inject('newCustomSidebarMenu') //make sure the provide available on each layout
 
 
-// console.log('custom menu sidebar',  upcommingProductCategories);
 const  convertToDepartmentStructure = (menusData) => {
 
     // If input is not an array, wrap it in an array
@@ -117,9 +113,9 @@ watch(
     () => upcommingProductCategories,
     (newValue) => {
         if (newValue) {
-            const converted = convertToDepartmentStructure(newValue?.value?.sidebar?.data?.fieldValue.navigation);
+            const converted = convertToDepartmentStructure(newValue?.value?.data?.fieldValue.navigation);
             customMenus.value = [...converted];
-            console.log(converted);
+            // console.log(converted);
         } else {
             customMenus.value = []; // Handle the case where the data is null or undefined
         }

@@ -20,6 +20,8 @@ const props = defineProps<{
     customMenus?: Array<any>
 }>();
 
+console.log(props);
+
 const layout = inject("layout", {});
 const isLoggedIn = inject('isPreviewLoggedIn', false)
 const onLogout = inject('onLogout')
@@ -183,7 +185,7 @@ onUnmounted(() => {
 
                     <!-- Custom Menus Section for Mobile -->
                     <div v-if="sortedCustomMenus && sortedCustomMenus.length > 0">
-                        <hr class="my-4 border-gray-300">
+                        <!-- <hr class="my-4 border-gray-300"> -->
                         <div v-for="(customItem, customIndex) in sortedCustomMenus" :key="'custom-' + customIndex">
                             <!-- Custom Menu WITH Sub-departments -->
                             <Disclosure v-if="customItem.sub_departments && customItem.sub_departments.length > 0"
@@ -232,11 +234,14 @@ onUnmounted(() => {
 
                             <!-- Custom Menu SINGLE LINK -->
                             <div v-else class="py-4 px-5 border-b">
-                                <a :href="'/' + customItem.url"
+                                <a v-if="customItem?.url !== undefined" :href="'/' + customItem.url"
                                     :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
                                     class="font-bold text-gray-600 text-lg">
                                     {{ customItem.name }}
                                 </a>
+                                <span v-else
+                                    :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
+                                    class="font-bold text-gray-600 text-lg">{{ customItem.name }}</span>
                             </div>
                         </div>
                     </div>
