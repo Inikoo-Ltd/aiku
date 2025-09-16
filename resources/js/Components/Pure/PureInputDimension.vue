@@ -21,7 +21,6 @@ const createDefaultValue = () => ({
   h: 0,
   l: 0,
   w: 0,
-  d: 0,
   type: "rectangular",
   units: "mm"
 })
@@ -44,6 +43,7 @@ watch(
 watch(
   localValue,
   (val) => {
+    console.log(val)
     emits("update:modelValue", { ...val })
   },
   { deep: true }
@@ -96,12 +96,12 @@ const unitOptions = [
       <template v-else-if="localValue.type === 'cylinder'">
         <NumberInput v-model="localValue.h" inputClass="w-20 text-center" placeholder="H" />
         <span class="text-gray-500">×</span>
-        <NumberInput v-model="localValue.d" inputClass="w-20 text-center" placeholder="D" />
+        <NumberInput v-model="localValue.w" inputClass="w-20 text-center" placeholder="D" />
       </template>
 
       <!-- Sphere -->
       <template v-else-if="localValue.type === 'sphere'">
-        <NumberInput v-model="localValue.d" inputClass="w-20 text-center" placeholder="D" />
+        <NumberInput v-model="localValue.h" inputClass="w-20 text-center" placeholder="D" />
       </template>
 
       <!-- String -->
