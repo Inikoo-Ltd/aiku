@@ -82,6 +82,9 @@ const fetchRecommenders = async () => {
                     "size": 7,
                     // "user_id": "1234",
                     "recommendation_context":  {},
+                    "category": undefined,
+                    "brand": undefined,
+                    "product_id": undefined,
                     // "hit_fields": ["url", "title"]
                 }
             ],
@@ -142,44 +145,43 @@ onMounted(()=> {
 
             <template v-else-if="listProducts?.length">
                 <SwiperSlide v-for="(image, index) in listProducts" :key="index" class="w-full h-full min-h-full">
-                    <div class="relative border border-gray-300 hover:border-gray-700 px-4 py-3 rounded flex flex-col justify-between h-full">
-                        <!-- Product Image -->
-                        <component :is="image.attributes.web_url?.[0] ? Link : 'div'" :href="image.attributes.web_url?.[0]" class="block rounded aspect-[5/4] w-full overflow-hidden">
-                            <img
-                                :src="image.attributes.image_link"
-                                :alt="image.attributes.title"
-                                class="w-full h-full object-contain"
-                            >
-                        </component>
-                        
-                        <!-- Title -->
-                        <Link v-if="image.attributes.web_url?.[0]" :href="image.attributes.web_url?.[0]"
-                            class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
-                            {{ image.attributes.title }}
-                        </Link>
-                        <div v-else class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
-                            {{ image.attributes.title }}
-                        </div>
-
-                        <!-- SKU and RRP -->
-                        <div class="flex justify-between text-xs text-gray-500 mb-1 capitalize">
-                            <span>{{ image.attributes.product_code?.[0] }}</span>
-                        </div>
-
-                        <!-- Rating and Stock -->
-                        <div class="flex justify-between items-center text-xs mb-2">
-                            <div v-if="layout?.iris?.is_logged_in" v-tooltip="trans('Stock')" class="flex items-center gap-1"
-                                :class="Number(image.attributes?.stock_qty?.[0]) > 0 ? 'text-green-600' : 'text-red-600'">
-                                <FontAwesomeIcon :icon="faCircle" class="text-[8px]" />
-                                <span>{{ Number(image.attributes?.stock_qty?.[0]) > 0 ? Number(image.attributes?.stock_qty?.[0]) : 0 }} {{trans('available')}}</span>
+                    <div class="relative border border-gray-300 hover:border-gray-700 px-4 py-3 rounded !flex flex-col justify-between h-full">
+                        <div>
+                            <!-- Product Image -->
+                            <component :is="image.attributes.web_url?.[0] ? Link : 'div'" :href="image.attributes.web_url?.[0]" class="block rounded aspect-[5/4] w-full overflow-hidden">
+                                <img
+                                    :src="image.attributes.image_link"
+                                    :alt="image.attributes.title"
+                                    class="w-full h-full object-contain"
+                                >
+                            </component>
+                            
+                            <!-- Title -->
+                            <Link v-if="image.attributes.web_url?.[0]" :href="image.attributes.web_url?.[0]"
+                                class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
+                                {{ image.attributes.title }}
+                            </Link>
+                            <div v-else class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
+                                {{ image.attributes.title }}
                             </div>
-                        </div>
-
-                        <!-- Prices -->
-                        <div v-if="layout?.iris?.is_logged_in" class="mb-3">
-                            <div class="flex justify-between text-sm ">
-                                <span>{{ trans('Price') }}: <span class="font-semibold">{{ image.attributes.formatted_price }}</span></span>
-                                <!-- <span><span v-tooltip="trans('Recommended retail price')" >{{trans('RRP')}}</span>:  <span class="font-semibold">{{ locale.currencyFormat(layout.iris.currency.code,product.rrp) }}</span></span> -->
+                            <!-- SKU and RRP -->
+                            <div class="flex justify-between text-xs text-gray-500 mb-1 capitalize">
+                                <span>{{ image.attributes.product_code?.[0] }}</span>
+                            </div>
+                            <!-- Rating and Stock -->
+                            <div class="flex justify-between items-center text-xs mb-2">
+                                <div v-if="layout?.iris?.is_logged_in" v-tooltip="trans('Stock')" class="flex items-center gap-1"
+                                    :class="Number(image.attributes?.stock_qty?.[0]) > 0 ? 'text-green-600' : 'text-red-600'">
+                                    <FontAwesomeIcon :icon="faCircle" class="text-[8px]" />
+                                    <span>{{ Number(image.attributes?.stock_qty?.[0]) > 0 ? Number(image.attributes?.stock_qty?.[0]) : 0 }} {{trans('available')}}</span>
+                                </div>
+                            </div>
+                            <!-- Prices -->
+                            <div v-if="layout?.iris?.is_logged_in" class="mb-3">
+                                <div class="flex justify-between text-sm ">
+                                    <span>{{ trans('Price') }}: <span class="font-semibold">{{ image.attributes.formatted_price }}</span></span>
+                                    <!-- <span><span v-tooltip="trans('Recommended retail price')" >{{trans('RRP')}}</span>:  <span class="font-semibold">{{ locale.currencyFormat(layout.iris.currency.code,product.rrp) }}</span></span> -->
+                                </div>
                             </div>
                         </div>
 
