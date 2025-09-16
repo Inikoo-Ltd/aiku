@@ -189,11 +189,29 @@ class EditTradeUnit extends OrgAction
                                     'value' => $tradeUnit->description_extra
                                 ],
                                 'gross_weight' => [
-                                    'type'  => 'input',
+                                    'type'  => 'input_number',
                                     'label' => __('gross weight'),
-                                    'value' => $tradeUnit->gross_weight
+                                    'value' => $tradeUnit->gross_weight,
+                                    'bind'  =>[
+                                        'suffix' => 'g'
+                                    ]
                                 ],
-                                
+                                 'net_weight' => [
+                                    'type'  => 'input_number',
+                                    'label' => __('net weight'),
+                                    'value' => $tradeUnit->net_weight,
+                                    'bind'  =>[
+                                        'suffix' => 'g'
+                                    ]
+                                ],
+                                'marketing_weight' => [
+                                    'type'  => 'input_number',
+                                    'label' => __('marketing weight'),
+                                    'value' => $tradeUnit->marketing_weight,
+                                    'bind'  =>[
+                                        'suffix' => 'g'
+                                    ]
+                                ],
                             ],
                         ],
                         [
