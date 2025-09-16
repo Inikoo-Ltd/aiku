@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Catalogue\Product\Json\GetRetinaPortfoliosInProduct;
+use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetEbayProducts;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetRetinaCustomerProductCategorySalesChannelIds;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetShopifyProducts;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetWooProducts;
@@ -34,4 +35,4 @@ Route::get('product-category/{productCategory:id}/channels', GetRetinaCustomerPr
 
 Route::get('customer-sales-channel/{customerSalesChannel:id}/shopify-products', GetShopifyProducts::class)->name('dropshipping.customer_sales_channel.shopify_products');
 Route::get('customer-sales-channel/{customerSalesChannel:id}/woo-products', GetWooProducts::class)->name('dropshipping.customer_sales_channel.woo_products');
-Route::get('customer-sales-channel/{customerSalesChannel:id}/ebay-products', GetWooProducts::class)->name('dropshipping.customer_sales_channel.ebay_products');
+Route::get('customer-sales-channel/{customerSalesChannel:id}/ebay-products', GetEbayProducts::class)->name('dropshipping.customer_sales_channel.ebay_products');

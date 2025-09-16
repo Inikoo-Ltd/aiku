@@ -9,7 +9,7 @@
 
 namespace App\Actions\Dropshipping\CustomerSalesChannel\Json;
 
-use App\Actions\Dropshipping\WooCommerce\Product\GetProductForWooCommerce;
+use App\Actions\Dropshipping\Ebay\Product\GetProductForEbay;
 use App\Actions\OrgAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Support\Arr;
@@ -25,7 +25,7 @@ class GetEbayProducts extends OrgAction
             $query = '';
         }
 
-        return GetProductForWooCommerce::run($customerSalesChannel->user, $query);
+        return GetProductForEbay::run($customerSalesChannel->user, $query);
     }
 
     public function rules(): array
