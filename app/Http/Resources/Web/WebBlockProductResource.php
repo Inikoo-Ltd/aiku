@@ -75,7 +75,7 @@ class WebBlockProductResource extends JsonResource
             'web_images'        => $product->web_images,
             'created_at'        => $product->created_at,
             'updated_at'        => $product->updated_at,
-            'images'            => $product->bucket_images ? $this->getImagesData($product) : ImageResource::collection($product->images)->toArray($request),
+            'images'            =>  $this->getImagesData($product),
             'tags'              => TagResource::collection($product->tradeUnitTagsViaTradeUnits())->toArray($request),
         ];
     }
