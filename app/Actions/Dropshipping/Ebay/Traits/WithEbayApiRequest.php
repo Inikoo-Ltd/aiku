@@ -421,6 +421,63 @@ trait WithEbayApiRequest
     }
 
     /**
+     * Get listing by SKU
+     */
+    public function getListing($sku)
+    {
+        try {
+            $endpoint = "/sell/inventory/v1/listing/$sku";
+            return $this->makeEbayRequest('get', $endpoint);
+        } catch (Exception $e) {
+            Log::error('Get eBay Listing Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    public function getListings($limit = 50, $offset = 0)
+    {
+        try {
+            $endpoint = "/sell/inventory/v1/listing";
+            return $this->makeEbayRequest('get', $endpoint, [], [
+                'limit' => $limit,
+                'offset' => $offset
+            ]);
+        } catch (Exception $e) {
+            Log::error('Get eBay Listings Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get offers by inventory item SKU
+     */
+    public function getOffers($fields)
+    {
+        try {
+            $endpoint = "/sell/inventory/v1/offer";
+            return $this->makeEbayRequest('get', $endpoint, [], $fields);
+        } catch (Exception $e) {
+            Log::error('Get eBay Offers Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get offer by offer ID
+     */
+    public function getOffer($offerId)
+    {
+        try {
+            $endpoint = "/sell/inventory/v1/offer/$offerId";
+            return $this->makeEbayRequest('get', $endpoint);
+        } catch (Exception $e) {
+            Log::error('Get eBay Offer Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+
+    /**
      * Delete product from eBay
      */
     public function deleteProduct($sku)

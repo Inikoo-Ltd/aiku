@@ -27,20 +27,25 @@ class CheckIfProductExistInEbay extends RetinaAction
     public function handle(EbayUser $ebayUser, Portfolio $portfolio): array
     {
         try {
-            /*if ($portfolio->platform_product_id) {
+            if ($portfolio->platform_product_id) {
                 $searchFields = [
-                    'id' => $portfolio->platform_product_id
+                    'offerId' => $portfolio->platform_product_id
                 ];
-            } else {*/
-            $searchFields = [
-                'sku' => $portfolio->sku
-            ];
-            // }
+            } else {
+                $searchFields = [
+                    'sku' => $portfolio->sku
+                ];
+            }
 
             $result = [];
 
             foreach ($searchFields as $field => $value) {
-                $searchResult = $ebayUser->getProduct($value);
+
+                if ($field === 'sku') {
+                    $searchResult = $ebayUser->getOffers($searchFields);
+                } else {
+                    $searchResult = $ebayUser->getOffer($value);
+                }
 
                 if (!empty($searchResult)) {
                     $result = $searchResult;
