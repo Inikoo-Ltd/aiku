@@ -34,3 +34,4 @@ Route::get('product-category/{productCategory:id}/channels', GetRetinaCustomerPr
 
 Route::get('customer-sales-channel/{customerSalesChannel:id}/shopify-products', GetShopifyProducts::class)->name('dropshipping.customer_sales_channel.shopify_products');
 Route::get('customer-sales-channel/{customerSalesChannel:id}/woo-products', GetWooProducts::class)->name('dropshipping.customer_sales_channel.woo_products');
+Route::get('customer-sales-channel/{customerSalesChannel:id}/ebay-products', GetWooProducts::class)->name('dropshipping.customer_sales_channel.ebay_products');
