@@ -57,6 +57,8 @@ class UpdateProductCategoryImages extends OrgAction
 
         $this->update($productCategory, $modelData);
 
+        UpdateProductCategoryWebImages::run($productCategory);
+
         if ($updateDependants && $productCategory->masterProductCategory) {
             $this->updateDependants($productCategory, $modelData);
         }

@@ -72,6 +72,8 @@ class UpdateMasterProductImages extends GrpAction
             }
         }
 
+        data_set($modelData, 'bucket_images', true);
+
         $this->update($masterAsset, $modelData);
 
         if ($updateDependants && $masterAsset->is_single_trade_unit) {

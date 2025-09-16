@@ -200,18 +200,29 @@ const videoSetup = ref(
 )
 
 
-const validImages = computed(() =>{
-  if(isArray(imagesSetup.value)) return imagesSetup.value
-  imagesSetup.value
-    .filter(item => item.images) // only keep if images exist
-    .flatMap(item => {
-      const images = Array.isArray(item.images) ? item.images : [item.images] 
-      return images.map(img => ({
-        source: img,
-        thumbnail: img
-      }))
-    })
+
+const validImages = computed(() => {
+  if (!imagesSetup.value) return []
+
+  const hasType = imagesSetup.value.some(item => "type" in item)
+
+  if (hasType) {
+    return imagesSetup.value
+      .filter(item => item.images)
+      .flatMap(item => {
+        const images = Array.isArray(item.images) ? item.images : [item.images]
+        return images.map(img => ({
+          source: img,
+          thumbnail: img
+        }))
+      })
+  }
+
+  // berarti array of string/url
+  return imagesSetup.value
 })
+
+
 
 </script>
 
@@ -223,7 +234,7 @@ const validImages = computed(() =>{
         <div class="grid grid-cols-12 gap-x-10 mb-2"> 
             <div class="col-span-7">
                 <div class="py-1 w-full">
-                    <ImageProducts v-if="validImages.length"  :images="validImages" />
+                    <ImageProducts  :images="validImages" :video="videoSetup?.url"/>
                 </div>
                 <div class="flex gap-x-10 text-gray-400 mb-6 mt-4" v-if="fieldValue?.product?.tags?.length">
                     <div class="flex items-center gap-1 text-xs" v-for="(tag, index) in fieldValue.product.tags"
@@ -349,7 +360,7 @@ const validImages = computed(() =>{
     <!-- Mobile Layout -->
     <div class="block sm:hidden px-4 py-6 text-gray-800">
         <h2 class="text-xl font-bold mb-2">{{ fieldValue.product.name }}</h2>
-        <ImageProducts :images="fieldValue?.product?.images" />
+        <ImageProducts :images="validImages" :video="videoSetup?.url" />
         <div class="flex justify-between items-start gap-4 mt-4">
             <!-- Price + Unit Info -->
             <div v-if="layout?.iris?.is_logged_in">
