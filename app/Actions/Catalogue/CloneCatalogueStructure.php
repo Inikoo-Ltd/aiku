@@ -219,7 +219,7 @@ class CloneCatalogueStructure
     /**
      * @throws \Throwable
      */
-    public function upsertDepartment(Shop $shop, ProductCategory|MasterProductCategory $department): ProductCategory
+    public function upsertDepartment(Shop $shop, ProductCategory|MasterProductCategory $department): ?ProductCategory
     {
         $code = $department->code;
 
@@ -230,6 +230,7 @@ class CloneCatalogueStructure
 
 
         if (!$foundDepartmentData) {
+
             $foundDepartment = StoreProductCategory::make()->action(
                 $shop,
                 [
@@ -241,22 +242,23 @@ class CloneCatalogueStructure
             );
         } else {
             $foundDepartment = ProductCategory::find($foundDepartmentData->id);
+            if($foundDepartment) {
+                $dataToUpdate = [
+                    'code' => $department->code,
+                    'name' => $department->name,
+                ];
+                if ($department->description) {
+                    data_set($dataToUpdate, 'description', $department->description);
+                }
 
-            $dataToUpdate = [
-                'code' => $department->code,
-                'name' => $department->name,
-            ];
-            if ($department->description) {
-                data_set($dataToUpdate, 'description', $department->description);
+                $foundDepartment = UpdateProductCategory::make()->action(
+                    $foundDepartment,
+                    $dataToUpdate
+                );
             }
-
-            $foundDepartment = UpdateProductCategory::make()->action(
-                $foundDepartment,
-                $dataToUpdate
-            );
         }
 
-        if (!$foundDepartment->webpage) {
+        if ($foundDepartment && !$foundDepartment->webpage) {
             $webpage = StoreProductCategoryWebpage::make()->action($foundDepartment);
             PublishWebpage::make()->action(
                 $webpage,

@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { getComponent } from '@/Composables/getWorkshopComponents'
 import { getIrisComponent } from '@/Composables/getIrisComponents'
-import { ref, onMounted, provide, onBeforeUnmount, inject, watch } from 'vue'
+import { ref, onMounted, provide, onBeforeUnmount, inject, watch, } from 'vue'
 import WebPreview from "@/Layouts/WebPreview.vue";
 import { sendMessageToParent } from '@/Composables/Workshop'
 import RenderHeaderMenu from './RenderHeaderMenu.vue'
@@ -19,6 +19,7 @@ import ButtonPreviewLogin from '@/Components/Workshop/Tools/ButtonPreviewLogin.v
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { Sidebar } from 'primevue';
 library.add(faTimes)
 
 defineOptions({ layout: WebPreview })
@@ -38,6 +39,7 @@ const props = defineProps<{
     },
     sidebar: {}
 }>()
+// console.log('preview',props);
 const isOpenMenuMobile = inject('isOpenMenuMobile')
 const layout: any = inject("layout", {});
 const isPreviewLoggedIn = ref(false)
@@ -84,7 +86,7 @@ onMounted(() => {
         if (event.data.key === 'active_language') active_language.value = event.data.value
         if (event.data.key === 'reload') {
             router.reload({
-                only: ['footer', 'header', 'webpage', 'navigation'],
+                only: ['footer', 'header', 'webpage', 'navigation', 'sidebar'],
                 onSuccess: () => {
                     if (props.webpage) data.value = props.webpage
                 }
@@ -114,16 +116,20 @@ onBeforeUnmount(() => {
 
 provide('isPreviewLoggedIn', isPreviewLoggedIn)
 provide('isPreviewMode', isPreviewMode)
+provide('newCustomSidebarMenu', props.sidebar)
+
 
 watch(isPreviewLoggedIn, (value) => {
      updateIrisLayout(isPreviewLoggedIn.value)
 }, { immediate: true });
 
 
+
 </script>
 
 
 <template>
+  <pre>{{ testaja }}</pre>
     <div class="editor-class" :class="route().params?.mode !== 'iris' ? 'is-not-mode-iris' : ''">
         <div v-if="isInWorkshop" class="bg-gray-200 shadow-xl px-8 py-4 flex justify-center items-center gap-x-2">
             <ButtonPreviewLogin v-model="isPreviewLoggedIn" />
@@ -136,6 +142,7 @@ watch(isPreviewLoggedIn, (value) => {
                     :data="header.data"
                     :menu="navigation"
                     :loginMode="isPreviewLoggedIn"
+                    :sidebar="sidebar"
                     @update:model-value="updateData(header.data)"
                     :screenType="screenType"
                 />

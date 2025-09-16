@@ -17,6 +17,7 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Catalogue\Product;
+use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterProductCategory;
 
 class StoreFamilyFromMasterFamily extends GrpAction
@@ -24,11 +25,12 @@ class StoreFamilyFromMasterFamily extends GrpAction
     /**
      * @throws \Throwable
      */
-    public function handle(MasterProductCategory $masterFamily, array $modelData)
+    public function handle(MasterProductCategory $masterFamily, array $modelData): void
     {
         $activeShops = $masterFamily->masterShop->shops()->where('state', ShopStateEnum::OPEN)->get();
 
         if ($activeShops) {
+            /** @var Shop $shop */
             foreach ($activeShops as $shop) {
                 if (isset($modelData['shop_family']) && !array_key_exists($shop->id, $modelData['shop_family'])) {
                     continue;

@@ -158,8 +158,8 @@ class UpdateMasterProductCategory extends OrgAction
             'description'      => ['sometimes', 'max:1500'],
             'description_title' => ['sometimes', 'nullable', 'max:255'],
             'description_extra' => ['sometimes', 'nullable', 'max:65500'],
-            'master_department_id'     => ['sometimes', 'nullable', 'exists:product_categories,id'],
-            'master_sub_department_id' => ['sometimes', 'nullable', 'exists:product_categories,id'],
+            'master_department_id'     => ['sometimes', 'nullable', 'exists:master_product_categories,id'],
+            'master_sub_department_id' => ['sometimes', 'nullable', 'exists:master_product_categories,id'],
             'show_in_website'          => ['sometimes', 'boolean'],
             'image'                      => [
                 'sometimes',

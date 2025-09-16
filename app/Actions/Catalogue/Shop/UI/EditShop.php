@@ -194,6 +194,17 @@ class EditShop extends OrgAction
                                     'value'         => $shop->cost_price_ratio,
                                     'min'           => 0
                                 ],
+                                'price_rrp_ratio' => [
+                                    'type'          => 'input_number',
+                                    'bind' => [
+                                        'maxFractionDigits' => 3
+                                    ],
+                                    'label'         => __('rrp ratio'),
+                                    'placeholder'   => __('price rrp ratio'),
+                                    'required'      => true,
+                                    'value'         => $shop->price_rrp_ratio,
+                                    'min'           => 0
+                                ]
                             ]
                         ],
                         [

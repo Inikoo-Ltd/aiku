@@ -48,13 +48,14 @@ class StoreMasterProductCategory extends GrpAction
         $imageData = ['image' => Arr::pull($modelData, 'image')];
         data_set($modelData, 'group_id', $parent->group_id);
         if ($parent instanceof MasterProductCategory) {
-            data_set($modelData, 'master_department_id', $parent->id);
+
             data_set($modelData, 'master_shop_id', $parent->master_shop_id);
             data_set($modelData, 'master_parent_id', $parent->id);
 
             if ($parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
                 data_set($modelData, 'master_department_id', $parent->id);
             } elseif ($parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                data_set($modelData, 'master_department_id', $parent->master_department_id);
                 data_set($modelData, 'master_sub_department_id', $parent->id);
             }
         } else {
