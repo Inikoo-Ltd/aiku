@@ -9,6 +9,7 @@
 namespace App\Actions\Maintenance\Masters;
 
 use App\Actions\Catalogue\CloneCatalogueStructure;
+use App\Actions\Catalogue\ProductCategory\CloneProductCategoryImagesFromMaster;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
@@ -64,28 +65,33 @@ class AddMissingProductCategoriesFromMaster
                 $foundFamily = StoreProductCategory::make()->action(
                     $parent,
                     [
-                        'code' => $masterFamily->code,
-                        'name' => $masterFamily->name,
-                        'description' => $masterFamily->description,
-                        'type' => ProductCategoryTypeEnum::FAMILY,
+                        'code'                       => $masterFamily->code,
+                        'name'                       => $masterFamily->name,
+                        'description'                => $masterFamily->description,
+                        'type'                       => ProductCategoryTypeEnum::FAMILY,
+                        'master_product_category_id' => $masterFamily->id
                     ]
                 );
+                CloneProductCategoryImagesFromMaster::run($foundFamily);
             }
         } else {
             $foundFamily = ProductCategory::find($foundFamilyData->id);
 
-            $dataToUpdate = [
-                'code' => $masterFamily->code,
-                'name' => $masterFamily->name,
-            ];
-            if ($masterFamily->description && !$foundFamily->description) {
-                data_set($dataToUpdate, 'description', $masterFamily->description);
-            }
+            if($foundFamily) {
+                $dataToUpdate = [
+                    //    'code' => $masterFamily->code,
+                    //    'name' => $masterFamily->name,
+                    'master_product_category_id' => $masterFamily->id
+                ];
+                if ($masterFamily->description && !$foundFamily->description) {
+                    data_set($dataToUpdate, 'description', $masterFamily->description);
+                }
 
-            //            $foundFamily = UpdateProductCategory::make()->action(
-            //                $foundFamily,
-            //                $dataToUpdate
-            //            );
+                $foundFamily = UpdateProductCategory::make()->action(
+                    $foundFamily,
+                    $dataToUpdate
+                );
+            }
         }
 
 
@@ -100,13 +106,14 @@ class AddMissingProductCategoriesFromMaster
     {
         $parent = null;
         if ($masterFamily->masterDepartment) {
-            $masterDepartment = CloneCatalogueStructure::make()->upsertDepartment($shop, $masterFamily->masterDepartment);
+            $department = CloneCatalogueStructure::make()->upsertDepartment($shop, $masterFamily->masterDepartment);
 
-
-            if ($masterFamily->masterSubDepartment) {
-                $parent = CloneCatalogueStructure::make()->upsertSubDepartment($masterDepartment, $masterFamily->masterSubDepartment);
-            } else {
-                $parent = $masterDepartment;
+            if($department) {
+                if ($masterFamily->masterSubDepartment) {
+                    $parent = CloneCatalogueStructure::make()->upsertSubDepartment($department, $masterFamily->masterSubDepartment);
+                } else {
+                    $parent = $department;
+                }
             }
         }
 
