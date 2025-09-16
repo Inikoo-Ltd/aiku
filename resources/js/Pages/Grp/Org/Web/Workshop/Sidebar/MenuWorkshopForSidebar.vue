@@ -51,9 +51,8 @@ const props = defineProps<{
 	domain: string
 }>()
 
-console.log(props);
 
-const Navigation = ref(props.data.menu)
+const Navigation = ref(props.data.sidebar)
 const isLoading = ref(false)
 const status = ref(props.status)
 const comment = ref("")

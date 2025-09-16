@@ -298,6 +298,35 @@ trait WithEbayApiRequest
     }
 
     /**
+     * Search products by SKU or title
+     */
+    public function searchProducts($query, $type = 'sku', $limit = 50, $offset = 0)
+    {
+        try {
+            $params = [
+                'limit' => $limit,
+                'offset' => $offset
+            ];
+
+            if ($type === 'title') {
+                $params['q'] = $query;
+            } elseif ($type === 'id') {
+                $params['id'] = $query;
+            } else {
+                $params['sku'] = $query;
+            }
+
+            $queryString = http_build_query($params);
+            $endpoint = "/sell/inventory/v1/inventory_item?$queryString";
+
+            return $this->makeEbayRequest('get', $endpoint);
+        } catch (Exception $e) {
+            Log::error('Search eBay Products Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
      * Get a specific product by SKU
      */
     public function getProduct($sku)
@@ -310,6 +339,7 @@ trait WithEbayApiRequest
             return ['error' => $e->getMessage()];
         }
     }
+
 
     /**
      * Create/Store product on eBay

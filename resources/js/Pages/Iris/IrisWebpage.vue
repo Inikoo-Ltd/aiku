@@ -93,7 +93,6 @@ onBeforeUnmount(() => {
 
 const layout: any = inject("layout", {});
 
-console.log(props)
 
 </script>
 
