@@ -59,6 +59,7 @@ import SelectPrinter from '@/Components/Forms/Fields/SelectPrinter.vue'
 import ListSelectorFrom from '@/Components/Forms/Fields/ListSelectorFrom.vue'
 import BrandsTradeUnit from '@/Components/Forms/Fields/BrandsTradeUnit.vue'
 import MultiselectTagsInfiniteScroll from '@/Components/Forms/Fields/MultiselectTagsInfiniteScroll.vue'
+import InputDimensions from '@/Components/Forms/Fields/InputDimensions.vue'
 
 
 export const componentsList: {[key: string]: Component} = {
@@ -119,7 +120,8 @@ export const componentsList: {[key: string]: Component} = {
     'edit-trade-unit-shop' : FormEditTradeUnit,
     'tags-trade-unit' : TagsTradeUnits,
     'brands-trade-unit' : BrandsTradeUnit,
-    'multiselect-tags' : MultiselectTagsInfiniteScroll
+    'multiselect-tags' : MultiselectTagsInfiniteScroll,
+    'input-dimension' : InputDimensions
 }
 
 export const getComponent = (componentName: string) => {

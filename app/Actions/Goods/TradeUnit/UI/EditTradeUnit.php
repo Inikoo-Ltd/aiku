@@ -212,6 +212,11 @@ class EditTradeUnit extends OrgAction
                                         'suffix' => 'g'
                                     ]
                                 ],
+                                'dimension' => [
+                                    'type'  => 'input-dimension',
+                                    'label' => __('dimension'),
+                                    'value' => $tradeUnit->dimension,
+                                ],
                             ],
                         ],
                         [

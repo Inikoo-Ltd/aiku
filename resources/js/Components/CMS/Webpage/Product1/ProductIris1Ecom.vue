@@ -197,7 +197,6 @@ const validImages = computed(() => {
 </script>
 
 <template>
-    {{ validImages }}
     <div id="product-1"  :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             marginLeft : 'auto', marginRight : 'auto'
