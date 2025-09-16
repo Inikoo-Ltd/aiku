@@ -230,6 +230,7 @@ class IndexOrgStocks extends OrgAction
                 'org_stocks.code',
                 'org_stocks.name',
                 'org_stocks.slug',
+                'org_stocks.state',
                 'org_stocks.unit_value',
                 'number_locations',
                 'quantity_in_locations',

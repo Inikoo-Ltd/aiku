@@ -39,7 +39,7 @@ const props = defineProps<{
     },
     sidebar: {}
 }>()
-// console.log('preview',props);
+
 const isOpenMenuMobile = inject('isOpenMenuMobile')
 const layout: any = inject("layout", {});
 const isPreviewLoggedIn = ref(false)
@@ -116,7 +116,7 @@ onBeforeUnmount(() => {
 
 provide('isPreviewLoggedIn', isPreviewLoggedIn)
 provide('isPreviewMode', isPreviewMode)
-const newCustomSidebarMenu = computed(() => props.sidebar) // make the props reactive
+const newCustomSidebarMenu = computed(() => props.sidebar.sidebar) // make the props reactive
 provide('newCustomSidebarMenu', newCustomSidebarMenu)
 
 

@@ -16,7 +16,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class SyncronisePortfolioToEbay extends RetinaAction
+class StoreNewProductToCurrentEbay extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
@@ -26,7 +26,7 @@ class SyncronisePortfolioToEbay extends RetinaAction
      */
     public function handle(EbayUser $ebayUser, Portfolio $portfolio)
     {
-        RequestApiUploadProductEbay::run($ebayUser, $portfolio);
+        StoreEbayProduct::run($ebayUser, $portfolio);
     }
 
     public function asController(EbayUser $ebayUser, Portfolio $portfolio, ActionRequest $request)
