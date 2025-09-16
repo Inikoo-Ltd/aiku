@@ -77,6 +77,8 @@ class UpdateProductImages extends OrgAction
 
         $this->update($product, $modelData);
 
+        UpdateProductWebImages::run($product);
+
         if ($updateDependants && $product->is_single_trade_unit) {
             $this->updateDependants($product, $modelData);
         }
