@@ -66,7 +66,8 @@ const isProductLoading = (productId: string) => {
 }
 
 const fetchRecommenders = async () => {
-    // console.log('11111 recommmmm', layout.user.user.customer_id)
+    // console.log('11111 recommmmm', layout.iris?.user_auth?.customer_id?.toString())
+    // console.log('22222 recommmmm', layout.user.user.customer_id)
     try {
         isLoadingFetch.value = true
         const response = await axios.post(
@@ -78,7 +79,7 @@ const fetchRecommenders = async () => {
                     "recommendation_type": props.recommendation_type || "test_reco",
                     "recommender_client_identifier": props.recommendation_type || "test_reco",
                     "size": 7,
-                    "user_id": layout.user?.customer_id?.toString(),
+                    "user_id": layout.iris?.user_auth?.customer_id?.toString(),
                     "recommendation_context": {},
                     // "hit_fields": ["url", "title"]
                 }
@@ -92,7 +93,7 @@ const fetchRecommenders = async () => {
         if (response.status !== 200) {
             console.error('Error fetching recommenders:', response.statusText)
         }
-        console.log('Response axios:', response.data)
+        console.log('111 rec:', response.data)
         listProducts.value = response.data[0].hits
     } catch (error: any) {
         console.error('Error on fetching recommendations:', error)
