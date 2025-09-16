@@ -74,7 +74,10 @@ class UpdateTradeUnitImages extends GrpAction
             }
         }
 
-        data_set($modelData, 'bucket_images', true);
+        if($tradeUnit->bucket_images == false) {
+            data_set($modelData, 'bucket_images', true);
+        }
+
         $this->update($tradeUnit, $modelData);
 
         if ($updateDependants) {

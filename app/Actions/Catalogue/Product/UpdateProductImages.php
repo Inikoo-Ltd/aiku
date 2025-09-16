@@ -72,6 +72,10 @@ class UpdateProductImages extends OrgAction
                 }
             }
         }
+        
+        if($product->bucket_images == false) {
+            data_set($modelData, 'bucket_images', true);
+        }
 
         $this->update($product, $modelData);
 
