@@ -21,6 +21,7 @@ import { faImage } from "@far"
 import ProductSummary from "@/Components/Product/ProductSummary.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { trans } from "laravel-vue-i18n"
+import Dimension from "@/Components/CMS/Fields/Dimension.vue"
 
 
 library.add(
@@ -115,7 +116,7 @@ const validImages = computed(() =>
 
 
 const locale = inject("locale", aikuLocaleStructure)
-
+console.log(props)
 </script>
 
 
@@ -140,67 +141,6 @@ const locale = inject("locale", aikuLocaleStructure)
 			</div>
 		</div>
 		<!-- tradeUnit Summary -->
-		<ProductSummary :data="data.masterProduct" :video="videoSetup?.url" :hide="['price', 'rrp', 'stock']" />
-
-
-		<div class="bg-white h-fit mx-4 rounded-xl px-4 py-2 lg:p-6 lg:py-4 shadow-sm border border-gray-100">
-			<dl class="space-y-2 text-sm">
-
-				<!-- Stock -->
-				<div class="flex justify-between items-center flex-wrap gap-2">
-					<dt class="text-gray-500">{{ trans("Stock") }}</dt>
-					<dd class="flex items-center gap-2 font-medium">
-						<FontAwesomeIcon :icon="['fas', 'circle']" :class="[
-							data.masterProduct.data?.stock > 20
-								? 'text-green-500'
-								: data.masterProduct.data?.stock > 0
-									? 'text-orange-500'
-									: 'text-red-500'
-						]" />
-						<span :class="[
-							data.masterProduct.data?.stock > 20
-								? 'text-green-600'
-								: data.masterProduct.data?.stock > 0
-									? 'text-orange-600'
-									: 'text-red-600 font-semibold'
-						]">
-							{{ data.masterProduct.data?.stock }} {{ data.masterProduct.data?.unit }}
-						</span>
-					</dd>
-				</div>
-
-				<hr class="border-gray-200" />
-
-				<!-- Cost -->
-				<div class="flex justify-between items-center flex-wrap gap-2">
-					<dt class="text-gray-500">{{ trans("Cost") }}</dt>
-					<dd class="font-medium text-blue-600">
-						{{ locale.currencyFormat(data.masterProduct.data?.currency_code, data.masterProduct.data?.cost) || '-' }}
-					</dd>
-				</div>
-
-				<!-- Price -->
-				<div class="flex justify-between items-center flex-wrap gap-2">
-					<dt class="text-gray-500">{{ trans("Price") }}</dt>
-					<dd class="font-semibold text-green-600 text-lg">
-						{{ locale.currencyFormat(data.masterProduct.data?.currency_code, data.masterProduct.data?.price) }}
-					</dd>
-				</div>
-
-				<!-- RRP -->
-				<div class="flex justify-between items-center flex-wrap gap-2">
-					<dt class="text-gray-500">RRP</dt>
-					<dd class="flex items-center gap-2 font-semibold text-gray-700">
-						<span>
-							{{ locale.currencyFormat(data.masterProduct.data?.currency_code, data.masterProduct.data?.rrp) }}
-						</span>
-						<span class="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600">
-							({{ ((data.masterProduct.data?.rrp - data.masterProduct.data?.price) / data.masterProduct.data?.price *
-								100).toFixed(2) }}%)
-						</span>
-					</dd>
-				</div>
-			</dl>
-		</div>
+		<ProductSummary :data="data.masterProduct" :video="videoSetup?.url" :hide="['price', 'rrp', 'stock', 'weight', 'dimension']" />
 	</div>
 </template>

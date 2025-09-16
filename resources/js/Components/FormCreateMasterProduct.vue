@@ -93,7 +93,7 @@ const form = useForm({
     description: "",
     description_title: "",
     description_extra: "",
-    /* dimensions: {
+/*     dimensions: {
         h: 0,
         l: 0,
         w: 0,
@@ -402,7 +402,7 @@ const toggleFull = () => {
                             </small>
                         </div>
 
-                        <div>
+                        <div v-if="form.trade_units.length > 1">
                             <label class="block text-xs font-medium text-gray-600 mb-1">Marketing Weight</label>
                             <PureInputNumber v-model="form.marketing_weight"
                                 @update:model-value="form.errors.marketing_weight = null" class="w-full"
@@ -413,6 +413,18 @@ const toggleFull = () => {
                                 {{ form.errors.marketing_weight.join(", ") }}
                             </small>
                         </div>
+
+
+                         <!-- <div>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Dimension</label>
+                            <PureInputDimension :rows="4" v-model="form.dimensions"
+                                @update:model-value="form.errors.dimensions = null" class="w-full" />
+                            <small v-if="form.errors.dimensions"
+                                class="text-red-500 text-xs flex items-center gap-1 mt-1">
+                                <FontAwesomeIcon :icon="faCircleExclamation" />
+                                {{ form.errors.dimensions.join(", ") }}
+                            </small>
+                        </div> -->
 
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">Description title</label>
@@ -446,16 +458,6 @@ const toggleFull = () => {
                                 {{ form.errors.description_extra.join(", ") }}
                             </small>
                         </div>
-                        <!-- <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Dimension</label>
-                            <PureInputDimension :rows="4" v-model="form.dimensions"
-                                @update:model-value="form.errors.dimensions = null" class="w-full" />
-                            <small v-if="form.errors.dimensions"
-                                class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                                <FontAwesomeIcon :icon="faCircleExclamation" />
-                                {{ form.errors.dimensions.join(", ") }}
-                            </small>
-                        </div> -->
                     </div>
                 </div>
             </div>
