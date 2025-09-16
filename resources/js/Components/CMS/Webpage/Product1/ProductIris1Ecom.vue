@@ -10,14 +10,12 @@ import ProductContentsIris from "./ProductContentIris.vue"
 import InformationSideProduct from "./InformationSideProduct.vue"
 import Image from "@/Components/Image.vue"
 import { notify } from "@kyvg/vue3-notification"
-import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
 import { trans } from "laravel-vue-i18n"
 import { router, Link } from "@inertiajs/vue3"
 import { Image as ImageTS } from '@/types/Image'
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { set, isArray } from "lodash-es"
 import { getStyles } from "@/Composables/styles"
-import axios from "axios"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ButtonAddToBasket from "@/Components/Iris/Products/ButtonAddToBasket.vue"
 
@@ -59,12 +57,6 @@ const contentRef = ref<Element | null>(null)
 const expanded = ref(false)
 const showButton = ref(false)
 
-
-function formatNumber(value: Number) {
-    return Number.parseFloat(value).toString()
-}
-
-
 // Section: Add to Favourites
 const isLoadingFavourite = ref(false)
 const onAddFavourite = (product: ProductResource) => {
@@ -98,6 +90,7 @@ const onAddFavourite = (product: ProductResource) => {
         }
     )
 }
+
 const onUnselectFavourite = (product: ProductResource) => {
     router.delete(
         route('iris.models.favourites.delete', {
@@ -136,7 +129,6 @@ onMounted(() => {
     })
 
     // Luigi: last_seen recommendations
-    console.log('iden', props.fieldValue.product.luigi_identity)
     if (props.fieldValue?.product?.luigi_identity) {
         window?.dataLayer?.push({
             event: "view_item",
