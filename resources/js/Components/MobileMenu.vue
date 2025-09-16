@@ -212,14 +212,14 @@ onUnmounted(() => {
 
                                         <div v-if="subDept.families" class="space-y-2 mt-2 ml-4 pl-4 border-gray-200">
                                             <a v-for="(family, familyIndex) in subDept.families" :key="familyIndex"
-                                                v-if="family.url !== undefined" :href="'/' + family.url"
+                                                v-if="family?.url !== undefined" :href="'/' + family?.url"
                                                 :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
                                                 class="block text-sm text-gray-700 relative hover:text-primary transition-all">
                                                 <span class="absolute left-0 -ml-4">–</span>
                                                 {{ family.name }}
                                             </a>
                                             <span v-for="(family, familyIndex) in subDept.families"
-                                                :key="'span-' + familyIndex" v-if="family.url === undefined"
+                                                :key="'span-' + familyIndex" v-if="family?.url === undefined"
                                                 :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
                                                 class="block text-sm text-gray-700 relative">
                                                 <span class="absolute left-0 -ml-4">–</span>
