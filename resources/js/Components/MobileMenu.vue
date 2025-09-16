@@ -39,7 +39,8 @@ const sortedProductCategories = computed(() => {
     );
 });
 
-const sortedCustomMenus = computed(() => {
+// Custom menus without sorting
+const customMenus = computed(() => {
     if (!props.customMenus) return [];
     return props.customMenus;
 });
@@ -58,10 +59,10 @@ const sortedSubDepartments = computed(() => {
     );
 });
 
-const sortedCustomSubDepartments = computed(() => {
-    if (activeCustomIndex.value === null || !sortedCustomMenus.value[activeCustomIndex.value]?.sub_departments) return [];
-    return sortedCustomMenus.value[activeCustomIndex.value].sub_departments;
-
+// Custom sub departments without sorting
+const customSubDepartments = computed(() => {
+    if (activeCustomIndex.value === null || !customMenus.value[activeCustomIndex.value]?.sub_departments) return [];
+    return customMenus.value[activeCustomIndex.value].sub_departments;
 });
 
 const sortedFamilies = computed(() => {
@@ -71,9 +72,10 @@ const sortedFamilies = computed(() => {
     );
 });
 
-const sortedCustomFamilies = computed(() => {
-    if (activeCustomSubIndex.value === null || !sortedCustomSubDepartments.value[activeCustomSubIndex.value]?.families) return [];
-    return sortedCustomSubDepartments.value[activeCustomSubIndex.value].families;
+// Custom families without sorting
+const customFamilies = computed(() => {
+    if (activeCustomSubIndex.value === null || !customSubDepartments.value[activeCustomSubIndex.value]?.families) return [];
+    return customSubDepartments.value[activeCustomSubIndex.value].families;
 });
 
 // reset subdepartment when category changes
@@ -182,9 +184,9 @@ onUnmounted(() => {
                     </div>
 
                     <!-- Custom Menus Section for Mobile -->
-                    <div v-if="sortedCustomMenus && sortedCustomMenus.length > 0">
-                        <hr class="my-4 border-gray-300">
-                        <div v-for="(customItem, customIndex) in sortedCustomMenus" :key="'custom-' + customIndex">
+                    <div v-if="customMenus && customMenus.length > 0">
+                        <!-- <hr class="my-4 border-gray-300"> -->
+                        <div v-for="(customItem, customIndex) in customMenus" :key="'custom-' + customIndex">
                             <!-- Custom Menu WITH Sub-departments -->
                             <Disclosure v-if="customItem.sub_departments && customItem.sub_departments.length > 0"
                                 v-slot="{ open }">
@@ -198,7 +200,7 @@ onUnmounted(() => {
                                 </DisclosureButton>
 
                                 <DisclosurePanel class="disclosure-panel">
-                                    <div v-for="(subDept, subDeptIndex) in [...customItem.sub_departments].sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }))"
+                                    <div v-for="(subDept, subDeptIndex) in customItem.sub_departments"
                                         :key="subDeptIndex" class="mb-6">
                                         <a v-if="subDept.url !== undefined" :href="'/' + subDept.url"
                                             class="block text-base font-bold text-gray-700 mb-2"
@@ -232,11 +234,14 @@ onUnmounted(() => {
 
                             <!-- Custom Menu SINGLE LINK -->
                             <div v-else class="py-4 px-5 border-b">
-                                <a :href="'/' + customItem.url"
+                                <a v-if="customItem?.url !== undefined" :href="'/' + customItem.url"
                                     :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
                                     class="font-bold text-gray-600 text-lg">
                                     {{ customItem.name }}
                                 </a>
+                                <span v-else
+                                    :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
+                                    class="font-bold text-gray-600 text-lg">{{ customItem.name }}</span>
                             </div>
                         </div>
                     </div>
@@ -276,9 +281,9 @@ onUnmounted(() => {
                     </div>
 
                     <!-- Custom Menus Section for Desktop -->
-                    <div v-if="sortedCustomMenus && sortedCustomMenus.length > 0">
+                    <div v-if="customMenus && customMenus.length > 0">
                         <hr class="my-4 mx-4 border-gray-300">
-                        <div v-for="(customItem, customIndex) in sortedCustomMenus" :key="'custom-' + customIndex"
+                        <div v-for="(customItem, customIndex) in customMenus" :key="'custom-' + customIndex"
                             class="p-2 px-4 flex items-center justify-between cursor-pointer transition-colors duration-200"
                             :class="[
                                 activeCustomIndex === customIndex
@@ -329,8 +334,8 @@ onUnmounted(() => {
                         </div>
 
                         <!-- Custom Menus Subdepartments -->
-                        <div v-if="activeCustomIndex !== null && sortedCustomSubDepartments.length">
-                            <div v-for="(sub, sIndex) in sortedCustomSubDepartments" :key="sIndex"
+                        <div v-if="activeCustomIndex !== null && customSubDepartments.length">
+                            <div v-for="(sub, sIndex) in customSubDepartments" :key="sIndex"
                                 class="p-2 px-4 flex items-center justify-between cursor-pointer transition-colors duration-200"
                                 :class="[
                                     activeCustomSubIndex === sIndex
@@ -348,14 +353,14 @@ onUnmounted(() => {
                                     class="transition-transform duration-200 text-xs" />
                             </div>
                             <!-- <div class="p-2 px-4  cursor-pointer font-bold">
-                                <a :href="'/' + sortedCustomMenus[activeCustomIndex].url">
+                                <a :href="'/' + customMenus[activeCustomIndex].url">
                                     <Button label="View all" :icon="faExternalLink" size="xs" />
                                 </a>
                             </div> -->
                         </div>
 
                         <!-- No subdepartments message -->
-                        <div v-if="(activeIndex !== null && !sortedSubDepartments.length) || (activeCustomIndex !== null && !sortedCustomSubDepartments.length)"
+                        <div v-if="(activeIndex !== null && !sortedSubDepartments.length) || (activeCustomIndex !== null && !customSubDepartments.length)"
                             class="p-2 text-gray-400 italic">
                             No subdepartments available
                         </div>
@@ -384,21 +389,21 @@ onUnmounted(() => {
                         </div>
 
                         <!-- Custom Menus Families -->
-                        <div v-if="activeCustomSubIndex !== null && sortedCustomFamilies.length">
-                            <div v-for="(child, cIndex) in sortedCustomFamilies" :key="cIndex"
+                        <div v-if="activeCustomSubIndex !== null && customFamilies.length">
+                            <div v-for="(child, cIndex) in customFamilies" :key="cIndex"
                                 class="p-2 px-4  cursor-pointer hover:bg-gray-50">
                                 <a v-if="child.url !== undefined" :href="'/' + child.url">{{ child.name }}</a>
                                 <span v-else>{{ child.name }}</span>
                             </div>
                             <!-- <div class="p-2 px-4  cursor-pointer hover:bg-gray-50 font-bold">
-                                <a :href="'/' + sortedCustomSubDepartments[activeCustomSubIndex].url">
+                                <a :href="'/' + customSubDepartments[activeCustomSubIndex].url">
                                     <Button label="View all" :icon="faExternalLink" size="xs" />
                                 </a>
                             </div> -->
                         </div>
 
                         <!-- No families message -->
-                        <div v-if="(activeSubIndex !== null && !sortedFamilies.length) || (activeCustomSubIndex !== null && !sortedCustomFamilies.length)"
+                        <div v-if="(activeSubIndex !== null && !sortedFamilies.length) || (activeCustomSubIndex !== null && !customFamilies.length)"
                             class="p-2 text-gray-400 italic">
                             No further items
                         </div>

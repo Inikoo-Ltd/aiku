@@ -4,7 +4,7 @@ import { routeType } from "@/types/route"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { TabGroup, Tab, TabPanels, TabPanel } from '@headlessui/vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import WebBlockListDnd from "@/Components/CMS/Fields/WebBlockListDnd.vue"
+// import WebBlockListDnd from "@/Components/CMS/Fields/WebBlockListDnd.vue"
 import SetMenuListWorkshop from "@/Components/CMS/Fields/SetMenuListWorkshop.vue"
 import axios from "axios"
 import {
@@ -22,8 +22,8 @@ import {
 } from "@fas"
 import { faHeart, faLowVision } from "@far"
 import { notify } from "@kyvg/vue3-notification"
-import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue"
-import Blueprint from "./Blueprint"
+// import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue"
+// import Blueprint from "./Blueprint"
 
 library.add(
 	faChevronRight,
@@ -50,7 +50,6 @@ const props = defineProps<{
 		data: Array<any>
 	}
 }>()
-console.log('wrpper',props)
 
 const emits = defineEmits<{
 	(e: 'sendToIframe', value: Object): void
