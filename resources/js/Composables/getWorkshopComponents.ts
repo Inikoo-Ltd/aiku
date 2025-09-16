@@ -50,6 +50,7 @@ import EditFooter1Translation from '@/Components/CMS/Website/Footers/footerTheme
 
 
 
+import LuigiTrends1Workshop from '@/Components/CMS/Webpage/LuigiTrends1/LuigiTrends1Workshop.vue'
 
 export const getComponent = (componentName: string) => {
     const components: Component = {
@@ -90,6 +91,9 @@ export const getComponent = (componentName: string) => {
 
         //see-also
         'see-also-1' : SeeAlso1Workshop,
+
+        // Luigi
+        'luigi-trends-1' : LuigiTrends1Workshop,
 
         'banner': WowsbarBanner,
         "bento-grid-1": BentoGrid,
