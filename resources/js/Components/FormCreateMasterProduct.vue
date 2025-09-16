@@ -93,13 +93,13 @@ const form = useForm({
     description: "",
     description_title: "",
     description_extra: "",
-    dimensions: {
+/*     dimensions: {
         h: 0,
         l: 0,
         w: 0,
         type: "sphere",
         units: "cm"
-    }
+    } */
 });
 
 // Image upload states
@@ -415,7 +415,7 @@ const toggleFull = () => {
                         </div>
 
 
-                         <div>
+                         <!-- <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">Dimension</label>
                             <PureInputDimension :rows="4" v-model="form.dimensions"
                                 @update:model-value="form.errors.dimensions = null" class="w-full" />
@@ -424,7 +424,7 @@ const toggleFull = () => {
                                 <FontAwesomeIcon :icon="faCircleExclamation" />
                                 {{ form.errors.dimensions.join(", ") }}
                             </small>
-                        </div>
+                        </div> -->
 
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">Description title</label>

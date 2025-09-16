@@ -193,6 +193,7 @@ class EditTradeUnit extends OrgAction
                                     'label' => __('gross weight'),
                                     'value' => $tradeUnit->gross_weight
                                 ],
+                                
                             ],
                         ],
                         [
@@ -204,6 +205,7 @@ class EditTradeUnit extends OrgAction
                                     'label' => __('translate name'),
                                     'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($tradeUnit->group->extra_languages),
                                     'main' => $tradeUnit->name,
+                                    'full' => true,
                                     'value' => $tradeUnit->getTranslations('name_i8n')
                                 ],
                                 'description_title_i8n' => [
@@ -211,6 +213,7 @@ class EditTradeUnit extends OrgAction
                                     'label' => __('translate description title'),
                                     'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($tradeUnit->group->extra_languages),
                                     'main' => $tradeUnit->description_title,
+                                    'full' => true,
                                     'value' => $tradeUnit->getTranslations('description_title_i8n')
                                 ],
                                 'description_i8n' => [
@@ -218,6 +221,7 @@ class EditTradeUnit extends OrgAction
                                     'label' => __('translate description'),
                                     'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($tradeUnit->group->extra_languages),
                                     'main' => $tradeUnit->description,
+                                    'full' => true,
                                     'value' => $tradeUnit->getTranslations('description_i8n')
                                 ],
                                 'description_extra_i8n' => [
@@ -225,6 +229,7 @@ class EditTradeUnit extends OrgAction
                                     'label' => __('translate description extra'),
                                     'languages' => GetLanguagesOptions::make()->getExtraShopLanguages($tradeUnit->group->extra_languages),
                                     'main' => $tradeUnit->description_extra,
+                                    'full' => true,
                                     'value' => $tradeUnit->getTranslations('description_extra_i8n')
                                 ],
                             ],

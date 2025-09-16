@@ -43,6 +43,9 @@ class MasterProductResource extends JsonResource
             'price'                 => $this->price,
             'description'           => $this->description,
             'description_title'     => $this->description_title,
+            'specifications'        => [
+                'gross_weight'                => $this->marketing_weight,
+            ],
             'description_extra'     => $this->description_extra,
             'trade_units'           => TradeUnitsForMasterResource::collection($this->tradeUnits)->resolve(),
             'name_i8n'              => $this->getTranslations('name_i8n'),
