@@ -64,15 +64,16 @@ const upcommingProductCategories = inject('newCustomSidebarMenu') //make sure th
 
 const  convertToDepartmentStructure = (menusData) => {
 
-    // If input is not an array, wrap it in an array
     const dataArray = Array.isArray(menusData) ? menusData : [menusData];
 
-    // Convert each aromatherapy item to department structure
+    // Regex untuk menghapus awalan http:// atau https://
+    const removeProtocol = url => typeof url === 'string' ? url.replace(/^https?:\/\//, '') : undefined;
+
     return dataArray.map(menu => {
         const mainLinkHref = menu?.link?.href;
 
         const departmentStructure = {
-            url: typeof mainLinkHref === 'string' ? mainLinkHref.replace('https://', '') : undefined,
+            url: removeProtocol(mainLinkHref),
             name: menu?.label || undefined,
             sub_departments: []
         };
@@ -80,8 +81,9 @@ const  convertToDepartmentStructure = (menusData) => {
         if (Array.isArray(menu?.subnavs)) {
             menu.subnavs.forEach(subnav => {
                 const subLinkHref = subnav?.link?.href;
+
                 const subDepartment = {
-                    url: typeof subLinkHref === 'string' ? subLinkHref.replace('https://', '') : undefined,
+                    url: removeProtocol(subLinkHref),
                     name: subnav?.title || undefined,
                     families: []
                 };
@@ -89,10 +91,12 @@ const  convertToDepartmentStructure = (menusData) => {
                 if (Array.isArray(subnav?.links)) {
                     subnav.links.forEach(link => {
                         const linkHref = link?.link?.href;
+
                         const family = {
-                            url: typeof linkHref === 'string' ? linkHref.replace('https://', '') : undefined,
+                            url: removeProtocol(linkHref),
                             name: link?.label || undefined
                         };
+
                         subDepartment.families.push(family);
                     });
                 }
@@ -104,7 +108,6 @@ const  convertToDepartmentStructure = (menusData) => {
         return departmentStructure;
     });
 }
-
 
 
 const customMenus = ref([]); // Create a reactive ref to hold the new value
