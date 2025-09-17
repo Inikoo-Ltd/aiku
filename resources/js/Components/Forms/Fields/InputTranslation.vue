@@ -53,7 +53,14 @@ const langLabel = (code: string) => {
 watch(
   langBuffers,
   (newVal) => {
-    props.form[props.fieldName] = { ...newVal }
+    if (props.fieldData.mode === "single") {
+      // store only selected language
+      props.form[props.fieldName] = newVal[selectedLang.value] || ""
+
+    } else {
+      // store all translations
+      props.form[props.fieldName] = { ...newVal }
+    }
     emits("update:form", { ...props.form })
   },
   { deep: true }
@@ -137,6 +144,7 @@ const generateAllTranslationsAI = async () => {
     type: "success",
   })
 }
+
 
 
 onMounted(() => {
