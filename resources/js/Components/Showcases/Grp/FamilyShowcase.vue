@@ -28,6 +28,7 @@ const props = defineProps<{
             detach_family: routeType
         }
     }
+    actions: any
 }>()
 
 console.log(props)
@@ -35,21 +36,45 @@ console.log(props)
 
 <template>
     <div class="pb-8 m-5">
-         <Message v-if="data.family?.data.url_master" severity="success" closable>
-            <template #icon>
-                <FontAwesomeIcon :icon="faInfoCircle" />
-            </template>
-            <span class="ml-2">
-                {{ trans("Right now you follow") }}
-                <Link :href="route(data.family.data.url_master.name, data.family.data.url_master.parameters)"
-                    class="underline font-bold">
-                {{ trans("the master data") }}
-                </Link>
-            </span>
-        </Message>
+        <div class="space-y-4">
+            <Message v-if="data.family?.data.url_master" severity="success" closable>
+                <template #icon>
+                    <FontAwesomeIcon :icon="faInfoCircle" />
+                </template>
+                <span class="ml-2">
+                    {{ trans("Right now you follow") }}
+                    <Link :href="route(data.family.data.url_master.name, data.family.data.url_master.parameters)"
+                        class="underline font-bold">
+                    {{ trans("the master data") }}
+                    </Link>
+                </span>
+            </Message>
+            <Message
+                v-if="!data.family.data.description || !data.family.data.description_title || !data.family.data.description_extra"
+                severity="warn" closable>
+                <template #icon>
+                    <FontAwesomeIcon :icon="faInfoCircle" />
+                </template>
+                <div class="ml-2">
+                    <div class="flex gap-2 flex-wrap box-border">
+                        <span v-if="!data.family.data.description_title">{{ trans("Description Title is missing")
+                            }}.</span>
+                        <span v-if="!data.family.data.description">{{ trans("Description is missing") }}.</span>
+                        <span v-if="!data.family.data.description_extra">{{ trans("Extra description is missing")
+                            }}.</span>
+                    </div>
+                    {{ trans("Please") }}
+                    <Link
+                        :href="route(actions.actions[0].route.name, { ...actions.actions[0].route.parameters, section: 1 })"
+                        class="underline font-bold">
+                    {{ trans("add missing description fields") }}
+                    </Link>.
+                </div>
+            </Message>
+        </div>
         <div class="px-5 grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-6 mt-4 mb-4 ">
             <ProductCategoryCard :data="data.family.data" />
         </div>
-     <!--    <TranslationBox :master="data.family.data" :needTranslation="data.family.data" v-bind="data.translation_box" /> -->
+        <!--    <TranslationBox :master="data.family.data" :needTranslation="data.family.data" v-bind="data.translation_box" /> -->
     </div>
 </template>

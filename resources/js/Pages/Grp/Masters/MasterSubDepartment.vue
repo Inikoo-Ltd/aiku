@@ -107,7 +107,7 @@ const showDialog = ref(false)
     </PageHeading>
 
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab]" :tab="currentTab"></component>
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :actions="pageHead"></component>
 
 
     <FormCreateMasterFamily
