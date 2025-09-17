@@ -207,6 +207,50 @@ class ShowProduct extends OrgAction
                     'previous' => $this->getPrevious($product, $request),
                     'next'     => $this->getNext($product, $request),
                 ],
+                'mini_breadcrumbs' => [
+                    [
+                        'label' => 'departement',
+                        'to'    => [
+                            'name'       => 'grp.org.shops.show.web.webpages.show',
+                            'parameters' => [
+                                'organisation' => $this->organisation->slug,
+                                'shop'         => $this->shop->slug,
+                                'website'      => $this->shop->website->slug,
+                                'webpage'      => $product->webpage->slug
+                            ]
+                        ],
+                        'tooltip' => 'Departement',
+                        'icon' => ['fal', 'folder-tree']
+                    ],
+                    [
+                        'label' => 'sub-departement',
+                        'to'    => [
+                            'name'       => 'grp.org.shops.show.web.webpages.show',
+                            'parameters' => [
+                                'organisation' => $this->organisation->slug,
+                                'shop'         => $this->shop->slug,
+                                'website'      => $this->shop->website->slug,
+                                'webpage'      => $product->webpage->slug
+                            ]
+                        ],
+                        'tooltip' => 'Sub-Departement',
+                        'icon' => ['fal', 'folder-tree']
+                    ],
+                    [
+                        'label' => 'family',
+                        'to'    => [
+                            'name'       => 'grp.org.shops.show.web.webpages.show',
+                            'parameters' => [
+                                'organisation' => $this->organisation->slug,
+                                'shop'         => $this->shop->slug,
+                                'website'      => $this->shop->website->slug,
+                                'webpage'      => $product->webpage->slug
+                            ]
+                        ],
+                        'tooltip' => 'family',
+                        'icon' => ['fal', 'folder-tree']
+                    ]
+                ],
                 'pageHead'    => [
                     'title'      => $product->code,
                     'model'      => $this->parent->code,

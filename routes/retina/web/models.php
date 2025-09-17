@@ -14,7 +14,6 @@ use App\Actions\Dropshipping\Amazon\Product\SyncronisePortfoliosToAmazon;
 use App\Actions\Dropshipping\Amazon\Product\SyncronisePortfolioToAmazon;
 use App\Actions\Dropshipping\CustomerSalesChannel\RetinaDeleteCustomerSalesChannel;
 use App\Actions\Dropshipping\Ebay\Orders\FetchEbayUserOrders;
-use App\Actions\Dropshipping\Ebay\Product\StoreBulkNewProductToCurrentEbay;
 use App\Actions\Dropshipping\Ebay\Product\StoreNewProductToCurrentEbay;
 use App\Actions\Dropshipping\Magento\Orders\GetRetinaOrdersFromMagento;
 use App\Actions\Dropshipping\Magento\Product\SyncronisePortfoliosToMagento;
@@ -291,9 +290,6 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('{wooCommerceUser:id}/woo-batch-sync', [CreateNewBulkPortfolioToWooCommerce::class, 'asBatchSync'])->name('woo.batch_sync')->withoutScopedBindings();
     Route::post('{wooCommerceUser:id}/woo-batch-brave', [CreateNewBulkPortfolioToWooCommerce::class, 'asBraveMode'])->name('woo.batch_brave')->withoutScopedBindings();
     Route::post('{wooCommerceUser:id}/woo-single-upload/{portfolio:id}', StoreNewProductToCurrentEbay::class)->name('woo.single_upload')->withoutScopedBindings();
-
-    Route::post('{ebayUser:id}/ebay-batch-upload', StoreBulkNewProductToCurrentEbay::class)->name('ebay.batch_upload')->withoutScopedBindings();
-    Route::post('{ebayUser:id}/ebay-single-upload/{portfolio:id}', StoreNewProductToCurrentEbay::class)->name('ebay.single_upload')->withoutScopedBindings();
 
     Route::post('{amazonUser:id}/amazon-batch-upload', SyncronisePortfoliosToAmazon::class)->name('amazon.batch_upload')->withoutScopedBindings();
     Route::post('{amazonUser:id}/amazon-single-upload/{portfolio:id}', SyncronisePortfolioToAmazon::class)->name('amazon.single_upload')->withoutScopedBindings();

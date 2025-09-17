@@ -18,6 +18,7 @@ use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Http\Resources\Helpers\LanguageResource;
 
 class EditFamily extends OrgAction
 {
@@ -86,6 +87,17 @@ class EditFamily extends OrgAction
             ];
 
         }
+
+         $urlMaster                              = null;
+        if ($family->master_product_category_id) {
+            $urlMaster = [
+                'name'       => 'grp.helpers.redirect_master_product_category',
+                'parameters' => [
+                    $family->masterProductCategory->id
+                ]
+            ];
+        }
+        $languages = [$family->shop->language_id => LanguageResource::make($family->shop->language)->resolve()];
         return Inertia::render(
             'EditModel',
             [
@@ -96,6 +108,12 @@ class EditFamily extends OrgAction
                     'text'  =>  __('Changing name or description may affect master family.'),
                     'icon'  => ['fas', 'fa-exclamation-triangle']
                 ] : null,
+                'iconRight' => $urlMaster  ?  [
+                        'icon'  => "fab fa-octopus-deploy",
+                        'color' => "#4B0082",
+                        'class' => 'opacity-70 hover:opacity-100',
+                        'url'   => $urlMaster
+                    ] : [],
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $family,
                     $request->route()->getName(),
@@ -143,59 +161,47 @@ class EditFamily extends OrgAction
                                         'value' => $family->code
                                     ],
                                     'name' => [
-                                        'type'  => 'input',
-                                        'label' => __('name'),
-                                        'value' => $family->name
-                                    ],
-                                    'description_title' => [
-                                        'type'  => 'input',
-                                        'label' => __('description title'),
-                                        'value' => $family->description_title
-                                    ],
-                                    'description' => [
-                                        'type'  => 'textEditor',
-                                        'label' => __('description'),
-                                        'value' => $family->description
-                                    ],
-                                    'description_extra' => [
-                                        'type'  => 'textEditor',
-                                        'label' => __('Extra description'),
-                                        'value' => $family->description_extra
-                                    ],
-                                ]
-                            ],
-                            /* !$family->master_product_category_id ? [
-                                'label'  => __('Translations'),
-                                'icon'   => 'fa-light fa-language',
-                                'main' => $family->name,
-                                'languages_main' => $family->shop->language->code,
-                                'fields' => [
-                                    'name_i8n' => [
-                                        'type'  => 'input_translation',
-                                        'label' => __('translate name'),
-                                        'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($family->shop->extra_languages),
-                                        'value' => $family->getTranslations('name_i8n')
-                                    ],
-                                    'description_title_i8n' => [
                                         'type'  => 'input_translation',
                                         'label' => __('translate description title'),
-                                        'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($family->shop->extra_languages),
+                                        'language_from' => 'en',
+                                        'full' => true,
+                                        'main' => $family->masterProductCategory->name,
+                                        'languages' => $languages,
+                                        'value' => $family->getTranslations('name_i8n'),
+                                        'mode' => 'single'
+                                    ],
+                                    'description_title' => [
+                                        'type'  => 'input_translation',
+                                        'label' => __('translate description title'),
+                                        'language_from' => 'en',
+                                        'full' => true,
+                                        'main' => $family->masterProductCategory->description_title,
+                                        'languages' => $languages,
+                                        'mode' => 'single',
                                         'value' => $family->getTranslations('description_title_i8n')
                                     ],
-                                    'description_i8n' => [
+                                    'description' => [
                                         'type'  => 'textEditor_translation',
-                                        'label' => __('translate description'),
-                                        'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($family->shop->extra_languages),
+                                        'label' => __('translate description title'),
+                                        'language_from' => 'en',
+                                        'full' => true,
+                                        'main' => $family->masterProductCategory->description,
+                                        'languages' => $languages,
+                                        'mode' => 'single',
                                         'value' => $family->getTranslations('description_i8n')
                                     ],
-                                    'description_extra_i8n' => [
+                                    'description_extra' => [
                                         'type'  => 'textEditor_translation',
-                                        'label' => __('translate description extra'),
-                                        'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($family->shop->extra_languages),
+                                        'label' => __('translate description title'),
+                                        'language_from' => 'en',
+                                        'full' => true,
+                                        'main' => $family->masterProductCategory->description_extra,
+                                        'languages' => $languages,
+                                        'mode' => 'single',
                                         'value' => $family->getTranslations('description_extra_i8n')
                                     ],
                                 ]
-                            ] : null, */
+                            ],
                             [
                                 'label'  => __('Pricing'),
                                 'title'  => __('id'),
