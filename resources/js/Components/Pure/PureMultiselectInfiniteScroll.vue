@@ -264,4 +264,6 @@ const onOpen = () => {
 :deep(.multiselect-tag-remove-icon) {
     @apply text-lime-800
 }
+
+
 </style>

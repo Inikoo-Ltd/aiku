@@ -20,6 +20,7 @@ use App\Actions\Catalogue\Product\Json\GetProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsInWorkshop;
 use App\Actions\Catalogue\Product\Json\GetProductsWithNoWebpage;
 use App\Actions\Catalogue\Product\Json\GetTopProductsInProductCategory;
+use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentAndSubDepartments;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartments;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentsInCollection;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentsInShop;
@@ -70,6 +71,7 @@ use App\Actions\Masters\MasterAsset\Json\GetTakenTradeUnits;
 use App\Actions\Masters\MasterCollection\UI\GetMasterCollections;
 use App\Actions\Masters\MasterCollection\UI\GetMasterFamilies;
 use App\Actions\Masters\MasterCollection\UI\GetMasterProductsNotAttachedToAMasterCollection;
+use App\Actions\Masters\MasterProductCategory\Json\GetMasterDepartmentAndMasterSubDepartments;
 use App\Actions\Ordering\Order\UI\IndexRecentOrderTransactionUploads;
 use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProducts;
 use App\Actions\SysAdmin\User\GetSupervisorUsers;
@@ -109,6 +111,8 @@ Route::get('/mailshot/{mailshot:id}/merge-tags', GetMailshotMergeTags::class)->n
 
 Route::get('shop/{shop}/payment-accounts', GetShopPaymentAccounts::class)->name('shop.payment-accounts');
 Route::get('shop/{shop}/products', GetProductsInWorkshop::class)->name('shop.products');
+
+Route::get('shop/{shop}/department-and-sub-departments', GetDepartmentAndSubDepartments::class)->name('shop.department_and_sub_departments');
 
 Route::get('shop/{shop}/collection/{collection}/webpages-for-collection', GetWebpagesForCollection::class)->name('shop.collection.webpages');
 Route::get('shop/{shop:id}/families', GetFamiliesInShop::class)->name('shop.families');
@@ -182,6 +186,7 @@ Route::get('customer-sales-channel/{customerSalesChannel:id}/shopify-products', 
 Route::get('customer-sales-channel/{customerSalesChannel:id}/woo-products', GetWooProducts::class)->name('dropshipping.customer_sales_channel.woo_products');
 Route::get('customer-sales-channel/{customerSalesChannel:id}/ebay-products', GetEbayProducts::class)->name('dropshipping.customer_sales_channel.ebay_products');
 
+Route::get('master-shop/{masterShop}/departments-and-sub-departments', GetMasterDepartmentAndMasterSubDepartments::class)->name('master_shop.master_departments_and_sub_departments');
 Route::get('master-shop/{masterShop}/scopes/{scope}/departments', GetMasterDepartments::class)->name('master_shop.master_departments');
 Route::get('master-shop/{masterShop}/scopes/{scope}/sub-departments', GetMasterSubDepartments::class)->name('master_shop.master_sub_departments');
 

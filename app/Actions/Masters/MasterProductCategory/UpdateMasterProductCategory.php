@@ -100,12 +100,14 @@ class UpdateMasterProductCategory extends OrgAction
 
         $changed = Arr::except($masterProductCategory->getChanges(), ['updated_at']);
 
-        if (Arr::hasAny($changed, ['code', 'name', 'description', 'rrp'])) {
+        if (Arr::hasAny($changed, ['code', 'name', 'description', 'description_title','description_extra', 'rrp'])) {
             foreach ($masterProductCategory->productCategories as $productCategory) {
                 UpdateProductCategory::make()->action($productCategory, [
                     'code' => $masterProductCategory->code,
                     'name' => $masterProductCategory->name,
                     'description' => $masterProductCategory->description,
+                    'description_title' => $masterProductCategory->description_title,
+                    'description_extra' => $masterProductCategory->description_extra,
                     'rrp' => $masterProductCategory->rrp
                 ]);
             }

@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import {Head} from "@inertiajs/vue3";
+import {Head, Link} from "@inertiajs/vue3";
 import {library} from "@fortawesome/fontawesome-svg-core";
 import {
     faCube,
@@ -18,7 +18,7 @@ import {
     faShoppingCart, faStickyNote, faMoneyBillWave
 } from "@fal";
 import {faCheckCircle} from "@fas";
-
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import {capitalize} from "@/Composables/capitalize";
 import Tabs from "@/Components/Navigation/Tabs.vue";
@@ -34,7 +34,7 @@ import TradeUnitImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 import Breadcrumb from 'primevue/breadcrumb'
 
 library.add(faChartLine, faCheckCircle, faFolderTree, faFolder, faCube, faShoppingCart, faFileInvoice, faStickyNote,
-    faMoneyBillWave, faFolderOpen, faAtom
+    faMoneyBillWave, faFolderOpen, faAtom, faFolderTree
 );
 
 const props = defineProps<{

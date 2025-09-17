@@ -156,7 +156,7 @@ function masterDepartmentRoute(department: Department) {
             </template>
         </Breadcrumb>
     </div>
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" ></component>
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" is-master></component>
 </template>
 
 <style scoped>
