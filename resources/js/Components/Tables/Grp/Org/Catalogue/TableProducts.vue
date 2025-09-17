@@ -41,7 +41,6 @@ const emits = defineEmits<{
 }>()
 
 function productRoute(product: Product) {
-    console.log(product)
     if (!product.slug) {
         return ''
     }
@@ -182,7 +181,7 @@ function productRoute(product: Product) {
                 return route(
                     "grp.helpers.redirect_asset",
                     [product.asset_id]);
-            }else return "/"
+            }else return ''
 
     }
 }
