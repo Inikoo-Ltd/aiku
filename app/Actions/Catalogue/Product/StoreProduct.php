@@ -57,6 +57,9 @@ class StoreProduct extends OrgAction
      */
     public function handle(Shop|ProductCategory $parent, array $modelData): Product
     {
+
+
+
         if (!Arr::has($modelData, 'unit_price')) {
             data_set($modelData, 'unit_price', Arr::get($modelData, 'price') / Arr::get($modelData, 'units', 1));
         }
@@ -94,7 +97,6 @@ class StoreProduct extends OrgAction
             /** @var Product $product */
             $product = $shop->products()->create($modelData);
             $product = $this->syncOrgStocks($product, $orgStocks);
-            $product = $this->associateTradeUnits($product);
             ProductHydrateTradeUnitsFields::run($product);
             $product = ModelHydrateSingleTradeUnits::run($product);
             $product = ProductHydrateForSale::run($product);

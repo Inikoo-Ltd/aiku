@@ -29,7 +29,6 @@ class StoreProductFromMasterProduct extends GrpAction
         if ($productCategories) {
             foreach ($productCategories as $productCategory) {
                 $shop = $productCategory->shop;
-
                 if (isset($modelData['shop_products']) && !array_key_exists($shop->id, $modelData['shop_products'])) {
                     continue;
                 }
@@ -75,7 +74,23 @@ class StoreProductFromMasterProduct extends GrpAction
                     'is_for_sale'       => true
                 ];
 
+
+                $product = Product::where('shop_id', $shop->id)
+                    ->whereRaw("lower(code) = lower(?)", [$masterAsset->code])
+                    ->first();
+
+                if ($product) {
+                    data_set($data, 'family_id', $productCategory->id);
+                    data_set($data, 'well_formatted_org_stocks', $orgStocks);
+                    data_forget($data, 'org_stocks');
+
+
+                    $this->updateFoundProduct($product, $data, $createWebpage);
+                    continue;
+                }
+
                 $product = StoreProduct::run($productCategory, $data);
+
                 $product->refresh();
                 CloneProductImagesFromTradeUnits::run($product);
                 $product->refresh();
@@ -86,12 +101,21 @@ class StoreProductFromMasterProduct extends GrpAction
                         'comment' => 'first publish'
                     ]);
                 }
-                $tradeUnitsData = [];
-                foreach ($masterAsset->tradeUnits as $tradeUnit) {
-                    $tradeUnitsData[$tradeUnit->id] = ['quantity' => $tradeUnit->pivot->quantity];
-                }
-                $product->tradeUnits()->syncWithoutDetaching($tradeUnitsData);
             }
+        }
+    }
+
+    public function updateFoundProduct(Product $product, array $data, bool $createWebpage): void
+    {
+
+        $product = UpdateProduct::run($product, $data);
+        CloneProductImagesFromTradeUnits::run($product);
+        $product->refresh();
+        if ($createWebpage && $product->webpage === null) {
+            $webpage = StoreProductWebpage::run($product);
+            PublishWebpage::make()->action($webpage, [
+                'comment' => 'first publish'
+            ]);
         }
     }
 

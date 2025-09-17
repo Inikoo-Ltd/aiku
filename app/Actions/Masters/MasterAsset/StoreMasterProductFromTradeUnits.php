@@ -30,6 +30,11 @@ class StoreMasterProductFromTradeUnits extends GrpAction
     use WithAttachMediaToModel;
 
     /**
+     * @var \App\Models\Masters\MasterProductCategory
+     */
+    private MasterProductCategory $masterFamily;
+
+    /**
      * @throws \Throwable
      */
     public function handle(MasterProductCategory $parent, array $modelData): MasterAsset
@@ -94,7 +99,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
                 new IUnique(
                     table: 'master_assets',
                     extraConditions: [
-                        ['column' => 'group_id', 'value' => $this->group->id],
+                        ['column' => 'master_shop_id', 'value' => $this->masterFamily->master_shop_id],
                         ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
@@ -134,19 +139,20 @@ class StoreMasterProductFromTradeUnits extends GrpAction
     /**
      * @throws \Throwable
      */
-    public function action(MasterProductCategory $parent, array $modelData, int $hydratorsDelay = 0, $strict = true, $audit = true): MasterAsset
+    public function action(MasterProductCategory $masterFamily, array $modelData, int $hydratorsDelay = 0, $strict = true, $audit = true): MasterAsset
     {
         if (!$audit) {
             MasterAsset::disableAuditing();
         }
+        $this->masterFamily = $masterFamily;
 
         $this->hydratorsDelay = $hydratorsDelay;
         $this->asAction       = true;
         $this->strict         = $strict;
 
-        $this->initialisation($parent->group, $modelData);
+        $this->initialisation($masterFamily->group, $modelData);
 
-        return $this->handle($parent, $this->validatedData);
+        return $this->handle($masterFamily, $this->validatedData);
     }
 
     /**
@@ -154,6 +160,8 @@ class StoreMasterProductFromTradeUnits extends GrpAction
      */
     public function asController(MasterProductCategory $masterFamily, ActionRequest $request): MasterAsset
     {
+        $this->masterFamily = $masterFamily;
+
         $this->initialisation($masterFamily->group, $request);
         return $this->handle($masterFamily, $this->validatedData);
     }

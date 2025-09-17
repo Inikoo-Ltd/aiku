@@ -85,6 +85,7 @@ class StoreMasterAsset extends OrgAction
                 ]);
             }
 
+
             return ModelHydrateSingleTradeUnits::run($masterAsset);
         });
 
@@ -204,8 +205,8 @@ class StoreMasterAsset extends OrgAction
         $this->asAction       = true;
         $this->strict         = $strict;
 
-        $this->initialisationFromGroup($masterFamily->group, $modelData);
 
+        $this->initialisationFromGroup($masterFamily->group, $modelData);
         return $this->handle($masterFamily, $this->validatedData);
     }
 

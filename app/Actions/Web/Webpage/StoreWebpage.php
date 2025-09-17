@@ -146,8 +146,6 @@ class StoreWebpage extends OrgAction
                     } elseif ($model->type == ProductCategoryTypeEnum::FAMILY) {
                         $this->createWebBlock($webpage, 'family-1');
                         $this->createWebBlock($webpage, 'products-1');
-                        $this->createWebBlock($webpage, 'see-also-1');
-
                     }
                 }
 
@@ -335,6 +333,7 @@ class StoreWebpage extends OrgAction
         $this->hydratorsDelay = $hydratorsDelay;
         $this->parent         = $parent;
         $this->website        = $parent instanceof Website ? $parent : $parent->website;
+
         $this->initialisationFromShop($this->website->shop, $modelData);
 
         return $this->handle($parent, $this->validatedData);

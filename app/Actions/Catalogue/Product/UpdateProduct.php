@@ -40,6 +40,7 @@ class UpdateProduct extends OrgAction
 
     public function handle(Product $product, array $modelData): Product
     {
+
         $oldHistoricProduct = $product->current_historic_asset_id;
 
         if (Arr::has($modelData, 'family_id')) {
@@ -48,8 +49,11 @@ class UpdateProduct extends OrgAction
             ]);
         }
 
+        $orgStocks = null;
+
         if (Arr::has($modelData, 'org_stocks')) {
             $orgStocksRaw = Arr::pull($modelData, 'org_stocks', []);
+
             $orgStocksRaw = array_column($orgStocksRaw, null, 'org_stock_id');
             $orgStocksRaw = array_map(function ($item) {
                 $filtered             = Arr::only($item, ['org_stock_id', 'quantity', 'notes']);
@@ -58,8 +62,21 @@ class UpdateProduct extends OrgAction
                 return $filtered;
             }, $orgStocksRaw);
 
-            $this->syncOrgStocks($product, $orgStocksRaw);
-            //todo  after updating orgStock need a new method to update Trade Units
+            $orgStocks = $orgStocksRaw;
+
+
+        }
+
+        if (Arr::has($modelData, 'well_formatted_org_stocks')) {
+
+            $orgStocks = Arr::pull($modelData, 'well_formatted_org_stocks', []);
+
+
+        }
+
+        if ($orgStocks !== null) {
+
+            $this->syncOrgStocks($product, $orgStocks);
         }
 
         $assetData = [];
@@ -192,6 +209,12 @@ class UpdateProduct extends OrgAction
         if (Arr::has($changed, 'available_quantity')) {
             $product->updateQuietly([
                 'available_quantity_updated_at' => now()
+            ]);
+        }
+
+        if (Arr::has($changed, 'master_product_id')) {
+            $product->asset->updateQuietly([
+                'master_asset_id' => $product->master_product_id
             ]);
         }
 
