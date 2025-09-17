@@ -15,7 +15,7 @@ import Icon from '@/Components/Icon.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { trans } from 'laravel-vue-i18n'
 import Tag from "@/Components/Tag.vue"
-import { snakeCase } from "lodash-es"
+import { toLower, upperFirst } from "lodash-es"
 library.add(faExclamationCircle, faCheckCircle)
 
 const props = defineProps<{
@@ -42,9 +42,14 @@ onMounted(() => {
         props.form[props.fieldName] = props.options?.[0]?.value
     }
 })
-function unsnakeCase(str) {
-  return _.upperFirst(_.toLower(str.replace(/_/g, " ")))
+
+
+
+function unsnakeCase(str?: string | null) {
+  if (!str) return ""   // handle undefined / null safely
+  return upperFirst(toLower(str.replace(/_/g, " ")))
 }
+
 </script>
 
 <template>
@@ -78,7 +83,7 @@ function unsnakeCase(str) {
                 </template>
 
 				<template v-if="props.fieldData.type_label == 'department-and-sub-department'" #singlelabel="{ value }">
-                       <div class="flex justify-start w-full mx-2">{{ value.code }} - {{ value.name }} <Tag class="mx-2" :label="unsnakeCase(value.type)"></Tag> </div>
+                       <div class="flex justify-start w-full mx-2">{{ value.code }} - {{ value.name }} <Tag v-if="value.type" class="mx-2" :label="unsnakeCase(value.type)"></Tag> </div>
                 </template>
                 
                 <template v-if="props.fieldData.type_label == 'families'" #option="{ option, isSelected, isPointed }">
@@ -86,7 +91,7 @@ function unsnakeCase(str) {
                 </template>
 
 				 <template v-if="props.fieldData.type_label == 'department-and-sub-department'" #option="{ option, isSelected, isPointed }">
-                    <div class="">{{ option.code }} - {{ option.name }} <Tag :label="unsnakeCase(option.type)"></Tag></div>
+                    <div class="">{{ option.code }} - {{ option.name }} <Tag v-if="option.type" :label="unsnakeCase(option.type)"></Tag></div>
                 </template>
 		</PureMultiselectInfiniteScroll>
 			<div
