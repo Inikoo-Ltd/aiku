@@ -182,18 +182,27 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
     }
 
 
-    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_families_webpages';
+    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_families_webpages {website_id?}';
 
     public function asCommand(Command $command): void
     {
-        $webpagesID = DB::table('webpages')->select('id')->where('sub_type', 'family')->get();
+        $websiteId = $command->argument('website_id');
+
+        $query = DB::table('webpages')->select('id')->where('sub_type', 'family');
+        if ($websiteId) {
+            $query->where('website_id', $websiteId);
+        }
+        $webpagesID = $query->get();
+
+        $total = count($webpagesID);
+        $current = 1;
         foreach ($webpagesID as $webpageID) {
+            print "[{$current}/{$total}] Webpage id: {$webpageID->id}\n";
             $webpage = Webpage::find($webpageID->id);
             if ($webpage) {
-
                 $this->handle($webpage, $command);
             }
-
+            $current++;
         }
     }
 
