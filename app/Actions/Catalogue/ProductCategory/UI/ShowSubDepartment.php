@@ -104,7 +104,7 @@ class ShowSubDepartment extends OrgAction
                 'mini_breadcrumbs' => array_filter(
                     [
                         [
-                            'label' => 'department',
+                            'label' => $subDepartment->department->name,
                             'to'    => [
                                 'name'       => 'grp.org.shops.show.catalogue.departments.show',
                                 'parameters' => [
@@ -117,7 +117,7 @@ class ShowSubDepartment extends OrgAction
                             'icon' => ['fal', 'folder-tree']
                         ],
                         [
-                            'label' => 'sub-departement',
+                            'label' => $subDepartment->name,
                             'to'    => [
                                 'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
                                 'parameters' => [

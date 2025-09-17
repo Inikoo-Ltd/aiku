@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head } from "@inertiajs/vue3";
+import { Head, Link } from "@inertiajs/vue3";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import {
     faBullhorn,
@@ -35,6 +35,8 @@ import FormCreateMasterFamily from "@/Components/Master/FormCreateMasterFamily.v
 import { sub } from "date-fns";
 import TableSubDepartments from "@/Components/Tables/Grp/Org/Catalogue/TableSubDepartments.vue";
 import ImagesManagement from "@/Components/Goods/ImagesManagement.vue";
+import Breadcrumb from 'primevue/breadcrumb'
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 library.add(
     faFolder,
@@ -74,6 +76,7 @@ const props = defineProps<{
     storeRoute: routeType
     shopsData: {}
     images?: object
+    mini_breadcrumbs : any
 }>();
 
 let currentTab = ref(props.tabs.current);
@@ -108,10 +111,8 @@ const showDialog = ref(false)
     </PageHeading>
 
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component :is="component" :data="props[currentTab]" :tab="currentTab"></component>
-    <div v-if="mini_breadcrumbs"
-        class="bg-white shadow-sm rounded px-4 py-2 mx-4 mt-2 w-fit border border-gray-200 overflow-x-auto">
-        <Breadcrumb :model="mini_breadcrumbs">
+     <div v-if="mini_breadcrumbs" class="bg-white shadow-sm rounded px-4 py-2 mx-4 mt-2 w-fit border border-gray-200 overflow-x-auto">
+     <Breadcrumb :model="mini_breadcrumbs">
             <template #item="{ item, index }">
                 <div class="flex items-center gap-1 whitespace-nowrap">
                     <!-- Breadcrumb link or text -->
@@ -127,7 +128,7 @@ const showDialog = ref(false)
             </template>
         </Breadcrumb>
     </div>
-
+    <component :is="component" :data="props[currentTab]" :tab="currentTab"></component>
     <FormCreateMasterFamily :showDialog="showDialog" :storeProductRoute="storeRoute"
         @update:show-dialog="(value) => showDialog = value" :shopsData="shopsData" />
 </template>

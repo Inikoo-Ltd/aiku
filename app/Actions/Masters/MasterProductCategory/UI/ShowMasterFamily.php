@@ -119,7 +119,7 @@ class ShowMasterFamily extends GrpAction
                 'mini_breadcrumbs' => array_filter(
                     [
                         [
-                            'label' => 'master department',
+                            'label' => $masterFamily->masterDepartment->name,
                             'to'    => [
                                 'name'       => 'grp.masters.master_shops.show.master_departments.show',
                                 'parameters' => [
@@ -131,7 +131,7 @@ class ShowMasterFamily extends GrpAction
                             'icon' => ['fal', 'folder-tree']
                         ],
                         $masterFamily->master_sub_department_id ? [
-                            'label' => 'master sub-departement',
+                            'label' => $masterFamily->masterSubDepartment->code,
                             'to'    => [
                                 'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show',
                                 'parameters' => [
@@ -144,7 +144,7 @@ class ShowMasterFamily extends GrpAction
                             'icon' => ['fal', 'folder-tree']
                         ] : [],
                         [
-                            'label' => 'master family',
+                            'label' => $masterFamily->name,
                             'to'    => [
                                 'name'       => $masterFamily->master_sub_department_id ? 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show' : 'grp.masters.master_shops.show.master_departments.show.master_families.show',
                                 'parameters' =>  $masterFamily->master_sub_department_id ? [

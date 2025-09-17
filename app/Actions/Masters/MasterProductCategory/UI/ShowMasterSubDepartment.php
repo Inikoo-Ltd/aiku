@@ -80,7 +80,7 @@ class ShowMasterSubDepartment extends GrpAction
                 'mini_breadcrumbs' => array_filter(
                     [
                         [
-                            'label' => 'master department',
+                            'label' => $masterSubDepartment->masterDepartment->name,
                             'to'    => [
                                 'name'       => 'grp.masters.master_shops.show.master_departments.show',
                                 'parameters' => [
@@ -92,13 +92,13 @@ class ShowMasterSubDepartment extends GrpAction
                             'icon' => ['fal', 'folder-tree']
                         ],
                         [
-                            'label' => 'master sub-departement',
+                            'label' => $masterSubDepartment->name,
                             'to'    => [
                                 'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show',
                                 'parameters' => [
                                     'masterShop'         => $masterSubDepartment->masterShop->slug,
                                     'masterDepartment'   => $masterSubDepartment->masterDepartment->slug,
-                                    'masterSubDepartment' => $masterSubDepartment->masterSubDepartment->slug
+                                    'masterSubDepartment' => $masterSubDepartment->slug
                                 ]
                             ],
                             'tooltip' => 'Master Sub-Departement',

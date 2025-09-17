@@ -171,7 +171,7 @@ class ShowFamily extends OrgAction
                 'mini_breadcrumbs' => array_filter(
                     [
                         [
-                            'label' => 'department',
+                            'label' => $family->department->name,
                             'to'    => [
                                 'name'       => 'grp.org.shops.show.catalogue.departments.show',
                                 'parameters' => [
@@ -184,7 +184,7 @@ class ShowFamily extends OrgAction
                             'icon' => ['fal', 'folder-tree']
                         ],
                         $family->sub_department_id ? [
-                            'label' => 'sub-departement',
+                            'label' =>  $family->subDepartment->name,
                             'to'    => [
                                 'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
                                 'parameters' => [
@@ -198,7 +198,7 @@ class ShowFamily extends OrgAction
                             'icon' => ['fal', 'folder-tree']
                         ] : [],
                         [
-                            'label' => 'family',
+                            'label' => $family->name,
                             'to'    => [
                                 'name'       => $family->sub_department_id ? 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show' : 'grp.org.shops.show.catalogue.departments.show.families.show',
                                 'parameters' =>  $family->sub_department_id ? [
