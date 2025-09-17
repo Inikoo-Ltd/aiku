@@ -180,6 +180,8 @@ class StoreMasterAsset extends OrgAction
             'description_title'      => ['sometimes', 'string', 'nullable', 'max:300'],
             'description_extra'      => ['sometimes', 'string', 'nullable', 'max:15000'],
             'marketing_weight'       => ['sometimes', 'numeric', 'min:0'],
+            'gross_weight'           => ['sometimes', 'numeric', 'min:0'],
+            'marketing_dimensions'   => ['sometimes'],
 
         ];
 

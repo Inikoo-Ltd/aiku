@@ -153,6 +153,7 @@ class MasterAsset extends Model implements Auditable, HasMedia
 
     protected $casts = [
         'type'               => MasterAssetTypeEnum::class,
+        'marketing_dimensions'   => 'array',
         'variant_ratio'      => 'decimal:3',
         'price'              => 'decimal:2',
         'rrp'                => 'decimal:2',

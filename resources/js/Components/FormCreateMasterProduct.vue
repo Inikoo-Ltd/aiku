@@ -177,7 +177,7 @@ const ListSelectorChange = (value) => {
         form.code = value[0].code
         form.unit = value[0].type
         form.image = value[0]?.image?.source || null
-        form.marketing_weight = value[0].marketing_weight
+        form.marketing_weight = value[0].marketing_weight || 0
         form.net_weight = value[0].net_weight
         form.description = value[0].description
         form.description_title = value[0].description_title
