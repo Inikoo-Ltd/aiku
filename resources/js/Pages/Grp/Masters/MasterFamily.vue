@@ -71,8 +71,6 @@ const props = defineProps<{
     mini_breadcrumbs?: any[]
 }>()
 
-console.log(props.pageHead);
-
 const currentTab = ref(props.tabs.current)
 
 
@@ -92,7 +90,6 @@ const component = computed(() => {
     }
     return components[currentTab.value] ?? ModelDetails
 })
-console.log(route().params)
 
 const showDialog = ref(false);
 
@@ -126,6 +123,7 @@ const showDialog = ref(false);
     </Message>
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
+    <div v-if="mini_breadcrumbs" class="bg-white shadow-sm rounded px-4 py-2 mx-4 mt-2 w-fit border border-gray-200 overflow-x-auto">
      <Breadcrumb :model="mini_breadcrumbs">
             <template #item="{ item, index }">
                 <div class="flex items-center gap-1 whitespace-nowrap">
@@ -141,6 +139,7 @@ const showDialog = ref(false);
                 </div>
             </template>
         </Breadcrumb>
+    </div>
 
     <component :is="component" :data="props[currentTab]" :tab="currentTab" />
 
@@ -154,3 +153,13 @@ const showDialog = ref(false);
     />
 
 </template>
+
+<style scoped>
+/* Remove default breadcrumb styles */
+:deep(.p-breadcrumb) {
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border: none;
+}
+</style>

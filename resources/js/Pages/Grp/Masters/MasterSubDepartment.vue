@@ -131,3 +131,13 @@ const showDialog = ref(false)
     <FormCreateMasterFamily :showDialog="showDialog" :storeProductRoute="storeRoute"
         @update:show-dialog="(value) => showDialog = value" :shopsData="shopsData" />
 </template>
+
+<style scoped>
+/* Remove default breadcrumb styles */
+:deep(.p-breadcrumb) {
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border: none;
+}
+</style>

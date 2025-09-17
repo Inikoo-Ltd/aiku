@@ -191,3 +191,14 @@ const onSubmitAddItem = async (idProduct: number[]) => {
         </ProductsSelector>
     </Modal>
 </template>
+
+
+<style scoped>
+/* Remove default breadcrumb styles */
+:deep(.p-breadcrumb) {
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border: none;
+}
+</style>

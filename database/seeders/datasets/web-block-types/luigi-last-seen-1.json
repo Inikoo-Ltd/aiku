@@ -5,6 +5,7 @@
 	"name": "Luigi: Last Seen",
 	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
 	"category": "block",
+	"fixed": true,
 	"data": {
 		"fieldValue": {
 			"settings": null,
@@ -36,7 +37,7 @@
 					"margin": {
 						"unit": "px",
 						"top": {
-							"value": 0
+							"value": 20
 						},
 						"left": {
 							"value": 0

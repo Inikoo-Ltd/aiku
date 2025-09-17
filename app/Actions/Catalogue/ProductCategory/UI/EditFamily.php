@@ -237,7 +237,7 @@ class EditFamily extends OrgAction
                                 ]
                             ],
                             [
-                                'label'  => __('Department'),
+                                'label'  => __('Parent').' ('.__('Department/Sub-Department').')',
                                 'icon'   => 'fa-light fa-box',
                                 'fields' => [
                                     'department_id'  =>  [
@@ -260,7 +260,30 @@ class EditFamily extends OrgAction
                                         'labelProp' => 'code',
                                         'required' => false,
                                         'value'   => $family->department->id ?? null,
-                                    ]
+                                    ],
+                                    'sub_department_id'  =>  [
+                                        'type'    => 'select_infinite',
+                                        'label'   => __('Sub Department'),
+                                        'options'   => [
+                                            [
+                                                'id' => $family->subDepartment?->id,
+                                                'code' => $family->subDepartment?->code
+                                            ]
+                                        ],
+                                        'fetchRoute'    => [
+                                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.index',
+                                            'parameters' => [
+                                                'organisation' => $this->organisation->slug,
+                                                'shop' => $this->shop->slug,
+                                                'department' => $family->department->slug
+                                            ]
+                                        ],
+                                        'valueProp' => 'id',
+                                        'labelProp' => 'code',
+                                        'required' => false,
+                                        'value'   => $family->subDepartment->id ?? null,
+                                    ],
+
                                 ],
 
                             ],
