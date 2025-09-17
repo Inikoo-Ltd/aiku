@@ -104,6 +104,65 @@ class ShowMasterProducts extends GrpAction
                     'previous' => $this->getPrevious($masterAsset, $request),
                     'next'     => $this->getNext($masterAsset, $request),
                 ],
+                'mini_breadcrumbs' => array_filter(
+                    [
+                        $masterAsset->master_family_id ? [
+                            'label' => $masterAsset->masterDepartment->name,
+                            'to'    => [
+                                'name'       => 'grp.masters.master_shops.show.master_departments.show',
+                                'parameters' => [
+                                    'masterShop'         => $masterAsset->masterShop->slug,
+                                    'masterDepartment'   => $masterAsset->masterDepartment->slug
+                                ]
+                            ],
+                            'tooltip' => 'Master Department',
+                            'icon' => ['fal', 'folder-tree']
+                        ] : [],
+                        $masterAsset->master_sub_department_id ? [
+                            'label' => $masterAsset->masterSubDepartment->name,
+                            'to'    => [
+                                'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show',
+                                'parameters' => [
+                                    'masterShop'         => $masterAsset->masterShop->slug,
+                                    'masterDepartment'   => $masterAsset->masterDepartment->slug,
+                                    'masterSubDepartment' => $masterAsset->masterSubDepartment->slug
+                                ]
+                            ],
+                            'tooltip' => 'Master Sub-Departement',
+                            'icon' => ['fal', 'folder-tree']
+                        ] : [],
+                        $masterAsset->master_family_id ? [
+                            'label' => $masterAsset->masterFamily->name,
+                            'to'    => [
+                                'name'       => $masterAsset->master_sub_department_id ? 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show' : 'grp.masters.master_shops.show.master_departments.show.master_families.show',
+                                'parameters' =>  $masterAsset->master_sub_department_id ? [
+                                    'masterShop'         => $masterAsset->masterShop->slug,
+                                    'masterDepartment'   => $masterAsset->masterDepartment->slug,
+                                    'masterSubDepartment'   => $masterAsset->masterSubDepartment->slug,
+                                    'masterFamily' => $masterAsset->masterFamily->slug,
+                                ] : [
+                                    'masterShop'         => $masterAsset->masterShop->slug,
+                                    'masterDepartment'   => $masterAsset->masterDepartment->slug,
+                                    'masterFamily' => $masterAsset->masterFamily->slug,
+                                ]
+                            ],
+                            'tooltip' => 'Master Family',
+                            'icon' => ['fal', 'folder-tree']
+                        ] : [],
+                        [
+                            'label' => $masterAsset->masterFamily->name,
+                            'to'    => [
+                                'name'       => 'grp.masters.master_shops.show.master_products.show',
+                                'parameters' => [
+                                    'masterShop'         => $masterAsset->masterShop->slug,
+                                    'masterProduct' => $masterAsset->slug,
+                                ]
+                            ],
+                            'tooltip' => 'Master Product',
+                            'icon' => ['fal', 'folder-tree']
+                        ],
+                    ],
+                ),
                 'pageHead'    => [
                     'title'   => $masterAsset->code,
                     'afterTitle' => [
