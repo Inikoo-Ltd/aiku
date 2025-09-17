@@ -125,42 +125,6 @@ const showMissingTaxonomyMessage = computed(() => {
     return !props.taxonomy?.department && !props.taxonomy?.family
 })
 
-// Breadcrumb logic
-/* const breadcrumbItems = computed(() => {
-    const items = []
-
-    const hasDepartment = props.taxonomy?.department
-    const hasFamily = props.taxonomy?.family
-
-    if (!hasDepartment && !hasFamily) return []
-
-    items.push({
-        label: hasDepartment ? props.taxonomy.department.label : '-',
-        to: hasDepartment
-            ? route(
-                props.taxonomy.department.route.name,
-                props.taxonomy.department.route.parameters,
-            )
-            : null,
-        tooltip: hasDepartment ? 'Department ' + props.taxonomy.department.tooltip : 'no department',
-        title: hasDepartment ? props.taxonomy.department.name : 'No department',
-        icon: faFolderTree,
-    })
-
-    if (hasFamily) {
-        items.push({
-            label: props.taxonomy.family.label,
-            to: route(
-                props.taxonomy.family.route.name,
-                props.taxonomy.family.route.parameters,
-            ),
-            title: props.taxonomy.family.name,
-            tooltip: 'Family ' + props.taxonomy.family.tooltip,
-            icon: faFolder
-        })
-    }
-    return items
-}) */
 
 
 function masterProductRoute() {

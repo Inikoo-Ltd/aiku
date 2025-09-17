@@ -101,6 +101,37 @@ class ShowSubDepartment extends OrgAction
                     'previous' => $this->getPrevious($subDepartment, $request),
                     'next'     => $this->getNext($subDepartment, $request),
                 ],
+                'mini_breadcrumbs' => array_filter(
+                    [
+                        [
+                            'label' => 'department',
+                            'to'    => [
+                                'name'       => 'grp.org.shops.show.catalogue.departments.show',
+                                'parameters' => [
+                                    'organisation' => $this->organisation->slug,
+                                    'shop'         => $this->shop->slug,
+                                    'department'   => $subDepartment->department->slug
+                                ]
+                            ],
+                            'tooltip' => 'Department',
+                            'icon' => ['fal', 'folder-tree']
+                        ],
+                        [
+                            'label' => 'sub-departement',
+                            'to'    => [
+                                'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
+                                'parameters' => [
+                                    'organisation' => $this->organisation->slug,
+                                    'shop'         => $this->shop->slug,
+                                    'department'   => $subDepartment->department->slug,
+                                    'subDepartment' => $subDepartment->slug
+                                ]
+                            ],
+                            'tooltip' => 'Sub-Departement',
+                            'icon' => ['fal', 'folder-tree']
+                        ],
+                    ],
+                ),
                 'pageHead'    => [
                     'title'         => $subDepartment->name,
                     'model'         => __('Sub-department'),
