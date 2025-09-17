@@ -307,7 +307,7 @@ console.log('product summary : ', props)
 				<!-- Video Section - Accordion -->
 				<div class="space-y-3">
 					<Accordion multiple>
-						<AccordionPanel value="0">
+						<AccordionPanel v-if="!hide?.includes('vimeo')" value="0">
 							<AccordionHeader>
 								<div class="flex items-center gap-2">
 									<span class="font-medium text-base">{{ trans("Video (vimeo)") }}</span>
@@ -345,7 +345,7 @@ console.log('product summary : ', props)
 								</div>
 							</AccordionContent>
 						</AccordionPanel>
-						<AccordionPanel value="2">
+						<AccordionPanel v-if="!hide?.includes('outer')" value="2">
 							<AccordionHeader>
 								<div class="flex items-center gap-2">
 									<span class="font-medium text-base">{{ trans("Outer") }}</span>
@@ -375,7 +375,7 @@ console.log('product summary : ', props)
 								</div>
 							</AccordionContent>
 						</AccordionPanel>
-						<AccordionPanel value="3">
+						<AccordionPanel v-if="!hide?.includes('properties')" value="3">
 							<AccordionHeader>
 								<div class="flex items-center gap-2">
 									<span class="font-medium text-base">{{ trans("Properties") }}</span>
@@ -432,7 +432,7 @@ console.log('product summary : ', props)
 								</div>
 							</AccordionContent>
 						</AccordionPanel>
-						<AccordionPanel value="4">
+						<AccordionPanel  v-if="!hide?.includes('health')" value="4">
 							<AccordionHeader>
 								<div class="flex items-center gap-2">
 									<span class="font-medium text-base">{{ trans("Health & Safety") }}</span>
