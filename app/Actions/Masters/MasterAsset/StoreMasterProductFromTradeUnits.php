@@ -46,9 +46,10 @@ class StoreMasterProductFromTradeUnits extends GrpAction
             data_set($modelData, 'unit', Arr::get($tradeUnits, '0.type'));
         }
 
-
+        
 
         $masterAsset = DB::transaction(function () use ($parent, $modelData, $tradeUnits, $shopProducts) {
+            // dd($modelData);
             $data        = [
                 'code'    => Arr::get($modelData, 'code'),
                 'name'    => Arr::get($modelData, 'name'),
@@ -58,6 +59,8 @@ class StoreMasterProductFromTradeUnits extends GrpAction
                 'description_extra'       => Arr::get($modelData, 'description_extra'),
                 'units'                   => Arr::get($modelData, 'units', 1),
                 'marketing_weight'        => Arr::get($modelData, 'marketing_weight', 0),
+                'gross_weight'            => Arr::get($modelData, 'gross_weight', 0),
+                'marketing_dimensions'    => Arr::get($modelData, 'marketing_dimensions', []),
                 'is_main' => true,
                 'type'    => MasterAssetTypeEnum::PRODUCT,
                 'trade_units'  => $tradeUnits,
@@ -132,7 +135,10 @@ class StoreMasterProductFromTradeUnits extends GrpAction
                 'numeric',
                 'min:0'
             ],
-            'image' => ["sometimes", "mimes:jpg,png,jpeg,gif", "max:50000"]
+            'image' => ["sometimes", "mimes:jpg,png,jpeg,gif", "max:50000"],
+            'marketing_weight'       => ['sometimes', 'numeric', 'min:0'],
+            'gross_weight'           => ['sometimes', 'numeric', 'min:0'],
+            'marketing_dimensions'   => ['sometimes'],
         ];
     }
 

@@ -52,7 +52,7 @@ const props = defineProps<{
 const slidesPerView = computed(() => {
     const perRow = props.fieldValue?.settings?.per_row ?? {}
     return {
-        desktop: perRow.desktop ?? 6,
+        desktop: perRow.desktop ?? 5,
         tablet: perRow.tablet ?? 4,
         mobile: perRow.mobile ?? 2,
     }[props.screenType] ?? 1
@@ -79,13 +79,10 @@ const fetchRecommenders = async () => {
                 {
                     "blacklisted_item_ids": [],
                     "item_ids": [],
-                    "recommendation_type": "trends",
-                    "recommender_client_identifier": "trends",
+                    "recommendation_type": "last_seen",
+                    "recommender_client_identifier": "last_seen",
                     "size": 7,
                     "user_id": layout.iris?.user_auth?.customer_id?.toString(),
-                    "category": undefined,
-                    "brand": undefined,
-                    "product_id": undefined,
                     "recommendation_context": {},
                     // "hit_fields": ["url", "title"]
                 }
@@ -99,7 +96,7 @@ const fetchRecommenders = async () => {
         if (response.status !== 200) {
             console.error('Error fetching recommenders:', response.statusText)
         }
-        console.log('LTrends1:', response.data)
+        console.log('LLS1:', response.data)
         listProducts.value = response.data[0].hits
     } catch (error: any) {
         console.error('Error on fetching recommendations:', error)
@@ -115,7 +112,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div aria-type="luigi-trends-1-iris" class="w-full pb-6" :style="{
+    <div aria-type="luigi-last-seen-1-iris" class="w-full pb-6" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(fieldValue.container?.properties, screenType),
         width: 'auto'

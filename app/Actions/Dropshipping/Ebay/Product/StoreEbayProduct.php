@@ -35,12 +35,13 @@ class StoreEbayProduct extends RetinaAction
             /** @var Product $product */
             $product = $portfolio->item;
 
-            $imageUrls = [];
             $images = [];
             if (app()->isProduction()) {
                 foreach ($product->images as $image) {
                     $images[] = GetImgProxyUrl::run($image->getImage()->extension('jpg'));
                 }
+            } else {
+                $images[] = Arr::get($product->web_images, 'all.0.gallery.original');
             }
 
             $imageUrls = [
@@ -98,6 +99,7 @@ class StoreEbayProduct extends RetinaAction
             };
 
             $productResult = $ebayUser->storeProduct($inventoryItem);
+
             if ($handleError($productResult)) {
                 return;
             }

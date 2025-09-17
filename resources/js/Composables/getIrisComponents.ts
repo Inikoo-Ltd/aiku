@@ -53,6 +53,7 @@ import LuigiTrends1Iris from '@/Components/CMS/Webpage/LuigiTrends1/LuigiTrends1
 
 
 import UserSubscribeIris from '@/Components/CMS/Webpage/UserSubscribe/UserSubscribeIris.vue'
+import LuigiLastSeen1Iris from '@/Components/CMS/Webpage/LuigiLastSeen1/LuigiLastSeen1Iris.vue'
 
 
 const components = (shop_type?: string): Record<string, Component> => {
@@ -101,6 +102,7 @@ const components = (shop_type?: string): Record<string, Component> => {
 
         // Luigi
         'luigi-trends-1' : LuigiTrends1Iris,
+        'luigi-last-seen-1' : LuigiLastSeen1Iris,
 
 
         'banner': WowsbarBannerIris,
