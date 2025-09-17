@@ -73,7 +73,7 @@ const props = defineProps<{
     sub_departments?: {}
     storeRoute: routeType
     shopsData: {}
-    images?:object
+    images?: object
 }>();
 
 let currentTab = ref(props.tabs.current);
@@ -99,21 +99,35 @@ const showDialog = ref(false)
 
 
 <template>
+
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-         <template #button-add-master-family>
+        <template #button-add-master-family>
             <Button :label="trans('Master family')" @click="showDialog = true" :style="'create'" />
         </template>
     </PageHeading>
 
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <component :is="component" :data="props[currentTab]" :tab="currentTab"></component>
+    <div v-if="mini_breadcrumbs"
+        class="bg-white shadow-sm rounded px-4 py-2 mx-4 mt-2 w-fit border border-gray-200 overflow-x-auto">
+        <Breadcrumb :model="mini_breadcrumbs">
+            <template #item="{ item, index }">
+                <div class="flex items-center gap-1 whitespace-nowrap">
+                    <!-- Breadcrumb link or text -->
+                    <component :is="item.to ? Link : 'span'" :href="item.to" v-tooltip="item.tooltip"
+                        :title="item.title" class="flex items-center gap-2 text-sm transition-colors duration-150"
+                        :class="item.to
+                            ? 'text-gray-500'
+                            : 'text-gray-500 cursor-default'">
+                        <FontAwesomeIcon :icon="item.icon" class="w-4 h-4" />
+                        <span class="truncate max-w-[150px]">{{ item.label || '-' }}</span>
+                    </component>
+                </div>
+            </template>
+        </Breadcrumb>
+    </div>
 
-
-    <FormCreateMasterFamily
-        :showDialog="showDialog" 
-        :storeProductRoute="storeRoute" 
-        @update:show-dialog="(value) => showDialog = value"
-        :shopsData="shopsData"
-    />
+    <FormCreateMasterFamily :showDialog="showDialog" :storeProductRoute="storeRoute"
+        @update:show-dialog="(value) => showDialog = value" :shopsData="shopsData" />
 </template>
