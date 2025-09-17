@@ -49,6 +49,7 @@ class StoreProductCategory extends OrgAction
 
             if ($parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
                 data_set($modelData, 'department_id', $parent->id);
+                data_set($modelData, 'sub_department_id', null);
             } elseif ($parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
                 data_set($modelData, 'sub_department_id', $parent->id);
                 data_set($modelData, 'department_id', $parent->department_id);

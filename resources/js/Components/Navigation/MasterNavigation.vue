@@ -39,7 +39,7 @@ const buttonsToShow = computed(() => {
 
     if (props.isAddBoth || props.isAddFamilies) {
         buttons.push({
-            label: trans("Create Master Families"),
+            label: trans("Create Master Family"),
             route_target: props.familiesRoute,
             icon: faPlus,
             key: 'families'
@@ -51,7 +51,7 @@ const buttonsToShow = computed(() => {
 </script>
 
 <template>
-    <div class="border rounded-lg p-4">
+    <div class="hidden border rounded-lg p-4">
         <div class="flex flex-col gap-4">
             <ButtonWithLink v-for="button in buttonsToShow" :key="button.key" :label="button.label"
                 :route-target="button.route_target" :icon="button.icon" type="secondary" full />
