@@ -227,7 +227,7 @@ class EditMasterFamily extends OrgAction
                             'label'  => __('Parent').' ('.__('Department/Sub-Department').')',
                             'icon'   => 'fa-light fa-folder-tree',
                             'fields' => [
-                                'department_id'  =>  [
+                                'master_department_id'  =>  [
                                     'type'    => 'select_infinite',
                                     'label'   => __('Master Department'),
                                     'options'   => [
@@ -246,7 +246,28 @@ class EditMasterFamily extends OrgAction
                                     'labelProp' => 'code',
                                     'required' => false,
                                     'value'   => $masterProductCategory->masterDepartment->id ?? null,
-                                ]
+                                ],
+                                'master_sub_department_id'  =>  [
+                                        'type'    => 'select_infinite',
+                                        'label'   => __('Master Sub Department'),
+                                        'options'   => [
+                                            [
+                                                'id' => $masterProductCategory->masterSubDepartment?->id,
+                                                'code' => $masterProductCategory->masterSubDepartment?->code
+                                            ]
+                                        ],
+                                        'fetchRoute'    => [
+                                            'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.index',
+                                            'parameters' => [
+                                                'masterShop' => $masterProductCategory->masterShop,
+                                                'masterDepartment' => $masterProductCategory->masterDepartment->slug
+                                            ]
+                                        ],
+                                        'valueProp' => 'id',
+                                        'labelProp' => 'code',
+                                        'required' => false,
+                                        'value'   => $masterProductCategory->masterSubDepartment->id ?? null,
+                                    ],
                             ],
 
                         ],
