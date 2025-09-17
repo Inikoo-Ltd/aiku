@@ -271,6 +271,7 @@ class EditFamily extends OrgAction
                                                 'shop' => $family->shop->slug,
                                             ]
                                         ],
+                                        'type_label' => 'department-and-sub-department',
                                         'valueProp' => 'id',
                                         'labelProp' => 'code',
                                         'required' => false,

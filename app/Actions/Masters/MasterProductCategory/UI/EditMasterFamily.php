@@ -244,6 +244,7 @@ class EditMasterFamily extends OrgAction
                                         ]
                                     ],
                                     'valueProp' => 'id',
+                                    'type_label' => 'department-and-sub-department',
                                     'labelProp' => 'code',
                                     'required' => false,
                                     'value'   => $masterProductCategory->masterSubDepartment->id ?? $masterProductCategory->masterDepartment->id  ?? null,
