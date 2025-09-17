@@ -178,11 +178,11 @@ function productRoute(product: Product) {
                     product.slug
                 ]); */
         default:
-            return route(
-                "grp.helpers.redirect_asset",
-                [product.asset_id]);
-
-
+            if (product.asset_id) {
+                return route(
+                    "grp.helpers.redirect_asset",
+                    [product.asset_id]);
+            }else return "/"
 
     }
 }
