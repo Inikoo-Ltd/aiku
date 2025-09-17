@@ -48,6 +48,7 @@
     "laravel/pennant": "^1.13",
     "laravel/sanctum": "^4",
     "laravel/scout": "^10.0",
+    "laravel/slack-notification-channel": "^3.6",
     "laravel/socialite": "^5",
     "laravel/telescope": "^5.0",
     "laravel/tinker": "^2",
