@@ -223,7 +223,7 @@ function shopRoute(invoice: Invoice) {
             ]);
     }
 
-    return route(
+    return  route(
         "grp.org.shops.show.catalogue.dashboard",
         [
             invoice.organisation_slug,
@@ -285,7 +285,7 @@ const locale = inject("locale", aikuLocaleStructure);
                     />
                 </Link>
                 <Link :href="productRoute(product)" class="primaryLink">
-                {{ product["code"] }}
+                   {{ product["code"] }}
                 </Link>
             </div>
         </template>
