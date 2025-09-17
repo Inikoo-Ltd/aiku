@@ -75,6 +75,8 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                 'portfolios.platform_status',
                 'portfolios.has_valid_platform_product_id',
                 'portfolios.number_platform_possible_matches as matches',
+                'portfolios.data',
+                'platforms.type as platform_type',
                 'customer_sales_channels.platform_status as customer_sales_channel_platform_status',
             ])
             ->defaultSort('portfolios.reference')
