@@ -86,7 +86,7 @@ class ShowMasterDepartment extends GrpAction
                 'mini_breadcrumbs' => array_filter(
                     [
                         [
-                            'label' => 'master department',
+                            'label' => $masterDepartment->name,
                             'to'    => [
                                 'name'       => 'grp.masters.master_shops.show.master_departments.show',
                                 'parameters' => [

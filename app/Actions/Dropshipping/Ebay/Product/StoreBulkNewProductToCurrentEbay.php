@@ -34,7 +34,7 @@ class StoreBulkNewProductToCurrentEbay extends RetinaAction
             ->get();
 
         foreach ($portfolios as $portfolio) {
-            StoreEbayProduct::run($ebayUser, $portfolio);
+            StoreNewProductToCurrentEbay::dispatch($ebayUser, $portfolio);
         }
     }
 

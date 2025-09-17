@@ -82,7 +82,7 @@ class ShowDepartment extends OrgAction
                 'mini_breadcrumbs' => array_filter(
                     [
                         [
-                            'label' => 'department',
+                            'label' => $department->name,
                             'to'    => [
                                 'name'       => 'grp.org.shops.show.catalogue.departments.show',
                                 'parameters' => [
