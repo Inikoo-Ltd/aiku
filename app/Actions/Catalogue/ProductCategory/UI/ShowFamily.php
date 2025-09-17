@@ -201,7 +201,13 @@ class ShowFamily extends OrgAction
                             'label' => 'family',
                             'to'    => [
                                 'name'       => $family->sub_department_id ? 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show' : 'grp.org.shops.show.catalogue.departments.show.families.show',
-                                'parameters' => [
+                                'parameters' =>  $family->sub_department_id ? [
+                                    'organisation' => $this->organisation->slug,
+                                    'shop'         => $this->shop->slug,
+                                    'department'   => $family->department->slug,
+                                    'subDepartment'   => $family->subDepartment->slug,
+                                    'family' => $family->slug,
+                                ] : [
                                     'organisation' => $this->organisation->slug,
                                     'shop'         => $this->shop->slug,
                                     'department'   => $family->department->slug,

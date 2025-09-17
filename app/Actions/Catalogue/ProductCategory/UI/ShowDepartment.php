@@ -79,6 +79,23 @@ class ShowDepartment extends OrgAction
                     'previous' => $this->getPrevious($department, $request),
                     'next'     => $this->getNext($department, $request),
                 ],
+                'mini_breadcrumbs' => array_filter(
+                    [
+                        [
+                            'label' => 'department',
+                            'to'    => [
+                                'name'       => 'grp.org.shops.show.catalogue.departments.show',
+                                'parameters' => [
+                                    'organisation' => $this->organisation->slug,
+                                    'shop'         => $this->shop->slug,
+                                    'department'   => $department->slug
+                                ]
+                            ],
+                            'tooltip' => 'Department',
+                            'icon' => ['fal', 'folder-tree']
+                        ],
+                    ],
+                ),
                 'pageHead'    => [
                     'title'         => $department->name,
                     'model'        => __('Department'),
