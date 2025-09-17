@@ -160,45 +160,61 @@ class EditFamily extends OrgAction
                                         'label' => __('code'),
                                         'value' => $family->code
                                     ],
-                                    'name' => [
+                                    'name' => $family->masterProductCategory ? [
                                         'type'  => 'input_translation',
-                                        'label' => __('translate description title'),
+                                        'label' => __('name'),
                                         'language_from' => 'en',
                                         'full' => true,
                                         'main' => $family->masterProductCategory->name,
                                         'languages' => $languages,
                                         'value' => $family->getTranslations('name_i8n'),
                                         'mode' => 'single'
+                                    ] : [
+                                        'type'  => 'input',
+                                        'label' => __('name'),
+                                        'value' => $family->name
                                     ],
-                                    'description_title' => [
+                                    'description_title' => $family->masterProductCategory ? [
                                         'type'  => 'input_translation',
-                                        'label' => __('translate description title'),
+                                        'label' => __('description title'),
                                         'language_from' => 'en',
                                         'full' => true,
                                         'main' => $family->masterProductCategory->description_title,
                                         'languages' => $languages,
                                         'mode' => 'single',
                                         'value' => $family->getTranslations('description_title_i8n')
+                                    ] : [
+                                         'type'  => 'input',
+                                         'label' => __('description title'),
+                                         'value' => $family->description_title
                                     ],
-                                    'description' => [
+                                    'description' => $family->masterProductCategory ? [
                                         'type'  => 'textEditor_translation',
-                                        'label' => __('translate description title'),
+                                        'label' => __('description'),
                                         'language_from' => 'en',
                                         'full' => true,
                                         'main' => $family->masterProductCategory->description,
                                         'languages' => $languages,
                                         'mode' => 'single',
                                         'value' => $family->getTranslations('description_i8n')
+                                    ] : [
+                                        'type'  => 'textEditor',
+                                        'label' => __('description'),
+                                        'value' => $family->description
                                     ],
-                                    'description_extra' => [
+                                    'description_extra' => $family->masterProductCategory ? [
                                         'type'  => 'textEditor_translation',
-                                        'label' => __('translate description title'),
+                                        'label' => __('Extra description'),
                                         'language_from' => 'en',
                                         'full' => true,
                                         'main' => $family->masterProductCategory->description_extra,
                                         'languages' => $languages,
                                         'mode' => 'single',
                                         'value' => $family->getTranslations('description_extra_i8n')
+                                    ] : [
+                                        'type'  => 'textEditor',
+                                        'label' => __('Extra description'),
+                                        'value' => $family->description_extra
                                     ],
                                 ]
                             ],
