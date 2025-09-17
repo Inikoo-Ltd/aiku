@@ -9,7 +9,7 @@ export const blueprint = (data?: {}) => {
             replaceForm: [
                 {
                     key: ["per_row"],
-                    label: "Show Each Row",
+                    label: trans("Number slides per row"),
                     type: "number",
                     useIn : ["desktop", "tablet", "mobile"],
                     information: trans("Can use decimal e.g. 4.5 to show half of next slide"),

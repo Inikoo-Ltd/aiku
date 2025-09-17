@@ -1,15 +1,14 @@
 {
 	"scope": "webpage",
-	"slug": "luigi-trends-1",
-	"code": "luigi-trends-1",
-	"name": "Luigi: Trends",
+	"slug": "luigi-last-seen-1",
+	"code": "luigi-last-seen-1",
+	"name": "Luigi: Last Seen",
 	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
 	"category": "block",
-	"fixed": true,
 	"data": {
 		"fieldValue": {
 			"settings": null,
-			"title" : "<p style=\"text-align: center\">Trending</p>",
+			"title" : "<p style=\"text-align: center\">Last seen</p>",
 			"container": {
 				"properties": {
 					"background": {

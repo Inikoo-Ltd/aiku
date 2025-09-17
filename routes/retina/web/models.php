@@ -63,6 +63,9 @@ use App\Actions\Retina\Dropshipping\Portfolio\StoreRetinaPortfolioToAllChannels;
 use App\Actions\Retina\Dropshipping\Portfolio\StoreRetinaPortfolioToMultiChannels;
 use App\Actions\Retina\Dropshipping\Portfolio\UpdateRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Product\StoreRetinaProductManual;
+use App\Actions\Retina\Ebay\CreateRetinaNewAllPortfoliosToEbay;
+use App\Actions\Retina\Ebay\CreateRetinaNewBulkPortfoliosToEbay;
+use App\Actions\Retina\Ebay\MatchRetinaBulkNewProductToCurrentEbay;
 use App\Actions\Retina\Ebay\MatchRetinaPortfolioToCurrentEbayProduct;
 use App\Actions\Retina\Ebay\StoreRetinaNewProductToCurrentEbay;
 use App\Actions\Retina\Ecom\Basket\RetinaDeleteBasketTransaction;
@@ -279,6 +282,10 @@ Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
     Route::post('{customerSalesChannel:id}/woo-batch-upload', CreateRetinaNewBulkPortfoliosToWoo::class)->name('woo.batch_upload')->withoutScopedBindings();
     Route::post('{customerSalesChannel:id}/woo-batch-match', MatchRetinaBulkNewProductToCurrentWooCommerce::class)->name('woo.batch_match')->withoutScopedBindings();
     Route::post('{customerSalesChannel:id}/woo-batch-all', CreateRetinaNewAllPortfoliosToWoo::class)->name('woo.batch_all')->withoutScopedBindings();
+
+    Route::post('{customerSalesChannel:id}/ebay-batch-upload', CreateRetinaNewBulkPortfoliosToEbay::class)->name('ebay.batch_upload')->withoutScopedBindings();
+    Route::post('{customerSalesChannel:id}/ebay-batch-match', MatchRetinaBulkNewProductToCurrentEbay::class)->name('ebay.batch_match')->withoutScopedBindings();
+    Route::post('{customerSalesChannel:id}/ebay-batch-all', CreateRetinaNewAllPortfoliosToEbay::class)->name('ebay.batch_all')->withoutScopedBindings();
 
     Route::post('{wooCommerceUser:id}/woo-batch-upload', CreateNewBulkPortfolioToWooCommerce::class)->name('woo.batch_upload_legacy')->withoutScopedBindings();
     Route::post('{wooCommerceUser:id}/woo-batch-sync', [CreateNewBulkPortfolioToWooCommerce::class, 'asBatchSync'])->name('woo.batch_sync')->withoutScopedBindings();

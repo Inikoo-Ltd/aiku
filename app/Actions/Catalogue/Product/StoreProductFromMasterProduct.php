@@ -71,9 +71,11 @@ class StoreProductFromMasterProduct extends GrpAction
                     'master_product_id' => $masterAsset->id,
                     'state'             => ProductStateEnum::ACTIVE,
                     'status'            => ProductStatusEnum::FOR_SALE,
-                    'is_for_sale'       => true
+                    'is_for_sale'       => true,
+                    'marketing_dimensions' => $masterAsset->marketing_dimensions,
+                    'gross_weight'  => $masterAsset->gross_weight,
+                    'marketing_weight' => $masterAsset->marketing_weight
                 ];
-
 
                 $product = Product::where('shop_id', $shop->id)
                     ->whereRaw("lower(code) = lower(?)", [$masterAsset->code])

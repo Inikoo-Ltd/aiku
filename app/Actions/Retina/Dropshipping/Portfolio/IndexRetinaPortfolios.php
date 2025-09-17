@@ -194,6 +194,12 @@ class IndexRetinaPortfolios extends RetinaAction
                         'customerSalesChannel' => $this->customerSalesChannel->id
                     ]
                 ],
+                PlatformTypeEnum::EBAY => [
+                    'name'       => 'retina.models.dropshipping.ebay.batch_all',
+                    'parameters' => [
+                        'customerSalesChannel' => $this->customerSalesChannel->id
+                    ]
+                ],
                 default => false
             };
         }
