@@ -48,7 +48,7 @@ class FetchEbayUserOrders extends OrgAction
             $lineItems = collect(Arr::get($ebayOrder, 'lineItems', []))->pluck('legacyItemId')->filter()->toArray();
 
             $hasOutProducts = DB::table('portfolios')->where('customer_sales_channel_id', $ebayUser->customer_sales_channel_id)
-                ->whereIn('platform_product_id', $lineItems)->exists();
+                ->whereIn('platform_product_variant_id', $lineItems)->exists();
 
             if ($hasOutProducts) {
                 StoreOrderFromEbay::run($ebayUser, $ebayOrder);
