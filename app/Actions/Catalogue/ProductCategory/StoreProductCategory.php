@@ -44,6 +44,7 @@ class StoreProductCategory extends OrgAction
         data_set($modelData, 'organisation_id', $parent->organisation_id);
 
         if (class_basename($parent) == 'ProductCategory') {
+            $shop = $parent->shop;
             data_set($modelData, 'shop_id', $parent->shop_id);
             data_set($modelData, 'parent_id', $parent->id);
 
@@ -56,7 +57,16 @@ class StoreProductCategory extends OrgAction
             }
         } else {
             $modelData['shop_id'] = $parent->id;
+            $shop = $parent;
         }
+
+        if ($shop->language->code == 'en') {
+            data_set($modelData, 'is_name_reviewed', true);
+            data_set($modelData, 'is_description_title_reviewed', true);
+            data_set($modelData, 'is_description_reviewed', true);
+            data_set($modelData, 'is_description_extra_reviewed', true);
+        }
+
 
         $productCategory = DB::transaction(function () use ($modelData) {
             $productCategory = ProductCategory::create($modelData);

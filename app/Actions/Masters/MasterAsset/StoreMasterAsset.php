@@ -116,11 +116,10 @@ class StoreMasterAsset extends OrgAction
 
             foreach ($tradeUnit->stocks as $stock) {
                 $stocks[$stock->id] = [
-                    'quantity' => $stock->pivot->quantity * Arr::get($item, 'quantity'),
+                    'quantity' =>  Arr::get($item, 'quantity')/$stock->pivot->quantity ,
                 ];
             }
         }
-
 
         $masterAsset->stocks()->sync($stocks);
         $masterAsset->refresh();
