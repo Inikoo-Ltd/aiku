@@ -33,7 +33,7 @@ import FormCreateMasterProduct from "@/Components/FormCreateMasterProduct.vue"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import TableFamilies from "@/Components/Tables/Grp/Org/Catalogue/TableFamilies.vue"
 import ImagesManagement from "@/Components/Goods/ImagesManagement.vue"
-import Breadcrumb from "primevue"
+import Breadcrumb from 'primevue/breadcrumb'
 
 library.add(
     faFolder,
