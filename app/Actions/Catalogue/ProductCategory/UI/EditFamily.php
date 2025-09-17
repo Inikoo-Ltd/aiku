@@ -262,7 +262,8 @@ class EditFamily extends OrgAction
                                         'options'   => [
                                                 [
                                                     'id' =>  $family->subDepartment->id ?? $family->department->id  ?? null,
-                                                    'code' =>  $family->subDepartment->code ?? $family->department->code  ?? null
+                                                    'code' =>  $family->subDepartment->code ?? $family->department->code  ?? null,
+                                                    'type' =>  $family->subDepartment->type ?? $family->department->type  ?? null
                                                 ]
                                         ],
                                         'fetchRoute'    => [
