@@ -5,6 +5,7 @@ import { getStyles } from "@/Composables/styles"
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import axios from 'axios'
+import Cookies from 'js-cookie';
 
 // Swiper
 import { Swiper, SwiperSlide } from 'swiper/vue'
@@ -82,7 +83,7 @@ const fetchRecommenders = async () => {
                     "recommendation_type": "last_seen",
                     "recommender_client_identifier": "last_seen",
                     "size": 7,
-                    "user_id": layout.iris?.user_auth?.customer_id?.toString(),  // TODO: take from cookies if not logged in
+                    "user_id": layout.iris?.user_auth?.customer_id?.toString() ?? Cookies.get('_lb') ?? null,  // Customer ID or Cookie _lb
                     "recommendation_context": {},
                     // "hit_fields": ["url", "title"]
                 }
