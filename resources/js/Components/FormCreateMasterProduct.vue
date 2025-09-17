@@ -95,7 +95,7 @@ const form = useForm({
     description_extra: "",
     gross_weight : 0,
     net_weight : 0,
-    dimensions: {
+    marketing_dimensions: {
         h: 0,
         l: 0,
         w: 0,
@@ -184,7 +184,7 @@ const ListSelectorChange = (value) => {
         form.description_extra = value[0].description_extra
         form.units = value[0]?.units || 1
         form.gross_weight = value[0]?.gross_weight || 0
-        form.dimensions = value[0]?.dimensions || null
+        form.marketing_dimensions = value[0]?.dimensions || null
     }
     getTableData(tableData.value)
 }
@@ -447,12 +447,12 @@ const toggleFull = () => {
 
                          <div v-if="form.trade_units.length > 1">
                             <label class="block text-xs font-medium text-gray-600 mb-1">Dimension</label>
-                            <PureInputDimension :rows="4" v-model="form.dimensions"
-                                @update:model-value="form.errors.dimensions = null" class="w-full" />
-                            <small v-if="form.errors.dimensions"
+                            <PureInputDimension :rows="4" v-model="form.marketing_dimensions"
+                                @update:model-value="form.errors.marketing_dimensions = null" class="w-full" />
+                            <small v-if="form.errors.marketing_dimensions"
                                 class="text-red-500 text-xs flex items-center gap-1 mt-1">
                                 <FontAwesomeIcon :icon="faCircleExclamation" />
-                                {{ form.errors.dimensions.join(", ") }}
+                                {{ form.errors.marketing_dimensions.join(", ") }}
                             </small>
                         </div>
 
