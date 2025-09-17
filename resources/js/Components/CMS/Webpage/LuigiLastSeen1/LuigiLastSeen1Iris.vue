@@ -82,7 +82,7 @@ const fetchRecommenders = async () => {
                     "recommendation_type": "last_seen",
                     "recommender_client_identifier": "last_seen",
                     "size": 7,
-                    "user_id": layout.iris?.user_auth?.customer_id?.toString(),
+                    "user_id": layout.iris?.user_auth?.customer_id?.toString(),  // TODO: take from cookies if not logged in
                     "recommendation_context": {},
                     // "hit_fields": ["url", "title"]
                 }
@@ -125,7 +125,7 @@ onMounted(() => {
                 </div>
             </div>
             
-            <div class="py-4" id="LuigiTrends1">
+            <div class="py-4">
                 <Swiper :slides-per-view="slidesPerView ? Math.min(listProducts?.length || 0, slidesPerView || 0) : 4"
                     :loop="false"
                     :autoplay="false"
@@ -182,7 +182,7 @@ onMounted(() => {
                             </div>
                             
                             <!-- Add to Basket Button -->
-                            <div v-if="image.attributes.product_id?.[0]">
+                            <div v-if="layout.retina.type === 'b2b' && image.attributes.product_id?.[0]">
                                 <Button @click="() => false"
                                     xdisabled="isProductLoading(image.attributes.product_id[0])"
                                     disabled

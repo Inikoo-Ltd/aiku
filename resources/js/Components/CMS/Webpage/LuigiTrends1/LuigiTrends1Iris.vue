@@ -185,7 +185,7 @@ onMounted(() => {
                             </div>
                             
                             <!-- Add to Basket Button -->
-                            <div v-if="image.attributes.product_id?.[0]">
+                            <div v-if="layout.retina.type === 'b2b' && image.attributes.product_id?.[0]">
                                 <Button @click="() => false"
                                     xdisabled="isProductLoading(image.attributes.product_id[0])"
                                     disabled
