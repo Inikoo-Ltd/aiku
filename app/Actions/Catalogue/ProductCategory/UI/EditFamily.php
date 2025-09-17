@@ -142,25 +142,25 @@ class EditFamily extends OrgAction
                                         'label' => __('code'),
                                         'value' => $family->code
                                     ],
-                                    'name_i8n' => [
+                                    'name' => [
                                         'type'  => 'input',
                                         'label' => __('name'),
-                                        'value' => $family->getTranslation('name_i8n', $family->shop->language->code) ?: $family->name
+                                        'value' => $family->name
                                     ],
-                                    'description_title_i8n' => [
+                                    'description_title' => [
                                         'type'  => 'input',
                                         'label' => __('description title'),
-                                        'value' => $family->getTranslation('description_title_i8n', $family->shop->language->code) ?: $family->description_title
+                                        'value' => $family->description_title
                                     ],
-                                    'description_i8n' => [
+                                    'description' => [
                                         'type'  => 'textEditor',
                                         'label' => __('description'),
-                                        'value' => $family->getTranslation('description_i8n', $family->shop->language->code) ?: $family->description
+                                        'value' => $family->description
                                     ],
-                                    'description_extra_i8n' => [
+                                    'description_extra' => [
                                         'type'  => 'textEditor',
                                         'label' => __('Extra description'),
-                                        'value' => $family->getTranslation('description_extra_i8n', $family->shop->language->code) ?: $family->description_extra
+                                        'value' => $family->description_extra
                                     ],
                                 ]
                             ],
