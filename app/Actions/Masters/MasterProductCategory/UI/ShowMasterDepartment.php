@@ -83,6 +83,22 @@ class ShowMasterDepartment extends GrpAction
                     'previous' => $this->getPrevious($masterDepartment, $request),
                     'next'     => $this->getNext($masterDepartment, $request),
                 ],
+                'mini_breadcrumbs' => array_filter(
+                    [
+                        [
+                            'label' => 'master department',
+                            'to'    => [
+                                'name'       => 'grp.masters.master_shops.show.master_departments.show',
+                                'parameters' => [
+                                    'masterShop'         => $masterDepartment->masterShop->slug,
+                                    'masterDepartment'   => $masterDepartment->slug
+                                ]
+                            ],
+                            'tooltip' => 'Master Department',
+                            'icon' => ['fal', 'folder-tree']
+                        ],
+                    ],
+                ),
                 'pageHead'    => [
                     'title'         => $masterDepartment->name,
                     'icon'          => [

@@ -119,7 +119,7 @@ class IndexProductsInProductCategory extends OrgAction
                 'products.created_at',
                 'products.updated_at',
                 'products.slug',
-
+                'products.asset_id',
                 'invoices_all',
                 'sales_all',
                 'customers_invoiced_all',

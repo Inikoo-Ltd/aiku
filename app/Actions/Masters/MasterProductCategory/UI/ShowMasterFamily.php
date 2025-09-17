@@ -116,6 +116,53 @@ class ShowMasterFamily extends GrpAction
                     'previous' => $this->getPrevious($masterFamily, $request),
                     'next'     => $this->getNext($masterFamily, $request),
                 ],
+                'mini_breadcrumbs' => array_filter(
+                    [
+                        [
+                            'label' => 'master department',
+                            'to'    => [
+                                'name'       => 'grp.masters.master_shops.show.master_departments.show',
+                                'parameters' => [
+                                    'masterShop'         => $masterFamily->masterShop->slug,
+                                    'masterDepartment'   => $masterFamily->masterDepartment->slug
+                                ]
+                            ],
+                            'tooltip' => 'Master Department',
+                            'icon' => ['fal', 'folder-tree']
+                        ],
+                        $masterFamily->master_sub_department_id ? [
+                            'label' => 'master sub-departement',
+                            'to'    => [
+                                'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show',
+                                'parameters' => [
+                                    'masterShop'         => $masterFamily->masterShop->slug,
+                                    'masterDepartment'   => $masterFamily->masterDepartment->slug,
+                                    'masterSubDepartment' => $masterFamily->masterSubDepartment->slug
+                                ]
+                            ],
+                            'tooltip' => 'Master Sub-Departement',
+                            'icon' => ['fal', 'folder-tree']
+                        ] : [],
+                        [
+                            'label' => 'master family',
+                            'to'    => [
+                                'name'       => $masterFamily->master_sub_department_id ? 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show' : 'grp.masters.master_shops.show.master_departments.show.master_families.show',
+                                'parameters' =>  $masterFamily->master_sub_department_id ? [
+                                    'masterShop'         => $masterFamily->masterShop->slug,
+                                    'masterDepartment'   => $masterFamily->masterDepartment->slug,
+                                    'masterSubDepartment'   => $masterFamily->masterSubDepartment->slug,
+                                    'masterFamily' => $masterFamily->slug,
+                                ] : [
+                                    'masterShop'         => $masterFamily->masterShop->slug,
+                                    'masterDepartment'   => $masterFamily->masterDepartment->slug,
+                                    'masterFamily' => $masterFamily->slug,
+                                ]
+                            ],
+                            'tooltip' => 'Master Family',
+                            'icon' => ['fal', 'folder-tree']
+                        ]
+                    ],
+                ),
                 'familyId'      => $masterFamily->id,
                 'currency' => $masterFamily->group->currency,
                 'storeProductRoute' => [

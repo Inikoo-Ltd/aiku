@@ -227,15 +227,9 @@ class EditMasterFamily extends OrgAction
                             'label'  => __('Parent').' ('.__('Department/Sub-Department').')',
                             'icon'   => 'fa-light fa-folder-tree',
                             'fields' => [
-                                'department_id'  =>  [
+                                'master_department_or_master_sub_department_id'  =>  [
                                     'type'    => 'select_infinite',
-                                    'label'   => __('Master Department'),
-                                    'options'   => [
-                                        [
-                                            'id' => $masterProductCategory->masterDepartment?->id,
-                                            'code' => $masterProductCategory->masterDepartment?->code
-                                        ]
-                                    ],
+                                    'label'   => __('Parent'),
                                     'fetchRoute'    => [
                                         'name'       => 'grp.masters.master_shops.show.master_departments.index',
                                         'parameters' => [
@@ -245,8 +239,11 @@ class EditMasterFamily extends OrgAction
                                     'valueProp' => 'id',
                                     'labelProp' => 'code',
                                     'required' => false,
-                                    'value'   => $masterProductCategory->masterDepartment->id ?? null,
-                                ]
+                                    'value'   => $masterProductCategory->masterSubDepartment->id ?? $masterProductCategory->masterDepartment->id  ?? null,
+                                ],
+
+
+
                             ],
 
                         ],

@@ -77,6 +77,35 @@ class ShowMasterSubDepartment extends GrpAction
                     'previous' => $this->getPrevious($masterSubDepartment, $request),
                     'next'     => $this->getNext($masterSubDepartment, $request),
                 ],
+                'mini_breadcrumbs' => array_filter(
+                    [
+                        [
+                            'label' => 'master department',
+                            'to'    => [
+                                'name'       => 'grp.masters.master_shops.show.master_departments.show',
+                                'parameters' => [
+                                    'masterShop'         => $masterSubDepartment->masterShop->slug,
+                                    'masterDepartment'   => $masterSubDepartment->masterDepartment->slug
+                                ]
+                            ],
+                            'tooltip' => 'Master Department',
+                            'icon' => ['fal', 'folder-tree']
+                        ],
+                        [
+                            'label' => 'master sub-departement',
+                            'to'    => [
+                                'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show',
+                                'parameters' => [
+                                    'masterShop'         => $masterSubDepartment->masterShop->slug,
+                                    'masterDepartment'   => $masterSubDepartment->masterDepartment->slug,
+                                    'masterSubDepartment' => $masterSubDepartment->masterSubDepartment->slug
+                                ]
+                            ],
+                            'tooltip' => 'Master Sub-Departement',
+                            'icon' => ['fal', 'folder-tree']
+                        ],
+                    ],
+                ),
                 'pageHead'    => [
                     'title'   => $masterSubDepartment->name,
                     'model'   => __('master sub-department'),
