@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faInfoCircle } from "@fas";
 import { faAlbumCollection } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { Link } from "@inertiajs/vue3";
+import { Link, router } from "@inertiajs/vue3";
 import { trans } from "laravel-vue-i18n";
 import TranslationBox from '@/Components/TranslationBox.vue';
 import ProductCategoryCard from "@/Components/ProductCategoryCard.vue";
@@ -43,8 +43,30 @@ const props = defineProps<{
             }>;
         };
     };
-    actions: any
 }>();
+
+
+const navigateTo = () => {
+    let routeCurr = route().current();
+    let targetRoute;
+    let routeParams = route().params;
+    
+    switch (routeCurr) {
+        case "grp.masters.master_shops.show.master_departments.show":
+            targetRoute = route("grp.masters.master_shops.show.master_departments.edit", {
+                ...routeParams,
+                section: 1
+            });
+            break;
+        default:
+            targetRoute = route("grp.org.shops.show.catalogue.departments.edit", {
+                ...routeParams,
+                section: 1
+            });
+            break;
+    }
+    router.visit(targetRoute);
+}
 </script>
 
 <template>
@@ -64,7 +86,7 @@ const props = defineProps<{
             </Message>
             <Message
                 v-if="!data.department.description || !data.department.description_title || !data.department.description_extra"
-                severity="warn" closable>
+                severity="error" closable>
                 <template #icon>
                     <FontAwesomeIcon :icon="faInfoCircle" />
                 </template>
@@ -77,9 +99,7 @@ const props = defineProps<{
                             }}.</span>
                     </div>
                     {{ trans("Please") }}
-                    <Link
-                        :href="route(actions.actions[0].route.name, { ...actions.actions[0].route.parameters, section: 1 })"
-                        class="underline font-bold">
+                    <Link @click="navigateTo()" class="underline font-bold cursor-pointer">
                     {{ trans("add missing description fields") }}
                     </Link>.
                 </div>

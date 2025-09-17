@@ -69,6 +69,8 @@ const props = defineProps<{
     images?:object
 }>()
 
+console.log(props.pageHead);
+
 const currentTab = ref(props.tabs.current)
 
 
@@ -123,7 +125,7 @@ const showDialog = ref(false);
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" :actions="pageHead" />
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" />
 
     <FormCreateMasterProduct 
         :showDialog="showDialog" 
