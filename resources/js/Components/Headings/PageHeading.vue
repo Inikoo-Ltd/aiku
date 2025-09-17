@@ -139,7 +139,7 @@ const setError = (e) => {
                             <component
                                     v-if="data.iconRight || data.titleRight || data.afterTitle"
                                     :is="data?.iconRight?.url ? 'a' : 'div'"
-                                    :href="route(data?.iconRight?.url.name, data?.iconRight?.url.parameters)"
+                                    :href="data?.iconRight?.url ? route(data?.iconRight?.url.name, data?.iconRight?.url.parameters) : ''"
                                 >
                             <div class="flex gap-x-2 items-center">
                                 <FontAwesomeIcon v-if="data.iconRight" v-tooltip="data.iconRight.tooltip || ''"
