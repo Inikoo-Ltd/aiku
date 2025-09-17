@@ -106,6 +106,8 @@ class UpdateMasterProductCategory extends OrgAction
                     'code' => $masterProductCategory->code,
                     'name' => $masterProductCategory->name,
                     'description' => $masterProductCategory->description,
+                    'description_title' => $masterProductCategory->description_title,
+                    'description_extra' => $masterProductCategory->description_extra,
                     'rrp' => $masterProductCategory->rrp
                 ]);
             }
