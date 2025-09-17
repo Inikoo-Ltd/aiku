@@ -41,7 +41,6 @@ const emits = defineEmits<{
 }>()
 
 function productRoute(product: Product) {
-    console.log(product)
     if (!product.slug) {
         return ''
     }
@@ -178,11 +177,11 @@ function productRoute(product: Product) {
                     product.slug
                 ]); */
         default:
-            return route(
-                "grp.helpers.redirect_asset",
-                [product.asset_id]);
-
-
+            if (product.asset_id) {
+                return route(
+                    "grp.helpers.redirect_asset",
+                    [product.asset_id]);
+            }else return ''
 
     }
 }
@@ -223,7 +222,7 @@ function shopRoute(invoice: Invoice) {
             ]);
     }
 
-    return route(
+    return  route(
         "grp.org.shops.show.catalogue.dashboard",
         [
             invoice.organisation_slug,
@@ -285,7 +284,7 @@ const locale = inject("locale", aikuLocaleStructure);
                     />
                 </Link>
                 <Link :href="productRoute(product)" class="primaryLink">
-                {{ product["code"] }}
+                   {{ product["code"] }}
                 </Link>
             </div>
         </template>

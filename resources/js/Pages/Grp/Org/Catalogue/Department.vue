@@ -60,6 +60,7 @@ const props = defineProps<{
         current: string;
         navigation: object;
     }
+    mini_breadcrumbs?: any[]
     products?: object
     families?: object;
     customers?: object;
@@ -135,12 +136,12 @@ function masterDepartmentRoute(department: Department) {
         </template>
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <div class="bg-white shadow-sm rounded px-4 py-2 mx-4 mt-2 w-fit border border-gray-200 overflow-x-auto">
-        <Breadcrumb :model="breadcrumbItems">
+    <div v-if="mini_breadcrumbs" class="bg-white shadow-sm rounded px-4 py-2 mx-4 mt-2 w-fit border border-gray-200 overflow-x-auto">
+        <Breadcrumb  :model="mini_breadcrumbs">
             <template #item="{ item, index }">
                 <div class="flex items-center gap-1 whitespace-nowrap">
                     <!-- Breadcrumb link or text -->
-                    <component :is="item.to ? Link : 'span'" :href="item.to" v-tooltip="item.tooltip"
+                    <component :is="item.to ? Link : 'span'" :href="route(item.to.name,item.to.parameters)" v-tooltip="item.tooltip"
                         :title="item.title" class="flex items-center gap-2 text-sm transition-colors duration-150"
                         :class="item.to
                             ? 'text-gray-500'
