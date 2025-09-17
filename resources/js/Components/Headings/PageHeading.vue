@@ -136,10 +136,15 @@ const setError = (e) => {
                         </div>
                         <!-- Section: After Title -->
                         <slot name="afterTitle">
-                            <div v-if="data.iconRight || data.titleRight || data.afterTitle" class="flex gap-x-2 items-center">
+                            <component
+                                    v-if="data.iconRight || data.titleRight || data.afterTitle"
+                                    :is="data?.iconRight?.url ? 'a' : 'div'"
+                                    :href="route(data?.iconRight?.url.name, data?.iconRight?.url.parameters)"
+                                >
+                            <div class="flex gap-x-2 items-center">
                                 <FontAwesomeIcon v-if="data.iconRight" v-tooltip="data.iconRight.tooltip || ''"
-                                                 :icon="data.iconRight?.icon || data.iconRight" class="h-4 align-top" :class="data.iconRight.class"
-                                                 aria-hidden="true"
+                                                 :icon="data.iconRight?.icon || data.iconRight" class="align-top" :class="data.iconRight.class"
+                                                 aria-hidden="true" :color="data.iconRight.color"
                                                  :rotation="data?.iconRight?.icon_rotation"
                                 />
                                 <span v-if="data.titleRight" class="text-lg">{{ data.titleRight }}</span>
@@ -147,6 +152,7 @@ const setError = (e) => {
                                     {{ data.afterTitle.label }}
                                 </div>
                             </div>
+                            </component>
                         </slot>
                         <slot name="platform">
                             <div v-if="data.platform" v-tooltip="data.platform.title || data.platform.name" class=" h-6 max-w-7 min-w-5 w-auto text-gray-400 font-normal text-lg leading-none" v-html="ChannelLogo(data.platform.type)">

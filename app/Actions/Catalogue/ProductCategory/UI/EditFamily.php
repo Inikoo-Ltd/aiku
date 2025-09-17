@@ -87,6 +87,16 @@ class EditFamily extends OrgAction
             ];
 
         }
+
+         $urlMaster                              = null;
+        if ($family->master_product_category_id) {
+            $urlMaster = [
+                'name'       => 'grp.helpers.redirect_master_product_category',
+                'parameters' => [
+                    $family->masterProductCategory->id
+                ]
+            ];
+        }
         $languages = [$family->shop->language_id => LanguageResource::make($family->shop->language)->resolve()];
         return Inertia::render(
             'EditModel',
@@ -98,6 +108,12 @@ class EditFamily extends OrgAction
                     'text'  =>  __('Changing name or description may affect master family.'),
                     'icon'  => ['fas', 'fa-exclamation-triangle']
                 ] : null,
+                'iconRight' => $urlMaster  ?  [
+                        'icon'  => "fab fa-octopus-deploy",
+                        'color' => "#4B0082",
+                        'class' => 'opacity-70 hover:opacity-100',
+                        'url'   => $urlMaster
+                    ] : [],
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $family,
                     $request->route()->getName(),
