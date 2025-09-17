@@ -8,10 +8,10 @@ import { trans } from "laravel-vue-i18n";
 import TranslationBox from '@/Components/TranslationBox.vue';
 import ProductCategoryCard from "@/Components/ProductCategoryCard.vue";
 import Message from "primevue/message";
+import MasterNavigation from "@/Components/Navigation/MasterNavigation.vue";
 
 library.add(faAlbumCollection);
-
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     data: {
         has_webpage?: boolean;
         department: {
@@ -43,8 +43,11 @@ const props = defineProps<{
             }>;
         };
     };
-}>();
-
+    isMaster?: boolean
+}>(), {
+    // Default values
+    isMaster: false,
+});
 
 const navigateTo = () => {
     let routeCurr = route().current();
@@ -109,6 +112,9 @@ const navigateTo = () => {
         <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 gap-4 mt-4">
             <div class="col-span-1 md:col-span-1 lg:col-span-2">
                 <ProductCategoryCard :data="data.department" />
+            </div>
+            <div v-if="isMaster" class="md:col-start-7 md:col-end-9">
+                <MasterNavigation is-add-both />
             </div>
         </div>
     </div>
