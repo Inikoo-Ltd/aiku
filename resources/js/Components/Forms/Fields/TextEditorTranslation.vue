@@ -47,8 +47,9 @@ if (!props.form[props.fieldName]) {
 
 // Local buffer (copy all existing translations)
 const langBuffers = ref<Record<string, string>>({
-  ...props.form[props.fieldName],
+  ...props.form[props.fieldName]
 })
+
 
 const langLabel = (code: string) => {
   const langObj = Object.values(props.fieldData.languages).find(
@@ -135,8 +136,15 @@ const generateAllTranslationsAI = async () => {
 // sync buffer → form
 watch(
   langBuffers,
-  newVal => {
-    props.form[props.fieldName] = { ...newVal }
+  (newVal) => {
+    if (props.fieldData.mode === "single") {
+      // store only selected language
+      props.form[props.fieldName] = newVal[selectedLang.value] || ""
+
+    } else {
+      // store all translations
+      props.form[props.fieldName] = { ...newVal }
+    }
     emits("update:form", { ...props.form })
   },
   { deep: true }

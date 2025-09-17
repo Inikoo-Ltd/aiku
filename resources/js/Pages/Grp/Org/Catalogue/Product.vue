@@ -72,6 +72,7 @@ const props = defineProps<{
     stocks?: {}
     images?: {}
     master : boolean
+    mini_breadcrumbs? : any[]
     masterRoute?: routeType
     taxonomy: {
         department?: {
@@ -125,7 +126,7 @@ const showMissingTaxonomyMessage = computed(() => {
 })
 
 // Breadcrumb logic
-const breadcrumbItems = computed(() => {
+/* const breadcrumbItems = computed(() => {
     const items = []
 
     const hasDepartment = props.taxonomy?.department
@@ -159,7 +160,7 @@ const breadcrumbItems = computed(() => {
         })
     }
     return items
-})
+}) */
 
 
 function masterProductRoute() {
@@ -198,12 +199,11 @@ function masterProductRoute() {
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
     <div class="bg-white shadow-sm rounded px-4 py-2 mx-4 mt-2 w-fit border border-gray-200 overflow-x-auto">
-        <Breadcrumb :model="breadcrumbItems">
+        <Breadcrumb :model="mini_breadcrumbs">
             <template #item="{ item, index }">
                 <div class="flex items-center gap-1 whitespace-nowrap">
-                    <!-- Breadcrumb link or text -->
-                    <component :is="item.to ? Link : 'span'" :href="item.to" v-tooltip="item.tooltip"
-                        :title="item.title" class="flex items-center gap-2 text-sm transition-colors duration-150"
+                    <component :is="item.to ? Link : 'span'" :href="route(item.to.name,item.to.parameters)" v-tooltip="item.tooltip"
+                        :title="item.label" class="flex items-center gap-2 text-sm transition-colors duration-150"
                         :class="item.to
                             ? 'text-gray-500'
                             : 'text-gray-500 cursor-default'">

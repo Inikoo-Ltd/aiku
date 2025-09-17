@@ -18,6 +18,7 @@ use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Http\Resources\Helpers\LanguageResource;
 
 class EditSubDepartment extends OrgAction
 {
@@ -54,6 +55,16 @@ class EditSubDepartment extends OrgAction
 
     public function htmlResponse(ProductCategory $subDepartment, ActionRequest $request): Response
     {
+        $urlMaster                              = null;
+        if ($subDepartment->master_product_category_id) {
+            $urlMaster = [
+                'name'       => 'grp.helpers.redirect_master_product_category',
+                'parameters' => [
+                    $subDepartment->masterProductCategory->id
+                ]
+            ];
+        }
+        $languages = [$subDepartment->shop->language_id => LanguageResource::make($subDepartment->shop->language)->resolve()];
         return Inertia::render(
             'EditModel',
             [
@@ -75,6 +86,12 @@ class EditSubDepartment extends OrgAction
                 ],
                 'pageHead'    => [
                     'title'   => $subDepartment->code,
+                    'iconRight' => $urlMaster  ?  [
+                        'icon'  => "fab fa-octopus-deploy",
+                        'color' => "#4B0082",
+                        'class' => 'opacity-70 hover:opacity-100',
+                        'url'   => $urlMaster
+                    ] : [],
                     'actions' => [
                         [
                             'type'  => 'button',
@@ -106,59 +123,47 @@ class EditSubDepartment extends OrgAction
                                 'icon'   => 'fa-light fa-tag',
                                 'fields' => [
                                     'name' => [
-                                        'type'  => 'input',
-                                        'label' => __('name'),
-                                        'value' => $subDepartment->name
-                                    ],
-                                    'description_title' => [
-                                        'type'  => 'input',
-                                        'label' => __('description title'),
-                                        'value' => $subDepartment->description_title
-                                    ],
-                                    'description' => [
-                                        'type'  => 'textEditor',
-                                        'label' => __('description'),
-                                        'value' => $subDepartment->description
-                                    ],
-                                    'description_extra' => [
-                                        'type'  => 'textEditor',
-                                        'label' => __('Extra description'),
-                                        'value' => $subDepartment->description_extra
-                                    ],
-                                ]
-                            ],
-                            /* !$subDepartment->master_product_category_id ? [
-                                'label'  => __('Translations'),
-                                'icon'   => 'fa-light fa-language',
-                                'main' => $subDepartment->name,
-                                'languages_main' => $subDepartment->shop->language->code,
-                                'fields' => [
-                                    'name_i8n' => [
-                                        'type'  => 'input_translation',
-                                        'label' => __('translate name'),
-                                        'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($subDepartment->shop->extra_languages),
-                                        'value' => $subDepartment->getTranslations('name_i8n')
-                                    ],
-                                    'description_title_i8n' => [
                                         'type'  => 'input_translation',
                                         'label' => __('translate description title'),
-                                        'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($subDepartment->shop->extra_languages),
+                                        'language_from' => 'en',
+                                        'full' => true,
+                                        'main' => $subDepartment->masterProductCategory->name,
+                                        'languages' => $languages,
+                                        'mode' => 'single',
+                                        'value' => $subDepartment->getTranslations('name_i8n')
+                                    ],
+                                    'description_title' => [
+                                        'type'  => 'input_translation',
+                                        'label' => __('translate description title'),
+                                        'language_from' => 'en',
+                                        'full' => true,
+                                        'main' => $subDepartment->masterProductCategory->description_title,
+                                        'languages' => $languages,
+                                        'mode' => 'single',
                                         'value' => $subDepartment->getTranslations('description_title_i8n')
                                     ],
-                                    'description_i8n' => [
+                                    'description' => [
                                         'type'  => 'textEditor_translation',
-                                        'label' => __('translate description'),
-                                        'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($subDepartment->shop->extra_languages),
+                                        'label' => __('translate description title'),
+                                        'language_from' => 'en',
+                                        'full' => true,
+                                        'main' => $subDepartment->masterProductCategory->description,
+                                        'languages' => $languages,
+                                        'mode' => 'single',
                                         'value' => $subDepartment->getTranslations('description_i8n')
                                     ],
-                                    'description_extra_i8n' => [
+                                    'description_extra' => [
                                         'type'  => 'textEditor_translation',
-                                        'label' => __('translate description extra'),
-                                        'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($subDepartment->shop->extra_languages),
+                                        'label' => __('translate description title'),
+                                        'language_from' => 'en',
+                                        'full' => true,
+                                        'main' => $subDepartment->masterProductCategory->description_extra,
+                                        'languages' => $languages,
+                                        'mode' => 'single',
                                         'value' => $subDepartment->getTranslations('description_extra_i8n')
                                     ],
                                 ]
-                            ] : null, */
+                            ],
                             [
                                 'label'  => __('Properties'),
                                 'icon'   => 'fa-light fa-fingerprint',

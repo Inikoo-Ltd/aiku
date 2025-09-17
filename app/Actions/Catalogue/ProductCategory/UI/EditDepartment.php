@@ -16,6 +16,7 @@ use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Http\Resources\Helpers\LanguageResource;
 use Lorisleiva\Actions\ActionRequest;
 
 class EditDepartment extends OrgAction
@@ -46,6 +47,16 @@ class EditDepartment extends OrgAction
 
     public function htmlResponse(ProductCategory $department, ActionRequest $request): Response
     {
+        $urlMaster                              = null;
+        if ($department->master_product_category_id) {
+            $urlMaster = [
+                'name'       => 'grp.helpers.redirect_master_product_category',
+                'parameters' => [
+                    $department->masterProductCategory->id
+                ]
+            ];
+        }
+        $languages = [$department->shop->language_id => LanguageResource::make($department->shop->language)->resolve()];
         return Inertia::render(
             'EditModel',
             [
@@ -66,6 +77,12 @@ class EditDepartment extends OrgAction
                 ],
                 'pageHead'    => [
                     'title'    => $department->name,
+                    'iconRight' => $urlMaster  ?  [
+                        'icon'  => "fab fa-octopus-deploy",
+                        'color' => "#4B0082",
+                        'class' => 'opacity-70 hover:opacity-100',
+                        'url'   => $urlMaster
+                    ] : [],
                     'icon'     =>
                         [
                             'icon'  => ['fal', 'fa-folder-tree'],
@@ -103,59 +120,47 @@ class EditDepartment extends OrgAction
                                 'icon'   => 'fa-light fa-tag',
                                 'fields' => [
                                     'name' => [
-                                        'type'  => 'input',
-                                        'label' => __('name'),
-                                        'value' =>  $department->name
+                                        'type'  => 'input_translation',
+                                        'label' => __('translate description title'),
+                                        'language_from' => 'en',
+                                        'full' => true,
+                                        'main' => $department->masterProductCategory->name,
+                                        'languages' => $languages,
+                                        'value' => $department->getTranslations('name_i8n'),
+                                        'mode' => 'single'
                                     ],
                                     'description_title' => [
-                                        'type'  => 'input',
-                                        'label' => __('description title'),
-                                        'value' =>  $department->description_title
+                                        'type'  => 'input_translation',
+                                        'label' => __('translate description title'),
+                                        'language_from' => 'en',
+                                        'full' => true,
+                                        'main' => $department->masterProductCategory->description_title,
+                                        'languages' => $languages,
+                                        'value' => $department->getTranslations('description_title_i8n'),
+                                        'mode' => 'single'
                                     ],
                                     'description' => [
-                                        'type'  => 'textEditor',
-                                        'label' => __('description'),
-                                        'value' => $department->description
+                                        'type'  => 'textEditor_translation',
+                                        'label' => __('translate description title'),
+                                        'language_from' => 'en',
+                                        'full' => true,
+                                        'main' => $department->masterProductCategory->description,
+                                        'languages' => $languages,
+                                        'value' => $department->getTranslations('description_i8n'),
+                                        'mode' => 'single'
                                     ],
                                     'description_extra' => [
-                                        'type'  => 'textEditor',
-                                        'label' => __('Extra description'),
-                                        'value' =>  $department->description_extra
+                                        'type'  => 'textEditor_translation',
+                                        'label' => __('translate description title'),
+                                        'language_from' => 'en',
+                                        'full' => true,
+                                        'main' => $department->masterProductCategory->description_extra,
+                                        'languages' => $languages,
+                                        'value' => $department->getTranslations('description_extra_i8n'),
+                                        'mode' => 'single'
                                     ],
                                 ]
                             ],
-                            /* !$department->master_product_category_id ? [
-                                'label'  => __('Translations'),
-                                'icon'   => 'fa-light fa-language',
-                                'main' => $department->name,
-                                'languages_main' => $department->shop->language->code,
-                                'fields' => [
-                                    'name_i8n' => [
-                                        'type'  => 'input_translation',
-                                        'label' => __('translate name'),
-                                        'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($department->shop->extra_languages),
-                                        'value' => $department->getTranslations('name_i8n')
-                                    ],
-                                    'description_title_i8n' => [
-                                        'type'  => 'input_translation',
-                                        'label' => __('translate description title'),
-                                        'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($department->shop->extra_languages),
-                                        'value' => $department->getTranslations('description_title_i8n')
-                                    ],
-                                    'description_i8n' => [
-                                        'type'  => 'textEditor_translation',
-                                        'label' => __('translate description'),
-                                        'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($department->shop->extra_languages),
-                                        'value' => $department->getTranslations('description_i8n')
-                                    ],
-                                    'description_extra_i8n' => [
-                                        'type'  => 'textEditor_translation',
-                                        'label' => __('translate description extra'),
-                                        'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($department->shop->extra_languages),
-                                        'value' => $department->getTranslations('description_extra_i8n')
-                                    ],
-                                ]
-                            ] : null, */
                             [
                                 'label'  => __('Pricing'),
                                 'icon'   => 'fa-light fa-money-bill',
