@@ -35,12 +35,11 @@ trait WithMasterProductCategoryAction
 
         if ($this->has('master_department_or_master_sub_department_id')) {
             $parent = MasterProductCategory::find($this->get('master_department_or_master_sub_department_id'));
+
             if ($parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
                 $this->set('master_department_id', $parent->id);
-                $this->set('master_sub_department_id', null);
             } elseif ($parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
                 $this->set('master_sub_department_id', $parent->id);
-                $this->set('master_department_id', $parent->masterDepartment->id);
             }
         }
     }

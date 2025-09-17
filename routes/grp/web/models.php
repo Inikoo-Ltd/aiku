@@ -364,9 +364,9 @@ Route::patch('credit-transaction/{customer:id}/decrease', DecreaseCreditTransact
 Route::patch('customer/{customer:id}/credit-transaction', StoreCreditTransaction::class)->name('customer.credit-transaction.store')->withoutScopedBindings();
 Route::patch('customer/delivery-address/{customer:id}', UpdateCustomerDeliveryAddress::class)->name('customer.delivery-address.update')->withoutScopedBindings();
 
-Route::patch('master-product/{masterProductCategory:id}', UpdateMasterProductCategory::class)->name('master_product.update')->withoutScopedBindings();
-Route::post('master-product/{masterProductCategory:id}/image', UploadImageMasterProductCategory::class)->name('master_product_image.upload')->withoutScopedBindings();
-Route::patch('master-product/{masterProductCategory:id}/translations', UpdateMasterProductCategoryTranslations::class)->name('master_product_categories.translations.update');
+Route::patch('master-product-category/{masterProductCategory:id}', UpdateMasterProductCategory::class)->name('master_product_category.update')->withoutScopedBindings();
+Route::post('master-product-category/{masterProductCategory:id}/image', UploadImageMasterProductCategory::class)->name('master_product_category_image.upload')->withoutScopedBindings();
+Route::patch('master-product-category/{masterProductCategory:id}/translations', UpdateMasterProductCategoryTranslations::class)->name('master_product_categories.translations.update');
 
 
 Route::prefix('stock-family')->name('stock-family.')->group(function () {

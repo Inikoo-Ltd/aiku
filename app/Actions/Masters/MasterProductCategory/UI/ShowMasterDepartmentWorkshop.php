@@ -83,7 +83,7 @@ class ShowMasterDepartmentWorkshop extends GrpAction
 
                 'upload_image_route' => [
                     'method'     => 'post',
-                    'name'       => 'grp.models.master_product_image.upload',
+                    'name'       => 'grp.models.master_product_category_image.upload',
                     'parameters' => [
                         'masterProductCategory' => $masterDepartment->id
                     ]
@@ -91,7 +91,7 @@ class ShowMasterDepartmentWorkshop extends GrpAction
 
                 'update_route' => [
                     'method'     => 'patch',
-                    'name'       => 'grp.models.master_product.update',
+                    'name'       => 'grp.models.master_product_category.update',
                     'parameters' => [
                         'masterProductCategory' => $masterDepartment->id
                     ]

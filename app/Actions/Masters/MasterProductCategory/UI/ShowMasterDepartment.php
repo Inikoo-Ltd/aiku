@@ -163,8 +163,12 @@ class ShowMasterDepartment extends GrpAction
     }
 
 
-    public function getBreadcrumbs(Group|MasterShop|MasterProductCategory $parent, MasterProductCategory $masterDepartment, string $routeName, array $routeParameters, string $suffix = null): array
+    public function getBreadcrumbs(Group|MasterShop|MasterProductCategory $parent, ?MasterProductCategory $masterDepartment, string $routeName, array $routeParameters, string $suffix = null): array
     {
+        if($masterDepartment==null){
+            return [];
+        }
+
         $headCrumb = function (MasterProductCategory $department, array $routeParameters, ?string $suffix) {
             return [
 
