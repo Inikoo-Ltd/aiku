@@ -27,6 +27,9 @@ const props = defineProps<{
             state: string
             created_at: string
             updated_at: string
+            description: string
+            description_title: string
+            description_extra: string
         }
 
         routes: {
@@ -47,30 +50,54 @@ const props = defineProps<{
             collections_route: string
         },
         has_wepage?: boolean
-    }
+    },
+    actions: any
 }>()
 
 const isModalOpen = ref(false)
 provide('isModalOpen', isModalOpen)
-
 
 </script>
 
 <template>
     <div class="px-4 pb-8 m-5">
         <!-- Master Message -->
-           <Message v-if="data.subDepartment?.url_master" severity="success" closable>
-            <template #icon>
-                <FontAwesomeIcon :icon="faInfoCircle" />
-            </template>
-            <span class="ml-2">
-                {{ trans("Right now you follow") }}
-                <Link :href="route(data.subDepartment.url_master.name, data.subDepartment.url_master.parameters)"
-                    class="underline font-bold">
-                {{ trans("the master data") }}
-                </Link>
-            </span>
-        </Message>
+        <div class="space-y-4">
+            <Message v-if="data.subDepartment?.url_master" severity="success" closable>
+                <template #icon>
+                    <FontAwesomeIcon :icon="faInfoCircle" />
+                </template>
+                <span class="ml-2">
+                    {{ trans("Right now you follow") }}
+                    <Link :href="route(data.subDepartment.url_master.name, data.subDepartment.url_master.parameters)"
+                        class="underline font-bold">
+                    {{ trans("the master data") }}
+                    </Link>
+                </span>
+            </Message>
+            <Message
+                v-if="!data.subDepartment.description || !data.subDepartment.description_title || !data.subDepartment.description_extra"
+                severity="warn" closable>
+                <template #icon>
+                    <FontAwesomeIcon :icon="faInfoCircle" />
+                </template>
+                <div class="ml-2">
+                    <div class="flex gap-2 flex-wrap box-border">
+                        <span v-if="!data.subDepartment.description_title">{{ trans("Description Title is missing")
+                            }}.</span>
+                        <span v-if="!data.subDepartment.description">{{ trans("Description is missing") }}.</span>
+                        <span v-if="!data.subDepartment.description_extra">{{ trans("Extra description is missing")
+                            }}.</span>
+                    </div>
+                    {{ trans("Please") }}
+                    <Link
+                        :href="route(actions.actions[0].route.name, { ...actions.actions[0].route.parameters, section: 1 })"
+                        class="underline font-bold">
+                    {{ trans("add missing description fields") }}
+                    </Link>.
+                </div>
+            </Message>
+        </div>
         <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 gap-4 mt-4">
             <!-- Sidebar -->
             <div class="col-span-1 md:col-span-1 lg:col-span-2">

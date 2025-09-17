@@ -123,7 +123,7 @@ const showDialog = ref(false);
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" />
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :actions="pageHead" />
 
     <FormCreateMasterProduct 
         :showDialog="showDialog" 
