@@ -90,6 +90,10 @@ use App\Actions\Dispatching\Shipment\UI\CreateShipmentInPalletReturnInWarehouse;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\CustomerSalesChannel\DeleteCustomerSalesChannel;
+use App\Actions\Dropshipping\Ebay\Product\MatchBulkNewProductToCurrentEbay;
+use App\Actions\Dropshipping\Ebay\Product\MatchPortfolioToCurrentEbayProduct;
+use App\Actions\Dropshipping\Ebay\Product\StoreBulkNewProductToCurrentEbay;
+use App\Actions\Dropshipping\Ebay\Product\StoreNewProductToCurrentEbay;
 use App\Actions\Dropshipping\Portfolio\DeletePortfolio;
 use App\Actions\Dropshipping\Portfolio\StoreMultiplePortfolios;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
@@ -642,11 +646,19 @@ Route::post('{customerSalesChannel:id}/woo-batch-match', MatchBulkNewProductToCu
 Route::post('{customerSalesChannel:id}/woo-batch-all', StoreBulkNewProductToCurrentWooCommerce::class)->name('woo.batch_all')->withoutScopedBindings();
 
 
+Route::post('{customerSalesChannel:id}/ebay-batch-upload', StoreBulkNewProductToCurrentEbay::class)->name('ebay.batch_upload')->withoutScopedBindings();
+Route::post('{customerSalesChannel:id}/ebay-batch-match', MatchBulkNewProductToCurrentEbay::class)->name('ebay.batch_match')->withoutScopedBindings();
+Route::post('{customerSalesChannel:id}/ebay-batch-all', StoreBulkNewProductToCurrentEbay::class)->name('ebay.batch_all')->withoutScopedBindings();
+
+
 Route::post('portfolio/{portfolio:id}/match-to-existing-shopify-product', MatchPortfolioToCurrentShopifyProduct::class)->name('portfolio.match_to_existing_shopify_product');
 Route::post('portfolio/{portfolio:id}/store-new-shopify-product', StoreNewProductToCurrentShopify::class)->name('portfolio.store_new_shopify_product');
 
 Route::post('portfolio/{portfolio:id}/match-to-existing-woo-product', MatchPortfolioToCurrentWooProduct::class)->name('portfolio.match_to_existing_woo_product');
 Route::post('portfolio/{portfolio:id}/store-new-woo-product', StoreNewProductToCurrentWooCommerce::class)->name('portfolio.store_new_woo_product');
+
+Route::post('portfolio/{portfolio:id}/match-to-existing-ebay-product', MatchPortfolioToCurrentEbayProduct::class)->name('portfolio.match_to_existing_ebay_product');
+Route::post('portfolio/{portfolio:id}/store-new-ebay-product', StoreNewProductToCurrentEbay::class)->name('portfolio.store_new_ebay_product');
 
 
 Route::patch('{storedItem:id}/stored-items/pallets', SyncStoredItemPallet::class)->name('stored-items.pallets.update');

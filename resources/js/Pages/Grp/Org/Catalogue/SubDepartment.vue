@@ -38,7 +38,7 @@ import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faOctopusDeploy } from '@fortawesome/free-brands-svg-icons'
 import ImagesManagement from '@/Components/Goods/ImagesManagement.vue'
-
+import Breadcrumb from 'primevue/breadcrumb'
 
 library.add(
     faFolder,
@@ -71,6 +71,7 @@ const props = defineProps<{
     showcase: {
 
     }
+    mini_breadcrumbs?: any[]
     customers: {}
     mailshots: {}
     products: {}
@@ -147,6 +148,23 @@ const onSubmitAddItem = async (idProduct: number[]) => {
     </PageHeading>
 
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
+     <div v-if="mini_breadcrumbs" class="bg-white shadow-sm rounded px-4 py-2 mx-4 mt-2 w-fit border border-gray-200 overflow-x-auto">
+        <Breadcrumb  :model="mini_breadcrumbs">
+            <template #item="{ item, index }">
+                <div class="flex items-center gap-1 whitespace-nowrap">
+                    <!-- Breadcrumb link or text -->
+                    <component :is="item.to ? Link : 'span'" :href="route(item.to.name,item.to.parameters)" v-tooltip="item.tooltip"
+                        :title="item.title" class="flex items-center gap-2 text-sm transition-colors duration-150"
+                        :class="item.to
+                            ? 'text-gray-500'
+                            : 'text-gray-500 cursor-default'">
+                        <FontAwesomeIcon :icon="item.icon" class="w-4 h-4" />
+                        <span class="truncate max-w-[150px]">{{ item.label || '-' }}</span>
+                    </component>
+                </div>
+            </template>
+        </Breadcrumb>
+    </div>
     <component :is="component" :data="props[currentTab]" :tab="currentTab"></component>
 
     <Modal v-if="true" :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl">
@@ -173,3 +191,14 @@ const onSubmitAddItem = async (idProduct: number[]) => {
         </ProductsSelector>
     </Modal>
 </template>
+
+
+<style scoped>
+/* Remove default breadcrumb styles */
+:deep(.p-breadcrumb) {
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border: none;
+}
+</style>
