@@ -47,6 +47,15 @@ class EditDepartment extends OrgAction
 
     public function htmlResponse(ProductCategory $department, ActionRequest $request): Response
     {
+        $urlMaster                              = null;
+        if ($department->master_product_category_id) {
+            $urlMaster = [
+                'name'       => 'grp.helpers.redirect_master_product_category',
+                'parameters' => [
+                    $department->masterProductCategory->id
+                ]
+            ];
+        }
         $languages = [$department->shop->language_id => LanguageResource::make($department->shop->language)->resolve()];
         return Inertia::render(
             'EditModel',
@@ -68,6 +77,12 @@ class EditDepartment extends OrgAction
                 ],
                 'pageHead'    => [
                     'title'    => $department->name,
+                    'iconRight' => $urlMaster  ?  [
+                        'icon'  => "fab fa-octopus-deploy",
+                        'color' => "#4B0082",
+                        'class' => 'opacity-70 hover:opacity-100',
+                        'url'   => $urlMaster
+                    ] : [],
                     'icon'     =>
                         [
                             'icon'  => ['fal', 'fa-folder-tree'],

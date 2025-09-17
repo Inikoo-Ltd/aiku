@@ -93,6 +93,11 @@ class RepairMissingFixedWebBlocksInProductsWebpages
             $this->createWebBlock($webpage, 'luigi-trends-1');
         }
 
+        $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'luigi-last-seen-1');
+        if (count($countFamilyWebBlock) == 0) {
+            $this->createWebBlock($webpage, 'luigi-last-seen-1');
+        }
+
 
         $webpage->refresh();
         UpdateWebpageContent::run($webpage);
@@ -114,11 +119,11 @@ class RepairMissingFixedWebBlocksInProductsWebpages
         }
     }
 
-    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_products_webpages {website_id?}';
+    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_products_webpages {--website_id=}';
 
     public function asCommand(Command $command): void
     {
-        $websiteId = $command->argument('website_id');
+        $websiteId = $command->option('website_id');
 
         $query = DB::table('webpages')
             ->select('id')

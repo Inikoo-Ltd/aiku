@@ -3,7 +3,7 @@ import { routeType } from '@/types/route';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faInfoCircle } from "@fas";
 import Message from "primevue/message";
-import { Link } from "@inertiajs/vue3";
+import { Link, router } from "@inertiajs/vue3";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faAlbumCollection } from "@fal";
 import TranslationBox from '@/Components/TranslationBox.vue';
@@ -28,10 +28,30 @@ const props = defineProps<{
             detach_family: routeType
         }
     }
-    actions: any
+    actions?: any
 }>()
 
-console.log(props)
+const navigateTo = () => {
+    let routeCurr = route().current();
+    let targetRoute;
+    let routeParams = route().params;
+    
+    switch (routeCurr) {
+        case "grp.masters.master_shops.show.master_departments.show.master_families.show":
+            targetRoute = route("grp.masters.master_shops.show.master_departments.show.master_families.edit", {
+                ...routeParams,
+                section: 1
+            });
+            break;
+        default:
+            targetRoute = route("grp.org.shops.show.catalogue.departments.show.families.edit", {
+                ...routeParams,
+                section: 1
+            });
+            break;
+    }
+    router.visit(targetRoute);
+}
 </script>
 
 <template>
@@ -50,8 +70,8 @@ console.log(props)
                 </span>
             </Message>
             <Message
-                v-if="!data.family.data.description || !data.family.data.description_title || !data.family.data.description_extra"
-                severity="warn" closable>
+                v-if="!data.family.data.description || !data.family.data.description_title || !data.family.data.description_extra && actions"
+                severity="error" closable>
                 <template #icon>
                     <FontAwesomeIcon :icon="faInfoCircle" />
                 </template>
@@ -65,7 +85,7 @@ console.log(props)
                     </div>
                     {{ trans("Please") }}
                     <Link
-                        :href="route(actions.actions[0].route.name, { ...actions.actions[0].route.parameters, section: 1 })"
+                        @click="navigateTo"
                         class="underline font-bold">
                     {{ trans("add missing description fields") }}
                     </Link>.

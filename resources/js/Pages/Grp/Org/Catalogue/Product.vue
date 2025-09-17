@@ -72,6 +72,7 @@ const props = defineProps<{
     stocks?: {}
     images?: {}
     master : boolean
+    mini_breadcrumbs? : any[]
     masterRoute?: routeType
     taxonomy: {
         department?: {
@@ -124,42 +125,6 @@ const showMissingTaxonomyMessage = computed(() => {
     return !props.taxonomy?.department && !props.taxonomy?.family
 })
 
-// Breadcrumb logic
-const breadcrumbItems = computed(() => {
-    const items = []
-
-    const hasDepartment = props.taxonomy?.department
-    const hasFamily = props.taxonomy?.family
-
-    if (!hasDepartment && !hasFamily) return []
-
-    items.push({
-        label: hasDepartment ? props.taxonomy.department.label : '-',
-        to: hasDepartment
-            ? route(
-                props.taxonomy.department.route.name,
-                props.taxonomy.department.route.parameters,
-            )
-            : null,
-        tooltip: hasDepartment ? 'Department ' + props.taxonomy.department.tooltip : 'no department',
-        title: hasDepartment ? props.taxonomy.department.name : 'No department',
-        icon: faFolderTree,
-    })
-
-    if (hasFamily) {
-        items.push({
-            label: props.taxonomy.family.label,
-            to: route(
-                props.taxonomy.family.route.name,
-                props.taxonomy.family.route.parameters,
-            ),
-            title: props.taxonomy.family.name,
-            tooltip: 'Family ' + props.taxonomy.family.tooltip,
-            icon: faFolder
-        })
-    }
-    return items
-})
 
 
 function masterProductRoute() {
@@ -198,12 +163,11 @@ function masterProductRoute() {
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
     <div class="bg-white shadow-sm rounded px-4 py-2 mx-4 mt-2 w-fit border border-gray-200 overflow-x-auto">
-        <Breadcrumb :model="breadcrumbItems">
+        <Breadcrumb :model="mini_breadcrumbs">
             <template #item="{ item, index }">
                 <div class="flex items-center gap-1 whitespace-nowrap">
-                    <!-- Breadcrumb link or text -->
-                    <component :is="item.to ? Link : 'span'" :href="item.to" v-tooltip="item.tooltip"
-                        :title="item.title" class="flex items-center gap-2 text-sm transition-colors duration-150"
+                    <component :is="item.to ? Link : 'span'" :href="route(item.to.name,item.to.parameters)" v-tooltip="item.tooltip"
+                        :title="item.label" class="flex items-center gap-2 text-sm transition-colors duration-150"
                         :class="item.to
                             ? 'text-gray-500'
                             : 'text-gray-500 cursor-default'">

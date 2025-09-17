@@ -39,9 +39,6 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
 
     protected function processFamilyWebpages(Webpage $webpage, Command $command): void
     {
-
-
-
         /** @var ProductCategory $family */
         $family = $webpage->model;
 
@@ -65,14 +62,13 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
         }
 
 
-
         $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'overview_aurora');
 
         if (count($countFamilyWebBlock) > 0) {
             $command->error('Webpage '.$webpage->code.' MORE than 1 overview_aurora Web Block found');
 
             foreach ($countFamilyWebBlock as $webBlockData) {
-                $layout = json_decode($webBlockData->layout, true);
+                $layout       = json_decode($webBlockData->layout, true);
                 $descriptions = Arr::get($layout, 'data.fieldValue.texts.values');
 
                 $description = '';
@@ -100,7 +96,6 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
         }
 
 
-
         $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'family-1');
         if (count($countFamilyWebBlock) == 0) {
             $this->createWebBlock($webpage, 'family-1');
@@ -116,14 +111,19 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
             $this->createWebBlock($webpage, 'luigi-trends-1');
         }
 
+        $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'luigi-last-seen-1');
+        if (count($countFamilyWebBlock) == 0) {
+            $this->createWebBlock($webpage, 'luigi-last-seen-1');
+        }
 
         $webpage->refresh();
 
-        UpdateWebpageContent::run($webpage);
+
 
 
         $this->setFamilyWebBlockOnTop($webpage);
         $webpage->refresh();
+        UpdateWebpageContent::run($webpage);
 
         foreach ($webpage->webBlocks as $webBlock) {
             print $webBlock->webBlockType->code."\n";
@@ -144,31 +144,42 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
                 );
             }
         }
-
     }
 
 
     public function setFamilyWebBlockOnTop(Webpage $webpage): void
     {
-
         $familyWebBlock = $this->getWebpageBlocksByType($webpage, 'family-1')->first()->model_has_web_blocks_id;
 
-        $webBlocks = $webpage->webBlocks()->pluck('position', 'model_has_web_blocks.id', )->toArray();
+
+        $trendsWebBlock   = $this->getWebpageBlocksByType($webpage, 'luigi-trends-1')->first()->model_has_web_blocks_id;
+        $lastSeenWebBlock = $this->getWebpageBlocksByType($webpage, 'luigi-last-seen-1')->first()->model_has_web_blocks_id;
+
+
+        $webBlocks = $webpage->webBlocks()->pluck('position', 'model_has_web_blocks.id')->toArray();
         //print_r($webBlocks);
+
+
+        $count =$webpage->webBlocks()->count();
+
+        $trendsWebBlockPosition = $count + 101;
+        $lastSeenWebBlockPosition       = $count + 102;
+
 
 
         $runningPosition = 2;
         foreach ($webBlocks as $key => $position) {
             if ($key == $familyWebBlock) {
                 $webBlocks[$key] = 1;
+            }elseif ($key == $trendsWebBlock) {
+                $webBlocks[$key] = $trendsWebBlockPosition;
+            }elseif ($key == $lastSeenWebBlock) {
+                $webBlocks[$key] = $lastSeenWebBlockPosition;
             } else {
                 $webBlocks[$key] = $runningPosition;
                 $runningPosition++;
             }
-
-
         }
-
 
 
         foreach ($webBlocks as $key => $position) {
@@ -177,24 +188,27 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
                 ->update(['position' => $position]);
         }
         UpdateWebpageContent::run($webpage);
-
-
     }
 
 
-    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_families_webpages {website_id?}';
+    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_families_webpages {--website_id=} {--webpage_id=}';
 
     public function asCommand(Command $command): void
     {
-        $websiteId = $command->argument('website_id');
+        $websiteId       = $command->option('website_id');
+        $singleWebpageId = $command->option('webpage_id');
 
-        $query = DB::table('webpages')->select('id')->where('sub_type', 'family');
-        if ($websiteId) {
-            $query->where('website_id', $websiteId);
+        if ($singleWebpageId) {
+            $webpagesID = collect([(object)['id' => (int)$singleWebpageId]]);
+        } else {
+            $query = DB::table('webpages')->select('id')->where('sub_type', 'family');
+            if ($websiteId) {
+                $query->where('website_id', $websiteId);
+            }
+            $webpagesID = $query->get();
         }
-        $webpagesID = $query->get();
 
-        $total = count($webpagesID);
+        $total   = count($webpagesID);
         $current = 1;
         foreach ($webpagesID as $webpageID) {
             print "[{$current}/{$total}] Webpage id: {$webpageID->id}\n";

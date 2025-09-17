@@ -9,7 +9,7 @@ import TranslationBox from '@/Components/TranslationBox.vue';
 import { trans } from "laravel-vue-i18n"
 import ProductCategoryCard from "../ProductCategoryCard.vue"
 import { Message } from "primevue"
-import { Head, Link } from "@inertiajs/vue3";
+import { Head, Link, router } from "@inertiajs/vue3";
 
 library.add(faUnlink, faThLarge, faBars, faSeedling, faCheck)
 
@@ -51,12 +51,32 @@ const props = defineProps<{
         },
         has_wepage?: boolean
     },
-    actions: any
 }>()
 
 const isModalOpen = ref(false)
 provide('isModalOpen', isModalOpen)
 
+const navigateTo = () => {
+    let routeCurr = route().current();
+    let targetRoute;
+    let routeParams = route().params;
+    
+    switch (routeCurr) {
+        case "grp.masters.master_shops.show.master_departments.show.master_sub_departments.show":
+            targetRoute = route("grp.masters.master_shops.show.master_departments.show.master_sub_departments.edit", {
+                ...routeParams,
+                section: 1
+            });
+            break;
+        default:
+            targetRoute = route("grp.org.shops.show.catalogue.departments.show.sub_departments.edit", {
+                ...routeParams,
+                section: 1
+            });
+            break;
+    }
+    router.visit(targetRoute);
+}
 </script>
 
 <template>
@@ -77,7 +97,7 @@ provide('isModalOpen', isModalOpen)
             </Message>
             <Message
                 v-if="!data.subDepartment.description || !data.subDepartment.description_title || !data.subDepartment.description_extra"
-                severity="warn" closable>
+                severity="error" closable>
                 <template #icon>
                     <FontAwesomeIcon :icon="faInfoCircle" />
                 </template>
@@ -91,7 +111,7 @@ provide('isModalOpen', isModalOpen)
                     </div>
                     {{ trans("Please") }}
                     <Link
-                        :href="route(actions.actions[0].route.name, { ...actions.actions[0].route.parameters, section: 1 })"
+                       @click="navigateTo()"
                         class="underline font-bold">
                     {{ trans("add missing description fields") }}
                     </Link>.

@@ -53,8 +53,9 @@ import {
     faExchange,
     faBoxes,
     faAtom,
-    faMoneyBill
+    faMoneyBill,
 } from "@fal"
+import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle } from "@fas"
 import { faBan } from "@far"
 import { Head, usePage } from "@inertiajs/vue3"
@@ -63,6 +64,7 @@ import { router } from "@inertiajs/vue3"
 import Message from 'primevue/message';
 
 library.add(
+    faOctopusDeploy,
     faExclamationTriangle,
     faAtom,
     faTag,
