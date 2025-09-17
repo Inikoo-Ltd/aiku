@@ -170,7 +170,7 @@ onMounted(async () => {
 									class="capitalize block text-sm font-medium text-gray-700"
 								>
 									<FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
-									Password
+									{{ trans("Password") }}
 									</label>
 								<div class="mt-2 password">
 									<PureInput
@@ -191,7 +191,7 @@ onMounted(async () => {
 									class="capitalize block text-sm font-medium text-gray-700"
 								>
 									<FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
-									Retype Password
+									{{ trans("Retype Password") }}
 								</label>
 								<div class="mt-2 password">
 									<PureInput
