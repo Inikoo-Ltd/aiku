@@ -46,10 +46,9 @@ class StoreMasterProductFromTradeUnits extends GrpAction
             data_set($modelData, 'unit', Arr::get($tradeUnits, '0.type'));
         }
 
-        
 
         $masterAsset = DB::transaction(function () use ($parent, $modelData, $tradeUnits, $shopProducts) {
-            // dd($modelData);
+
             $data        = [
                 'code'    => Arr::get($modelData, 'code'),
                 'name'    => Arr::get($modelData, 'name'),
