@@ -75,7 +75,7 @@ const props = defineProps<{
     shopsData: {}
     images?:object
 }>();
-
+console.log(props.pageHead);
 let currentTab = ref(props.tabs.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 
