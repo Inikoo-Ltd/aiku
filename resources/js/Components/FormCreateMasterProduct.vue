@@ -93,13 +93,15 @@ const form = useForm({
     description: "",
     description_title: "",
     description_extra: "",
-/*     dimensions: {
+    gross_weight : 0,
+    net_weight : 0,
+    dimensions: {
         h: 0,
         l: 0,
         w: 0,
         type: "sphere",
         units: "cm"
-    } */
+    }
 });
 
 // Image upload states
@@ -169,16 +171,20 @@ const getTableData = (data) => {
 }
 
 const ListSelectorChange = (value) => {
+    console.log('ssss',value)
     if (value.length >= 1) {
         form.name = value[0].name
         form.code = value[0].code
         form.unit = value[0].type
         form.image = value[0]?.image?.source || null
-        form.marketing_weight = value[0].weight
+        form.marketing_weight = value[0].marketing_weight
+        form.net_weight = value[0].net_weight
         form.description = value[0].description
         form.description_title = value[0].description_title
         form.description_extra = value[0].description_extra
         form.units = value[0]?.units || 1
+        form.gross_weight = value[0]?.gross_weight || 0
+        form.dimensions = value[0]?.dimensions || null
     }
     getTableData(tableData.value)
 }
@@ -414,8 +420,32 @@ const toggleFull = () => {
                             </small>
                         </div>
 
+                        <div v-if="form.trade_units.length > 1">
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Net Weight</label>
+                            <PureInputNumber v-model="form.net_weight"
+                                @update:model-value="form.errors.net_weight = null" class="w-full"
+                                :suffix="'g'" />
+                            <small v-if="form.errors.marketing_weight"
+                                class="text-red-500 text-xs flex items-center gap-1 mt-1">
+                                <FontAwesomeIcon :icon="faCircleExclamation" />
+                                {{ form.errors.net_weight.join(", ") }}
+                            </small>
+                        </div>
 
-                         <!-- <div>
+                        <div v-if="form.trade_units.length > 1">
+                            <label class="block text-xs font-medium text-gray-600 mb-1">Gross Weight</label>
+                            <PureInputNumber v-model="form.gross_weight"
+                                @update:model-value="form.errors.gross_weight = null" class="w-full"
+                                :suffix="'g'" />
+                            <small v-if="form.errors.marketing_weight"
+                                class="text-red-500 text-xs flex items-center gap-1 mt-1">
+                                <FontAwesomeIcon :icon="faCircleExclamation" />
+                                {{ form.errors.gross_weight.join(", ") }}
+                            </small>
+                        </div>
+
+
+                         <div v-if="form.trade_units.length > 1">
                             <label class="block text-xs font-medium text-gray-600 mb-1">Dimension</label>
                             <PureInputDimension :rows="4" v-model="form.dimensions"
                                 @update:model-value="form.errors.dimensions = null" class="w-full" />
@@ -424,9 +454,9 @@ const toggleFull = () => {
                                 <FontAwesomeIcon :icon="faCircleExclamation" />
                                 {{ form.errors.dimensions.join(", ") }}
                             </small>
-                        </div> -->
+                        </div>
 
-                        <div>
+                        <div :class="'col-span-2'">
                             <label class="block text-xs font-medium text-gray-600 mb-1">Description title</label>
                             <PureInput type="text" v-model="form.description_title"
                                 @update:model-value="form.errors.description_title = null" class="w-full" />
