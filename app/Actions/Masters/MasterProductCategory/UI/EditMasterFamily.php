@@ -230,8 +230,14 @@ class EditMasterFamily extends OrgAction
                                 'master_department_or_master_sub_department_id'  =>  [
                                     'type'    => 'select_infinite',
                                     'label'   => __('Parent'),
+                                    'options'   => [
+                                            [
+                                                'id' =>  $masterProductCategory->masterSubDepartment->id ?? $masterProductCategory->masterDepartment->id  ?? null,
+                                                'code' =>  $masterProductCategory->masterSubDepartment->code ?? $masterProductCategory->masterDepartment->code  ?? null
+                                            ]
+                                    ],
                                     'fetchRoute'    => [
-                                        'name'       => 'grp.masters.master_shops.show.master_departments.index',
+                                        'name'       => 'grp.json.master_shop.master_departments_and_sub_departments',
                                         'parameters' => [
                                             'masterShop' => $masterProductCategory->masterShop->slug,
                                         ]
