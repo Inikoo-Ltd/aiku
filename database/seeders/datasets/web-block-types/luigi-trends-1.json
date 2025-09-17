@@ -9,7 +9,7 @@
 	"data": {
 		"fieldValue": {
 			"settings": null,
-			"title" : "See Also",
+			"title" : "<p style=\"text-align: center\">Trending</p>",
 			"container": {
 				"properties": {
 					"background": {
