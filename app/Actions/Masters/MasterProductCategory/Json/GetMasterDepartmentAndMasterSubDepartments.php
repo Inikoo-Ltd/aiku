@@ -48,6 +48,7 @@ class GetMasterDepartmentAndMasterSubDepartments extends GrpAction
                 'master_product_categories.slug',
                 'master_product_categories.code',
                 'master_product_categories.name',
+                'master_product_categories.type',
                 'master_product_categories.description',
                 'master_product_categories.created_at',
                 'master_product_categories.updated_at',

@@ -254,51 +254,30 @@ class EditFamily extends OrgAction
                             ],
                             [
                                 'label'  => __('Parent').' ('.__('Department/Sub-Department').')',
-                                'icon'   => 'fa-light fa-box',
+                                'icon'   => 'fa-light fa-folder-tree',
                                 'fields' => [
-                                    'department_id'  =>  [
+                                    'department_or_sub_department_id'  =>  [
                                         'type'    => 'select_infinite',
-                                        'label'   => __('Department'),
+                                        'label'   => __('Parent'),
                                         'options'   => [
-                                            [
-                                                'id' => $family->department?->id,
-                                                'code' => $family->department?->code
-                                            ]
+                                                [
+                                                    'id' =>  $family->subDepartment->id ?? $family->department->id  ?? null,
+                                                    'code' =>  $family->subDepartment->code ?? $family->department->code  ?? null
+                                                ]
                                         ],
                                         'fetchRoute'    => [
-                                            'name'       => 'grp.org.shops.show.catalogue.departments.index',
+                                            'name'       => 'grp.json.shop.department_and_sub_departments',
                                             'parameters' => [
-                                                'organisation' => $this->organisation->slug,
-                                                'shop' => $this->shop->slug
+                                                'shop' => $family->shop->slug,
                                             ]
                                         ],
                                         'valueProp' => 'id',
                                         'labelProp' => 'code',
                                         'required' => false,
-                                        'value'   => $family->department->id ?? null,
+                                        'value'   => $family->subDepartment->id ?? $family->department->id  ?? null,
                                     ],
-                                    'sub_department_id'  =>  [
-                                        'type'    => 'select_infinite',
-                                        'label'   => __('Sub Department'),
-                                        'options'   => [
-                                            [
-                                                'id' => $family->subDepartment?->id,
-                                                'code' => $family->subDepartment?->code
-                                            ]
-                                        ],
-                                        'fetchRoute'    => [
-                                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.index',
-                                            'parameters' => [
-                                                'organisation' => $this->organisation->slug,
-                                                'shop' => $this->shop->slug,
-                                                'department' => $family->department->slug
-                                            ]
-                                        ],
-                                        'valueProp' => 'id',
-                                        'labelProp' => 'code',
-                                        'required' => false,
-                                        'value'   => $family->subDepartment->id ?? null,
-                                    ],
+
+
 
                                 ],
 

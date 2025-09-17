@@ -233,7 +233,8 @@ class EditMasterFamily extends OrgAction
                                     'options'   => [
                                             [
                                                 'id' =>  $masterProductCategory->masterSubDepartment->id ?? $masterProductCategory->masterDepartment->id  ?? null,
-                                                'code' =>  $masterProductCategory->masterSubDepartment->code ?? $masterProductCategory->masterDepartment->code  ?? null
+                                                'code' =>  $masterProductCategory->masterSubDepartment->code ?? $masterProductCategory->masterDepartment->code  ?? null,
+                                                'type' => $masterProductCategory->masterSubDepartment->type ?? $masterProductCategory->masterDepartment->type  ?? null,
                                             ]
                                     ],
                                     'fetchRoute'    => [
