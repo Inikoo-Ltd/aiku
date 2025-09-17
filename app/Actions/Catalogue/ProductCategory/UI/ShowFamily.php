@@ -168,6 +168,51 @@ class ShowFamily extends OrgAction
                     'previous' => $this->getPrevious($family, $request),
                     'next'     => $this->getNext($family, $request),
                 ],
+                'mini_breadcrumbs' => array_filter(
+                    [
+                        [
+                            'label' => 'department',
+                            'to'    => [
+                                'name'       => 'grp.org.shops.show.catalogue.departments.show',
+                                'parameters' => [
+                                    'organisation' => $this->organisation->slug,
+                                    'shop'         => $this->shop->slug,
+                                    'department'   => $family->department->slug
+                                ]
+                            ],
+                            'tooltip' => 'Department',
+                            'icon' => ['fal', 'folder-tree']
+                        ],
+                        $family->sub_department_id ? [
+                            'label' => 'sub-departement',
+                            'to'    => [
+                                'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
+                                'parameters' => [
+                                    'organisation' => $this->organisation->slug,
+                                    'shop'         => $this->shop->slug,
+                                    'department'   => $family->department->slug,
+                                    'subDepartment' => $family->subDepartment->slug
+                                ]
+                            ],
+                            'tooltip' => 'Sub-Departement',
+                            'icon' => ['fal', 'folder-tree']
+                        ] : [],
+                        [
+                            'label' => 'family',
+                            'to'    => [
+                                'name'       => $family->sub_department_id ? 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show' : 'grp.org.shops.show.catalogue.departments.show.families.show',
+                                'parameters' => [
+                                    'organisation' => $this->organisation->slug,
+                                    'shop'         => $this->shop->slug,
+                                    'department'   => $family->department->slug,
+                                    'family' => $family->slug,
+                                ]
+                            ],
+                            'tooltip' => 'family',
+                            'icon' => ['fal', 'folder-tree']
+                        ]
+                    ],
+                ),
                 'pageHead'    => [
                     'title'   => $family->name,
                     'model'   => __('Family'),
