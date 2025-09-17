@@ -87,7 +87,6 @@ const component = computed(() => {
     }
     return components[currentTab.value] ?? ModelDetails
 })
-console.log(route().params)
 
 const showDialog = ref(false);
 
