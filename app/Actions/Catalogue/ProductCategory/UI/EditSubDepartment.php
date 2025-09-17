@@ -122,45 +122,61 @@ class EditSubDepartment extends OrgAction
                                 'label'  => __('Name/Description'),
                                 'icon'   => 'fa-light fa-tag',
                                 'fields' => [
-                                    'name' => [
+                                    'name' =>  $subDepartment->masterProductCategory  ? [
                                         'type'  => 'input_translation',
-                                        'label' => __('translate description title'),
+                                        'label' => __('name'),
                                         'language_from' => 'en',
                                         'full' => true,
                                         'main' => $subDepartment->masterProductCategory->name,
                                         'languages' => $languages,
                                         'mode' => 'single',
                                         'value' => $subDepartment->getTranslations('name_i8n')
+                                    ] : [
+                                        'type'  => 'input',
+                                        'label' => __('name'),
+                                        'value' => $subDepartment->name
                                     ],
-                                    'description_title' => [
+                                    'description_title' => $subDepartment->masterProductCategory ? [
                                         'type'  => 'input_translation',
-                                        'label' => __('translate description title'),
+                                        'label' => __('description title'),
                                         'language_from' => 'en',
                                         'full' => true,
                                         'main' => $subDepartment->masterProductCategory->description_title,
                                         'languages' => $languages,
                                         'mode' => 'single',
                                         'value' => $subDepartment->getTranslations('description_title_i8n')
+                                    ] : [
+                                        'type'  => 'input',
+                                        'label' => __('description title'),
+                                        'value' => $subDepartment->description_title
                                     ],
-                                    'description' => [
+                                    'description' => $subDepartment->masterProductCategory ? [
                                         'type'  => 'textEditor_translation',
-                                        'label' => __('translate description title'),
+                                        'label' => __(key: 'description'),
                                         'language_from' => 'en',
                                         'full' => true,
                                         'main' => $subDepartment->masterProductCategory->description,
                                         'languages' => $languages,
                                         'mode' => 'single',
                                         'value' => $subDepartment->getTranslations('description_i8n')
+                                    ] : [
+                                        'type'  => 'textEditor',
+                                        'label' => __(key: 'description'),
+                                        'value' => $subDepartment->description
                                     ],
-                                    'description_extra' => [
+                                    'description_extra' => $subDepartment->masterProductCategory ? [
                                         'type'  => 'textEditor_translation',
-                                        'label' => __('translate description title'),
+                                        'label' => __('Extra description'),
                                         'language_from' => 'en',
                                         'full' => true,
                                         'main' => $subDepartment->masterProductCategory->description_extra,
                                         'languages' => $languages,
                                         'mode' => 'single',
                                         'value' => $subDepartment->getTranslations('description_extra_i8n')
+                                    ] : [
+                                         'type'  => 'textEditor',
+                                        'label' => __('Extra description'),
+                                        'value' => $subDepartment->description_extra
                                     ],
                                 ]
                             ],

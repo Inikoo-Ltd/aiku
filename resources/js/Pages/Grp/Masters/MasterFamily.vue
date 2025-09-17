@@ -71,8 +71,6 @@ const props = defineProps<{
     mini_breadcrumbs?: any[]
 }>()
 
-console.log(props.pageHead);
-
 const currentTab = ref(props.tabs.current)
 
 
@@ -92,7 +90,6 @@ const component = computed(() => {
     }
     return components[currentTab.value] ?? ModelDetails
 })
-console.log(route().params)
 
 const showDialog = ref(false);
 

@@ -170,6 +170,20 @@ class UpdateProductCategory extends OrgAction
         return $request->user()->authTo("products.{$this->shop->id}.edit");
     }
 
+    public function prepareForValidation()
+    {
+        if($this->has('department_or_sub_department_id')) {
+            $parent = ProductCategory::find($this->get('department_or_sub_department_id'));
+            if($parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
+                $this->set('department_id', $parent->id);
+                $this->set('sub_department_id', null);
+            } elseif ($parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                $this->set('sub_department_id', $parent->id);
+                $this->set('department_id', $parent->department->id);
+            }
+        }
+    }
+
 
     public function rules(): array
     {
@@ -203,6 +217,7 @@ class UpdateProductCategory extends OrgAction
             ],
             'sub_department_id' => [
                 'sometimes',
+                'nullable',
                 Rule::exists('product_categories', 'id')
                     ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
                     ->where('shop_id', $this->shop->id)

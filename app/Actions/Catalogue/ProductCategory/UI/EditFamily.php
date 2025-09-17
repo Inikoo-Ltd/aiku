@@ -160,45 +160,61 @@ class EditFamily extends OrgAction
                                         'label' => __('code'),
                                         'value' => $family->code
                                     ],
-                                    'name' => [
+                                    'name' => $family->masterProductCategory ? [
                                         'type'  => 'input_translation',
-                                        'label' => __('translate description title'),
+                                        'label' => __('name'),
                                         'language_from' => 'en',
                                         'full' => true,
                                         'main' => $family->masterProductCategory->name,
                                         'languages' => $languages,
                                         'value' => $family->getTranslations('name_i8n'),
                                         'mode' => 'single'
+                                    ] : [
+                                        'type'  => 'input',
+                                        'label' => __('name'),
+                                        'value' => $family->name
                                     ],
-                                    'description_title' => [
+                                    'description_title' => $family->masterProductCategory ? [
                                         'type'  => 'input_translation',
-                                        'label' => __('translate description title'),
+                                        'label' => __('description title'),
                                         'language_from' => 'en',
                                         'full' => true,
                                         'main' => $family->masterProductCategory->description_title,
                                         'languages' => $languages,
                                         'mode' => 'single',
                                         'value' => $family->getTranslations('description_title_i8n')
+                                    ] : [
+                                         'type'  => 'input',
+                                         'label' => __('description title'),
+                                         'value' => $family->description_title
                                     ],
-                                    'description' => [
+                                    'description' => $family->masterProductCategory ? [
                                         'type'  => 'textEditor_translation',
-                                        'label' => __('translate description title'),
+                                        'label' => __('description'),
                                         'language_from' => 'en',
                                         'full' => true,
                                         'main' => $family->masterProductCategory->description,
                                         'languages' => $languages,
                                         'mode' => 'single',
                                         'value' => $family->getTranslations('description_i8n')
+                                    ] : [
+                                        'type'  => 'textEditor',
+                                        'label' => __('description'),
+                                        'value' => $family->description
                                     ],
-                                    'description_extra' => [
+                                    'description_extra' => $family->masterProductCategory ? [
                                         'type'  => 'textEditor_translation',
-                                        'label' => __('translate description title'),
+                                        'label' => __('Extra description'),
                                         'language_from' => 'en',
                                         'full' => true,
                                         'main' => $family->masterProductCategory->description_extra,
                                         'languages' => $languages,
                                         'mode' => 'single',
                                         'value' => $family->getTranslations('description_extra_i8n')
+                                    ] : [
+                                        'type'  => 'textEditor',
+                                        'label' => __('Extra description'),
+                                        'value' => $family->description_extra
                                     ],
                                 ]
                             ],
@@ -238,51 +254,30 @@ class EditFamily extends OrgAction
                             ],
                             [
                                 'label'  => __('Parent').' ('.__('Department/Sub-Department').')',
-                                'icon'   => 'fa-light fa-box',
+                                'icon'   => 'fa-light fa-folder-tree',
                                 'fields' => [
-                                    'department_id'  =>  [
+                                    'department_or_sub_department_id'  =>  [
                                         'type'    => 'select_infinite',
-                                        'label'   => __('Department'),
+                                        'label'   => __('Parent'),
                                         'options'   => [
-                                            [
-                                                'id' => $family->department?->id,
-                                                'code' => $family->department?->code
-                                            ]
+                                                [
+                                                    'id' =>  $family->subDepartment->id ?? $family->department->id  ?? null,
+                                                    'code' =>  $family->subDepartment->code ?? $family->department->code  ?? null
+                                                ]
                                         ],
                                         'fetchRoute'    => [
-                                            'name'       => 'grp.org.shops.show.catalogue.departments.index',
+                                            'name'       => 'grp.json.shop.department_and_sub_departments',
                                             'parameters' => [
-                                                'organisation' => $this->organisation->slug,
-                                                'shop' => $this->shop->slug
+                                                'shop' => $family->shop->slug,
                                             ]
                                         ],
                                         'valueProp' => 'id',
                                         'labelProp' => 'code',
                                         'required' => false,
-                                        'value'   => $family->department->id ?? null,
+                                        'value'   => $family->subDepartment->id ?? $family->department->id  ?? null,
                                     ],
-                                    'sub_department_id'  =>  [
-                                        'type'    => 'select_infinite',
-                                        'label'   => __('Sub Department'),
-                                        'options'   => [
-                                            [
-                                                'id' => $family->subDepartment?->id,
-                                                'code' => $family->subDepartment?->code
-                                            ]
-                                        ],
-                                        'fetchRoute'    => [
-                                            'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.index',
-                                            'parameters' => [
-                                                'organisation' => $this->organisation->slug,
-                                                'shop' => $this->shop->slug,
-                                                'department' => $family->department->slug
-                                            ]
-                                        ],
-                                        'valueProp' => 'id',
-                                        'labelProp' => 'code',
-                                        'required' => false,
-                                        'value'   => $family->subDepartment->id ?? null,
-                                    ],
+
+
 
                                 ],
 

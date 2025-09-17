@@ -68,6 +68,12 @@ const navigateTo = () => {
                 section: 1
             });
             break;
+        case "grp.masters.master_shops.show.master_sub_departments.show":
+            targetRoute = route("grp.masters.master_shops.show.master_sub_departments.edit", {
+                ...routeParams,
+                section: 1
+            });
+            break;
         default:
             targetRoute = route("grp.org.shops.show.catalogue.departments.show.sub_departments.edit", {
                 ...routeParams,
