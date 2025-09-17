@@ -114,23 +114,34 @@ class RepairMissingFixedWebBlocksInProductsWebpages
         }
     }
 
-    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_products_webpages';
+    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_products_webpages {website_id?}';
 
     public function asCommand(Command $command): void
     {
-        // Process webpages in chunks to save memory
-        DB::table('webpages')
+        $websiteId = $command->argument('website_id');
+
+        $query = DB::table('webpages')
             ->select('id')
             ->where('model_type', 'Product')
-            ->orderBy('id')
-            ->chunk(100, function ($webpagesID) use ($command) {
-                foreach ($webpagesID as $webpageID) {
-                    $webpage = Webpage::find($webpageID->id);
-                    if ($webpage) {
-                        $this->handle($webpage, $command);
-                    }
+            ->orderBy('id');
+
+        if ($websiteId) {
+            $query->where('website_id', $websiteId);
+        }
+
+        $total = $query->count();
+        $current = 0;
+
+        $query->chunk(100, function ($webpagesID) use ($command, &$current, $total) {
+            foreach ($webpagesID as $webpageID) {
+                $current++;
+                print "[{$current}/{$total}] Webpage id: {$webpageID->id}\n";
+                $webpage = Webpage::find($webpageID->id);
+                if ($webpage) {
+                    $this->handle($webpage, $command);
                 }
-            });
+            }
+        });
     }
 
 }

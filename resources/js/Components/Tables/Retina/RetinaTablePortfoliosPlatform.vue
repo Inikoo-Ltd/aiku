@@ -283,7 +283,7 @@ const fetchRoute = async () => {
     isLoadingFetchPlatformProduct.value = false
 
 }
-const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
+const debounceGetPortfoliosList = debounce(() => fetchRoute(), 700)
 
 
 const selectedProducts = defineModel<number[]>('selectedProducts')
@@ -603,8 +603,8 @@ const onDisableCheckbox = (item) => {
             </div>
 
             <div class="mb-2">
-                <PureInput v-model="querySearchPortfolios" aupdate:modelValue="() => debounceGetPortfoliosList()"
-                           :placeholder="trans('Input to search portfolios')"/>
+                <PureInput v-model="querySearchPortfolios" @update:modelValue="() => debounceGetPortfoliosList()"
+                           :placeholder="trans('Input sku/title to search')"/>
                 <slot name="afterInput">
                 </slot>
             </div>
