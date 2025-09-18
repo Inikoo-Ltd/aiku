@@ -29,10 +29,10 @@ class GetMasterProductCategoryShowcase
         return match ($productCategory->type) {
             MasterProductCategoryTypeEnum::DEPARTMENT => [
                 'shopsData' => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($productCategory->masterShop, 'shops')),
-                'storeRoute' => [
-                    'name' => 'grp.models.master_shops.master_department.store',
+                'storeFamilyRoute' => [
+                    'name' => 'grp.models.master_family.store',
                     'parameters' => [
-                        'masterShop' => $productCategory->masterShop->id
+                        'masterDepartment' => $productCategory->id
                     ]
                 ],
                 'department' => MasterProductCategoryResource::make($productCategory)->resolve(),
@@ -51,9 +51,9 @@ class GetMasterProductCategoryShowcase
             MasterProductCategoryTypeEnum::SUB_DEPARTMENT => [
                 'shopsData' => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($productCategory->masterShop, 'shops')),
                 'storeRoute' => [
-                    'name' => 'grp.models.master_sub_department.store',
+                    'name' => 'grp.models.master-sub-department.master_family.store',
                     'parameters' => [
-                        'masterDepartment' => $productCategory->masterDepartment->id
+                        'masterSubDepartment' => $productCategory->id
                     ]
                 ],
                 'subDepartment' => MasterSubDepartmentsResource::make($productCategory)->resolve(),
