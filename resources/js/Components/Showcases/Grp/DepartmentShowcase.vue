@@ -1,18 +1,20 @@
 <script setup lang="ts">
+import {ref} from 'vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faInfoCircle } from "@fas";
 import { faAlbumCollection } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { Link, router } from "@inertiajs/vue3";
 import { trans } from "laravel-vue-i18n";
-import TranslationBox from '@/Components/TranslationBox.vue';
+// import TranslationBox from '@/Components/TranslationBox.vue';
 import ProductCategoryCard from "@/Components/ProductCategoryCard.vue";
 import Message from "primevue/message";
+import MasterNavigation from "@/Components/Navigation/MasterNavigation.vue";
+import FormCreateMasterFamily from "@/Components/Master/FormCreateMasterFamily.vue";
 import ReviewContent from "@/Components/ReviewContent.vue";
 
 library.add(faAlbumCollection);
-
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     data: {
         has_webpage?: boolean;
         department: {
@@ -43,9 +45,16 @@ const props = defineProps<{
                 image: Array<string>;
             }>;
         };
+        storeRoute: any
+        shopsData: any
     };
-}>();
+    isMaster?: boolean
+}>(), {
+    // Default values
+    isMaster: false,
+});
 
+console.log(props);
 
 const navigateTo = () => {
     let routeCurr = route().current();
@@ -67,6 +76,12 @@ const navigateTo = () => {
             break;
     }
     router.visit(targetRoute);
+}
+
+const showDialog = ref<boolean>(false)
+
+const openFamilyModal = () => {
+    showDialog.value = true
 }
 </script>
 
@@ -111,10 +126,9 @@ const navigateTo = () => {
             <div class="col-span-1 md:col-span-1 lg:col-span-2">
                 <ProductCategoryCard :data="data.department" />
             </div>
-            <div class="col-span-1 md:col-span-1 lg:col-span-4"></div>
-            <div class="col-span-1 md:col-span-1 lg:col-span-2"> 
-                <ReviewContent :data="data.department" />
-            </div>
         </div>
     </div>
+
+    <!--  <TranslationBox :master="data.department" :needTranslation="data.department"
+        v-bind="data.translation_box" /> -->
 </template>

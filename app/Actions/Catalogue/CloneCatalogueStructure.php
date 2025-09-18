@@ -242,7 +242,7 @@ class CloneCatalogueStructure
             );
         } else {
             $foundDepartment = ProductCategory::find($foundDepartmentData->id);
-            if($foundDepartment) {
+            if ($foundDepartment) {
                 $dataToUpdate = [
                     'code' => $department->code,
                     'name' => $department->name,

@@ -8,28 +8,16 @@
 
 namespace App\Actions\Maintenance\Catalogue;
 
-use App\Actions\Maintenance\Masters\AddMissingMasterAssets;
-use App\Actions\Masters\MasterAsset\MatchAssetsToMaster;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Catalogue\Product\ProductStateEnum;
-use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Storage;
 
 class CVSSubDepartment
 {
     use WithActionUpdate;
 
-    /**
-     * @throws \Throwable
-     */
-    public function handle(ProductCategory $productCategory): void
-    {
-        // Your existing logic here
-    }
+
 
     public string $commandSignature = 'cvs:sub_departments {--export-csv : Export data to CSV file}';
 
@@ -37,36 +25,22 @@ class CVSSubDepartment
     {
         if ($command->option('export-csv')) {
             $this->exportToCSV($command);
-            return;
+
         }
 
-        $count = ProductCategory::whereNotNull('sub_department_id')->count();
 
-        $bar = $command->getOutput()->createProgressBar($count);
-        $bar->setFormat('debug');
-        $bar->start();
-
-        ProductCategory::whereNotNull('sub_department_id')->orderBy('id')
-            ->chunk(100, function (Collection $models) use ($bar, $command) {
-                foreach ($models as $model) {
-                    $this->handle($model, $command);
-                    $bar->advance();
-                }
-            });
-        
-        $bar->finish();
     }
 
     private function exportToCSV(Command $command): void
     {
         $command->info('Exporting ProductCategory data to CSV...');
-        
+
         $filename = 'product_categories_sub_departments_' . date('Y-m-d_H-i-s') . '.csv';
         $filepath = storage_path('app/' . $filename);
-        
-        // Open file for writing
+
+        // Open a file for writing
         $handle = fopen($filepath, 'w');
-        
+
         if (!$handle) {
             $command->error('Could not create CSV file');
             return;
@@ -97,8 +71,8 @@ class CVSSubDepartment
         $bar->finish();
         fclose($handle);
 
-        $command->info("\nCSV file created successfully: {$filename}");
-        $command->info("Location: {$filepath}");
-        $command->info("Total records exported: {$count}");
+        $command->info("\nCSV file created successfully: $filename");
+        $command->info("Location: $filepath");
+        $command->info("Total records exported: $count");
     }
 }

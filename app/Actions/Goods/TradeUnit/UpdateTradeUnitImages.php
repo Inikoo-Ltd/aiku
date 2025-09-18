@@ -48,7 +48,7 @@ class UpdateTradeUnitImages extends GrpAction
 
         $imageKeys = collect($imageTypeMapping)
             ->keys()
-            ->filter(fn($key) => Arr::exists($modelData, $key))
+            ->filter(fn ($key) => Arr::exists($modelData, $key))
             ->toArray();
 
         foreach ($imageKeys as $imageKey) {
@@ -73,7 +73,7 @@ class UpdateTradeUnitImages extends GrpAction
                 }
             }
         }
-        
+
         data_set($modelData, 'bucket_images', true);
 
         $this->update($tradeUnit, $modelData);

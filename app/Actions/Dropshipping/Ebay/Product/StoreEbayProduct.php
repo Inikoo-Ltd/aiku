@@ -117,6 +117,7 @@ class StoreEbayProduct extends RetinaAction
                 'currency' => $portfolio->shop->currency->code,
                 'category_id' => Arr::get($categories, 'categorySuggestions.0.category.categoryId')
             ]);
+
             if ($handleError($offer)) {
                 return;
             }
@@ -131,6 +132,8 @@ class StoreEbayProduct extends RetinaAction
                 'platform_product_variant_id' => Arr::get($publishedOffer, 'listingId'),
                 'upload_warning' => null,
             ]);
+
+            CheckEbayPortfolio::run($portfolio);
 
             UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio);
         } catch (\Exception $e) {

@@ -8,7 +8,6 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
-use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Enums\UI\Catalogue\DepartmentTabsEnum;
@@ -86,7 +85,7 @@ class EditSubDepartment extends OrgAction
                 ],
                 'pageHead'    => [
                     'title'   => $subDepartment->code,
-                    'iconRight' => $urlMaster  ?  [
+                    'iconRight' => $urlMaster ? [
                         'icon'  => "fab fa-octopus-deploy",
                         'color' => "#4B0082",
                         'class' => 'opacity-70 hover:opacity-100',
@@ -122,7 +121,7 @@ class EditSubDepartment extends OrgAction
                                 'label'  => __('Name/Description'),
                                 'icon'   => 'fa-light fa-tag',
                                 'fields' => [
-                                    'name' =>  $subDepartment->masterProductCategory  ? [
+                                    'name' =>  $subDepartment->masterProductCategory ? [
                                         'type'  => 'input_translation',
                                         'label' => __('name'),
                                         'language_from' => 'en',

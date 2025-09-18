@@ -77,7 +77,7 @@ class AddMissingProductCategoriesFromMaster
         } else {
             $foundFamily = ProductCategory::find($foundFamilyData->id);
 
-            if($foundFamily) {
+            if ($foundFamily) {
                 $dataToUpdate = [
                     //    'code' => $masterFamily->code,
                     //    'name' => $masterFamily->name,
@@ -108,7 +108,7 @@ class AddMissingProductCategoriesFromMaster
         if ($masterFamily->masterDepartment) {
             $department = CloneCatalogueStructure::make()->upsertDepartment($shop, $masterFamily->masterDepartment);
 
-            if($department) {
+            if ($department) {
                 if ($masterFamily->masterSubDepartment) {
                     $parent = CloneCatalogueStructure::make()->upsertSubDepartment($department, $masterFamily->masterSubDepartment);
                 } else {

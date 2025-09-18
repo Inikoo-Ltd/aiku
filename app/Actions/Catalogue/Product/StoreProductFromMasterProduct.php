@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Product;
 
 use App\Actions\GrpAction;
+use App\Actions\Helpers\Translations\TranslateCategoryModel;
 use App\Actions\Inventory\OrgStock\StoreOrgStock;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Enums\Catalogue\Product\ProductStateEnum;
@@ -16,6 +17,7 @@ use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterAsset;
+use Illuminate\Support\Arr;
 
 class StoreProductFromMasterProduct extends GrpAction
 {
@@ -62,6 +64,11 @@ class StoreProductFromMasterProduct extends GrpAction
                 $data = [
                     'code'              => $masterAsset->code,
                     'name'              => $masterAsset->name,
+                    'description'       => $masterAsset->description,
+                    'description_title' => $masterAsset->description_title,
+                    'description_extra' => $masterAsset->description_extra,
+
+
                     'price'             => $price,
                     'rrp'               => $rrp,
                     'unit'              => $masterAsset->unit,
@@ -72,10 +79,13 @@ class StoreProductFromMasterProduct extends GrpAction
                     'state'             => ProductStateEnum::ACTIVE,
                     'status'            => ProductStatusEnum::FOR_SALE,
                     'is_for_sale'       => true,
-                    'marketing_dimensions' => $masterAsset->marketing_dimensions,
-                    'gross_weight'  => $masterAsset->gross_weight,
-                    'marketing_weight' => $masterAsset->marketing_weight
                 ];
+
+                if (count($orgStocks) > 1) {
+                    data_set($data, 'gross_weight', $masterAsset->gross_weight);
+                    data_set($data, 'marketing_weight', $masterAsset->marketing_weight);
+                }
+
 
                 $product = Product::where('shop_id', $shop->id)
                     ->whereRaw("lower(code) = lower(?)", [$masterAsset->code])
@@ -103,14 +113,17 @@ class StoreProductFromMasterProduct extends GrpAction
                         'comment' => 'first publish'
                     ]);
                 }
+                TranslateCategoryModel::dispatch(
+                    $product,
+                    Arr::only($data, ['name', 'description', 'description_title', 'description_extra'])
+                );
             }
         }
     }
 
-    public function updateFoundProduct(Product $product, array $data, bool $createWebpage): void
+    public function updateFoundProduct(Product $product, array $modelData, bool $createWebpage): void
     {
-
-        $product = UpdateProduct::run($product, $data);
+        $product = UpdateProduct::run($product, $modelData);
         CloneProductImagesFromTradeUnits::run($product);
         $product->refresh();
         if ($createWebpage && $product->webpage === null) {
@@ -119,6 +132,10 @@ class StoreProductFromMasterProduct extends GrpAction
                 'comment' => 'first publish'
             ]);
         }
+        TranslateCategoryModel::dispatch(
+            $product,
+            Arr::only($modelData, ['name', 'description', 'description_title', 'description_extra'])
+        );
     }
 
     public function rules(): array
