@@ -114,7 +114,9 @@ const navigateTo = () => {
                 <ProductCategoryCard :data="data.department" />
             </div>
             <div v-if="isMaster" class="md:col-start-7 md:col-end-9">
-                <MasterNavigation is-add-both />
+                <MasterNavigation
+                    sub-department-route="grp.masters.master_shops.show.master_departments.show.master_sub_departments.create"
+                    is-add-both />
             </div>
         </div>
     </div>

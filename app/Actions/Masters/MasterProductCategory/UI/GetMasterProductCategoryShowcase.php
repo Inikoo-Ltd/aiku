@@ -10,7 +10,9 @@
 
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
+use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Http\Resources\Catalogue\MasterProductCategoryResource;
 use App\Http\Resources\Masters\MasterFamiliesResource;
 use App\Http\Resources\Masters\MasterSubDepartmentsResource;
@@ -26,6 +28,13 @@ class GetMasterProductCategoryShowcase
 
         return match ($productCategory->type) {
             MasterProductCategoryTypeEnum::DEPARTMENT => [
+                'shopsData' => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($productCategory->masterShop, 'shops')),
+                'storeRoute' => [
+                    'name' => 'grp.models.master_shops.master_department.store',
+                    'parameters' => [
+                        'masterShop' => $productCategory->masterShop->id
+                    ]
+                ],
                 'department' => MasterProductCategoryResource::make($productCategory)->resolve(),
                 'families' => MasterProductCategoryResource::collection($productCategory->masterFamilies()),
                 'translation_box' => [
@@ -40,6 +49,13 @@ class GetMasterProductCategoryShowcase
             ],
             ],
             MasterProductCategoryTypeEnum::SUB_DEPARTMENT => [
+                'shopsData' => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($productCategory->masterShop, 'shops')),
+                'storeRoute' => [
+                    'name' => 'grp.models.master_sub_department.store',
+                    'parameters' => [
+                        'masterDepartment' => $productCategory->masterDepartment->id
+                    ]
+                ],
                 'subDepartment' => MasterSubDepartmentsResource::make($productCategory)->resolve(),
                 'families' => MasterFamiliesResource::collection($productCategory->masterFamilies()),
                 'translation_box' => [
