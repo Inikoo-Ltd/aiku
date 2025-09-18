@@ -93,9 +93,7 @@ class StoreEbayProduct extends RetinaAction
                         }
                     }
 
-                    $portfolio = UpdatePortfolio::make()->action($portfolio, ['upload_warning' => $errorMessage]);
-
-                    UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio);
+                    UpdatePortfolio::make()->action($portfolio, ['upload_warning' => $errorMessage]);
 
                     return $errorMessage;
                 }
@@ -141,9 +139,11 @@ class StoreEbayProduct extends RetinaAction
 
             UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio);
         } catch (\Exception $e) {
-            UpdatePortfolio::run($portfolio, [
+            $portfolio = UpdatePortfolio::run($portfolio, [
                 'errors_response' => [$e->getMessage()]
             ]);
+
+            UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio);
 
             Sentry::captureMessage("Failed to upload product due to: " . $e->getMessage());
             throw $e;
