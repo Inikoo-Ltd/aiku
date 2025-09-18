@@ -19,7 +19,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
 library.add(faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome)
 
-defineProps<{
+const props = defineProps<{
     pageHead: PageHeadingTypes
     title: string
     data: {}
@@ -29,6 +29,7 @@ defineProps<{
 }>()
 
 const showDialog = ref(false)
+
 </script>
 
 <template>

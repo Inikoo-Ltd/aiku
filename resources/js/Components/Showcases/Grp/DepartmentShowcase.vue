@@ -1,14 +1,17 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faInfoCircle } from "@fas";
 import { faAlbumCollection } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { Link, router } from "@inertiajs/vue3";
 import { trans } from "laravel-vue-i18n";
-import TranslationBox from '@/Components/TranslationBox.vue';
+// import TranslationBox from '@/Components/TranslationBox.vue';
 import ProductCategoryCard from "@/Components/ProductCategoryCard.vue";
 import Message from "primevue/message";
 import MasterNavigation from "@/Components/Navigation/MasterNavigation.vue";
+import FormCreateMasterFamily from "@/Components/Master/FormCreateMasterFamily.vue";
+import ReviewContent from "@/Components/ReviewContent.vue";
 
 library.add(faAlbumCollection);
 const props = withDefaults(defineProps<{
@@ -42,6 +45,8 @@ const props = withDefaults(defineProps<{
                 image: Array<string>;
             }>;
         };
+        storeRoute: any
+        shopsData: any
     };
     isMaster?: boolean
 }>(), {
@@ -49,11 +54,13 @@ const props = withDefaults(defineProps<{
     isMaster: false,
 });
 
+console.log(props);
+
 const navigateTo = () => {
     let routeCurr = route().current();
     let targetRoute;
     let routeParams = route().params;
-    
+
     switch (routeCurr) {
         case "grp.masters.master_shops.show.master_departments.show":
             targetRoute = route("grp.masters.master_shops.show.master_departments.edit", {
@@ -69,6 +76,12 @@ const navigateTo = () => {
             break;
     }
     router.visit(targetRoute);
+}
+
+const showDialog = ref<boolean>(false)
+
+const openFamilyModal = () => {
+    showDialog.value = true
 }
 </script>
 
@@ -96,10 +109,10 @@ const navigateTo = () => {
                 <div class="ml-2">
                     <div class="flex gap-2 flex-wrap box-border">
                         <span v-if="!data.department.description_title">{{ trans("Description Title is missing")
-                            }}.</span>
+                        }}.</span>
                         <span v-if="!data.department.description">{{ trans("Description is missing") }}.</span>
                         <span v-if="!data.department.description_extra">{{ trans("Extra description is missing")
-                            }}.</span>
+                        }}.</span>
                     </div>
                     {{ trans("Please") }}
                     <Link @click="navigateTo()" class="underline font-bold cursor-pointer">
@@ -113,14 +126,11 @@ const navigateTo = () => {
             <div class="col-span-1 md:col-span-1 lg:col-span-2">
                 <ProductCategoryCard :data="data.department" />
             </div>
-            <div v-if="isMaster" class="md:col-start-7 md:col-end-9">
-                <MasterNavigation
-                    sub-department-route="grp.masters.master_shops.show.master_departments.show.master_sub_departments.create"
-                    is-add-both />
+            <div class="col-span-1 md:col-span-1 lg:col-span-4"></div>
+            <div class="col-span-1 md:col-span-1 lg:col-span-2">
+                <ReviewContent :data="data.department" />
             </div>
         </div>
     </div>
 
-    <!--  <TranslationBox :master="data.department" :needTranslation="data.department"
-        v-bind="data.translation_box" /> -->
 </template>
