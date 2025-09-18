@@ -17,4 +17,13 @@ enum MasterProductCategoryTypeEnum: string
     case DEPARTMENT     = 'department';
     case SUB_DEPARTMENT = 'sub_department';
     case FAMILY         = 'family';
+
+    public function label(): string
+    {
+        return match ($this) {
+            MasterProductCategoryTypeEnum::DEPARTMENT => 'Master Department',
+            MasterProductCategoryTypeEnum::SUB_DEPARTMENT => 'Master Sub Department',
+            MasterProductCategoryTypeEnum::FAMILY => 'Master Family',
+        };
+    }
 }
