@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterProductCategory;
 
+use App\Actions\Catalogue\ProductCategory\CloneProductCategoryParentsFromMaster;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterAssets;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterFamilies;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterSubDepartmentHydrateMasterAssets;
@@ -17,6 +18,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterFamiliesWithNoDepartm
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -53,6 +55,11 @@ class UpdateMasterFamilyMasterDepartment extends OrgAction
                 'master_department_id'     => $masterFamily->department_id,
                 'master_sub_department_id' => null
             ]);
+
+        foreach (ProductCategory::where('master_product_category_id', $masterFamily->id)->get() as $family)
+        {
+            CloneProductCategoryParentsFromMaster::run($family);
+        }
 
 
         if (Arr::has($changes, 'master_department_id')) {
