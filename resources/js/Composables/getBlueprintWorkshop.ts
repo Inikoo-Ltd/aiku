@@ -43,6 +43,7 @@ import Cta4Blueprint from "@/Components/CMS/Webpage/Cta4/Blueprint"
 import { blueprint as SeeAlso1Blueprint  } from "@/Components/CMS/Webpage/SeeAlso1/Blueprint"
 import { blueprint as LuigiTrends1Blueprint  } from "@/Components/CMS/Webpage/LuigiTrends1/Blueprint"
 import { blueprint as LuigiLastSeen1  } from "@/Components/CMS/Webpage/LuigiLastSeen1/Blueprint"
+import { blueprint as LuigiItemAlternatives1  } from "@/Components/CMS/Webpage/LuigiItemAlternatives1/Blueprint"
 
 
 export const getBlueprint = (componentName: string, data?: object) => {
@@ -87,6 +88,7 @@ export const getBlueprint = (componentName: string, data?: object) => {
 		// Luigi
 		"luigi-trends-1": () => LuigiTrends1Blueprint(data).blueprint,
 		"luigi-last-seen-1": () => LuigiLastSeen1(data).blueprint,
+		"luigi-item-alternatives-1": () => LuigiItemAlternatives1(data).blueprint,
 
 		// misc
 		"banner": WowsbarBannerBlueprint.blueprint,
