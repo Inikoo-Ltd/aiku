@@ -258,7 +258,7 @@ class EditMasterFamily extends OrgAction
                     ],
                     'args'      => [
                         'updateRoute' => [
-                            'name' => 'grp.models.master_product.update',
+                            'name' => 'grp.models.master_product_category.update',
                             'parameters' => [
                                 'masterProductCategory' => $masterProductCategory->id
                             ]

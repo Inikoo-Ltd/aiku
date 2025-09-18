@@ -8,7 +8,6 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
-use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Models\Catalogue\ProductCategory;
@@ -77,7 +76,7 @@ class EditDepartment extends OrgAction
                 ],
                 'pageHead'    => [
                     'title'    => $department->name,
-                    'iconRight' => $urlMaster  ?  [
+                    'iconRight' => $urlMaster ? [
                         'icon'  => "fab fa-octopus-deploy",
                         'color' => "#4B0082",
                         'class' => 'opacity-70 hover:opacity-100',

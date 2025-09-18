@@ -125,8 +125,8 @@ class UpdateMasterProductImages extends GrpAction
             'art1_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
             'art2_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
             'art3_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
-            'art4_image_id'=> ['sometimes', 'nullable', 'exists:media,id'],
-            'art5_image_id'=> ['sometimes', 'nullable', 'exists:media,id'],
+            'art4_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
+            'art5_image_id' => ['sometimes', 'nullable', 'exists:media,id'],
             'video_url' => ['sometimes', 'nullable'],
         ];
     }

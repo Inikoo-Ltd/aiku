@@ -192,7 +192,7 @@ class EditTradeUnit extends OrgAction
                                     'type'  => 'input_number',
                                     'label' => __('gross weight'),
                                     'value' => $tradeUnit->gross_weight,
-                                    'bind'  =>[
+                                    'bind'  => [
                                         'suffix' => 'g'
                                     ]
                                 ],
@@ -200,7 +200,7 @@ class EditTradeUnit extends OrgAction
                                     'type'  => 'input_number',
                                     'label' => __('net weight'),
                                     'value' => $tradeUnit->net_weight,
-                                    'bind'  =>[
+                                    'bind'  => [
                                         'suffix' => 'g'
                                     ]
                                 ],
@@ -208,7 +208,7 @@ class EditTradeUnit extends OrgAction
                                     'type'  => 'input_number',
                                     'label' => __('marketing weight'),
                                     'value' => $tradeUnit->marketing_weight,
-                                    'bind'  =>[
+                                    'bind'  => [
                                         'suffix' => 'g'
                                     ]
                                 ],

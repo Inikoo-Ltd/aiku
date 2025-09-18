@@ -67,9 +67,9 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'SaveDataFeeds',
         );
 
-        $schedule->command('fetch:orders -w full -B')->everyFiveMinutes()->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'FetchOrdersInBasket',
-        );
+//        $schedule->command('fetch:orders -w full -B')->everyFiveMinutes()->timezone('UTC')->sentryMonitor(
+//            monitorSlug: 'FetchOrdersInBasket',
+//        );
 
         $schedule->command('fetch:dispatched_emails -w full -D 2 -N')->everySixHours(15)
             ->timezone('UTC')->sentryMonitor(

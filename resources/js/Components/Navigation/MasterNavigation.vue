@@ -24,23 +24,22 @@ const props = withDefaults(defineProps<Props>(), {
     familiesRoute: '',
 });
 
-// Computed property untuk menentukan button mana yang ditampilkan
 const buttonsToShow = computed(() => {
     const buttons = [];
 
-    if (props.isAddBoth || props.isAddSubDepartment) {
+    if ((props.isAddBoth || props.isAddSubDepartment) && props.subDepartmentRoute) {
         buttons.push({
             label: trans("Create Sub Department"),
-            route_target: props.subDepartmentRoute,
+            route_target: route(props.subDepartmentRoute, route().params),
             icon: faPlus,
             key: 'subDepartment'
         });
     }
 
-    if (props.isAddBoth || props.isAddFamilies) {
+    if ((props.isAddBoth || props.isAddFamilies) && props.familiesRoute) {
         buttons.push({
-            label: trans("Create Master Families"),
-            route_target: props.familiesRoute,
+            label: trans("Create Master Family"),
+            route_target: route(props.familiesRoute, route().params),
             icon: faPlus,
             key: 'families'
         });
@@ -54,7 +53,7 @@ const buttonsToShow = computed(() => {
     <div class="border rounded-lg p-4">
         <div class="flex flex-col gap-4">
             <ButtonWithLink v-for="button in buttonsToShow" :key="button.key" :label="button.label"
-                :route-target="button.route_target" :icon="button.icon" type="secondary" full />
+                :url="button.route_target" :icon="button.icon" type="secondary" full />
         </div>
     </div>
 </template>
