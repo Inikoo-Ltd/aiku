@@ -100,7 +100,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div aria-type="luigi-last-seen-1-iris" class="w-full pb-6" :style="{
+    <div aria-type="luigi-item-alternatives-1-iris" class="w-full pb-6" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(fieldValue.container?.properties, screenType),
         width: 'auto'
@@ -130,7 +130,6 @@ onMounted(() => {
                     </div>
 
                     <template v-else>
-
                         <SwiperSlide
                             v-for="(product, index) in listProducts"
                             :key="index"

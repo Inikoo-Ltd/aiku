@@ -19,6 +19,7 @@ enum ProductCategoryTabsEnum: string
 
     case INDEX   = 'index';
     case SALES      = 'sales';
+    case NEED_REVIEW      = 'need_review';
 
     public function blueprint(): array
     {
@@ -30,6 +31,10 @@ enum ProductCategoryTabsEnum: string
             ProductCategoryTabsEnum::SALES => [
                 'title' => __('sales'),
                 'icon'  => 'fal fa-money-bill-wave',
+            ],
+            ProductCategoryTabsEnum::NEED_REVIEW => [
+                'title' => __('need review'),
+                'icon'  => 'fal fa-pen-alt',
             ],
         };
     }

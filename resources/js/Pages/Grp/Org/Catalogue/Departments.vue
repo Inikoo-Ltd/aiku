@@ -25,6 +25,7 @@ const props = defineProps<{
     data: {},
     index?: {}
     sales?: {}
+    need_review?: {}
 }>()
 
 const currentTab = ref<string>(props.tabs.current)
@@ -34,6 +35,7 @@ const component = computed(() => {
     const components: any = {
         index: TableDepartments,
         sales: TableDepartments,
+        need_review: TableDepartments,
     }
 
     return components[currentTab.value]

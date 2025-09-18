@@ -79,7 +79,7 @@ class StoreEbayProduct extends RetinaAction
                 ]
             ];
 
-            $handleError = function ($result) use ($portfolio) {
+            $handleError = function ($result) use ($portfolio, $ebayUser) {
                 if (isset($result['error'])) {
                     $errorMessage = $result['error'];
 
@@ -92,7 +92,9 @@ class StoreEbayProduct extends RetinaAction
                         }
                     }
 
-                    UpdatePortfolio::make()->action($portfolio, ['upload_warning' => $errorMessage]);
+                    $portfolio = UpdatePortfolio::make()->action($portfolio, ['upload_warning' => $errorMessage]);
+
+                    UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio);
                     return true;
                 }
                 return false;

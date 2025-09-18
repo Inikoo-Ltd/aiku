@@ -22,21 +22,10 @@ import axios from "axios"
 import { Link } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import RecommendationSlideWorkshop from "@/Components/Iris/Recommendations/RecommendationSlideWorkshop.vue"
+import { ProductHit } from "@/types/Luigi/LuigiTypes"
 library.add(faChevronLeft, faChevronRight)
 
-interface ProductHits {
-    attributes: {
-        image_link: string
-        price: string
-        formatted_price: string
-        department: string[]
-        category: string[]
-        product_code: string[]
-        stock_qty: string[]
-        title: string
-        web_url: string[]
-    }
-}
 const props = defineProps<{
     modelValue: any
     webpageData?: any
@@ -66,7 +55,7 @@ const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', retinaLayoutStructure)
 console.log('lala', layout)
 
-const listProducts = ref<ProductHits[] | null>()
+const listProducts = ref<ProductHit[] | null>()
 const isLoadingFetch = ref(false)
 const fetchRecommenders = async () => {
     try {
@@ -111,7 +100,7 @@ onMounted(()=> {
 </script>
 
 <template>
-    <div id="see-also-1-workshop" class="w-full pb-6" :style="{
+    <div id="luigi-trends-1-workshop" class="w-full pb-6" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(modelValue.container?.properties, screenType),
         width: 'auto'
@@ -130,78 +119,35 @@ onMounted(()=> {
             />
         </div>
 
-        <Swiper
-            :slides-per-view="slidesPerView ? Math.min(listProducts?.length || 0, slidesPerView || 0) : 4"
-            :loop="false" :autoplay="false" :pagination="{ clickable: true }" :modules="[Autoplay]"
-            class="w-full" xstyle="getStyles(fieldValue?.value?.layout?.properties, screenType)"
-            spaceBetween="12"
-            autoHeight
-        >
-            <div v-if="isLoadingFetch" class="grid grid-cols-4 gap-x-4">
-                <div v-for="xx in 4" class="skeleton w-full h-64 rounded">
-
-                </div>
-            </div>
-
-            <template v-else-if="listProducts?.length">
-                <SwiperSlide v-for="(image, index) in listProducts" :key="index" class="w-full h-full min-h-full">
-                    <div class="relative border border-gray-300 hover:border-gray-700 px-4 py-3 rounded !flex flex-col justify-between h-full">
-                        <div>
-                            <!-- Product Image -->
-                            <component :is="image.attributes.web_url?.[0] ? Link : 'div'" :href="image.attributes.web_url?.[0]" class="block rounded aspect-[5/4] w-full overflow-hidden">
-                                <img
-                                    :src="image.attributes.image_link"
-                                    :alt="image.attributes.title"
-                                    class="w-full h-full object-contain"
-                                >
-                            </component>
-                            
-                            <!-- Title -->
-                            <Link v-if="image.attributes.web_url?.[0]" :href="image.attributes.web_url?.[0]"
-                                class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
-                                {{ image.attributes.title }}
-                            </Link>
-                            <div v-else class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
-                                {{ image.attributes.title }}
-                            </div>
-                            <!-- SKU and RRP -->
-                            <div class="flex justify-between text-xs text-gray-500 mb-1 capitalize">
-                                <span>{{ image.attributes.product_code?.[0] }}</span>
-                            </div>
-                            <!-- Rating and Stock -->
-                            <div class="flex justify-between items-center text-xs mb-2">
-                                <div v-if="layout?.iris?.is_logged_in" v-tooltip="trans('Stock')" class="flex items-center gap-1"
-                                    :class="Number(image.attributes?.stock_qty?.[0]) > 0 ? 'text-green-600' : 'text-red-600'">
-                                    <FontAwesomeIcon :icon="faCircle" class="text-[8px]" />
-                                    <span>{{ Number(image.attributes?.stock_qty?.[0]) > 0 ? Number(image.attributes?.stock_qty?.[0]) : 0 }} {{trans('available')}}</span>
-                                </div>
-                            </div>
-                            <!-- Prices -->
-                            <div v-if="layout?.iris?.is_logged_in" class="mb-3">
-                                <div class="flex justify-between text-sm ">
-                                    <span>{{ trans('Price') }}: <span class="font-semibold">{{ image.attributes.formatted_price }}</span></span>
-                                    <!-- <span><span v-tooltip="trans('Recommended retail price')" >{{trans('RRP')}}</span>:  <span class="font-semibold">{{ locale.currencyFormat(layout.iris.currency.code,product.rrp) }}</span></span> -->
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Add to Basket Button -->
-                        <div v-if="image.attributes.product_id?.[0]">
-                            <Button
-                                disabled
-                                :label="trans('Add to Basket')"
-                                class="w-full justify-center"
-                            />
-                        </div>
+        <div class="py-4">
+            <Swiper
+                :slides-per-view="slidesPerView ? Math.min(listProducts?.length || 0, slidesPerView || 0) : 4"
+                :loop="false" :autoplay="false" :pagination="{ clickable: true }" :modules="[Autoplay]"
+                class="w-full" xstyle="getStyles(fieldValue?.value?.layout?.properties, screenType)"
+                spaceBetween="12"
+                autoHeight
+            >
+                <div v-if="isLoadingFetch" class="grid grid-cols-4 gap-x-4">
+                    <div v-for="xx in 4" class="skeleton w-full h-64 rounded">
                     </div>
-                </SwiperSlide>
-            </template>
-
-            <div v-else class="h-64 flex text-lg font-semibold flex-col items-center justify-center  w-full bg-gray-200">
-                <div>{{ trans("No products to show") }}</div>
-                <div class="text-sm italic text-gray-400">{{ trans("This will not appear in live website") }}</div>
-            </div>
-        </Swiper>
+                </div>
+                <template v-else-if="listProducts?.length">
+                    <SwiperSlide
+                        v-for="(product, index) in listProducts"
+                        :key="index"
+                        class="w-full cursor-grab relative hover:bg-gray-500/10 px-4 py-3 rounded !grid h-full min-h-full"
+                    >
+                        <RecommendationSlideWorkshop
+                            :product
+                        />
+                    </SwiperSlide>
+                </template>
+                <div v-else class="h-64 flex text-lg font-semibold flex-col items-center justify-center  w-full bg-gray-200">
+                    <div>{{ trans("No products to show") }}</div>
+                    <div class="text-sm italic text-gray-400">{{ trans("This will not appear in live website") }}</div>
+                </div>
+            </Swiper>
+        </div>
     </div>
 </template>
 
