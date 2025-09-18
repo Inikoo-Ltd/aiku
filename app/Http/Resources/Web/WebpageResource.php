@@ -9,6 +9,7 @@
 namespace App\Http\Resources\Web;
 
 use App\Actions\Web\Webpage\WithGetWebpageWebBlocks;
+use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Http\Resources\HasSelfCall;
 use App\Models\Web\Webpage;
@@ -46,6 +47,13 @@ class WebpageResource extends JsonResource
             'code'                => $webpage->code,
             'model_id'                               => $webpage->model_id,
             'product_category_id'                    => $modelId,
+            'product'                                => $webpage->sub_type == WebpageSubTypeEnum::PRODUCT ? [
+                'id'                => $webpage->model?->id,
+                'slug'              => $webpage->model?->slug,
+                'code'              => $webpage->model?->code,
+                'name'              => $webpage->model?->name,
+                'luigi_identity'    => $webpage->model?->getLuigiIdentity(),
+            ] : null,
             // 'url'                 => $webpage->url,
             'url'                 => $webpage->getUrl(),
             'type'                => $webpage->type,

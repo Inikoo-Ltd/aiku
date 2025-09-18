@@ -108,9 +108,11 @@ onMounted(()=> {
             />
         </div>
 
-        <div class="h-48 flex text-lg font-semibold flex-col items-center justify-center  w-full bg-gray-200 border border-gray-300">
-            <div>{{ trans("No recommendations to preview") }}</div>
-            <div class="text-sm italic text-gray-500 font-normal">{{ trans("Last Seen is very specific to user behavior, will show real recommendations on live website.") }}</div>
+        <div class="py-4">
+            <div class="h-48 flex text-lg font-semibold flex-col items-center justify-center  w-full bg-gray-200 border border-gray-300">
+                <div>{{ trans("No recommendations to preview") }}</div>
+                <div class="text-sm italic text-gray-500 font-normal">{{ trans("Last Seen is very specific to user behavior, will show real recommendations on live website.") }}</div>
+            </div>
         </div>
     </div>
 </template>
