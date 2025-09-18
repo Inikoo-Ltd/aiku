@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {ref} from 'vue'
+import { ref } from 'vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faInfoCircle } from "@fas";
 import { faAlbumCollection } from "@fal";
@@ -60,7 +60,7 @@ const navigateTo = () => {
     let routeCurr = route().current();
     let targetRoute;
     let routeParams = route().params;
-    
+
     switch (routeCurr) {
         case "grp.masters.master_shops.show.master_departments.show":
             targetRoute = route("grp.masters.master_shops.show.master_departments.edit", {
@@ -109,10 +109,10 @@ const openFamilyModal = () => {
                 <div class="ml-2">
                     <div class="flex gap-2 flex-wrap box-border">
                         <span v-if="!data.department.description_title">{{ trans("Description Title is missing")
-                            }}.</span>
+                        }}.</span>
                         <span v-if="!data.department.description">{{ trans("Description is missing") }}.</span>
                         <span v-if="!data.department.description_extra">{{ trans("Extra description is missing")
-                            }}.</span>
+                        }}.</span>
                     </div>
                     {{ trans("Please") }}
                     <Link @click="navigateTo()" class="underline font-bold cursor-pointer">
@@ -126,9 +126,11 @@ const openFamilyModal = () => {
             <div class="col-span-1 md:col-span-1 lg:col-span-2">
                 <ProductCategoryCard :data="data.department" />
             </div>
+            <div class="col-span-1 md:col-span-1 lg:col-span-4"></div>
+            <div class="col-span-1 md:col-span-1 lg:col-span-2">
+                <ReviewContent :data="data.department" />
+            </div>
         </div>
     </div>
 
-    <!--  <TranslationBox :master="data.department" :needTranslation="data.department"
-        v-bind="data.translation_box" /> -->
 </template>
