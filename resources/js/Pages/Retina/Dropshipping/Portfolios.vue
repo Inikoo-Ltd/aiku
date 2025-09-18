@@ -318,6 +318,7 @@ const key = ulid()
     <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead">
 
+     
         <template #button-upload-to-shopify="{ action }">
             <Button @click="onUploadToShopify()" :style="action.style" :label="action.label" :loading="isLoadingUpload"
                     :disabled="!selectedData.products.length"
@@ -487,9 +488,9 @@ const key = ulid()
 
         <RetinaTablePortfoliosPlatform v-else :data="props.products" :tab="'products'" :selectedData :platform_data
                                        :platform_user_id :is_platform_connected :progressToUploadToShopify
-                                       :customerSalesChannel="customer_sales_channel"
-                                       v-model:selectedProducts="selectedProducts" :key="tableKey"
-                                       :routes="props.routes"/>
+                                       :customerSalesChannel="customer_sales_channel" :progressToUploadToEcom="progessbar"
+                                       v-model:selectedProducts="selectedProducts" :key="key + 'table-products'"
+                                       :routes="props.routes" :count_product_not_synced="count_product_not_synced"/>
     </div>
 
     <Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false"
