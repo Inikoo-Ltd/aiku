@@ -259,7 +259,7 @@ class EditProduct extends OrgAction
                             'type'  => 'input_number',
                             'label' => __('gross weight'),
                             'value' => $product->gross_weight,
-                            'bind'  =>[
+                            'bind'  => [
                                 'suffix' => 'g'
                             ]
                         ],
@@ -267,7 +267,7 @@ class EditProduct extends OrgAction
                             'type'  => 'input_number',
                             'label' => __('marketing weight'),
                             'value' => $product->marketing_weight,
-                            'bind'  =>[
+                            'bind'  => [
                                 'suffix' => 'g'
                             ]
                         ],

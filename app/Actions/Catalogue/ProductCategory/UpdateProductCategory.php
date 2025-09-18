@@ -172,9 +172,9 @@ class UpdateProductCategory extends OrgAction
 
     public function prepareForValidation()
     {
-        if($this->has('department_or_sub_department_id')) {
+        if ($this->has('department_or_sub_department_id')) {
             $parent = ProductCategory::find($this->get('department_or_sub_department_id'));
-            if($parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
+            if ($parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
                 $this->set('department_id', $parent->id);
                 $this->set('sub_department_id', null);
             } elseif ($parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {

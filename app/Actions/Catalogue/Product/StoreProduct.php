@@ -92,6 +92,12 @@ class StoreProduct extends OrgAction
         data_set($modelData, 'currency_id', $shop->currency_id);
         data_set($modelData, 'bucket_images', $this->strict);
 
+        if ($shop->language->code == 'en') {
+            data_set($modelData, 'is_name_reviewed', true);
+            data_set($modelData, 'is_description_title_reviewed', true);
+            data_set($modelData, 'is_description_reviewed', true);
+            data_set($modelData, 'is_description_extra_reviewed', true);
+        }
 
         $product = DB::transaction(function () use ($shop, $modelData, $orgStocks) {
             /** @var Product $product */

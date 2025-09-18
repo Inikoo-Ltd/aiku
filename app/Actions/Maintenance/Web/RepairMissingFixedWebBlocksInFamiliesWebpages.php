@@ -157,10 +157,8 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
 
 
         $webBlocks = $webpage->webBlocks()->pluck('position', 'model_has_web_blocks.id')->toArray();
-        //print_r($webBlocks);
 
-
-        $count =$webpage->webBlocks()->count();
+        $count = $webpage->webBlocks()->count();
 
         $trendsWebBlockPosition = $count + 101;
         $lastSeenWebBlockPosition       = $count + 102;
@@ -171,9 +169,9 @@ class RepairMissingFixedWebBlocksInFamiliesWebpages
         foreach ($webBlocks as $key => $position) {
             if ($key == $familyWebBlock) {
                 $webBlocks[$key] = 1;
-            }elseif ($key == $trendsWebBlock) {
+            } elseif ($key == $trendsWebBlock) {
                 $webBlocks[$key] = $trendsWebBlockPosition;
-            }elseif ($key == $lastSeenWebBlock) {
+            } elseif ($key == $lastSeenWebBlock) {
                 $webBlocks[$key] = $lastSeenWebBlockPosition;
             } else {
                 $webBlocks[$key] = $runningPosition;

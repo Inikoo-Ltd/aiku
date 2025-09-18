@@ -81,6 +81,10 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $cost_price_ratio
  * @property int|null $lifestyle_image_id
  * @property bool|null $bucket_images images following the buckets
+ * @property bool|null $is_name_reviewed
+ * @property bool|null $is_description_title_reviewed
+ * @property bool|null $is_description_reviewed
+ * @property bool|null $is_description_extra_reviewed
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections

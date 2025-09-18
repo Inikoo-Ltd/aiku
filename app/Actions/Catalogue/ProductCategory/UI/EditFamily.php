@@ -8,7 +8,6 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
-use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\UI\Catalogue\DepartmentTabsEnum;
@@ -88,7 +87,7 @@ class EditFamily extends OrgAction
 
         }
 
-         $urlMaster                              = null;
+        $urlMaster                              = null;
         if ($family->master_product_category_id) {
             $urlMaster = [
                 'name'       => 'grp.helpers.redirect_master_product_category',
@@ -108,7 +107,7 @@ class EditFamily extends OrgAction
                     'text'  =>  __('Changing name or description may affect master family.'),
                     'icon'  => ['fas', 'fa-exclamation-triangle']
                 ] : null,
-                'iconRight' => $urlMaster  ?  [
+                'iconRight' => $urlMaster ? [
                         'icon'  => "fab fa-octopus-deploy",
                         'color' => "#4B0082",
                         'class' => 'opacity-70 hover:opacity-100',
@@ -262,7 +261,8 @@ class EditFamily extends OrgAction
                                         'options'   => [
                                                 [
                                                     'id' =>  $family->subDepartment->id ?? $family->department->id  ?? null,
-                                                    'code' =>  $family->subDepartment->code ?? $family->department->code  ?? null
+                                                    'code' =>  $family->subDepartment->code ?? $family->department->code  ?? null,
+                                                    'type' =>  $family->subDepartment->type ?? $family->department->type  ?? null
                                                 ]
                                         ],
                                         'fetchRoute'    => [
@@ -271,9 +271,10 @@ class EditFamily extends OrgAction
                                                 'shop' => $family->shop->slug,
                                             ]
                                         ],
+                                        'required' => true,
+                                        'type_label' => 'department-and-sub-department',
                                         'valueProp' => 'id',
                                         'labelProp' => 'code',
-                                        'required' => false,
                                         'value'   => $family->subDepartment->id ?? $family->department->id  ?? null,
                                     ],
 

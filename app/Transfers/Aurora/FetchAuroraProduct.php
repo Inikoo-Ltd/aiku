@@ -37,10 +37,10 @@ class FetchAuroraProduct extends FetchAurora
         }
 
 
-
         $this->parsedData['shop'] = $shop;
 
         $this->parsedData['parent'] = $this->parsedData['shop'];
+
 
         $family = null;
         if ($this->auroraModelData->{'Product Family Category Key'}) {
@@ -52,13 +52,16 @@ class FetchAuroraProduct extends FetchAurora
             }
         }
 
+
         $this->parsedData['family'] = $family;
-        if ($shop->type != ShopTypeEnum::DROPSHIPPING) {
-            $this->parsedData['parent'] = $family;
-        }
+        $this->parsedData['parent'] = $family;
+
 
         if ($this->parsedData['parent'] === null) {
+
             $this->parsedData['shop'] = $shop;
+            $this->parsedData['parent'] = $shop;
+
         }
 
 
@@ -159,7 +162,6 @@ class FetchAuroraProduct extends FetchAurora
         ];
 
 
-
         if ($this->auroraModelData->{'is_variant'} == 'Yes') {
             $this->parsedData['product']['is_main'] = false;
             $mainProduct                            = $this->parseProduct($this->organisation->id.':'.$this->auroraModelData->{'variant_parent_id'});
@@ -171,10 +173,7 @@ class FetchAuroraProduct extends FetchAurora
         }
 
         $this->parsedData['au_data'] = $this->auroraModelData;
-
     }
-
-
 
 
     protected function fetchData($id): object|null

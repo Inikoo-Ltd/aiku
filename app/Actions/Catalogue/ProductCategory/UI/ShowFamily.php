@@ -100,10 +100,10 @@ class ShowFamily extends OrgAction
                 'style' => 'delete',
                 'route' => [
                     'name'       => 'grp.models.product_category.delete',
-                    'method' => 'delete',
+                    'method'     => 'delete',
                     'parameters' => [
                         'productCategory' => $family->id
-                        ]
+                    ]
                 ]
             ] : false
         ]);
@@ -117,15 +117,15 @@ class ShowFamily extends OrgAction
         if ($this->parent instanceof ProductCategory) {
             if ($this->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
                 $parentTag = [
-                        [
-                            'label' => $family->department->name,
-                            'route' => [
-                                'name'       => 'grp.org.shops.show.catalogue.departments.index',
-                                'parameters' => $request->route()->originalParameters()
-                            ],
-                            'icon'  => 'fal fa-folder-tree'
-                        ]
-                        ];
+                    [
+                        'label' => $family->department->name,
+                        'route' => [
+                            'name'       => 'grp.org.shops.show.catalogue.departments.index',
+                            'parameters' => $request->route()->originalParameters()
+                        ],
+                        'icon'  => 'fal fa-folder-tree'
+                    ]
+                ];
             } elseif ($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
                 if (request()->route()->getName() == 'grp.org.shops.show.catalogue.sub_departments.show.families.show') {
                     $route = 'grp.org.shops.show.catalogue.sub_departments.show';
@@ -145,7 +145,7 @@ class ShowFamily extends OrgAction
             }
         }
 
-        $urlMaster                              = null;
+        $urlMaster = null;
         if ($family->master_product_category_id) {
             $urlMaster = [
                 'name'       => 'grp.helpers.redirect_master_product_category',
@@ -158,21 +158,21 @@ class ShowFamily extends OrgAction
         return Inertia::render(
             'Org/Catalogue/Family',
             [
-                'title'       => __('family'),
-                'breadcrumbs' => $this->getBreadcrumbs(
+                'title'            => __('family'),
+                'breadcrumbs'      => $this->getBreadcrumbs(
                     $family,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'  => [
+                'navigation'       => [
                     'previous' => $this->getPrevious($family, $request),
                     'next'     => $this->getNext($family, $request),
                 ],
                 'mini_breadcrumbs' => array_filter(
                     [
-                        [
-                            'label' => 'department',
-                            'to'    => [
+                        $family->department_id ? [
+                            'label'   => $family->department->name,
+                            'to'      => [
                                 'name'       => 'grp.org.shops.show.catalogue.departments.show',
                                 'parameters' => [
                                     'organisation' => $this->organisation->slug,
@@ -181,64 +181,45 @@ class ShowFamily extends OrgAction
                                 ]
                             ],
                             'tooltip' => 'Department',
-                            'icon' => ['fal', 'folder-tree']
-                        ],
+                            'icon'    => ['fal', 'folder-tree']
+                        ] : [],
                         $family->sub_department_id ? [
-                            'label' => 'sub-departement',
-                            'to'    => [
+                            'label'   => $family->subDepartment->name,
+                            'to'      => [
                                 'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
                                 'parameters' => [
-                                    'organisation' => $this->organisation->slug,
-                                    'shop'         => $this->shop->slug,
-                                    'department'   => $family->department->slug,
+                                    'organisation'  => $this->organisation->slug,
+                                    'shop'          => $this->shop->slug,
+                                    'department'    => $family->department->slug,
                                     'subDepartment' => $family->subDepartment->slug
                                 ]
                             ],
                             'tooltip' => 'Sub-Departement',
-                            'icon' => ['fal', 'folder-tree']
+                            'icon'    => ['fal', 'folder-tree']
                         ] : [],
-                        [
-                            'label' => 'family',
-                            'to'    => [
-                                'name'       => $family->sub_department_id ? 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show' : 'grp.org.shops.show.catalogue.departments.show.families.show',
-                                'parameters' =>  $family->sub_department_id ? [
-                                    'organisation' => $this->organisation->slug,
-                                    'shop'         => $this->shop->slug,
-                                    'department'   => $family->department->slug,
-                                    'subDepartment'   => $family->subDepartment->slug,
-                                    'family' => $family->slug,
-                                ] : [
-                                    'organisation' => $this->organisation->slug,
-                                    'shop'         => $this->shop->slug,
-                                    'department'   => $family->department->slug,
-                                    'family' => $family->slug,
-                                ]
-                            ],
-                            'tooltip' => 'family',
-                            'icon' => ['fal', 'folder-tree']
-                        ]
+
                     ],
                 ),
-                'pageHead'    => [
-                    'title'   => $family->name,
-                    'model'   => __('Family'),
-                    'icon'    => [
+                'pageHead'         => [
+                    'title'     => $family->name,
+                    'model'     => __('Family'),
+                    'icon'      => [
                         'icon'  => ['fal', 'fa-folder'],
                         'title' => __('department')
                     ],
                     'iconRight' => $family->state->stateIcon()[$family->state->value],
-                    'actions' => $this->getActions($family, $request),
+                    'actions'   => $this->getActions($family, $request),
                     'parentTag' => $parentTag,
 
                     'subNavigation' => $this->getFamilySubNavigation($family, $this->parent, $request)
 
                 ],
                 'url_master'       => $urlMaster,
-                'tabs'        => [
+                'tabs'             => [
                     'current'    => $this->tab,
                     'navigation' => FamilyTabsEnum::navigation()
                 ],
-                'is_orphan' => false,  // TODO: to show in orphan Family
+                'is_orphan'        => !$family->department_id,
 
                 FamilyTabsEnum::SHOWCASE->value => $this->tab == FamilyTabsEnum::SHOWCASE->value ?
                     fn () => GetProductCategoryShowcase::run($family)
@@ -249,11 +230,11 @@ class ShowFamily extends OrgAction
                     : Inertia::lazy(fn () => CustomersResource::collection(IndexCustomers::run(parent: $family->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))),
 
                 FamilyTabsEnum::HISTORY->value => $this->tab == FamilyTabsEnum::HISTORY->value ?
-                                    fn () => HistoryResource::collection(IndexHistory::run($family))
-                                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($family))),
+                    fn () => HistoryResource::collection(IndexHistory::run($family))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($family))),
 
                 FamilyTabsEnum::IMAGES->value => $this->tab == FamilyTabsEnum::IMAGES->value ?
-                    fn () =>  GetProductCategoryImages::run($family)
+                    fn () => GetProductCategoryImages::run($family)
                     : Inertia::lazy(fn () => GetProductCategoryImages::run($family)),
 
 

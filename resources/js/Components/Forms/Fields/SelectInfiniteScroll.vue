@@ -14,6 +14,8 @@ import { routeType } from "@/types/route"
 import Icon from '@/Components/Icon.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { trans } from 'laravel-vue-i18n'
+import Tag from "@/Components/Tag.vue"
+import { toLower, upperFirst } from "lodash-es"
 library.add(faExclamationCircle, faCheckCircle)
 
 const props = defineProps<{
@@ -40,6 +42,14 @@ onMounted(() => {
         props.form[props.fieldName] = props.options?.[0]?.value
     }
 })
+
+
+
+function unsnakeCase(str?: string | null) {
+  if (!str) return ""   // handle undefined / null safely
+  return upperFirst(toLower(str.replace(/_/g, " ")))
+}
+
 </script>
 
 <template>
@@ -71,9 +81,17 @@ onMounted(() => {
 				<template v-if="props.fieldData.type_label == 'families'" #singlelabel="{ value }">
                        <div class="">{{ value.code }} - {{ value.name }} <Icon :data="value.state"></Icon><span class="text-sm text-gray-400">({{ locale.number(value.number_current_products) }} {{ trans("products") }})</span></div>
                 </template>
+
+				<template v-if="props.fieldData.type_label == 'department-and-sub-department'" #singlelabel="{ value }">
+                       <div class="flex justify-start w-full mx-2">{{ value.code }} - {{ value.name }} <Tag v-if="value.type" class="mx-2" :label="unsnakeCase(value.type)"></Tag> </div>
+                </template>
                 
                 <template v-if="props.fieldData.type_label == 'families'" #option="{ option, isSelected, isPointed }">
                     <div class="">{{ option.code }} - {{ option.name }} <Icon :data="option.state"></Icon><span class="text-sm text-gray-400">({{ locale.number(option.number_current_products) }} {{ trans("products") }})</span></div>
+                </template>
+
+				 <template v-if="props.fieldData.type_label == 'department-and-sub-department'" #option="{ option, isSelected, isPointed }">
+                    <div class="">{{ option.code }} - {{ option.name }} <Tag v-if="option.type" :label="unsnakeCase(option.type)"></Tag></div>
                 </template>
 		</PureMultiselectInfiniteScroll>
 			<div

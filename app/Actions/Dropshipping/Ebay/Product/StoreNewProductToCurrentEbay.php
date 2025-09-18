@@ -9,14 +9,14 @@
 
 namespace App\Actions\Dropshipping\Ebay\Product;
 
-use App\Actions\RetinaAction;
+use App\Actions\OrgAction;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\Portfolio;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class StoreNewProductToCurrentEbay extends RetinaAction
+class StoreNewProductToCurrentEbay extends OrgAction
 {
     use AsAction;
     use WithAttributes;
@@ -29,9 +29,12 @@ class StoreNewProductToCurrentEbay extends RetinaAction
         StoreEbayProduct::run($ebayUser, $portfolio);
     }
 
-    public function asController(EbayUser $ebayUser, Portfolio $portfolio, ActionRequest $request)
+    public function asController(Portfolio $portfolio, ActionRequest $request)
     {
-        $this->initialisation($request);
+        $this->initialisation($portfolio->organisation, $request);
+
+        /** @var EbayUser $ebayUser */
+        $ebayUser = $portfolio->customerSalesChannel->user;
 
         $this->handle($ebayUser, $portfolio);
     }

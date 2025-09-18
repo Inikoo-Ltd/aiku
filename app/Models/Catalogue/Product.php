@@ -153,6 +153,10 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $art3_image_id
  * @property int|null $art4_image_id
  * @property int|null $art5_image_id
+ * @property bool|null $is_name_reviewed
+ * @property bool|null $is_description_title_reviewed
+ * @property bool|null $is_description_reviewed
+ * @property bool|null $is_description_extra_reviewed
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image

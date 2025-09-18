@@ -243,9 +243,10 @@ class EditMasterFamily extends OrgAction
                                             'masterShop' => $masterProductCategory->masterShop->slug,
                                         ]
                                     ],
+                                    'required' => true,
                                     'valueProp' => 'id',
+                                    'type_label' => 'department-and-sub-department',
                                     'labelProp' => 'code',
-                                    'required' => false,
                                     'value'   => $masterProductCategory->masterSubDepartment->id ?? $masterProductCategory->masterDepartment->id  ?? null,
                                 ],
 
@@ -257,7 +258,7 @@ class EditMasterFamily extends OrgAction
                     ],
                     'args'      => [
                         'updateRoute' => [
-                            'name' => 'grp.models.master_product.update',
+                            'name' => 'grp.models.master_product_category.update',
                             'parameters' => [
                                 'masterProductCategory' => $masterProductCategory->id
                             ]

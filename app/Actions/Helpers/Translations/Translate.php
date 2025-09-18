@@ -23,10 +23,10 @@ class Translate extends OrgAction
     /**
      * @throws \Exception
      */
-    public function handle($text, Language $languageFrom, Language $languageTo): string
+    public function handle(?string $text, Language $languageFrom, Language $languageTo): string
     {
-        if ($text == '' || $languageFrom->code == $languageTo->code) {
-            return $text;
+        if ($text == null || $text == '' || $languageFrom->code == $languageTo->code) {
+            return $text ?? '';
         }
 
         $translationEngineService   = new TranslationEngineService();
@@ -75,10 +75,10 @@ class Translate extends OrgAction
     public function asCommand($command): void
     {
         $text         = $command->argument('text');
-        $languageTo   = Language::where('code', $command->argument('languageTo'))->firstOrFail();
         $languageFrom = Language::where('code', $command->argument('languageFrom'))->firstOrFail();
+        $languageTo   = Language::where('code', $command->argument('languageTo'))->firstOrFail();
 
-        $translation = $this->handle($text, $languageTo, $languageFrom);
+        $translation = $this->handle($text, $languageFrom, $languageTo);
         $command->info($text.' -> '.$translation);
     }
 

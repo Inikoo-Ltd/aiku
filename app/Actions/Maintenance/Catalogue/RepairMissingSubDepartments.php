@@ -27,11 +27,10 @@ class RepairMissingSubDepartments
     public function handle(ProductCategory $productCategory, array $modelData): void
     {
 
-       //
+
         print_r([$productCategory->slug,$modelData]);
-      // return;
-//        return;
-        if ($productCategory->type == ProductCategoryTypeEnum::FAMILY and $productCategory->sub_department_id == null) {
+
+        if ($productCategory->type == ProductCategoryTypeEnum::FAMILY && $productCategory->sub_department_id == null) {
 
             try {
                 UpdateProductCategory::run($productCategory, [
@@ -49,7 +48,7 @@ class RepairMissingSubDepartments
                         ]);
                     }
                 }
-            }catch (\Exception $e){
+            } catch (\Exception $e) {
                 print_r($e->getMessage());
             }
         }
@@ -86,19 +85,19 @@ class RepairMissingSubDepartments
 
         $command->info("Reading CSV file: {$filePath}");
 
-     //   try {
-            $datas = $this->readCsvFile($filePath);
-            foreach ($datas as $data) {
-                $productCategory = ProductCategory::find($data['id']);
-                if ($productCategory) {
-                    $this->handle($productCategory, $data);
-                }
+        //   try {
+        $datas = $this->readCsvFile($filePath);
+        foreach ($datas as $data) {
+            $productCategory = ProductCategory::find($data['id']);
+            if ($productCategory) {
+                $this->handle($productCategory, $data);
             }
-//        } catch (\Exception $e) {
-//            $command->error("Error reading CSV file: ".$e->getMessage());
-//
-//            return 1;
-//        }
+        }
+        //        } catch (\Exception $e) {
+        //            $command->error("Error reading CSV file: ".$e->getMessage());
+        //
+        //            return 1;
+        //        }
 
         return 0;
     }

@@ -85,7 +85,6 @@ trait WithProductOrgStocks
         }
 
 
-
         foreach ($tradeUnits as $tradeUnitId => $tradeUnitData) {
             $tradeUnit = TradeUnit::find($tradeUnitId);
             AttachTradeUnitToProduct::run($product, $tradeUnit, [
