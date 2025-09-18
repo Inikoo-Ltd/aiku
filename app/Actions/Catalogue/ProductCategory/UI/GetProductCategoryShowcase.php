@@ -182,6 +182,13 @@ class GetProductCategoryShowcase
             ],
         ];
 
+        $data['reviews'] = [
+            'is_name_reviewed' => $productCategory->is_name_reviewed,
+            'is_description_title_reviewed' => $productCategory->is_description_title_reviewed,
+            'is_description_reviewed' => $productCategory->is_description_reviewed,
+            'is_description_extra_reviewed' => $productCategory->is_description_extra_reviewed
+        ];
+
 
 
         $data['has_webpage'] = (bool)$productCategory->webpage;

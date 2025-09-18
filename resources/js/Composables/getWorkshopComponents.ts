@@ -52,6 +52,7 @@ import EditFooter1Translation from '@/Components/CMS/Website/Footers/footerTheme
 
 import LuigiTrends1Workshop from '@/Components/CMS/Webpage/LuigiTrends1/LuigiTrends1Workshop.vue'
 import LuigiLastSeen1Workshop from '@/Components/CMS/Webpage/LuigiLastSeen1/LuigiLastSeen1Workshop.vue'
+import LuigiItemAlternatives1Workshop from '@/Components/CMS/Webpage/LuigiItemAlternatives1/LuigiItemAlternatives1Workshop.vue'
 
 export const getComponent = (componentName: string) => {
     const components: Component = {
@@ -96,6 +97,7 @@ export const getComponent = (componentName: string) => {
         // Luigi
         'luigi-trends-1' : LuigiTrends1Workshop,
         'luigi-last-seen-1' : LuigiLastSeen1Workshop,
+        'luigi-item-alternatives-1' : LuigiItemAlternatives1Workshop,
 
         'banner': WowsbarBanner,
         "bento-grid-1": BentoGrid,
