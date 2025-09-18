@@ -45,6 +45,10 @@ class SubDepartmentResource extends JsonResource
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'url_master'       => $urlMaster,
+             'is_name_reviewed' => $this->is_name_reviewed,
+            'is_description_title_reviewed' => $this->is_description_title_reviewed,
+            'is_description_reviewed' => $this->is_description_reviewed,
+            'is_description_extra_reviewed' => $this->is_description_extra_reviewed
         ];
     }
 }

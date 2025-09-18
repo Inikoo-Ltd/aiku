@@ -6,13 +6,13 @@ import Message from "primevue/message";
 import { Link, router } from "@inertiajs/vue3";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faAlbumCollection } from "@fal";
-import TranslationBox from '@/Components/TranslationBox.vue';
+import ReviewContent from '@/Components/ReviewContent.vue';
 import ProductCategoryCard from '@/Components/ProductCategoryCard.vue';
 import { trans } from 'laravel-vue-i18n';
 
 library.add(faAlbumCollection);
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     data: {
         translation_box: {
             title: string
@@ -29,7 +29,11 @@ const props = defineProps<{
         }
     }
     actions?: any
-}>()
+    isMaster?: boolean
+}>(), {
+    // Default values
+    isMaster: false,
+});
 
 const navigateTo = () => {
     let routeCurr = route().current();
@@ -113,9 +117,17 @@ const navigateTo = () => {
                 </div>
             </Message>
         </div>
-        <div class="px-5 grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-6 mt-4 mb-4 ">
-            <ProductCategoryCard :data="data.family.data" />
+
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 gap-4 mt-4">
+            <div class="col-span-1 md:col-span-1 lg:col-span-2">
+                <ProductCategoryCard :data="data.family.data"  />
+            </div>
+            <div class="col-span-1 md:col-span-1 lg:col-span-4"></div>
+            <div class="col-span-1 md:col-span-1 lg:col-span-2">
+                <ReviewContent v-if="!isMaster" :data="data.family.data"  />
+            </div>
         </div>
+
         <!--    <TranslationBox :master="data.family.data" :needTranslation="data.family.data" v-bind="data.translation_box" /> -->
     </div>
 </template>
