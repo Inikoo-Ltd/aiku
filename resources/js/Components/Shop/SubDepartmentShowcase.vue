@@ -10,48 +10,57 @@ import { trans } from "laravel-vue-i18n"
 import ProductCategoryCard from "../ProductCategoryCard.vue"
 import { Message } from "primevue"
 import { Head, Link, router } from "@inertiajs/vue3";
+import MasterNavigation from "../Navigation/MasterNavigation.vue"
+import FormCreateMasterFamily from "../Master/FormCreateMasterFamily.vue"
 
 library.add(faUnlink, faThLarge, faBars, faSeedling, faCheck)
 
-const props = defineProps<{
-    data: {
-        translation_box: {
-            title: string
-            save_route: routeType
-        }
-        subDepartment: {
-            slug: string
-            image_id: ImageTS | string | null
-            code: string
-            name: string
-            state: string
-            created_at: string
-            updated_at: string
-            description: string
-            description_title: string
-            description_extra: string
-        }
-
-        routes: {
-            detach_family: routeType,
-            attach_collections_route: routeType,
-            detach_collections_route: routeType
-        }
-        collections: {
-            data: {
-                id: number
+const props = withDefaults(
+    defineProps<{
+        data: {
+            translation_box: {
+                title: string
+                save_route: routeType
+            }
+            subDepartment: {
+                slug: string
+                image_id: ImageTS | string | null
+                code: string
                 name: string
-                description?: string
-                image?: ImageTS[]
-            }[]
+                state: string
+                created_at: string
+                updated_at: string
+                description: string
+                description_title: string
+                description_extra: string
+            }
+
+            routes: {
+                detach_family: routeType,
+                attach_collections_route: routeType,
+                detach_collections_route: routeType
+            }
+            collections: {
+                data: {
+                    id: number
+                    name: string
+                    description?: string
+                    image?: ImageTS[]
+                }[]
+            },
+            routeList: {
+                collectionRoute: string,
+                collections_route: string
+            },
+            has_wepage?: boolean
+            storeFamilyRoute: any
+            shopsData: any
         },
-        routeList: {
-            collectionRoute: string,
-            collections_route: string
-        },
-        has_wepage?: boolean
-    },
-}>()
+        isMaster: boolean
+    }>(), {
+        isMaster: false,
+    }
+)
 
 const isModalOpen = ref(false)
 provide('isModalOpen', isModalOpen)
@@ -82,6 +91,12 @@ const navigateTo = () => {
             break;
     }
     router.visit(targetRoute);
+}
+
+const showDialog = ref<boolean>(false)
+
+const openFamilyModal = () => {
+    showDialog.value = true
 }
 </script>
 
@@ -116,9 +131,7 @@ const navigateTo = () => {
                             }}.</span>
                     </div>
                     {{ trans("Please") }}
-                    <Link
-                       @click="navigateTo()"
-                        class="underline font-bold">
+                    <Link @click="navigateTo()" class="underline font-bold">
                     {{ trans("add missing description fields") }}
                     </Link>.
                 </div>
@@ -129,9 +142,15 @@ const navigateTo = () => {
             <div class="col-span-1 md:col-span-1 lg:col-span-2">
                 <ProductCategoryCard :data="data.subDepartment" />
             </div>
+            <div v-if="isMaster" class="md:col-start-7 md:col-end-9">
+                <MasterNavigation
+                    sub-department-route="grp.masters.master_shops.show.master_departments.show.master_sub_departments.create"
+                    :families-event="openFamilyModal" isAddFamilies />
+            </div>
         </div>
     </div>
-
+    <FormCreateMasterFamily :showDialog="showDialog" :storeProductRoute="data.storeFamilyRoute"
+        @update:show-dialog="(value) => showDialog = value" :shopsData="data.shopsData" />
     <!-- <TranslationBox :master="data.subDepartment" :needTranslation="data.subDepartment"
         v-bind="data.translation_box" /> -->
 </template>
