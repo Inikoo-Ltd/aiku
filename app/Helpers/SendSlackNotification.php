@@ -14,21 +14,20 @@ use App\Actions\Masters\MasterProductCategory\Slack\NewMasterProductCategoryCrea
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Notifications\AnonymousNotifiable;
-use Illuminate\Notifications\Slack\SlackMessage;
 
 class SendSlackNotification extends GrpAction
 {
-    public function handle(MasterAsset|MasterProductCategory $parent)
+    public function handle(MasterAsset|MasterProductCategory $parent): void
     {
         $template = null;
 
-        if($parent instanceof MasterAsset) {
+        if ($parent instanceof MasterAsset) {
             $template = NewMasterAssetCreated::run($parent);
-        } elseif ($parent instanceof MasterProductCategory) {
+        } else {
             $template = NewMasterProductCategoryCreated::run($parent);
         }
 
-        $notifiable = (new AnonymousNotifiable)
+        $notifiable = (new AnonymousNotifiable())
                 ->route('slack', []);
 
         $notifiable->notify(new SlackNotification($template));

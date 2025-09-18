@@ -19,20 +19,20 @@ class NewMasterProductCategoryCreated extends GrpAction
     public function handle(MasterProductCategory $masterProductCategory): SlackMessage
     {
         $type = $masterProductCategory->type->label();
-       return (new SlackMessage)
-            ->sectionBlock(function (SectionBlock $block) use ($masterProductCategory, $type) {
-                $block->text("*New {$type} Created");
-                
-                $block->field("*{$type} Code:*\n{$masterProductCategory->code}")->markdown();
+        return (new SlackMessage())
+             ->sectionBlock(function (SectionBlock $block) use ($masterProductCategory, $type) {
+                 $block->text("*New $type Created");
 
-                $block->field("*{$type} Name:*\n{$masterProductCategory->name}")->markdown();
-                
-                
-            })
-            ->dividerBlock()
-            ->contextBlock(function (ContextBlock $block) use ($masterProductCategory) {
-                $timestamp = $masterProductCategory->created_at ?? now();
-                $block->text("Created on {$timestamp}");
-            });
+                 $block->field("*$type Code:*\n$masterProductCategory->code")->markdown();
+
+                 $block->field("*$type Name:*\n$masterProductCategory->name")->markdown();
+
+
+             })
+             ->dividerBlock()
+             ->contextBlock(function (ContextBlock $block) use ($masterProductCategory) {
+                 $timestamp = $masterProductCategory->created_at ?? now();
+                 $block->text("Created on $timestamp");
+             });
     }
 }
