@@ -26,7 +26,7 @@ const locale = inject('locale', aikuLocaleStructure)
                 :href="product.attributes.web_url?.[0]"
                 class="block rounded aspect-[5/4] w-full overflow-hidden">
                 <img :src="product.attributes.image_link" :alt="product.attributes.title"
-                    class="w-full h-full object-contain bg-yellow-500 text-center text-xxs text-gray-400/70 italic font-normal">
+                    class="w-full h-full object-contain bg-gray-50 text-center text-xxs text-gray-400/70 italic font-normal">
             </component>
 
             <!-- Title -->
