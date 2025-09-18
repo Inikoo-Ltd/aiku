@@ -53,10 +53,10 @@ const emits = defineEmits<{
 const isLoadingVisit = ref(false)
 
 const setError = (e: {}) => {
-    console.error("Error", e)
+    console.log(e)
     notify({
         title: trans("Something went wrong"),
-        text: trans("Please try again or contact support."),
+        text: e.message ? e.message : trans("Please try again or contact support."),
         type: "error",
     })
 }
