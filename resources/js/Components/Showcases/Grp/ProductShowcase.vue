@@ -13,6 +13,7 @@ import { faImage } from "@far"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import ProductSummary from "@/Components/Product/ProductSummary.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import ReviewContent from "@/Components/ReviewContent.vue"
 
 
 library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus, faBarcode, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo)
@@ -174,9 +175,13 @@ const validImages = computed(() =>
 			:video="videoSetup.url" :hide="['price', 'rrp', 'stock']" />
 
 
-		<div class="bg-white h-fit mx-4 rounded-xl px-4 py-2 lg:p-6 lg:py-4 shadow-sm border border-gray-100">
-			<dl class="space-y-2 text-sm">
 
+
+		<div class="bg-white h-fit mx-4  shadow-sm ">
+			<div class="my-4 ">
+				<ReviewContent  :data="data.product.data" />
+			</div>
+			<dl class="space-y-2 text-sm border border-gray-100 px-4 py-2 lg:p-6 lg:py-4 rounded">
 				<!-- Stock -->
 				<div class="flex justify-between items-center flex-wrap gap-2">
 					<dt class="text-gray-500">{{ trans("Stock") }}</dt>
@@ -232,6 +237,7 @@ const validImages = computed(() =>
 					</dd>
 				</div>
 			</dl>
+
 		</div>
 	</div>
 </template>

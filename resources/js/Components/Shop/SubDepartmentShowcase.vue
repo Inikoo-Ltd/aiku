@@ -5,13 +5,13 @@ import { routeType } from '@/types/route'
 import { ref, provide } from 'vue'
 import { Image as ImageTS } from '@/types/Image'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import TranslationBox from '@/Components/TranslationBox.vue';
 import { trans } from "laravel-vue-i18n"
 import ProductCategoryCard from "../ProductCategoryCard.vue"
 import { Message } from "primevue"
-import { Head, Link, router } from "@inertiajs/vue3";
+import { Link, router } from "@inertiajs/vue3";
 import MasterNavigation from "../Navigation/MasterNavigation.vue"
 import FormCreateMasterFamily from "../Master/FormCreateMasterFamily.vue"
+import ReviewContent from "../ReviewContent.vue"
 
 library.add(faUnlink, faThLarge, faBars, faSeedling, faCheck)
 
@@ -137,20 +137,20 @@ const openFamilyModal = () => {
                 </div>
             </Message>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 gap-4 mt-4">
-            <!-- Sidebar -->
+
+         <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 gap-4 mt-4">
             <div class="col-span-1 md:col-span-1 lg:col-span-2">
-                <ProductCategoryCard :data="data.subDepartment" />
+                  <ProductCategoryCard :data="data.subDepartment" />
             </div>
-            <div v-if="isMaster" class="md:col-start-7 md:col-end-9">
-                <MasterNavigation
+            <div  class="md:col-start-7 md:col-end-9">
+                <MasterNavigation v-if="isMaster"
                     sub-department-route="grp.masters.master_shops.show.master_departments.show.master_sub_departments.create"
                     :families-event="openFamilyModal" isAddFamilies />
+                <ReviewContent v-else  :data="data.subDepartment"  />
             </div>
         </div>
+        
     </div>
     <FormCreateMasterFamily :showDialog="showDialog" :storeProductRoute="data.storeFamilyRoute"
         @update:show-dialog="(value) => showDialog = value" :shopsData="data.shopsData" />
-    <!-- <TranslationBox :master="data.subDepartment" :needTranslation="data.subDepartment"
-        v-bind="data.translation_box" /> -->
 </template>

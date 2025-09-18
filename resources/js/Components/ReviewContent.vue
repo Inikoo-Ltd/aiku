@@ -10,20 +10,22 @@ library.add(faAlbumCollection, faImage, faCheck, faTimesCircle);
 
 const props = defineProps<{
   data?: {
-    description?: string | null;
-    description_title?: string | null;
-    description_extra?: string | null;
+    is_description_extra_reviewed?: string | null;
+    is_description_title_reviewed?: string | null;
+    is_description_reviewed?: string | null;
   };
 }>();
 
+
+console.log(props)
 
 const isFilled = (val: unknown) =>
   val !== null && val !== undefined && String(val).trim().length > 0;
 
 const status = computed(() => ({
-  title: isFilled(props.data?.description_title),
-  description: isFilled(props.data?.description),
-  extra: isFilled(props.data?.description_extra),
+  title: isFilled(props.data?.is_description_title_reviewed),
+  description: isFilled(props.data?.is_description_reviewed),
+  extra: isFilled(props.data?.is_description_extra_reviewed),
 }));
 
 const dotClass = (filled: boolean) =>
