@@ -42,54 +42,13 @@ const emits = defineEmits<{
 
 
 const layout = inject('layout', retinaLayoutStructure)
-console.log('lala', layout)
-
-// const listProducts = ref<ProductHits[] | null>()
-// const isLoadingFetch = ref(false)
-// const fetchRecommenders = async () => {
-//     try {
-//         isLoadingFetch.value = true
-//         const response = await axios.post(
-//             `https://live.luigisbox.com/v1/recommend?tracker_id=${layout.iris?.luigisbox_tracker_id}`,
-//             [
-//                 {
-//                     "blacklisted_item_ids":  [],
-//                     "item_ids": [],
-//                     "recommendation_type": "last_seen",
-//                     "recommender_client_identifier": "last_seen",
-//                     "size": 7,
-//                     // "user_id": "1234",
-//                     "recommendation_context":  {},
-//                     "category": undefined,
-//                     "brand": undefined,
-//                     "product_id": undefined,
-//                     // "hit_fields": ["url", "title"]
-//                 }
-//             ],
-//             {
-//                 headers: {
-//                     'Content-Type': 'application/json;charset=utf-8'
-//                 }
-//             }
-//         )
-//         if (response.status !== 200) {
-//             console.error('Error fetching recommenders:', response.statusText)
-//         }
-//         console.log('Response axios:', response.data)
-//         listProducts.value = response.data[0].hits
-//     } catch (error: any) {
-//         console.error('Error on fetching recommendations:', error)
-//     }
-//     isLoadingFetch.value = false
-// }
 
 onMounted(()=> {
-    // fetchRecommenders()
 })
 </script>
 
 <template>
-    <div id="see-also-1-workshop" class="w-full pb-6" :style="{
+    <div id="luigi-last-seen-1-workshop" class="w-full pb-6" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(modelValue.container?.properties, screenType),
         width: 'auto'
