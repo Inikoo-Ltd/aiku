@@ -17,6 +17,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
@@ -95,7 +96,8 @@ class StoreEbayProduct extends RetinaAction
                     $portfolio = UpdatePortfolio::make()->action($portfolio, ['upload_warning' => $errorMessage]);
 
                     UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio);
-                    return true;
+
+                    return $errorMessage;
                 }
                 return false;
             };
@@ -103,12 +105,12 @@ class StoreEbayProduct extends RetinaAction
             $productResult = $ebayUser->storeProduct($inventoryItem);
 
             if ($handleError($productResult)) {
-                return;
+                throw ValidationException::withMessages(['message' => $handleError($productResult)]);
             }
 
             $categories = $ebayUser->getCategorySuggestions($product->family->name);
             if ($handleError($categories)) {
-                return;
+                throw ValidationException::withMessages(['message' => $handleError($categories)]);
             }
 
             $offer = $ebayUser->storeOffer([
@@ -121,12 +123,12 @@ class StoreEbayProduct extends RetinaAction
             ]);
 
             if ($handleError($offer)) {
-                return;
+                throw ValidationException::withMessages(['message' => $handleError($offer)]);
             }
 
             $publishedOffer = $ebayUser->publishListing(Arr::get($offer, 'offerId'));
             if ($handleError($publishedOffer)) {
-                return;
+                throw ValidationException::withMessages(['message' => $handleError($publishedOffer)]);
             }
 
             $portfolio = UpdatePortfolio::run($portfolio, [
@@ -144,6 +146,7 @@ class StoreEbayProduct extends RetinaAction
             ]);
 
             Sentry::captureMessage("Failed to upload product due to: " . $e->getMessage());
+            throw $e;
         }
     }
 }
