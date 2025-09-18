@@ -27,15 +27,8 @@ class SlackTestNotification extends Notification
     public function toSlack(object $notifiable): SlackMessage
     {
         return (new SlackMessage)
-            ->text('Aiku Notification')
-            ->headerBlock('Notification Send')
             ->sectionBlock(function (SectionBlock $block) {
                 $block->text($this->message);
-                $block->field("TEST MESSAGE")->markdown();
-            })
-            ->dividerBlock()
-            ->sectionBlock(function (SectionBlock $block) {
-                $block->text('This Bot Is Under Development!');
             });
     }
 }
