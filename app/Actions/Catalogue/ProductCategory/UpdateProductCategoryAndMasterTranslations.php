@@ -23,29 +23,32 @@ class UpdateProductCategoryAndMasterTranslations extends OrgAction
             foreach ($modelData['translations']['name'] as $locale => $translation) {
                 $name_i8n[$locale] = $translation;
                 $productCategory->name_i8n = $name_i8n;
+                $productCategory->is_name_reviewed = true;
             }
         }
         if (Arr::has($modelData, 'translations.description_title')) {
             foreach ($modelData['translations']['description_title'] as $locale => $translation) {
                 $description_title_i8n[$locale] = $translation;
                 $productCategory->description_title_i8n = $description_title_i8n;
+                $productCategory->is_description_title_reviewed = true;
             }
         }
         if (Arr::has($modelData, 'translations.description')) {
             foreach ($modelData['translations']['description'] as $locale => $translation) {
                 $description_i8n[$locale] = $translation;
                 $productCategory->description_i8n = $description_i8n;
+                $productCategory->is_description_reviewed = true;
             }
         }
         if (Arr::has($modelData, 'translations.description_extra')) {
             foreach ($modelData['translations']['description_extra'] as $locale => $translation) {
                 $description_extra_i8n[$locale] = $translation;
                 $productCategory->description_extra_i8n = $description_extra_i8n;
+                $productCategory->is_description_extra_reviewed = true;
             }
         }
 
         $productCategory->save();
-
         if ($productCategory->masterProductCategory) {
             $this->updateMaster($productCategory->masterProductCategory, $name_i8n, $description_i8n, $description_title_i8n, $description_extra_i8n);
         }
