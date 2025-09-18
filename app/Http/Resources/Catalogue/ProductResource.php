@@ -57,6 +57,10 @@ class ProductResource extends JsonResource
             'image_thumbnail' => $product->imageSources(720, 480),
             'stock'                     => $product->available_quantity,
             'specifications'    => $tradeUnits->count() > 0 ? $specifications : null,
+            'is_name_reviewed' => $product->is_name_reviewed,
+            'is_description_title_reviewed' => $product->is_description_title_reviewed,
+            'is_description_reviewed' => $product->is_description_reviewed,
+            'is_description_extra_reviewed' => $product->is_description_extra_reviewed
         ];
     }
 }

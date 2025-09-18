@@ -43,13 +43,6 @@ class GetProductShowcase
             'hts_us'            => $product->hts_us,
         ];
 
-        $reviews = [
-            'is_name_reviewed' => $product->is_name_reviewed,
-            'is_description_title_reviewed' => $product->is_description_title_reviewed,
-            'is_description_reviewed' => $product->is_description_reviewed,
-            'is_description_extra_reviewed' => $product->is_description_extra_reviewed
-        ];
-
         $gpsr = [
             'manufacturer' => $product->gpsr_manufacturer,
             'eu_responsible' => $product->gpsr_eu_responsible,
@@ -106,7 +99,6 @@ class GetProductShowcase
                 ]
             ],
             'product' => ProductResource::make($product),
-            'reviews' => $reviews,
             'properties' => $properties,
             'gpsr' => $gpsr,
 
