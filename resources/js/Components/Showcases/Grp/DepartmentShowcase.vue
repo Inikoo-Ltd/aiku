@@ -8,6 +8,7 @@ import { trans } from "laravel-vue-i18n";
 import TranslationBox from '@/Components/TranslationBox.vue';
 import ProductCategoryCard from "@/Components/ProductCategoryCard.vue";
 import Message from "primevue/message";
+import ReviewContent from "@/Components/ReviewContent.vue";
 
 library.add(faAlbumCollection);
 
@@ -110,9 +111,10 @@ const navigateTo = () => {
             <div class="col-span-1 md:col-span-1 lg:col-span-2">
                 <ProductCategoryCard :data="data.department" />
             </div>
+            <div class="col-span-1 md:col-span-1 lg:col-span-4"></div>
+            <div class="col-span-1 md:col-span-1 lg:col-span-2"> 
+                <ReviewContent :data="data.department" />
+            </div>
         </div>
     </div>
-
-    <!--  <TranslationBox :master="data.department" :needTranslation="data.department"
-        v-bind="data.translation_box" /> -->
 </template>
