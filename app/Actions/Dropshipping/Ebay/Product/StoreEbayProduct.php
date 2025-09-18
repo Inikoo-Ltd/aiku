@@ -132,6 +132,8 @@ class StoreEbayProduct extends RetinaAction
                 'upload_warning' => null,
             ]);
 
+            CheckEbayPortfolio::run($portfolio);
+
             UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio);
         } catch (\Exception $e) {
             UpdatePortfolio::run($portfolio, [
