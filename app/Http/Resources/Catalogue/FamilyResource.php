@@ -51,7 +51,7 @@ class FamilyResource extends JsonResource
             'type'            => $family->type,
             'follow_master'   => $family->follow_master,
             'url_master'       => $urlMaster,
-             'is_name_reviewed' => $family->is_name_reviewed,
+            'is_name_reviewed' => $family->is_name_reviewed,
             'is_description_title_reviewed' => $family->is_description_title_reviewed,
             'is_description_reviewed' => $family->is_description_reviewed,
             'is_description_extra_reviewed' => $family->is_description_extra_reviewed,

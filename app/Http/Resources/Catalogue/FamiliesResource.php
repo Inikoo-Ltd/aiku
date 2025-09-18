@@ -74,7 +74,11 @@ class FamiliesResource extends JsonResource
             'invoices_all'                 => $this->invoices_all,
             'organisation_name' => $this->organisation_name,
             'organisation_slug' => $this->organisation_slug,
-            'master_product_category_id'     => $this->master_product_category_id
+            'master_product_category_id'     => $this->master_product_category_id,
+            'is_name_reviewed' => $this->is_name_reviewed,
+            'is_description_title_reviewed' => $this->is_description_title_reviewed,
+            'is_description_reviewed' => $this->is_description_reviewed,
+            'is_description_extra_reviewed' => $this->is_description_extra_reviewed,
         ];
     }
 }
