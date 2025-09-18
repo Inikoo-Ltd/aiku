@@ -21,12 +21,43 @@ class RepairWrongMasterProductStock
 
     public function handle(MasterAsset $masterAsset, Command $command): void
     {
+
+        if($masterAsset->stocks()->count()>1
+        ){
+            dd($masterAsset->orgStocks);
+        }
+
+        $stock= $masterAsset->stocks->first();
+
+        if(!$stock){
+            return;
+        }
+
+        $base=$stock->tradeUnits->pluck('pivot.quantity')[0];
+
+
         $productData = [
             'product_code' => $masterAsset->code,
             'product_units' => $masterAsset->units,
-            'org_stocks' => $masterAsset->stocks->pluck('pivot.quantity')->toArray(),
+            'stocks' => $masterAsset->stocks->pluck('pivot.quantity')->toArray(),
             'trade_units' => $masterAsset->tradeUnits->pluck('pivot.quantity')->toArray(),
+            'base'=>$base
+
         ];
+
+
+
+        $tradeUnit=$masterAsset->tradeUnits->first();
+        $masterAsset->tradeUnits()->updateExistingPivot(
+            $tradeUnit->id,
+            ['quantity' => 1]
+        );
+
+        $stock=$masterAsset->stocks->first();
+        $masterAsset->stocks()->updateExistingPivot(
+            $stock->id,
+            ['quantity' => 1/$base]
+        );
 
         $command->info('Master Product Data:');
         $command->info(json_encode($productData, JSON_PRETTY_PRINT));
