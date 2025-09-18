@@ -149,7 +149,7 @@ const getTarget = (item) => {
 
             <div v-if="isMobile" class="menu-container-mobile">
                 <div class="menu-content">
-                    <div v-for="(item, index) in sortedNavigation" :key="index">
+                    <div v-for="(item, index) in props.menu.navigation" :key="index">
                         <!-- MULTIPLE TYPE WITH DROPDOWN -->
                         <Disclosure v-if="item.type === 'multiple'" v-slot="{ open }">
                             <DisclosureButton class="w-full text-left p-4 font-semibold text-gray-600 border-b">
