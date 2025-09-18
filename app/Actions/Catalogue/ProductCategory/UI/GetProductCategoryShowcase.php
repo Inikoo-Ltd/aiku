@@ -8,7 +8,6 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
-use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\Catalogue\DepartmentResource;
 use App\Http\Resources\Catalogue\FamilyResource;

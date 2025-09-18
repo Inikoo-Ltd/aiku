@@ -9,7 +9,6 @@
 namespace App\Actions\Masters\MasterAsset;
 
 use App\Actions\Catalogue\Product\StoreProductFromMasterProduct;
-use App\Actions\Masters\MasterAsset\Slack\NewMasterAssetCreated;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterAssets;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateMasterAssets;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
@@ -119,7 +118,7 @@ class StoreMasterAsset extends OrgAction
 
             foreach ($tradeUnit->stocks as $stock) {
                 $stocks[$stock->id] = [
-                    'quantity' =>  Arr::get($item, 'quantity')/$stock->pivot->quantity ,
+                    'quantity' =>  Arr::get($item, 'quantity') / $stock->pivot->quantity ,
                 ];
             }
         }

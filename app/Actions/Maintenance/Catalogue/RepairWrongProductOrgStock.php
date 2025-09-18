@@ -24,13 +24,13 @@ class RepairWrongProductOrgStock
 
 
 
-        if($product->orgStocks()->count()>1
-        ){
+        if ($product->orgStocks()->count() > 1
+        ) {
             dd($product->orgStocks);
         }
 
-        $orgStock= $product->orgStocks->first();
-        $base=$orgStock->tradeUnits->pluck('pivot.quantity')[0];
+        $orgStock = $product->orgStocks->first();
+        $base = $orgStock->tradeUnits->pluck('pivot.quantity')[0];
 
 
 
@@ -43,20 +43,20 @@ class RepairWrongProductOrgStock
             'trade_units' => $product->tradeUnits->pluck('pivot.quantity')->toArray(), // 1 always
             'trade_units_in_org_stock' => $orgStock->tradeUnits->pluck('pivot.quantity')->toArray(),
 
-            'base'=>$base
+            'base' => $base
 
         ];
 
-        $tradeUnit=$product->tradeUnits->first();
+        $tradeUnit = $product->tradeUnits->first();
         $product->tradeUnits()->updateExistingPivot(
             $tradeUnit->id,
             ['quantity' => 1]
         );
         $product->refresh();
-        $orgStock=$product->orgStocks->first();
+        $orgStock = $product->orgStocks->first();
         $product->orgStocks()->updateExistingPivot(
             $orgStock->id,
-            ['quantity' => 1/$base]
+            ['quantity' => 1 / $base]
         );
         $product->refresh();
         HydrateProducts::run($product);
@@ -70,7 +70,7 @@ class RepairWrongProductOrgStock
 
     public function asCommand(Command $command): void
     {
-        $query = Product::whereHas('masterProduct', function($query) {
+        $query = Product::whereHas('masterProduct', function ($query) {
             $query->where('master_shop_id', 2);
         })
         ->whereNull('source_id')
@@ -87,7 +87,7 @@ class RepairWrongProductOrgStock
                 $processed++;
             }
         });
-        
+
         $command->info("Processed {$processed} products successfully.");
     }
 }
