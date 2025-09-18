@@ -142,7 +142,7 @@ const showDialog = ref(false);
         </Breadcrumb>
     </div>
 
-    <component :is="component" :data="props[currentTab]" :tab="currentTab" />
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" is-master />
 
     <FormCreateMasterProduct 
         :showDialog="showDialog" 

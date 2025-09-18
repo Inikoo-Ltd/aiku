@@ -90,15 +90,6 @@ const component = computed(() => {
 });
 
 
-function masterDepartmentRoute(department: Department) {
-    if(!department.master_product_category_id){
-        return '';
-    }
-
-    return route(
-        "grp.helpers.redirect_master_product_category",
-        [department.master_product_category_id]);
-}
 
 
 </script>

@@ -128,7 +128,7 @@ const showDialog = ref(false)
             </template>
         </Breadcrumb>
     </div>
-    <component :is="component" :data="props[currentTab]" :tab="currentTab"></component>
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" is-master></component>
     <FormCreateMasterFamily :showDialog="showDialog" :storeProductRoute="storeRoute"
         @update:show-dialog="(value) => showDialog = value" :shopsData="shopsData" />
 </template>
