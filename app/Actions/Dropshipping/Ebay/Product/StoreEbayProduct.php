@@ -117,6 +117,7 @@ class StoreEbayProduct extends RetinaAction
                 'currency' => $portfolio->shop->currency->code,
                 'category_id' => Arr::get($categories, 'categorySuggestions.0.category.categoryId')
             ]);
+
             if ($handleError($offer)) {
                 return;
             }
