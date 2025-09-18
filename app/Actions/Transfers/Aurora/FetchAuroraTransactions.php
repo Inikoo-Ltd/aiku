@@ -48,7 +48,8 @@ class FetchAuroraTransactions
             $transactionData['transaction']['in_warehouse_at'] = $order->in_warehouse_at;
         }
 
-        if ($transaction = Transaction::where('source_id', $transactionData['transaction']['source_id'])->first()) {
+        if ($transaction = Transaction::withTrashed()->where('source_id', $transactionData['transaction']['source_id'])->first()) {
+            $transactionData['transaction']['deleted_at']= null;
             $transaction = UpdateTransaction::make()->action(
                 transaction: $transaction,
                 modelData: $transactionData['transaction'],

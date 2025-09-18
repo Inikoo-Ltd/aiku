@@ -13,7 +13,6 @@ import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
 import { Autoplay, Navigation, Pagination } from 'swiper/modules'
-import RecommendationSlideIris from "@/Components/Iris/Recommendations/RecommendationSlideIris.vue"
 
 // Font Awesome
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -23,6 +22,7 @@ import { trans } from "laravel-vue-i18n"
 import { faCircle } from "@fas"
 import { Link } from "@inertiajs/vue3"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import RecommendationSlideIris from "@/Components/Iris/Recommendations/RecommendationSlideIris.vue"
 import { ProductHit } from "@/types/Luigi/LuigiTypes"
 // import ProductRenderEcom from "../Products1/ProductRenderEcom.vue"
 library.add(faChevronLeft, faChevronRight)
@@ -35,13 +35,15 @@ const props = defineProps<{
 }>()
 
 
+
+
 const slidesPerView = computed(() => {
     const perRow = props.fieldValue?.settings?.per_row ?? {}
     return {
         desktop: perRow.desktop ?? 5,
         tablet: perRow.tablet ?? 4,
         mobile: perRow.mobile ?? 2,
-    }[props.screenType] ?? 1
+    }[props.screenType] ?? 5
 })
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -65,8 +67,8 @@ const fetchRecommenders = async () => {
                 {
                     "blacklisted_item_ids": [],
                     "item_ids": [],
-                    "recommendation_type": "last_seen",
-                    "recommender_client_identifier": "last_seen",
+                    "recommendation_type": "item_detail_alternatives",
+                    "recommender_client_identifier": "item_detail_alternatives",
                     "size": 7,
                     "user_id": layout.iris?.user_auth?.customer_id?.toString() ?? Cookies.get('_lb') ?? null,  // Customer ID or Cookie _lb
                     "recommendation_context": {},
@@ -82,7 +84,7 @@ const fetchRecommenders = async () => {
         if (response.status !== 200) {
             console.error('Error fetching recommenders:', response.statusText)
         }
-        console.log('LLS1:', response.data)
+        console.log('LIA1:', response.data)
         listProducts.value = response.data[0].hits
     } catch (error: any) {
         console.error('Error on fetching recommendations:', error)
@@ -122,12 +124,13 @@ onMounted(() => {
                     spaceBetween="12"
                     autoHeight
                 >
-                    <div v-if="isLoadingFetch" class="grid grid-cols-4 gap-x-4">
-                        <div v-for="xx in 4" class="skeleton w-full h-64 rounded">
+                    <div v-if="isLoadingFetch" class="grid grid-cols-5 gap-x-4">
+                        <div v-for="xx in 5" class="skeleton w-full h-64 rounded">
                         </div>
                     </div>
 
                     <template v-else>
+
                         <SwiperSlide
                             v-for="(product, index) in listProducts"
                             :key="index"
