@@ -44,7 +44,7 @@ const props = withDefaults(defineProps<{
                 image: Array<string>;
             }>;
         };
-        storeRoute: any
+        storeFamilyRoute: any
         shopsData: any
     };
     isMaster?: boolean
@@ -52,8 +52,6 @@ const props = withDefaults(defineProps<{
     // Default values
     isMaster: false,
 });
-
-console.log(props);
 
 const navigateTo = () => {
     let routeCurr = route().current();
@@ -133,7 +131,7 @@ const openFamilyModal = () => {
             </div>
         </div>
     </div>
-    <FormCreateMasterFamily :showDialog="showDialog" :storeProductRoute="data.storeRoute"
+    <FormCreateMasterFamily :showDialog="showDialog" :storeProductRoute="data.storeFamilyRoute"
         @update:show-dialog="(value) => showDialog = value" :shopsData="data.shopsData" />
     <!--  <TranslationBox :master="data.department" :needTranslation="data.department"
         v-bind="data.translation_box" /> -->
