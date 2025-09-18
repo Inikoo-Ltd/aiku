@@ -50,7 +50,7 @@ class GetMasterProductCategoryShowcase
             ],
             MasterProductCategoryTypeEnum::SUB_DEPARTMENT => [
                 'shopsData' => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($productCategory->masterShop, 'shops')),
-                'storeRoute' => [
+                'storeFamilyRoute' => [
                     'name' => 'grp.models.master-sub-department.master_family.store',
                     'parameters' => [
                         'masterSubDepartment' => $productCategory->id
