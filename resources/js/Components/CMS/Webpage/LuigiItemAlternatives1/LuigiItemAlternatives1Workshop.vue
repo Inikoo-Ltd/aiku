@@ -22,21 +22,10 @@ import axios from "axios"
 import { Link } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import { ProductHit } from "@/types/Luigi/LuigiTypes"
 library.add(faChevronLeft, faChevronRight)
 
-interface ProductHits {
-    attributes: {
-        image_link: string
-        price: string
-        formatted_price: string
-        department: string[]
-        category: string[]
-        product_code: string[]
-        stock_qty: string[]
-        title: string
-        web_url: string[]
-    }
-}
+
 const props = defineProps<{
     modelValue: any
     webpageData?: any
@@ -66,7 +55,7 @@ const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', retinaLayoutStructure)
 console.log('lala', layout)
 
-const listProducts = ref<ProductHits[] | null>()
+const listProducts = ref<ProductHit[] | null>()
 const isLoadingFetch = ref(false)
 const fetchRecommenders = async () => {
     try {
@@ -183,7 +172,7 @@ onMounted(()=> {
                         </div>
 
                         <!-- Add to Basket Button -->
-                        <div v-if="image.attributes.product_id?.[0]">
+                        <div v-if="layout.retina.type === 'b2b' && image.attributes.product_id?.[0]">
                             <Button
                                 disabled
                                 :label="trans('Add to Basket')"
