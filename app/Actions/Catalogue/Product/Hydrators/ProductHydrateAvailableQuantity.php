@@ -29,6 +29,7 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
 
     public function handle(Product $product): void
     {
+
         if ($product->state == ProductStateEnum::DISCONTINUED) {
             UpdateProduct::run($product, [
                 'available_quantity' => null,
@@ -52,11 +53,10 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
 
             $availableQuantityFromThisOrgStock = floor($quantityInStock / $productToOrgStockRatio);
 
-
             if ($numberOrgStocksChecked == 0) {
                 $availableQuantity = $availableQuantityFromThisOrgStock;
             } else {
-                $availableQuantity = min($availableQuantityFromThisOrgStock, $numberOrgStocksChecked);
+                $availableQuantity = min($availableQuantityFromThisOrgStock, $availableQuantity);
             }
 
             $numberOrgStocksChecked++;
@@ -82,13 +82,21 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
             $dataToUpdate['status'] = $status;
         }
 
+
         UpdateProduct::run($product, $dataToUpdate);
     }
 
-    public string $commandSignature = 'product:hydrate-available-quantity';
+    public string $commandSignature = 'product:hydrate-available-quantity {id?}';
 
     public function asCommand(Command $command): void
     {
+
+        if($command->argument('id')){
+            $product = Product::findOrFail($command->argument('id'));
+            $this->handle($product);
+            return;
+        }
+
         $chunkSize = 100; // Process 100 products at a time to save memory
         $count     = 0;
 
