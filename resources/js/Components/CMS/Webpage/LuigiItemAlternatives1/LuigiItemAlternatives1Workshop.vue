@@ -19,24 +19,12 @@ import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons
 import { library } from '@fortawesome/fontawesome-svg-core'
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import axios from "axios"
-import { Link } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
-import Button from "@/Components/Elements/Buttons/Button.vue"
+import { ProductHit } from "@/types/Luigi/LuigiTypes"
+import RecommendationSlideWorkshop from "@/Components/Iris/Recommendations/RecommendationSlideWorkshop.vue"
 library.add(faChevronLeft, faChevronRight)
 
-interface ProductHits {
-    attributes: {
-        image_link: string
-        price: string
-        formatted_price: string
-        department: string[]
-        category: string[]
-        product_code: string[]
-        stock_qty: string[]
-        title: string
-        web_url: string[]
-    }
-}
+
 const props = defineProps<{
     modelValue: any
     webpageData?: any
@@ -66,7 +54,7 @@ const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', retinaLayoutStructure)
 console.log('lala', layout)
 
-const listProducts = ref<ProductHits[] | null>()
+const listProducts = ref<ProductHit[] | null>()
 const isLoadingFetch = ref(false)
 const fetchRecommenders = async () => {
     try {
@@ -108,7 +96,7 @@ onMounted(()=> {
 </script>
 
 <template>
-    <div id="see-also-1-workshop" class="w-full pb-6" :style="{
+    <div id="luigi-item-alternatives-1-workshop" class="w-full pb-6" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(modelValue.container?.properties, screenType),
         width: 'auto'
@@ -141,55 +129,14 @@ onMounted(()=> {
                 </div>
                 
                 <template v-else-if="listProducts?.length">
-                    <SwiperSlide v-for="(image, index) in listProducts" :key="index" class="w-full cursor-grab relative hover:bg-gray-500/10 px-4 py-3 rounded !flex flex-col justify-between h-full min-h-full">
-                        <div>
-                            <!-- Product Image -->
-                            <component :is="image.attributes.web_url?.[0] ? Link : 'div'" :href="image.attributes.web_url?.[0]" class="block rounded aspect-[5/4] w-full overflow-hidden">
-                                <img
-                                    :src="image.attributes.image_link"
-                                    :alt="image.attributes.title"
-                                    class="w-full h-full object-contain bg-gray-50"
-                                >
-                            </component>
-        
-                            <!-- Title -->
-                            <Link v-if="image.attributes.web_url?.[0]" :href="image.attributes.web_url?.[0]"
-                                class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
-                                {{ image.attributes.title }}
-                            </Link>
-                            <div v-else class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
-                                {{ image.attributes.title }}
-                            </div>
-                            <!-- SKU and RRP -->
-                            <div class="flex justify-between text-xs text-gray-500 mb-1 capitalize">
-                                <span>{{ image.attributes.product_code?.[0] }}</span>
-                            </div>
-                            <!-- Rating and Stock -->
-                            <div class="flex justify-between items-center text-xs mb-2">
-                                <div v-if="layout?.iris?.is_logged_in" v-tooltip="trans('Stock')" class="flex items-center gap-1"
-                                    :class="Number(image.attributes?.stock_qty?.[0]) > 0 ? 'text-green-600' : 'text-red-600'">
-                                    <FontAwesomeIcon :icon="faCircle" class="text-[8px]" />
-                                    <span>{{ Number(image.attributes?.stock_qty?.[0]) > 0 ? Number(image.attributes?.stock_qty?.[0]) : 0 }} {{trans('available')}}</span>
-                                </div>
-                            </div>
-
-                            <!-- Prices -->
-                            <div xv-if="layout?.iris?.is_logged_in" class="mb-3">
-                                <div class="flex justify-between text-sm ">
-                                    <span>{{ trans('Price') }}: <span class="font-semibold">{{ image.attributes.formatted_price }}</span></span>
-                                    <!-- <span><span v-tooltip="trans('Recommended retail price')" >{{trans('RRP')}}</span>:  <span class="font-semibold">{{ locale.currencyFormat(layout.iris.currency.code,product.rrp) }}</span></span> -->
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Add to Basket Button -->
-                        <div v-if="image.attributes.product_id?.[0]">
-                            <Button
-                                disabled
-                                :label="trans('Add to Basket')"
-                                class="w-full justify-center"
-                            />
-                        </div>
+                    <SwiperSlide
+                        v-for="(product, index) in listProducts"
+                        :key="index"
+                        class="w-full cursor-grab relative hover:bg-gray-500/10 px-4 py-3 rounded !grid h-full min-h-full"
+                    >
+                        <RecommendationSlideWorkshop
+                            :product
+                        />
                     </SwiperSlide>
                 </template>
 
