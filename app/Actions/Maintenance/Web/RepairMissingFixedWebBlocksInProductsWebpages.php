@@ -98,6 +98,13 @@ class RepairMissingFixedWebBlocksInProductsWebpages
             $this->createWebBlock($webpage, 'luigi-last-seen-1');
         }
 
+        $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'luigi-item-alternatives-1');
+        if (count($countFamilyWebBlock) == 0) {
+            $this->createWebBlock($webpage, 'luigi-item-alternatives-1');
+        }
+
+
+
 
         $webpage->refresh();
         UpdateWebpageContent::run($webpage);
