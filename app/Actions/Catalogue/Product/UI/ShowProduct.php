@@ -193,64 +193,91 @@ class ShowProduct extends OrgAction
     {
         $hasMaster = $product->master_product_id;
 
+        $miniBreadcrumbs = [];
+        if ($product->department) {
+            $miniBreadcrumbs[] = [
+                'label'   => $product->department->name,
+                'to'      => [
+                    'name'       => 'grp.org.shops.show.catalogue.departments.show',
+                    'parameters' => [
+                        'organisation' => $product->organisation->slug,
+                        'shop'         => $product->shop->slug,
+                        'department'   => $product->department->slug,
+                    ]
+                ],
+                'tooltip'   => __('Department').': '.$product->department->name,
+                'icon'    => ['fal', 'folder-tree']
+            ];
+        }
+
+        if ($product->subDepartment) {
+            $miniBreadcrumbs[] = [
+                'label'   => $product->subDepartment->name,
+                'to'      => [
+                    'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
+                    'parameters' => [
+                        'organisation'  => $product->organisation->slug,
+                        'shop'          => $product->shop->slug,
+                        'department'    => $product->department->slug,
+                        'subDepartment' => $product->subDepartment->slug,
+                    ]
+                ],
+                'tooltip' => __('Sub-department').': '.$product->subDepartment->name,
+                'icon'    => ['fal', 'folders']
+            ];
+        }
+
+        if ($product->family) {
+            if ($product->subDepartment) {
+                $route = [
+                    'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show',
+                    'parameters' => [
+                        'organisation'  => $product->organisation->slug,
+                        'shop'          => $product->shop->slug,
+                        'department'    => $product->department->slug,
+                        'subDepartment' => $product->subDepartment->slug,
+                        'family'        => $product->family->slug,
+                    ]
+                ];
+            } else {
+                $route = [
+                    'name'       => 'grp.org.shops.show.catalogue.departments.show.family.show',
+                    'parameters' => [
+                        'organisation' => $product->organisation->slug,
+                        'shop'         => $product->shop->slug,
+                        'department'   => $product->department->slug,
+                        'family'       => $product->family->slug,
+                    ]
+                ];
+            }
+
+            $miniBreadcrumbs[] = [
+                'label'   => $product->family->name,
+                'to'      => $route,
+                'tooltip' => __('Family').': '.$product->family->name,
+                'icon'    => ['fal', 'folder']
+            ];
+        }
+
+
+
+
         return Inertia::render(
             'Org/Catalogue/Product',
             [
-                'title'       => __('product'),
-                'breadcrumbs' => $this->getBreadcrumbs(
+                'title'            => __('product'),
+                'breadcrumbs'      => $this->getBreadcrumbs(
                     $this->parent,
                     $product,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'  => [
+                'navigation'       => [
                     'previous' => $this->getPrevious($product, $request),
                     'next'     => $this->getNext($product, $request),
                 ],
-                'mini_breadcrumbs' => [
-                    [
-                        'label' => 'departement',
-                        'to'    => [
-                            'name'       => 'grp.org.shops.show.web.webpages.show',
-                            'parameters' => [
-                                'organisation' => $this->organisation->slug,
-                                'shop'         => $this->shop->slug,
-                                'website'      => $this->shop->website->slug,
-                                'webpage'      => $product->webpage->slug
-                            ]
-                        ],
-                        'tooltip' => 'Departement',
-                        'icon' => ['fal', 'folder-tree']
-                    ],
-                    [
-                        'label' => 'sub-departement',
-                        'to'    => [
-                            'name'       => 'grp.org.shops.show.web.webpages.show',
-                            'parameters' => [
-                                'organisation' => $this->organisation->slug,
-                                'shop'         => $this->shop->slug,
-                                'website'      => $this->shop->website->slug,
-                                'webpage'      => $product->webpage->slug
-                            ]
-                        ],
-                        'tooltip' => 'Sub-Departement',
-                        'icon' => ['fal', 'folder-tree']
-                    ],
-                    [
-                        'label' => 'family',
-                        'to'    => [
-                            'name'       => 'grp.org.shops.show.web.webpages.show',
-                            'parameters' => [
-                                'organisation' => $this->organisation->slug,
-                                'shop'         => $this->shop->slug,
-                                'website'      => $this->shop->website->slug,
-                                'webpage'      => $product->webpage->slug
-                            ]
-                        ],
-                        'tooltip' => 'family',
-                        'icon' => ['fal', 'folder-tree']
-                    ]
-                ],
+                'mini_breadcrumbs' => $miniBreadcrumbs,
+
                 'pageHead'    => [
                     'title'      => $product->code,
                     'model'      => $this->parent->code,
@@ -322,33 +349,33 @@ class ShowProduct extends OrgAction
 
 
                 ProductTabsEnum::SHOWCASE->value => $this->tab == ProductTabsEnum::SHOWCASE->value ?
-                    fn () => GetProductShowcase::run($product)
-                    : Inertia::lazy(fn () => GetProductShowcase::run($product)),
+                    fn() => GetProductShowcase::run($product)
+                    : Inertia::lazy(fn() => GetProductShowcase::run($product)),
 
 
                 ProductTabsEnum::FAVOURITES->value => $this->tab == ProductTabsEnum::FAVOURITES->value ?
-                    fn () => ProductFavouritesResource::collection(IndexProductFavourites::run($product))
-                    : Inertia::lazy(fn () => ProductFavouritesResource::collection(IndexProductFavourites::run($product))),
+                    fn() => ProductFavouritesResource::collection(IndexProductFavourites::run($product))
+                    : Inertia::lazy(fn() => ProductFavouritesResource::collection(IndexProductFavourites::run($product))),
 
                 ProductTabsEnum::REMINDERS->value => $this->tab == ProductTabsEnum::REMINDERS->value ?
-                    fn () => ProductBackInStockRemindersResource::collection(IndexProductBackInStockReminders::run($product))
-                    : Inertia::lazy(fn () => ProductBackInStockRemindersResource::collection(IndexProductBackInStockReminders::run($product))),
+                    fn() => ProductBackInStockRemindersResource::collection(IndexProductBackInStockReminders::run($product))
+                    : Inertia::lazy(fn() => ProductBackInStockRemindersResource::collection(IndexProductBackInStockReminders::run($product))),
 
                 ProductTabsEnum::TRADE_UNITS->value => $this->tab == ProductTabsEnum::TRADE_UNITS->value ?
-                    fn () => TradeUnitsResource::collection(IndexTradeUnitsInProduct::run($product))
-                    : Inertia::lazy(fn () => TradeUnitsResource::collection(IndexTradeUnitsInProduct::run($product))),
+                    fn() => TradeUnitsResource::collection(IndexTradeUnitsInProduct::run($product))
+                    : Inertia::lazy(fn() => TradeUnitsResource::collection(IndexTradeUnitsInProduct::run($product))),
 
                 ProductTabsEnum::STOCKS->value => $this->tab == ProductTabsEnum::STOCKS->value ?
-                    fn () => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))
-                    : Inertia::lazy(fn () => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))),
+                    fn() => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))
+                    : Inertia::lazy(fn() => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))),
 
                 ProductTabsEnum::IMAGES->value => $this->tab == ProductTabsEnum::IMAGES->value ?
-                    fn () => GetProductImagesShowcase::run($product)
-                    : Inertia::lazy(fn () => GetProductImagesShowcase::run($product)),
+                    fn() => GetProductImagesShowcase::run($product)
+                    : Inertia::lazy(fn() => GetProductImagesShowcase::run($product)),
 
                 ProductTabsEnum::HISTORY->value => $this->tab == ProductTabsEnum::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($product))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($product))),
+                    fn() => HistoryResource::collection(IndexHistory::run($product))
+                    : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run($product))),
 
 
             ]
