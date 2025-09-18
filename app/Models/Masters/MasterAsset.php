@@ -153,20 +153,20 @@ class MasterAsset extends Model implements Auditable, HasMedia
     protected $guarded = [];
 
     protected $casts = [
-        'type'               => MasterAssetTypeEnum::class,
-        'marketing_dimensions'   => 'array',
-        'variant_ratio'      => 'decimal:3',
-        'price'              => 'decimal:2',
-        'rrp'                => 'decimal:2',
-        'data'               => 'array',
-        'status'             => 'boolean',
-        'variant_is_visible' => 'boolean',
-        'fetched_at'         => 'datetime',
-        'last_fetched_at'    => 'datetime',
+        'type'                 => MasterAssetTypeEnum::class,
+        'marketing_dimensions' => 'array',
+        'variant_ratio'        => 'decimal:3',
+        'price'                => 'decimal:2',
+        'rrp'                  => 'decimal:2',
+        'data'                 => 'array',
+        'status'               => 'boolean',
+        'variant_is_visible'   => 'boolean',
+        'fetched_at'           => 'datetime',
+        'last_fetched_at'      => 'datetime',
     ];
 
     protected $attributes = [
-        'data'     => '{}',
+        'data' => '{}',
     ];
 
     public function generateTags(): array
@@ -197,7 +197,12 @@ class MasterAsset extends Model implements Auditable, HasMedia
     {
         return SlugOptions::create()
             ->generateSlugsFrom(function () {
-                return $this->code.'-'.$this->group->code;
+                $suffix = $this->masterShop?->code;
+                if (!$suffix) {
+                    $suffix = $this->group->code;
+                }
+
+                return $this->code.'-'.$suffix;
             })
             ->saveSlugsTo('slug')
             ->doNotGenerateSlugsOnUpdate()

@@ -149,14 +149,27 @@ const debReloadPage = debounce(() => {
 
 onMounted(() => {
     errorBluk.value = []
+
+    const activeListeners = new Map<string | number, { event: string; action: string }>()
+    let isCompleted = false // flag untuk menandai progress sudah selesai
+
     props.data?.data?.forEach((porto) => {
         const socketConfig = selectSocketiBasedPlatform(porto)
-        console.log('sss',socketConfig)
         if (!socketConfig) return
 
+        // === replace listener jika sudah ada untuk ID yang sama ===
+        if (activeListeners.has(porto.id)) {
+            const oldConfig = activeListeners.get(porto.id)
+            if (oldConfig) {
+                window.Echo.private(oldConfig.event).stopListening(oldConfig.action)
+            }
+        }
+
+        activeListeners.set(porto.id, socketConfig)
+
         window.Echo.private(socketConfig.event).listen(socketConfig.action, (eventData) => {
-            console.log('dddd',eventData,props.platform_data.type)
             const progress = props.progressToUploadToEcom?.data
+            if (!progress) return
 
             // === Error handler (all platforms) ===
             if (eventData.errors_response) {
@@ -167,11 +180,19 @@ onMounted(() => {
                 return
             }
 
-            // === Unified handling for ALL platforms ===
             const pf = eventData.portfolio
 
-            console.log('Event data from platform:', props.platform_data.type, pf)
+            // ✅ kalau sudah complete, hanya simpan error tapi jangan update success/fail count lagi
+            if (isCompleted) {
+                if (!pf.has_valid_platform_product_id || !pf.platform_status || !pf.exist_in_platform) {
+                    if (!errorBluk.value.includes(pf.item_code)) {
+                        errorBluk.value.push(pf.item_code)
+                    }
+                }
+                return
+            }
 
+            // === Unified handling for ALL platforms ===
             const isSuccess =
                 pf.has_valid_platform_product_id &&
                 pf.platform_status &&
@@ -180,19 +201,22 @@ onMounted(() => {
             if (isSuccess) {
                 progress.number_success += 1
             } else {
-                console.log('err',pf)
                 progress.number_fails += 1
-                errorBluk.value.push(pf.item_code)
+                if (!errorBluk.value.includes(pf.item_code)) {
+                    errorBluk.value.push(pf.item_code)
+                }
             }
 
             const totalFinished = progress.number_success + progress.number_fails
-            console.log('halo',totalFinished,selectedProducts.value, props.count_product_not_synced)
+
+            // 🚀 tandai selesai hanya sekali
             if (
-                totalFinished === selectedProducts.value.length ||
-                totalFinished === props.count_product_not_synced
+                totalFinished === props.count_product_not_synced ||
+                totalFinished === selectedProducts.value.length
             ) {
+                isCompleted = true
                 props.progressToUploadToEcom.done = true
-                // Reset progress after 5s
+
                 setTimeout(() => {
                     progress.number_success = 0
                     progress.number_fails = 0
@@ -205,6 +229,8 @@ onMounted(() => {
         })
     })
 })
+
+
 
 
 // Table: Filter out-of-stock and discontinued
