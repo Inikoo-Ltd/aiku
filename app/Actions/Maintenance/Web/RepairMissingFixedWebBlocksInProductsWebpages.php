@@ -126,16 +126,21 @@ class RepairMissingFixedWebBlocksInProductsWebpages
         }
     }
 
-    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_products_webpages {--website_id=}';
+    public string $commandSignature = 'repair:missing_fixed_web_blocks_in_products_webpages {--website_id=} {--webpage_id=}';
 
     public function asCommand(Command $command): void
     {
         $websiteId = $command->option('website_id');
+        $singleWebpageId = $command->option('webpage_id');
 
         $query = DB::table('webpages')
             ->select('id')
             ->where('model_type', 'Product')
             ->orderBy('id');
+
+        if ($singleWebpageId) {
+            $query->where('id', $singleWebpageId);
+        }
 
         if ($websiteId) {
             $query->where('website_id', $websiteId);
