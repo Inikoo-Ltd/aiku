@@ -17,6 +17,8 @@ const props = defineProps<{
   };
 }>();
 
+console.log(props)
+
 // Status mapping based on actual boolean values
 const status = computed(() => ({
   name: props.data?.is_name_reviewed ?? false,
