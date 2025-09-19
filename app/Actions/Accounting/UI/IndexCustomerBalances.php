@@ -81,7 +81,7 @@ class IndexCustomerBalances extends OrgAction
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
             ])
-            ->allowedSorts(['id', 'name', 'slug','balance'])
+            ->allowedSorts(['id', 'name', 'slug', 'balance'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -93,7 +93,7 @@ class IndexCustomerBalances extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
             $table
                 ->withGlobalSearch()
@@ -110,8 +110,6 @@ class IndexCustomerBalances extends OrgAction
             $table->defaultSort('id');
         };
     }
-
-
 
     public function inOrganisation(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
@@ -177,8 +175,7 @@ class IndexCustomerBalances extends OrgAction
                 'pageHead'    => [
                     'icon'      => ['fal', 'fa-money-check-alt'],
                     'title'     => $title,
-                    'actions'   => [
-                    ],
+                    'actions'   => [],
                     'subNavigation' => $subNavigation,
 
 
