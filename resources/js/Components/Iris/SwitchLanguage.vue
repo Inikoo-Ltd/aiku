@@ -75,20 +75,23 @@ const compFilterLanguageOptions = computed(() => {
 
 <template>
     <div v-if="layout.app.environment === 'local' && Object.keys(layout.iris.website_i18n?.language_options).length > 0">
-        <Button
-            @click="(e) => _popover?.toggle(e)"
-            v-tooltip="trans('Change language of the website')"
-            icon="fal fa-language"
-            class="text-white"
-            xlabel="Object.values(layout.iris.website_i18n?.language_options || {})?.find(language => language.code === layout.iris.locale)?.name"
-            :loading="!!isLoadingChangeLanguage"
-            type="transparent"
-        >
-            <template #label>
-                {{ Object.values(layout.iris.website_i18n?.language_options || {})?.find(language => language.code === layout.iris.website_i18n.current_language?.code)?.name }}
-                <img class="inline pr-1 pl-1 h-[1em]" :src="`/flags/${layout.iris.website_i18n.current_language?.flag}`" xalt="language.code"   xtitle='capitalize(countryName)'  />
-            </template>
-        </Button>
+        <div @click="(e) => _popover?.toggle(e)">
+            <slot :isLoadingChangeLanguage>
+                <Button
+                    v-tooltip="trans('Change language of the website')"
+                    icon="fal fa-language"
+                    class="text-white"
+                    xlabel="Object.values(layout.iris.website_i18n?.language_options || {})?.find(language => language.code === layout.iris.locale)?.name"
+                    :loading="!!isLoadingChangeLanguage"
+                    type="transparent"
+                >
+                    <template #label>
+                        {{ Object.values(layout.iris.website_i18n?.language_options || {})?.find(language => language.code === layout.iris.website_i18n.current_language?.code)?.name }}
+                        <img class="inline pr-1 pl-1 h-[1em]" :src="`/flags/${layout.iris.website_i18n.current_language?.flag}`" xalt="language.code"   xtitle='capitalize(countryName)'  />
+                    </template>
+                </Button>
+            </slot>
+        </div>
         <Popover ref="_popover">
             <div>
                 <!-- Language Options -->
