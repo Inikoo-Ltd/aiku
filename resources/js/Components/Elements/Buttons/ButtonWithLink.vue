@@ -103,7 +103,7 @@ const dataToSend = props.body ?? props.routeTarget?.body
                     <slot name="icon" />
                 </template>
                 <template #label>
-                    <slot name="label" />
+                    <slot name="label" :isLoadingVisit />
                 </template>
                 <template #iconRight>
                     <slot name="iconRight" />

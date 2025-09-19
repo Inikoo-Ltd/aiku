@@ -191,5 +191,7 @@ const iconList: { [key: string]: string } = {
             </template>
         </template>
 
+        <slot />
+
     </nav>
 </template>
