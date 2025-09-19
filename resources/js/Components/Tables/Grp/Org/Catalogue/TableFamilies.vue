@@ -14,7 +14,7 @@ import { routeType } from "@/types/route"
 import { remove as loRemove } from 'lodash-es'
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCheck, faTimesCircle } from "@fal";
+import { faCheck, faTimesCircle, faCheckCircle } from "@fal";
 import { RouteParams } from "@/types/route-params";
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -32,7 +32,6 @@ const props = defineProps<{
     isCheckBox?: boolean
 }>()
 
-console.log(props)
 
 const emits = defineEmits<{
     (e: "selectedRow", value: {}): void
@@ -177,7 +176,7 @@ const isLoadingDetach = ref<string[]>([])
 
 const dotClass = (filled: boolean) =>
     filled ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600";
-const statusIcon = (filled: boolean) => (filled ? faCheck : faTimesCircle);
+const statusIcon = (filled: boolean) => (filled ? faCheckCircle : faTimesCircle);
 
 </script>
 
@@ -275,7 +274,7 @@ const statusIcon = (filled: boolean) => (filled ? faCheck : faTimesCircle);
             </Link>
         </template>
         <template #cell(is_name_reviewed)="{ item }">
-            <div>
+            <div >
                 <FontAwesomeIcon :class="[
                     'flex items-center justify-center w-4 h-4 rounded-full',
                     dotClass(item.is_name_reviewed),
@@ -307,5 +306,4 @@ const statusIcon = (filled: boolean) => (filled ? faCheck : faTimesCircle);
             </div>
         </template>
     </Table>
-    <!-- <pre>{{ data.data[0] }}</pre> -->
 </template>

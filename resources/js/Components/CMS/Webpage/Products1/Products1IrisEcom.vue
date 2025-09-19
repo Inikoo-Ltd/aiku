@@ -233,12 +233,13 @@ const loadMore = () => {
 const sortOptions = computed(() => {
     const baseOptions = [
         /* { label: "Latest Arrivals", value: "created_at" }, */
-        { label: "Product Code", value: "code" },
-        { label: "Name", value: "name" }
+        { label: trans("New arrivals"), value: "created_at" },
+        { label: trans("Product Code"), value: "code" },
+        { label: trans("Name"), value: "name" }
     ]
     if (layout?.iris?.is_logged_in) {
-        baseOptions.splice(1, 0, { label: "Price", value: "price" })
-        baseOptions.splice(1, 0, { label: "Rrp", value: "rrp" })
+        baseOptions.splice(1, 0, { label: trans("Price"), value: "price" })
+        baseOptions.splice(1, 0, { label: trans("RRP"), value: "rrp" })
     }
     return baseOptions
 })
@@ -308,7 +309,7 @@ const toggleSort = (key: string) => {
         sortKey.value = key
         isAscending.value = true
     }
-
+    
     orderBy.value = isAscending.value ? key : `-${key}`
     updateQueryParams()
     handleSearch()
@@ -408,12 +409,12 @@ const responsiveGridClass = computed(() => {
                             <Button :icon="faFilter" @click="isShowAside = !isShowAside" class="!p-3 !w-auto"
                                 aria-label="Open Filters" />
                         </div>
-                        <PureInput v-model="q" @keyup.enter="handleSearch" type="text" placeholder="Search products..."
+                        <PureInput v-model="q" @keyup.enter="handleSearch" type="text" :placeholder="trans('Search products...')"
                             :clear="true" :isLoading="isLoadingInitial" :prefix="{ icon: faSearch, label: '' }" />
                     </div>
 
                     <!-- Sort Tabs -->
-                    <div class="flex space-x-6 overflow-x-auto mt-2 md:mt-0 border-b border-gray-300">
+                    <div class="flex xspace-x-6 overflow-x-auto mt-2 md:mt-0">
                         <!-- <button @click="toggleNewArrivals"
                             class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1" :class="[
                             isNewArrivals
@@ -424,12 +425,12 @@ const responsiveGridClass = computed(() => {
                         </button> -->
 
                         <button v-for="option in sortOptions" :key="option.value" @click="toggleSort(option.value)"
-                            class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1" :class="[
-                                'pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1',
+                            class="pb-2 px-4 text-sm font-medium whitespace-nowrap flex items-center border-b-2 gap-1" :class="[
                                 sortKey === option.value
-                                    ? `border-b-2 text-[${layout?.app?.theme?.[0] || '#1F2937'}] border-[${layout?.app?.theme?.[0] || '#1F2937'}]`
-                                    : `text-gray-600 hover:text-[${layout?.app?.theme?.[0] || '#1F2937'}]`
-                            ]" :disabled="isLoadingInitial || isLoadingMore">
+                                    ? `border-[var(--iris-color-0)] text-[var(--iris-color-0)]`
+                                    : `border-gray-300 text-gray-600 hover:text-[var(--iris-color-0)]`
+                            ]"
+                            :disabled="isLoadingInitial || isLoadingMore">
                             {{ option.label }} {{ getArrow(option.value) }}
                         </button>
                     </div>
@@ -439,14 +440,14 @@ const responsiveGridClass = computed(() => {
                 <div class="px-4 mb-2 flex justify-between items-center text-sm text-gray-600">
                     <div
                         class="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
-                        <span class="text-gray-700 font-medium">
-                            Showing
+                        <span class="font-medium">
+                            {{ trans("Showing") }}
                             <span :class="['font-semibold', `text-[${layout?.app?.theme?.[0] || '#1F2937'}]`]">{{
                                 products.length }}</span>
-                            of
+                            {{ trans("of") }}
                             <span :class="['font-semibold', `text-[${layout?.app?.theme?.[0] || '#1F2937'}]`]">{{
                                 totalProducts }}</span>
-                            {{ products.length === 1 ? "product" : "products" }}
+                            {{ products.length === 1 ? trans("product") : trans("products") }}
                         </span>
                     </div>
 
