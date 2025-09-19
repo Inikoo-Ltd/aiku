@@ -41,7 +41,7 @@ class IndexTradeUnitFamilies extends GrpAction
         return $this->handle();
     }
 
-    public function handle($prefix = null, $bucket = 'all'): LengthAwarePaginator
+    public function handle($prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {

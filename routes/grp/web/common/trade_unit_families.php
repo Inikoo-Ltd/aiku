@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Goods\TradeUnitFamily\IndexTradeUnitFamilies;
+use App\Actions\Goods\TradeUnitFamily\ShowTradeUnitFamily;
 use Illuminate\Support\Facades\Route;
 
 /**
@@ -20,5 +21,8 @@ function tradeUnitFamiliesRoutes(string $prefix = 'trade-unit-families', string 
 {
     Route::prefix($prefix)->as($as)->group(function () {
         Route::get('/', IndexTradeUnitFamilies::class)->name('index');
+        Route::prefix('{tradeUnitFamily:slug}')->group(function () {
+            Route::get('', ShowTradeUnitFamily::class)->name('show');
+        });
     });
 }
