@@ -251,55 +251,65 @@ const getTarget = (item) => {
                         </div>
                     </div>
 
-                    <div v-for="(item, index) in props.menu.navigation" :key="index">
-                        <!-- MULTIPLE TYPE WITH DROPDOWN -->
-                        <Disclosure v-if="item.type === 'multiple'" v-slot="{ open }">
+                    <!-- Product Categories Section for Mobile -->
+                    <div v-for="(category, index) in sortedProductCategories" :key="index">
+                        <!-- Product Category WITH Sub-departments -->
+                        <Disclosure v-if="category.sub_departments && category.sub_departments.length > 0"
+                            v-slot="{ open }">
                             <DisclosureButton class="w-full text-left p-4 font-semibold text-gray-600 border-b">
                                 <div class="flex justify-between items-center text-lg"
                                     :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }">
-                                    <div>
-                                        <a v-if="item.link && item.link.href" :href="item.link.href"
-                                            :target="item.link.target">
-                                            <span>{{ item.label }}</span>
-                                        </a>
-                                        <span v-else>
-                                            {{ item.label }}
-                                        </span>
-                                    </div>
+                                    <span>{{ category.name }}</span>
                                     <FontAwesomeIcon :icon="faChevronCircleDown"
                                         :class="{ 'rotate-180': open, 'transition-transform duration-300': true }" />
                                 </div>
                             </DisclosureButton>
 
                             <DisclosurePanel class="disclosure-panel">
-                                <div v-for="(submenu, subIndex) in item.subnavs" :key="subIndex" class="mb-6">
-                                    <a v-if="submenu.title" :href="submenu.link?.href" :target="submenu.link?.target"
+                                <div v-for="(subDept, subDeptIndex) in category.sub_departments"
+                                    :key="subDeptIndex" class="mb-6">
+                                    <a v-if="subDept?.url !== null" :href="'/' + subDept.url"
                                         class="block text-base font-bold text-gray-700 mb-2"
                                         :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }">
-                                        {{ submenu.title }}
+                                        {{ subDept.name }}
                                     </a>
-
-                                    <div v-if="submenu.links" class="space-y-2 mt-2 ml-4 pl-4  border-gray-200">
-                                        <a v-for="(menu, menuIndex) in [...submenu.links].sort((a, b) => (a.label || '').localeCompare(b.label || '', undefined, { sensitivity: 'base' }))"
-                                            :key="menuIndex" :href="menu.link?.href" :target="menu.link?.target"
-                                            :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
-                                            class="block text-sm text-gray-700 relative hover:text-primary transition-all">
-                                            <span class="absolute left-0 -ml-4">–</span>
-                                            {{ menu.label }}
-                                        </a>
+                                    <span v-else class="block text-base font-bold text-gray-700 mb-2"
+                                        :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }">
+                                        {{ subDept.name }}
+                                    </span>
+                                    <div v-if="subDept.families" class="space-y-2 mt-2 ml-4 pl-4 border-gray-200">
+                                        <div v-for="(family, familyIndex) in subDept.families" :key="familyIndex">
+                                            <a 
+                                                v-if="family?.url !== null" :href="'/' + family.url"
+                                                :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
+                                                class="block text-sm text-gray-700 relative hover:text-primary transition-all">
+                                                <span class="absolute left-0 -ml-4">–</span>
+                                                {{ family.name }}
+                                            </a>
+                                            <span v-else
+                                                :key="'span-' + familyIndex" v-if="family?.url === null"
+                                                :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
+                                                class="block text-sm text-gray-700 relative">
+                                                <span class="absolute left-0 -ml-4">–</span>
+                                                {{ family.name }}
+                                            </span>
+                                        </div>
                                     </div>
-
                                 </div>
                             </DisclosurePanel>
                         </Disclosure>
 
-                        <!-- SINGLE LINK -->
+                        <!-- Product Category SINGLE LINK -->
                         <div v-else class="py-4 px-5 border-b">
-                            <a :href="item.link?.href" :target="item.link?.target"
+                            <a v-if="category?.url !== null" :href="'/' + category.url"
                                 :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
                                 class="font-bold text-gray-600 text-lg">
-                                {{ item.label }}
+                                {{ category.name }}
                             </a>
+
+                            <span v-else
+                                :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
+                                class="font-bold text-gray-600 text-lg">{{ category.name }}</span>
                         </div>
                     </div>
 
