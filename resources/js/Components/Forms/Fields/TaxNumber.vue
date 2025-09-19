@@ -127,9 +127,10 @@ const validateVAT = (vatInput: any) => {
     const validation = checkVAT(vatNumber, countries);
     vatValidationResult.value = validation.isValid ? trans("Valid tax number") : trans("Invalid tax number");
 
+
     // Handle invalid VAT
     if (!validation.isValid) {
-        set(props.form, ['errors', props.fieldName], trans('Invalid VAT number'));
+        set(props.form, ['errors', props.fieldName],  '🤔 '+trans('Tax number looks invalid. Are you sure you want to save it?'));
         // props.form.reset();
         return updateFormValue(validation);;
     }
