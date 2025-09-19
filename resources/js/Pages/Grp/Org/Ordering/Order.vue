@@ -14,7 +14,6 @@ import { computed, ref, inject } from "vue"
 import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import Timeline from "@/Components/Utils/Timeline.vue"
-// import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue"
 import Popover from "@/Components/Popover.vue"
 import {Popover as PopoverPrimevue} from 'primevue';
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -23,7 +22,7 @@ import BoxNote from "@/Components/Pallet/BoxNote.vue"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
-import { PalletDelivery, UploadPallet } from "@/types/Pallet"
+import { UploadPallet } from "@/types/Pallet"
 import { Table as TableTS } from "@/types/Table"
 import { Tabs as TSTabs } from "@/types/Tabs"
 import "@vuepic/vue-datepicker/dist/main.css"
@@ -955,18 +954,22 @@ const toggleElipsis = (e: Event) => {
 
                 <div class="xspace-y-0.5 pl-1">
                     <!-- Field: Billing -->
-                    <dl class="relative flex items-start w-full flex-none gap-x-1">
+                    <dl class="relative flex items-start w-full flex-none gap-x-1"    >
                         <dt class="flex-none pt-0.5 pl-1">
                             <FontAwesomeIcon icon="fal fa-dollar-sign" fixed-width aria-hidden="true"
                                 class="text-gray-500" />
                         </dt>
 
-                        <div>
+                        <div   v-if="box_stats.products.payment.pay_status!= 'no_need' ">
                             <NeedToPay :totalAmount="box_stats.products.payment.total_amount"
                                 :paidAmount="box_stats.products.payment.paid_amount"
                                 :payAmount="box_stats.products.payment.pay_amount"
                                 xclass="[box_stats.products.payment.pay_amount ? 'hover:bg-gray-100 cursor-pointer' : '']"
-                                :currencyCode="currency.code">
+                                :currencyCode="currency.code"
+
+
+
+                            >
                                 <template #default>
                                     <!-- Pay: Invoice -->
                                     <div v-if="box_stats.products.payment.pay_amount > 0 && !(props.data?.data?.state === 'creating' || props.data?.data?.state === 'cancelled'   ) "
@@ -983,7 +986,7 @@ const toggleElipsis = (e: Event) => {
                                     </div>
 
                                     <!-- Pay: excesses balance -->
-                                    <div v-if="box_stats.products.excesses_payment?.amount > 0"
+                                    <div v-if="box_stats.products.excesses_payment?.amount > 0 "
                                         class="pt-1 border-t border-green-300 text-xxs">
                                         <p class="text-gray-500 mb-1 mt-2">
                                             {{ trans("The order is overpaid") }}:
@@ -1003,7 +1006,6 @@ const toggleElipsis = (e: Event) => {
 
                                 </template>
                             </NeedToPay>
-
                             <div v-if="last_payment" class="text-xs text-gray-500">
                                 {{ trans("Last payments:") }}
                                 <Link :href="route('grp.org.accounting.payments.show', {
@@ -1011,6 +1013,11 @@ const toggleElipsis = (e: Event) => {
                                     payment: last_payment?.id
                                 })" class="secondaryLink">{{ last_payment?.reference ?? last_payment?.id }}
                                 </Link>
+                            </div>
+                        </div>
+                        <div v-else class="text-gray-500">
+                            <div class="border border-gray-300 rounded-md p-2 pr-4">
+                            {{ trans("Order cancelled, payments returned to balance") }}
                             </div>
                         </div>
                     </dl>
