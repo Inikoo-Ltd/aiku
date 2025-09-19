@@ -31,7 +31,9 @@ class CancelDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
 
-    public function handle(DeliveryNote $deliveryNote): DeliveryNote
+    private DeliveryNote $deliveryNote;
+
+    public function handle(DeliveryNote $deliveryNote, $fromOrder = false): DeliveryNote
     {
         $cancelledRef = $deliveryNote->reference . '-CANCELLED';
 
@@ -95,7 +97,7 @@ class CancelDeliveryNote extends OrgAction
             ]);
         }
 
-        if ($deliveryNote->type == DeliveryNoteTypeEnum::ORDER) {
+        if ($deliveryNote->type == DeliveryNoteTypeEnum::ORDER && $fromOrder == true) {
             $order = $deliveryNote->orders->first();
             RollbackOrderAfterDeliveryNoteCancellation::make()->action($order);
         }
@@ -114,10 +116,10 @@ class CancelDeliveryNote extends OrgAction
         return $this->handle($deliveryNote);
     }
 
-    public function action(DeliveryNote $deliveryNote): DeliveryNote
+    public function action(DeliveryNote $deliveryNote, $fromOrder = false): DeliveryNote
     {
         $this->initialisationFromShop($deliveryNote->shop, []);
 
-        return $this->handle($deliveryNote);
+        return $this->handle($deliveryNote, $fromOrder);
     }
 }
