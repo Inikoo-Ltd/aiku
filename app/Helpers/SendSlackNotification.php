@@ -19,7 +19,7 @@ class SendSlackNotification extends GrpAction
 {
     public function handle(MasterAsset|MasterProductCategory $parent): void
     {
-        $template = null;
+
 
         if ($parent instanceof MasterAsset) {
             $template = NewMasterAssetCreated::run($parent);
@@ -30,6 +30,10 @@ class SendSlackNotification extends GrpAction
         $notifiable = (new AnonymousNotifiable())
                 ->route('slack', []);
 
-        $notifiable->notify(new SlackNotification($template));
+        try {
+            $notifiable->notify(new SlackNotification($template));
+        }catch (\Exception ){
+            //
+        }
     }
 }

@@ -193,64 +193,91 @@ class ShowProduct extends OrgAction
     {
         $hasMaster = $product->master_product_id;
 
+        $miniBreadcrumbs = [];
+        if ($product->department) {
+            $miniBreadcrumbs[] = [
+                'label'   => $product->department->name,
+                'to'      => [
+                    'name'       => 'grp.org.shops.show.catalogue.departments.show',
+                    'parameters' => [
+                        'organisation' => $product->organisation->slug,
+                        'shop'         => $product->shop->slug,
+                        'department'   => $product->department->slug,
+                    ]
+                ],
+                'tooltip'   => __('Department').': '.$product->department->name,
+                'icon'    => ['fal', 'folder-tree']
+            ];
+        }
+
+        if ($product->subDepartment) {
+            $miniBreadcrumbs[] = [
+                'label'   => $product->subDepartment->name,
+                'to'      => [
+                    'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
+                    'parameters' => [
+                        'organisation'  => $product->organisation->slug,
+                        'shop'          => $product->shop->slug,
+                        'department'    => $product->department->slug,
+                        'subDepartment' => $product->subDepartment->slug,
+                    ]
+                ],
+                'tooltip' => __('Sub-department').': '.$product->subDepartment->name,
+                'icon'    => ['fal', 'folders']
+            ];
+        }
+
+        if ($product->family) {
+            if ($product->subDepartment) {
+                $route = [
+                    'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show',
+                    'parameters' => [
+                        'organisation'  => $product->organisation->slug,
+                        'shop'          => $product->shop->slug,
+                        'department'    => $product->department->slug,
+                        'subDepartment' => $product->subDepartment->slug,
+                        'family'        => $product->family->slug,
+                    ]
+                ];
+            } else {
+                $route = [
+                    'name'       => 'grp.org.shops.show.catalogue.departments.show.family.show',
+                    'parameters' => [
+                        'organisation' => $product->organisation->slug,
+                        'shop'         => $product->shop->slug,
+                        'department'   => $product->department->slug,
+                        'family'       => $product->family->slug,
+                    ]
+                ];
+            }
+
+            $miniBreadcrumbs[] = [
+                'label'   => $product->family->name,
+                'to'      => $route,
+                'tooltip' => __('Family').': '.$product->family->name,
+                'icon'    => ['fal', 'folder']
+            ];
+        }
+
+
+
+
         return Inertia::render(
             'Org/Catalogue/Product',
             [
-                'title'       => __('product'),
-                'breadcrumbs' => $this->getBreadcrumbs(
+                'title'            => __('product'),
+                'breadcrumbs'      => $this->getBreadcrumbs(
                     $this->parent,
                     $product,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'  => [
+                'navigation'       => [
                     'previous' => $this->getPrevious($product, $request),
                     'next'     => $this->getNext($product, $request),
                 ],
-                'mini_breadcrumbs' => [
-                    [
-                        'label' => 'departement',
-                        'to'    => [
-                            'name'       => 'grp.org.shops.show.web.webpages.show',
-                            'parameters' => [
-                                'organisation' => $this->organisation->slug,
-                                'shop'         => $this->shop->slug,
-                                'website'      => $this->shop->website->slug,
-                                'webpage'      => $product->webpage->slug
-                            ]
-                        ],
-                        'tooltip' => 'Departement',
-                        'icon' => ['fal', 'folder-tree']
-                    ],
-                    [
-                        'label' => 'sub-departement',
-                        'to'    => [
-                            'name'       => 'grp.org.shops.show.web.webpages.show',
-                            'parameters' => [
-                                'organisation' => $this->organisation->slug,
-                                'shop'         => $this->shop->slug,
-                                'website'      => $this->shop->website->slug,
-                                'webpage'      => $product->webpage->slug
-                            ]
-                        ],
-                        'tooltip' => 'Sub-Departement',
-                        'icon' => ['fal', 'folder-tree']
-                    ],
-                    [
-                        'label' => 'family',
-                        'to'    => [
-                            'name'       => 'grp.org.shops.show.web.webpages.show',
-                            'parameters' => [
-                                'organisation' => $this->organisation->slug,
-                                'shop'         => $this->shop->slug,
-                                'website'      => $this->shop->website->slug,
-                                'webpage'      => $product->webpage->slug
-                            ]
-                        ],
-                        'tooltip' => 'family',
-                        'icon' => ['fal', 'folder-tree']
-                    ]
-                ],
+                'mini_breadcrumbs' => $miniBreadcrumbs,
+
                 'pageHead'    => [
                     'title'      => $product->code,
                     'model'      => $this->parent->code,

@@ -49,7 +49,7 @@ class FetchAuroraTransactions
         }
 
         if ($transaction = Transaction::withTrashed()->where('source_id', $transactionData['transaction']['source_id'])->first()) {
-            $transactionData['transaction']['deleted_at']= null;
+            $transactionData['transaction']['deleted_at'] = null;
             $transaction = UpdateTransaction::make()->action(
                 transaction: $transaction,
                 modelData: $transactionData['transaction'],

@@ -10,7 +10,6 @@
 namespace App\Actions\Maintenance\Catalogue;
 
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterAsset;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
@@ -22,18 +21,18 @@ class RepairWrongMasterProductStock
     public function handle(MasterAsset $masterAsset, Command $command): void
     {
 
-        if($masterAsset->stocks()->count()>1
-        ){
+        if ($masterAsset->stocks()->count() > 1
+        ) {
             dd($masterAsset->orgStocks);
         }
 
-        $stock= $masterAsset->stocks->first();
+        $stock = $masterAsset->stocks->first();
 
-        if(!$stock){
+        if (!$stock) {
             return;
         }
 
-        $base=$stock->tradeUnits->pluck('pivot.quantity')[0];
+        $base = $stock->tradeUnits->pluck('pivot.quantity')[0];
 
 
         $productData = [
@@ -41,22 +40,22 @@ class RepairWrongMasterProductStock
             'product_units' => $masterAsset->units,
             'stocks' => $masterAsset->stocks->pluck('pivot.quantity')->toArray(),
             'trade_units' => $masterAsset->tradeUnits->pluck('pivot.quantity')->toArray(),
-            'base'=>$base
+            'base' => $base
 
         ];
 
 
 
-        $tradeUnit=$masterAsset->tradeUnits->first();
+        $tradeUnit = $masterAsset->tradeUnits->first();
         $masterAsset->tradeUnits()->updateExistingPivot(
             $tradeUnit->id,
             ['quantity' => 1]
         );
 
-        $stock=$masterAsset->stocks->first();
+        $stock = $masterAsset->stocks->first();
         $masterAsset->stocks()->updateExistingPivot(
             $stock->id,
-            ['quantity' => 1/$base]
+            ['quantity' => 1 / $base]
         );
 
         $command->info('Master Product Data:');
@@ -82,7 +81,7 @@ class RepairWrongMasterProductStock
                 $processed++;
             }
         });
-        
+
         $command->info("Processed {$processed} master products successfully.");
     }
 }

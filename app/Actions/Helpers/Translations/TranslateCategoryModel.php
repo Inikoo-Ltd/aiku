@@ -38,36 +38,36 @@ class TranslateCategoryModel
 
         ];
 
-        if($shopLanguage->code == 'en') {
+        if ($shopLanguage->code == 'en') {
             data_set($modelData, 'is_name_reviewed', true);
             data_set($modelData, 'is_description_title_reviewed', true);
             data_set($modelData, 'is_description_reviewed', true);
             data_set($modelData, 'is_description_extra_reviewed', true);
 
-        }else{
+        } else {
             data_set($modelData, 'is_name_reviewed', Arr::get(
                 $translationData,
                 'name',
                 false
-            )?false:null);
+            ) ? false : null);
 
             data_set($modelData, 'is_description_title_reviewed', Arr::get(
                 $translationData,
                 'description_title',
                 false
-            )?false:null);
+            ) ? false : null);
 
             data_set($modelData, 'is_description_reviewed', Arr::get(
                 $translationData,
                 'description',
                 false
-            )?false:null);
+            ) ? false : null);
 
             data_set($modelData, 'is_description_extra_reviewed', Arr::get(
                 $translationData,
                 'description_extra',
                 false
-            )?false:null);
+            ) ? false : null);
 
         }
 

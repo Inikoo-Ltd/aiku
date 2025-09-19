@@ -17,6 +17,7 @@ use App\Actions\Helpers\TaxNumber\UpdateTaxNumber;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCustomers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCustomers;
+use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithModelAddressActions;
@@ -25,6 +26,7 @@ use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Models\CRM\Customer;
+use App\Models\Helpers\Country;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
 use App\Rules\Phone;
@@ -39,6 +41,7 @@ class UpdateCustomer extends OrgAction
     use WithModelAddressActions;
     use WithNoStrictRules;
     use WithProcessContactNameComponents;
+    use WithCRMEditAuthorisation;
 
     private Customer $customer;
 
@@ -75,6 +78,7 @@ class UpdateCustomer extends OrgAction
             $taxNumberData = Arr::get($modelData, 'tax_number');
             Arr::forget($modelData, 'tax_number');
 
+
             if ($taxNumberData) {
                 if (!$customer->taxNumber) {
                     if (!Arr::get($taxNumberData, 'data.name')) {
@@ -84,6 +88,8 @@ class UpdateCustomer extends OrgAction
                     if (!Arr::get($taxNumberData, 'data.address')) {
                         Arr::forget($taxNumberData, 'data.address');
                     }
+
+
                     StoreTaxNumber::run(
                         owner: $customer,
                         modelData: $taxNumberData
@@ -149,15 +155,6 @@ class UpdateCustomer extends OrgAction
 
 
         return $customer;
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("crm.{$this->shop->id}.edit");
     }
 
     public function rules(): array
@@ -243,6 +240,19 @@ class UpdateCustomer extends OrgAction
         return $rules;
     }
 
+    public function prepareForValidation(ActionRequest $request): void
+    {
+        if ($request->has('tax_number')) {
+            $countryCode   = Arr::get($request->get('tax_number'), 'country.isoCode.short');
+            $country       = Country::where('code', $countryCode)->first();
+            $taxNumberData = [
+                'number'     => (string)Arr::get($request->get('tax_number'), 'value'),
+                'country_id' => $country->id
+            ];
+
+            $this->set('tax_number', $taxNumberData);
+        }
+    }
 
     public function asController(Organisation $organisation, Customer $customer, ActionRequest $request): Customer
     {

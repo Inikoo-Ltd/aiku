@@ -19,6 +19,8 @@ class BreakProductInWebpagesCache
 
     public function handle(Product $product): void
     {
+        $this->breakCache($product->webpage);
+
         if ($product->family && $product->family->webpage) {
             $this->breakCache($product->family->webpage);
         }

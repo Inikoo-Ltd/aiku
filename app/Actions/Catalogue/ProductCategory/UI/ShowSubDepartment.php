@@ -127,7 +127,7 @@ class ShowSubDepartment extends OrgAction
                                     'subDepartment' => $subDepartment->slug
                                 ]
                             ],
-                            'tooltip' => 'Sub-Departement',
+                            'tooltip' => __('Sub-Department'),
                             'icon' => ['fal', 'folder-tree']
                         ],
                     ],

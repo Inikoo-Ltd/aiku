@@ -1,4 +1,9 @@
 <?php
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 19 Sept 2025 03:58:21 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
 namespace App\Console;
 
@@ -71,26 +76,47 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'FetchOrdersInBasket',
         );
 
-        $schedule->command('fetch:dispatched_emails -w full -D 2 -N')->everySixHours(15)
+        $schedule->command('fetch:stock_locations aw')->everyThirtyMinutes()->between('6:00', '19:00')
+            ->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'FetchAuroraStockLocationsAW',
+            );
+
+        $schedule->command('fetch:stock_locations sk')->everyThirtyMinutes()->between('6:00', '19:00')
+            ->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'FetchAuroraStockLocationsSK',
+            );
+
+        $schedule->command('fetch:stock_locations es')->everyThirtyMinutes()->between('6:00', '19:00')
+            ->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'FetchAuroraStockLocationsES',
+            );
+
+        $schedule->command('fetch:stock_locations aroma')->everyThirtyMinutes()->between('6:00', '19:00')
+            ->timezone('UTC')->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'FetchAuroraStockLocationsAroma',
+            );
+
+
+        $schedule->command('fetch:dispatched_emails -w full -D 2 -N')->everySixHours(15)->withoutOverlapping()
             ->timezone('UTC')->sentryMonitor(
                 monitorSlug: 'FetchDispatchedEmails',
             );
 
-        $schedule->command('fetch:email_tracking_events -N -D 2')->twiceDaily(11, 23)->timezone('UTC')
+        $schedule->command('fetch:email_tracking_events -N -D 2')->twiceDaily(11, 23)->timezone('UTC')->withoutOverlapping()
             ->sentryMonitor(
                 monitorSlug: 'FetchEmailTrackingEvents',
             );
 
 
-        $schedule->job(FetchEbayOrders::makeJob())->everyTenMinutes()->sentryMonitor(
+        $schedule->job(FetchEbayOrders::makeJob())->everyTenMinutes()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'FetchEbayOrders',
         );
 
-        $schedule->job(FetchWooOrders::makeJob())->everyTenMinutes()->sentryMonitor(
+        $schedule->job(FetchWooOrders::makeJob())->everyTenMinutes()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'FetchWooOrders',
         );
 
-        $schedule->job(UpdateInventoryInWooPortfolio::makeJob())->hourly()->sentryMonitor(
+        $schedule->job(UpdateInventoryInWooPortfolio::makeJob())->hourly()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'UpdateWooStockInventories',
         );
 
@@ -111,7 +137,6 @@ class Kernel extends ConsoleKernel
         $schedule->job(SaveWebsitesSitemap::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
             monitorSlug: 'SaveWebsitesSitemap',
         );
-
     }
 
 

@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import PureInput from "@/Components/Pure/PureInput.vue"
-import { set, get } from 'lodash-es'
+import { set, get, debounce } from 'lodash-es'
 import { checkVAT, countries } from 'jsvat-next';
 import { ref } from "vue"
-import { debounce } from "lodash-es"
 import { faExclamationCircle, faCheckCircle } from '@fas'
 import { faCopy } from '@fal'
 import { faSpinnerThird } from '@fad'
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { trans } from "laravel-vue-i18n"
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 
 const props = defineProps<{
@@ -22,7 +22,7 @@ const props = defineProps<{
  
 const emits = defineEmits()
 
-const setFormValue = (data: Object, fieldName: String) => {
+const setFormValue = (data: Object, fieldName: string) => {
     if (Array.isArray(fieldName)) {
         return getNestedValue(data, fieldName)
     } else {
@@ -40,7 +40,7 @@ const getNestedValue = (obj: Object, keys: Array<string>) => {
 const value = ref(setFormValue(props.form, props.fieldName))
 const vatValidationResult = ref<string | null>(null)
 
-// Fungsi validasi VAT
+
 const validateVAT = (vat: string) => {
     if (!vat.value) {
         vatValidationResult.value = null;
@@ -49,24 +49,16 @@ const validateVAT = (vat: string) => {
     }
 
     const validation = checkVAT(vat.value, countries);
-    vatValidationResult.value = validation.isValid ? "Valid VAT" : "Invalid VAT";
+    vatValidationResult.value = validation.isValid ? trans("Valid tax number") : trans("Invalid tax number");
 
     // Handle invalid VAT
     if (!validation.isValid) {
-        set(props.form, ['errors', props.fieldName], 'Invalid VAT number.');
+        set(props.form, ['errors', props.fieldName], trans('Invalid VAT number'));
         props.form.reset();
         return;
     }
 
-    // Handle country mismatch
-   /*  if (props.fieldData?.country && validation.country?.isoCode.short) {
-        console.log(props.fieldData?.country,validation.country?.isoCode.short,validation.country.isoCode.short,props.fieldData.country)
-        if (validation.country.isoCode.short !== props.fieldData.country) {
-            set(props.form, ['errors', props.fieldName], 'VAT number does not match with the address.');
-            props.form.reset();
-            return;
-        }
-    } */
+
 
     // Valid VAT and no mismatch, update the form value
     updateFormValue(validation);
@@ -74,7 +66,7 @@ const validateVAT = (vat: string) => {
 };
 
 
-// Watch dengan debounce
+
 const debouncedValidation = debounce((newValue: string) => {
     validateVAT(newValue)
 }, 500)
