@@ -42,6 +42,7 @@ class RepairMissingFixedWebBlocksInProductsWebpages
 
         if (!$product->is_main) {
             print "Product is not main product, skipping\n";
+
             // Delete Webpage
             return;
         }
@@ -49,7 +50,7 @@ class RepairMissingFixedWebBlocksInProductsWebpages
 
         if ($oldWebBlocksCount > 0) {
             if ($webpage->allow_fetch) {
-                $layout = json_decode($webBlocksDataOldComponent[0]->layout, true);
+                $layout      = json_decode($webBlocksDataOldComponent[0]->layout, true);
                 $description = Arr::get($layout, 'data.fieldValue.value.text');
 
                 if ($description) {
@@ -75,6 +76,31 @@ class RepairMissingFixedWebBlocksInProductsWebpages
             $this->createWebBlock($webpage, 'product-1');
         }
 
+
+        $ok=true;
+        $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'product-1');
+        if (count($countFamilyWebBlock) > 1) {
+
+            foreach ($countFamilyWebBlock as $webBlockData) {
+
+                if(!$ok){
+
+
+
+                    DB::table('model_has_web_blocks')->where('id', $webBlockData->model_has_web_blocks_id)->delete();
+                    DB::table('model_has_web_blocks')->where('web_block_id', $webBlockData->id)->delete();
+
+                    DB::table('model_has_media')->where('model_type', 'WebBlock')->where('model_id', $webBlockData->id)->delete();
+                    DB::table('web_block_has_models')->where('web_block_id', $webBlockData->id)->delete();
+
+                    DB::table('web_blocks')->where('id', $webBlockData->id)->delete();
+
+
+                }
+                $ok=false;
+            }
+
+        }
 
 
         $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'see-also-1');
