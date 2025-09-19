@@ -90,7 +90,7 @@ class EditShippingZone extends OrgAction
                                     'value' => $shippingZone->name
                                 ],
                                 'territories' => [
-                                    'type'  => 'teritory_zone',
+                                    'type'  => 'territory_zone',
                                     'label' => __('territory'),
                                     'value' => $shippingZone->territories,
                                     'country_list' => GetCountriesOptions::run(),
