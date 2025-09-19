@@ -201,6 +201,8 @@ const onOpenModalDetail = (deliveryNote) => {
                 <Link :href="showDeliveryNoteRoute(item)" class="primaryLink">
                 {{ item?.delivery_note_reference }}
                 </Link>
+                <FontAwesomeIcon v-if="item.delivery_note_is_premium_dispatch" v-tooltip="trans('Priority dispatch')" icon="fas fa-star" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon v-if="item.delivery_note_has_extra_packing" v-tooltip="trans('Extra packing')" icon="fas fa-box-heart" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
                 <NotesDisplay reference-field="delivery_note_reference" :item="item" :note-fields="{
                     shipping: 'delivery_note_shipping_notes',
                     customer: 'delivery_note_customer_notes',

@@ -241,7 +241,7 @@ class ShowProduct extends OrgAction
                 ];
             } else {
                 $route = [
-                    'name'       => 'grp.org.shops.show.catalogue.departments.show.family.show',
+                    'name'       => 'grp.org.shops.show.catalogue.departments.show.families.show',
                     'parameters' => [
                         'organisation' => $product->organisation->slug,
                         'shop'         => $product->shop->slug,

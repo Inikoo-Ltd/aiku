@@ -59,7 +59,7 @@ const props = defineProps<{
 
 const layout = inject('layout', retinaLayoutStructure)
 const isLoggedIn = inject('isPreviewLoggedIn', false)
-const upcommingProductCategories = inject('newCustomSidebarMenu') //make sure the provide available on each layout
+const upcommingCustomSidebarMenu = inject('newCustomSidebarMenu') //make sure the provide available on each layout
 
 
 const convertToDepartmentStructure = (menusData) => {
@@ -116,20 +116,40 @@ const convertToDepartmentStructure = (menusData) => {
         return departmentStructure;
     });
 }
-const customMenus = ref([]); // Create a reactive ref to hold the new value
+
+const customMenusBottom = ref([]); // Create a reactive ref to hold the bottom navigation
+const customMenusTop = ref([]); // Create a reactive ref to hold the top navigation
 
 watch(
-    () => upcommingProductCategories,
+    () => upcommingCustomSidebarMenu,
     (newValue) => {
         if (newValue) {
-            const converted = convertToDepartmentStructure(newValue?.value?.data?.fieldValue.navigation);
-            customMenus.value = [...converted];
-            // console.log(converted);
+            const navigationBottomData = newValue?.value?.data?.fieldValue?.navigation_bottom;
+            const navigationData = newValue?.value?.data?.fieldValue?.navigation;
+            
+            // Process navigation_bottom data
+            if (navigationBottomData) {
+                const convertedBottom = convertToDepartmentStructure(navigationBottomData);
+                customMenusBottom.value = [...convertedBottom];
+                // console.log('Bottom menu data:', convertedBottom);
+            } else {
+                customMenusBottom.value = [];
+            }
+            
+            // Process navigation data
+            if (navigationData) {
+                const convertedTop = convertToDepartmentStructure(navigationData);
+                customMenusTop.value = [...convertedTop];
+                // console.log('Top menu data:', convertedTop);
+            } else {
+                customMenusTop.value = [];
+            }
         } else {
-            customMenus.value = []; // Handle the case where the data is null or undefined
+            customMenusBottom.value = []; // Handle the case where newValue is null or undefined
+            customMenusTop.value = [];
         }
     },
-    { immediate: true, deep:true } // Add options for immediate and deep watching
+    { immediate: true, deep: true } // Add options for immediate and deep watching
 );
 </script>
 
@@ -137,7 +157,7 @@ watch(
     <div class="block md:hidden p-3">
         <div class="flex justify-between items-center">
             <!-- Section: Hamburger mobile -->
-            <MobileMenu :header="headerData" :menu="menuData" :productCategories="productCategories" :custom-menus="customMenus" />
+            <MobileMenu :header="headerData" :menu="menuData" :productCategories="productCategories" :custom-menus-bottom="customMenusBottom" :custom-menus-top="customMenusTop" />
 
             <!-- Section: Logo  -->
             <component :is="true ? Link : 'div'" :href="'/'" class="block w-full h-[65px] mb-1 rounded">

@@ -17,7 +17,8 @@ const props = defineProps<{
     screenType: String
     productCategories: Array<any>
     menu?: { data: Array<any> }
-    customMenus?: Array<any>
+    customMenusBottom?: Array<any>
+    customMenusTop?: Array<any>
 }>();
 
 const layout = inject("layout", {});
@@ -30,6 +31,8 @@ const activeIndex = ref(null); // active category
 const activeSubIndex = ref(null); // active subdepartment
 const activeCustomIndex = ref(null); // active custom menu
 const activeCustomSubIndex = ref(null); // active custom menu subdepartment
+const activeCustomTopIndex = ref(null); // active custom menu top
+const activeCustomTopSubIndex = ref(null); // active custom menu top subdepartment
 
 // Computed properties for sorted data
 const sortedProductCategories = computed(() => {
@@ -40,9 +43,14 @@ const sortedProductCategories = computed(() => {
 });
 
 // Custom menus without sorting
-const customMenus = computed(() => {
-    if (!props.customMenus) return [];
-    return props.customMenus;
+const customMenusBottom = computed(() => {
+    if (!props.customMenusBottom) return [];
+    return props.customMenusBottom;
+});
+
+const customMenusTop = computed(() => {
+    if (!props.customMenusTop) return [];
+    return props.customMenusTop;
 });
 
 const sortedNavigation = computed(() => {
@@ -61,8 +69,8 @@ const sortedSubDepartments = computed(() => {
 
 // Custom sub departments without sorting
 const customSubDepartments = computed(() => {
-    if (activeCustomIndex.value === null || !customMenus.value[activeCustomIndex.value]?.sub_departments) return [];
-    return customMenus.value[activeCustomIndex.value].sub_departments;
+    if (activeCustomIndex.value === null || !customMenusBottom.value[activeCustomIndex.value]?.sub_departments) return [];
+    return customMenusBottom.value[activeCustomIndex.value].sub_departments;
 });
 
 const sortedFamilies = computed(() => {
@@ -78,6 +86,18 @@ const customFamilies = computed(() => {
     return customSubDepartments.value[activeCustomSubIndex.value].families;
 });
 
+// Custom top sub departments without sorting
+const customTopSubDepartments = computed(() => {
+    if (activeCustomTopIndex.value === null || !customMenusTop.value[activeCustomTopIndex.value]?.sub_departments) return [];
+    return customMenusTop.value[activeCustomTopIndex.value].sub_departments;
+});
+
+// Custom top families without sorting
+const customTopFamilies = computed(() => {
+    if (activeCustomTopSubIndex.value === null || !customTopSubDepartments.value[activeCustomTopSubIndex.value]?.families) return [];
+    return customTopSubDepartments.value[activeCustomTopSubIndex.value].families;
+});
+
 // reset subdepartment when category changes
 const setActiveCategory = (index: number) => {
     activeIndex.value = index;
@@ -85,6 +105,8 @@ const setActiveCategory = (index: number) => {
     // Reset custom menu states
     activeCustomIndex.value = null;
     activeCustomSubIndex.value = null;
+    activeCustomTopIndex.value = null;
+    activeCustomTopSubIndex.value = null;
 };
 
 const setActiveCustomCategory = (index: number) => {
@@ -93,6 +115,20 @@ const setActiveCustomCategory = (index: number) => {
     // Reset product category states
     activeIndex.value = null;
     activeSubIndex.value = null;
+    // Reset custom top menu states
+    activeCustomTopIndex.value = null;
+    activeCustomTopSubIndex.value = null;
+};
+
+const setActiveCustomTopCategory = (index: number) => {
+    activeCustomTopIndex.value = index;
+    activeCustomTopSubIndex.value = null;
+    // Reset product category states
+    activeIndex.value = null;
+    activeSubIndex.value = null;
+    // Reset custom bottom menu states
+    activeCustomIndex.value = null;
+    activeCustomSubIndex.value = null;
 };
 
 const checkMobile = () => {
@@ -140,8 +176,8 @@ const getTarget = (item) => {
             margin: 0,
             padding: 0,
             ...getStyles(props.menu?.container?.properties),
-            width: isMobile ? null : !isNull(activeIndex) || !isNull(activeCustomIndex) ?
-                (!isNull(activeSubIndex) || !isNull(activeCustomSubIndex)) ? '60%' : '40%' : '20%'
+            width: isMobile ? null : !isNull(activeIndex) || !isNull(activeCustomIndex) || !isNull(activeCustomTopIndex) ?
+                (!isNull(activeSubIndex) || !isNull(activeCustomSubIndex) || !isNull(activeCustomTopSubIndex)) ? '60%' : '40%' : '20%'
         }">
             <template #header>
                 <img :src="header?.logo?.image?.source?.original" :alt="header?.logo?.alt" class="h-16" />
@@ -149,6 +185,72 @@ const getTarget = (item) => {
 
             <div v-if="isMobile" class="menu-container-mobile">
                 <div class="menu-content">
+                    <!-- Custom Menu Top Section for Mobile -->
+                    <div v-if="customMenusTop && customMenusTop.length > 0">
+                        <div v-for="(customTopItem, customTopIndex) in customMenusTop" :key="'custom-top-' + customTopIndex">
+                            <!-- Custom Menu Top WITH Sub-departments -->
+                            <Disclosure v-if="customTopItem.sub_departments && customTopItem.sub_departments.length > 0"
+                                v-slot="{ open }">
+                                <DisclosureButton class="w-full text-left p-4 font-semibold text-gray-600 border-b">
+                                    <div class="flex justify-between items-center text-lg"
+                                        :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }">
+                                        <span>{{ customTopItem.name }}</span>
+                                        <FontAwesomeIcon :icon="faChevronCircleDown"
+                                            :class="{ 'rotate-180': open, 'transition-transform duration-300': true }" />
+                                    </div>
+                                </DisclosureButton>
+
+                                <DisclosurePanel class="disclosure-panel">
+                                    <div v-for="(subDept, subDeptIndex) in customTopItem.sub_departments"
+                                        :key="subDeptIndex" class="mb-6">
+                                        <a v-if="subDept?.url !== null" :href="getHref(subDept)"
+                                            :target="getTarget(subDept)"
+                                            class="block text-base font-bold text-gray-700 mb-2"
+                                            :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }">
+                                            {{ subDept.name }}
+                                        </a>
+                                        <span v-else class="block text-base font-bold text-gray-700 mb-2"
+                                            :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }">
+                                            {{ subDept.name }}
+                                        </span>
+                                        <div v-if="subDept.families" class="space-y-2 mt-2 ml-4 pl-4 border-gray-200">
+                                            <div v-for="(family, familyIndex) in subDept.families" :key="familyIndex">
+                                                <a 
+                                                    v-if="family?.url !== null" :href="getHref(family)" :target="getTarget(family)"
+                                                    :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
+                                                    class="block text-sm text-gray-700 relative hover:text-primary transition-all">
+                                                    <span class="absolute left-0 -ml-4">–</span>
+                                                    {{ family.name }}
+                                                </a>
+                                                <span v-else
+                                                    :key="'span-' + familyIndex" v-if="family?.url === null"
+                                                    :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
+                                                    class="block text-sm text-gray-700 relative">
+                                                    <span class="absolute left-0 -ml-4">–</span>
+                                                    {{ family.name }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </DisclosurePanel>
+                            </Disclosure>
+
+                            <!-- Custom Menu Top SINGLE LINK -->
+                            <div v-else class="py-4 px-5 border-b">
+                                <a v-if="customTopItem?.url !== null" :href="getHref(customTopItem)"
+                                    :target="getTarget(customTopItem)"
+                                    :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
+                                    class="font-bold text-gray-600 text-lg">
+                                    {{ customTopItem.name }}
+                                </a>
+
+                                <span v-else
+                                    :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
+                                    class="font-bold text-gray-600 text-lg">{{ customTopItem.name }}</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <div v-for="(item, index) in props.menu.navigation" :key="index">
                         <!-- MULTIPLE TYPE WITH DROPDOWN -->
                         <Disclosure v-if="item.type === 'multiple'" v-slot="{ open }">
@@ -202,9 +304,9 @@ const getTarget = (item) => {
                     </div>
 
                     <!-- Custom Menus Section for Mobile -->
-                    <div v-if="customMenus && customMenus.length > 0">
+                    <div v-if="customMenusBottom && customMenusBottom.length > 0">
                         <!-- <hr class="my-4 border-gray-300"> -->
-                        <div v-for="(customItem, customIndex) in customMenus" :key="'custom-' + customIndex">
+                        <div v-for="(customItem, customIndex) in customMenusBottom" :key="'custom-' + customIndex">
                             <!-- Custom Menu WITH Sub-departments -->
                             <Disclosure v-if="customItem.sub_departments && customItem.sub_departments.length > 0"
                                 v-slot="{ open }">
@@ -282,9 +384,32 @@ const getTarget = (item) => {
 
             <!-- Two-column menu -->
             <div v-else
-                :class="['menu-container grid h-full', (activeIndex !== null || activeCustomIndex !== null) && 'grid-cols-2', (activeSubIndex !== null || activeCustomSubIndex !== null) && 'grid-cols-3']">
+                :class="['menu-container grid h-full', (activeIndex !== null || activeCustomIndex !== null || activeCustomTopIndex !== null) && 'grid-cols-2', (activeSubIndex !== null || activeCustomSubIndex !== null || activeCustomTopSubIndex !== null) && 'grid-cols-3']">
                 <!-- Column 1: Categories + Custom Menus -->
-                <div :class="[(activeIndex !== null || activeCustomIndex !== null) && 'border-r', 'overflow-y-auto']">
+                <div :class="[(activeIndex !== null || activeCustomIndex !== null || activeCustomTopIndex !== null) && 'border-r', 'overflow-y-auto']">
+                    <!-- Custom Menu Top Section for Desktop -->
+                    <div v-if="customMenusTop && customMenusTop.length > 0">
+                        <div v-for="(customTopItem, customTopIndex) in customMenusTop" :key="'custom-top-' + customTopIndex"
+                            class="p-2 px-4 flex items-center justify-between cursor-pointer transition-colors duration-200"
+                            :class="[
+                                activeCustomTopIndex === customTopIndex
+                                    ? `bg-gray-100 font-semibold text-[${layout.iris.theme?.color[0]}]`
+                                    : ' hover:bg-gray-50'
+                            ]"
+                            @click="customTopItem.sub_departments && customTopItem.sub_departments.length > 0 ? setActiveCustomTopCategory(customTopIndex) : null">
+                            <div>
+                                <a v-if="(!customTopItem.sub_departments || customTopItem.sub_departments.length === 0) && customTopItem.url !== null"
+                                    :href="getHref(customTopItem)" :target="getTarget(customTopItem)" class="block">
+                                    {{ customTopItem.name }}
+                                </a>
+                                <span v-else>{{ customTopItem.name }}</span>
+                            </div>
+                            <FontAwesomeIcon v-if="customTopItem.sub_departments && customTopItem.sub_departments.length > 0"
+                                :icon="faChevronRight" class="text-xs transition-transform duration-200" />
+                        </div>
+                        <hr class="mt-4 border-gray-200">
+                    </div>
+
                     <!-- Header -->
                     <div class="flex items-center justify-between px-2 py-4 border-b">
                         <h3 class="font-semibold text-sm">Departments</h3>
@@ -303,9 +428,9 @@ const getTarget = (item) => {
                     </div>
 
                     <!-- Custom Menus Section for Desktop -->
-                    <div v-if="customMenus && customMenus.length > 0">
+                    <div v-if="customMenusBottom && customMenusBottom.length > 0">
                         <hr class="my-4 mx-4 border-gray-300">
-                        <div v-for="(customItem, customIndex) in customMenus" :key="'custom-' + customIndex"
+                        <div v-for="(customItem, customIndex) in customMenusBottom" :key="'custom-' + customIndex"
                             class="p-2 px-4 flex items-center justify-between cursor-pointer transition-colors duration-200"
                             :class="[
                                 activeCustomIndex === customIndex
@@ -327,10 +452,10 @@ const getTarget = (item) => {
                 </div>
 
                 <!-- Column 2: Subdepartments -->
-                <div v-if="activeIndex !== null || activeCustomIndex !== null"
-                    :class="[(activeSubIndex !== null || activeCustomSubIndex !== null) && 'border-r']">
+                <div v-if="activeIndex !== null || activeCustomIndex !== null || activeCustomTopIndex !== null"
+                    :class="[(activeSubIndex !== null || activeCustomSubIndex !== null || activeCustomTopSubIndex !== null) && 'border-r']">
                     <!-- Header -->
-                    <div class="flex items-center justify-between py-4 px-4">
+                    <div  v-if="activeIndex !== null" class="flex items-center justify-between py-4 px-4">
                         <h3 class="font-semibold text-sm">Sub-Departments</h3>
                     </div>
 
@@ -381,8 +506,29 @@ const getTarget = (item) => {
                             </div> -->
                         </div>
 
+                        <!-- Custom Top Menus Subdepartments -->
+                        <div v-if="activeCustomTopIndex !== null && customTopSubDepartments.length">
+                            <div v-for="(sub, sIndex) in customTopSubDepartments" :key="sIndex"
+                                class="p-2 px-4 flex items-center justify-between cursor-pointer transition-colors duration-200"
+                                :class="[
+                                    activeCustomTopSubIndex === sIndex
+                                        ? `bg-gray-100 font-semibold text-[${layout.iris.theme?.color[0]}]`
+                                        : 'hover:bg-gray-50 text-gray-700'
+                                ]" @click="activeCustomTopSubIndex = sIndex">
+                                <div>
+                                    <a v-if="(!sub.families || sub.families.length === 0) && sub.url !== null"
+                                        :href="getHref(sub)" :target="getTarget(sub)" class="block">
+                                        {{ sub.name }}
+                                    </a>
+                                    <span v-else>{{ sub.name }}</span>
+                                </div>
+                                <FontAwesomeIcon :icon="faChevronRight"
+                                    class="transition-transform duration-200 text-xs" />
+                            </div>
+                        </div>
+
                         <!-- No subdepartments message -->
-                        <div v-if="(activeIndex !== null && !sortedSubDepartments.length) || (activeCustomIndex !== null && !customSubDepartments.length)"
+                        <div v-if="(activeIndex !== null && !sortedSubDepartments.length) || (activeCustomIndex !== null && !customSubDepartments.length) || (activeCustomTopIndex !== null && !customTopSubDepartments.length)"
                             class="p-2 text-gray-400 italic">
                             No subdepartments available
                         </div>
@@ -390,9 +536,9 @@ const getTarget = (item) => {
                 </div>
 
                 <!-- Column 3: Families -->
-                <div v-if="activeSubIndex !== null || activeCustomSubIndex !== null">
+                <div v-if="activeSubIndex !== null || activeCustomSubIndex !== null || activeCustomTopSubIndex !== null">
                     <!-- Header -->
-                    <div class="flex items-center justify-between p-4">
+                    <div  v-if="activeSubIndex !== null" class="flex items-center justify-between p-4">
                         <h3 class="font-semibold text-sm">Families</h3>
                     </div>
 
@@ -425,8 +571,18 @@ const getTarget = (item) => {
                             </div> -->
                         </div>
 
+                        <!-- Custom Top Menus Families -->
+                        <div v-if="activeCustomTopSubIndex !== null && customTopFamilies.length">
+                            <div v-for="(child, cIndex) in customTopFamilies" :key="cIndex"
+                                class="p-2 px-4  cursor-pointer hover:bg-gray-50">
+                                <a v-if="child.url !== null" :href="getHref(child)" :target="getTarget(child)">{{
+                                    child.name }}</a>
+                                <span v-else>{{ child.name }}</span>
+                            </div>
+                        </div>
+
                         <!-- No families message -->
-                        <div v-if="(activeSubIndex !== null && !sortedFamilies.length) || (activeCustomSubIndex !== null && !customFamilies.length)"
+                        <div v-if="(activeSubIndex !== null && !sortedFamilies.length) || (activeCustomSubIndex !== null && !customFamilies.length) || (activeCustomTopSubIndex !== null && !customTopFamilies.length)"
                             class="p-2 text-gray-400 italic">
                             No further items
                         </div>

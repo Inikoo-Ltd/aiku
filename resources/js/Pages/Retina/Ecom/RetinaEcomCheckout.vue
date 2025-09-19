@@ -3,7 +3,7 @@ import EcomCheckoutSummary from "@/Components/Retina/Ecom/EcomCheckoutSummary.vu
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { faPaypal } from "@fortawesome/free-brands-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { computed, inject, onMounted, ref } from "vue"
+import { computed, inject, onMounted, onUnmounted, ref } from "vue"
 import type { Component } from "vue"
 import { data } from "autoprefixer";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -89,6 +89,9 @@ const component = computed(() => {
 // }
 onMounted(() => {
     layout.root_active = 'retina.ecom.basket.'
+})
+onUnmounted(() => {
+    layout.root_active = ''
 })
 </script>
 
