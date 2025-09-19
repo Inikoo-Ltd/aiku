@@ -2,11 +2,11 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sat, 19 Jul 2025 10:44:54 British Summer Time, Trnava, Slovakia
+ * Created: Fri, 19 Sept 2025 02:58:02 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Helpers;
+namespace App\Actions\Helpers\Redirects;
 
 use App\Actions\OrgAction;
 use App\Models\Dispatching\DeliveryNote;

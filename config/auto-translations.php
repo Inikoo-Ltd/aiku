@@ -6,6 +6,8 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
+use App\Actions\Helpers\Translations\ChatGPT5Driver;
+
 return [
 
     /*
@@ -31,7 +33,7 @@ return [
     |
     */
 
-    'default_driver' => env('TRANSLATION_DEFAULT_DRIVER', 'chatgpt'),
+    'default_driver' => env('TRANSLATION_DEFAULT_DRIVER', 'chatgpt5'),
 
     /*
     |--------------------------------------------------------------------------
@@ -73,10 +75,13 @@ return [
             'api_key' => env('DEEPL_API_KEY'),
             'api_url' => env('DEEPL_API_URL', 'https://api-free.deepl.com/v2/translate'),
         ],
-        'my_custom_driver' => [
-            'class' => App\Drivers\MyCustomDriver::class,
-            'api_key' => env('MY_CUSTOM_API_KEY'),
-            // ...
+        'chatgpt5' => [
+            'class' => ChatGPT5Driver::class,
+            'api_key' => env('CHATGPT_TRANSLATIONS_API_KEY'),
+            'model' => env('CHATGPT_MODEL', 'gpt-5-nano'),
+            'max_tokens' => (int) env('CHATGPT_MAX_TOKENS', 16384),
+            'http_timeout' => (int) env('CHATGPT_HTTP_TIMEOUT', 300),
+
         ],
     ],
 ];

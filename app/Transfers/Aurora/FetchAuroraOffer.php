@@ -143,7 +143,7 @@ class FetchAuroraOffer extends FetchAurora
 
         if ($state == OfferStateEnum::ACTIVE and $trigger_type == null and $trigger == null) {
             print "No trigger found for ".$this->auroraModelData->{'Deal Trigger'}."  ".$this->auroraModelData->{'Deal Trigger Key'}."  (Active Offer)  \n";
-          //  exit;
+            //  exit;
 
             return;
         }

@@ -51,6 +51,7 @@ class ShowMasterSubDepartment extends GrpAction
         return $this->handle($masterSubDepartment);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, ActionRequest $request): MasterProductCategory
     {
         $this->parent = $masterDepartment;
@@ -101,7 +102,7 @@ class ShowMasterSubDepartment extends GrpAction
                                     'masterSubDepartment' => $masterSubDepartment->slug
                                 ]
                             ],
-                            'tooltip' => 'Master Sub-Departement',
+                            'tooltip' => __('Master Sub-Department'),
                             'icon' => ['fal', 'folder-tree']
                         ],
                     ],

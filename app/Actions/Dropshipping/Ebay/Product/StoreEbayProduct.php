@@ -111,20 +111,28 @@ class StoreEbayProduct extends RetinaAction
                 throw ValidationException::withMessages(['message' => $handleError($categories)]);
             }
 
-            $offer = $ebayUser->storeOffer([
-                'sku' => Arr::get($inventoryItem, 'sku'),
-                'description' => Arr::get($inventoryItem, 'product.description'),
-                'quantity' => Arr::get($inventoryItem, 'availability.shipToLocationAvailability.quantity'),
-                'price' => $portfolio->customer_price,
-                'currency' => $portfolio->shop->currency->code,
-                'category_id' => Arr::get($categories, 'categorySuggestions.0.category.categoryId')
+            $offerExist = $ebayUser->getOffers([
+                'sku' => Arr::get($inventoryItem, 'sku')
             ]);
+            if (Arr::get($offerExist, 'offers.0')) {
+                $offer = Arr::get($offerExist, 'offers.0');
+            } else {
+                $offer = $ebayUser->storeOffer([
+                    'sku' => Arr::get($inventoryItem, 'sku'),
+                    'description' => Arr::get($inventoryItem, 'product.description'),
+                    'quantity' => Arr::get($inventoryItem, 'availability.shipToLocationAvailability.quantity'),
+                    'price' => $portfolio->customer_price,
+                    'currency' => $portfolio->shop->currency->code,
+                    'category_id' => Arr::get($categories, 'categorySuggestions.0.category.categoryId')
+                ]);
+            }
 
             if ($handleError($offer)) {
                 throw ValidationException::withMessages(['message' => $handleError($offer)]);
             }
 
             $publishedOffer = $ebayUser->publishListing(Arr::get($offer, 'offerId'));
+
             if ($handleError($publishedOffer)) {
                 throw ValidationException::withMessages(['message' => $handleError($publishedOffer)]);
             }

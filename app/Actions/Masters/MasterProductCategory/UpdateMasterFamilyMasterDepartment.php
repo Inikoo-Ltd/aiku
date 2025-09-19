@@ -56,8 +56,7 @@ class UpdateMasterFamilyMasterDepartment extends OrgAction
                 'master_sub_department_id' => null
             ]);
 
-        foreach (ProductCategory::where('master_product_category_id', $masterFamily->id)->get() as $family)
-        {
+        foreach (ProductCategory::where('master_product_category_id', $masterFamily->id)->get() as $family) {
             CloneProductCategoryParentsFromMaster::run($family);
         }
 

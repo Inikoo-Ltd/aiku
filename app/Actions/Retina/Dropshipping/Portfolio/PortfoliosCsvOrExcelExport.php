@@ -110,21 +110,22 @@ class PortfoliosCsvOrExcelExport implements FromQuery, WithMapping, WithHeadings
 
     public function query(): \Illuminate\Database\Eloquent\Relations\Relation|\Illuminate\Database\Eloquent\Builder|\Laravel\Scout\Builder|\Illuminate\Database\Query\Builder|Portfolio
     {
-        $query = Portfolio::query();
-
-        $query->where('customer_id', $this->customer->id);
-        $query->where('customer_sales_channel_id', $this->customerSalesChannel->id);
-
-        $query->with(['item']);
-        $query->with(['item.image']);
-        $query->with(['item.family:name']);
-        $query->with(['item.currency']);
+        $query = Portfolio::query()
+            ->select('portfolios.*')
+            ->where('portfolios.customer_id', $this->customer->id)
+            ->where('portfolios.customer_sales_channel_id', $this->customerSalesChannel->id)
+            ->leftJoin('products', 'portfolios.item_id', '=', 'products.id')
+            ->leftJoin('media', 'products.image_id', '=', 'media.id')
+            ->leftJoin('product_categories', 'products.family_id', '=', 'product_categories.id')
+            ->leftJoin('currencies', 'products.currency_id', '=', 'currencies.id');
 
         if ($this->customer->is_fulfilment) {
-            $query->where('item_type', class_basename(StoredItem::class));
+            $query->where('portfolios.item_type', class_basename(StoredItem::class));
         } else {
-            $query->where('item_type', class_basename(Product::class));
+            $query->where('portfolios.item_type', class_basename(Product::class));
         }
+
+
 
         return $query;
     }

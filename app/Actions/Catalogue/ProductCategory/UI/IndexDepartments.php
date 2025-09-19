@@ -326,7 +326,7 @@ class IndexDepartments extends OrgAction
                 ProductCategoryTabsEnum::SALES->value => $this->tab == ProductCategoryTabsEnum::SALES->value ?
                     fn () => DepartmentsResource::collection($departments)
                     : Inertia::lazy(fn () => DepartmentsResource::collection($departments)),
-                
+
                 ProductCategoryTabsEnum::NEED_REVIEW->value => $this->tab == ProductCategoryTabsEnum::NEED_REVIEW->value ?
                     fn () => DepartmentsResource::collection(IndexDepartmentsNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))
                     : Inertia::lazy(fn () => DepartmentsResource::collection(IndexDepartmentsNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
