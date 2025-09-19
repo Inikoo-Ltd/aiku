@@ -50,13 +50,6 @@ trait IsDeliveryNotesIndex
         $query->leftjoin('shops', 'delivery_notes.shop_id', '=', 'shops.id');
 
         if ($shopType != 'all') {
-
-            //HACK temporal hack to show only new system orders, remove after migration
-            if ($shopType == 'dropshipping') {
-                $query->whereNull('delivery_notes.source_id');
-
-            }
-
             $query->where('shops.type', $shopType);
         }
 

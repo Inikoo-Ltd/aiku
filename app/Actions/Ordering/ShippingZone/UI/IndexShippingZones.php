@@ -58,6 +58,7 @@ class IndexShippingZones extends OrgAction
                 'shipping_zones.territories',
                 'shipping_zones.position',
                 'shipping_zones.created_at',
+                'currencies.code as currency_code'
             ]);
 
         return $queryBuilder->allowedSorts(['name', 'status', 'position'])
