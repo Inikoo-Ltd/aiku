@@ -205,7 +205,7 @@ const onDisableCheckbox = (item) => {
     <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="false"
         @onChecked="(item) => onChangeCheked(true, item)" @onUnchecked="(item) => onChangeCheked(false, item)"
         @onCheckedAll="(data) => onCheckedAll(data)" checkboxKey='id'
-        :isChecked="(item) => selectedProducts.includes(item.id)" :disabledCheckbox="(item) => onDisableCheckbox(item)"
+        :isChecked="(item) => selectedProducts?.includes(item.id)" :disabledCheckbox="(item) => onDisableCheckbox(item)"
         :rowColorFunction="(item) => {
             if (!isPlatformManual && is_platform_connected && !item.platform_product_id && get(progressToUploadToShopify, [item.id], undefined) != 'success') {
                 return 'bg-yellow-50'

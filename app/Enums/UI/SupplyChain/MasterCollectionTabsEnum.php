@@ -23,6 +23,7 @@ enum MasterCollectionTabsEnum: string
     case FAMILIES            = 'families';
     case PRODUCTS            = 'products';
     case COLLECTIONS         = 'collections';
+    case SHOP_COLLECTIONS         = 'shop_collections';
     case HISTORY  = 'history';
 
 
@@ -50,6 +51,10 @@ enum MasterCollectionTabsEnum: string
             ],
             MasterCollectionTabsEnum::COLLECTIONS => [
                 'title' => __('Collections'),
+                'icon'  => 'fal fa-cube',
+            ],
+            MasterCollectionTabsEnum::SHOP_COLLECTIONS => [
+                'title' => __('Shop Collections'),
                 'icon'  => 'fal fa-cube',
             ],
             MasterCollectionTabsEnum::SHOWCASE => [

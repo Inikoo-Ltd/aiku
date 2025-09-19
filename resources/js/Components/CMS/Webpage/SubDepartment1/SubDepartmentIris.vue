@@ -18,6 +18,7 @@ import {
   faPoundSign, faClock
 } from "@far";
 import { faLambda } from "@fad";
+import { trans } from "laravel-vue-i18n"
 
 // Tambahkan semua ikon ke library
 library.add(
@@ -86,7 +87,7 @@ const mergedItems = computed(() => {
     :style="getStyles(fieldValue?.container?.properties, screenType)"
   >
     <h2 class="text-2xl font-bold mb-6" aria-label="Browse Sub-departments Section">
-      Browse By Sub-department
+      {{ trans("Browse By Sub-department") }}
     </h2>
 
     <div >

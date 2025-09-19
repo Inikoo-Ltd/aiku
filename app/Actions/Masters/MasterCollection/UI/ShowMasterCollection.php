@@ -10,6 +10,7 @@
 
 namespace App\Actions\Masters\MasterCollection\UI;
 
+use App\Actions\Catalogue\Collection\UI\IndexCollectionsInMasterCollection;
 use App\Actions\GrpAction;
 use App\Actions\Masters\MasterAsset\UI\IndexMasterProductsInMasterCollection;
 use App\Actions\Masters\MasterProductCategory\UI\IndexMasterFamiliesInMasterCollection;
@@ -201,6 +202,10 @@ class ShowMasterCollection extends GrpAction
                 MasterCollectionTabsEnum::COLLECTIONS->value => $this->tab == MasterCollectionTabsEnum::COLLECTIONS->value ?
                     fn () => MasterCollectionsResource::collection(IndexMasterCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::COLLECTIONS->value))
                     : Inertia::lazy(fn () => MasterCollectionsResource::collection(IndexMasterCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::COLLECTIONS->value))),
+
+                MasterCollectionTabsEnum::SHOP_COLLECTIONS->value => $this->tab == MasterCollectionTabsEnum::SHOP_COLLECTIONS->value ?
+                    fn () => CollectionsResource::collection(IndexCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::SHOP_COLLECTIONS->value))
+                    : Inertia::lazy(fn () => CollectionsResource::collection(IndexCollectionsInMasterCollection::run($masterCollection, prefix: MasterCollectionTabsEnum::SHOP_COLLECTIONS->value))),
             ]
         )->table(
             IndexMasterFamiliesInMasterCollection::make()->tableStructure(
@@ -216,6 +221,10 @@ class ShowMasterCollection extends GrpAction
             IndexMasterCollectionsInMasterCollection::make()->tableStructure(
                 masterCollection: $masterCollection,
                 prefix: MasterCollectionTabsEnum::COLLECTIONS->value,
+            )
+        )->table(
+            IndexCollectionsInMasterCollection::make()->tableStructure(
+                prefix: MasterCollectionTabsEnum::SHOP_COLLECTIONS->value,
             )
         );
     }

@@ -124,7 +124,7 @@ const showDialog = ref(false);
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
-    <div v-if="mini_breadcrumbs" class="bg-white shadow-sm rounded px-4 py-2 mx-4 mt-2 w-fit border border-gray-200 overflow-x-auto">
+    <div v-if="mini_breadcrumbs.length != 0" class="bg-white shadow-sm rounded px-4 py-2 mx-4 mt-2 w-fit border border-gray-200 overflow-x-auto">
      <Breadcrumb :model="mini_breadcrumbs">
             <template #item="{ item, index }">
                 <div class="flex items-center gap-1 whitespace-nowrap">
@@ -135,7 +135,7 @@ const showDialog = ref(false);
                             ? 'text-gray-500'
                             : 'text-gray-500 cursor-default'">
                         <FontAwesomeIcon :icon="item.icon" class="w-4 h-4" />
-                        <span class="truncate max-w-[150px]">{{ item.label || '-' }}</span>
+                        <span class="truncate max-w-[150px] md:max-w-full">{{ item.label || '-' }}</span>
                     </component>
                 </div>
             </template>
