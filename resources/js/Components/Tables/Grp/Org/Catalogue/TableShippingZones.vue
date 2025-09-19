@@ -8,10 +8,13 @@
 import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import type { Links, Meta } from "@/types/Table"
-import { ref, onMounted, onUnmounted } from "vue"
-// import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
+import { ref, onMounted, onUnmounted, inject } from "vue"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-// import { faArrowRight, faTruck } from "@fal"
+import { faWeight, faBox, faClock } from "@fal"
+import { faTruck } from "@fas"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faWeight, faBox, faClock, faTruck)
 
 interface ShippingZone {
 	id: number
@@ -50,6 +53,8 @@ const props = defineProps<{
 	}
 	tab?: string
 }>()
+
+const locale = inject('locale', aikuLocaleStructure)
 
 // Reactive state for managing which postal code info is visible
 const activePostalInfo = ref<string | null>(null)
@@ -205,7 +210,7 @@ onUnmounted(() => {
 			<div class="space-y-1 text-xs text-gray-800">
 				<!-- TBC Case -->
 				<div v-if="price.price.type === 'TBC'" class="text-gray-500 italic">
-					<font-awesome-icon icon="fas fa-clock" class="text-yellow-500 mr-1" />
+					<font-awesome-icon icon="fal fa-clock" class="text- mr-1" />
 					Shipping price: TBC
 				</div>
 
@@ -220,10 +225,12 @@ onUnmounted(() => {
 							<font-awesome-icon
 								:icon="
 									price.price.type === 'Step Order Estimated Weight'
-										? 'fas fa-weight'
-										: 'fas fa-box'
+										? 'fal fa-weight'
+										: 'fal fa-box'
 								"
-								class="text-blue-500" />
+								class="opacity-70"
+								fixed-width
+							/>
 							<span>
 								{{
 									price.price.type === "Step Order Estimated Weight"
@@ -234,22 +241,23 @@ onUnmounted(() => {
 						</div>
 
 						<!-- Range -->
-						<div class="flex items-center gap-1 text-gray-700 text-sm">
-							<span>£{{ priceStep.from }}</span>
-							<font-awesome-icon icon="fas fa-arrow-right" />
-							<span v-if="priceStep.to !== 'INF'">£{{ Number(priceStep.to) }}</span>
+						<div class="flex items-center gap-1 text-gray-700 text-sm tabular-nums">
+							<span>{{ locale.number(priceStep.from) }}</span>
+							<font-awesome-icon icon="fas fa-arrow-right" fixed-width />
+							<span v-if="priceStep.to !== 'INF'">{{ locale.number(priceStep.to) }}</span>
 							<span v-else>∞</span>
 						</div>
 
 						<!-- Price -->
 						<div
-							class="font-bold text-right text-sm"
-							:class="priceStep.price === 0 ? 'text-green-600' : 'text-black'">
+							class="font-bold text-right text-sm tabular-nums"
+							:class="priceStep.price === 0 ? 'text-green-600' : ''">
 							<span v-if="priceStep.price === 0">
-								<font-awesome-icon icon="fas fa-truck" class="mr-1" />
+								<!-- <font-awesome-icon icon="fas fa-truck" class="mr-1" /> -->
 								Free
 							</span>
-							<span v-else> £{{ priceStep.price }} </span>
+							<span v-else-if="typeof priceStep.price == 'number'"> {{ locale.currencyFormat(price.currency_code, priceStep.price) }} </span>
+							<span v-else> {{ priceStep.price }} </span>
 						</div>
 					</div>
 				</div>
