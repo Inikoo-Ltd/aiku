@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Route;
 
 // Include the common trade units routes
 require_once __DIR__ . '/common/trade_units.php';
+require_once __DIR__ . '/common/trade_unit_families.php';
 
 Route::get('/', ShowGoodsDashboard::class)->name('dashboard');
 
@@ -101,6 +102,7 @@ Route::prefix('families')->as('stock-families.')->group(function () {
 
 // Use the common trade units routes
 tradeUnitsRoutes();
+tradeUnitFamiliesRoutes();
 
 
 Route::prefix('ingredients')->as('ingredients.')->group(function () {

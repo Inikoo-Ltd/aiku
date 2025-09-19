@@ -288,6 +288,16 @@ class GetGroupNavigation
 
                         ]
                     ],
+                    [
+                        'label' => 'Trade Unit Families',
+                        'icon'  => ['fal', 'fa-atom'],
+                        'root'  => 'grp.goods.trade-units.',
+                        'route' => [
+                            'name'       => 'grp.masters.trade-unit-families.index',
+                            'parameters' => []
+
+                        ]
+                    ],
 
 
                 ]
