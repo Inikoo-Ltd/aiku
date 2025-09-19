@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import InputNumber from 'primevue/inputnumber'
 import Button from '../Elements/Buttons/Button.vue'
 import PureMultiselect from './PureMultiselect.vue'
+import { trans } from 'laravel-vue-i18n'
 
 library.add(faInfinity, faPlus, faTrash)
 
@@ -22,9 +23,9 @@ const emit = defineEmits<{
 
 // Available pricing types (aligned with backend)
 const options = ref([
-  { value: 'Step Order Items Net Amount', label: 'Items net amount' },
-  { value: 'Step Order Estimated Weight', label: 'Weight' },
-  { value: 'TBC', label: 'To be confirmed' }
+  { value: 'Step Order Items Net Amount', label: trans('Items net amount') },
+  { value: 'Step Order Estimated Weight', label: trans('Weight') },
+  { value: 'TBC', label: trans('To be confirmed') }
 ])
 
 // Deep copy for local editing
