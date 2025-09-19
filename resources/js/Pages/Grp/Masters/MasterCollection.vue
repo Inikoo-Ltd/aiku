@@ -37,6 +37,7 @@ const props = defineProps<{
     families?: {}
     products?: {}
     collections?: {}
+    shop_collections?: {}
     history?: {};
     routes: {
         families: { dataList: routeType, submitAttach: routeType, detach: routeType }
@@ -69,6 +70,7 @@ const component = computed(() => {
         families: TableFamilies,
         products: TableProducts,
         collections: TableCollections,
+        shop_collections: TableCollections,
         history: TableHistories
     }
     return components[currentTab.value]

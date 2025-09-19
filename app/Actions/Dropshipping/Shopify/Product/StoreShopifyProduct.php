@@ -121,7 +121,7 @@ class StoreShopifyProduct extends RetinaAction
 
 
             if (!empty($response['errors']) || !isset($response['body'])) {
-                $errorMessage = 'Error in API response: '.json_encode($response['errors'] ?? []);
+                $errorMessage = 'Error in API response: '.$response['body'];
                 UpdatePortfolio::run($portfolio, [
                     'errors_response' => [$errorMessage]
                 ]);
