@@ -34,6 +34,7 @@ use Illuminate\Support\Facades\Route;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartmentsWorkshop;
 
 require_once __DIR__ . '/common/trade_units.php';
+require_once __DIR__ . '/common/trade_unit_families.php';
 
 Route::get('/', ShowMastersDashboard::class)->name('dashboard');
 
@@ -211,3 +212,4 @@ Route::name("master_shops")->prefix('master-shops')
 
 // Use the common trade units routes
 tradeUnitsRoutes();
+tradeUnitFamiliesRoutes();
