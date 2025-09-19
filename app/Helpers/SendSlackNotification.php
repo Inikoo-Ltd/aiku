@@ -19,8 +19,6 @@ class SendSlackNotification extends GrpAction
 {
     public function handle(MasterAsset|MasterProductCategory $parent): void
     {
-
-
         if ($parent instanceof MasterAsset) {
             $template = NewMasterAssetCreated::run($parent);
         } else {

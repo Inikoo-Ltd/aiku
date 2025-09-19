@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, Teleport } from "vue"
+import { onBeforeUnmount, onMounted, ref, Teleport, inject } from "vue"
 import { useEditor, EditorContent, BubbleMenu } from '@tiptap/vue-3'
 /* import type DataTable from "@/models/table" */
 import Select from 'primevue/select'
@@ -46,6 +46,7 @@ import suggestion from './Variables/suggestion'
 import ImageResize from 'tiptap-extension-resize-image';
 import Dialog from 'primevue/dialog';
 import Placeholder from "@tiptap/extension-placeholder"
+import axios from "axios"
 
 import {
     faUndo,
@@ -76,7 +77,7 @@ import {
     faExternalLink,
     faTimesCircle,
 } from "@far"
-import { faTable, faPalette, faUnlink } from "@fal"
+import { faTable, faPalette, faUnlink, faLanguage } from "@fal"
 import { faEraser, faTint, faTable as fasTable, } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
@@ -118,6 +119,8 @@ const emits = defineEmits<{
     (e: 'blur'): void
 }>()
 
+const layout = inject('layout', {})
+console.log(layout)
 const _bubbleMenu = ref(null)
 const showDialog = ref(false)
 const contentResult = ref<string>()
@@ -503,6 +506,34 @@ const shouldShow = ({ editor, view, state, from, to }) => {
 }
 
 const tippyOptions = ref({}) // default kosong
+
+/* const onTranslate = async () => {
+  try {
+    const text = editorInstance?.value?.getHTML() || ""; // or getHTML()
+
+    if (!text) {
+      console.warn("Editor is empty, nothing to translate.");
+      return;
+    }
+
+    const response = await axios.post(
+      route("grp.models.translate", {
+        languageFrom: "en",
+        languageTo: 'id',
+      }),
+      { text }
+    );
+
+    if (response.data) {
+      console.log("Translated text:", response.data);
+
+      // Example: replace editor content with translated version
+      editorInstance?.value?.commands.setContent(response.data, false);
+    }
+  } catch (error) {
+    console.error("Translation failed:", error);
+  }
+}; */
 
 onMounted(() => {
   setTimeout(() => (contentResult.value = editorInstance.value?.getHTML()), 250)
@@ -926,10 +957,18 @@ onMounted(() => {
                             </TiptapToolbarButton>
                         </TiptapToolbarGroup>
 
-                        <TiptapToolbarButton @click="editorInstance?.chain().focus().unsetAllMarks().run()"
-                            label="Unset Style">
-                            <FontAwesomeIcon :icon="faEraser" class="h-5 w-5 sm:h-4 sm:w-4" />
-                        </TiptapToolbarButton>
+                        <TiptapToolbarGroup>
+                            <TiptapToolbarButton @click="editorInstance?.chain().focus().unsetAllMarks().run()"
+                                label="Unset Style">
+                                <FontAwesomeIcon :icon="faEraser" class="h-5 w-5 sm:h-4 sm:w-4" />
+                            </TiptapToolbarButton>
+                        </TiptapToolbarGroup>
+
+                        <!-- <TiptapToolbarGroup>
+                            <TiptapToolbarButton @click="onTranslate" label="Translate">
+                                <FontAwesomeIcon :icon="faLanguage" class="h-5 w-5 sm:h-4 sm:w-4" />
+                            </TiptapToolbarButton>
+                        </TiptapToolbarGroup> -->
 
                     </section>
                 </div>
