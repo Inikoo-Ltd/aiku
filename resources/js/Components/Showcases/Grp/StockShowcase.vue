@@ -5,12 +5,9 @@
   -->
 
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { inject, ref, computed, watch } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { faTrash as falTrash, faEdit, faExternalLink } from "@fal"
-import { faCircle, faPlay, faTrash, faPlus } from "@fas"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
@@ -23,7 +20,12 @@ import EditTradeUnit from "@/Components/Goods/EditTradeUnit.vue"
 import { Fieldset, Select } from "primevue"
 
 
-library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus)
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faTrash as falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote } from "@fal"
+import { faCircle, faPlay, faTrash, faPlus } from "@fas"
+import StocksManagement from "@/Components/Warehouse/Inventory/StocksManagement/StocksManagement.vue"
+import { Icon } from "@/types/Utils/Icon"
+library.add(faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus)
 
 const props = defineProps<{
     data: {
@@ -75,6 +77,21 @@ const props = defineProps<{
             tags: {}[]
             tags_selected_id: number[]
         }[]
+        stocks_management: {
+            summary: {
+                [key: string]: {
+                    icon_state: Icon
+                    value: number
+                }
+            }
+            part_locations: {
+                id: number
+                name: string
+                slug: string
+                stock: number
+                isAudited: boolean
+            }[]
+        }
     }
 }>()
 
@@ -111,7 +128,7 @@ const compSelectedTradeUnit = computed(() => {
 
 
 <template>
-    <div class="grid md:grid-cols-4 gap-x-1 gap-y-4">
+    <div class="grid md:grid-cols-4 gap-x-1 gap-y-4 p-6">
         <!-- Sidebar -->
        <!--  <div class="p-5 space-y-5 grid grid-cols-1 max-w-[500px]">
             <div class="relative">
@@ -156,8 +173,11 @@ const compSelectedTradeUnit = computed(() => {
             </section>
         </div> -->
 
-        <div></div>
-        <div>
+        <div class="bg-gray-200"></div>
+        <div class="md:col-span-3">
+            <StocksManagement
+                :stocks_management="data.stocks_management"
+            />
         </div>
 
         <div class="md:col-span-2 pr-6">
@@ -250,5 +270,7 @@ const compSelectedTradeUnit = computed(() => {
                 <span class="text-sm font-medium">{{ trans("Show more") }}</span>
             </div>
         </div>
+        
+        <pre>{{ data.stocks_management }}</pre>
     </div>
 </template>
