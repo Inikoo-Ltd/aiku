@@ -12,6 +12,7 @@ namespace App\Models\Masters;
 
 use App\Enums\Catalogue\MasterCollection\MasterCollectionProductStatusEnum;
 use App\Enums\Catalogue\MasterCollection\MasterCollectionStateEnum;
+use App\Models\Catalogue\Collection;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
@@ -20,6 +21,7 @@ use App\Models\Traits\InGroup;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -183,5 +185,10 @@ class MasterCollection extends Model implements Auditable, HasMedia
         return $this->morphedByMany(MasterProductCategory::class, 'model', 'model_has_master_collections')
             ->wherePivot('type', 'master_sub_department')
             ->withTimestamps();
+    }
+
+    public function childrenCollections(): HasMany
+    {
+        return $this->hasMany(Collection::class, 'master_collection_id');
     }
 }
