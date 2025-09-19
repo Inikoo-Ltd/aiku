@@ -39,9 +39,7 @@ class EditShippingZone extends OrgAction
 
     public function htmlResponse(ShippingZone $shippingZone, ActionRequest $request): Response
     {
-        // dd(array_merge(array_values($request->route()->originalParameters()), [
-        //                             'zone'
-        // ]));
+
         return Inertia::render(
             'EditModel',
             [
