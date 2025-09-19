@@ -13,7 +13,6 @@ use App\Events\UploadProductToEbayProgressEvent;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
-use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -25,20 +24,36 @@ class MatchPortfolioToCurrentEbayProduct extends OrgAction
     {
         /** @var EbayUser $ebayUser */
         $ebayUser = $portfolio->customerSalesChannel->user;
+        $product = $portfolio->item;
 
         $ebayProductId = Arr::get($modelData, 'platform_product_id');
 
         $listing = $ebayUser->getOffers([
             'sku' => $ebayProductId
         ]);
+        $offerId = Arr::get($listing, 'offers.0.offerId');
+        $categoryId = Arr::get($listing, 'offers.0.categoryId');
+
+        $ebayUser->updateOffer($offerId, [
+            'categoryId' => $categoryId,
+            'availableQuantity' => $portfolio->item->available_quantity,
+            'pricingSummary' => [
+                'price' => [
+                    'currency' => $portfolio->shop->currency->code,
+                    'value' => $portfolio->customer_price
+                ]
+            ],
+        ]);
 
         if (! Arr::has($listing, 'offers.0.listing.listingId')) {
-            throw ValidationException::withMessages(['message' => __('This product doesnt have any listing yet.')]);
+            $publishedOffer = $ebayUser->publishListing($offerId);
+        } else {
+            $publishedOffer = Arr::get($listing, 'offers.0.listing');
         }
 
         $portfolio->update([
             'platform_product_id' => Arr::get($listing, 'offers.0.offerId'),
-            'platform_product_variant_id' => Arr::get($listing, 'offers.0.listing.listingId')
+            'platform_product_variant_id' => Arr::get($publishedOffer, 'listingId')
         ]);
 
         $portfolio->refresh();

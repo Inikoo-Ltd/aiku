@@ -31,15 +31,16 @@ class CancelDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
 
-    public function handle(DeliveryNote $deliveryNote): DeliveryNote
+
+    public function handle(DeliveryNote $deliveryNote, $fromOrder = false): DeliveryNote
     {
-        $cancelledRef = $deliveryNote->reference . '-CANCELLED';
+        $cancelledRef = $deliveryNote->reference.'-CANCELLED';
 
         $cancelledCount = DB::table('delivery_notes')
-                ->where('reference', 'like', $deliveryNote->reference . '-CANCELLED%')
-                ->count();
+            ->where('reference', 'like', $deliveryNote->reference.'-CANCELLED%')
+            ->count();
 
-        $newCancelledRef = $cancelledRef . ($cancelledCount > 0 ? '-' . ($cancelledCount + 1) : '');
+        $newCancelledRef = $cancelledRef.($cancelledCount > 0 ? '-'.($cancelledCount + 1) : '');
 
         data_set($modelData, 'reference', $newCancelledRef);
         data_set($modelData, 'cancelled_at', now());
@@ -48,7 +49,6 @@ class CancelDeliveryNote extends OrgAction
         $deliveryNote = $this->update($deliveryNote, $modelData);
 
         foreach ($deliveryNote->pickings as $picking) {
-
             $deliveryNoteItem = $picking->deliveryNoteItem;
 
             $toPick = $deliveryNoteItem->quantity_required - $deliveryNoteItem->picked_quantity;
@@ -60,15 +60,14 @@ class CancelDeliveryNote extends OrgAction
             }
             // this needs to change if $locationPickingStock is null we need to throw the error to UI
             if ($locationPickingStock && $picking->type == PickingTypeEnum::PICK) {
-
                 StorePicking::run(
                     $deliveryNoteItem,
                     $locationPickingStock,
                     [
                         'not_picked_reason' => PickingNotPickedReasonEnum::NA,
-                        'type' => PickingTypeEnum::RETURN,
-                        'quantity' => -$picking->quantity,
-                        'picker_user_id' => $picking->picker_user_id,
+                        'type'              => PickingTypeEnum::RETURN,
+                        'quantity'          => -$picking->quantity,
+                        'picker_user_id'    => $picking->picker_user_id,
 
                     ],
                 );
@@ -80,8 +79,8 @@ class CancelDeliveryNote extends OrgAction
                     request()->user(),
                     [
                         'not_picked_reason' => PickingNotPickedReasonEnum::CANCELLED_BY_CUSTOMER,
-                        'not_picked_note' => "Delivery Note $deliveryNote->reference cancelled.",
-                        'quantity' => $toPick,
+                        'not_picked_note'   => "Delivery Note $deliveryNote->reference cancelled.",
+                        'quantity'          => $toPick,
                     ],
                 );
             }
@@ -90,12 +89,13 @@ class CancelDeliveryNote extends OrgAction
 
         foreach ($deliveryNote->deliveryNoteItems as $item) {
             UpdateDeliveryNoteItem::make()->action($item, [
-                'state' => DeliveryNoteItemStateEnum::CANCELLED,
+                'state'        => DeliveryNoteItemStateEnum::CANCELLED,
                 'cancel_state' => DeliveryNoteItemCancelStateEnum::RETURNED,
             ]);
         }
 
-        if ($deliveryNote->type == DeliveryNoteTypeEnum::ORDER) {
+
+        if ($deliveryNote->type == DeliveryNoteTypeEnum::ORDER && !$fromOrder) {
             $order = $deliveryNote->orders->first();
             RollbackOrderAfterDeliveryNoteCancellation::make()->action($order);
         }
@@ -114,10 +114,10 @@ class CancelDeliveryNote extends OrgAction
         return $this->handle($deliveryNote);
     }
 
-    public function action(DeliveryNote $deliveryNote): DeliveryNote
+    public function action(DeliveryNote $deliveryNote, $fromOrder = false): DeliveryNote
     {
         $this->initialisationFromShop($deliveryNote->shop, []);
 
-        return $this->handle($deliveryNote);
+        return $this->handle($deliveryNote, $fromOrder);
     }
 }

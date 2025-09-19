@@ -9,17 +9,24 @@
 namespace App\Actions\Ordering\Order;
 
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
+use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Dispatching\DeliveryNote\CancelDeliveryNote;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
+use App\Enums\Accounting\Payment\PaymentStateEnum;
+use App\Enums\Accounting\Payment\PaymentStatusEnum;
+use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
+use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -63,11 +70,33 @@ class CancelOrder extends OrgAction
                 'reason' => CreditTransactionReasonEnum::MONEY_BACK,
                 'notes'  => "Order #$order->reference cancelled. Money returned as store credit.",
             ]);
+
+
+            $paymentAccountShop = PaymentAccountShop::where('shop_id', $order->shop_id)->where('type', 'account')->where('state', 'active')->first();
+
+            $paymentData = [
+                'reference'               => 'cu-'.$order->customer->id.'-return-bal-'.Str::random(10),
+                'amount'                  => -$order->payment_amount,
+                'status'                  => PaymentStatusEnum::SUCCESS,
+                'payment_account_shop_id' => $paymentAccountShop->id,
+                'state'                   => PaymentStateEnum::COMPLETED,
+                'type'                    => PaymentTypeEnum::REFUND
+            ];
+
+
+
+            $payment     = StorePayment::make()->action($order->customer, $paymentAccountShop->paymentAccount, $paymentData);
+
+            AttachPaymentToOrder::make()->action($order, $payment, [
+                'amount' => $payment->amount
+            ]);
+
+
         }
 
         $deliveryNotes = $order->deliveryNotes;
         foreach ($deliveryNotes as $deliveryNote) {
-            CancelDeliveryNote::make()->action($deliveryNote);
+            CancelDeliveryNote::make()->action($deliveryNote,true);
         }
 
 
