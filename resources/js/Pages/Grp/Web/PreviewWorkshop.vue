@@ -40,6 +40,8 @@ const props = defineProps<{
     sidebar: {}
 }>()
 
+console.log(props.sidebar);
+
 const isOpenMenuMobile = inject('isOpenMenuMobile')
 const layout: any = inject("layout", {});
 const isPreviewLoggedIn = ref(false)
