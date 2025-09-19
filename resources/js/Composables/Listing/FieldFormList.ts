@@ -54,7 +54,7 @@ import DeleteWebpage from '@/Components/Forms/Fields/DeleteWebpage.vue'
 import InputTranslation from '@/Components/Forms/Fields/InputTranslation.vue'
 import TextEditorTranslation from '@/Components/Forms/Fields/TextEditorTranslation.vue'
 import Pricing_zone from '@/Components/Forms/Fields/Pricing_zone.vue'
-import Teritory_zone from '@/Components/Forms/Fields/Teritory_zone.vue'
+import TerritoryZone from '@/Components/Forms/Fields/TerritoryZone.vue'
 import SelectPrinter from '@/Components/Forms/Fields/SelectPrinter.vue'
 import ListSelectorFrom from '@/Components/Forms/Fields/ListSelectorFrom.vue'
 import BrandsTradeUnit from '@/Components/Forms/Fields/BrandsTradeUnit.vue'
@@ -114,7 +114,7 @@ export const componentsList: {[key: string]: Component} = {
     'select_infinite': SelectInfiniteScroll,
     'textEditor_translation' : TextEditorTranslation,
     'pricing_zone': Pricing_zone,
-    'teritory_zone': Teritory_zone,
+    'territory_zone': TerritoryZone,
     'crop-image-full' : cropImageFull,
     'list-selector' : ListSelectorFrom,
     'edit-trade-unit-shop' : FormEditTradeUnit,

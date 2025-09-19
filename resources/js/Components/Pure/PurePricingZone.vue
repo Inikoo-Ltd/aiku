@@ -4,7 +4,9 @@ import { faInfinity, faPlus, faTrash } from '@far'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import InputNumber from 'primevue/inputnumber'
+import Button from '../Elements/Buttons/Button.vue'
 import PureMultiselect from './PureMultiselect.vue'
+import { trans } from 'laravel-vue-i18n'
 
 library.add(faInfinity, faPlus, faTrash)
 
@@ -19,17 +21,19 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: any): void
 }>()
 
+// Available pricing types (aligned with backend)
 const options = ref([
-  { value: 'Step Order Estimated Weight', label: 'Step Order Estimated Weight' },
-  { value: 'shipping_zone', label: 'Shipping Zone' },
+  { value: 'Step Order Items Net Amount', label: trans('Items net amount') },
+  { value: 'Step Order Estimated Weight', label: trans('Weight') },
+  { value: 'TBC', label: trans('To be confirmed') }
 ])
 
-// Deep copy untuk local editing
+// Deep copy for local editing
 const localSteps = shallowRef(
   JSON.parse(JSON.stringify(props.modelValue.steps))
 )
 
-// Sync jika modelValue.steps berubah dari luar
+// Sync if modelValue.steps changes from outside
 watch(() => props.modelValue.steps, (newVal) => {
   localSteps.value = JSON.parse(JSON.stringify(newVal))
 }, { deep: true })
@@ -37,7 +41,6 @@ watch(() => props.modelValue.steps, (newVal) => {
 function updateStep(index: number, field: 'from' | 'to' | 'price', value: number | string) {
   localSteps.value[index][field] = value
 
-  // Emit hanya perubahan yang diperlukan
   const updatedSteps = localSteps.value.map(step => ({ ...step }))
   emit('update:modelValue', {
     ...props.modelValue,
@@ -76,6 +79,10 @@ function removeStep(index: number) {
 
 <template>
   <div class="space-y-4 text-sm">
+
+    <div class="flex justify-end mb-2">
+      <Button :icon="faPlus" label="Add Step" type="create" size="xs"  @click="()=>addStepBeforeInfinity()" />
+    </div>
     <!-- Type Selector -->
     <div>
       <label class="block mb-1 font-medium text-gray-700">Type</label>
@@ -93,7 +100,7 @@ function removeStep(index: number) {
     </div>
 
     <!-- Steps Table -->
-    <div>
+    <div v-if="modelValue.type !== 'TBC'">
       <div class="grid grid-cols-12 gap-2 text-xs font-semibold text-gray-500 border-b pb-1">
         <div class="col-span-3">From</div>
         <div class="col-span-3">To</div>
@@ -143,27 +150,27 @@ function removeStep(index: number) {
 
         <!-- Action -->
         <div class="col-span-2 flex items-center justify-center gap-2">
-          <button
+          <div
             v-if="item.to !== 'INF'"
             class="text-red-500 hover:text-red-700"
             @click="removeStep(index)"
             title="Remove Step"
           >
             <FontAwesomeIcon :icon="faTrash" />
-          </button>
+          </div>
         </div>
       </div>
 
       <!-- Add Button -->
-      <div class="pt-3 text-right">
-        <button
+      <!-- <div class="pt-3 text-right">
+        <div
           class="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800"
-          @click="addStepBeforeInfinity"
+          @click="()=>addStepBeforeInfinity()"
         >
           <FontAwesomeIcon :icon="faPlus" />
           Add Step
-        </button>
-      </div>
+        </div>
+      </div> -->
     </div>
   </div>
 </template>
