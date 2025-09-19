@@ -5,7 +5,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { TabGroup, Tab, TabPanels, TabPanel } from '@headlessui/vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 // import WebBlockListDnd from "@/Components/CMS/Fields/WebBlockListDnd.vue"
-import SetMenuListWorkshop from "@/Components/CMS/Fields/SetMenuListWorkshop.vue"
+import SetMenuListWorkshopForSidebar from "@/Components/CMS/Fields/SetMenuListWorkshopForSidebar.vue"
 import axios from "axios"
 import {
 	faChevronRight,
@@ -79,6 +79,8 @@ const onPickBlock = (value: object) => {
 
 let controller: AbortController | null = null
 const autoSave = async (value) => {
+
+	console.log(value);
   // Cancel the previous request if still pending
   if (controller) {
     controller.abort()
@@ -127,7 +129,7 @@ const autoSave = async (value) => {
 			</TabPanel> -->
 			<TabPanel v-if="data">
 				<!-- need fix this components edit drawer -->
-				<SetMenuListWorkshop :data="data" :autosaveRoute="autosaveRoute" @auto-save="() => autoSave(data)" />
+				<SetMenuListWorkshopForSidebar :data="data" :autosaveRoute="autosaveRoute" @auto-save="() => autoSave(data)" />
 			</TabPanel>
 			<!-- <TabPanel  v-if="data">
 				<SideEditor

@@ -14,7 +14,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { computed, ref, onMounted } from "vue"
 import { routeType } from "@/types/route"
 import { notify } from "@kyvg/vue3-notification"
-import { faTrashAlt, faTools, faTimes } from "@fal"
+import { faTrashAlt, faImage, faTools, faTimes } from "@fal"
 import { faCheckCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { Portfolio } from "@/types/portfolio"
@@ -29,7 +29,7 @@ import { debounce } from "lodash-es"
 import PureProgressBar from "@/Components/PureProgressBar.vue"
 import { Message } from "primevue"
 
-library.add(faTrashAlt, faTools, faCheckCircle)
+library.add(faTrashAlt, faImage, faTools, faCheckCircle)
 
 interface ShopifyProduct {
     id: string // "gid://shopify/Product/12148498727252"
@@ -387,42 +387,43 @@ onMounted(() => {
             <!-- {{ portfolio.customer_sales_channel_platform_status }} {{   !portfolio.platform_status }} -->
             <template v-if="(portfolio.customer_sales_channel_platform_status &&  !portfolio.platform_status)">
                 <div v-if="portfolio.platform_possible_matches?.number_matches"  class="flex gap-x-2 items-center">
-                    <div class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow">
+                    <div class="min-h-12 h-auto max-h-24 min-w-24 w-auto max-w-24 shadow bg-gray-100">
                         <img :src="portfolio.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src" />
                     </div>
-                    <div>
-                        <span class="mr-1">{{ portfolio.platform_possible_matches?.matches_labels[0]}}</span>
+                    <div class="flex flex-col justify-start items-start gap-y-1">
+                        <div class="">{{ portfolio.platform_possible_matches?.matches_labels[0]}}</div>
+                        <ButtonWithLink
+                            v-if="portfolio.platform_possible_matches?.number_matches"
+                            v-tooltip="trans('Match to existing Shopify product')"
+                            :routeTarget="{
+                                method: 'post',
+                                name: 'grp.models.portfolio.match_to_existing_shopify_product',
+                                parameters: {
+                                    portfolio: portfolio.id,
+                                    shopify_product_id: portfolio.platform_possible_matches.raw_data?.[0]?.id
+                                }
+                            }"
+                            :bindToLink="{
+                                preserveScroll: true,
+                            }"
+                            type="secondary"
+                            :label="trans('Match with this product')"
+                            size="xxs"
+                            icon="fal fa-tools"
+                        />
+                        
+                        <Button
+                            xv-if="portfolio.platform_possible_matches?.number_matches"
+                            @click="() => (fetchRoute(), isOpenModalVariant = true, selectedPortfolio = portfolio)"
+                            :label="trans('Select other product from Shopify')"
+                            :capitalize="false"
+                            size="xxs"
+                            type="tertiary"
+                        />
                     </div>
                 </div>
                 
-                <ButtonWithLink
-                    v-if="portfolio.platform_possible_matches?.number_matches"
-                    v-tooltip="trans('Match to existing Shopify product')"
-                    :routeTarget="{
-                        method: 'post',
-                        name: 'grp.models.portfolio.match_to_existing_shopify_product',
-                        parameters: {
-                            portfolio: portfolio.id,
-                            shopify_product_id: portfolio.platform_possible_matches.raw_data?.[0]?.id
-                        }
-                    }"
-                    :bindToLink="{
-                        preserveScroll: true,
-                    }"
-                    type="secondary"
-                    :label="trans('Match with this product')"
-                    size="xxs"
-                    icon="fal fa-tools"
-                />
                 
-                <Button
-                    xv-if="portfolio.platform_possible_matches?.number_matches"
-                    @click="() => (fetchRoute(), isOpenModalVariant = true, selectedPortfolio = portfolio)"
-                    :label="trans('Select other product from Shopify')"
-                    :capitalize="false"
-                    size="xxs"
-                    type="tertiary"
-                />
             </template>
 
             <div v-else-if="portfolio.matched_product?.label">
@@ -523,8 +524,15 @@ onMounted(() => {
                                         <!-- <Image v-if="item.image" :src="item.image?.[0]?.src"
                                             class="w-16 h-16 overflow-hidden mx-auto md:mx-0 mb-4 md:mb-0" imageCover
                                             :alt="item.name"/> -->
-                                        <div class="min-h-3 h-auto max-h-9 min-w-9 w-auto max-w-9">
-                                            <img :src="item.images?.[0]?.src" class="shadow" />
+                                        <div class="min-h-9 h-auto max-h-12 min-w-12 w-auto max-w-12 flex items-center justify-center border border-gray-300 rounded">
+                                            <img v-if="item.images?.[0]?.src" :src="item.images?.[0]?.src" class="shadow" />
+                                            <FontAwesomeIcon v-else
+                                                v-tooltip="trans('No image available')"
+                                                icon="fal fa-image"
+                                                class="text-gray-400"
+                                                :aria-hidden="true"
+                                                fixed-width
+                                            />
                                         </div>
                                         <div class="flex flex-col justify-between">
                                             <div class="w-fit" xclick="() => selectProduct(item)">
@@ -544,6 +552,9 @@ onMounted(() => {
                                                 </div>
                                                 <div v-if="item.gross_weight" v-tooltip="trans('Weight')"
                                                         class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}
+                                                </div>
+                                                <div v-if="item.id" v-tooltip="trans('Id')"
+                                                        class="w-fit text-xxs text-gray-400 italic">{{ item.id }}
                                                 </div>
                                             </div>
                                             <!-- <div v-if="!item.no_price" xclick="() => selectProduct(item)"
@@ -584,7 +595,7 @@ onMounted(() => {
                     <div class="mt-4">
                         <Button
                             @click="() => onSubmitVariant()"
-                            xdisabled="selectedProduct.length < 1"
+                            :disabled="!selectedVariant?.id"
                             xv-tooltip="selectedProduct.length < 1 ? trans('Select at least one product') : ''"
                             xlabel="submitLabel ?? `${trans('Add')} ${selectedProduct.length}`"
                             :label="trans('Match the product')"
