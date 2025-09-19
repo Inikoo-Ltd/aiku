@@ -476,6 +476,26 @@ trait WithEbayApiRequest
         }
     }
 
+    /**
+     * Update offer by offer ID
+     */
+    public function updateOffer($offerId, array $productData)
+    {
+        try {
+            $endpoint = "/sell/inventory/v1/offer/$offerId";
+            return $this->makeEbayRequest('put', $endpoint, array_merge($productData, [
+                "listingPolicies" => [
+                    "fulfillmentPolicyId" => Arr::get($this->settings, 'defaults.main_fulfilment_policy_id'),
+                    "paymentPolicyId" => Arr::get($this->settings, 'defaults.main_payment_policy_id'),
+                    "returnPolicyId" => Arr::get($this->settings, 'defaults.main_return_policy_id'),
+                ],
+                "merchantLocationKey" => Arr::get($this->settings, 'defaults.main_location_key')
+            ]));
+        } catch (Exception $e) {
+            Log::error('Get eBay Offer Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
 
     /**
      * Delete product from eBay
