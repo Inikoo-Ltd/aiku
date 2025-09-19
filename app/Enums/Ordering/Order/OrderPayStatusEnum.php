@@ -18,6 +18,7 @@ enum OrderPayStatusEnum: string
     case UNPAID = 'unpaid';
     case PAID = 'paid';
     case UNKNOWN = 'unknown';
+    case NO_NEED = 'no_need';
 
     public static function labels(): array
     {
@@ -25,6 +26,7 @@ enum OrderPayStatusEnum: string
             'unpaid' => __('Unpaid'),
             'paid'   => __('Paid'),
             'unknown' => __('Unknown payment status'),
+            'no_need' => __('No need to pay'),
         ];
     }
 
@@ -61,6 +63,15 @@ enum OrderPayStatusEnum: string
                     'type' => 'font-awesome-5'
                 ]
             ],
+            'no_need' => [
+                'tooltip' => __('No need to pay'),
+                'icon'    => 'fal fa-check-circle',
+                'class'   => 'text-green-600',
+                'color'   => 'lime',
+                'app'     => [
+                    'name' => 'check-circle',
+                ]
+            ]
         ];
     }
 }
