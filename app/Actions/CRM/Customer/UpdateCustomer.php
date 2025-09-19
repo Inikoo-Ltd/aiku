@@ -22,11 +22,11 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Actions\Traits\WithProcessContactNameComponents;
+use App\Actions\Traits\WithPrepareTaxNumberValidation;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Models\CRM\Customer;
-use App\Models\Helpers\Country;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
 use App\Rules\Phone;
@@ -42,6 +42,7 @@ class UpdateCustomer extends OrgAction
     use WithNoStrictRules;
     use WithProcessContactNameComponents;
     use WithCRMEditAuthorisation;
+    use WithPrepareTaxNumberValidation;
 
     private Customer $customer;
 
@@ -95,6 +96,7 @@ class UpdateCustomer extends OrgAction
                         modelData: $taxNumberData
                     );
                 } else {
+
                     UpdateTaxNumber::run($customer->taxNumber, $taxNumberData);
                 }
             } elseif ($customer->taxNumber) {
@@ -240,19 +242,6 @@ class UpdateCustomer extends OrgAction
         return $rules;
     }
 
-    public function prepareForValidation(ActionRequest $request): void
-    {
-        if ($request->has('tax_number')) {
-            $countryCode   = Arr::get($request->get('tax_number'), 'country.isoCode.short');
-            $country       = Country::where('code', $countryCode)->first();
-            $taxNumberData = [
-                'number'     => (string)Arr::get($request->get('tax_number'), 'value'),
-                'country_id' => $country->id
-            ];
-
-            $this->set('tax_number', $taxNumberData);
-        }
-    }
 
     public function asController(Organisation $organisation, Customer $customer, ActionRequest $request): Customer
     {
