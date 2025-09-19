@@ -140,7 +140,7 @@ class ShowMasterFamily extends GrpAction
                                     'masterSubDepartment' => $masterFamily->masterSubDepartment->slug
                                 ]
                             ],
-                            'tooltip' => 'Master Sub-Departement',
+                            'tooltip' => __('Master Sub-Department'),
                             'icon' => ['fal', 'folder-tree']
                         ] : [],
                         [

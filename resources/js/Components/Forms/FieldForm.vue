@@ -10,7 +10,7 @@ import { useForm } from '@inertiajs/vue3'
 import { routeType } from '@/types/route'
 import { ref, computed } from 'vue'
 import axios from 'axios'
-import { getComponent } from '@/Composables/Listing/FieldFormList'  // Fieldform list
+import { getComponent } from '@/Composables/Listing/FieldFormList'  // Field form list
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faSave as fadSave, } from '@fad'
@@ -145,7 +145,6 @@ defineExpose({
                             <FontAwesomeIcon v-if="form.processing" icon='fad fa-spinner-third' class='text-2xl animate-spin' fixed-width aria-hidden='true' />
                             <FontAwesomeIcon v-else icon="fad fa-save" class="h-8" :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
                         </template>
-                        <!-- <FontAwesomeIcon v-else-if="form.recentlySuccessful" icon="fas fa-check-circle" class="h-7 aspect-square text-green-500" aria-hidden="true" /> -->
                         <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
                     </button>
 

@@ -128,7 +128,7 @@ class ShowMasterProducts extends GrpAction
                                     'masterSubDepartment' => $masterAsset->masterSubDepartment->slug
                                 ]
                             ],
-                            'tooltip' => 'Master Sub-Departement',
+                            'tooltip' => __('Master Sub-Department'),
                             'icon' => ['fal', 'folder-tree']
                         ] : [],
                         $masterAsset->master_family_id ? [

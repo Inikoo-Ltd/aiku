@@ -21,6 +21,7 @@ use App\Actions\Traits\UI\WithImageCatalogue;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Helpers\SendSlackNotification;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Rules\AlphaDashDot;
@@ -122,6 +123,8 @@ class StoreMasterProductCategory extends GrpAction
         }
 
         GroupHydrateMasterProductCategories::dispatch($masterProductCategory->group)->delay($this->hydratorsDelay);
+
+        SendSlackNotification::dispatch($masterProductCategory);
 
         return $masterProductCategory;
     }

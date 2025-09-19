@@ -165,7 +165,7 @@ class ShowMasterDepartment extends GrpAction
 
     public function getBreadcrumbs(Group|MasterShop|MasterProductCategory $parent, ?MasterProductCategory $masterDepartment, string $routeName, array $routeParameters, string $suffix = null): array
     {
-        if($masterDepartment==null){
+        if ($masterDepartment == null) {
             return [];
         }
 

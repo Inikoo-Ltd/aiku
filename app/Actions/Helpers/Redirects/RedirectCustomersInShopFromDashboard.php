@@ -1,14 +1,12 @@
 <?php
 
 /*
- * Author: Ganes <gustiganes@gmail.com>
- * Created on: 22-04-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
- * Copyright: 2025
- *
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 19 Sept 2025 02:58:02 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
-namespace App\Actions\Helpers;
+namespace App\Actions\Helpers\Redirects;
 
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;

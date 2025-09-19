@@ -46,8 +46,7 @@ class UpdateMasterFamilyMasterSubDepartment extends GrpAction
                 'master_sub_department_id' => $masterFamily->master_sub_department_id,
             ]);
 
-        foreach (ProductCategory::where('master_product_category_id', $masterFamily->id)->get() as $family)
-        {
+        foreach (ProductCategory::where('master_product_category_id', $masterFamily->id)->get() as $family) {
             CloneProductCategoryParentsFromMaster::run($family);
         }
 

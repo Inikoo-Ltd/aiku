@@ -8,16 +8,9 @@
 
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
-use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
-use App\Actions\Catalogue\WithCollectionSubNavigation;
-use App\Actions\Catalogue\WithDepartmentSubNavigation;
-use App\Actions\Catalogue\WithSubDepartmentSubNavigation;
 use App\Actions\OrgAction;
-use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Enums\UI\Catalogue\ProductCategoryTabsEnum;
 use App\Http\Resources\Catalogue\FamiliesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Collection;
@@ -31,9 +24,6 @@ use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
-use Inertia\Inertia;
-use Inertia\Response;
-use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
 use Spatie\QueryBuilder\Sorts\Sort;
@@ -71,8 +61,8 @@ class IndexDepartmentsNeedReviews extends OrgAction
             $queryBuilder->where('product_categories.master_product_category_id', $parent->id);
         }
 
-        
-       $queryBuilder->where(function ($query) {
+
+        $queryBuilder->where(function ($query) {
             $query->where(function ($subQuery) {
                 $subQuery->where('product_categories.is_name_reviewed', false)
                     ->orWhereNull('product_categories.is_name_reviewed');
@@ -188,18 +178,19 @@ class IndexDepartmentsNeedReviews extends OrgAction
                     [
                             'title' => __("No families need review"),
                             'count' => 0,
-                    ])
-                    
-                
+                    ]
+                )
+
+
                 ->withGlobalSearch()
                 ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->withModelOperations($modelOperations);
 
-                $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'is_name_reviewed', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'is_description_title_reviewed', label: __('description title'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'is_description_reviewed', label: __('description'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'is_description_extra_reviewed', label: __('description extra'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'is_name_reviewed', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'is_description_title_reviewed', label: __('description title'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'is_description_reviewed', label: __('description'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'is_description_extra_reviewed', label: __('description extra'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 

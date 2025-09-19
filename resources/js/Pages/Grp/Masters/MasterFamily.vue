@@ -135,7 +135,7 @@ const showDialog = ref(false);
                             ? 'text-gray-500'
                             : 'text-gray-500 cursor-default'">
                         <FontAwesomeIcon :icon="item.icon" class="w-4 h-4" />
-                        <span class="truncate max-w-[150px]">{{ item.label || '-' }}</span>
+                        <span class="truncate max-w-[150px] md:max-w-full">{{ item.label || '-' }}</span>
                     </component>
                 </div>
             </template>
