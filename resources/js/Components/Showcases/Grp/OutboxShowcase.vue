@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { HtmlHTMLAttributes, ref } from "vue"
-import { Pie } from "vue-chartjs"
 import { Chart as ChartJS, Title, Tooltip, Legend, ArcElement } from "chart.js"
 import Modal from "@/Components/Utils/Modal.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faInboxOut } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faExpand } from "@fal"
 import ScreenView from "@/Components/ScreenView.vue"
 import { setIframeView } from "@/Composables/Workshop"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
@@ -20,7 +18,7 @@ import {
 	faEnvelopeOpen,
 	faHandPaper,
 	faDumpster,
-	faDraftingCompass,
+	faDraftingCompass,faExpand
 } from "@fal"
 import { Link } from "@inertiajs/vue3"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -48,29 +46,21 @@ const props = defineProps<{
 	data: {
 		outbox: {
 			slug: string
-			sender: String
-			subject: String
+			sender: string
+			subject: string
 		}
 		stats: Array<any>
 		compiled_layout: HtmlHTMLAttributes
-		dashboard_stats: String
+		dashboard_stats: string
         outbox_subscribe: any
-		builder: String
+        has_user_subscribers: boolean
+		builder: string
 	}
 }>()
 
 const previewOpen = ref(false)
 const iframeClass = ref("w-full h-full")
-// const totalValue = (props.data.stats.map((item) => item.value || 0)).reduce((acc, val) => acc + val, 0);
-// const dataSet = {
-//     labels: (props.data.stats.map((item) => item.label)),
-//     datasets: [
-//         {
-//             backgroundColor: (props.data.stats.map((item) => item.color)),
-//             data: (props.data.stats.map((item) => item.value || 0)),
-//         },
-//     ],
-// };
+
 
 const isLoadingVisit = ref(false)
 </script>
@@ -140,34 +130,12 @@ const isLoadingVisit = ref(false)
 				</div>
 			</div>
 			<!-- Right Column: UserSubscribe -->
-			<div class="h-full">
-				<UserSubscribe :widget="props.data.outbox_subscribe.data" class="h-full" />
+
+			<div class="h-full" v-if="data.has_user_subscribers">
+				<UserSubscribe   :widget="props.data.outbox_subscribe.data" class="h-full" />
 			</div>
 		</div>
 	</div>
-	<!--  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="h-auto mb-3">
-                <div class="bg-white p-4 rounded-lg drop-shadow-2xl overflow-auto relative">
-                    <button @click="previewOpen = true"
-                        class="absolute top-2 right-2 bg-gray-300 text-white px-2 py-1 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300">
-                        <FontAwesomeIcon :icon="faExpand" />
-                    </button>
-
-                    <div class="mb-4 border-b pb-2">
-                        <p class="text-sm text-gray-500"><strong>From:</strong> {{ data.outbox.sender || 'Unknown Sender' }}
-                        </p>
-                        <p class="text-sm text-gray-500"><strong>Subject:</strong> {{ data.outbox.subject || '(No Subject)' }}
-                        </p>
-                    </div>
-                    <div v-if="data.compiled_layout" v-html="data.compiled_layout"></div>
-                    <div v-else>
-                        <EmptyState :data="{ title: 'You don’t have any preview' }" />
-                    </div>
-                </div>
-            </div>
-        </div> -->
-
-	<!-- <pre>{{ props }}</pre> -->
 
 	<Modal :isOpen="previewOpen" @onClose="previewOpen = false">
 		<div class="border">
