@@ -40,7 +40,8 @@ class GetMasterDepartmentAndMasterSubDepartments extends GrpAction
         $queryBuilder = QueryBuilder::for(MasterProductCategory::class);
         $queryBuilder->where('master_product_categories.master_shop_id', $masterShop->id);
         $queryBuilder->whereIn('type', [MasterProductCategoryTypeEnum::DEPARTMENT, MasterProductCategoryTypeEnum::SUB_DEPARTMENT]);
-
+        $queryBuilder->whereNull('deleted_at');
+        
         return $queryBuilder
             ->defaultSort('master_product_categories.code')
             ->select([

@@ -170,7 +170,7 @@ class ShowFamily extends OrgAction
                 ],
                 'mini_breadcrumbs' => array_filter(
                     [
-                        $family->department_id ? [
+                        $family->department ? [
                             'label'   => $family->department->name,
                             'to'      => [
                                 'name'       => 'grp.org.shops.show.catalogue.departments.show',
@@ -183,7 +183,7 @@ class ShowFamily extends OrgAction
                             'tooltip' => 'Department',
                             'icon'    => ['fal', 'folder-tree']
                         ] : [],
-                        $family->sub_department_id ? [
+                        $family->subDepartment ? [
                             'label'   => $family->subDepartment->name,
                             'to'      => [
                                 'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
