@@ -40,6 +40,7 @@ class GetDepartmentAndSubDepartments extends OrgAction
         $queryBuilder = QueryBuilder::for(ProductCategory::class);
         $queryBuilder->where('product_categories.shop_id', $shop->id);
         $queryBuilder->whereIn('type', [ProductCategoryTypeEnum::DEPARTMENT, ProductCategoryTypeEnum::SUB_DEPARTMENT]);
+        $queryBuilder->whereNull('deleted_at');
 
         return $queryBuilder
             ->defaultSort('product_categories.code')
