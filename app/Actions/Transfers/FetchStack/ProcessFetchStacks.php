@@ -37,7 +37,7 @@ class ProcessFetchStacks
                 'send_to_queue_at' => now()
             ]);
 
-            $command?->info("Processing: $fetchStack->id $fetchStack->operation $fetchStack->submitted_at ");
+            $command?->info("Processing: $fetchStack->id $fetchStack->operation $fetchStack->operation_id $fetchStack->submitted_at ");
 
             ProcessFetchStack::run($fetchStack, $runInBackground);
         }
