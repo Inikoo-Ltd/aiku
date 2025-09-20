@@ -10,6 +10,7 @@ namespace App\Actions\Transfers\FetchStack;
 
 use App\Actions\Traits\WithOrganisationSource;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
+use App\Enums\Transfers\FetchStack\FetchStackStateEnum;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Transfers\FetchStack;
 use Illuminate\Console\Command;
@@ -51,7 +52,10 @@ class StoreFetchStacks
             }
 
             foreach ($data as $key => $row) {
-                FetchStack::create($row);
+
+                if(!FetchStack::where('operation', $row['operation'])->where('operation_id', $row['operation_id'])->where('state',FetchStackStateEnum::IN_PROCESS)->exists()){
+                    FetchStack::create($row);
+                }
                 DB::connection('aurora')->table('Stack Aiku Dimension')->where('Stack Aiku Key', $key)->delete();
             }
 
