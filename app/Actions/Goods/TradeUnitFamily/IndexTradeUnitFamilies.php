@@ -11,11 +11,8 @@ namespace App\Actions\Goods\TradeUnitFamily;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\GrpAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
-use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Http\Resources\Goods\TradeUnitFamiliesResource;
-use App\Http\Resources\Goods\TradeUnitsResource;
 use App\InertiaTable\InertiaTable;
-use App\Models\Goods\TradeUnit;
 use App\Models\Goods\TradeUnitFamily;
 use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
@@ -120,7 +117,7 @@ class IndexTradeUnitFamilies extends GrpAction
                     'title'         => __('Trade Unit Families'),
                     'iconRight'     => [
                         'icon'  => ['fal', 'fa-atom'],
-                        'title' =>__('Trade Unit Families'),
+                        'title' => __('Trade Unit Families'),
                     ],
                 ],
                 'data'        => TradeUnitFamiliesResource::collection($tradeUnitFamilies),

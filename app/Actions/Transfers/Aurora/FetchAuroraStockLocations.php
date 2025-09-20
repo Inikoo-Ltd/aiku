@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Fri, 19 Sept 2025 03:13:40 Malaysia Time, Kuala Lumpur, Malaysia
@@ -7,25 +8,12 @@
 
 namespace App\Actions\Transfers\Aurora;
 
-use App\Actions\Goods\Stock\StoreStock;
-use App\Actions\Goods\Stock\SyncStockTradeUnits;
-use App\Actions\Goods\Stock\UpdateStock;
 use App\Actions\Inventory\OrgStock\SyncOrgStockLocations;
-use App\Actions\Inventory\OrgStock\SyncOrgStockTradeUnits;
-use App\Actions\Inventory\OrgStockHasOrgSupplierProduct\StoreOrgStockHasOrgSupplierProduct;
-use App\Enums\Goods\Stock\StockStateEnum;
-use App\Models\Goods\Stock;
-use App\Models\Goods\StockHasSupplierProduct;
-use App\Models\Goods\TradeUnit;
 use App\Models\Inventory\OrgStock;
-use App\Models\Procurement\OrgSupplierProduct;
 use App\Transfers\Aurora\WithAuroraAttachments;
 use App\Transfers\SourceOrganisationService;
-use Exception;
 use Illuminate\Database\Query\Builder;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Throwable;
 
 class FetchAuroraStockLocations extends FetchAuroraAction
 {
@@ -43,7 +31,7 @@ class FetchAuroraStockLocations extends FetchAuroraAction
         $orgStock = OrgStock::where('source_id', $organisationSource->getOrganisation()->id.':'.$organisationSourceId)->first();
 
 
-        if($orgStock){
+        if ($orgStock) {
             $locationsData = $this->getStockLocationData($organisationSource, $organisationSource->getOrganisation()->id.':'.$organisationSourceId);
             SyncOrgStockLocations::make()->action($orgStock, [
                 'locationsData' => $locationsData

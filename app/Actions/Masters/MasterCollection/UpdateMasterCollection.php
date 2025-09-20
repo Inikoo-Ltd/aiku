@@ -42,7 +42,7 @@ class UpdateMasterCollection extends GrpAction
         $masterCollection = $this->update($masterCollection, $modelData, ['data']);
         $changed = Arr::except($masterCollection->getChanges(), ['updated_at']);
 
-        
+
         if (Arr::hasAny($changed, ['code', 'name', 'description'])) {
             foreach ($masterCollection->childrenCollections as $collections) {
                 UpdateCollection::make()->action($collections, [

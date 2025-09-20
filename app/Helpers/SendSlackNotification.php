@@ -30,7 +30,7 @@ class SendSlackNotification extends GrpAction
 
         try {
             $notifiable->notify(new SlackNotification($template));
-        }catch (\Exception ){
+        } catch (\Exception) {
             //
         }
     }

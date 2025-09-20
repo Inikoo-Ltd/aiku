@@ -22,7 +22,7 @@ class NewMasterProductCategoryCreated extends GrpAction
     {
         $type = $masterProductCategory->type->label();
         $url = null;
-        if($masterProductCategory->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
+        if ($masterProductCategory->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
             $url = route('grp.masters.master_shops.show.master_departments.show', [
                 $masterProductCategory->masterShop->slug,
                 $masterProductCategory->slug
@@ -48,25 +48,25 @@ class NewMasterProductCategoryCreated extends GrpAction
              })
              ->dividerBlock()
              ->actionsBlock(function (ActionsBlock $block) use ($url) {
-                $block->button('View')->primary()->url($url);
+                 $block->button('View')->primary()->url($url);
              })
              ->dividerBlock()
             ->sectionBlock(function (SectionBlock $block) use ($masterProductCategory, $type) {
-                 $block->text("*New $type Created in Shops");
+                $block->text("*New $type Created in Shops");
 
-                 foreach($masterProductCategory->productCategories as $productCategory) {
-                     $block->field("{$productCategory->shop->code}")->markdown();
-    
-                     $block->field("{$productCategory->name}")->markdown();
-                 } 
-             })
+                foreach ($masterProductCategory->productCategories as $productCategory) {
+                    $block->field("{$productCategory->shop->code}")->markdown();
+
+                    $block->field("{$productCategory->name}")->markdown();
+                }
+            })
              ->dividerBlock()
             ->actionsBlock(function (ActionsBlock $block) use ($masterProductCategory) {
-                foreach($masterProductCategory->productCategories as $productCategory) {
-                    if(!$productCategory->webpage) {
+                foreach ($masterProductCategory->productCategories as $productCategory) {
+                    if (!$productCategory->webpage) {
                         continue;
                     }
-                    
+
                     $url = 'https://' . $productCategory->webpage->website->domain . '/';
                     if ($productCategory->department && $productCategory->department->url) {
                         $url .= $productCategory->department->url . '/';
@@ -77,9 +77,9 @@ class NewMasterProductCategoryCreated extends GrpAction
                     $url .= $productCategory->url;
 
                     $block->button("{$productCategory->shop->code}")->url($url);
-                 } 
-                
-             })
+                }
+
+            })
              ->dividerBlock()
              ->contextBlock(function (ContextBlock $block) use ($masterProductCategory) {
                  $timestamp = $masterProductCategory->created_at ?? now();

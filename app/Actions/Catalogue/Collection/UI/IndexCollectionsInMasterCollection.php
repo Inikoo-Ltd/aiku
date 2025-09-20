@@ -11,7 +11,6 @@ namespace App\Actions\Catalogue\Collection\UI;
 use App\Actions\OrgAction;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Collection;
-use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterCollection;
 use App\Services\QueryBuilder;
 use Closure;

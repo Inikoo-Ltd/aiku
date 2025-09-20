@@ -34,28 +34,29 @@ class GetOutboxShowcase
 
         $userSubscribers = null;
 
-        //  if($outbox->type=OutboxTypeEnum::USER_NOTIFICATION){
-        $userSubscribers = [
-            'data' => $outbox->subscribedUsers->map(function ($subscribedUser) {
-                return $subscribedUser->user
-                    ? [
-                        'user_id'       => $subscribedUser->user->id,
-                        'subscriber_id' => $subscribedUser->id,
-                        'username'      => $subscribedUser->user->username,
-                        'contact_name'  => $subscribedUser->user->contact_name,
-                        'email'         => $subscribedUser->user->email,
-                    ]
-                    : [
-                        'subscriber_id' => $subscribedUser->id,
-                        'email'         => $subscribedUser->external_email,
-                    ];
-            })
-        ];
-        // }
+        if ($outbox->type == OutboxTypeEnum::USER_NOTIFICATION) {
+            $userSubscribers = [
+                'data' => $outbox->subscribedUsers->map(function ($subscribedUser) {
+                    return $subscribedUser->user
+                        ? [
+                            'user_id'       => $subscribedUser->user->id,
+                            'subscriber_id' => $subscribedUser->id,
+                            'username'      => $subscribedUser->user->username,
+                            'contact_name'  => $subscribedUser->user->contact_name,
+                            'email'         => $subscribedUser->user->email,
+                        ]
+                        : [
+                            'subscriber_id' => $subscribedUser->id,
+                            'email'         => $subscribedUser->external_email,
+                        ];
+                })
+            ];
+        }
 
 
         return [
             'outbox'          => [
+                'id'      => $outbox->id,
                 'slug'    => $outbox->slug,
                 'subject' => $outbox->emailOngoingRun?->email?->subject,
                 'sender'  => $outbox->shop?->senderEmail?->email_address
@@ -66,7 +67,7 @@ class GetOutboxShowcase
                 ? Arr::get($outbox->emailOngoingRun?->email?->liveSnapshot?->layout, 'blade_template')
                 : $outbox->emailOngoingRun?->email?->liveSnapshot?->compiled_layout,
 
-            'dashboard_stats'  => [
+            'dashboard_stats'      => [
                 'widgets' => [
                     'column_count' => 1,
                     'components'   => array_filter([
@@ -78,7 +79,7 @@ class GetOutboxShowcase
                     ])
                 ]
             ],
-            'outbox_subscribe' => $userSubscribers,
+            'outbox_subscribe'     => $userSubscribers,
             'has_user_subscribers' => $outbox->type == OutboxTypeEnum::USER_NOTIFICATION,
         ];
     }

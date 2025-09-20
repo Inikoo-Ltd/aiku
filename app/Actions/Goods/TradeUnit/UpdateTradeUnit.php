@@ -221,10 +221,10 @@ class UpdateTradeUnit extends GrpAction
             $rules['marketing_weight'] = ['sometimes', 'nullable', 'numeric'];
 
 
-//            unset($rules['marketing_dimensions']);
-//            unset($rules['gross_weight']);
-//            unset($rules['net_weight']);
-//            unset($rules['marketing_weight']);
+            //            unset($rules['marketing_dimensions']);
+            //            unset($rules['gross_weight']);
+            //            unset($rules['net_weight']);
+            //            unset($rules['marketing_weight']);
 
 
             $rules                     = $this->noStrictUpdateRules($rules);

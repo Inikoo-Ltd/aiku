@@ -17,7 +17,7 @@ class TradeUnitFamiliesResource extends JsonResource
         return [
             'slug'                    => $this->slug,
             'code'                    => $this->code,
-            'name'                    => $this->name,          
+            'name'                    => $this->name,
             'id'                      => $this->id,
         ];
     }

@@ -25,11 +25,11 @@ class StoreCollectionsFromMasterCollection extends GrpAction
             'master_collection_id' => $masterCollection->id
         ];
 
-        if($masterCollection->image_id) {
+        if ($masterCollection->image_id) {
             data_set($data, 'image_id', $masterCollection->image_id);
         }
 
-        if($parent instanceof MasterShop) {
+        if ($parent instanceof MasterShop) {
             foreach ($parent->shops->where('state', ShopStateEnum::OPEN) as $shop) {
                 StoreCollection::make()->action($shop, $data);
             }
@@ -38,7 +38,7 @@ class StoreCollectionsFromMasterCollection extends GrpAction
                 StoreCollection::make()->action($productCategory, $data);
             }
         }
-        
+
     }
 
     public function action(MasterShop|MasterProductCategory $parent, MasterCollection $masterCollection)

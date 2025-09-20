@@ -34,39 +34,39 @@ class NewMasterAssetCreated extends GrpAction
              ->dividerBlock()
             ->actionsBlock(function (ActionsBlock $block) use ($url) {
                 $block->button('View')->primary()->url($url);
-             })
+            })
              ->dividerBlock()
             ->sectionBlock(function (SectionBlock $block) use ($masterAsset, $type) {
-                 $block->text("*New $type"."s Created in Shops");
+                $block->text("*New $type"."s Created in Shops");
 
-                 foreach($masterAsset->products as $product) {
-                     $block->field("{$product->shop->code}")->markdown();
-    
-                     $block->field("{$product->name}")->markdown();
-                 } 
-             })
+                foreach ($masterAsset->products as $product) {
+                    $block->field("{$product->shop->code}")->markdown();
+
+                    $block->field("{$product->name}")->markdown();
+                }
+            })
              ->dividerBlock()
              ->actionsBlock(function (ActionsBlock $block) use ($masterAsset) {
-                foreach($masterAsset->products as $product) {
-                    if(!$product->webpage) {
-                        continue;
-                    }
-                    
-                    $url = 'https://' . $product->webpage->website->domain . '/';
-                    if ($product->department && $product->department->url) {
-                        $url .= $product->department->url . '/';
-                    }
-                    if ($product->subDepartment && $product->subDepartment->url) {
-                        $url .= $product->subDepartment->url . '/';
-                    }
-                    if ($product->family && $product->family->url) {
-                        $url .= $product->family->url . '/';
-                    }
-                    $url .= $product->url;
+                 foreach ($masterAsset->products as $product) {
+                     if (!$product->webpage) {
+                         continue;
+                     }
 
-                    $block->button("{$product->shop->code}")->url($url);
-                 } 
-                
+                     $url = 'https://' . $product->webpage->website->domain . '/';
+                     if ($product->department && $product->department->url) {
+                         $url .= $product->department->url . '/';
+                     }
+                     if ($product->subDepartment && $product->subDepartment->url) {
+                         $url .= $product->subDepartment->url . '/';
+                     }
+                     if ($product->family && $product->family->url) {
+                         $url .= $product->family->url . '/';
+                     }
+                     $url .= $product->url;
+
+                     $block->button("{$product->shop->code}")->url($url);
+                 }
+
              })
              ->dividerBlock()
              ->contextBlock(function (ContextBlock $block) use ($masterAsset) {

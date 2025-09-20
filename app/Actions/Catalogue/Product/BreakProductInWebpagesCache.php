@@ -49,7 +49,7 @@ class BreakProductInWebpagesCache
 
     }
 
-    protected function commandSignature():string
+    protected function commandSignature(): string
     {
         return 'webpages:break_cache {id}';
     }

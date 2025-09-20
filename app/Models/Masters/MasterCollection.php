@@ -48,6 +48,7 @@ use Spatie\Translatable\HasTranslations;
  * @property MasterCollectionStateEnum $state
  * @property MasterCollectionProductStatusEnum $products_status
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read LaravelCollection<int, Collection> $childrenCollections
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategory> $departments
  * @property-read Group $group
  * @property-read \App\Models\Helpers\Media|null $image

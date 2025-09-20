@@ -51,7 +51,7 @@ class PickingSessionDeliveryNoteItemsStateUnassignedResource extends JsonResourc
             'delivery_note_slug'           => $this->delivery_note_slug,
             'delivery_note_is_premium_dispatch'          => $this->delivery_note_is_premium_dispatch,
             'delivery_note_has_extra_packing'            => $this->delivery_note_has_extra_packing,
-            
+
             'delivery_note_customer_notes'   => $this->delivery_note_customer_notes,
             'delivery_note_public_notes'     => $this->delivery_note_public_notes,
             'delivery_note_internal_notes'   => $this->delivery_note_internal_notes,

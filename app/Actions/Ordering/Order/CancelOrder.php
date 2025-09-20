@@ -25,7 +25,6 @@ use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
@@ -96,7 +95,7 @@ class CancelOrder extends OrgAction
 
         $deliveryNotes = $order->deliveryNotes;
         foreach ($deliveryNotes as $deliveryNote) {
-            CancelDeliveryNote::make()->action($deliveryNote,true);
+            CancelDeliveryNote::make()->action($deliveryNote, true);
         }
 
 

@@ -51,7 +51,6 @@ use App\Actions\Transfers\Aurora\Api\ProcessAuroraWebpage;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraWebUser;
 use App\Enums\Transfers\FetchStack\FetchStackStateEnum;
 use App\Models\Transfers\FetchStack;
-use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ProcessFetchStack

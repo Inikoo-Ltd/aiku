@@ -19,6 +19,29 @@ use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
+/**
+ * @property int $id
+ * @property int $group_id
+ * @property string $slug
+ * @property string $code
+ * @property string|null $name
+ * @property string|null $description
+ * @property array<array-key, mixed> $data
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Goods\TradeUnit> $tradeUnits
+ * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitFamily newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitFamily newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitFamily onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitFamily query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitFamily withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TradeUnitFamily withoutTrashed()
+ * @mixin \Eloquent
+ */
 class TradeUnitFamily extends Model implements Auditable
 {
     use HasSlug;

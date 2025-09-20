@@ -10,7 +10,6 @@ namespace App\Transfers\Aurora;
 
 use App\Actions\Goods\Ingredient\StoreIngredient;
 use App\Models\Goods\Ingredient;
-use Arr;
 use Illuminate\Support\Facades\DB;
 
 class FetchAuroraIngredient extends FetchAurora

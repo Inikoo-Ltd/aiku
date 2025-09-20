@@ -30,8 +30,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class OrgStocksResource extends JsonResource
 {
-
-
     public function toArray($request): array
     {
         /** @var OrgStock $orgStock */

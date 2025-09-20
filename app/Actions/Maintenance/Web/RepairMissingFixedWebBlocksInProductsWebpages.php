@@ -77,13 +77,13 @@ class RepairMissingFixedWebBlocksInProductsWebpages
         }
 
 
-        $ok=true;
+        $ok = true;
         $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'product-1');
         if (count($countFamilyWebBlock) > 1) {
 
             foreach ($countFamilyWebBlock as $webBlockData) {
 
-                if(!$ok){
+                if (!$ok) {
 
 
 
@@ -97,7 +97,7 @@ class RepairMissingFixedWebBlocksInProductsWebpages
 
 
                 }
-                $ok=false;
+                $ok = false;
             }
 
         }
@@ -172,8 +172,8 @@ class RepairMissingFixedWebBlocksInProductsWebpages
 
         /** @var WebBlock $alternativesWebBlock */
         $alternativesWebBlock = $this->getWebpageBlocksByType($webpage, 'luigi-item-alternatives-1')->first();
-        if($alternativesWebBlock){
-            $alternativesWebBlock=$alternativesWebBlock->model_has_web_blocks_id;
+        if ($alternativesWebBlock) {
+            $alternativesWebBlock = $alternativesWebBlock->model_has_web_blocks_id;
         }
 
 
@@ -185,7 +185,7 @@ class RepairMissingFixedWebBlocksInProductsWebpages
 
         $trendsWebBlockPosition = $count + 101;
         $lastSeenWebBlockPosition       = $count + 102;
-        $alternativesWebBlockPosition= $count + 103;
+        $alternativesWebBlockPosition = $count + 103;
 
 
         $runningPosition = 2;

@@ -53,7 +53,7 @@ class StoreFetchStacks
 
             foreach ($data as $key => $row) {
 
-                if(!FetchStack::where('operation', $row['operation'])->where('operation_id', $row['operation_id'])->where('state',FetchStackStateEnum::IN_PROCESS)->exists()){
+                if (!FetchStack::where('operation', $row['operation'])->where('operation_id', $row['operation_id'])->where('state', FetchStackStateEnum::IN_PROCESS)->exists()) {
                     FetchStack::create($row);
                 }
                 DB::connection('aurora')->table('Stack Aiku Dimension')->where('Stack Aiku Key', $key)->delete();

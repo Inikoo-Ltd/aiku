@@ -91,7 +91,7 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
     public function asCommand(Command $command): void
     {
 
-        if($command->argument('id')){
+        if ($command->argument('id')) {
             $product = Product::findOrFail($command->argument('id'));
             $this->handle($product);
             return;

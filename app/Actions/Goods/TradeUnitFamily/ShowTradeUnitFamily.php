@@ -8,19 +8,11 @@
 
 namespace App\Actions\Goods\TradeUnitFamily;
 
-use App\Actions\Catalogue\Product\UI\IndexProductsInTradeUnit;
-use App\Actions\Goods\Stock\UI\IndexStocksInTradeUnit;
-use App\Actions\Goods\TradeUnit\IndexTradeUnitImages;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\GrpAction;
-use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\UI\SupplyChain\TradeUnitFamilyTabsEnum;
 use App\Enums\UI\SupplyChain\TradeUnitTabsEnum;
-use App\Http\Resources\Catalogue\ProductsResource;
-use App\Http\Resources\Goods\StocksResource;
-use App\Http\Resources\Goods\TradeUnitResource;
-use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Models\Goods\TradeUnit;
 use App\Models\Goods\TradeUnitFamily;
 use Inertia\Inertia;
