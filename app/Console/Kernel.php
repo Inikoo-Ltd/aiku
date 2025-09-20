@@ -130,9 +130,9 @@ class Kernel extends ConsoleKernel
         (new Schedule())->command('hydrate:shops')->everyTwoHours('23:00')->timezone('UTC');
         (new Schedule())->command('hydrate:invoice_categories')->everyTwoHours('23:00')->timezone('UTC');
 
-//        $schedule->job(ProcessFetchStacks::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
-//            monitorSlug: 'ProcessFetchStacks',
-//        );
+        $schedule->job(ProcessFetchStacks::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'ProcessFetchStacks',
+        );
 
         $schedule->job(SaveWebsitesSitemap::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
             monitorSlug: 'SaveWebsitesSitemap',
