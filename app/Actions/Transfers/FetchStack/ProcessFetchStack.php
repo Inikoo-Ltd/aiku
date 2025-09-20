@@ -51,6 +51,7 @@ use App\Actions\Transfers\Aurora\Api\ProcessAuroraWebpage;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraWebUser;
 use App\Enums\Transfers\FetchStack\FetchStackStateEnum;
 use App\Models\Transfers\FetchStack;
+use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ProcessFetchStack
@@ -64,12 +65,14 @@ class ProcessFetchStack
      */
     public function handle(FetchStack $fetchStack, $bg = false): void
     {
+
         $organisation = $fetchStack->organisation;
         $modelData    = [
             'fetch_stack_id' => $fetchStack->id,
             'id'             => $fetchStack->operation_id,
             'bg'             => $bg
         ];
+
 
         if ($fetchStack->operation == 'DeleteFavourite') {
             $modelData['unfavourited_at'] = $fetchStack->submitted_at;
@@ -118,7 +121,7 @@ class ProcessFetchStack
             'DeliveryNote' => ProcessAuroraDeliveryNote::make()->action($organisation, array_merge($modelData, ['with' => 'transactions'])),
             'PurchaseOrder' => ProcessAuroraPurchaseOrder::make()->action($organisation, array_merge($modelData, ['with' => 'transactions'])),
             'Customer' => ProcessAuroraCustomer::make()->action($organisation, $modelData),
-            'Stock' => ProcessAuroraStock::make()->action($organisation, $modelData),
+            'Stock','Part' => ProcessAuroraStock::make()->action($organisation, $modelData),
             'DeleteFavourite' => ProcessAuroraDeleteFavourites::make()->action($organisation, $modelData),
             'Webpage' => ProcessAuroraWebpage::make()->action($organisation, $modelData),
             'PublishWebpage' => ProcessAuroraWebpage::make()->action($organisation, array_merge($modelData, ['with' => 'web_blocks'])),

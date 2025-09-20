@@ -389,9 +389,6 @@ class FetchAuroraOrders extends FetchAuroraAction
             $query->where('Order Store Key', $sourceData[1]);
         }
 
-        // print_r( $query->getBindings() );
-
-        // dd($query->toSql());
 
         return $query;
     }

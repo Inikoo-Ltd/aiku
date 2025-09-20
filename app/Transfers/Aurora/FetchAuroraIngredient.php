@@ -49,9 +49,6 @@ class FetchAuroraIngredient extends FetchAurora
 
         $this->parsedData['extra_ingredients'] = $extraIngredients;
 
-        //print ">>$name<<<\n";
-        //print_r(Arr::get($this->parsedData, 'trade_unit_args'));
-        //print_r($extraIngredients);
 
         $this->parsedData['ingredient'] = [
             'name'            => $name,
