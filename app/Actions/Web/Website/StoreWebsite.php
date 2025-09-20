@@ -102,20 +102,6 @@ class StoreWebsite extends OrgAction
         return $website;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        if ($this->parent instanceof Fulfilment) {
-            return $request->user()->authTo("fulfilment-shop.{$this->parent->id}.edit");
-        } elseif ($this->parent instanceof Shop) {
-            return $request->user()->authTo("web.{$this->parent->id}.edit");
-        }
-
-        return false;
-    }
 
     public function rules(): array
     {

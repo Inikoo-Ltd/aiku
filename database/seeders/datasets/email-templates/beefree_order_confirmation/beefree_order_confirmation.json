@@ -1,0 +1,549 @@
+{
+  "page": {
+    "body": {
+      "type": "mailup-bee-page-properties",
+      "content": {
+        "style": {
+          "color": "#000000",
+          "font-family": "Arial, Helvetica Neue, Helvetica, sans-serif"
+        },
+        "computedStyle": {
+          "linkColor": "#0068A5",
+          "messageWidth": "650px",
+          "messageBackgroundColor": "transparent"
+        }
+      },
+      "webFonts": [
+        {
+          "url": "https://fonts.googleapis.com/css?family=Ubuntu",
+          "name": "Ubuntu",
+          "fontFamily": "'Ubuntu', Tahoma, Verdana, Segoe, sans-serif"
+        },
+        {
+          "url": "https://fonts.googleapis.com/css?family=Montserrat",
+          "name": "Montserrat",
+          "fontFamily": "'Montserrat', 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', 'Lucida Sans', Tahoma, sans-serif"
+        }
+      ],
+      "container": {
+        "style": {
+          "background-color": "#FFFFFF"
+        }
+      }
+    },
+    "rows": [
+      {
+        "type": "one-column-empty",
+        "uuid": "1d62940e-bec7-41e1-9c7f-2e7c0cfaf69f",
+        "empty": false,
+        "locked": false,
+        "synced": false,
+        "columns": [
+          {
+            "uuid": "885e6510-9803-4800-aff2-8b9ef3dae904",
+            "style": {
+              "border-top": "0px solid transparent",
+              "border-left": "0px solid transparent",
+              "padding-top": "5px",
+              "border-right": "0px solid transparent",
+              "padding-left": "0px",
+              "border-bottom": "0px solid transparent",
+              "padding-right": "0px",
+              "padding-bottom": "5px",
+              "background-color": "transparent"
+            },
+            "modules": [],
+            "grid-columns": 12
+          }
+        ],
+        "content": {
+          "style": {
+            "color": "#000000",
+            "width": "650px",
+            "background-color": "transparent",
+            "background-image": "none",
+            "background-repeat": "no-repeat",
+            "background-position": "top left"
+          },
+          "computedStyle": {
+            "verticalAlign": "top",
+            "hideContentOnMobile": false,
+            "rowColStackOnMobile": true,
+            "hideContentOnDesktop": false,
+            "rowReverseColStackOnMobile": false
+          }
+        },
+        "container": {
+          "style": {
+            "background-color": "transparent",
+            "background-image": "none",
+            "background-repeat": "no-repeat",
+            "background-position": "top left"
+          }
+        }
+      },
+      {
+        "type": "one-column-empty",
+        "uuid": "dfc7daa5-32d5-44f7-80c0-f1ffdd002351",
+        "empty": false,
+        "locked": false,
+        "synced": false,
+        "columns": [
+          {
+            "uuid": "bc80712b-6e4d-4322-8be5-a81264c65941",
+            "style": {
+              "border-top": "0px solid transparent",
+              "border-left": "0px solid transparent",
+              "padding-top": "5px",
+              "border-right": "0px solid transparent",
+              "padding-left": "0px",
+              "border-bottom": "0px solid transparent",
+              "padding-right": "0px",
+              "padding-bottom": "5px",
+              "background-color": "transparent"
+            },
+            "modules": [
+              {
+                "type": "mailup-bee-newsletter-modules-text",
+                "uuid": "bc2003e2-f4d1-49d7-975d-2dfaccaa1572",
+                "locked": false,
+                "descriptor": {
+                  "text": {
+                    "html": "<div class=\"txtTinyMce-wrapper\" style=\"font-family:&#39;Montserrat&#39;, &#39;Trebuchet MS&#39;, &#39;Lucida Grande&#39;, &#39;Lucida Sans Unicode&#39;, &#39;Lucida Sans&#39;, Tahoma, sans-serif;font-size:12px;line-height:14px;\" data-mce-style=\"font-family:&#39;Montserrat&#39;, &#39;Trebuchet MS&#39;, &#39;Lucida Grande&#39;, &#39;Lucida Sans Unicode&#39;, &#39;Lucida Sans&#39;, Tahoma, sans-serif;font-size:12px;line-height:14px;\"><p style=\"font-size:14px;line-height:16px;text-align:center;word-break:break-word;\" data-mce-style=\"font-size:14px;line-height:16px;text-align:center;word-break:break-word;\"><span style=\"font-size:30px;line-height:36px;\" data-mce-style=\"font-size:30px;line-height:36px;\">Your Order Confirmation&nbsp;</span></p></div>",
+                    "style": {
+                      "color": "#e87928",
+                      "font-family": "'Montserrat', 'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', 'Lucida Sans', Tahoma, sans-serif",
+                      "line-height": "120%"
+                    },
+                    "computedStyle": {
+                      "linkColor": "#0068A5"
+                    }
+                  },
+                  "style": {
+                    "padding-top": "10px",
+                    "padding-left": "10px",
+                    "padding-right": "10px",
+                    "padding-bottom": "10px"
+                  },
+                  "computedStyle": {
+                    "hideContentOnMobile": false
+                  }
+                }
+              }
+            ],
+            "grid-columns": 12
+          }
+        ],
+        "content": {
+          "style": {
+            "color": "#000000",
+            "width": "650px",
+            "background-color": "#EBEBEB",
+            "background-image": "none",
+            "background-repeat": "no-repeat",
+            "background-position": "top left"
+          },
+          "computedStyle": {
+            "verticalAlign": "top",
+            "hideContentOnMobile": false,
+            "rowColStackOnMobile": true,
+            "hideContentOnDesktop": false,
+            "rowReverseColStackOnMobile": false
+          }
+        },
+        "container": {
+          "style": {
+            "background-color": "transparent",
+            "background-image": "none",
+            "background-repeat": "no-repeat",
+            "background-position": "top left"
+          }
+        }
+      },
+      {
+        "type": "one-column-empty",
+        "uuid": "1d0be951-9687-4d92-92e6-9388116901b3",
+        "empty": false,
+        "locked": false,
+        "synced": false,
+        "columns": [
+          {
+            "uuid": "51ebf2db-1b31-486d-894a-1c023ba3b050",
+            "style": {
+              "border-top": "0px solid transparent",
+              "border-left": "0px solid transparent",
+              "padding-top": "5px",
+              "border-right": "0px solid transparent",
+              "padding-left": "0px",
+              "border-bottom": "0px solid transparent",
+              "padding-right": "0px",
+              "padding-bottom": "5px",
+              "background-color": "transparent"
+            },
+            "modules": [
+              {
+                "type": "mailup-bee-newsletter-modules-divider",
+                "uuid": "a566001c-968f-422e-9495-48956173162b",
+                "locked": false,
+                "descriptor": {
+                  "style": {
+                    "padding-top": "10px",
+                    "padding-left": "10px",
+                    "padding-right": "10px",
+                    "padding-bottom": "10px"
+                  },
+                  "divider": {
+                    "style": {
+                      "width": "100%",
+                      "height": "0px",
+                      "border-top": "1px solid #5093BB"
+                    }
+                  },
+                  "computedStyle": {
+                    "align": "center"
+                  }
+                }
+              }
+            ],
+            "grid-columns": 12
+          }
+        ],
+        "content": {
+          "style": {
+            "color": "#000000",
+            "width": "650px",
+            "background-color": "transparent",
+            "background-image": "none",
+            "background-repeat": "no-repeat",
+            "background-position": "top left"
+          },
+          "computedStyle": {
+            "verticalAlign": "top",
+            "hideContentOnMobile": false,
+            "rowColStackOnMobile": true,
+            "hideContentOnDesktop": false,
+            "rowReverseColStackOnMobile": false
+          }
+        },
+        "container": {
+          "style": {
+            "background-color": "transparent",
+            "background-image": "none",
+            "background-repeat": "no-repeat",
+            "background-position": "top left"
+          }
+        }
+      },
+      {
+        "type": "one-column-empty",
+        "uuid": "fade1e5c-68a4-4518-80c4-da112e200d08",
+        "empty": false,
+        "locked": false,
+        "synced": false,
+        "columns": [
+          {
+            "uuid": "0eaadff2-2104-468c-ab44-0626e14af074",
+            "style": {
+              "border-top": "0px solid transparent",
+              "border-left": "0px solid transparent",
+              "padding-top": "5px",
+              "border-right": "0px solid transparent",
+              "padding-left": "0px",
+              "border-bottom": "0px solid transparent",
+              "padding-right": "0px",
+              "padding-bottom": "5px",
+              "background-color": "transparent"
+            },
+            "modules": [
+              {
+                "type": "mailup-bee-newsletter-modules-text",
+                "uuid": "c80c0497-1980-45a8-99d2-e51acba10b4d",
+                "locked": false,
+                "descriptor": {
+                  "text": {
+                    "html": "<div class=\"txtTinyMce-wrapper\" style=\"font-size: 12px; line-height: 14px; font-family: 'Ubuntu', Tahoma, Verdana, Segoe, sans-serif;\" data-mce-style=\"font-size: 12px; line-height: 14px; font-family: 'Ubuntu', Tahoma, Verdana, Segoe, sans-serif;\"><p style=\"font-size: 12px; line-height: 14px; text-align: left; word-break: break-word;\" data-mce-style=\"font-size: 12px; line-height: 14px; text-align: left; word-break: break-word;\"><span style=\"line-height: 16px; font-size: 14px;\" data-mce-style=\"line-height: 16px; font-size: 14px;\">Hello [Customer Name],</span></p><p style=\"font-size: 12px; line-height: 14px; text-align: left; word-break: break-word;\" data-mce-style=\"font-size: 12px; line-height: 14px; text-align: left; word-break: break-word;\"><span style=\"line-height: 16px; font-size: 14px;\" data-mce-style=\"line-height: 16px; font-size: 14px;\">&nbsp;</span></p><p style=\"font-size: 12px; line-height: 14px; text-align: left; word-break: break-word;\" data-mce-style=\"font-size: 12px; line-height: 14px; text-align: left; word-break: break-word;\"><span style=\"line-height: 16px; font-size: 14px;\" data-mce-style=\"line-height: 16px; font-size: 14px;\"><strong>Thank you!</strong> We are delighted to receive your order at ___.<br></span><br><span style=\"line-height: 16px; font-size: 14px;\" data-mce-style=\"line-height: 16px; font-size: 14px;\">The order is out for picking and packing and will be dispatched to your customer shortly. You can check the status in the \"Orders section under your account dashboard.<br><br></span></p><p style=\"font-size: 12px; line-height: 14px; text-align: left; word-break: break-word;\" data-mce-style=\"font-size: 12px; line-height: 14px; text-align: left; word-break: break-word;\"><span style=\"line-height: 16px; font-size: 14px;\" data-mce-style=\"line-height: 16px; font-size: 14px;\">If you have any questions please email our team at ___ or you can use the online chat on our website just quote this <strong>order number</strong> [Order Reference] so we can help you.</span></p></div>",
+                    "style": {
+                      "color": "#555555",
+                      "font-family": "'Ubuntu', Tahoma, Verdana, Segoe, sans-serif",
+                      "line-height": "120%"
+                    },
+                    "computedStyle": {
+                      "linkColor": "#0068A5"
+                    }
+                  },
+                  "style": {
+                    "padding-top": "10px",
+                    "padding-left": "10px",
+                    "padding-right": "10px",
+                    "padding-bottom": "10px"
+                  },
+                  "computedStyle": {
+                    "hideContentOnMobile": false
+                  }
+                }
+              }
+            ],
+            "grid-columns": 12
+          }
+        ],
+        "content": {
+          "style": {
+            "color": "#000000",
+            "width": "650px",
+            "background-color": "transparent",
+            "background-image": "none",
+            "background-repeat": "no-repeat",
+            "background-position": "top left"
+          },
+          "computedStyle": {
+            "verticalAlign": "top",
+            "hideContentOnMobile": false,
+            "rowColStackOnMobile": true,
+            "hideContentOnDesktop": false,
+            "rowReverseColStackOnMobile": false
+          }
+        },
+        "container": {
+          "style": {
+            "background-color": "transparent",
+            "background-image": "none",
+            "background-repeat": "no-repeat",
+            "background-position": "top left"
+          }
+        }
+      },
+      {
+        "type": "one-column-empty",
+        "uuid": "8e571108-c95d-40aa-8265-55d96770273f",
+        "empty": false,
+        "locked": false,
+        "synced": false,
+        "columns": [
+          {
+            "uuid": "c93e76b7-38d6-492e-8dcd-2579eb84e6e5",
+            "style": {
+              "border-top": "0px solid transparent",
+              "border-left": "0px solid transparent",
+              "padding-top": "5px",
+              "border-right": "0px solid transparent",
+              "padding-left": "0px",
+              "border-bottom": "0px solid transparent",
+              "padding-right": "0px",
+              "padding-bottom": "5px",
+              "background-color": "transparent"
+            },
+            "modules": [
+              {
+                "type": "mailup-bee-newsletter-modules-paragraph",
+                "uuid": "33dd23fe-fa3e-47d5-81ea-33def5e64a92",
+                "locked": false,
+                "descriptor": {
+                  "style": {
+                    "padding-top": "10px",
+                    "padding-left": "10px",
+                    "padding-right": "10px",
+                    "padding-bottom": "10px"
+                  },
+                  "paragraph": {
+                    "html": "<p>[Order]</p>",
+                    "style": {
+                      "color": "#000000",
+                      "direction": "ltr",
+                      "font-size": "14px",
+                      "text-align": "left",
+                      "font-family": "inherit",
+                      "font-weight": "400",
+                      "line-height": "120%",
+                      "letter-spacing": "0px"
+                    },
+                    "computedStyle": {
+                      "linkColor": "#0068A5",
+                      "paragraphSpacing": "16px"
+                    }
+                  },
+                  "computedStyle": {
+                    "hideContentOnAmp": false,
+                    "hideContentOnHtml": false,
+                    "hideContentOnMobile": false,
+                    "hideContentOnDesktop": false
+                  }
+                }
+              }
+            ],
+            "grid-columns": 12
+          }
+        ],
+        "content": {
+          "style": {
+            "color": "#000000",
+            "width": "650px",
+            "border-top": "0px solid transparent",
+            "border-left": "0px solid transparent",
+            "padding-top": "0px",
+            "border-right": "0px solid transparent",
+            "padding-left": "0px",
+            "border-bottom": "0px solid transparent",
+            "border-radius": "0px",
+            "padding-right": "0px",
+            "padding-bottom": "0px",
+            "background-color": "transparent",
+            "background-image": "none",
+            "background-repeat": "no-repeat",
+            "background-position": "top left"
+          },
+          "computedStyle": {
+            "verticalAlign": "top",
+            "hideContentOnMobile": false,
+            "rowColStackOnMobile": true,
+            "hideContentOnDesktop": false,
+            "rowReverseColStackOnMobile": false
+          }
+        },
+        "container": {
+          "style": {
+            "background-color": "transparent",
+            "background-image": "none",
+            "background-repeat": "no-repeat",
+            "background-position": "top left"
+          }
+        }
+      },
+      {
+        "type": "one-column-empty",
+        "uuid": "d48946b7-1aec-4a61-a816-791cdce86730",
+        "empty": false,
+        "locked": false,
+        "synced": false,
+        "columns": [
+          {
+            "uuid": "fc9d2f78-dc11-44a2-871e-7dda1eb7cfc0",
+            "style": {
+              "border-top": "0px solid transparent",
+              "border-left": "0px solid transparent",
+              "padding-top": "5px",
+              "border-right": "0px solid transparent",
+              "padding-left": "0px",
+              "border-bottom": "0px solid transparent",
+              "padding-right": "0px",
+              "padding-bottom": "5px",
+              "background-color": "transparent"
+            },
+            "modules": [
+              {
+                "type": "mailup-bee-newsletter-modules-text",
+                "uuid": "abac5e83-d1f0-4f58-a692-927a0d17fcc7",
+                "locked": false,
+                "descriptor": {
+                  "text": {
+                    "html": "<div class=\"txtTinyMce-wrapper\" style=\"font-size: 12px; line-height: 14px; font-family: 'Ubuntu', Tahoma, Verdana, Segoe, sans-serif;\" data-mce-style=\"font-size: 12px; line-height: 14px; font-family: 'Ubuntu', Tahoma, Verdana, Segoe, sans-serif;\"><p style=\"font-size: 12px; line-height: 14px; text-align: left; word-break: break-word;\" data-mce-style=\"font-size: 12px; line-height: 14px; text-align: left; word-break: break-word;\"><span style=\"line-height: 16px; font-size: 14px;\" data-mce-style=\"line-height: 16px; font-size: 14px;\">Thank you&nbsp; again for trading with us, we really appreciate your business.</span></p><p style=\"font-size: 12px; line-height: 14px; text-align: left; word-break: break-word;\" data-mce-style=\"font-size: 12px; line-height: 14px; text-align: left; word-break: break-word;\"><span style=\"line-height: 16px; font-size: 14px;\" data-mce-style=\"line-height: 16px; font-size: 14px;\"><br><br></span></p><p style=\"font-size: 12px; line-height: 14px; text-align: left; word-break: break-word;\" data-mce-style=\"font-size: 12px; line-height: 14px; text-align: left; word-break: break-word;\">&nbsp;</p></div>",
+                    "style": {
+                      "color": "#555555",
+                      "font-family": "'Ubuntu', Tahoma, Verdana, Segoe, sans-serif",
+                      "line-height": "120%"
+                    },
+                    "computedStyle": {
+                      "linkColor": "#0068A5"
+                    }
+                  },
+                  "style": {
+                    "padding-top": "10px",
+                    "padding-left": "10px",
+                    "padding-right": "10px",
+                    "padding-bottom": "10px"
+                  },
+                  "computedStyle": {
+                    "hideContentOnMobile": false
+                  }
+                }
+              }
+            ],
+            "grid-columns": 12
+          }
+        ],
+        "content": {
+          "style": {
+            "color": "#000000",
+            "width": "650px",
+            "background-color": "transparent",
+            "background-image": "none",
+            "background-repeat": "no-repeat",
+            "background-position": "top left"
+          },
+          "computedStyle": {
+            "verticalAlign": "top",
+            "hideContentOnMobile": false,
+            "rowColStackOnMobile": true,
+            "hideContentOnDesktop": false,
+            "rowReverseColStackOnMobile": false
+          }
+        },
+        "container": {
+          "style": {
+            "background-color": "transparent",
+            "background-image": "none",
+            "background-repeat": "no-repeat",
+            "background-position": "top left"
+          }
+        }
+      },
+      {
+        "type": "one-column-empty",
+        "uuid": "a79787a4-b109-4acc-bdd9-539460f11bb0",
+        "empty": false,
+        "locked": false,
+        "synced": false,
+        "columns": [
+          {
+            "uuid": "7f3f6455-7cd7-4971-a14b-66df017afc37",
+            "style": {
+              "border-top": "0px solid transparent",
+              "border-left": "0px solid transparent",
+              "padding-top": "5px",
+              "border-right": "0px solid transparent",
+              "padding-left": "0px",
+              "border-bottom": "0px solid transparent",
+              "padding-right": "0px",
+              "padding-bottom": "5px",
+              "background-color": "transparent"
+            },
+            "modules": [],
+            "grid-columns": 12
+          }
+        ],
+        "content": {
+          "style": {
+            "color": "#000000",
+            "width": "650px",
+            "background-color": "#4b5058",
+            "background-image": "none",
+            "background-repeat": "no-repeat",
+            "background-position": "top left"
+          },
+          "computedStyle": {
+            "verticalAlign": "top",
+            "hideContentOnMobile": false,
+            "rowColStackOnMobile": true,
+            "hideContentOnDesktop": false,
+            "rowReverseColStackOnMobile": false
+          }
+        },
+        "container": {
+          "style": {
+            "background-color": "transparent",
+            "background-image": "none",
+            "background-repeat": "no-repeat",
+            "background-position": "top left"
+          }
+        }
+      }
+    ],
+    "title": null,
+    "template": {
+      "name": "template-base",
+      "type": "basic",
+      "version": "2.0.0"
+    },
+    "description": "Test template for BEE"
+  },
+  "comments": []
+}

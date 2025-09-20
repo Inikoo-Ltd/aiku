@@ -53,6 +53,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property array<array-key, mixed> $sources
+ * @property bool $is_applicable
  * @property-read Collection<int, \App\Models\Comms\DispatchedEmail> $dispatchedEmails
  * @property-read Collection<int, \App\Models\Comms\EmailBulkRun> $emailBulkRuns
  * @property-read \App\Models\Comms\EmailOngoingRun|null $emailOngoingRun

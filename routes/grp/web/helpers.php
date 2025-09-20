@@ -17,6 +17,8 @@ use App\Actions\Helpers\Redirects\RedirectInvoicesInShopLink;
 use App\Actions\Helpers\Redirects\RedirectMasterProductCategoryLink;
 use App\Actions\Helpers\Redirects\RedirectMasterProductLink;
 use App\Actions\Helpers\Redirects\RedirectOrgStockLink;
+use App\Actions\Helpers\Redirects\RedirectOutboxLink;
+use App\Actions\Helpers\Redirects\RedirectOutboxWorkshopLink;
 use App\Actions\Helpers\Redirects\RedirectPickingSessionLink;
 use App\Actions\Helpers\Redirects\RedirectPortfolioItemLink;
 use App\Actions\Helpers\Redirects\RedirectProductCategoryLink;
@@ -48,6 +50,8 @@ Route::get('redirect-picking-session/{pickingSession:id}', RedirectPickingSessio
 Route::get('redirect-master-product/{masterAsset:id}', RedirectMasterProductLink::class)->name('redirect_master_product');
 Route::get('redirect-master-product-category/{masterProductCategory:id}', RedirectMasterProductCategoryLink::class)->name('redirect_master_product_category');
 
+Route::get('redirect-outbox/{outbox:id}', RedirectOutboxLink::class)->name('redirect_outbox');
+Route::get('redirect-outbox-workshop/{outbox:id}', RedirectOutboxWorkShopLink::class)->name('redirect_outbox_workshop');
 
 
 Route::prefix('uploads/{upload}')->as('uploads.')->group(function () {

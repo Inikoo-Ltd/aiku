@@ -274,5 +274,148 @@
     "arguments": [
       "customer"
     ]
+  },
+  {
+    "outboxes": [
+      "delivery_confirmation"
+    ],
+    "name": "Delivery confirmation",
+    "content": "beefree_delivery_confirmation.json",
+    "builder": "beefree",
+    "arguments": [
+      "delivery_note"
+    ]
+  },
+  {
+    "outboxes": [
+      "oos_notification"
+    ],
+    "name": "Out of stock notification",
+    "content": "beefree_oos_notification.json",
+    "builder": "beefree",
+    "arguments": [
+      "customer"
+    ]
+  },
+  {
+    "outboxes": [
+      "order_confirmation"
+    ],
+    "name": "Order confirmation",
+    "content": "beefree_order_confirmation.json",
+    "builder": "beefree",
+    "arguments": [
+      "order"
+    ]
+  },
+  {
+    "outboxes": [
+      "rental_agreement"
+    ],
+    "name": "Rental agreement",
+    "content": "beefree_rental_agreement.json",
+    "builder": "beefree",
+    "arguments": [
+      "customer"
+    ]
+  },
+  {
+    "outboxes": [
+      "pallet_delivery_processed"
+    ],
+    "name": "Pallet delivery processed",
+    "content": "beefree_pallet_delivery_processed.json",
+    "builder": "beefree",
+    "arguments": [
+      "pallet_delivery"
+    ]
+  },
+  {
+    "outboxes": [
+      "pallet_return_dispatched"
+    ],
+    "name": "Pallet return dispatched",
+    "content": "beefree_pallet_return_dispatched.json",
+    "builder": "beefree",
+    "arguments": [
+      "pallet_return"
+    ]
+  },
+  {
+    "outboxes": [
+      "new_customer_push"
+    ],
+    "name": "New customer push",
+    "content": "beefree_new_customer_push.json",
+    "builder": "beefree",
+    "arguments": [
+      "customer"
+    ]
+  },
+  {
+    "outboxes": [
+      "registration_approved"
+    ],
+    "name": "Registration approved",
+    "content": "beefree_registration_approved.json",
+    "builder": "beefree",
+    "arguments": [
+      "customer"
+    ]
+  },
+  {
+    "outboxes": [
+      "registration_rejected"
+    ],
+    "name": "Registration rejected",
+    "content": "beefree_registration_rejected.json",
+    "builder": "beefree",
+    "arguments": [
+      "customer"
+    ]
+  },
+  {
+    "outboxes": [
+      "basket_low_stock"
+    ],
+    "name": "Basket low stock",
+    "content": "beefree_basket_low_stock.json",
+    "builder": "beefree",
+    "arguments": [
+      "customer"
+    ]
+  },
+  {
+    "outboxes": [
+      "basket_push"
+    ],
+    "name": "Basket push",
+    "content": "beefree_basket_push.json",
+    "builder": "beefree",
+    "arguments": [
+      "customer"
+    ]
+  },
+  {
+    "outboxes": [
+      "reorder_reminder"
+    ],
+    "name": "Reorder reminder",
+    "content": "beefree_reorder_reminder.json",
+    "builder": "beefree",
+    "arguments": [
+      "customer"
+    ]
+  },
+  {
+    "outboxes": [
+      "registration"
+    ],
+    "name": "Reorder reminder",
+    "content": "beefree_registration.json",
+    "builder": "beefree",
+    "arguments": [
+      "customer"
+    ]
   }
 ]

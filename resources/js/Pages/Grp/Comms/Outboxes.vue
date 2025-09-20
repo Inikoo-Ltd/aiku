@@ -5,21 +5,21 @@
   -->
 
 <script setup lang="ts">
-import { Head } from "@inertiajs/vue3";
-import PageHeading from "@/Components/Headings/PageHeading.vue";
-import TableOutboxes from "@/Components/Tables/TableOutboxes.vue";
+import { Head } from "@inertiajs/vue3"
+import PageHeading from "@/Components/Headings/PageHeading.vue"
+import TableOutboxes from "@/Components/Tables/TableOutboxes.vue"
 import { capitalize } from "@/Composables/capitalize"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faInboxOut, faSortAlt, faProjectDiagram, faPhoneVolume, faBars, faSeedling, faTimes } from "@fal"
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faInboxOut, faSortAlt, faProjectDiagram, faPhoneVolume, faBars } from "@fal";
-
-library.add(faInboxOut, faSortAlt, faProjectDiagram, faPhoneVolume, faBars);
+library.add(faInboxOut, faSortAlt, faProjectDiagram, faPhoneVolume, faBars, faSeedling, faTimes)
 
 
-const props = defineProps<{
+defineProps<{
     data: object
     title: string
-    pageHead: object
+    pageHead: PageHeadingTypes
 }>()
 
 
