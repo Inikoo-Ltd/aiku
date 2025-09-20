@@ -411,7 +411,7 @@
     "outboxes": [
       "registration"
     ],
-    "name": "Reorder reminder",
+    "name": "Registration",
     "content": "beefree_registration.json",
     "builder": "beefree",
     "arguments": [

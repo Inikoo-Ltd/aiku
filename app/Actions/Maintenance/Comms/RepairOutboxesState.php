@@ -45,7 +45,7 @@ class RepairOutboxesState
                     $outbox->refresh();
                     $email = $outbox->emailOngoingRun->email;
                 } else {
-                    dd($outbox->code);
+                    dd($outbox->code,$outbox->shop->name,$emailTemplate);
                 }
 
 
