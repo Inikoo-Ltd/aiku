@@ -21,7 +21,8 @@ trait WithAuroraImages
             ->leftJoin('Image Dimension', 'Image Subject Image Key', '=', 'Image Key')
             ->where('Image Subject Object', $model)
             ->where('Image Subject Object Key', $id)
-            ->orderByRaw("FIELD(`Image Subject Is Principal`, 'Yes','No')")
+            ->orderBy('Image Subject Order')
+       //     ->orderByRaw("FIELD(`Image Subject Is Principal`, 'Yes','No')")
             ->get();
     }
 
@@ -56,6 +57,8 @@ trait WithAuroraImages
                 'position'   => $auroraImageData->{'Image Subject Order'},
                 'caption'    => $auroraImageData->{'Image Subject Image Caption'},
                 'source_id'  => $this->organisation->id.':'.$auroraImageData->{'Image Subject Key'},
+//                'is_main'    => $auroraImageData->{'Image Subject Is Principal'},
+//                'order'    => $auroraImageData->{'Image Subject Order'},
 
             ];
         } else {
@@ -64,4 +67,28 @@ trait WithAuroraImages
             return [];
         }
     }
+
+    public function fetchImageLight($auroraImageData): array
+    {
+        $image_path = sprintf(
+            config('app.aurora_image_path'),
+            Arr::get($this->organisation->source, 'account_code')
+        );
+
+        $image_path .= preg_replace('/^img\/db/', '', $auroraImageData->{'Image Path'});
+
+        if (file_exists($image_path)) {
+            return [
+                'image_path' => $image_path,
+                'filename'   => $auroraImageData->{'Image Filename'},
+
+
+            ];
+        } else {
+            print "Image not found: $image_path\n";
+
+            return [];
+        }
+    }
+
 }

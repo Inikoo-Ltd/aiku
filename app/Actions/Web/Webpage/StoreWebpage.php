@@ -132,6 +132,9 @@ class StoreWebpage extends OrgAction
             if ($this->strict) {
                 if ($model instanceof Product) {
                     $this->createWebBlock($webpage, 'product-1');
+                    $this->createWebBlock($webpage, 'luigi-trends-1');
+                    $this->createWebBlock($webpage, 'luigi-last-seen-1');
+                    $this->createWebBlock($webpage, 'luigi-item-alternatives-1');
                 } elseif ($model instanceof Collection) {
                     $this->createWebBlock($webpage, 'families-1');
                     $this->createWebBlock($webpage, 'products-1');
@@ -146,6 +149,8 @@ class StoreWebpage extends OrgAction
                     } elseif ($model->type == ProductCategoryTypeEnum::FAMILY) {
                         $this->createWebBlock($webpage, 'family-1');
                         $this->createWebBlock($webpage, 'products-1');
+                        $this->createWebBlock($webpage, 'luigi-trends-1');
+                        $this->createWebBlock($webpage, 'luigi-last-seen-1');
                     }
                 }
 
@@ -333,6 +338,7 @@ class StoreWebpage extends OrgAction
         $this->hydratorsDelay = $hydratorsDelay;
         $this->parent         = $parent;
         $this->website        = $parent instanceof Website ? $parent : $parent->website;
+
         $this->initialisationFromShop($this->website->shop, $modelData);
 
         return $this->handle($parent, $this->validatedData);

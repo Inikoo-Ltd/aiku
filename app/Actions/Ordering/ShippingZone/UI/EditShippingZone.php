@@ -39,9 +39,7 @@ class EditShippingZone extends OrgAction
 
     public function htmlResponse(ShippingZone $shippingZone, ActionRequest $request): Response
     {
-        // dd(array_merge(array_values($request->route()->originalParameters()), [
-        //                             'zone'
-        // ]));
+
         return Inertia::render(
             'EditModel',
             [
@@ -90,7 +88,7 @@ class EditShippingZone extends OrgAction
                                     'value' => $shippingZone->name
                                 ],
                                 'territories' => [
-                                    'type'  => 'teritory_zone',
+                                    'type'  => 'territory_zone',
                                     'label' => __('territory'),
                                     'value' => $shippingZone->territories,
                                     'country_list' => GetCountriesOptions::run(),

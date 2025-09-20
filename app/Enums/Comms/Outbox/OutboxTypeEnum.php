@@ -38,7 +38,7 @@ enum OutboxTypeEnum: string
     }
 
 
-    public function stateIcon(): array
+    public function icon(): array
     {
         return [
             OutboxTypeEnum::NEWSLETTER->value             => [

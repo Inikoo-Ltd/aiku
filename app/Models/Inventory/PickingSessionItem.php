@@ -20,8 +20,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
- *
- *
  * @property-read \Illuminate\Database\Eloquent\Collection<int, DeliveryNoteItem> $deliveryNoteItems
  * @property-read Group|null $group
  * @property-read \App\Models\Inventory\Location|null $location

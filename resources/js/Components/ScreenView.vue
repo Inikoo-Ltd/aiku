@@ -60,14 +60,14 @@ const layout = inject('layout', layoutStructure)
 
 <style lang="scss" scoped>
 .selected-bg {
-    background-color: v-bind('layout?.app?.theme[0]') !important;
-    color: v-bind('layout?.app?.theme[1]') !important;
+    background-color: v-bind('layout?.app?.theme?.[0]') !important;
+    color: v-bind('layout?.app?.theme?.[1]') !important;
 }
 .unselected-bg {
     @apply text-gray-500;
 }
 .unselected-bg:hover {
-    color: v-bind('layout?.app?.theme[0]') !important;
+    color: v-bind('layout?.app?.theme?.[0]') !important;
 }
 </style>
 

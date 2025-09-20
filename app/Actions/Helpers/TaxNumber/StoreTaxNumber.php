@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\TaxNumber;
 
+use App\Enums\Helpers\TaxNumber\TaxNumberTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Helpers\TaxNumber;
 use App\Models\Catalogue\Shop;
@@ -19,8 +20,13 @@ class StoreTaxNumber
 
     public function handle(Shop|Customer $owner, array $modelData = []): TaxNumber
     {
+
         /** @var TaxNumber $taxNumber */
         $taxNumber = $owner->taxNumber()->create($modelData);
+
+        if ($taxNumber->type == TaxNumberTypeEnum::EU_VAT) {
+            $taxNumber = ValidateEuropeanTaxNumber::run($taxNumber);
+        }
 
         return $taxNumber;
     }

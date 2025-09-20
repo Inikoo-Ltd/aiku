@@ -43,13 +43,8 @@ class MasterSubDepartmentsResource extends JsonResource
             'updated_at'      => $this->updated_at,
             'number_families' => $this->number_families,
             'number_products' => $this->number_products,
-            'translation_box' => [
-                'title'      => __('Multi-language Translations'),
-                'save_route' => [
-                    'name'       => 'grp.models.master_product_categories.translations.update',
-                    'parameters' => []
-                ],
-            ],
+            'description_title' => $this->description_title,
+            'description_extra' => $this->description_extra,
         ];
     }
 }

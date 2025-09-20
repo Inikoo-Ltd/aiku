@@ -25,6 +25,7 @@ class ProductHydrateGrossWeightFromTradeUnits implements ShouldBeUnique
 
     public function handle(Product $product): void
     {
+
         $product->updateQuietly(
             [
                 'gross_weight' => $this->getWeightFromTradeUnits($product),

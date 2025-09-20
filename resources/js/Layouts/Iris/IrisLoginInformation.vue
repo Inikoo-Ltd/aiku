@@ -169,7 +169,7 @@ const onClickLogin = () => {
                             <div class="w-full border-t border-gray-200" />
                         </div>
                         <div class="relative flex justify-center text-sm leading-6">
-                            <span class="bg-white text-gray-500 px-6">Don't have account?</span>
+                            <span class="bg-white text-gray-500 px-6">{{ trans("Don't have account?") }}</span>
                         </div>
                     </div>
 

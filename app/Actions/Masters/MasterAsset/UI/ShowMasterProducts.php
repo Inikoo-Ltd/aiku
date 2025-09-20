@@ -10,14 +10,19 @@
 
 namespace App\Actions\Masters\MasterAsset\UI;
 
+use App\Actions\Catalogue\Product\UI\IndexProductsInMasterProduct;
 use App\Actions\Catalogue\WithFamilySubNavigation;
 use App\Actions\Comms\Mailshot\UI\IndexMailshots;
+use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInMasterProduct;
 use App\Actions\GrpAction;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterDepartment;
+use App\Actions\Masters\MasterProductCategory\UI\ShowMasterFamily;
 use App\Actions\Masters\MasterProductCategory\UI\ShowMasterSubDepartment;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
 use App\Enums\UI\SupplyChain\MasterAssetTabsEnum;
+use App\Http\Resources\Catalogue\ProductsResource;
+use App\Http\Resources\Goods\TradeUnitsResource;
 use App\Http\Resources\Masters\MasterProductResource;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
@@ -80,7 +85,7 @@ class ShowMasterProducts extends GrpAction
         $group        = group();
 
         $this->parent = $masterFamily;
-        $this->initialisation($group, $request);
+        $this->initialisation($group, $request)->withTab(MasterAssetTabsEnum::values());
         return $this->handle($masterProduct);
     }
 
@@ -99,20 +104,81 @@ class ShowMasterProducts extends GrpAction
                     'previous' => $this->getPrevious($masterAsset, $request),
                     'next'     => $this->getNext($masterAsset, $request),
                 ],
+                'mini_breadcrumbs' => array_filter(
+                    [
+                        $masterAsset->master_family_id ? [
+                            'label' => $masterAsset->masterDepartment->name,
+                            'to'    => [
+                                'name'       => 'grp.masters.master_shops.show.master_departments.show',
+                                'parameters' => [
+                                    'masterShop'         => $masterAsset->masterShop->slug,
+                                    'masterDepartment'   => $masterAsset->masterDepartment->slug
+                                ]
+                            ],
+                            'tooltip' => 'Master Department',
+                            'icon' => ['fal', 'folder-tree']
+                        ] : [],
+                        $masterAsset->master_sub_department_id ? [
+                            'label' => $masterAsset->masterSubDepartment->name,
+                            'to'    => [
+                                'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show',
+                                'parameters' => [
+                                    'masterShop'         => $masterAsset->masterShop->slug,
+                                    'masterDepartment'   => $masterAsset->masterDepartment->slug,
+                                    'masterSubDepartment' => $masterAsset->masterSubDepartment->slug
+                                ]
+                            ],
+                            'tooltip' => __('Master Sub-Department'),
+                            'icon' => ['fal', 'folder-tree']
+                        ] : [],
+                        $masterAsset->master_family_id ? [
+                            'label' => $masterAsset->masterFamily->name,
+                            'to'    => [
+                                'name'       => $masterAsset->master_sub_department_id ? 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show' : 'grp.masters.master_shops.show.master_departments.show.master_families.show',
+                                'parameters' =>  $masterAsset->master_sub_department_id ? [
+                                    'masterShop'         => $masterAsset->masterShop->slug,
+                                    'masterDepartment'   => $masterAsset->masterDepartment->slug,
+                                    'masterSubDepartment'   => $masterAsset->masterSubDepartment->slug,
+                                    'masterFamily' => $masterAsset->masterFamily->slug,
+                                ] : [
+                                    'masterShop'         => $masterAsset->masterShop->slug,
+                                    'masterDepartment'   => $masterAsset->masterDepartment->slug,
+                                    'masterFamily' => $masterAsset->masterFamily->slug,
+                                ]
+                            ],
+                            'tooltip' => 'Master Family',
+                            'icon' => ['fal', 'folder-tree']
+                        ] : [],
+                        [
+                            'label' => $masterAsset->masterFamily->name,
+                            'to'    => [
+                                'name'       => 'grp.masters.master_shops.show.master_products.show',
+                                'parameters' => [
+                                    'masterShop'         => $masterAsset->masterShop->slug,
+                                    'masterProduct' => $masterAsset->slug,
+                                ]
+                            ],
+                            'tooltip' => 'Master Product',
+                            'icon' => ['fal', 'folder-tree']
+                        ],
+                    ],
+                ),
                 'pageHead'    => [
-                    'title'   => $masterAsset->name,
+                    'title'   => $masterAsset->code,
+                    'afterTitle' => [
+                        'label' => $masterAsset->name
+                    ],
                     'model'   => '',
                     'icon'    => [
-                        'icon'  => ['fal', 'fa-folder'],
+                        'icon'  => ['fal', 'fa-cube'],
                         'title' => __('master asset')
                     ],
                     'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'edit',
-                            'label' => 'blueprint',
                             'route' => [
-                                'name'       => preg_replace('/show$/', 'blueprint', $request->route()->getName()),
+                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ],
@@ -132,10 +198,25 @@ class ShowMasterProducts extends GrpAction
                 ],
 
                 MasterAssetTabsEnum::SHOWCASE->value => $this->tab == MasterAssetTabsEnum::SHOWCASE->value ?
-                    fn () => MasterProductResource::make($masterAsset)
-                    : Inertia::lazy(fn () => MasterProductResource::make($masterAsset)),
+                    fn () => GetMasterProductShowcase::run($masterAsset)
+                    : Inertia::lazy(fn () => GetMasterProductShowcase::run($masterAsset)),
+
+                MasterAssetTabsEnum::TRADE_UNITS->value => $this->tab == MasterAssetTabsEnum::TRADE_UNITS->value ?
+                    fn () => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset))
+                    : Inertia::lazy(fn () => TradeUnitsResource::collection(IndexTradeUnitsInMasterProduct::run($masterAsset))),
+
+                MasterAssetTabsEnum::IMAGES->value => $this->tab == MasterAssetTabsEnum::IMAGES->value ?
+                    fn () =>  GetMasterProductImages::run($masterAsset)
+                    : Inertia::lazy(fn () => GetMasterProductImages::run($masterAsset)),
+
+                MasterAssetTabsEnum::PRODUCTS->value => $this->tab == MasterAssetTabsEnum::PRODUCTS->value ?
+                    fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset))
+                    : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset))),
+
             ]
-        )->table(IndexMailshots::make()->tableStructure($masterAsset));
+        )->table(IndexProductsInMasterProduct::make()->tableStructure(masterAsset: $masterAsset, prefix: MasterAssetTabsEnum::PRODUCTS->value))
+        ->table(IndexMailshots::make()->tableStructure($masterAsset))
+        ->table(IndexTradeUnitsInMasterProduct::make()->tableStructure(prefix: MasterAssetTabsEnum::TRADE_UNITS->value));
     }
 
     public function jsonResponse(MasterAsset $masterAsset): MasterProductResource
@@ -171,7 +252,7 @@ class ShowMasterProducts extends GrpAction
         return match ($routeName) {
             'grp.masters.master_shops.show.master_products.show' =>
             array_merge(
-                ShowMasterShop::make()->getBreadcrumbs($this->parent, $routeParameters),
+                ShowMasterShop::make()->getBreadcrumbs($masterAsset->masterShop, $routeParameters),
                 $headCrumb(
                     $masterAsset,
                     [
@@ -239,6 +320,24 @@ class ShowMasterProducts extends GrpAction
                         ],
                         'model' => [
                             'name'       => 'grp.masters.master_shops.show.master_departments.show.master_products.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.masters.master_shops.show.master_families.master_products.show' =>
+            array_merge(
+                ShowMasterFamily::make()->getBreadcrumbs($masterAsset->masterFamily, $routeName, $routeParameters, $suffix),
+                $headCrumb(
+                    $masterAsset,
+                    [
+                        'index' => [
+                            'name'       => 'grp.masters.master_shops.show.master_families.master_products.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.masters.master_shops.show.master_families.master_products.show',
                             'parameters' => $routeParameters
                         ]
                     ],

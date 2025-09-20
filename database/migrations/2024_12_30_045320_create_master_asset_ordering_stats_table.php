@@ -2,8 +2,8 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 30 Dec 2024 12:53:50 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2024, Raul A Perusquia Flores
+ * Created: Wed, 03 Sept 2025 16:23:57 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
 use App\Stubs\Migrations\HasOrderingStats;

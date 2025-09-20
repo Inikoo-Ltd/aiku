@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import PureInput from "@/Components/Pure/PureInput.vue"
-import { set, get } from 'lodash-es'
+import { set, get, debounce } from 'lodash-es'
 import { checkVAT, countries } from 'jsvat-next';
-import { ref, watch } from "vue"
-import { debounce } from "lodash-es"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { ref } from "vue"
 import { faExclamationCircle, faCheckCircle } from '@fas'
 import { faCopy } from '@fal'
 import { faSpinnerThird } from '@fad'
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { trans } from "laravel-vue-i18n"
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 
 const props = defineProps<{
@@ -16,14 +15,12 @@ const props = defineProps<{
     fieldName: string
     options?: any
     refForms?: any
-    fieldData?: {
-        country: Array<string>
-    }
+    fieldData?: any
 }>()
- 
+
 const emits = defineEmits()
 
-const setFormValue = (data: Object, fieldName: String) => {
+const setFormValue = (data: Object, fieldName: string) => {
     if (Array.isArray(fieldName)) {
         return getNestedValue(data, fieldName)
     } else {
@@ -38,34 +35,104 @@ const getNestedValue = (obj: Object, keys: Array<string>) => {
     }, obj)
 }
 
+// Helper function to get the actual value with conditional access
+const getActualValue = (valueObj: any): string => {
+    if (!valueObj) return ''
+
+    // Priority 1: Check form data structure first (maintain backward compatibility)
+
+    // Case 1: value.value.number exists (nested object structure)
+    if (valueObj.value && typeof valueObj.value === 'object' && valueObj.value.number !== undefined) {
+        return valueObj.value.number
+    }
+
+    // Case 2: value.value is a string
+    if (valueObj.value && typeof valueObj.value === 'string') {
+        return valueObj.value
+    }
+
+    // Case 3: direct string value
+    if (typeof valueObj === 'string') {
+        return valueObj
+    }
+
+    // Priority 2: Fallback to fieldData if form data is empty/invalid
+    if (props.fieldData?.value?.number && (!valueObj || !valueObj.value)) {
+        return props.fieldData.value.number
+    }
+
+    // Default fallback
+    return valueObj.value || ''
+}
+
+// Helper function to set the actual value with conditional structure
+const setActualValue = (valueObj: any, newValue: string): any => {
+    if (!valueObj) {
+        return { value: newValue }
+    }
+
+    // Maintain existing structure patterns (backward compatibility)
+
+    // Case 1: if original structure has value.value.number
+    if (valueObj.value && typeof valueObj.value === 'object' && 'number' in valueObj.value) {
+        return {
+            ...valueObj,
+            value: {
+                ...valueObj.value,
+                number: newValue
+            }
+        }
+    }
+
+    // Case 2: if original structure has value.value as string
+    if (valueObj.value !== undefined && typeof valueObj.value === 'string') {
+        return {
+            ...valueObj,
+            value: newValue
+        }
+    }
+
+    // Case 3: Check if we should create fieldData-like structure
+    // Only if fieldData exists and form data seems empty
+    if (props.fieldData?.value?.number && (!valueObj.value || valueObj.value === '')) {
+        return {
+            value: {
+                number: newValue,
+                // Preserve other fieldData properties if they exist
+                ...(props.fieldData.value.id && { id: props.fieldData.value.id }),
+                ...(props.fieldData.value.type && { type: props.fieldData.value.type }),
+                ...(props.fieldData.value.country_id && { country_id: props.fieldData.value.country_id }),
+                ...(props.fieldData.value.status && { status: 'pending' }), // Reset status on new input
+                valid: false // Reset validation on new input
+            }
+        }
+    }
+
+    // Case 4: direct value (fallback)
+    return { value: newValue }
+}
+
 const value = ref(setFormValue(props.form, props.fieldName))
 const vatValidationResult = ref<string | null>(null)
 
-// Fungsi validasi VAT
-const validateVAT = (vat: string) => {
-    if (!vat.value) {
+const validateVAT = (vatInput: any) => {
+    const vatNumber = getActualValue(vatInput)
+
+    if (!vatNumber) {
         vatValidationResult.value = null;
         set(props.form, ['errors', props.fieldName], '');
-        return;
+       /*  return; */
     }
 
-    const validation = checkVAT(vat.value, countries);
-    vatValidationResult.value = validation.isValid ? "Valid VAT" : "Invalid VAT";
+    const validation = checkVAT(vatNumber, countries);
+    vatValidationResult.value = validation.isValid ? trans("Valid tax number") : trans("Invalid tax number");
+
 
     // Handle invalid VAT
     if (!validation.isValid) {
-        set(props.form, ['errors', props.fieldName], 'Invalid VAT number.');
-        props.form.reset();
-        return;
-    }
-
-    // Handle country mismatch
-    if (props.fieldData?.country && validation.country?.isoCode.short) {
-        if (validation.country.isoCode.short !== props.fieldData.country) {
-            set(props.form, ['errors', props.fieldName], 'VAT number does not match with the address.');
-            props.form.reset();
-            return;
-        }
+        set(props.form, ['errors', props.fieldName],  '🤔 '+trans('Tax number looks invalid. Are you sure you want to save it?'));
+        // props.form.reset();
+        return updateFormValue(validation);;
     }
 
     // Valid VAT and no mismatch, update the form value
@@ -73,9 +140,7 @@ const validateVAT = (vat: string) => {
     set(props.form, ['errors', props.fieldName], '');
 };
 
-
-// Watch dengan debounce
-const debouncedValidation = debounce((newValue: string) => {
+const debouncedValidation = debounce((newValue: any) => {
     validateVAT(newValue)
 }, 500)
 
@@ -89,7 +154,9 @@ const updateFormValue = (newValue) => {
     emits("update:form", target);
 };
 
-const updateVat = (e) => {
+const updateVat = (newInputValue: string) => {
+    // Update the value ref with the new input while preserving structure
+    value.value = setActualValue(value.value, newInputValue)
     debouncedValidation(value.value)
 }
 </script>
@@ -97,7 +164,7 @@ const updateVat = (e) => {
 <template>
     <div class="relative">
         <div class="relative">
-            <PureInput v-model="value.value" @update:model-value="updateVat"/>
+            <PureInput :model-value="getActualValue(value)" @update:model-value="updateVat" />
         </div>
     </div>
     <p v-if="get(form, ['errors', `${fieldName}`])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">

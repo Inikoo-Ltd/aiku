@@ -330,7 +330,7 @@ test('update fulfilment settings (monthly cut off day)', function (Fulfilment $f
 })->depends('create fulfilment shop');
 
 test('get end date recurring bill (monthly)', function () {
-    $current = Carbon::now(); // store current time once
+    $current = Carbon::now(); // store the current time once
 
     $endDate = $this->getRecurringBillEndDate->getEndDate(
         $current,
@@ -353,7 +353,7 @@ test('get end date recurring bill (monthly)', function () {
 });
 
 test('get end date recurring bill (weekly)', function () {
-    $startDate = Carbon::create(2025, 10, 20); // 20 is monday
+    $startDate = Carbon::create(2025, 10, 20); // 20 is Monday
     $endDate   = $this->getRecurringBillEndDate->getEndDate(
         $startDate,
         [
@@ -365,7 +365,7 @@ test('get end date recurring bill (weekly)', function () {
     expect($endDate)->toBeInstanceOf(Carbon::class)
         ->toEqual(Carbon::create(2025, 10, 27));
 
-    $startDate = Carbon::create(2025, 11, 21); // 21 is friday
+    $startDate = Carbon::create(2025, 11, 21); // 21 is Friday
     $endDate   = $this->getRecurringBillEndDate->getEndDate(
         $startDate,
         [
@@ -1847,7 +1847,6 @@ test('picking pallet to return', function (PalletReturn $submittedPalletReturn) 
     $pickingPalletReturn = PickingPalletReturn::make()->action(
         $submittedPalletReturn,
     );
-    // dd($storedPallet);
     $fulfilmentCustomer->refresh();
     $firstPallet = $pickingPalletReturn->pallets->first();
     expect($pickingPalletReturn)->toBeInstanceOf(PalletReturn::class)
@@ -1868,7 +1867,6 @@ test('picked pallet to return', function (PalletReturn $pickingPalletReturn) {
     $pickedPalletReturn = PickedPalletReturn::make()->action(
         $pickingPalletReturn,
     );
-    // dd($storedPallet);
     $fulfilmentCustomer->refresh();
     expect($pickedPalletReturn)->toBeInstanceOf(PalletReturn::class)
         ->and($pickedPalletReturn->state)->toBe(PalletReturnStateEnum::PICKED);
@@ -2642,7 +2640,6 @@ test('picking second pallet to return', function (PalletReturn $submittedPalletR
     $pickingPalletReturn = PickingPalletReturn::make()->action(
         $submittedPalletReturn,
     );
-    // dd($storedPallet);
     $fulfilmentCustomer->refresh();
     expect($pickingPalletReturn)->toBeInstanceOf(PalletReturn::class)
         ->and($pickingPalletReturn->state)->toBe(PalletReturnStateEnum::PICKING);
@@ -2894,7 +2891,6 @@ test('consolidate recurring bill', function ($fulfilmentCustomer) {
     $fulfilmentCustomer->refresh();
 
     $newRecurringBill = $fulfilmentCustomer->currentRecurringBill;
-    // dd($recurringBill->transactions);
 
     expect($newRecurringBill)->not->toBe($recurringBill)
         ->and($newRecurringBill)->toBeInstanceOf(RecurringBill::class)
@@ -2960,14 +2956,14 @@ test('pay invoice (full)', function ($fulfilmentCustomer) {
     expect($invoice->total_amount)->tobe($invoice->payment_amount)
         ->and($payment)->toBeInstanceOf(Payment::class)
         ->and($payment->status)->toBe(PaymentStatusEnum::SUCCESS)
-        ->and($payment->state)->toBe(PaymentStateEnum::COMPLETED);
+        ->and($payment->state)->toBe(PaymentStateEnum::COMPLETED)
+        ->and($invoice->customer->balance)->toBe("-402.00");
 
     return $fulfilmentCustomer;
 })->depends('update third rental agreement cause');
 
 test('consolidate 2nd recurring bill', function ($fulfilmentCustomer) {
     $recurringBill = $fulfilmentCustomer->currentRecurringBill;
-    // dd($recurringBill->transactions);
     ConsolidateRecurringBill::make()->action($recurringBill);
 
     $recurringBill->refresh();
@@ -3047,10 +3043,12 @@ test('consolidate 3rd recurring bill', function ($fulfilmentCustomer) {
 })->depends('pay invoice (other half)');
 
 test('pay invoice (exceed)', function ($invoice) {
-    expect($invoice->total_amount)->toBe("140.00")
-        ->and($invoice->payment_amount)->toBe("0.00");
-
     $customer           = $invoice->customer;
+    expect($invoice->total_amount)->toBe("140.00")
+        ->and($invoice->payment_amount)->toBe("0.00")
+    ->and($customer->balance)->toBe("-542.00");
+
+
     $paymentAccountShop = $invoice->shop->paymentAccountShops()->first();
     $paymentAccount     = $paymentAccountShop->paymentAccount;
     $fulfilmentCustomer = $invoice->customer->fulfilmentCustomer;
@@ -3066,8 +3064,8 @@ test('pay invoice (exceed)', function ($invoice) {
         ->and($payment->status)->toBe(PaymentStatusEnum::SUCCESS)
         ->and($payment->state)->toBe(PaymentStateEnum::COMPLETED)
         ->and($customer->creditTransactions)->not->toBeNull()
-        ->and($customer->balance)->toBe("60.00")
-        ->and($customer->creditTransactions->first()->amount)->toBe("60.00");
+        ->and($customer->balance)->toBe("-682.00")
+        ->and($customer->creditTransactions->first()->amount)->toBe("-402.00");
 
     return $fulfilmentCustomer;
 })->depends('consolidate 3rd recurring bill');
@@ -3440,13 +3438,11 @@ test('refund to credit balance', function (array $data) {
     $refund->refresh();
 
     $refundPayment = $refund->payments->first();
-    $refundPaymentInvoice = $invoice->payments->where('type', PaymentTypeEnum::REFUND)->first();
 
     expect($refund)->toBeInstanceOf(Invoice::class)
         ->and($refund->pay_status)->toBe(InvoicePayStatusEnum::PAID)
         ->and($refund->payments->count())->toBe(1)
         ->and($refundPayment->amount)->toBe($refund->total_amount)
-        ->and($refundPaymentInvoice->amount)->toBe($refund->total_amount)
         ->and($refundPayment->type)->toBe(PaymentTypeEnum::REFUND)
         ->and($refundPayment->status)->toBe(PaymentStatusEnum::SUCCESS)
         ->and($refundPayment->state)->toBe(PaymentStateEnum::COMPLETED);

@@ -127,16 +127,24 @@ const setError = (e) => {
                          class="w-6 h-6" />
 
                     <div class="flex flex-col sm:flex-row gap-y-1.5 gap-x-3 sm:items-center ">
-                        <h2 :class="data.noCapitalise ? '' : 'capitalize'" class="space-x-2">
-                            <span v-if="data.model" class="text-gray-400 font-medium">{{ data.model }}</span>
-                            <span class="">{{ useTruncate(data.title, 30) }}</span>
-                        </h2>
+                        <div :class="data.noCapitalise ? '' : 'capitalize'" class="xspace-x-2">
+                            <template v-if="data.model">
+                                <span class="text-gray-400 font-medium">{{ data.model }}</span>
+                                <span>&nbsp;</span>
+                            </template>
+                            <span class="inline-block">{{ useTruncate(data.title, 30) }}</span>
+                        </div>
                         <!-- Section: After Title -->
                         <slot name="afterTitle">
-                            <div v-if="data.iconRight || data.titleRight || data.afterTitle" class="flex gap-x-2 items-center">
+                            <component
+                                    v-if="data.iconRight || data.titleRight || data.afterTitle"
+                                    :is="data?.iconRight?.url ? 'a' : 'div'"
+                                    :href="data?.iconRight?.url ? route(data?.iconRight?.url.name, data?.iconRight?.url.parameters) : ''"
+                                >
+                            <div class="flex gap-x-2 items-center">
                                 <FontAwesomeIcon v-if="data.iconRight" v-tooltip="data.iconRight.tooltip || ''"
-                                                 :icon="data.iconRight?.icon || data.iconRight" class="h-4 align-top" :class="data.iconRight.class"
-                                                 aria-hidden="true"
+                                                 :icon="data.iconRight?.icon || data.iconRight" class="align-top" :class="data.iconRight.class"
+                                                 aria-hidden="true" :color="data.iconRight.color"
                                                  :rotation="data?.iconRight?.icon_rotation"
                                 />
                                 <span v-if="data.titleRight" class="text-lg">{{ data.titleRight }}</span>
@@ -144,12 +152,14 @@ const setError = (e) => {
                                     {{ data.afterTitle.label }}
                                 </div>
                             </div>
+                            </component>
                         </slot>
                         <slot name="platform">
                             <div v-if="data.platform" v-tooltip="data.platform.title || data.platform.name" class=" h-6 max-w-7 min-w-5 w-auto text-gray-400 font-normal text-lg leading-none" v-html="ChannelLogo(data.platform.type)">
                             </div>
 
                         </slot>
+                        <slot name="afterTitle2" />
                     </div>
                 </div>
             </div>

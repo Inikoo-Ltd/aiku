@@ -135,6 +135,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $colour
  * @property bool $registration_needs_approval
  * @property array<array-key, mixed>|null $extra_languages
+ * @property bool $is_aiku
+ * @property string $cost_price_ratio
+ * @property array<array-key, mixed>|null $forbidden_dispatch_countries
+ * @property string $price_rrp_ratio
  * @property-read \App\Models\Catalogue\ShopAccountingStats|null $accountingStats
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses
@@ -226,7 +230,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Shop newQuery()
  * @method static Builder<static>|Shop onlyTrashed()
  * @method static Builder<static>|Shop query()
- * @method static Builder<static>|Shop withTrashed()
+ * @method static Builder<static>|Shop withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Shop withoutTrashed()
  * @mixin Eloquent
  */
@@ -247,6 +251,7 @@ class Shop extends Model implements HasMedia, Auditable
         'settings'        => 'array',
         'location'        => 'array',
         'extra_languages' => 'array',
+        'forbidden_dispatch_countries' => 'array',
         'type'            => ShopTypeEnum::class,
         'state'           => ShopStateEnum::class,
         'fetched_at'      => 'datetime',
@@ -257,7 +262,8 @@ class Shop extends Model implements HasMedia, Auditable
         'data'     => '{}',
         'settings' => '{}',
         'location' => '{}',
-        'extra_languages' => '{}'
+        'extra_languages' => '{}',
+        'forbidden_dispatch_countries' => '{}'
     ];
 
     protected $guarded = [];

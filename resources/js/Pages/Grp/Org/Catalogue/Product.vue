@@ -5,7 +5,7 @@ import {
     faBox, faBullhorn, faCameraRetro, faCube, faFolder,
     faMoneyBillWave, faProjectDiagram, faRoad, faShoppingCart,
     faStream, faUsers, faHeart, faMinus,
-    faFolderTree
+    faFolderTree, faBrowser, faLanguage,faFolders
 } from '@fal'
 import { ref, computed } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
@@ -28,11 +28,14 @@ import TableProductBackInStockReminders from "@/Components/Tables/Grp/Org/Catalo
 import TableTradeUnits from '@/Components/Tables/Grp/Goods/TableTradeUnits.vue'
 import TableOrgStocks from '@/Components/Tables/Grp/Org/Inventory/TableOrgStocks.vue'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
-import TableImages from "@/Components/Tables/Grp/Helpers/TableImages.vue"
+import ProductTranslation from '@/Components/Showcases/Grp/ProductTranslation.vue'
+import { routeType } from '@/types/route'
+import TradeUnitImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 
 
 library.add(
     faFolder,
+    faFolders,
     faCube,
     faStream,
     faMoneyBillWave,
@@ -44,7 +47,10 @@ library.add(
     faCameraRetro,
     faRoad,
     faHeart,
-    faMinus
+    faMinus,
+    faBrowser,
+    faLanguage,
+    faFolderTree
 )
 
 const props = defineProps<{
@@ -54,6 +60,7 @@ const props = defineProps<{
         current: string
         navigation: {}
     }
+    translation?: {}
     orders?: {}
     customers?: {}
     mailshots?: {}
@@ -64,6 +71,9 @@ const props = defineProps<{
     history?: {}
     stocks?: {}
     images?: {}
+    master : boolean
+    mini_breadcrumbs? : any[]
+    masterRoute?: routeType
     taxonomy: {
         department?: {
             name: string
@@ -83,7 +93,7 @@ const props = defineProps<{
         }
     }
 }>()
-console.log('Product.vue props:', props)
+
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
@@ -101,59 +111,50 @@ const component = computed(() => {
         reminders: TableProductBackInStockReminders,
         trade_units: TableTradeUnits,
         stocks: TableOrgStocks,
-        images: TableImages
+        images: TradeUnitImagesManagement,
+        translation: ProductTranslation,
     }
+    console.log(currentTab.value)
     return components[currentTab.value]
 })
+
+
 
 // Warning flag
 const showMissingTaxonomyMessage = computed(() => {
     return !props.taxonomy?.department && !props.taxonomy?.family
 })
 
-// Breadcrumb logic
-const breadcrumbItems = computed(() => {
-    const items = []
 
-    const hasDepartment = props.taxonomy?.department
-    const hasFamily = props.taxonomy?.family
 
-    if (!hasDepartment && !hasFamily) return []
+function masterProductRoute() {
+    return route(
+        "grp.masters.master_shops.show.master_products.show",
+        {
+            masterShop : route().params.shop as string,
+            masterProduct : props.code as string
+        }
+    );
+}
 
-    items.push({
-        label: hasDepartment ? props.taxonomy.department.label : '-',
-        to: hasDepartment
-            ? route(
-                props.taxonomy.department.route.name,
-                props.taxonomy.department.route.parameters,
-            )
-            : null,
-        tooltip: hasDepartment ? 'Department ' + props.taxonomy.department.tooltip : 'no department',
-        title: hasDepartment ? props.taxonomy.department.name : 'No department',
-        icon: faFolderTree,
-    })
 
-    if (hasFamily) {
-        items.push({
-            label: props.taxonomy.family.label,
-            to: route(
-                props.taxonomy.family.route.name,
-                props.taxonomy.family.route.parameters,
-            ),
-            title: props.taxonomy.family.name,
-            tooltip: 'Family ' + props.taxonomy.family.tooltip,
-            icon: faFolder
-        })
-    }
-    return items
-})
+
 </script>
 
 <template>
 
     <Head :title="capitalize(title)" />
 
-    <PageHeading :data="pageHead" />
+    <PageHeading :data="pageHead" >
+        <template #afterTitle>
+             <Link v-if="master" :href="route(masterRoute.name, masterRoute.parameters)"  v-tooltip="'Go to Master'" class="mr-1">
+                <FontAwesomeIcon
+                    icon="fab fa-octopus-deploy"
+                    color="#4B0082"
+                />
+            </Link>
+        </template>
+    </PageHeading>
 
 
     <Message v-if="showMissingTaxonomyMessage" severity="warn" class="mb-4">
@@ -161,14 +162,12 @@ const breadcrumbItems = computed(() => {
     </Message>
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-
-    <div class="bg-white shadow-sm rounded px-4 py-2 mx-4 mt-2 w-fit border border-gray-200 overflow-x-auto">
-        <Breadcrumb :model="breadcrumbItems">
+    <div v-if="mini_breadcrumbs.length != 0" class="bg-white shadow-sm rounded px-4 py-2 mx-4 mt-2 w-fit border border-gray-200 overflow-x-auto">
+        <Breadcrumb :model="mini_breadcrumbs">
             <template #item="{ item, index }">
                 <div class="flex items-center gap-1 whitespace-nowrap">
-                    <!-- Breadcrumb link or text -->
-                    <component :is="item.to ? Link : 'span'" :href="item.to" v-tooltip="item.tooltip"
-                        :title="item.title" class="flex items-center gap-2 text-sm transition-colors duration-150"
+                    <component :is="item.to ? Link : 'span'" :href="route(item.to.name,item.to.parameters)" v-tooltip="item.tooltip"
+                        :title="item.label" class="flex items-center gap-2 text-sm transition-colors duration-150"
                         :class="item.to
                             ? 'text-gray-500'
                             : 'text-gray-500 cursor-default'">

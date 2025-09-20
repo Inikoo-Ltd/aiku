@@ -94,7 +94,7 @@ class IndexTopUps extends OrgAction
 
             $emptyStateData = [
                 'icons' => ['fal fa-pallet'],
-                'title' => __("No topup exist"),
+                'title' => __("No top up exist"),
                 'count' => 0
             ];
 

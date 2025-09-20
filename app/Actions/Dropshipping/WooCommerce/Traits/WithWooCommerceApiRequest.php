@@ -69,7 +69,7 @@ trait WithWooCommerceApiRequest
             $this->initWooCommerceApi();
         }
 
-        return $this->woocommerceApiUrl . '/wp-json/' . $this->woocommerceApiVersion;
+        return rtrim($this->woocommerceApiUrl, '/') . '/wp-json/' . $this->woocommerceApiVersion;
     }
 
     /**
@@ -137,6 +137,8 @@ trait WithWooCommerceApiRequest
                 'error' => $e->getMessage()
             ]);
 
+            \Sentry::captureMessage($e->getMessage());
+
             return [];
         }
     }
@@ -149,9 +151,9 @@ trait WithWooCommerceApiRequest
      *
      * @return array|null Products data
      */
-    public function getWooCommerceProducts(array $params = [], bool $useCache = true): ?array
+    public function getWooCommerceProducts(array $params = [], bool $useCache = false): ?array
     {
-        return $this->makeWooCommerceRequest('GET', 'products', $params, $useCache);
+        return $this->makeWooCommerceRequest('GET', 'products', [...$params, ...[]], $useCache);
     }
 
     /**

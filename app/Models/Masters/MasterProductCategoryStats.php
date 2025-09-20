@@ -92,6 +92,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $number_collections_state_in_process
  * @property int $number_collections_state_active
  * @property int $number_collections_state_inactive
+ * @property int $number_pending_master_assets
  * @method static Builder<static>|MasterProductCategoryStats newModelQuery()
  * @method static Builder<static>|MasterProductCategoryStats newQuery()
  * @method static Builder<static>|MasterProductCategoryStats query()

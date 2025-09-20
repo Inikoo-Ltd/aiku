@@ -11,6 +11,7 @@ namespace App\Actions\Masters\MasterProductCategory;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -30,6 +31,16 @@ trait WithMasterProductCategoryAction
     {
         if ($this->masterProductCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $this->set('master_department_id', null);
+        }
+
+        if ($this->has('master_department_or_master_sub_department_id')) {
+            $parent = MasterProductCategory::find($this->get('master_department_or_master_sub_department_id'));
+
+            if ($parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
+                $this->set('master_department_id', $parent->id);
+            } elseif ($parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                $this->set('master_sub_department_id', $parent->id);
+            }
         }
     }
 

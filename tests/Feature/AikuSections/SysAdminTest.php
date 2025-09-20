@@ -106,14 +106,14 @@ test('create group', function () {
 
 test('group scoped job positions', function (Group $group) {
     $jobPositions = collect(config("blueprint.job_positions.positions"));
-    expect($group->jobPositions()->count())->toBe(5)
+    expect($group->jobPositions()->count())->toBe(6)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 
     $this->artisan('group:seed-job-positions', [
         'group' => $group->slug,
     ])->assertSuccessful();
 
-    expect($group->jobPositions()->count())->toBe(5)
+    expect($group->jobPositions()->count())->toBe(6)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 })->depends('create group');
 

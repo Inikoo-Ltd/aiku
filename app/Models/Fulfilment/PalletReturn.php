@@ -131,7 +131,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletReturn newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletReturn onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletReturn query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletReturn withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletReturn withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletReturn withoutTrashed()
  * @mixin \Eloquent
  */

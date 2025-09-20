@@ -13,7 +13,6 @@ use App\Actions\OrgAction;
 use App\Models\Dispatching\Shipper;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -32,8 +31,8 @@ class EditShipper extends OrgAction
                 ),
                 'title'       => __('new shipper'),
                 'pageHead'    => [
-                    'title'        => __('new shipper'),
-                    'icon'         => [
+                    'title'   => __('new shipper'),
+                    'icon'    => [
                         'icon'  => ['fal', 'fa-shipping-fast'],
                         'title' => __('shipper')
                     ],
@@ -54,25 +53,30 @@ class EditShipper extends OrgAction
                         [
                             'title'  => __('contact'),
                             'fields' => [
-                                'code' => [
+                                'code'         => [
                                     'type'  => 'input',
                                     'label' => __('code'),
                                     'value' => $shipper->code,
                                 ],
-                                'name' => [
+                                'name'         => [
                                     'type'  => 'input',
                                     'label' => __('name'),
                                     'value' => $shipper->name,
                                 ],
-                                'base_url' => [
+                                'trade_as' => [
                                     'type'  => 'input',
-                                    'label' => __('base url'),
-                                    'value' => Arr::get($shipper->settings, 'base_url', ''),
+                                    'label' => __('Trade as'),
+                                    'value' => $shipper->trade_as,
+                                ],
+                                'tracking_url' => [
+                                    'type'  => 'input',
+                                    'label' => __('Tracking url'),
+                                    'value' => $shipper->tracking_url,
                                 ],
                             ]
                         ]
                     ],
-                    'args' => [
+                    'args'      => [
                         'updateRoute' => [
                             'name'       => 'grp.models.shipper.update',
                             'parameters' => [
@@ -89,11 +93,11 @@ class EditShipper extends OrgAction
 
     public function asController(Organisation $organisation, Warehouse $warehouse, Shipper $shipper, ActionRequest $request): Response
     {
-        $this->parent = $organisation;
         $this->initialisationFromWarehouse($warehouse, $request);
 
         return $this->handle($shipper, $request);
     }
+
     public function getBreadcrumbs(Shipper $shipper, string $routeName, array $routeParameters): array
     {
         return array_merge(

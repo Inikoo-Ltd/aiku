@@ -71,6 +71,33 @@ class AutosaveWebsiteMarginal extends OrgAction
                     'menu' => $layout
                 ]
             ]);
+        } elseif ($marginal == 'sidebar') {
+            if (!$website->unpublishedSidebarSnapshot) {
+                $sidebarSnapshot = StoreWebsiteSnapshot::run(
+                    $website,
+                    [
+                        'scope'  => SnapshotScopeEnum::SIDEBAR,
+                        'publisher_id'   => Arr::get($modelData, 'publisher_id'),
+                        'publisher_type' => Arr::get($modelData, 'publisher_type'),
+                        'layout' => []
+                    ]
+                );
+
+                $website->update(
+                    [
+                        'unpublished_sidebar_snapshot_id' => $sidebarSnapshot->id
+                    ]
+                );
+                $website->refresh();
+            }
+
+            $layout = Arr::get($modelData, 'layout');
+
+            $this->update($website->unpublishedSidebarSnapshot, [
+                'layout' => [
+                    'sidebar' => $layout
+                ]
+            ]);
         } elseif ($marginal == 'department') {
             if (!$website->unpublishedDepartmentSnapshot) {
                 $departmentSnapshot = StoreWebsiteSnapshot::run(
@@ -276,6 +303,12 @@ class AutosaveWebsiteMarginal extends OrgAction
     {
         $this->initialisationFromShop($website->shop, $request);
         $this->handle($website, 'menu', $this->validatedData);
+    }
+
+    public function sidebar(Website $website, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website, 'sidebar', $this->validatedData);
     }
 
     public function department(Website $website, ActionRequest $request): void

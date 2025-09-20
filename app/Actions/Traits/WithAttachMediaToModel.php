@@ -9,9 +9,12 @@
 namespace App\Actions\Traits;
 
 use App\Models\Catalogue\Product;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\WebUser;
+use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Media;
+use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -22,7 +25,7 @@ use stdClass;
 
 trait WithAttachMediaToModel
 {
-    protected function attachMediaToModel(Group|Organisation|Shop|User|Webuser|Website|WebBlock|Product|MasterProductCategory $model, Media $media, string $scope = 'default', string $subScope = null, $data = null): Group|Organisation|Shop|User|Website|Webuser|WebBlock|Product|MasterProductCategory
+    protected function attachMediaToModel(Group|Organisation|Shop|User|Webuser|Website|WebBlock|Product|MasterProductCategory|TradeUnit|MasterAsset|ProductCategory $model, Media $media, string $scope = 'default', string $subScope = null, $data = null): Group|Organisation|Shop|User|Website|Webuser|WebBlock|Product|MasterProductCategory|TradeUnit|MasterAsset|ProductCategory
     {
 
 

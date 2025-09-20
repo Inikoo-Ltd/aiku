@@ -72,7 +72,7 @@ class StoreTransaction extends OrgAction
         $unitWeight = $historicAsset->model->gross_weight ?? 0;
 
         $estimatedWeight = $unitWeight * Arr::get($modelData, 'quantity_ordered', 1);
-
+        $estimatedWeight = (int)ceil($estimatedWeight);
 
 
         data_set($modelData, 'estimated_weight', $estimatedWeight);

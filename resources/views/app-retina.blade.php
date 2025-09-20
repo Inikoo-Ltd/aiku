@@ -39,6 +39,11 @@
             })(window,document,'script','dataLayer','{{ Arr::get(request()->get("website")->settings, "google_tag_id", "") }}');</script>
             <!-- End Google Tag Manager -->
         @endif
+
+        <!-- Section: Luigi analytics -->
+        @if(request()->get('website') && Arr::get(request()->get('website')->settings, 'luigisbox.lbx_code', ''))
+            <script async src="https://scripts.luigisbox.com/{{ Arr::get(request()->get('website')->settings, 'luigisbox.lbx_code', '') }}.js"></script> 
+        @endif
     </head>
     <body class="font-sans antialiased h-full text-slate-700">
         @if(request()->get('website') && Arr::get(request()->get('website')->settings, 'google_tag_id', ''))

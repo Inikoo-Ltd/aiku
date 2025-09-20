@@ -64,14 +64,16 @@ const getAspectClass = () => {
                     <FontAwesomeIcon icon="fas fa-circle" class="text-yellow-400" />
                     <FontAwesomeIcon icon="fas fa-circle" class="text-green-400" />
                 </div>
-                <div class="ml-3 flex items-center space-x-2 truncate min-w-0">
-                    <FontAwesomeIcon :icon="tab?.icon || 'fab fa-chrome'" />
-                    <span class="truncate text-sm font-medium">{{ tab?.label || trans('New Tab') }}</span>
-                </div>
-                <div class="ml-auto cursor-pointer" @click="() => keyIconTimes++">
-                    <Transition name="spin-to-right">
-                        <FontAwesomeIcon :key="keyIconTimes" icon="far fa-times" />
-                    </Transition>
+                <div class="flex items-center gap-x-2 border border-gray-300 rounded-full px-4 py-0.5 bg-white max-w-48 w-full">
+                    <div class="flex items-center space-x-2 truncate min-w-0">
+                        <FontAwesomeIcon :icon="tab?.icon || 'fab fa-chrome'" />
+                        <span class="truncate text-sm font-medium">{{ tab?.label || trans('New Tab') }}</span>
+                    </div>
+                    <div class="ml-auto cursor-pointer opacity-50 hover:opacity-100" @click="() => keyIconTimes++">
+                        <Transition name="spin-to-right">
+                            <FontAwesomeIcon :key="keyIconTimes" icon="far fa-times" />
+                        </Transition>
+                    </div>
                 </div>
             </div>
 
@@ -82,9 +84,9 @@ const getAspectClass = () => {
                     <FontAwesomeIcon icon="far fa-arrow-left" class="text-gray-500 cursor-pointer" />
                     <FontAwesomeIcon icon="far fa-arrow-right" class="text-gray-500 cursor-pointer" />
                     <Transition name="spin-to-right">
-                        <FontAwesomeIcon v-if="!isLoadingRefreshPage" @click="onRefreshPage" icon="fas fa-redo-alt"
+                        <FontAwesomeIcon v-if="!isLoadingRefreshPage" @click="onRefreshPage" fixed-width icon="fas fa-redo-alt"
                             class="text-gray-500 cursor-pointer" />
-                        <FontAwesomeIcon v-else icon="far fa-times" class="text-gray-500 cursor-pointer"
+                        <FontAwesomeIcon v-else fixed-width icon="far fa-times" class="text-gray-500 cursor-pointer"
                             @click="isLoadingRefreshPage = false" />
                     </Transition>
                 </div>
@@ -94,7 +96,12 @@ const getAspectClass = () => {
                     <div class="flex items-center bg-gray-100 px-4 py-1 rounded-full w-full">
                         <FontAwesomeIcon icon="fal fa-globe" class="text-xs shrink-0" />
                         <span class="truncate text-sm ml-2 text-gray-700">
-                            {{ url?.domain || 'www.website.com' }}<span class="text-gray-400">/{{ url?.page }}</span>
+                            <template v-if="url?.page && url.page.includes('http')">
+                                {{ url.page }}
+                            </template>
+                            <template v-else>
+                                {{ url?.domain || 'www.website.com' }}<span class="text-gray-400">/{{ url?.page }}</span>
+                            </template>
                         </span>
                         <FontAwesomeIcon :icon="isStar ? 'fas fa-star' : 'fal fa-star'"
                             class="ml-auto text-yellow-500 cursor-pointer" @click="isStar = !isStar" />

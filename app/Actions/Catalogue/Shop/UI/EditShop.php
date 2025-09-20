@@ -45,6 +45,17 @@ class EditShop extends OrgAction
      */
     public function htmlResponse(Shop $shop, ActionRequest $request): Response
     {
+        $merged = array_merge(
+            $shop->organisation->forbidden_dispatch_countries ?? [],
+            $shop->forbidden_dispatch_countries ?? []
+        );
+
+        $result = array_reduce($merged, function ($carry, $item) {
+            if (!in_array($item, $carry)) {
+                $carry[] = $item;
+            }
+            return $carry;
+        }, []);
 
         return Inertia::render(
             'EditModel',
@@ -160,13 +171,40 @@ class EditShop extends OrgAction
                                     'searchable'    => true
                                 ],
                             ],
-
                         ],
                         [
                             'label'  => __('contact/details'),
                             'icon'   => 'fa-light fa-user',
                             'fields' => [
 
+                            ]
+                        ],
+                        [
+                            'label'  => __('Pricing'),
+                            'icon'   => 'fa-light fa-money-bill',
+                            'fields' => [
+                                'cost_price_ratio' => [
+                                    'type'          => 'input_number',
+                                    'bind' => [
+                                        'maxFractionDigits' => 3
+                                    ],
+                                    'label'         => __('pricing ratio'),
+                                    'placeholder'   => __('Cost price ratio'),
+                                    'required'      => true,
+                                    'value'         => $shop->cost_price_ratio,
+                                    'min'           => 0
+                                ],
+                                'price_rrp_ratio' => [
+                                    'type'          => 'input_number',
+                                    'bind' => [
+                                        'maxFractionDigits' => 3
+                                    ],
+                                    'label'         => __('rrp ratio'),
+                                    'placeholder'   => __('price rrp ratio'),
+                                    'required'      => true,
+                                    'value'         => $shop->price_rrp_ratio,
+                                    'min'           => 0
+                                ]
                             ]
                         ],
                         [
@@ -227,6 +265,25 @@ class EditShop extends OrgAction
                                     'mode'          => 'tags',
                                     'labelProp'     => 'name',
                                     'valueProp' => 'id',
+                                ]
+                            ],
+                        ],
+                        [
+                            'label'  => __('Shipping'),
+                            'icon'   => 'fa-light fa-truck',
+                            'fields' => [
+                                'forbidden_dispatch_countries' => [
+                                    'type'          => 'multiselect-tags',
+                                    'placeholder'   => __('Select countries'),
+                                    'information'   => __('Customer cannot submit order that delivered to these countries'),
+                                    'label'         => __('Forbidden Countries'),
+                                    'required'      => true,
+                                    'value'         => $result,
+                                    'options'       => GetCountriesOptions::run(),
+                                    'searchable'    => true,
+                                    'mode'          => 'tags',
+                                    'labelProp'     => 'label',
+                                    'valueProp'     => 'id'
                                 ]
                             ],
                         ],

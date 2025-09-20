@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\Media;
 
+use App\Actions\Helpers\Media\Hydrators\MediaHydrateDimensions;
 use App\Actions\Helpers\Media\Hydrators\MediaHydrateMultiplicity;
 use App\Actions\Helpers\Media\Hydrators\MediaHydrateUsage;
 use App\Actions\HydrateModel;
@@ -23,6 +24,7 @@ class HydrateMedia extends HydrateModel
     {
         MediaHydrateUsage::run($media);
         MediaHydrateMultiplicity::run($media);
+        MediaHydrateDimensions::run($media);
     }
 
     public function asCommand(Command $command): int

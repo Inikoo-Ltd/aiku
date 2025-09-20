@@ -27,12 +27,13 @@ use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Enums\Comms\Outbox\OutboxTypeEnum;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
 use App\Models\Catalogue\Shop;
-use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Email;
+use App\Models\Comms\EmailOngoingRun;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
 use App\Models\CRM\WebUser;
 use App\Models\Fulfilment\Fulfilment;
+use App\Models\Helpers\Snapshot;
 use App\Models\Web\Website;
 use Config;
 use Inertia\Testing\AssertableInertia;
@@ -103,13 +104,33 @@ test('seed shop outboxes by command', function (Shop $shop) {
 })->depends('outbox seeded when shop created');
 
 test('outbox seeded when website created', function (Shop $shop) {
+
+
     $website = StoreWebsite::make()->action(
         $shop,
         Website::factory()->definition()
     );
+
     expect($website->group->commsStats->number_outboxes)->toBe(34)
         ->and($website->organisation->commsStats->number_outboxes)->toBe(34)
         ->and($website->shop->commsStats->number_outboxes)->toBe(21);
+
+    /** @var Outbox $outbox */
+    $forgotPasswordOutbox = $website->shop->outboxes()->where('code', 'password_reminder')->first();
+
+    expect($forgotPasswordOutbox)->toBeInstanceOf(Outbox::class)
+    ->and($forgotPasswordOutbox->state)->toBe(OutboxStateEnum::IN_PROCESS);
+
+    $forgotPasswordEmailOngoingRun = $forgotPasswordOutbox->emailOngoingRun;
+    expect($forgotPasswordEmailOngoingRun)->toBeInstanceOf(EmailOngoingRun::class)
+        ->and($forgotPasswordEmailOngoingRun->email)->toBeInstanceOf(Email::class);
+
+    $email = $forgotPasswordEmailOngoingRun->email;
+
+    expect($email->unpublishedSnapshot)->toBeInstanceOf(Snapshot::class)
+        ->and($email->liveSnapshot)->toBeInstanceOf(Snapshot::class)
+        ->and($email->liveSnapshot->compiled_layout)->toBeNull();
+
 
     return $website;
 })->depends('outbox seeded when shop created');
@@ -170,13 +191,13 @@ test('test post room hydrator', function ($shop) {
         $shop->organisation,
         []
     );
-    $outbox = StoreOutbox::make()->action(
+    $outbox      = StoreOutbox::make()->action(
         $orgPostRoom,
         $shop,
         [
-            'code' => OutboxCodeEnum::INVITE,
-            'type' => OutboxTypeEnum::NEWSLETTER,
-            'name' => 'Test',
+            'code'  => OutboxCodeEnum::INVITE,
+            'type'  => OutboxTypeEnum::NEWSLETTER,
+            'name'  => 'Test',
             'state' => OutboxStateEnum::ACTIVE
         ]
     );
@@ -190,36 +211,21 @@ test('test post room hydrator', function ($shop) {
 
 
 test('test send email reset password', function () {
-
-
     StoreWebsite::make()->action($this->shop, [
-        'code' => 'test1',
-        'name' => 'Test Website',
-        'domain'  => 'https://test.com',
+        'code'   => 'test1',
+        'name'   => 'Test Website',
+        'domain' => 'https://test.com',
     ]);
 
     $webUser = StoreWebUser::make()->action($this->customer, WebUser::factory()->definition());
 
-    $outbox = $webUser->shop->outboxes()->where('code', 'password_reminder')->first();
-    $email  = StoreEmail::make()->action($outbox->emailOngoingRun, null, [
-        'subject'               => 'Reset Password',
-        'body'                  => 'Reset Password',
-        'layout'                => ['body' => 'Reset Password'],
-        'compiled_layout'       => 'xxx',
-        'state'                 => 'active',
-        'builder'               => EmailBuilderEnum::BEEFREE,
-        'snapshot_state'        => SnapshotStateEnum::LIVE,
-        'snapshot_recyclable'   => true,
-        'snapshot_first_commit' => true,
-    ], strict: false);
 
-    expect($email)->toBeInstanceOf(Email::class);
 
     $dispatchedEmail = SendResetPasswordEmail::run($webUser, [
         'url' => 'https://test.com'
     ]);
 
-    expect($dispatchedEmail)->toBeInstanceOf(DispatchedEmail::class);
+    expect($dispatchedEmail)->toBeNull();
 
     return $this->customer;
 })->depends('outbox seeded when shop created');
@@ -536,7 +542,6 @@ test('UI show dispatched emails', function () {
 });
 
 test('UI edit outbox in fulfilment', function () {
-
     $fulfilment = Fulfilment::first();
     if (!$fulfilment) {
         $fulfilment = createFulfilment($this->organisation);
@@ -553,10 +558,10 @@ test('UI edit outbox in fulfilment', function () {
         $orgPostRoom,
         $fulfilment,
         [
-            'code' => OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
-            'type' => OutboxTypeEnum::USER_NOTIFICATION,
+            'code'  => OutboxCodeEnum::SEND_INVOICE_TO_CUSTOMER,
+            'type'  => OutboxTypeEnum::USER_NOTIFICATION,
             'state' => OutboxStateEnum::ACTIVE,
-            'name' => 'test sender',
+            'name'  => 'test sender',
         ]
     );
 
@@ -598,7 +603,7 @@ test('UI create mailshot', function () {
                 'formData',
                 fn (AssertableInertia $page) => $page
                     ->where('route', [
-                        'name' => 'grp.models.outbox.mailshot.store',
+                        'name'       => 'grp.models.outbox.mailshot.store',
                         'parameters' => [
                             'outbox' => $outbox->id
                         ]
@@ -629,11 +634,11 @@ test('UI edit mailshot', function (Mailshot $mailShot) {
 test('UI show mailshot in workshop', function (Mailshot $mailShot) {
     $this->withoutExceptionHandling();
     UpdateGroupSettings::make()->action($this->group, [
-        'client_id' => 'xxx',
+        'client_id'     => 'xxx',
         'client_secret' => 'xxx',
-        'grant_type' => 'whatever'
+        'grant_type'    => 'whatever'
     ]);
-    $email  = StoreEmail::make()->action($mailShot, null, [
+    $email = StoreEmail::make()->action($mailShot, null, [
         'subject'               => 'Reset Password',
         'body'                  => 'Reset Password',
         'layout'                => ['body' => 'Reset Password'],
@@ -644,7 +649,6 @@ test('UI show mailshot in workshop', function (Mailshot $mailShot) {
         'snapshot_recyclable'   => true,
         'snapshot_first_commit' => true,
     ], strict: false);
-
 
 
     $mailShot->update([

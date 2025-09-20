@@ -118,20 +118,6 @@ class CreateWebpage extends OrgAction
                                     'value'    => '',
                                     'required' => true,
                                 ],
-                                //                                'type' => [
-                                //                                    'type'     => 'select',
-                                //                                    'label'    => __('type'),
-                                //                                    'options'  => Options::forEnum(WebpageTypeEnum::class),
-                                //                                    'value'    => '',
-                                //                                    'required' => true,
-                                //                                ],
-                                //                                'sub_type' => [
-                                //                                    'type'     => 'select',
-                                //                                    'label'    => __('sub type'),
-                                //                                    'options'  => Options::forEnum(WebpageSubTypeEnum::class),
-                                //                                    'value'    => '',
-                                //                                    'required' => true,
-                                //                                ],
                                 'url' => [
                                     'type'      => 'inputWithAddOn',
                                     'label'     => __('URL'),

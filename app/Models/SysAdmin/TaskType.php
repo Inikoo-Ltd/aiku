@@ -8,8 +8,6 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 /**
- *
- *
  * @property int $id
  * @property string $slug
  * @property string $code
@@ -22,7 +20,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskType newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskType onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskType query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskType withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskType withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskType withoutTrashed()
  * @mixin \Eloquent
  */

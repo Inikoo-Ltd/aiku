@@ -69,7 +69,7 @@ enum ProductTabsEnum: string
                 'align' => 'right',
             ],
             ProductTabsEnum::IMAGES => [
-                'title' => __('images'),
+                'title' => __('media'),
                 'icon'  => 'fal fa-camera-retro',
                 'type'  => 'icon',
                 'align' => 'right',

@@ -4,7 +4,6 @@ import { faStar, faCircle, faChevronLeft, faChevronRight, faDesktop } from "@fas
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { ref, provide, inject, toRaw, watch } from "vue"
 import { getComponent } from "@/Composables/getWorkshopComponents"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { layoutStructure } from '@/Composables/useLayoutStructure';
 import { router } from "@inertiajs/vue3";
 import { routeType } from "@/types/route"

@@ -101,7 +101,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static Builder<static>|Transaction newQuery()
  * @method static Builder<static>|Transaction onlyTrashed()
  * @method static Builder<static>|Transaction query()
- * @method static Builder<static>|Transaction withTrashed()
+ * @method static Builder<static>|Transaction withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Transaction withoutTrashed()
  * @mixin Eloquent
  */

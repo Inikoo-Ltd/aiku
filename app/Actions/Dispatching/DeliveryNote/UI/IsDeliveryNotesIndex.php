@@ -50,13 +50,6 @@ trait IsDeliveryNotesIndex
         $query->leftjoin('shops', 'delivery_notes.shop_id', '=', 'shops.id');
 
         if ($shopType != 'all') {
-
-            //HACK temporal hack to show only new system orders, remove after migration
-            if ($shopType == 'dropshipping') {
-                $query->whereNull('delivery_notes.source_id');
-
-            }
-
             $query->where('shops.type', $shopType);
         }
 
@@ -117,12 +110,14 @@ trait IsDeliveryNotesIndex
                   ->whereColumn('picking_session_has_delivery_notes.delivery_note_id', 'delivery_notes.id');
         };
 
-        return $query->defaultSort('-delivery_notes.date')
+        return $query->defaultSort('delivery_notes.created_at')
             ->select([
                 'delivery_notes.id',
                 'delivery_notes.reference',
                 'delivery_notes.date',
                 'delivery_notes.state',
+                'delivery_notes.is_premium_dispatch',
+                'delivery_notes.has_extra_packing',
                 'delivery_notes.created_at',
                 'delivery_notes.updated_at',
                 'delivery_notes.slug',
@@ -139,6 +134,10 @@ trait IsDeliveryNotesIndex
                 'shops.slug as shop_slug',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
+                'delivery_notes.customer_notes',
+                'delivery_notes.internal_notes',
+                'delivery_notes.public_notes',
+                'delivery_notes.shipping_notes',
             ])
             ->selectSub($pickingSessionsCountSubquery, 'picking_sessions_count')
             ->selectSub($pickingSessionIdsSubquery, 'picking_session_ids')

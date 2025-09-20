@@ -67,6 +67,22 @@ class UpdateCharge extends OrgAction
     }
 
 
+    public function prepareForValidation()
+    {
+        $settings = $this->charge->settings ?? [];
+        if ($this->has('amount')) {
+            $amount = (string) $this->get('amount');
+            $settings['amount'] = $amount;
+        }
+
+        if ($this->has('min_order')) {
+            $minOrder = (string) $this->get('min_order');
+
+            $settings['rules'] = '<;' . $minOrder;
+        }
+        $this->set('settings', $settings);
+    }
+
     public function rules(): array
     {
         $rules = [
@@ -84,6 +100,7 @@ class UpdateCharge extends OrgAction
                 ),
             ],
             'name'        => ['sometimes', 'required', 'max:250', 'string'],
+            'label'        => ['sometimes', 'string'],
             'description' => ['sometimes', 'max:1024', 'string'],
 
             'data'     => ['sometimes', 'array'],

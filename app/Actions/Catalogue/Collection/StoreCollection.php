@@ -63,7 +63,6 @@ class StoreCollection extends OrgAction
 
         AttachCollectionToModel::make()->action($parent, $collection);
 
-
         CollectionRecordSearch::dispatch($collection);
         OrganisationHydrateCollections::dispatch($collection->organisation)->delay($this->hydratorsDelay);
         GroupHydrateCollections::dispatch($collection->group)->delay($this->hydratorsDelay);
@@ -101,6 +100,7 @@ class StoreCollection extends OrgAction
                     ->max(12 * 1024)
             ],
             'description' => ['sometimes', 'required', 'max:1500'],
+            'master_collection_id' => ['sometimes'],
         ];
 
         if (!$this->strict) {

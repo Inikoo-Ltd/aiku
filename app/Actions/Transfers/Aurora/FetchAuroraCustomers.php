@@ -29,7 +29,7 @@ class FetchAuroraCustomers extends FetchAuroraAction
     use WithAuroraAttachments;
     use WithAuroraParsers;
 
-    public string $commandSignature = 'fetch:customers {organisations?*} {--s|source_id=} {--S|shop= : Shop slug} {--w|with=* : Accepted values: products clients orders web_users portfolio favourites polls full} {--N|only_new : Fetch only new} {--d|db_suffix=} {--r|reset}';
+    public string $commandSignature = 'fetch:customers {organisations?*} {--s|source_id=} {--S|shop= : Shop slug} {--w|with=* : Accepted values: products orders web_users favourites polls full} {--N|only_new : Fetch only new} {--d|db_suffix=} {--r|reset}';
 
 
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?Customer
@@ -123,30 +123,6 @@ class FetchAuroraCustomers extends FetchAuroraAction
                     ]);
                 }
 
-
-                if (in_array('clients', $with) || in_array('full', $with)) {
-                    foreach (
-                        DB::connection('aurora')
-                            ->table('Customer Client Dimension')
-                            ->where('Customer Client Customer Key', $sourceData[1])
-                            ->select('Customer Client Key as source_id')
-                            ->orderBy('source_id')->get() as $customerClient
-                    ) {
-                        FetchAuroraCustomerClients::run($organisationSource, $customerClient->source_id);
-                    }
-                }
-
-                if (in_array('portfolio', $with) || in_array('full', $with)) {
-                    foreach (
-                        DB::connection('aurora')
-                            ->table('Customer Portfolio Fact')
-                            ->where('Customer Portfolio Customer Key', $sourceData[1])
-                            ->select('Customer Portfolio Key as source_id')
-                            ->orderBy('source_id')->get() as $portfolio
-                    ) {
-                        FetchAuroraPortfolios::run($organisationSource, $portfolio->source_id);
-                    }
-                }
             }
 
 

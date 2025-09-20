@@ -61,7 +61,7 @@ class FetchAuroraWebBlockMedia extends OrgAction
 
 
             if ($auroraImageData) {
-                $imageData = $this->fetchImage($auroraImageData);
+                $imageData = $this->fetchImageLight($auroraImageData);
 
 
                 if (isset($imageData['image_path']) && file_exists($imageData['image_path'])) {

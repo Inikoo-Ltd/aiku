@@ -17,8 +17,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id
@@ -62,7 +60,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBillTransaction newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBillTransaction onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBillTransaction query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBillTransaction withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBillTransaction withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBillTransaction withoutTrashed()
  * @mixin \Eloquent
  */

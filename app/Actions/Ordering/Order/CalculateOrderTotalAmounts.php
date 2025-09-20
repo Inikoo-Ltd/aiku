@@ -31,6 +31,9 @@ class CalculateOrderTotalAmounts extends OrgAction
         $chargesAmount   = $order->transactions()->where('model_type', 'Charge')->sum('net_amount');
         $estimatedWeight = $order->transactions()->where('model_type', 'Product')->sum('estimated_weight');
 
+        if ($order->collection_address_id) {
+            $shippingAmount = 0;
+        }
 
         $netAmount = $itemsNet + $shippingAmount + $chargesAmount;
 

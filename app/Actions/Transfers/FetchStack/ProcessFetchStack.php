@@ -19,7 +19,6 @@ use App\Actions\Transfers\Aurora\Api\ProcessAuroraDeleteDeliveryNote;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraDeleteFavourites;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraDeleteInvoice;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraDeliveryNote;
-use App\Actions\Transfers\Aurora\Api\ProcessAuroraDepartment;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraDispatchedEmail;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraEmailTrackingEvent;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraEmployee;
@@ -65,12 +64,14 @@ class ProcessFetchStack
      */
     public function handle(FetchStack $fetchStack, $bg = false): void
     {
+
         $organisation = $fetchStack->organisation;
         $modelData    = [
             'fetch_stack_id' => $fetchStack->id,
             'id'             => $fetchStack->operation_id,
             'bg'             => $bg
         ];
+
 
         if ($fetchStack->operation == 'DeleteFavourite') {
             $modelData['unfavourited_at'] = $fetchStack->submitted_at;
@@ -88,7 +89,6 @@ class ProcessFetchStack
             'Credit' => ProcessAuroraCredit::make()->action($organisation, $modelData),
             'CustomerNote' => ProcessAuroraCustomerNote::make()->action($organisation, $modelData),
             'DeleteDeliveryNote' => ProcessAuroraDeleteDeliveryNote::make()->action($organisation, $modelData),
-            'Department' => ProcessAuroraDepartment::make()->action($organisation, $modelData),
             'EmailTrackingEvent' => ProcessAuroraEmailTrackingEvent::make()->action($organisation, $modelData),
             'Staff', 'Employee' => ProcessAuroraEmployee::make()->action($organisation, $modelData),
             'Family' => ProcessAuroraFamily::make()->action($organisation, $modelData),
@@ -120,7 +120,7 @@ class ProcessFetchStack
             'DeliveryNote' => ProcessAuroraDeliveryNote::make()->action($organisation, array_merge($modelData, ['with' => 'transactions'])),
             'PurchaseOrder' => ProcessAuroraPurchaseOrder::make()->action($organisation, array_merge($modelData, ['with' => 'transactions'])),
             'Customer' => ProcessAuroraCustomer::make()->action($organisation, $modelData),
-            'Stock' => ProcessAuroraStock::make()->action($organisation, $modelData),
+            'Stock','Part' => ProcessAuroraStock::make()->action($organisation, $modelData),
             'DeleteFavourite' => ProcessAuroraDeleteFavourites::make()->action($organisation, $modelData),
             'Webpage' => ProcessAuroraWebpage::make()->action($organisation, $modelData),
             'PublishWebpage' => ProcessAuroraWebpage::make()->action($organisation, array_merge($modelData, ['with' => 'web_blocks'])),

@@ -50,20 +50,16 @@ class StoreEmailSnapshot extends OrgAction
     {
         $rules = [];
 
-        if (!$this->strict) {
-            $rules['builder']         = ['required', Rule::enum(SnapshotBuilderEnum::class)];
-            $rules['layout']          = ['required', 'array'];
-            $rules['compiled_layout'] = ['nullable', 'string'];
-            $rules['state']           = ['sometimes', 'required', Rule::enum(SnapshotStateEnum::class)];
-            $rules['published_at']    = ['sometimes', 'required', 'date'];
-            $rules['recyclable']      = ['sometimes', 'required', 'boolean'];
-            $rules['first_commit']    = ['sometimes', 'required', 'boolean'];
-            $rules                    = $this->noStrictStoreRules($rules);
 
+        $rules['builder']         = ['required', Rule::enum(SnapshotBuilderEnum::class)];
+        $rules['layout']          = ['required', 'array'];
+        $rules['compiled_layout'] = ['nullable', 'string'];
+        $rules['state']           = ['sometimes', 'required', Rule::enum(SnapshotStateEnum::class)];
+        $rules['published_at']    = ['sometimes', 'required', 'date'];
+        $rules['recyclable']      = ['sometimes', 'required', 'boolean'];
+        $rules['first_commit']    = ['sometimes', 'required', 'boolean'];
 
-        }
-
-        return $rules;
+        return $this->noStrictStoreRules($rules);
     }
 
     public function action(Email $email, array $modelData, int $hydratorsDelay = 0, bool $strict = true): Snapshot

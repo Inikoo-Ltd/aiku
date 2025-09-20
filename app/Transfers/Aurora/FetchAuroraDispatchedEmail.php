@@ -58,7 +58,6 @@ class FetchAuroraDispatchedEmail extends FetchAurora
 
         if (!$recipient) {
             return;
-            // print_r($this->auroraModelData);
         }
 
         $parent = null;

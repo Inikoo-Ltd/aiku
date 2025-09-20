@@ -11,8 +11,6 @@ namespace App\Models\Comms;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- *
- *
  * @property int $id
  * @property int $model_id
  * @property string $model_type

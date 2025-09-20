@@ -43,7 +43,26 @@ trait WithProcessAurora
             ];
         } else {
             $model = (new $this->fetcher())::make()->action($organisation->id, $id, $with);
+
             if ($model) {
+
+                if (is_array($model)) {
+
+
+
+                    if (array_key_exists('stock', $model)) {
+                        $model = $model['stock'];
+                        if (!$model) {
+                            return [
+                                'status' => 'error',
+                                'type'   => 'foreground'
+                            ];
+                        }
+
+                    }
+
+                }
+
                 return [
                     'status' => 'ok',
                     'type'   => 'foreground',

@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
+use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Accounting\CreditTransaction\UI\IndexCreditTransactions;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
@@ -31,6 +32,7 @@ use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Mail\DispatchedEmailsResource;
+use App\Http\Resources\Accounting\PaymentsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Organisation;
@@ -121,7 +123,7 @@ class ShowCustomer extends OrgAction
                         'title' => __('customer')
                     ],
                     'afterTitle'    => [
-                        'label' => '#'.$customer->reference,
+                        'label' => '#' . $customer->reference,
                     ],
                     'meta'          => array_filter([
                         $shopMeta,
@@ -170,10 +172,12 @@ class ShowCustomer extends OrgAction
                     : Inertia::lazy(fn () => GetCustomerShowcase::run($customer)),
 
 
-
                 $tabs::CREDIT_TRANSACTIONS->value  => $this->tab == $tabs::CREDIT_TRANSACTIONS->value ?
                     fn () => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))
                     : Inertia::lazy(fn () => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))),
+                $tabs::PAYMENTS->value => $this->tab == $tabs::PAYMENTS->value ?
+                    fn () => PaymentsResource::collection(IndexPayments::run($customer))
+                    : Inertia::lazy(fn () => PaymentsResource::collection(IndexPayments::run($customer))),
                 $tabs::FAVOURITES->value  => $this->tab == $tabs::FAVOURITES->value ?
                     fn () => CustomerFavouritesResource::collection(IndexCustomerFavourites::run($customer))
                     : Inertia::lazy(fn () => CustomerFavouritesResource::collection(IndexCustomerFavourites::run($customer))),
@@ -193,8 +197,9 @@ class ShowCustomer extends OrgAction
 
             ]
         )->table(IndexOrders::make()->tableStructure($customer))
-            ->table(IndexCustomerFavourites::make()->tableStructure(parent:$customer, prefix:$tabs::FAVOURITES->value))
+            ->table(IndexCustomerFavourites::make()->tableStructure(parent: $customer, prefix: $tabs::FAVOURITES->value))
             ->table(IndexCustomerBackInStockReminders::make()->tableStructure($customer, $tabs::REMINDERS->value))
+            ->table(IndexPayments::make()->tableStructure($customer, prefix: $tabs::PAYMENTS->value))
             ->table(IndexAttachments::make()->tableStructure($tabs::ATTACHMENTS->value))
             ->table(IndexDispatchedEmails::make()->tableStructure($customer, $tabs::DISPATCHED_EMAILS->value))
             ->table(IndexCreditTransactions::make()->tableStructure($customer, $tabs::CREDIT_TRANSACTIONS->value))

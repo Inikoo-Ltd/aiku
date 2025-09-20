@@ -41,7 +41,7 @@ class ShowRetinaCatalogueProduct extends RetinaAction
         $actions[] = [
             'type'  => 'button',
             'style' => 'create',
-            'label' => __('Portofolio'),
+            'label' => __('Portfolio'),
             'key'   => 'portofolio',
             'route' => [
                 'method'     => 'post',

@@ -13,6 +13,7 @@ use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithModelAddressActions;
+use App\Actions\Traits\WithPrepareTaxNumberValidation;
 use App\Models\CRM\Customer;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
@@ -22,6 +23,7 @@ class UpdateRetinaCustomer extends RetinaAction
 {
     use WithActionUpdate;
     use WithModelAddressActions;
+    use WithPrepareTaxNumberValidation;
 
     private bool $action = false;
 
@@ -36,7 +38,7 @@ class UpdateRetinaCustomer extends RetinaAction
             return true;
         }
 
-        return $this->customer->id = $request->route()->parameter('customer')->id and $request->user()->is_root;
+        return $this->customer->id = $request->route()->parameter('customer')->id && $request->user()->is_root;
     }
 
     public function rules(): array
@@ -47,9 +49,10 @@ class UpdateRetinaCustomer extends RetinaAction
             'email'        => ['sometimes', 'nullable', 'email'],
             'phone'        => ['sometimes', 'nullable', new Phone()],
             'contact_address'      => ['sometimes', 'required', new ValidAddress()],
+            'tax_number'               => ['sometimes', 'nullable', 'array'],
+
         ];
     }
-
 
     public function asController(Customer $customer, ActionRequest $request): Customer
     {

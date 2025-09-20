@@ -1,0 +1,99 @@
+<!--
+  -  Author: Raul Perusquia <raul@inikoo.com>
+  -  Created: Sat, 22 Oct 2022 18:57:31 British Summer Time, Sheffield, UK
+  -  Copyright (c) 2022, Raul A Perusquia Flores
+  -->
+
+<script setup lang="ts">
+import { Head } from "@inertiajs/vue3"
+import PageHeading from "@/Components/Headings/PageHeading.vue"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faGripHorizontal } from "@fal"
+import { computed, defineAsyncComponent, ref } from "vue"
+import Tabs from "@/Components/Navigation/Tabs.vue"
+import { capitalize } from "@/Composables/capitalize"
+import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
+import TradeUnitShowcase from "@/Components/Goods/TradeUnitShowcase.vue"
+import { routeType } from "@/types/route"
+import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
+import TableStocks from "@/Components/Tables/Grp/Goods/TableStocks.vue"
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import type { Navigation } from "@/types/Tabs"
+import { Images } from "@/types/Images"
+import TradeUnitImagesManagement from "@/Components/Goods/ImagesManagement.vue"
+
+library.add(faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faGripHorizontal)
+
+const isModalUploadOpen = ref(false)
+const ModelChangelog = defineAsyncComponent(() => import("@/Components/ModelChangelog.vue"))
+
+const props = defineProps<{
+    title: string,
+    pageHead: PageHeadingTypes
+    tabs: {
+        current: string;
+        navigation: Navigation
+    }
+    showcase?: object,
+    attachments?: {}
+    attachmentRoutes?: {}
+    tag_routes: {
+        store_tag: routeType
+        update_tag: routeType
+        destroy_tag: routeType
+        attach_tag: routeType
+        detach_tag: routeType
+    }
+    products?: {}
+    stocks?: {}
+    images?: {},
+    images_category_box?: {
+        label: string
+        type: string
+        column_in_db: string
+        url?: string
+        images?: Images
+    }[]
+    images_update_route: routeType
+    id: number | string
+}>()
+
+
+/* const currentTab = ref(props.tabs.current)
+const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
+
+const component = computed(() => {
+
+    const components = {
+        showcase: TradeUnitShowcase,
+        history: ModelChangelog,
+        attachments: TableAttachments,
+        products: TableProducts,
+        stocks: TableStocks,
+        images: TradeUnitImagesManagement
+    }
+    return components[currentTab.value]
+
+}) */
+
+
+
+</script>
+
+
+<template>
+
+    <Head :title="capitalize(title)" />
+    <PageHeading :data="pageHead">
+        <template #other>
+            <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
+                icon="upload" />
+        </template>
+    </PageHeading>
+    trade Unit Family
+
+
+
+</template>

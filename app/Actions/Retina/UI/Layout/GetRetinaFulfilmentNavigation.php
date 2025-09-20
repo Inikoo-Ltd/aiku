@@ -230,7 +230,7 @@ class GetRetinaFulfilmentNavigation
                     'icon'    => ['fal', 'fa-users-cog'],
                     'root'    => 'retina.sysadmin.',
                     'route'   => [
-                        'name' => 'retina.sysadmin.dashboard'
+                        'name' => 'retina.sysadmin.fulfilment.dashboard'
                     ],
                     'topMenu' => [
                         'subSections' => [

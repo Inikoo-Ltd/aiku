@@ -36,7 +36,7 @@ class UploadProductToEbayProgressEvent implements ShouldBroadcastNow
 
     public function broadcastOn(): array
     {
-        Log::info('Broadcasting WooCommerce upload progress', $this->portfolio->toArray());
+        Log::info('Broadcasting ebay upload progress', $this->portfolio->toArray());
         return [
             new PrivateChannel("ebay.{$this->ebayUser->id}.upload-product.{$this->portfolio->id}")
 

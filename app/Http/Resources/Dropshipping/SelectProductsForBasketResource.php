@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Dropshipping;
 
+use App\Models\Catalogue\Product;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -25,12 +26,15 @@ class SelectProductsForBasketResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $product = Product::find($this->id);
+
         return [
             'id'                 => $this->id,
             'slug'               => $this->slug,
             'code'               => $this->code,
             'name'               => $this->name,
             'image'              => null,  // TODO
+            'luigi_identity'     => $product?->getLuigiIdentity(),
             'price'              => $this->price,
             'available_quantity' => $this->available_quantity,
             'transaction_id'     => $this->transaction_id,

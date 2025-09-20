@@ -147,9 +147,6 @@ class FetchAuroraInvoiceCategory extends FetchAurora
             unset($this->parsedData['invoice_category']['settings']);
         }
 
-        // print_r($this->parsedData['invoice_category']);
-
-
         $createdAt = $this->parseDatetime($this->auroraModelData->{'Invoice Category Valid From'});
         if ($createdAt) {
             $this->parsedData['invoice_category']['created_at'] = $createdAt;

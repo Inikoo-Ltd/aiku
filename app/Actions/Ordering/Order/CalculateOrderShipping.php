@@ -32,7 +32,6 @@ class CalculateOrderShipping
     {
 
 
-
         if (in_array($order->shipping_engine, [OrderShippingEngineEnum::MANUAL, OrderShippingEngineEnum::NO_APPLICABLE, OrderShippingEngineEnum::TO_BE_CONFIRMED_SET])) {
             return $order;
         }
@@ -74,6 +73,10 @@ class CalculateOrderShipping
         list($shippingAmount, $shippingZone) = $this->getShippingAmountAndShippingZone($order, $shippingZoneSchema);
 
         if (!is_numeric($shippingAmount)) {
+            $shippingAmount = 0;
+        }
+
+        if ($order->collection_address_id) {
             $shippingAmount = 0;
         }
 

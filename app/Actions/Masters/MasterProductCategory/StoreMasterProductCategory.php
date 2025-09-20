@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterProductCategory;
 
+use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\GrpAction;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterFamilies;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
@@ -18,7 +19,9 @@ use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageCatalogue;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
+use App\Helpers\SendSlackNotification;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Rules\AlphaDashDot;
@@ -27,7 +30,6 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
-use Lorisleiva\Actions\ActionRequest;
 
 class StoreMasterProductCategory extends GrpAction
 {
@@ -38,26 +40,31 @@ class StoreMasterProductCategory extends GrpAction
 
     private MasterShop|MasterProductCategory $masterShop;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(MasterProductCategory|MasterShop $parent, array $modelData): MasterProductCategory
     {
+
         $imageData = ['image' => Arr::pull($modelData, 'image')];
         data_set($modelData, 'group_id', $parent->group_id);
         if ($parent instanceof MasterProductCategory) {
-            data_set($modelData, 'master_department_id', $parent->id);
+
             data_set($modelData, 'master_shop_id', $parent->master_shop_id);
             data_set($modelData, 'master_parent_id', $parent->id);
 
             if ($parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
                 data_set($modelData, 'master_department_id', $parent->id);
             } elseif ($parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                data_set($modelData, 'master_department_id', $parent->master_department_id);
                 data_set($modelData, 'master_sub_department_id', $parent->id);
             }
         } else {
             data_set($modelData, 'master_shop_id', $parent->id);
         }
 
-        $masterProductCategory = DB::transaction(function () use ($modelData) {
-            /** @var MasterProductCategory $masterProductCategory */
+        $masterProductCategory = DB::transaction(function () use ($parent, $modelData) {
+
             $masterProductCategory = MasterProductCategory::create($modelData);
 
             $masterProductCategory->stats()->create();
@@ -68,6 +75,34 @@ class StoreMasterProductCategory extends GrpAction
                 $masterProductCategory->timeSeries()->create(['frequency' => $frequency]);
             }
             $masterProductCategory->refresh();
+
+            $collection = null;
+            if ($masterProductCategory->type != MasterProductCategoryTypeEnum::FAMILY) { //FOR NOW ONLY FAMILY SUPPORT Selection Feature, just ignore this; everything will still work
+                if ($parent instanceof MasterShop) {
+                    $collection = $parent->shops;
+                } elseif ($parent instanceof MasterProductCategory) {
+                    $collection = $parent->productCategories;
+                }
+
+                if ($collection && $collection->isNotEmpty()) {
+                    $type = match (Arr::get($modelData, 'type')) {
+                        MasterProductCategoryTypeEnum::DEPARTMENT => ProductCategoryTypeEnum::DEPARTMENT,
+                        MasterProductCategoryTypeEnum::FAMILY => ProductCategoryTypeEnum::FAMILY,
+                        MasterProductCategoryTypeEnum::SUB_DEPARTMENT => ProductCategoryTypeEnum::SUB_DEPARTMENT,
+                    };
+                    $actionData = array_merge(
+                        Arr::except($modelData, ['status', 'type']),
+                        [
+                            'type' => $type,
+                            'master_product_category_id' => $masterProductCategory->id
+                        ]
+                    );
+
+                    foreach ($collection as $item) {
+                        StoreProductCategory::make()->action($item, $actionData);
+                    }
+                }
+            }
 
             return $masterProductCategory;
         });
@@ -88,6 +123,8 @@ class StoreMasterProductCategory extends GrpAction
         }
 
         GroupHydrateMasterProductCategories::dispatch($masterProductCategory->group)->delay($this->hydratorsDelay);
+
+        SendSlackNotification::dispatch($masterProductCategory);
 
         return $masterProductCategory;
     }
@@ -133,6 +170,9 @@ class StoreMasterProductCategory extends GrpAction
         return $rules;
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(MasterShop|MasterProductCategory $parent, array $modelData, int $hydratorsDelay = 0, bool $strict = true): MasterProductCategory
     {
         $this->asAction       = true;
@@ -140,24 +180,15 @@ class StoreMasterProductCategory extends GrpAction
         $this->strict         = $strict;
         $group                = $parent->group;
 
-        if($parent instanceof MasterProductCategory) {
-            $this->masterShop=$parent->masterShop;
-
-        }else{
-            $this->masterShop=$parent;
-
+        if ($parent instanceof MasterProductCategory) {
+            $this->masterShop = $parent->masterShop;
+        } else {
+            $this->masterShop = $parent;
         }
 
         $this->initialisation($group, $modelData);
 
         return $this->handle($parent, $this->validatedData);
-    }
-
-    public function inDepartment(MasterShop $masterShop, MasterProductCategory $masterProductCategory, ActionRequest $request): MasterProductCategory
-    {
-        $this->initialisation($masterShop->group, $request);
-
-        return $this->handle(parent: $masterProductCategory, modelData: $this->validatedData);
     }
 
 

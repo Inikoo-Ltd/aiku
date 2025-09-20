@@ -9,15 +9,18 @@
 
 namespace App\Actions\Retina\Dropshipping\Orders;
 
-use App\Actions\Ordering\Order\UI\GetOrderAddressManagement;
+use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexIndexTransactionsInBasket;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\RetinaAction;
+use App\Enums\Catalogue\Charge\ChargeStateEnum;
+use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Ordering\BasketTabsEnum;
 use App\Helpers\NaturalLanguage;
+use App\Http\Resources\Catalogue\ChargeResource;
 use App\Http\Resources\CRM\CustomerClientResource;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Helpers\AddressResource;
@@ -64,6 +67,8 @@ class ShowRetinaDropshippingBasket extends RetinaAction
     {
         $nonProductItems = NonProductItemsResource::collection(IndexNonProductItems::run($order));
 
+        $premiumDispatch = $order->shop->charges()->where('type', ChargeTypeEnum::PREMIUM)->where('state', ChargeStateEnum::ACTIVE)->first();
+        $extraPacking    = $order->shop->charges()->where('type', ChargeTypeEnum::PACKING)->where('state', ChargeStateEnum::ACTIVE)->first();
 
         return Inertia::render(
             'Dropshipping/RetinaDropshippingBasket',
@@ -83,14 +88,14 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                     'afterTitle' => [
                         'label' => __('Basket')
                     ],
-                    'actions'   => [
+                    'actions'    => [
                         [
                             'type'   => 'buttonGroup',
                             'button' => [
                                 [
-                                    'type'    => 'button',
-                                    'key'     => 'upload-add',
-                                    'icon'      => 'fal fa-upload',
+                                    'type' => 'button',
+                                    'key'  => 'upload-add',
+                                    'icon' => 'fal fa-upload',
                                 ],
                             ],
                         ],
@@ -103,7 +108,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
 
                 'routes' => [
 
-                    'select_products'     => [
+                    'select_products'  => [
                         'name'       => 'retina.dropshipping.select_products_for_basket',
                         'parameters' => [
                             'order' => $order->id
@@ -177,15 +182,23 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                     ]
                 ],
 
-                'address_management' => GetOrderAddressManagement::run(order: $order, isRetina: true),
+                'address_management' => GetOrderDeliveryAddressManagement::run(order: $order, isRetina: true),
 
-                'box_stats'    => $this->getDropshippingBasketBoxStats($order),
-                'currency'     => CurrencyResource::make($order->currency)->toArray(request()),
-                'data'         => RetinaDropshippingBasketResource::make($order),
-                'is_in_basket' => OrderStateEnum::CREATING == $order->state,
-                'balance'      => $order->customer?->balance,
-                'total_to_pay' => max(0, $order->total_amount - $order->customer->balance),
-                'total_products'    => $order->transactions->whereIn('model_type', ['Product', 'Service'])->count(),
+
+                'charges' => [
+                    'premium_dispatch' => $premiumDispatch ? ChargeResource::make($premiumDispatch)->toArray(request()) : null,
+                    'extra_packing'   => $extraPacking ? ChargeResource::make($extraPacking)->toArray(request()) : null,
+                ],
+
+                'is_unable_dispatch' => in_array($order->deliveryAddress->country_id, array_merge($order->organisation->forbidden_dispatch_countries ?? [], $order->shop->forbidden_dispatch_countries ?? [])),
+
+                'box_stats'      => $this->getDropshippingBasketBoxStats($order),
+                'currency'       => CurrencyResource::make($order->currency)->toArray(request()),
+                'data'           => RetinaDropshippingBasketResource::make($order),
+                'is_in_basket'   => OrderStateEnum::CREATING == $order->state,
+                'balance'        => $order->customer?->balance,
+                'total_to_pay'   => max(0, $order->total_amount - $order->customer->balance),
+                'total_products' => $order->transactions->whereIn('model_type', ['Product', 'Service'])->count(),
 
                 BasketTabsEnum::TRANSACTIONS->value => $this->tab == BasketTabsEnum::TRANSACTIONS->value ?
                     fn () => RetinaTransactionsInBasketResource::collection(IndexIndexTransactionsInBasket::run(order: $order, prefix: BasketTabsEnum::TRANSACTIONS->value))
@@ -254,7 +267,6 @@ class ShowRetinaDropshippingBasket extends RetinaAction
             'order_properties' => [
                 'weight' => NaturalLanguage::make()->weight($order->estimated_weight),
             ],
-
 
 
             'order_summary' => [

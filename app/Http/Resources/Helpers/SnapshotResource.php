@@ -82,6 +82,7 @@ class SnapshotResource extends JsonResource
                 'product_category_id'   => $modelId,
                 'publisher'        => $publisher,
                 'publisher_avatar' => $publisherAvatar,
+                'state_value'      => $snapshot->state->value,
                 'state'            => match ($snapshot->state) {
                     SnapshotStateEnum::LIVE => [
                         'tooltip' => __('live'),

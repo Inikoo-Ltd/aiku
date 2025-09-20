@@ -3,21 +3,19 @@ import { faCube, faLink, faHeart } from "@fal"
 import { faCircle, faHeart as fasHeart, faDotCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { ref, inject, onMounted} from "vue"
+import { ref, inject, onMounted, computed } from "vue"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import { useLocaleStore } from '@/Stores/locale'
 import ProductContentsIris from "./ProductContentIris.vue"
 import InformationSideProduct from "./InformationSideProduct.vue"
 import Image from "@/Components/Image.vue"
 import { notify } from "@kyvg/vue3-notification"
-import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
 import { trans } from "laravel-vue-i18n"
-import { router } from "@inertiajs/vue3"
+import { router, Link } from "@inertiajs/vue3"
 import { Image as ImageTS } from '@/types/Image'
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import { set } from "lodash-es"
+import { set, isArray } from "lodash-es"
 import { getStyles } from "@/Composables/styles"
-import axios from "axios"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import ButtonAddToBasket from "@/Components/Iris/Products/ButtonAddToBasket.vue"
 
@@ -59,12 +57,6 @@ const contentRef = ref<Element | null>(null)
 const expanded = ref(false)
 const showButton = ref(false)
 
-
-function formatNumber(value: Number) {
-    return Number.parseFloat(value).toString()
-}
-
-
 // Section: Add to Favourites
 const isLoadingFavourite = ref(false)
 const onAddFavourite = (product: ProductResource) => {
@@ -98,6 +90,7 @@ const onAddFavourite = (product: ProductResource) => {
         }
     )
 }
+
 const onUnselectFavourite = (product: ProductResource) => {
     router.delete(
         route('iris.models.favourites.delete', {
@@ -134,11 +127,72 @@ onMounted(() => {
             showButton.value = true
         }
     })
+
+    // Luigi: last_seen recommendations
+    if (props.fieldValue?.product?.luigi_identity) {
+        window?.dataLayer?.push({
+            event: "view_item",
+            ecommerce: {
+                items: [
+                    {
+                        item_id: props.fieldValue?.product?.luigi_identity,
+                    }
+                ]
+            }
+        })
+    }
 })
 
 const toggleExpanded = () => {
   expanded.value = !expanded.value
 }
+
+// Method: generate url for Login
+const urlLoginWithRedirect = () => {
+    if (route()?.current() !== "retina.login.show" && route()?.current() !== "retina.register") {
+        return `/app/login?ref=${encodeURIComponent(window?.location.pathname)}${window?.location.search ? encodeURIComponent(window?.location.search) : ""
+            }`
+    } else {
+        return "/app/login"
+    }
+}
+
+
+const imagesSetup = ref(isArray(props.fieldValue.product.images) ? props.fieldValue.product.images :
+	props.fieldValue.product.images
+		.filter(item => item.type == "image")
+		.map(item => ({
+			label: item.label,
+			column: item.column_in_db,
+			images: item.images,
+		}))
+)
+
+const videoSetup = ref(
+	props.fieldValue.product.images.find(item => item.type === "video") || null
+)
+
+
+const validImages = computed(() => {
+  if (!imagesSetup.value) return []
+
+  const hasType = imagesSetup.value.some(item => "type" in item)
+
+  if (hasType) {
+    return imagesSetup.value
+      .filter(item => item.images)
+      .flatMap(item => {
+        const images = Array.isArray(item.images) ? item.images : [item.images]
+        return images.map(img => ({
+          source: img,
+          thumbnail: img
+        }))
+      })
+  }
+
+  // berarti array of string/url
+  return imagesSetup.value
+})
 
 </script>
 
@@ -150,7 +204,7 @@ const toggleExpanded = () => {
         <div class="grid grid-cols-12 gap-x-10 mb-2">
             <div class="col-span-7">
                 <div class="py-1 w-full">
-                    <ImageProducts :images="fieldValue?.product?.images" />
+                    <ImageProducts  :images="validImages" :video="videoSetup?.url"/>
                 </div>
                 <div class="flex gap-x-10 text-gray-400 mb-6 mt-4">
                     <div class="flex items-center gap-1 text-xs" v-for="(tag, index) in fieldValue.product.tags"
@@ -164,27 +218,34 @@ const toggleExpanded = () => {
                     </div>
                 </div>
             </div>
+            
             <div class="col-span-5 self-start">
+                <!-- Header: Title, product code, stocks -->
                 <div class="flex justify-between mb-4 items-start">
                     <div class="w-full">
-                        <h1 class="text-2xl font-bold text-gray-900">{{ fieldValue.product.name }}</h1>
+                        <h1 class="!text-3xl font-bold">
+                            <span v-if="Number(fieldValue.product.units) > 1">{{ Number(fieldValue.product.units) }}x</span> {{ fieldValue.product.name }}
+                        </h1>
+
                         <div class="flex flex-wrap gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
                             <div>Product code: {{ fieldValue.product.code }}</div>
-                            <div class="flex items-center gap-[1px]">
-                            </div>
+                            <!-- <div class="flex items-center gap-[1px]">
+                            </div> -->
                         </div>
-                        <div v-if="layout?.iris?.is_logged_in" class="flex items-center gap-2 text-sm text-gray-600 mb-4">
+
+                        <div v-if="layout?.iris?.is_logged_in" class="flex items-center gap-2 text-sm">
                             <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
                                 :class="fieldValue.product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
                             <span>
                                 {{
-                                fieldValue.product.stock > 0
-                                ? trans('In stock')+` (${fieldValue.product.stock} `+trans('available')+`)`
-                                : trans('Out Of Stock')
+                                    fieldValue.product.stock > 0
+                                    ? trans('In stock')+` (${fieldValue.product.stock} `+trans('available')+`)`
+                                    : trans('Out Of Stock')
                                 }}
                             </span>
                         </div>
                     </div>
+
                     <div class="h-full flex items-start">
                         <!-- Favorite Icon -->
                         <template v-if="layout?.retina?.type != 'dropshipping' && layout.iris?.is_logged_in">
@@ -212,31 +273,48 @@ const toggleExpanded = () => {
                         </template>
                     </div>
                 </div>
-                <div v-if="layout?.iris?.is_logged_in" class="flex items-end pb-3 mb-3">
-                    <div class="text-gray-900 font-semibold text-3xl capitalize leading-none flex-grow min-w-0">
+
+                <!-- Section: Price, RRP -->
+                <div v-if="layout?.iris?.is_logged_in" class="flex flex-wrap gap-x-4 items-end mb-3">
+                    <div class="font-semibold text-2xl capitalize leading-none flex-grow min-w-0">
                         {{ locale.currencyFormat(currency?.code, fieldValue.product.price || 0) }}
-
+                        <span class="text-gray-500 text-base font-normal">
+                            ({{ locale.currencyFormat(currency?.code, (fieldValue.product.price/fieldValue.product.units).toFixed(2)) }}/{{ fieldValue.product.unit }})
+                        </span>
                     </div>
+
                     <div v-if="fieldValue.product.rrp"
-                        class="text-sm text-gray-800 font-semibold text-right whitespace-nowrap pl-4">
-                        <span>RRP: {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp || 0) }}</span>
+                        class="text-sm xtext-gray-800 xfont-semibold text-right xpl-4 text-gray-500">
+                        <span class="whitespace-nowrap ">RRP:</span>
+                        <span class=" text-base font-normal">
+                            {{ locale.currencyFormat(currency?.code, (fieldValue.product.rrp/fieldValue.product.units).toFixed(2)) }}/{{ fieldValue.product.unit }}
+                        </span>
                     </div>
                 </div>
 
-                <!-- Section: Button existence on all channels -->
+                <!-- Section: Button add to cart -->
                 <div class="relative flex gap-2 mb-6">
-                    <ButtonAddToBasket
-                        :product="fieldValue.product"
-                    />
+                    <div v-if="layout?.iris?.is_logged_in" class="w-full">
+                        <ButtonAddToBasket
+                            v-if="fieldValue.product.stock > 0"
+                            :product="fieldValue.product"
+                        />
+
+                        <div v-else>
+                            <Button :label="trans('Out of stock')" type="tertiary" disabled full />
+                        </div>
+                    </div>
+
+                    <Link v-else :href="urlLoginWithRedirect()" class="block text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
+                        {{ trans("Login or Register for Wholesale Prices") }}
+                    </Link>
                 </div>
 
-
-
-                <div class="text-sm font-medium text-gray-800" :style="getStyles(fieldValue?.description?.description_title, screenType)">
+                <div class="text-sm" :style="getStyles(fieldValue?.description?.description_title, screenType)">
                     <div>{{ fieldValue.product.description_title }}</div>
                 </div>
             
-                <div class="text-xs font-medium text-gray-800" :style="getStyles(fieldValue?.description?.description_content, screenType)">
+                <div class="text-sm" :style="getStyles(fieldValue?.description?.description_content, screenType)">
                     <div v-html="fieldValue.product.description"></div>
                 </div>
                 <div v-if="fieldValue.setting?.information" class="my-4 space-y-2">
@@ -260,7 +338,7 @@ const toggleExpanded = () => {
                 :style="{ maxHeight: expanded ? 'none' : '100px' }" v-html="fieldValue.product.description_extra"></div>
 
             <button v-if="showButton" @click="toggleExpanded"
-                class="mt-1 text-gray-900 text-xs underline focus:outline-none">
+                class="mt-1 text-xs underline focus:outline-none">
                 {{ expanded ? 'Show Less' : 'Read More' }}
             </button>
         </div>
@@ -270,18 +348,21 @@ const toggleExpanded = () => {
     <!-- Mobile Layout -->
     <div class="block sm:hidden px-4 py-6 text-gray-800">
         <h2 class="text-xl font-bold mb-2">{{ fieldValue.product.name }}</h2>
-        <ImageProducts :images="fieldValue?.product?.images" />
+        <ImageProducts :images="validImages" :video="videoSetup?.url" />
         <div class="flex justify-between items-start gap-4 mt-4">
             <!-- Price + Unit Info -->
             <div v-if="layout?.iris?.is_logged_in">
                 <div class="text-lg font-semibold">
                     {{ locale.currencyFormat(currency?.code, fieldValue.product.price || 0) }}
-                    <span class="text-xs text-gray-500 ml-1">
-                        ({{ formatNumber(fieldValue.product.units) }}/{{ fieldValue.product.unit }})
+                    <span class="text-sm text-gray-400 xtext-base font-normal">
+                        ({{ locale.currencyFormat(currency?.code, (fieldValue.product.price/fieldValue.product.units).toFixed(2)) }}/{{ fieldValue.product.unit }})
                     </span>
                 </div>
-                <div v-if="fieldValue.product.rrp" class="text-xs text-gray-400 font-semibold mt-1">
-                    RRP: {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp || 0) }}
+                <div v-if="fieldValue.product.rrp" class="text-xs xtext-gray-600 font-semibold mt-1">
+                    <span>RRP: {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp || 0) }}</span>
+                    <span class="text-gray-400 xtext-base font-normal">
+                        ({{ locale.currencyFormat(currency?.code, (fieldValue.product.rrp/fieldValue.product.units).toFixed(2)) }}/{{ fieldValue.product.unit }})
+                    </span>
                 </div>
             </div>
 
@@ -307,7 +388,9 @@ const toggleExpanded = () => {
         </div>
         
         <div class="mt-6 flex flex-col gap-2">
-            <ButtonAddPortfolio :product="fieldValue.product" :productHasPortfolio="fieldValue.productChannels" />
+            <ButtonAddToBasket
+                :product="fieldValue.product"
+            />
         </div>
 
         <div class="text-xs font-medium py-3">

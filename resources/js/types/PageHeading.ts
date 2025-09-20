@@ -1,3 +1,4 @@
+import { routeType } from './route';
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Sat, 12 Jul 2025 19:13:19 British Summer Time, Sheffield, UK
@@ -55,6 +56,7 @@ export interface PageHeading {
         tooltip: string
         icon: string
         class: string
+        url: routeType
         icon_rotation:  90 | 180 | 270 | '90' | '180' | '270'
     }
     icon_rotation:  90 | 180 | 270 | '90' | '180' | '270'

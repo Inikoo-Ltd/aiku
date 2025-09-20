@@ -16,7 +16,7 @@ enum ShippingZoneSchemaTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE      = 'showcase';
+    // case SHOWCASE      = 'showcase';
     case ZONES         = 'zones';
     case HISTORY       = 'history';
 
@@ -25,10 +25,10 @@ enum ShippingZoneSchemaTabsEnum: string
     {
         return match ($this) {
 
-            ShippingZoneSchemaTabsEnum::SHOWCASE => [
-                'title' => __('details'),
-                'icon'  => 'fal fa-shopping-cart',
-            ],
+            // ShippingZoneSchemaTabsEnum::SHOWCASE => [
+            //     'title' => __('details'),
+            //     'icon'  => 'fal fa-shopping-cart',
+            // ],
             ShippingZoneSchemaTabsEnum::ZONES => [
                 'title' => __('zones'),
                 'icon'  => 'fal fa-map',

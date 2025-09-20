@@ -8,7 +8,6 @@
 
 namespace App\Actions\Masters\MasterProductCategory;
 
-use App\Actions\Masters\UpdateMasterFamilyMasterDepartment;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
@@ -35,7 +34,6 @@ class AttachMasterFamiliesToMasterDepartment extends OrgAction
             ]);
         }
     }
-
 
     public function rules(): array
     {
