@@ -207,9 +207,7 @@ class IndexRetinaPortfolios extends RetinaAction
         $actions = [];
 
 
-        if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
-            $countProductsNotSync = $this->customerSalesChannel->portfolios()->where('portfolios.status', true)->where('platform_status', false)->count();
-        } elseif ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
+        if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
             $countProductsNotSync = 0;
         } else {
             $countProductsNotSync = $this->customerSalesChannel->portfolios()->where('portfolios.status', true)
@@ -217,34 +215,6 @@ class IndexRetinaPortfolios extends RetinaAction
                 ->count();
         }
 
-        if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
-            $actions = [
-                       /*  [
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'label' => __('Match With Existing Product'),
-                            'route' => [
-                                'method'     => 'post',
-                                'name'       => 'retina.models.dropshipping.shopify.batch_match',
-                                'parameters' => [
-                                    'customerSalesChannel' => $this->customerSalesChannel->id,
-                                ]
-                            ]
-                        ],
-                        [
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'label' => __('Create New Product'),
-                            'route' => [
-                                'name'       => 'retina.models.dropshipping.shopify.batch_upload',
-                                'parameters' => [
-                                    'customerSalesChannel' => $this->customerSalesChannel->id,
-                                ],
-                                'method'     => 'post'
-                            ]
-                        ] */
-                    ];
-        }
 
         return Inertia::render(
             'Dropshipping/Portfolios',
