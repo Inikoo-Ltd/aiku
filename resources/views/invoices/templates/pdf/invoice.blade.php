@@ -177,7 +177,7 @@
                     <span class="address_label">{{ __('Phone') }}:</span> <span
                         class="address_value">{{ $invoice->customer['phone'] }}</span>
                 </div>
-                @if($invoice->tax_number)
+                @if($invoice->tax_number  && $invoice->tax_number_valid)
                     <div>
                         <span class="address_label">{{ __('Tax Number') }}:</span> <span
                             class="address_value">{{ $invoice->tax_number }}</span>
@@ -318,9 +318,13 @@
 
     <tr>
         <td style="border:none" colspan="4"></td>
-        <td class="totals">{{ __('TAX') }} <br> @if($invoice->tax_number)
-                <small>Valid tax number: {{ $invoice->tax_number }}</small>
-            @endif</td>
+        <td class="totals">
+            {{ __('Tax') }}
+
+            <br><small>{{$invoice->taxCategory->name}}
+             ({{__('rate')}}:{{percentage($invoice->taxCategory->rate,1)}})
+            </small>
+        </td>
         <td class="totals">{{ $invoice->currency->symbol . $invoice->tax_amount }}</td>
     </tr>
 

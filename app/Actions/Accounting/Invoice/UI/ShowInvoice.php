@@ -209,6 +209,7 @@ class ShowInvoice extends OrgAction
             ];
         }
 
+
         return Inertia::render(
             'Org/Accounting/Invoice',
             [

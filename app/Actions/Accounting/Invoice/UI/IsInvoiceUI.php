@@ -28,20 +28,20 @@ trait IsInvoiceUI
     {
         if ($this->parent instanceof Fulfilment) {
             $customerRoute = [
-                'name' => 'grp.org.fulfilments.show.crm.customers.show',
+                'name'       => 'grp.org.fulfilments.show.crm.customers.show',
                 'parameters' => [
-                    'organisation' => $invoice->organisation->slug,
-                    'fulfilment' => $invoice->customer->fulfilmentCustomer->fulfilment->slug,
+                    'organisation'       => $invoice->organisation->slug,
+                    'fulfilment'         => $invoice->customer->fulfilmentCustomer->fulfilment->slug,
                     'fulfilmentCustomer' => $invoice->customer->fulfilmentCustomer->slug,
                 ]
             ];
         } else {
             $customerRoute = [
-                'name' => 'grp.org.shops.show.crm.customers.show',
+                'name'       => 'grp.org.shops.show.crm.customers.show',
                 'parameters' => [
                     'organisation' => $invoice->organisation->slug,
-                    'shop' => $invoice->shop->slug,
-                    'customer' => $invoice->customer->slug,
+                    'shop'         => $invoice->shop->slug,
+                    'customer'     => $invoice->customer->slug,
                 ]
             ];
         }
@@ -69,7 +69,7 @@ trait IsInvoiceUI
             'name'       => 'grp.org.shops.show.dashboard.comms.outboxes.workshop',
             'parameters' => [
                 'organisation' => $invoice->organisation->slug,
-                'shop'   => $invoice->customer->shop->slug,
+                'shop'         => $invoice->customer->shop->slug,
                 'outbox'       => $outbox->slug
             ]
         ];
@@ -77,7 +77,6 @@ trait IsInvoiceUI
 
     public function getBoxStats(Invoice $invoice): array
     {
-
         $deliveryNotesData = [];
 
 
@@ -99,21 +98,20 @@ trait IsInvoiceUI
             }
         }
 
-        return  [
-            'customer'    => [
+        return [
+            'customer'       => [
                 'slug'         => $invoice->customer->slug,
                 'reference'    => $invoice->customer->reference,
                 'route'        => $this->getCustomerRoute($invoice),
-                'contact_name' => $invoice->customer->contact_name,
-                'company_name' => $invoice->customer->company_name,
+                'name'         => $invoice->customer_name,
+                'contact_name' => $invoice->customer_contact_name,
                 'location'     => $invoice->customer->location,
                 'phone'        => $invoice->customer->phone,
-                // 'address'      => AddressResource::collection($invoice->customer->addresses),
             ],
-            'delivery_notes'   => $deliveryNotesData,
-            'information' => [
-                'paid_amount'    => $invoice->payment_amount,
-                'pay_amount'     => round($invoice->total_amount - $invoice->payment_amount, 2)
+            'delivery_notes' => $deliveryNotesData,
+            'information'    => [
+                'paid_amount' => $invoice->payment_amount,
+                'pay_amount'  => round($invoice->total_amount - $invoice->payment_amount, 2)
             ]
         ];
     }
@@ -264,9 +262,6 @@ trait IsInvoiceUI
                     ],
                 ];
         }
-
-
-
 
 
         return $wrappedActions;

@@ -74,12 +74,32 @@ class StoreInvoice extends OrgAction
         }
 
         if (class_basename($parent) == 'Customer') {
-            $modelData['customer_id'] = $parent->id;
+            $customer = $parent;
         } elseif (class_basename($parent) == 'RecurringBill') {
-            $modelData['customer_id'] = $parent->fulfilmentCustomer->customer_id;
+            $customer = $parent->fulfilmentCustomer->customer;
         } else {
-            $modelData['customer_id'] = $parent->customer_id;
+            $customer = $parent->customer;
         }
+
+
+        data_set($modelData, 'customer_id', $customer->id);
+        data_set($modelData, 'customer_name', $customer->name, false);
+        data_set($modelData, 'customer_contact_name', $customer->contact_name, false);
+        data_set($modelData, 'identity_document_type', $customer->identity_document_type, false);
+        data_set($modelData, 'identity_document_number', $customer->identity_document_number, false);
+
+
+        $taxNumber = $customer->taxNumber;
+        if ($taxNumber) {
+            data_set($modelData, 'tax_number', $taxNumber->number, false);
+            data_set($modelData, 'tax_number_status', $taxNumber->status, false);
+            data_set($modelData, 'tax_number_valid', $taxNumber->valid, false);
+        } else {
+            data_set($modelData, 'tax_number', null, false);
+            data_set($modelData, 'tax_number_status', 'na', false);
+            data_set($modelData, 'tax_number_valid', false, false);
+        }
+
 
         if (!Arr::has($modelData, 'billing_address')) {
             if ($parent instanceof Order) {
