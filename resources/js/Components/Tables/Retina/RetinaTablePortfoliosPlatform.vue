@@ -469,9 +469,21 @@ const onDisableCheckbox = (item) => {
         </template>
 
         <template #cell(image)="{ item: product }">
-            <div class="overflow-hidden w-10 h-10">
-                <Image :src="product.image" :alt="product.name"/>
-            </div>
+          <div class="relative group">
+				<div class="relative overflow-hidden w-10 h-10">
+					<Image :src="product.image" :alt="product.name" />
+				</div>
+				<!-- Popover with larger image -->
+				<div
+					class="absolute left-full top-0 ml-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
+					<div class="bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+						<div class="w-64 h-64 overflow-hidden rounded">
+							<Image :src="product.full_size_image || product.image" :alt="product.name"
+								class="w-full h-full object-cover" />
+						</div>
+					</div>
+				</div>
+			</div>
         </template>
 
         <template #cell(name)="{ item: product }">

@@ -59,6 +59,7 @@ use App\Models\Goods\Ingredient;
 use App\Models\Goods\Stock;
 use App\Models\Goods\StockFamily;
 use App\Models\Goods\TradeUnit;
+use App\Models\Goods\TradeUnitFamily;
 use App\Models\Helpers\Barcode;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\Query;
@@ -327,6 +328,11 @@ class Group extends Authenticatable implements Auditable, HasMedia
     public function tradeUnits(): HasMany
     {
         return $this->hasMany(TradeUnit::class);
+    }
+
+    public function tradeUnitFamilies(): HasMany
+    {
+        return $this->hasMany(TradeUnitFamily::class);
     }
 
     public function stockFamilies(): HasMany

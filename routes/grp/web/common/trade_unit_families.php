@@ -6,8 +6,8 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-use App\Actions\Goods\TradeUnitFamily\IndexTradeUnitFamilies;
-use App\Actions\Goods\TradeUnitFamily\ShowTradeUnitFamily;
+use App\Actions\Goods\TradeUnitFamily\UI\IndexTradeUnitFamilies;
+use App\Actions\Goods\TradeUnitFamily\UI\ShowTradeUnitFamily;
 use Illuminate\Support\Facades\Route;
 
 /**
