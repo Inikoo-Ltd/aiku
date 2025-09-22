@@ -21,13 +21,10 @@ const props = defineProps<{
     fieldData?: any
 }>()
 
-console.log(props);
+// console.log(props);
 
 const emits = defineEmits()
 
-const layout = inject('locale')
-
-console.log(layout)
 
 const setFormValue = (data: Object, fieldName: string) => {
     if (Array.isArray(fieldName)) {
