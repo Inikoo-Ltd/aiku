@@ -75,6 +75,11 @@ class ShowTradeUnitFamily extends GrpAction
                     'navigation' => TradeUnitFamilyTabsEnum::navigation()
 
                 ],
+
+                TradeUnitFamilyTabsEnum::SHOWCASE->value => $this->tab == TradeUnitFamilyTabsEnum::SHOWCASE->value ?
+                fn () => GetTradeUnitFamilyShowcase::run($tradeUnitFamily)
+                : Inertia::lazy(fn () => GetTradeUnitFamilyShowcase::run($tradeUnitFamily)),
+
             ]
         );
     }
