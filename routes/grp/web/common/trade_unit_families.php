@@ -26,7 +26,7 @@ function tradeUnitFamiliesRoutes(string $prefix = 'trade-unit-families', string 
         Route::get('create', CreateTradeUnitFamily::class)->name('create');
         Route::prefix('{tradeUnitFamily:slug}')->group(function () {
             Route::get('', ShowTradeUnitFamily::class)->name('show');
-            Route::get('', EditTradeUnitFamily::class)->name('edit');
+            Route::get('edit', EditTradeUnitFamily::class)->name('edit');
         });
     });
 }

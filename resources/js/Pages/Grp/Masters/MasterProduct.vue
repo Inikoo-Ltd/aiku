@@ -95,7 +95,12 @@ console.log(props)
             </template>
         </Breadcrumb>
     </div>
-    <component :is="component" :tab="currentTab" :data="props[currentTab]"></component>
+    <component 
+        :is="component" 
+        :tab="currentTab" 
+        :master="true"
+        :data="props[currentTab]"
+    />
 </template>
 
 

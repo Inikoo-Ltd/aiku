@@ -36,12 +36,13 @@ class IndexProductsInMasterProduct extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->orderBy('products.state');
-        $queryBuilder->leftJoin('shops', 'products.shop_id', 'shops.id','currencies');
+        $queryBuilder->leftJoin('shops', 'products.shop_id', 'shops.id');
+        $queryBuilder->leftJoin('currencies', 'shops.currency_id', 'currencies.id');
         $queryBuilder->leftJoin('organisations', 'products.organisation_id', 'organisations.id');
         $queryBuilder->where('products.is_main', true);
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
         $queryBuilder->where('products.master_product_id', $masterAsset->id);
-
+        
         $queryBuilder
             ->defaultSort('products.code')
             ->select([
@@ -57,6 +58,7 @@ class IndexProductsInMasterProduct extends OrgAction
                 'products.asset_id',
                 'shops.name as shop_name',
                 'shops.code as shop_code',
+                'currencies.code as currency_code',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
             ])
@@ -92,7 +94,7 @@ class IndexProductsInMasterProduct extends OrgAction
                 ->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: false)
                 ->column(key: 'rrp', label: __('RRP'), canBeHidden: false, sortable: true, searchable: false)
                 ->column(key: 'margin', label: __('margin'), canBeHidden: false, sortable: false, searchable: false)
-                ->column(key: 'action', label: __(''), canBeHidden: false, sortable: false, searchable: false);
+                ->column(key: 'actions', label: __(''), canBeHidden: false, sortable: false, searchable: false);
         };
     }
 

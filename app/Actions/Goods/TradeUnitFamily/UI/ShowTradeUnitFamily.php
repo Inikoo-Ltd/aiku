@@ -91,7 +91,8 @@ class ShowTradeUnitFamily extends GrpAction
         };
 
         return match ($routeName) {
-            'grp.goods.trade-unit-families.index' =>
+            'grp.goods.trade-unit-families.show',
+            'grp.masters.trade-unit-families.show' =>
             array_merge(
                 ShowGoodsDashboard::make()->getBreadcrumbs(),
                 $headCrumb(
@@ -115,14 +116,14 @@ class ShowTradeUnitFamily extends GrpAction
 
     public function getPrevious(TradeUnitFamily $tradeUnitFamily, ActionRequest $request): ?array
     {
-        $previous = TradeUnit::where('code', '<', $tradeUnitFamily->code)->orderBy('code', 'desc')->first();
+        $previous = TradeUnitFamily::where('code', '<', $tradeUnitFamily->code)->orderBy('code', 'desc')->first();
 
         return $this->getNavigation($previous, $request->route()->getName());
     }
 
     public function getNext(TradeUnitFamily $tradeUnitFamily, ActionRequest $request): ?array
     {
-        $next = TradeUnit::where('code', '>', $tradeUnitFamily->code)->orderBy('code')->first();
+        $next = TradeUnitFamily::where('code', '>', $tradeUnitFamily->code)->orderBy('code')->first();
 
         return $this->getNavigation($next, $request->route()->getName());
     }
@@ -135,7 +136,8 @@ class ShowTradeUnitFamily extends GrpAction
 
 
         return match ($routeName) {
-            'grp.goods.trade-units.show' => [
+            'grp.goods.trade-units.show',
+            'grp.masters.trade-unit-families.show' => [
                 'label' => $tradeUnitFamily->name,
                 'route' => [
                     'name'       => $routeName,

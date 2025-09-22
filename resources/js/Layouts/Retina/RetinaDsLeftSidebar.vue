@@ -8,12 +8,13 @@
 import RetinaLeftSidebarNavigation from "@/Layouts/Retina/RetinaLeftSidebarNavigation.vue"
 import { useLayoutStore } from "@/Stores/retinaLayout"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faChevronLeft } from "@far"
+import { faChevronLeft, faCopy } from "@far"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from "laravel-vue-i18n"
 import SwitchLanguage from "@/Components/Iris/SwitchLanguage.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
-library.add(faChevronLeft)
+import { useCopyText } from "@/Composables/useCopyText"
+library.add(faChevronLeft, faCopy)
 
 const layout = useLayoutStore()
 
@@ -39,8 +40,17 @@ const handleToggleLeftBar = () => {
             <div v-if="layout.leftSidebar.show" class="text-xxs text-gray-500 -mb-1 italic">
                 {{ trans("Customer reference:") }}
             </div>
-            <div class=" text-xl text-[#1d252e] font-semibold">
-                <Transition name="slide-to-left"><span v-if="layout.leftSidebar.show">#{{layout?.customer?.reference ?? '-'}}</span></Transition>
+            <div class=" text-xl text-[#1d252e] font-semibold flex items-center gap-2">
+                <Transition name="slide-to-left">
+                    <span v-if="layout.leftSidebar.show">#{{layout?.customer?.reference ?? '-'}}</span>
+                </Transition>
+                <FontAwesomeIcon 
+                    v-if="layout.leftSidebar.show && layout?.customer?.reference" 
+                    @click="useCopyText(layout?.customer?.reference)" 
+                    icon="far fa-copy"
+                    class="text-sm cursor-pointer opacity-50 hover:opacity-100 transition-opacity"
+                    v-tooltip="trans('Copy reference to clipboard')"
+                />
             </div>
         </div>
 
@@ -67,8 +77,15 @@ const handleToggleLeftBar = () => {
                 <div class="text-xxs opacity-50 -mb-1 italic">
                     {{ trans("Customer reference:") }}
                 </div>
-                <div class=" text-xl font-semibold">
-                    #{{layout?.customer?.reference ?? '-'}}
+                <div class=" text-xl font-semibold flex items-center gap-2">
+                    <span>#{{layout?.customer?.reference ?? '-'}}</span>
+                    <FontAwesomeIcon 
+                        v-if="layout?.customer?.reference" 
+                        @click="useCopyText(layout?.customer?.reference)" 
+                        icon="far fa-copy"
+                        class="text-sm cursor-pointer opacity-50 hover:opacity-100 transition-opacity"
+                        v-tooltip="trans('Copy reference to clipboard')"
+                    />
                 </div>
             </div>
 

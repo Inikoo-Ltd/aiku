@@ -14,6 +14,7 @@ use App\Models\Goods\TradeUnitFamily;
 use App\Models\SysAdmin\Group;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -28,6 +29,13 @@ class StoreTradeUnitFamily extends GrpAction
         GroupHydrateTradeUnitFamilies::dispatch($group);
 
         return $tradeUnitFamily;
+    }
+
+    public function htmlResponse(TradeUnitFamily $tradeUnitFamily)
+    {
+        return Redirect::route('grp.masters.trade-unit-families.show', [
+            $tradeUnitFamily->slug
+        ]);
     }
 
     public function rules(): array
@@ -52,6 +60,7 @@ class StoreTradeUnitFamily extends GrpAction
 
         return $rules;
     }
+
     public function asController(ActionRequest $request): TradeUnitFamily
     {
         $group = group();
