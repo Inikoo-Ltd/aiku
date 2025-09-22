@@ -345,7 +345,8 @@ const getStatusText = (status: string, valid: boolean) => {
                                                             {{ getStatusText(data.customer.tax_number.status, data.customer.tax_number.valid) }}
                                                         </span>
                                                         <span v-if="data.customer.tax_number.country"
-                                                            @click="countryPopover.toggle($event)"
+                                                            @mouseenter="countryPopover.show($event)"
+                                                            @mouseleave="countryPopover.hide()"
                                                             class="cursor-pointer hover:underline"> 
                                                             ({{ data.customer.tax_number.country.data.name }}) 
                                                         </span>
@@ -363,7 +364,8 @@ const getStatusText = (status: string, valid: boolean) => {
                                                         </Popover>
 
                                                         <span v-if="data.customer.tax_number.checked_at"
-                                                            @click="datePopover.toggle($event)"
+                                                            @mouseenter="datePopover.show($event)"
+                                                            @mouseleave="datePopover.hide()"
                                                             class="cursor-pointer hover:underline">
                                                             {{ formatDate(data.customer.tax_number.checked_at) }}
                                                         </span>
