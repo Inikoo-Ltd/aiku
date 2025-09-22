@@ -53,10 +53,10 @@ class IndexProductsInMasterProduct extends OrgAction
                 'products.created_at',
                 'products.updated_at',
                 'products.slug',
+                'products.rrp',
                 'products.asset_id',
                 'shops.name as shop_name',
                 'shops.code as shop_code',
-                'shops.slug as shop_slug',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
             ])
@@ -88,7 +88,11 @@ class IndexProductsInMasterProduct extends OrgAction
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: false)
+                ->column(key: 'rrp', label: __('RRP'), canBeHidden: false, sortable: true, searchable: false)
+                ->column(key: 'margin', label: __('margin'), canBeHidden: false, sortable: false, searchable: false)
+                ->column(key: 'action', label: __(''), canBeHidden: false, sortable: false, searchable: false);
         };
     }
 
