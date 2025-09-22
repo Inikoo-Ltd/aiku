@@ -93,7 +93,7 @@ class IndexProductsInMasterProduct extends OrgAction
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: false)
                 ->column(key: 'rrp', label: __('RRP'), canBeHidden: false, sortable: true, searchable: false)
-                ->column(key: 'margin', label: __('margin'), canBeHidden: false, sortable: false, searchable: false)
+                /* ->column(key: 'margin', label: __('margin'), canBeHidden: false, sortable: false, searchable: false) */
                 ->column(key: 'actions', label: __(''), canBeHidden: false, sortable: false, searchable: false);
         };
     }

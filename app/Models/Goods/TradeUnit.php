@@ -259,6 +259,11 @@ class TradeUnit extends Model implements HasMedia, Auditable
         return $this->morphToMany(Brand::class, 'model', 'model_has_brands');
     }
 
+    public function tradeUnitFamily(): BelongsTo
+    {
+        return $this->belongsTo(TradeUnitFamily::class);
+    }
+
     public function brand(): ?Brand
     {
         /** @var Brand $brand */
