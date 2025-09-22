@@ -35,12 +35,12 @@ const handleToggleLeftBar = () => {
         id="leftSidebar"
     >
         <!-- Reference -->
-        <div class="hidden md:absolute bottom-full left-3" :class="layout.leftSidebar.show ? '' : 'px-2' " v-tooltip="layout.leftSidebar.show ? '' : `Reference: #${layout?.customer?.reference}`">
+        <div class="hidden md:block absolute bottom-full left-3" :class="layout.leftSidebar.show ? '' : 'px-2' " v-tooltip="layout.leftSidebar.show ? '' : `Reference: #${layout?.customer?.reference}`">
             <div v-if="layout.leftSidebar.show" class="text-xxs text-gray-500 -mb-1 italic">
                 {{ trans("Customer reference:") }}
             </div>
             <div class=" text-xl text-[#1d252e] font-semibold">
-                <Transition name="slide-to-left"><span v-if="layout.leftSidebar.show">{{layout?.customer?.reference ?? '-'}}</span></Transition>
+                <Transition name="slide-to-left"><span v-if="layout.leftSidebar.show">#{{layout?.customer?.reference ?? '-'}}</span></Transition>
             </div>
         </div>
 
