@@ -34,11 +34,14 @@ defineProps<{
         detach: routeType
     },
     isCheckboxProducts?: boolean
+    master?:boolean
 }>()
 
 const emits = defineEmits<{
     (e: "selectedRow", value: {}): void
 }>()
+
+const onEditOpen = ref([])
 
 function productRoute(product: Product) {
     if (!product.slug) {
@@ -328,7 +331,7 @@ const locale = inject("locale", aikuLocaleStructure);
             <Button icon="fal fa-times" type="negative" size="xs"
                 :loading="isLoadingDetach.includes('detach' + item.id)" />
             </Link>
-            <Link v-else="item?.delete_product?.name" as="button"
+            <Link v-else-if="item?.delete_product?.name" as="button"
                 :href="route(item.delete_product.name, item.delete_product.parameters)"
                 :method="item?.delete_product?.method" :data="{
                     product: item.id
@@ -337,6 +340,9 @@ const locale = inject("locale", aikuLocaleStructure);
             <Button icon="fal fa-times" type="negative" size="xs"
                 :loading="isLoadingDetach.includes('detach' + item.id)" />
             </Link>
+            <div v-if="master">
+                <Button type="edit" />
+            </div>
         </template>
     </Table>
 </template>
