@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3";
+import { Link, router } from "@inertiajs/vue3";
 import Table from "@/Components/Table/Table.vue";
 import { Product } from "@/types/product";
 import Icon from "@/Components/Icon.vue";
@@ -48,6 +48,7 @@ const emits = defineEmits<{
 const editingValues = ref<Record<number, { price: number; rrp: number }>>({})
 const editingBackup = ref<Record<number, any>>({})
 const onEditOpen = ref<number[]>([])
+const loadingSave = ref([])
 
 function onEdit(item) {
     // backup original values
@@ -67,16 +68,36 @@ function onEdit(item) {
 function onSave(item) {
     const updated = editingValues.value[item.id]
 
-    // merge back into original item so table updates
-    Object.assign(item, updated)
+    if (!updated) return
 
-    // 🚀 TODO: send `updated` to API
-    console.log("Saving product", item)
+    router.patch(
+        route('grp.models.product.update', { product: item.id }),
+        {
+            price: updated.price,
+            rrp: updated.rrp,
+        },
+        {
+            preserveScroll: true,
+            onStart: () => {
+                loadingSave.value.push(item.id)
+            },
+            onSuccess: () => {
+                // merge back into original item so the table updates immediately
+                Object.assign(item, updated)
 
-    // cleanup
-    loRemove(onEditOpen.value, (id) => id === item.id)
-    delete editingBackup.value[item.id]
-    delete editingValues.value[item.id]
+                // cleanup
+                loRemove(onEditOpen.value, (id) => id === item.id)
+                delete editingBackup.value[item.id]
+                delete editingValues.value[item.id]
+            },
+            onError: (errors) => {
+                console.error('Save failed', errors)
+            },
+            onFinish: () => {
+                loRemove(loadingSave.value, (id) => id === item.id)
+            }
+        }
+    )
 }
 
 function onCancel(item) {
@@ -413,13 +434,30 @@ const locale = inject("locale", aikuLocaleStructure);
             <Button icon="fal fa-times" type="negative" size="xs"
                 :loading="isLoadingDetach.includes('detach' + item.id)" />
             </Link>
+
             <div v-if="master">
-                <Button v-if="!onEditOpen.includes(item.id)" type="edit" @click="onEdit(item)" size="xs" />
-                <span v-else class="space-x-1">
-                    <Button type="negative" :icon="faXmark" @click="onCancel(item)" size="xs" />
-                    <Button :icon="faSave" @click="onSave(item)" size="xs" />                  
+                <button v-if="!onEditOpen.includes(item.id)" class="h-9 align-bottom text-center" @click="onEdit(item)">
+                    <FontAwesomeIcon icon="fal fa-pencil" class="h-5 text-gray-500 hover:text-gray-700"
+                        aria-hidden="true" v-tooltip="'edit'"/>
+                </button>
+
+                <span v-else class="flex items-center space-x-3">
+                    <Button type="negative" v-tooltip="'cancel'" :icon="faXmark" @click="onCancel(item)" size="sm">
+                    </Button>
+
+                    <button class="h-9 align-bottom text-center" :disabled="loadingSave.includes(item.id)"
+                        @click="onSave(item)" v-tooltip="'save'">
+                        <FontAwesomeIcon v-if="loadingSave.includes(item.id)" icon="fad fa-spinner-third"
+                            class="text-2xl animate-spin" fixed-width aria-hidden="true" />
+
+                        <FontAwesomeIcon v-else-if="editingValues[item.id]" icon="fad fa-save" class="h-8"
+                            :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
+
+                        <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
+                    </button>
                 </span>
             </div>
+
         </template>
     </Table>
 </template>
