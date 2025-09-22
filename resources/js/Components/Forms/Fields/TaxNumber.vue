@@ -207,7 +207,7 @@ const validateVAT = (vatInput: any) => {
     // Handle invalid VAT
     if (!validation.isValid) {
         const messageWarning = '🤔 ' + trans('Tax number looks invalid. Are you sure you want to save it?')
-        // set(registrationWarning.value, ['tax_number'], messageWarning);
+        set(registrationWarning.value, ['tax_number'], messageWarning);
         set(props.form, ['errors', props.fieldName], messageWarning);
         // props.form.reset();
         return updateFormValue(validation);;

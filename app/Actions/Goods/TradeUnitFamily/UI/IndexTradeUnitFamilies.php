@@ -53,7 +53,7 @@ class IndexTradeUnitFamilies extends GrpAction
 
         $queryBuilder = QueryBuilder::for(TradeUnitFamily::class);
         $queryBuilder->where('trade_unit_families.group_id', $this->group->id);
-
+        $queryBuilder->leftjoin('trade_unit_family_stats', 'trade_unit_family_stats.trade_unit_family_id', 'trade_unit_families.id');
         $queryBuilder
             ->defaultSort('trade_unit_families.code')
             ->select([
@@ -62,6 +62,7 @@ class IndexTradeUnitFamilies extends GrpAction
                 'trade_unit_families.name',
                 'trade_unit_families.description',
                 'trade_unit_families.id',
+                'trade_unit_family_stats.number_trade_units'
             ]);
 
 
