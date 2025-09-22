@@ -11,6 +11,7 @@ import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useFormatTime } from '@/Composables/useFormatTime'
 import Popover from 'primevue/popover'
+import form from "@/Components/Forms/Form.vue"
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 
 const props = defineProps<{
@@ -193,8 +194,8 @@ const validateVAT = (vatInput: any) => {
 
     if (!vatNumber) {
         vatValidationResult.value = null;
-        set(props.form, ['errors', props.fieldName], '');
-        /*  return; */
+        props.form.clearErrors(props.fieldName)
+
     }
 
     const validation = checkVAT(vatNumber, countries);
@@ -210,7 +211,7 @@ const validateVAT = (vatInput: any) => {
 
     // Valid VAT and no mismatch, update the form value
     updateFormValue(validation);
-    set(props.form, ['errors', props.fieldName], '');
+    props.form.clearErrors(props.fieldName)
 };
 
 const debouncedValidation = debounce((newValue: any) => {

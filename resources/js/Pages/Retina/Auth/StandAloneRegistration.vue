@@ -227,7 +227,10 @@ onMounted(async () => {
 					<!-- Submit Button -->
 					<div>
 						<div v-if="Object.keys(form.errors || {}).length" class="mb-4 text-red-600">
-							There is {{ Object.keys(form.errors || {}).length }} error(s) in the form. Please correct them before submitting.
+
+
+                            {{trans('Please correct the following errors:')}} {{form.errors}}
+
 
 						</div>
 						<div class="flex justify-end">
