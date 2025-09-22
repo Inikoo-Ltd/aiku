@@ -1008,7 +1008,7 @@ Route::prefix('charge/{charge:id}')->name('charge.')->group(function () {
 
 Route::name('trade_unit_family.')->prefix('trade-unit-family')->group(function () {
     Route::post('store', StoreTradeUnitFamily::class)->name('store')->withoutScopedBindings();
-    Route::delete('{tradeUnitFamily:id}/update', UpdateTradeUnitFamily::class)->name('update')->withoutScopedBindings();
+    Route::patch('{tradeUnitFamily:id}/update', UpdateTradeUnitFamily::class)->name('update')->withoutScopedBindings();
 });
 
 require __DIR__ . "/models/inventory/warehouse.php";
