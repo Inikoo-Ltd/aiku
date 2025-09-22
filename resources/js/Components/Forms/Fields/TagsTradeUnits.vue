@@ -271,9 +271,7 @@ onMounted(() => {
 
             <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
                 <div class="col-span-2">
-                    <label class="block text-sm font-medium leading-6">{{
-                        trans('Image')
-                        }}</label>
+                    <label class="block text-sm font-medium leading-6">{{trans('Image')}}</label>
                     <div class="mt-1">
                         <PureImageCrop :src_image="selectedUpdateTag?.image" :aspectRatio="1 / 1"
                             @cropped="(e) => (selectedUpdateTag.image = e)" />

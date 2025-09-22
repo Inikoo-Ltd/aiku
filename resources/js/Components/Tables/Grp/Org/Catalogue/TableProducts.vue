@@ -236,6 +236,17 @@ const onEditProduct = ref(false);
 const isLoadingDetach = ref<string[]>([]);
 
 
+function getMargin(item: ProductItem) {
+    const p = Number(item.product?.price);
+    const cost = Number(item.product?.org_cost);
+
+    if (isNaN(p) || p === 0) return 0.000;
+    if (isNaN(cost) || cost === 0) return 100.000;
+
+    return Number((((p - cost) / p) * 100).toFixed(1));
+}
+
+
 onMounted(() => {
     if (typeof window !== "undefined") {
         document.addEventListener("keydown", (e) => e.keyCode == 27 ? onEditProduct.value = false : "");
@@ -267,6 +278,16 @@ const locale = inject("locale", aikuLocaleStructure);
             {{ locale.currencyFormat(product.currency_code, product.price) }}
         </template>
 
+        <template #cell(margin)="{ item }">
+            <span :class="{
+                'text-green-600 font-medium': getMargin(item) > 0,
+                'text-red-600 font-medium': getMargin(item) < 0,
+                'text-gray-500': getMargin(item) === 0
+            }" class="whitespace-nowrap text-xs inline-block w-16">
+                {{ getMargin(item) + '%' }}
+            </span>
+        </template>
+
         <template #cell(rrp)="{ item: product }">
             {{ locale.currencyFormat(product.currency_code, product.rrp) }}
         </template>
@@ -277,14 +298,12 @@ const locale = inject("locale", aikuLocaleStructure);
 
         <template #cell(code)="{ item: product }">
             <div class="whitespace-nowrap">
-                <Link  :href="(masterProductRoute(product) as string)"  v-tooltip="'Go to Master'" class="mr-1"  :class="[ product.master_product_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
-                    <FontAwesomeIcon
-                        icon="fab fa-octopus-deploy"
-                        color="#4B0082"
-                    />
+                <Link :href="(masterProductRoute(product) as string)" v-tooltip="'Go to Master'" class="mr-1"
+                    :class="[ product.master_product_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
+                <FontAwesomeIcon icon="fab fa-octopus-deploy" color="#4B0082" />
                 </Link>
                 <Link :href="productRoute(product)" class="primaryLink">
-                   {{ product["code"] }}
+                {{ product["code"] }}
                 </Link>
             </div>
         </template>
@@ -319,7 +338,5 @@ const locale = inject("locale", aikuLocaleStructure);
                 :loading="isLoadingDetach.includes('detach' + item.id)" />
             </Link>
         </template>
-
-
     </Table>
 </template>

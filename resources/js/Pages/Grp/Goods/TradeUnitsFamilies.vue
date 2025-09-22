@@ -7,9 +7,9 @@
 <script setup lang="ts">
 import { Head } from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
-import TableTradeUnits from "@/Components/Tables/Grp/Goods/TableTradeUnits.vue";
 import { capitalize } from "@/Composables/capitalize";
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
+import TableTradeUnitFamilies from "@/Components/Tables/Grp/Goods/TableTradeUnitFamilies.vue";
 
 defineProps<{
   data: object
@@ -24,6 +24,6 @@ defineProps<{
 <template>
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead"></PageHeading>
-  <TableTradeUnits :data="data" />
+  <TableTradeUnitFamilies :data="data" />
 </template>
 
