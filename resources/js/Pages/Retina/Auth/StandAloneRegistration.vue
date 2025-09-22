@@ -56,6 +56,8 @@ const form = useForm({
 	poll_replies: initialPollReplies,
 	is_opt_in: false,
 	interest: [],
+    tax_number: ''
+
 })
 
 // Define reactive variables
@@ -65,7 +67,7 @@ const submit = () => {
 	isLoading.value = true
 
 	const { isDirty, errors, __rememberable, hasErrors, progress, wasSuccessful, ...xxx } = form
-	// console.log('fooooorm', xxx)
+
 	if (form.password == form.password_confirmation) {
 		form
 		.transform((data) => ({
