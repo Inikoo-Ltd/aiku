@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head } from "@inertiajs/vue3"
 import { router, useForm } from "@inertiajs/vue3"
-import { ref, onMounted, nextTick } from "vue"
+import { ref, onMounted, nextTick, provide } from "vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import { trans } from "laravel-vue-i18n"
 import IconField from "primevue/iconfield"
@@ -103,6 +103,8 @@ onMounted(async () => {
 	document.getElementById("contact_name")?.focus()
 })
 
+const registrationWarning = ref({})
+provide('registrationWarning', registrationWarning)
 
 </script>
 
@@ -228,17 +230,17 @@ onMounted(async () => {
 					<div>
 						<!-- Warning: only tax_number -->
 						<div
-							v-if="form?.errors && form.errors.tax_number"
+							v-if="registrationWarning.tax_number"
 							class="mb-4 bg-amber-100 rounded text-amber-700 border border-amber-300 px-4 py-2"
 							>
 							<span class="font-bold">{{ trans('Warning') }}:</span>
 							<ul class="list-disc list-inside">
 								<!-- handle string or array error shapes -->
-								<li v-if="Array.isArray(form.errors.tax_number)" v-for="(msg, i) in form.errors.tax_number" :key="i">
+								<li v-if="Array.isArray(registrationWarning.tax_number)" v-for="(msg, i) in registrationWarning.tax_number" :key="i">
 									{{ msg }}
 								</li>
 								<li v-else>
-									{{ form.errors.tax_number }}
+									{{ registrationWarning.tax_number }}
 								</li>
 							</ul>
 						</div>

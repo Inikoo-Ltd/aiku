@@ -12,6 +12,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useFormatTime } from '@/Composables/useFormatTime'
 import Popover from 'primevue/popover'
 import form from "@/Components/Forms/Form.vue"
+import { inject } from "vue"
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 
 const props = defineProps<{
@@ -26,6 +27,7 @@ const props = defineProps<{
 
 const emits = defineEmits()
 
+const registrationWarning = inject('registrationWarning', ref({}))
 
 const setFormValue = (data: Object, fieldName: string) => {
     if (Array.isArray(fieldName)) {
@@ -194,7 +196,8 @@ const validateVAT = (vatInput: any) => {
 
     if (!vatNumber) {
         vatValidationResult.value = null;
-        props.form.clearErrors(props.fieldName)
+        set(props.form, ['errors', props.fieldName], '');
+        // props.form.clearErrors(props.fieldName)
 
     }
 
@@ -204,14 +207,17 @@ const validateVAT = (vatInput: any) => {
 
     // Handle invalid VAT
     if (!validation.isValid) {
-        set(props.form, ['errors', props.fieldName], '🤔 ' + trans('Tax number looks invalid. Are you sure you want to save it?'));
+        const messageWarning = '🤔 ' + trans('Tax number looks invalid. Are you sure you want to save it?')
+        set(registrationWarning.value, ['tax_number'], messageWarning);
+        set(props.form, ['errors', props.fieldName], messageWarning);
         // props.form.reset();
         return updateFormValue(validation);;
     }
 
     // Valid VAT and no mismatch, update the form value
     updateFormValue(validation);
-    props.form.clearErrors(props.fieldName)
+        set(props.form, ['errors', props.fieldName], '');
+        // props.form.clearErrors(props.fieldName)
 };
 
 const debouncedValidation = debounce((newValue: any) => {
