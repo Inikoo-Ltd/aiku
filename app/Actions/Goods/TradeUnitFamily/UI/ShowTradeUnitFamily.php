@@ -6,7 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Goods\TradeUnitFamily;
+namespace App\Actions\Goods\TradeUnitFamily\UI;
 
 use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\GrpAction;
