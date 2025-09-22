@@ -19,6 +19,7 @@ class TradeUnitFamilyResource extends JsonResource
             'code'                    => $this->code,
             'name'                    => $this->name,
             'id'                      => $this->id,
+            'description'             => $this->description,
         ];
     }
 }

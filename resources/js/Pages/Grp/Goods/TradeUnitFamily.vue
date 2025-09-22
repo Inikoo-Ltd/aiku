@@ -12,18 +12,11 @@ import { faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, 
 import { computed, defineAsyncComponent, ref } from "vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { capitalize } from "@/Composables/capitalize"
-import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
 import TradeUnitShowcase from "@/Components/Goods/TradeUnitShowcase.vue"
-import { routeType } from "@/types/route"
-import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
-import TableStocks from "@/Components/Tables/Grp/Goods/TableStocks.vue"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 import type { Navigation } from "@/types/Tabs"
-import { Images } from "@/types/Images"
-import TradeUnitImagesManagement from "@/Components/Goods/ImagesManagement.vue"
-
+import TradeUnitFamiliesShowcase from "@/Components/Goods/TradeUnitFamiliesShowcase.vue"
 library.add(faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faGripHorizontal)
 
 const isModalUploadOpen = ref(false)
@@ -37,48 +30,20 @@ const props = defineProps<{
         navigation: Navigation
     }
     showcase?: object,
-    attachments?: {}
-    attachmentRoutes?: {}
-    tag_routes: {
-        store_tag: routeType
-        update_tag: routeType
-        destroy_tag: routeType
-        attach_tag: routeType
-        detach_tag: routeType
-    }
-    products?: {}
-    stocks?: {}
-    images?: {},
-    images_category_box?: {
-        label: string
-        type: string
-        column_in_db: string
-        url?: string
-        images?: Images
-    }[]
-    images_update_route: routeType
-    id: number | string
 }>()
 
 
-/* const currentTab = ref(props.tabs.current)
+const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
 
 const component = computed(() => {
 
     const components = {
-        showcase: TradeUnitShowcase,
-        history: ModelChangelog,
-        attachments: TableAttachments,
-        products: TableProducts,
-        stocks: TableStocks,
-        images: TradeUnitImagesManagement
+        showcase: TradeUnitFamiliesShowcase,
     }
     return components[currentTab.value]
 
-}) */
-
-
+})
 
 </script>
 
@@ -92,8 +57,6 @@ const component = computed(() => {
                 icon="upload" />
         </template>
     </PageHeading>
-    trade Unit Family
-
-
-
+    <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :tag_routes />
 </template>
