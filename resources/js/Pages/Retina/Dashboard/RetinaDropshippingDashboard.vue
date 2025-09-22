@@ -7,6 +7,7 @@ import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import CountUp from 'vue-countup-v3'
 
 import { faArrowRight } from "@far"
+import { faUser, faBuilding, faEnvelope, faPhone } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { Link, router } from '@inertiajs/vue3'
@@ -20,7 +21,8 @@ import { routeType } from '@/types/route'
 import Modal from '@/Components/Utils/Modal.vue'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import { notify } from '@kyvg/vue3-notification'
-library.add(faArrowRight)
+import Tooltip from 'primevue/tooltip'
+library.add(faArrowRight, faUser, faBuilding, faEnvelope, faPhone)
 
 const props = defineProps<{
     data: {
@@ -51,7 +53,7 @@ const props = defineProps<{
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
-
+console.log(props);
 
 // Section: Modal Create Order
 const isModalCreateOrder = ref(false)
@@ -108,10 +110,49 @@ const onSubmitCreateOrder = () => {
             </defs>
             <rect width="100%" height="100%" stroke-width="0" fill="url(#0787a7c5-978c-4f66-83c7-11c213f99cb7)" />
         </svg> -->
-        
+            {{  }}
         <div class="mx-auto px-6 pb-12 pt-10 lg:flex lg:px-14 ">
             <div v-if="data.channels.length" class="w-full lg:shrink-0">
                 <div class="mx-auto xmax-w-2xl lg:mx-0 ">
+                    <!-- Customer Contact Information -->
+                    <div v-if="data.customer" class="mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <h2 class="text-lg font-semibold text-gray-900 mb-3">{{ trans("Customer Information") }}</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div v-if="data.customer.contact_name" class="flex items-center">
+                                <FontAwesomeIcon 
+                                    icon="fas fa-user" 
+                                    class="text-gray-600 mr-2 w-4 h-4"
+                                    v-tooltip="trans('Contact Name')"
+                                />
+                                <span class="text-gray-900">{{ data.customer.contact_name }}</span>
+                            </div>
+                            <div v-if="data.customer.company_name" class="flex items-center">
+                                <FontAwesomeIcon 
+                                    icon="fas fa-building" 
+                                    class="text-gray-600 mr-2 w-4 h-4"
+                                    v-tooltip="trans('Company Name')"
+                                />
+                                <span class="text-gray-900">{{ data.customer.company_name }}</span>
+                            </div>
+                            <div v-if="data.customer.email" class="flex items-center">
+                                <FontAwesomeIcon 
+                                    icon="fas fa-envelope" 
+                                    class="text-gray-600 mr-2 w-4 h-4"
+                                    v-tooltip="trans('Email')"
+                                />
+                                <span class="text-gray-900">{{ data.customer.email }}</span>
+                            </div>
+                            <div v-if="data.customer.phone" class="flex items-center">
+                                <FontAwesomeIcon 
+                                    icon="fas fa-phone" 
+                                    class="text-gray-600 mr-2 w-4 h-4"
+                                    v-tooltip="trans('Phone')"
+                                />
+                                <span class="text-gray-900">{{ data.customer.phone }}</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <h1 class="mt-10 text-pretty text-5xl font-semibold tracking-tight sm:text-7xl">
                         {{ trans("Your channels summary") }}
                     </h1>
