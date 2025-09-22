@@ -12,6 +12,7 @@ use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
+use App\Http\Resources\Helpers\TaxNumberResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Address;
 use App\Models\SysAdmin\Organisation;
@@ -84,6 +85,12 @@ class CreateCustomer extends OrgAction
                                             'countriesAddressData' => GetAddressData::run()
 
                                         ]
+                                    ],
+                                    'tax_number'      => [
+                                        'type'    => 'tax_number',
+                                        'label'   => __('Tax number'),
+                                        'value'   => null,
+                                        'country' => null,
                                     ]
                                 ]
                             ]

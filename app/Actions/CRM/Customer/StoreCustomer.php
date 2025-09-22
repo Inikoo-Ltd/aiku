@@ -26,6 +26,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCustomers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRegistrationIntervals;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithModelAddressActions;
+use App\Actions\Traits\WithPrepareTaxNumberValidation;
 use App\Actions\Traits\WithProcessContactNameComponents;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
@@ -55,6 +56,7 @@ class StoreCustomer extends OrgAction
     use WithModelAddressActions;
     use WithNoStrictRules;
     use WithProcessContactNameComponents;
+    use WithPrepareTaxNumberValidation;
 
     /**
      * @throws \Throwable
@@ -67,8 +69,7 @@ class StoreCustomer extends OrgAction
         Arr::forget($modelData, 'contact_address');
         $deliveryAddressData = Arr::get($modelData, 'delivery_address', []);
         Arr::forget($modelData, 'delivery_address');
-        $taxNumberData = Arr::get($modelData, 'tax_number');
-        Arr::forget($modelData, 'tax_number');
+        $taxNumberData = Arr::pull($modelData, 'tax_number');
 
         data_set($modelData, 'group_id', $shop->group_id);
         data_set($modelData, 'organisation_id', $shop->organisation_id);
