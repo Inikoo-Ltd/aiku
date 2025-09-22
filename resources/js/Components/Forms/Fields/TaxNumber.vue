@@ -2,7 +2,7 @@
 import PureInput from "@/Components/Pure/PureInput.vue"
 import { set, get, debounce } from 'lodash-es'
 import { checkVAT, countries } from 'jsvat-next';
-import { ref, computed } from "vue"
+import { ref, computed, watch } from "vue"
 import { faExclamationCircle, faCheckCircle } from '@fas'
 import { faCopy } from '@fal'
 import { faSpinnerThird } from '@fad'
@@ -11,12 +11,13 @@ import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useFormatTime } from '@/Composables/useFormatTime'
 import Popover from 'primevue/popover'
-import form from "@/Components/Forms/Form.vue"
+import { inject } from "vue"
+import { Tooltip } from 'floating-vue' 
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 
 const props = defineProps<{
     form: any
-    fieldName: string
+    fieldName?: string
     options?: any
     refForms?: any
     fieldData?: any
@@ -26,6 +27,7 @@ const props = defineProps<{
 
 const emits = defineEmits()
 
+const registrationWarning = inject('registrationWarning', ref({}))
 
 const setFormValue = (data: Object, fieldName: string) => {
     if (Array.isArray(fieldName)) {
@@ -194,7 +196,8 @@ const validateVAT = (vatInput: any) => {
 
     if (!vatNumber) {
         vatValidationResult.value = null;
-        props.form.clearErrors(props.fieldName)
+        set(props.form, ['errors', props.fieldName], '');
+        // props.form.clearErrors(props.fieldName)
 
     }
 
@@ -204,14 +207,17 @@ const validateVAT = (vatInput: any) => {
 
     // Handle invalid VAT
     if (!validation.isValid) {
-        set(props.form, ['errors', props.fieldName], '🤔 ' + trans('Tax number looks invalid. Are you sure you want to save it?'));
+        const messageWarning = '🤔 ' + trans('Tax number looks invalid. Are you sure you want to save it?')
+        set(registrationWarning.value, ['tax_number'], messageWarning);
+        set(props.form, ['errors', props.fieldName], messageWarning);
         // props.form.reset();
         return updateFormValue(validation);;
     }
 
     // Valid VAT and no mismatch, update the form value
     updateFormValue(validation);
-    props.form.clearErrors(props.fieldName)
+        set(props.form, ['errors', props.fieldName], '');
+        // props.form.clearErrors(props.fieldName)
 };
 
 const debouncedValidation = debounce((newValue: any) => {
@@ -236,6 +242,22 @@ const updateVat = (newInputValue: string) => {
     value.value = setActualValue(value.value, newInputValue)
     debouncedValidation(value.value)
 }
+
+// Watch for changes in fieldData to reset dirty state and show validation status
+watch(
+    () => props.fieldData,
+    (newFieldData, oldFieldData) => {
+        // Reset dirty state when fieldData is updated from server
+        if (newFieldData && newFieldData !== oldFieldData) {
+            // Check if the validation status has changed (indicating a server update)
+            const hasValidationData = newFieldData?.value?.status || newFieldData?.value?.checked_at
+            if (hasValidationData) {
+                isFormDirty.value = false
+            }
+        }
+    },
+    { deep: true }
+)
 </script>
 
 <template>
@@ -249,50 +271,39 @@ const updateVat = (newInputValue: string) => {
             <div class="flex items-start justify-between">
                 <div class="flex items-center space-x-2">
                     <FontAwesomeIcon 
-                       
                         :icon="getStatusIcon(validationStatus.status, validationStatus.valid)"
                         :class="getStatusColor(validationStatus.status, validationStatus.valid)" 
                         class="text-sm" />
 
                     <div class="space-y-2">
-                        <p class="text-sm text-gray-900">
+                        <p class="text-sm">
                             <span class="font-medium "
                                 :class="getStatusColor(validationStatus.status, validationStatus.valid)">
                                 {{ getStatusText(validationStatus.status, validationStatus.valid) }}
                             </span>
-                            <span 
-                                @click="countryPopover.toggle($event)"
-                                class="cursor-pointer hover:underline"> 
-                                ({{ validationStatus.country.data.name }}) 
-                            </span>
-                            
-                            <Popover ref="countryPopover">
-                                <div class="p-4 max-w-xs">
-                                    <div class="space-y-2">
-                                        <h4 class="font-semibold text-sm">{{ trans('Country Information') }}</h4>
-                                        <div class="text-sm space-y-1">
-                                            <p><span class="font-medium">{{ trans('Country') }}:</span> {{ validationStatus.country.data.name }}</p>
-                                            <p><span class="font-medium">{{ trans('Country Code') }}:</span> {{ validationStatus.country.data.code }}</p>
+
+                            <!-- Country -->
+                            <Tooltip class="inline ml-1">
+                                <div class="inline hover:underline cursor-default">({{ validationStatus.country?.data?.name }})</div>
+
+                                <template #popper>
+                                    <div class="p-1 max-w-xs">
+                                        <div class="space-y-2">
+                                            <div class="text-sm space-y-1">
+                                                <p><span class="font-medium">{{ trans('Country') }}:</span> {{ validationStatus.country.data.name }}</p>
+                                                <p><span class="font-medium">{{ trans('Country Code') }}:</span> {{ validationStatus.country.data.code }}</p>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </Popover>
+                                </template>
+                            </Tooltip>
 
-                            <span 
-                                @click="datePopover.toggle($event)"
-                                class="cursor-pointer hover:underline">
+                            <!-- Last checked date -->
+                            <span
+                                v-tooltip="trans('Last checked :date', { date: formatDate(validationStatus?.checked_at) })"
+                                class="ml-1 cursor-default hover:underline">
                                 {{ formatDate(validationStatus.checked_at) }}
                             </span>
-                            
-                            <Popover ref="datePopover">
-                                <div class="p-4 max-w-xs">
-                                    <div class="space-y-2">
-                                        <div class="text-sm space-y-1">
-                                            <p><span class="font-medium">{{ trans('Last checked') }}:</span> {{ formatDate(validationStatus.checked_at) }}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </Popover>
                         </p>
                     </div>
                 </div>

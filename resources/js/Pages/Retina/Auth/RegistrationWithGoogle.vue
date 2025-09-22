@@ -13,6 +13,7 @@ import { faBuilding, faGlobe, faPhone, faUser } from "@fal"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { Checkbox } from "primevue"
 import FieldStandaloneRegistration from "./Field/FieldStandaloneRegistration.vue"
+import { provide } from "vue"
 
 library.add(faEnvelope, faAsterisk, faUser, faPhone, faBuilding, faGlobe)
 
@@ -93,6 +94,8 @@ onMounted(async () => {
 	document.getElementById("contact_name")?.focus()
 })
 
+const registrationWarning = ref({})
+provide('registrationWarning', registrationWarning)
 </script>
 
 <template>

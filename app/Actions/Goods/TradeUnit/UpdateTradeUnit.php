@@ -15,6 +15,7 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUn
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateGrossWeightFromTradeUnits;
+use App\Actions\Goods\TradeUnitFamily\Hydrators\TradeUnitFamilyHydrateTradeUnits;
 use App\Stubs\Migrations\HasDangerousGoodsFields;
 use App\Actions\GrpAction;
 use App\Actions\Helpers\Brand\AttachBrandToModel;
@@ -86,9 +87,13 @@ class UpdateTradeUnit extends GrpAction
                 'brand_id' => Arr::pull($modelData, 'brands')
             ]);
         }
+        $oldTradeUnitFamily = null;
+        if (Arr::has($modelData, 'trade_unit_family_id')) {
+            $oldTradeUnitFamily = $tradeUnit->tradeUnitFamily;
+        }
 
         $tradeUnit = $this->update($tradeUnit, $modelData, ['data', 'marketing_dimensions']);
-
+        $tradeUnit->refresh();
 
         if ($tradeUnit->wasChanged('gross_weight')) {
             foreach ($tradeUnit->stocks as $stock) {
@@ -110,11 +115,12 @@ class UpdateTradeUnit extends GrpAction
                 ProductHydrateMarketingIngredientsFromTradeUnits::dispatch($product);
             }
         }
-
-        if ($tradeUnit->wasChanged('marketing_dimensions')) {
-            foreach ($tradeUnit->products as $product) {
-                ProductHydrateMarketingDimensionFromTradeUnits::dispatch($product);
+        
+        if ($tradeUnit->wasChanged('trade_unit_family_id')) {   
+            if($oldTradeUnitFamily) {
+                TradeUnitFamilyHydrateTradeUnits::dispatch($oldTradeUnitFamily);
             }
+            TradeUnitFamilyHydrateTradeUnits::dispatch($tradeUnit->tradeUnitFamily);
         }
 
         $dangerousGoodsFields     = $this->getDangerousGoodsFieldNames();
@@ -212,7 +218,7 @@ class UpdateTradeUnit extends GrpAction
             'description_extra_i8n'        => ['sometimes', 'array'],
             'tags'                         => ['sometimes', 'array'],
             'brands'                       => ['sometimes'],
-
+            'trade_unit_family_id'         => ['sometimes']
         ];
 
         if (!$this->strict) {

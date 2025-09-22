@@ -10,7 +10,7 @@ namespace App\Http\Resources\Goods;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class TradeUnitFamiliesResource extends JsonResource
+class TradeUnitFamilyResource extends JsonResource
 {
     public function toArray($request): array
     {
@@ -19,7 +19,7 @@ class TradeUnitFamiliesResource extends JsonResource
             'code'                    => $this->code,
             'name'                    => $this->name,
             'id'                      => $this->id,
-            'number_trade_units'      => $this->number_trade_units
+            'description'             => $this->description,
         ];
     }
 }

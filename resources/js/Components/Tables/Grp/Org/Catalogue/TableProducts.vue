@@ -5,14 +5,14 @@
   -->
 
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3";
+import { Link, router } from "@inertiajs/vue3";
 import Table from "@/Components/Table/Table.vue";
 import { Product } from "@/types/product";
 import Icon from "@/Components/Icon.vue";
 import { remove as loRemove } from "lodash-es";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faConciergeBell, faGarage, faExclamationTriangle, faPencil } from "@fal";
-import { faOctopusDeploy } from  "@fortawesome/free-brands-svg-icons"
+import { faConciergeBell, faGarage, faExclamationTriangle, faPencil, faMinus, faSave } from "@fal";
+import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { routeType } from "@/types/route";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { onMounted, onUnmounted, ref, inject } from "vue";
@@ -20,6 +20,10 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import { Invoice } from "@/types/invoice";
 import { RouteParams } from "@/types/route-params";
+import InputNumber from 'primevue/inputnumber';
+import ListItem from "@tiptap/extension-list-item";
+import { faCross, faPlus } from "@far";
+import { faXmark } from "@fortawesome/free-solid-svg-icons";
 
 
 library.add(faOctopusDeploy, faConciergeBell, faGarage, faExclamationTriangle, faPencil);
@@ -34,14 +38,77 @@ defineProps<{
         detach: routeType
     },
     isCheckboxProducts?: boolean
-    master?:boolean
+    master?: boolean
 }>()
 
 const emits = defineEmits<{
     (e: "selectedRow", value: {}): void
 }>()
 
-const onEditOpen = ref([])
+const editingValues = ref<Record<number, { price: number; rrp: number }>>({})
+const editingBackup = ref<Record<number, any>>({})
+const onEditOpen = ref<number[]>([])
+const loadingSave = ref([])
+
+function onEdit(item) {
+    // backup original values
+    editingBackup.value[item.id] = { ...item }
+
+    // make a working copy
+    editingValues.value[item.id] = {
+        price: item.price,
+        rrp: item.rrp
+    }
+
+    if (!onEditOpen.value.includes(item.id)) {
+        onEditOpen.value.push(item.id)
+    }
+}
+
+function onSave(item) {
+    const updated = editingValues.value[item.id]
+
+    if (!updated) return
+
+    router.patch(
+        route('grp.models.product.update', { product: item.id }),
+        {
+            price: updated.price,
+            rrp: updated.rrp,
+        },
+        {
+            preserveScroll: true,
+            onStart: () => {
+                loadingSave.value.push(item.id)
+            },
+            onSuccess: () => {
+                // merge back into original item so the table updates immediately
+                Object.assign(item, updated)
+
+                // cleanup
+                loRemove(onEditOpen.value, (id) => id === item.id)
+                delete editingBackup.value[item.id]
+                delete editingValues.value[item.id]
+            },
+            onError: (errors) => {
+                console.error('Save failed', errors)
+            },
+            onFinish: () => {
+                loRemove(loadingSave.value, (id) => id === item.id)
+            }
+        }
+    )
+}
+
+function onCancel(item) {
+    if (editingBackup.value[item.id]) {
+        Object.assign(item, editingBackup.value[item.id])
+    }
+    loRemove(onEditOpen.value, (id) => id === item.id)
+    delete editingBackup.value[item.id]
+    delete editingValues.value[item.id]
+}
+
 
 function productRoute(product: Product) {
     if (!product.slug) {
@@ -171,26 +238,26 @@ function productRoute(product: Product) {
             return route(
                 "grp.org.shops.show.catalogue.products.current_products.show",
                 [product.organisation_slug, product.shop_slug, product.slug]);
-       /*  case "grp.masters.master_shops.show.master_families.master_products.show":
-            return route(
-                "grp.org.shops.show.catalogue.products.current_products.show",
-                [
-                    product.organisation_slug,
-                    product.shop_slug,
-                    product.slug
-                ]); */
+        /*  case "grp.masters.master_shops.show.master_families.master_products.show":
+             return route(
+                 "grp.org.shops.show.catalogue.products.current_products.show",
+                 [
+                     product.organisation_slug,
+                     product.shop_slug,
+                     product.slug
+                 ]); */
         default:
             if (product.asset_id) {
                 return route(
                     "grp.helpers.redirect_asset",
                     [product.asset_id]);
-            }else return ''
+            } else return ''
 
     }
 }
 
 function masterProductRoute(product: {}) {
-    if(!product.master_product_id){
+    if (!product.master_product_id) {
         return '';
     }
 
@@ -225,7 +292,7 @@ function shopRoute(invoice: Invoice) {
             ]);
     }
 
-    return  route(
+    return route(
         "grp.org.shops.show.catalogue.dashboard",
         [
             invoice.organisation_slug,
@@ -278,8 +345,39 @@ const locale = inject("locale", aikuLocaleStructure);
         </template>
 
         <template #cell(price)="{ item: product }">
-            {{ locale.currencyFormat(product.currency_code, product.price) }}
+            <InputNumber v-if="onEditOpen.includes(product.id)" v-model="editingValues[product.id].price"
+                mode="currency" :currency="product.currency_code" :step="0.25" showButtons button-layout="horizontal"
+                inputClass="w-full text-xs">
+                <template #incrementbuttonicon>
+                    <FontAwesomeIcon :icon="faPlus" />
+                </template>
+                <template #decrementbuttonicon>
+                    <FontAwesomeIcon :icon="faMinus" />
+                </template>
+            </InputNumber>
+            <span v-else>
+                {{ locale.currencyFormat(product.currency_code, product.price) }}
+            </span>
         </template>
+
+
+
+
+        <template #cell(rrp)="{ item: product }">
+            <InputNumber v-if="onEditOpen.includes(product.id)" v-model="editingValues[product.id].rrp" mode="currency"
+                :currency="product.currency_code" :step="0.25" showButtons button-layout="horizontal"
+                inputClass="w-full text-xs">
+                <template #incrementbuttonicon>
+                    <FontAwesomeIcon :icon="faPlus" />
+                </template>
+                <template #decrementbuttonicon>
+                    <FontAwesomeIcon :icon="faMinus" />
+                </template>
+            </InputNumber>
+
+            <span v-else>{{ locale.currencyFormat(product.currency_code, product.rrp) }}</span>
+        </template>
+
 
         <template #cell(margin)="{ item }">
             <span :class="{
@@ -291,10 +389,6 @@ const locale = inject("locale", aikuLocaleStructure);
             </span>
         </template>
 
-        <template #cell(rrp)="{ item: product }">
-            {{ locale.currencyFormat(product.currency_code, product.rrp) }}
-        </template>
-
         <template #cell(sales_all)="{ item: product }">
             {{ locale.currencyFormat(product.currency_code, product.sales_all) }}
         </template>
@@ -302,7 +396,7 @@ const locale = inject("locale", aikuLocaleStructure);
         <template #cell(code)="{ item: product }">
             <div class="whitespace-nowrap">
                 <Link :href="(masterProductRoute(product) as string)" v-tooltip="'Go to Master'" class="mr-1"
-                    :class="[ product.master_product_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
+                    :class="[product.master_product_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
                 <FontAwesomeIcon icon="fab fa-octopus-deploy" color="#4B0082" />
                 </Link>
                 <Link :href="productRoute(product)" class="primaryLink">
@@ -340,9 +434,30 @@ const locale = inject("locale", aikuLocaleStructure);
             <Button icon="fal fa-times" type="negative" size="xs"
                 :loading="isLoadingDetach.includes('detach' + item.id)" />
             </Link>
+
             <div v-if="master">
-                <Button type="edit" />
+                <button v-if="!onEditOpen.includes(item.id)" class="h-9 align-bottom text-center" @click="onEdit(item)">
+                    <FontAwesomeIcon icon="fal fa-pencil" class="h-5 text-gray-500 hover:text-gray-700"
+                        aria-hidden="true" v-tooltip="'edit'"/>
+                </button>
+
+                <span v-else class="flex items-center space-x-3">
+                    <Button type="negative" v-tooltip="'cancel'" :icon="faXmark" @click="onCancel(item)" size="sm">
+                    </Button>
+
+                    <button class="h-9 align-bottom text-center" :disabled="loadingSave.includes(item.id)"
+                        @click="onSave(item)" v-tooltip="'save'">
+                        <FontAwesomeIcon v-if="loadingSave.includes(item.id)" icon="fad fa-spinner-third"
+                            class="text-2xl animate-spin" fixed-width aria-hidden="true" />
+
+                        <FontAwesomeIcon v-else-if="editingValues[item.id]" icon="fad fa-save" class="h-8"
+                            :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
+
+                        <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
+                    </button>
+                </span>
             </div>
+
         </template>
     </Table>
 </template>

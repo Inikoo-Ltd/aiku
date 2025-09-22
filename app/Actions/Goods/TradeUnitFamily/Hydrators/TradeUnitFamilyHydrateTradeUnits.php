@@ -28,7 +28,7 @@ class TradeUnitFamilyHydrateTradeUnits implements ShouldBeUnique
         $stats = [
             'number_trade_units' => $tradeUnitFamily->tradeUnits()->count()
         ];
-
+        
         $tradeUnitFamily->stats()->update(
             $stats
         );

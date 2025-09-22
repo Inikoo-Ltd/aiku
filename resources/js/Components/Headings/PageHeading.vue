@@ -127,7 +127,7 @@ const setError = (e) => {
                          class="w-6 h-6" />
 
                     <div class="flex flex-col sm:flex-row gap-y-1.5 gap-x-3 sm:items-center ">
-                        <div :class="data.noCapitalise ? '' : 'capitalize'" class="xspace-x-2">
+                        <div class="xspace-x-2">
                             <template v-if="data.model">
                                 <span class="text-gray-400 font-medium">{{ data.model }}</span>
                                 <span>&nbsp;</span>

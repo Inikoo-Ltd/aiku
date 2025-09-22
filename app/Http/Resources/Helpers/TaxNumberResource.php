@@ -26,7 +26,7 @@ class TaxNumberResource extends JsonResource
             'number'                     => $taxNumber->number,
             'type'                       => $taxNumber->type,
             'country_id'                 => $taxNumber->country_id,
-            'country'                    => CountryResource::make($taxNumber->country),
+            'country'                    => $taxNumber->country_id ? CountryResource::make($taxNumber->country) : null,
             'status'                     => $taxNumber->status,
             'valid'                      => $taxNumber->valid,
             'data'                       => $taxNumber->data,

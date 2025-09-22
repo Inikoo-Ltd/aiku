@@ -75,7 +75,7 @@ const handleChange = () => props.form.clearErrors(props.fieldName);
             <div class="grid col-span-2">
                 <div class="w-full ">
                     <div v-if="`${addressField}` === 'administrative_area'">
-                        <label for="administrative_area" class="capitalize block text-sm font-medium text-gray-700">
+                        <label for="administrative_area" class="block text-sm font-medium text-gray-700">
                             {{ addressFieldData.label }}
                         </label>
                         <Multiselect
@@ -88,7 +88,7 @@ const handleChange = () => props.form.clearErrors(props.fieldName);
                             class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" />
                     </div>
                     <div v-else>
-                        <label :for="`${addressField}`" class="capitalize block text-xs font-medium text-gray-700">
+                        <label :for="`${addressField}`" class="block text-xs font-medium text-gray-700">
                             {{ addressFieldData.label }}
                             <span v-if="form.errors[addressField]" class="mt-2 text-sm text-red-600">{{ form.errors[addressField] }}</span>
                         </label>

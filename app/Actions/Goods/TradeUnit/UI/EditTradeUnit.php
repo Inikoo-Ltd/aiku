@@ -275,6 +275,34 @@ class EditTradeUnit extends OrgAction
                                 ],
                             ],
                         ],
+                        [
+                            'label'  => __('Family'),
+                            'icon'   => 'fa-light fa-folder-tree',
+                            'fields' => [
+                                'trade_unit_family_id'  =>  [
+                                    'type'    => 'select_infinite',
+                                    'label'   => __('Family'),
+                                    'options'   => [
+                                            [
+                                                'id' =>  $tradeUnit->tradeUnitFamily->id ?? null,
+                                                'code' =>  $tradeUnit->tradeUnitFamily->code ?? null,
+                                                'name' => $tradeUnit->tradeUnitFamily->name ?? null,
+                                                'number_trade_units' => $tradeUnit->tradeUnitFamily->stats->number_trade_units ?? 0
+                                            ]
+                                    ],
+                                    'fetchRoute'    => [
+                                        'name'       => 'grp.masters.trade-unit-families.index',
+                                        'parameters' => [
+                                        ]
+                                    ],
+                                    'required' => true,
+                                    'valueProp' => 'id',
+                                    'type_label' => 'trade-unit-families',
+                                    'labelProp' => 'code',
+                                    'value'   => $tradeUnit->tradeUnitFamily->id ?? null,
+                                ],
+                            ],
+                        ],
                     ],
 
                     'args' => [

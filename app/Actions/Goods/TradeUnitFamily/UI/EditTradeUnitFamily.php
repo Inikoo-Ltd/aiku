@@ -11,17 +11,17 @@ use Lorisleiva\Actions\ActionRequest;
 class EditTradeUnitFamily extends GrpAction
 {
     /** @noinspection PhpUnusedParameterInspection */
-    public function asController(ActionRequest $request): ActionRequest
+    public function asController(TradeUnitFamily $tradeUnitFamily, ActionRequest $request): Response
     {
         $this->initialisation(group(), $request);
 
-        return $request;
+        return $this->handle($tradeUnitFamily, $request);
     }
 
     public function handle(TradeUnitFamily $tradeUnitFamily, ActionRequest $request): Response
     {
         return Inertia::render(
-            'CreateModel',
+            'EditModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $tradeUnitFamily,
@@ -67,12 +67,14 @@ class EditTradeUnitFamily extends GrpAction
                                 ]
                             ]
                         ],
-                    'route' => [
-                        'name' => 'grp.models.trade_unit_family.update',
-                        'parameters' => [
-                            'tradeUnitFamily' => $tradeUnitFamily->id
-                        ]
-                    ]
+                        'args'      => [
+                                'updateRoute' => [
+                                'name' => 'grp.models.trade_unit_family.update',
+                                'parameters' => [
+                                    'tradeUnitFamily' => $tradeUnitFamily->id
+                                ]
+                            ]
+                        ],
                 ]
             ]
         );

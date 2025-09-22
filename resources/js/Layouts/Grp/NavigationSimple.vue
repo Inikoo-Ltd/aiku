@@ -55,11 +55,11 @@ onUnmounted(() => {
         <FontAwesomeIcon v-else-if="nav.icon" aria-hidden="true" class="flex-shrink-0 h-4 w-4" fixed-width :icon="nav.icon" />
         
         <Transition name="slide-to-left">
-            <span v-if="layout.leftSidebar.show" class="py-0.5 capitalize leading-none whitespace-nowrap "
+            <span v-if="layout.leftSidebar.show" class="py-0.5 leading-none whitespace-nowrap "
                 :class="[layout.leftSidebar.show ? 'truncate block md:block' : 'block md:hidden']">
                 {{ nav.label }}
             </span>
-            <span v-else class="capitalize leading-none whitespace-nowrap block md:hidden">
+            <span v-else class="leading-none whitespace-nowrap block md:hidden">
                 {{ nav.label }}
             </span>
         </Transition>

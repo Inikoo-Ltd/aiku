@@ -58,12 +58,28 @@ class ShowTradeUnitFamily extends GrpAction
                         'icon'  => 'fal fa-atom'
                     ],
                     'title'   => $tradeUnitFamily->code,
+                    'actions' => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Edit'),
+                            'route' => [
+                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                                'parameters' => $request->route()->originalParameters()
+                            ]
+                        ]
+                    ]
                 ],
                 'tabs' => [
                     'current'    => $this->tab,
                     'navigation' => TradeUnitFamilyTabsEnum::navigation()
 
                 ],
+
+                TradeUnitFamilyTabsEnum::SHOWCASE->value => $this->tab == TradeUnitFamilyTabsEnum::SHOWCASE->value ?
+                fn () => GetTradeUnitFamilyShowcase::run($tradeUnitFamily)
+                : Inertia::lazy(fn () => GetTradeUnitFamilyShowcase::run($tradeUnitFamily)),
+
             ]
         );
     }

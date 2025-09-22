@@ -207,7 +207,7 @@ const updateDataDisplayType = (value: string) => {
 									v-slot="{ active, checked }"
 								>
 									<div :class="[
-											'cursor-pointer focus:outline-none flex items-center justify-center py-1 md:py-3 px-3 text-sm font-medium capitalize',
+											'cursor-pointer focus:outline-none flex items-center justify-center py-1 md:py-3 px-3 text-sm font-medium',
 											checked ? 'bg-indigo-500 text-white' : ' bg-white text-gray-700 hover:bg-gray-200',
 										]"
 										v-tooltip="option.tooltip"

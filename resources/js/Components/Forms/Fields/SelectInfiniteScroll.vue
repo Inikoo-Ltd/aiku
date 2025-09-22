@@ -82,6 +82,10 @@ function unsnakeCase(str?: string | null) {
                        <div class="">{{ value.code }} - {{ value.name }} <Icon :data="value.state"></Icon><span class="text-sm text-gray-400">({{ locale.number(value.number_current_products) }} {{ trans("products") }})</span></div>
                 </template>
 
+				<template v-if="props.fieldData.type_label == 'trade-unit-families'" #singlelabel="{ value }">
+                       <div class="">{{ value.code }} - {{ value.name }}<span class="text-sm text-gray-400">({{ locale.number(value.number_trade_units) }} {{ trans("trade units") }})</span></div>
+                </template>
+
 				<template v-if="props.fieldData.type_label == 'department-and-sub-department'" #singlelabel="{ value }">
                        <div class="flex justify-start w-full mx-2">{{ value.code }} - {{ value.name }} <Tag v-if="value.type" class="mx-2" :label="unsnakeCase(value.type)"></Tag> </div>
                 </template>
