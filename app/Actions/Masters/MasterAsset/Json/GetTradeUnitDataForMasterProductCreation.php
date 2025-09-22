@@ -94,10 +94,11 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
                 : null;
             $finalData[]                    = [
                 'id'              => $shop->id,
-                'org_stocks_data' => $orgStocksData
+                'org_stocks_data' => $orgStocksData,
+                'images'          => $tradeUnits[0]['images']
             ];
         }
-
+        
         return $finalData;
     }
 
