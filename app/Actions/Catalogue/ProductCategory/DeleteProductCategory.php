@@ -16,6 +16,8 @@ use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
+use App\Models\Masters\MasterProductCategory;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
@@ -113,6 +115,21 @@ class DeleteProductCategory extends OrgAction
             ProductCategoryTypeEnum::SUB_DEPARTMENT => Redirect::route('grp.org.shops.show.catalogue.departments.show.sub_departments.index', [$productCategory->organisation, $productCategory->shop, $productCategory->parent]),
             ProductCategoryTypeEnum::FAMILY => Redirect::route('grp.org.shops.show.catalogue.families.index', [$productCategory->organisation, $productCategory->shop])
         };
+    }
+
+    public function getCommandSignature(): string
+    {
+        return 'product_category:delete {product_category_id}';
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function asCommand(Command $command): int
+    {
+        $productCategory = ProductCategory::findOrFail($command->argument('product_category_id'));
+        $this->action($productCategory,true);
+        return 0;
     }
 
 

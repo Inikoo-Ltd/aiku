@@ -75,7 +75,7 @@ class AddMissingMasterAssets
             $price = $product->price * $exchange;
 
 
-            //Todo this will only worl with parent is masterfamily
+            //Todo this will only work with parent is masterfamily
             $foundMasterProduct = StoreMasterAsset::make()->action(
                 $masterFamily ?? $masterShop,
                 [
@@ -146,7 +146,7 @@ class AddMissingMasterAssets
     {
         $masterFamily = null;
         if ($product->family) {
-            $masterFamily = AddMissingProductCategoriesToMaster::make()
+            $masterFamily = AddMissingFamiliesToMaster::make()
                 ->upsertMasterFamily($masterShop, $product->family);
         }
 
