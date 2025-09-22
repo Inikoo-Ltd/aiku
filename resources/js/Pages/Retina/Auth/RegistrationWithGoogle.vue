@@ -166,10 +166,44 @@ onMounted(async () => {
 
 					<!-- Submit Button -->
 					<div>
-						<div v-if="Object.keys(form.errors || {}).length" class="mb-4 text-red-600">
+						<!-- <div v-if="Object.keys(form.errors || {}).length" class="mb-4 text-red-600">
 							There is {{ Object.keys(form.errors || {}).length }} error(s) in the form. Please correct them before submitting.
 
+						</div> -->
+
+						<!-- Warning: only tax_number -->
+						<div
+							v-if="form?.errors && form.errors.tax_number"
+							class="mb-4 bg-amber-100 rounded text-amber-700 border border-amber-300 px-4 py-2"
+							>
+							<span class="font-bold">{{ trans('Warning') }}:</span>
+							<ul class="list-disc list-inside">
+								<!-- handle string or array error shapes -->
+								<li v-if="Array.isArray(form.errors.tax_number)" v-for="(msg, i) in form.errors.tax_number" :key="i">
+									{{ msg }}
+								</li>
+								<li v-else>
+									{{ form.errors.tax_number }}
+								</li>
+							</ul>
 						</div>
+
+						<!-- Errors (everything except tax_number) -->
+						<div
+							v-if="Object.keys(form?.errors ?? {}).filter(k => k !== 'tax_number').length"
+							class="mb-4 text-red-600"
+						>
+							<span class="font-bold">{{ trans('Errors') }}:</span>
+							<ul class="list-disc list-inside">
+								<template v-for="(error, key) in form.errors" :key="key">
+									<template v-if="key !== 'tax_number'">
+										<li v-if="Array.isArray(error)" v-for="(msg, i) in error" :key="i">{{ msg }}</li>
+										<li v-else>{{ error }}</li>
+									</template>
+								</template>
+							</ul>
+						</div>
+
 						<div class="flex justify-end">
 							<button
 								type="submit"
