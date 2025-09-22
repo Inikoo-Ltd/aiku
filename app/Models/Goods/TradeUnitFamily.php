@@ -14,6 +14,7 @@ use App\Models\Traits\InGroup;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
@@ -93,5 +94,10 @@ class TradeUnitFamily extends Model implements Auditable
     public function tradeUnits(): HasMany
     {
         return $this->hasMany(TradeUnit::class);
+    }
+
+    public function stats(): HasOne
+    {
+        return $this->hasOne(TradeUnitFamilyStats::class);
     }
 }
