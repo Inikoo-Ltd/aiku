@@ -92,13 +92,17 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
             $orgStocksData['margin']        = ($orgStocksData['price'] > 0)
                 ? round((($orgStocksData['price'] - $orgStocksData['shop_cost']) / $orgStocksData['price']) * 100, 2)
                 : null;
-            $finalData[]                    = [
-                'id'              => $shop->id,
-                'org_stocks_data' => $orgStocksData,
-                'images'          => $tradeUnits[0]['images']
+
+            $finalData['shops'][] = 
+                 $orgStocksData;
+        }
+
+        foreach($tradeUnits as $tradeUnit) {
+            $finalData['trade_units'][] = [
+                'id'    => $tradeUnit['id'],
+                'images' => $tradeUnit['images']
             ];
         }
-        
         return $finalData;
     }
 
