@@ -249,33 +249,10 @@ const updateVat = (newInputValue: string) => {
             <div class="flex items-start justify-between">
                 <div class="flex items-center space-x-2">
                     <FontAwesomeIcon 
-                        @click="statusPopover.toggle($event)"
+                       
                         :icon="getStatusIcon(validationStatus.status, validationStatus.valid)"
                         :class="getStatusColor(validationStatus.status, validationStatus.valid)" 
-                        class="text-sm cursor-pointer" />
-                    
-                    <Popover ref="statusPopover">
-                        <div class="p-4 max-w-xs">
-                            <div class="space-y-2">
-                                <div class="flex items-center space-x-2">
-                                    <FontAwesomeIcon 
-                                        :icon="getStatusIcon(validationStatus.status, validationStatus.valid)"
-                                        :class="getStatusColor(validationStatus.status, validationStatus.valid)" 
-                                        class="text-sm" />
-                                    <span class="font-semibold text-sm">{{ trans('Validation Details') }}</span>
-                                </div>
-                                <div class="text-sm space-y-1">
-                                    <p><span class="font-medium">{{ trans('VAT Number') }}:</span> {{ validationStatus.vatNumber }}</p>
-                                    <p><span class="font-medium">{{ trans('Status') }}:</span> 
-                                        <span :class="getStatusColor(validationStatus.status, validationStatus.valid)">
-                                            {{ getStatusText(validationStatus.status, validationStatus.valid) }}
-                                        </span>
-                                    </p>
-                                    <p><span class="font-medium">{{ trans('Country') }}:</span> {{ validationStatus.country.data.name }} ({{ validationStatus.country.data.code }})</p>
-                                </div>
-                            </div>
-                        </div>
-                    </Popover>
+                        class="text-sm" />
 
                     <div class="space-y-2">
                         <p class="text-sm text-gray-900">
