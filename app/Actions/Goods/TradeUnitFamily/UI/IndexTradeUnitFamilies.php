@@ -105,6 +105,18 @@ class IndexTradeUnitFamilies extends GrpAction
 
     public function htmlResponse(LengthAwarePaginator $tradeUnitFamilies, ActionRequest $request): Response
     {
+        $actions = [];
+        $actions[] = [
+                    'type'    => 'button',
+                    'style'   => 'create',
+                    'tooltip' => __('new trade unit family'),
+                    'label'   => __('trade unit family'),
+                    'route'   => [
+                        'name'       => preg_replace('/index$/', 'create', $request->route()->getName()),
+                        'parameters' => []
+                    ],
+                    'method' => 'get'
+                ];
         return Inertia::render(
             'Goods/TradeUnitsFamilies',
             [
@@ -115,6 +127,7 @@ class IndexTradeUnitFamilies extends GrpAction
                 'title'       => __('Trade Unit Families'),
                 'pageHead'    => [
                     'title'         => __('Trade Unit Families'),
+                     'actions'       => $actions,
                     'iconRight'     => [
                         'icon'  => ['fal', 'fa-atom'],
                         'title' => __('Trade Unit Families'),

@@ -10,11 +10,11 @@ use Lorisleiva\Actions\ActionRequest;
 class CreateTradeUnitFamily extends GrpAction
 {
     /** @noinspection PhpUnusedParameterInspection */
-    public function asController(ActionRequest $request): ActionRequest
+    public function asController(ActionRequest $request): Response
     {
         $this->initialisation(group(), $request);
 
-        return $request;
+        return $this->handle($request);
     }
 
     public function handle(ActionRequest $request): Response
