@@ -269,7 +269,7 @@ const updateVat = (newInputValue: string) => {
                             <span 
                                 @click="countryPopover.toggle($event)"
                                 class="cursor-pointer hover:underline"> 
-                                ({{ validationStatus.country.data.name }}) 
+                                ({{ validationStatus.country?.data?.name }}) 
                             </span>
                             
                             <Popover ref="countryPopover">
