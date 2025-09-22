@@ -52,7 +52,8 @@ const form = useForm({
 	contact_address: {},
 	poll_replies: initialPollReplies,
 	is_opt_in: false,
-	interest: []
+	interest: [],
+	tax_number: "",
 })
 
 // Define reactive variables
