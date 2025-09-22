@@ -12,6 +12,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useFormatTime } from '@/Composables/useFormatTime'
 import Popover from 'primevue/popover'
 import { inject } from "vue"
+import { Tooltip } from 'floating-vue' 
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 
 const props = defineProps<{
@@ -22,7 +23,7 @@ const props = defineProps<{
     fieldData?: any
 }>()
 
-console.log(props);
+// console.log(props);
 
 const emits = defineEmits()
 
@@ -270,50 +271,39 @@ watch(
             <div class="flex items-start justify-between">
                 <div class="flex items-center space-x-2">
                     <FontAwesomeIcon 
-                       
                         :icon="getStatusIcon(validationStatus.status, validationStatus.valid)"
                         :class="getStatusColor(validationStatus.status, validationStatus.valid)" 
                         class="text-sm" />
 
                     <div class="space-y-2">
-                        <p class="text-sm text-gray-900">
+                        <p class="text-sm">
                             <span class="font-medium "
                                 :class="getStatusColor(validationStatus.status, validationStatus.valid)">
                                 {{ getStatusText(validationStatus.status, validationStatus.valid) }}
                             </span>
-                            <span 
-                                @click="countryPopover.toggle($event)"
-                                class="cursor-pointer hover:underline"> 
-                                ({{ validationStatus.country?.data?.name }}) 
-                            </span>
-                            
-                            <Popover ref="countryPopover">
-                                <div class="p-4 max-w-xs">
-                                    <div class="space-y-2">
-                                        <h4 class="font-semibold text-sm">{{ trans('Country Information') }}</h4>
-                                        <div class="text-sm space-y-1">
-                                            <p><span class="font-medium">{{ trans('Country') }}:</span> {{ validationStatus.country.data.name }}</p>
-                                            <p><span class="font-medium">{{ trans('Country Code') }}:</span> {{ validationStatus.country.data.code }}</p>
+
+                            <!-- Country -->
+                            <Tooltip class="inline ml-1">
+                                <div class="inline hover:underline cursor-default">({{ validationStatus.country?.data?.name }})</div>
+
+                                <template #popper>
+                                    <div class="p-1 max-w-xs">
+                                        <div class="space-y-2">
+                                            <div class="text-sm space-y-1">
+                                                <p><span class="font-medium">{{ trans('Country') }}:</span> {{ validationStatus.country.data.name }}</p>
+                                                <p><span class="font-medium">{{ trans('Country Code') }}:</span> {{ validationStatus.country.data.code }}</p>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </Popover>
+                                </template>
+                            </Tooltip>
 
-                            <span 
-                                @click="datePopover.toggle($event)"
-                                class="cursor-pointer hover:underline">
+                            <!-- Last checked date -->
+                            <span
+                                v-tooltip="trans('Last checked :date', { date: formatDate(validationStatus?.checked_at) })"
+                                class="ml-1 cursor-default hover:underline">
                                 {{ formatDate(validationStatus.checked_at) }}
                             </span>
-                            
-                            <Popover ref="datePopover">
-                                <div class="p-4 max-w-xs">
-                                    <div class="space-y-2">
-                                        <div class="text-sm space-y-1">
-                                            <p><span class="font-medium">{{ trans('Last checked') }}:</span> {{ formatDate(validationStatus.checked_at) }}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </Popover>
                         </p>
                     </div>
                 </div>
