@@ -93,7 +93,7 @@ class UpdateTradeUnit extends GrpAction
         }
 
         $tradeUnit = $this->update($tradeUnit, $modelData, ['data', 'marketing_dimensions']);
-
+        $tradeUnit->refresh();
 
         if ($tradeUnit->wasChanged('gross_weight')) {
             foreach ($tradeUnit->stocks as $stock) {
@@ -115,8 +115,8 @@ class UpdateTradeUnit extends GrpAction
                 ProductHydrateMarketingIngredientsFromTradeUnits::dispatch($product);
             }
         }
-
-        if ($tradeUnit->wasChanged('trade_unit_family_id')) {
+        
+        if ($tradeUnit->wasChanged('trade_unit_family_id')) {   
             if($oldTradeUnitFamily) {
                 TradeUnitFamilyHydrateTradeUnits::dispatch($oldTradeUnitFamily);
             }
