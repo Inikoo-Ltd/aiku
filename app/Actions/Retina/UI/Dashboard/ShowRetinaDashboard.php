@@ -40,7 +40,7 @@ class ShowRetinaDashboard extends RetinaAction
                 'data'        => match ($this->shop->type) {
                     ShopTypeEnum::FULFILMENT => GetRetinaFulfilmentHomeData::run($this->fulfilmentCustomer, $request),
                     ShopTypeEnum::DROPSHIPPING => GetRetinaDropshippingHomeData::run($this->customer),
-                    ShopTypeEnum::B2B => GetRetinaB2BHomeData::run($this->customer, $request),
+                    ShopTypeEnum::B2B => GetRetinaB2BHomeData::run($this->customer),
                     default => []
                 },
             ]

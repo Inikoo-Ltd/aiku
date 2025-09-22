@@ -10,6 +10,7 @@ namespace App\Http\Resources\Fulfilment;
 
 use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Helpers\AddressResource;
+use App\Http\Resources\Helpers\TaxNumberResource;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -23,7 +24,7 @@ class FulfilmentCustomerResource extends JsonResource
         $fulfilmentCustomer = $this;
 
         return [
-            'radioTabs' => [
+            'radioTabs'                     => [
                 'pallets_storage' => $fulfilmentCustomer->pallets_storage,
                 'items_storage'   => $fulfilmentCustomer->items_storage,
                 // 'dropshipping'    => $fulfilmentCustomer->dropshipping,
@@ -39,7 +40,7 @@ class FulfilmentCustomerResource extends JsonResource
                 'slug' => $fulfilmentCustomer->fulfilment->slug,
                 'name' => $fulfilmentCustomer->fulfilment->shop->name,
             ],
-            'customer' => [
+            'customer'                      => [
                 'id'           => $fulfilmentCustomer->customer->id,
                 'slug'         => $fulfilmentCustomer->customer->slug,
                 'reference'    => $fulfilmentCustomer->customer->reference,
@@ -52,7 +53,9 @@ class FulfilmentCustomerResource extends JsonResource
                 'phone'        => $fulfilmentCustomer->customer->phone,
                 'created_at'   => $fulfilmentCustomer->customer->created_at,
                 'status'       => $fulfilmentCustomer->customer->status,
-                'approved_at'       => $fulfilmentCustomer->customer->approved_at ?? null,
+                'approved_at'  => $fulfilmentCustomer->customer->approved_at ?? null,
+                'tax_number'   => $fulfilmentCustomer->customer->taxNumber ? TaxNumberResource::make($fulfilmentCustomer->customer->taxNumber)->getArray() : [],
+
             ]
 
         ];
