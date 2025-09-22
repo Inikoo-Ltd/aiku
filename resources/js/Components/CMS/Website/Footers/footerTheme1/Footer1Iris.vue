@@ -22,7 +22,7 @@ library.add(faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinked
 const props = defineProps<{
     fieldValue?: FieldValue,
     modelValue?: FieldValue,
-    screenType?: string
+    screenType: 'mobile' | 'tablet' | 'desktop'
     language?: string
 }>();
 
@@ -96,7 +96,6 @@ const getValueColumn4Transleted = (value: string) => {
 </script>
 
 <template>
-    {{ language }}
     <div id="footer_1_iris" class="md:mx-0 pb-12 lg:pb-24 pt-4 md:pt-8 md:px-16 text-white" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         margin: 0,
