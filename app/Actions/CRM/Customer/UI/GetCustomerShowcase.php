@@ -15,6 +15,7 @@ use Lorisleiva\Actions\Concerns\AsObject;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
+use App\Http\Resources\Helpers\TaxNumberResource;
 
 class GetCustomerShowcase
 {
@@ -38,6 +39,7 @@ class GetCustomerShowcase
 
         return [
             'customer' => CustomersResource::make($customer)->getArray(),
+            'tax_number' => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : [],
             'address_management' => GetCustomerAddressManagement::run(customer:$customer),
             'require_approval' => Arr::get($customer->shop->settings, 'registration.require_approval', false),
             'approveRoute'       => [
