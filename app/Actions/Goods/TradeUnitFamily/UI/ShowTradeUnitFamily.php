@@ -58,6 +58,17 @@ class ShowTradeUnitFamily extends GrpAction
                         'icon'  => 'fal fa-atom'
                     ],
                     'title'   => $tradeUnitFamily->code,
+                    'actions' => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'label' => __('Edit'),
+                            'route' => [
+                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                                'parameters' => $request->route()->originalParameters()
+                            ]
+                        ]
+                    ]
                 ],
                 'tabs' => [
                     'current'    => $this->tab,
