@@ -311,8 +311,14 @@ const getStatusText = (status: string, valid: boolean) => {
                             </dd>
                         </div>
 
-                        <!-- Field: Tax Number -->
-                        <div v-if="data?.customer.tax_number && data.customer.tax_number.number" class="flex items-start w-full flex-none gap-x-4 px-6">
+                   
+                    </div>
+
+
+                </dl>
+            </div>
+            <!-- Field: Tax Number -->
+                        <div v-if="data?.customer.tax_number && data.customer.tax_number.number" class="flex items-start w-full flex-none gap-x-4 px-6 mt-6">
                             <dt v-tooltip="trans('Tax Number')" class="flex-none pt-1">
                                 <span class="sr-only">Tax Number</span>
                                 <FontAwesomeIcon icon="fal fa-receipt" class="text-gray-400" fixed-width aria-hidden="true"/>
@@ -320,45 +326,22 @@ const getStatusText = (status: string, valid: boolean) => {
                             <dd class="w-full text-gray-500">
                                 <div class="space-y-2">
                                     <!-- Tax Number Display -->
-                                    <div class="text-gray-900 font-medium">{{ data.customer.number }}</div>
+                                    <div class="text-gray-900 font-medium">{{ data.customer.tax_number.number }}</div>
                                     
                                     <!-- Validation Status Display -->
                                     <div class="p-3 bg-gray-50 rounded-lg border">
                                         <div class="flex items-start justify-between">
                                             <div class="flex items-center space-x-2">
                                                 <FontAwesomeIcon 
-                                                    @click="statusPopover.toggle($event)"
                                                     :icon="getStatusIcon(data.customer.tax_number.status, data.customer.tax_number.valid)"
                                                     :class="getStatusColor(data.customer.tax_number.status, data.customer.tax_number.valid)" 
-                                                    class="text-sm cursor-pointer" />
+                                                    class="text-sm" />
                                                 
-                                                <Popover ref="statusPopover">
-                                                    <div class="p-4 max-w-xs">
-                                                        <div class="space-y-2">
-                                                            <div class="flex items-center space-x-2">
-                                                                <FontAwesomeIcon 
-                                                                    :icon="getStatusIcon(data.customer.tax_number.status, data.customer.tax_number.valid)"
-                                                                    :class="getStatusColor(data.customer.tax_number.status, data.customer.tax_number.valid)" 
-                                                                    class="text-sm" />
-                                                                <span class="font-semibold text-sm">{{ trans('Validation Details') }}</span>
-                                                            </div>
-                                                            <div class="text-sm space-y-1">
-                                                                <p><span class="font-medium">{{ trans('VAT Number') }}:</span> {{ data.customer.tax_number.number }}</p>
-                                                                <p><span class="font-medium">{{ trans('Status') }}:</span> 
-                                                                    <span :class="getStatusColor(data.customer.tax_number.status, data.customer.tax_number.valid)">
-                                                                        {{ getStatusText(data.customer.tax_number.status, data.customer.tax_number.valid) }}
-                                                                    </span>
-                                                                </p>
-                                                                <p v-if="data.customer.tax_number.country"><span class="font-medium">{{ trans('Country') }}:</span> {{ data.customer.tax_number.country.name }} ({{ data.customer.tax_number.country.code }})</p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </Popover>
 
                                                 <div class="space-y-2">
                                                     <p class="text-sm text-gray-900">
                                                         <span class="font-medium "
-                                                            :class="getStatusColor(data.customer.tax_number.status, data.customer.tax_number.valid)">
+                                                            >
                                                             {{ getStatusText(data.customer.tax_number.status, data.customer.tax_number.valid) }}
                                                         </span>
                                                         <span v-if="data.customer.tax_number.country"
@@ -402,12 +385,6 @@ const getStatusText = (status: string, valid: boolean) => {
                                 </div>
                             </dd>
                         </div>
-                    </div>
-
-
-                </dl>
-            </div>
-            <!-- tax number info -->
         </div>
 
 
