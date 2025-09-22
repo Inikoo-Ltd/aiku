@@ -11,6 +11,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useFormatTime } from '@/Composables/useFormatTime'
+import Popover from 'primevue/popover'
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 
 const props = defineProps<{
@@ -121,6 +122,11 @@ const setActualValue = (valueObj: any, newValue: string): any => {
 const value = ref(setFormValue(props.form, props.fieldName))
 const vatValidationResult = ref<string | null>(null)
 const isFormDirty = ref(false)
+
+// Popover refs
+const statusPopover = ref()
+const countryPopover = ref()
+const datePopover = ref()
 
 // Computed properties for validation status display
 const validationStatus = computed(() => {
@@ -242,34 +248,77 @@ const updateVat = (newInputValue: string) => {
         <div v-if="validationStatus" class="mt-3 p-3 bg-gray-50 rounded-lg border">
             <div class="flex items-start justify-between">
                 <div class="flex items-center space-x-2">
-                    <FontAwesomeIcon :icon="getStatusIcon(validationStatus.status, validationStatus.valid)"
-                        :class="getStatusColor(validationStatus.status, validationStatus.valid)" class="text-sm" />
+                    <FontAwesomeIcon 
+                        @click="statusPopover.toggle($event)"
+                        :icon="getStatusIcon(validationStatus.status, validationStatus.valid)"
+                        :class="getStatusColor(validationStatus.status, validationStatus.valid)" 
+                        class="text-sm cursor-pointer" />
+                    
+                    <Popover ref="statusPopover">
+                        <div class="p-4 max-w-xs">
+                            <div class="space-y-2">
+                                <div class="flex items-center space-x-2">
+                                    <FontAwesomeIcon 
+                                        :icon="getStatusIcon(validationStatus.status, validationStatus.valid)"
+                                        :class="getStatusColor(validationStatus.status, validationStatus.valid)" 
+                                        class="text-sm" />
+                                    <span class="font-semibold text-sm">{{ trans('Validation Details') }}</span>
+                                </div>
+                                <div class="text-sm space-y-1">
+                                    <p><span class="font-medium">{{ trans('VAT Number') }}:</span> {{ validationStatus.vatNumber }}</p>
+                                    <p><span class="font-medium">{{ trans('Status') }}:</span> 
+                                        <span :class="getStatusColor(validationStatus.status, validationStatus.valid)">
+                                            {{ getStatusText(validationStatus.status, validationStatus.valid) }}
+                                        </span>
+                                    </p>
+                                    <p><span class="font-medium">{{ trans('Country') }}:</span> {{ validationStatus.country.data.name }} ({{ validationStatus.country.data.code }})</p>
+                                </div>
+                            </div>
+                        </div>
+                    </Popover>
+
                     <div class="space-y-2">
-                        <p class="text-sm font-medium text-gray-900">
-                            {{ trans('Validation Status') }}:
-                            <span :class="getStatusColor(validationStatus.status, validationStatus.valid)">
+                        <p class="text-sm text-gray-900">
+                            <span class="font-medium "
+                                :class="getStatusColor(validationStatus.status, validationStatus.valid)">
                                 {{ getStatusText(validationStatus.status, validationStatus.valid) }}
                             </span>
-                        </p>
+                            <span 
+                                @click="countryPopover.toggle($event)"
+                                class="cursor-pointer hover:underline"> 
+                                ({{ validationStatus.country.data.name }}) 
+                            </span>
+                            
+                            <Popover ref="countryPopover">
+                                <div class="p-4 max-w-xs">
+                                    <div class="space-y-2">
+                                        <h4 class="font-semibold text-sm">{{ trans('Country Information') }}</h4>
+                                        <div class="text-sm space-y-1">
+                                            <p><span class="font-medium">{{ trans('Country') }}:</span> {{ validationStatus.country.data.name }}</p>
+                                            <p><span class="font-medium">{{ trans('Country Code') }}:</span> {{ validationStatus.country.data.code }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Popover>
 
-
-                        <!-- Country Information -->
-                        <p v-if="validationStatus.country" class="text-xs text-gray-600 mt-1">
-                            {{ trans('Country') }}: {{ validationStatus.country.data.name }} ({{
-                            validationStatus.country.data.code }})
-                        </p>
-
-                        <p v-if="validationStatus.checked_at" class="text-xs text-gray-600 mt-1">
-                            {{ trans('Last checked') }}: {{ formatDate(validationStatus.checked_at) }}
+                            <span 
+                                @click="datePopover.toggle($event)"
+                                class="cursor-pointer hover:underline">
+                                {{ formatDate(validationStatus.checked_at) }}
+                            </span>
+                            
+                            <Popover ref="datePopover">
+                                <div class="p-4 max-w-xs">
+                                    <div class="space-y-2">
+                                        <div class="text-sm space-y-1">
+                                            <p><span class="font-medium">{{ trans('Last checked') }}:</span> {{ formatDate(validationStatus.checked_at) }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Popover>
                         </p>
                     </div>
                 </div>
-
-                <!-- VAT Number Display -->
-                <!-- <div class="text-right">
-                    <p class="text-xs text-gray-500">{{ trans('VAT Number') }}</p>
-                    <p class="text-sm font-mono text-gray-900">{{ validationStatus.vatNumber }}</p>
-                </div> -->
             </div>
         </div>
     </div>
