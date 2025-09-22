@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
+use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Models\CRM\Customer;
 use Illuminate\Support\Arr;
@@ -38,8 +39,7 @@ class GetCustomerShowcase
         }
 
         return [
-            'customer' => CustomersResource::make($customer)->getArray(),
-            'tax_number' => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : [],
+            'customer' => CustomerResource::make($customer)->getArray(),
             'address_management' => GetCustomerAddressManagement::run(customer:$customer),
             'require_approval' => Arr::get($customer->shop->settings, 'registration.require_approval', false),
             'approveRoute'       => [

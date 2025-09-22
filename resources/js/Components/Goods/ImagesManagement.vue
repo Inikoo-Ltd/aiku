@@ -15,8 +15,7 @@ import { capitalize } from "lodash"
 // Types
 import { Image as ImageTS } from "@/types/Image"
 import { routeType } from "@/types/route"
-import { faStar } from "@far"
-import { faStarAndCrescent, faStarChristmas } from "@fas"
+import { faStarChristmas } from "@fas"
 
 const props = defineProps<{
     data: {
@@ -251,7 +250,6 @@ function onDeleteFilesInList(categoryBox: any) {
     )
 }
 
-console.log('dddd', props)
 </script>
 
 <template>
