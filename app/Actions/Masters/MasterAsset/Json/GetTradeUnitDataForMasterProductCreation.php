@@ -10,6 +10,7 @@ namespace App\Actions\Masters\MasterAsset\Json;
 
 use App\Actions\GrpAction;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Traits\HasBucketImages;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Goods\TradeUnit;
@@ -19,6 +20,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class GetTradeUnitDataForMasterProductCreation extends GrpAction
 {
+    use HasBucketImages;
+
     public function rules(): array
     {
         return [
@@ -44,6 +47,7 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
                 'id'       => $tradeUnit->id,
                 'model'    => $tradeUnit,
                 'quantity' => $tradeUnitData['quantity'],
+                'images'   => $this->getImagesData($tradeUnit)
             ];
         }
 
@@ -90,10 +94,11 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
                 : null;
             $finalData[]                    = [
                 'id'              => $shop->id,
-                'org_stocks_data' => $orgStocksData
+                'org_stocks_data' => $orgStocksData,
+                'images'          => $tradeUnits[0]['images']
             ];
         }
-
+        
         return $finalData;
     }
 
