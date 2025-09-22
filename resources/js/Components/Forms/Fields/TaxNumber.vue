@@ -2,7 +2,7 @@
 import PureInput from "@/Components/Pure/PureInput.vue"
 import { set, get, debounce } from 'lodash-es'
 import { checkVAT, countries } from 'jsvat-next';
-import { ref, computed } from "vue"
+import { ref, computed, watch } from "vue"
 import { faExclamationCircle, faCheckCircle } from '@fas'
 import { faCopy } from '@fal'
 import { faSpinnerThird } from '@fad'
@@ -11,19 +11,18 @@ import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useFormatTime } from '@/Composables/useFormatTime'
 import Popover from 'primevue/popover'
-import form from "@/Components/Forms/Form.vue"
 import { inject } from "vue"
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 
 const props = defineProps<{
     form: any
-    fieldName: string
+    fieldName?: string
     options?: any
     refForms?: any
     fieldData?: any
 }>()
 
-// console.log(props);
+console.log(props);
 
 const emits = defineEmits()
 
@@ -208,7 +207,7 @@ const validateVAT = (vatInput: any) => {
     // Handle invalid VAT
     if (!validation.isValid) {
         const messageWarning = '🤔 ' + trans('Tax number looks invalid. Are you sure you want to save it?')
-        set(registrationWarning.value, ['tax_number'], messageWarning);
+        // set(registrationWarning.value, ['tax_number'], messageWarning);
         set(props.form, ['errors', props.fieldName], messageWarning);
         // props.form.reset();
         return updateFormValue(validation);;
@@ -242,6 +241,22 @@ const updateVat = (newInputValue: string) => {
     value.value = setActualValue(value.value, newInputValue)
     debouncedValidation(value.value)
 }
+
+// Watch for changes in fieldData to reset dirty state and show validation status
+watch(
+    () => props.fieldData,
+    (newFieldData, oldFieldData) => {
+        // Reset dirty state when fieldData is updated from server
+        if (newFieldData && newFieldData !== oldFieldData) {
+            // Check if the validation status has changed (indicating a server update)
+            const hasValidationData = newFieldData?.value?.status || newFieldData?.value?.checked_at
+            if (hasValidationData) {
+                isFormDirty.value = false
+            }
+        }
+    },
+    { deep: true }
+)
 </script>
 
 <template>
