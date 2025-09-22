@@ -115,7 +115,7 @@ const tabIconClass = function (
 			<select
 				id="tabs"
 				name="tabs"
-				class="block w-full disabled:bg-gray-200 capitalize rounded-md border-gray-300 focus:border-gray-500 focus:ring-gray-500"
+				class="block w-full disabled:bg-gray-200 rounded-md border-gray-300 focus:border-gray-500 focus:ring-gray-500"
 				@input="(val: any) => onChangeTab(val.target.value)"
 				:disabled="Object.keys(navigation ?? {})?.length < 2">
 				<option
@@ -123,7 +123,7 @@ const tabIconClass = function (
 					:key="tabSlug"
 					:selected="tabSlug == currentTab"
 					:value="tabSlug"
-					class="capitalize">
+					class="">
 					<FontAwesomeIcon
 						v-if="tabLoading == tabSlug"
 						icon="fad fa-spinner-third"
@@ -155,7 +155,7 @@ const tabIconClass = function (
 							:class="[
 								tabSlug === currentTab ? 'tabNavigationActive' : 'tabNavigation',
 							]"
-							class="relative group flex items-center py-2 px-1 font-medium capitalize text-left text-sm md:text-base w-fit"
+							class="relative group flex items-center py-2 px-1 font-medium text-left text-sm md:text-base w-fit"
 							:aria-current="tabSlug === currentTab ? 'page' : undefined">
 							<FontAwesomeIcon
 								v-if="tabLoading === tabSlug"
@@ -217,7 +217,7 @@ const tabIconClass = function (
 								:icon="tab.icon"
 								class="h-5 w-5"
 								aria-hidden="true" />
-							<span v-if="tab.type !== 'icon'" class="capitalize whitespace-nowrap">{{
+							<span v-if="tab.type !== 'icon'" class="whitespace-nowrap">{{
 								tab.title
 							}}</span>
 

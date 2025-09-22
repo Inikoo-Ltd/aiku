@@ -79,7 +79,7 @@ const setCurrent = (key) => {
                         <FontAwesomeIcon v-if="item.icon" aria-hidden="true"
                             class="flex-shrink-0 sm:-ml-1 sm:mr-3 h-6 w-6 text-gray-500 sm:text-gray-400 sm:group-hover:text-gray-500"
                             :icon="item.icon" />
-                        <span class="hidden sm:inline capitalize truncate">{{ trans(item.title) }}</span>
+                        <span class="hidden sm:inline truncate">{{ trans(item.title) }}</span>
                     </li>
                 </ul>
             </nav>
@@ -92,7 +92,7 @@ const setCurrent = (key) => {
                     class="pb-4 sm:pb-5 sm:gap-4 w-full">
                     <!-- Title -->
                     <dt v-if="fieldData.name != 'image_source' && fieldData.label"
-                        class="text-sm font-medium text-gray-500 capitalize">
+                        class="text-sm font-medium text-gray-500">
                         <div class="inline-flex items-start leading-none">
                             <span>{{ fieldData.label }}</span>
                         </div>
