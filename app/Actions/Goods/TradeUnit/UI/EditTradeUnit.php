@@ -286,6 +286,8 @@ class EditTradeUnit extends OrgAction
                                             [
                                                 'id' =>  $tradeUnit->tradeUnitFamily->id ?? null,
                                                 'code' =>  $tradeUnit->tradeUnitFamily->code ?? null,
+                                                'name' => $tradeUnit->tradeUnitFamily->name ?? null,
+                                                'number_trade_units' => $tradeUnit->tradeUnitFamily->stats->number_trade_units ?? 0
                                             ]
                                     ],
                                     'fetchRoute'    => [
