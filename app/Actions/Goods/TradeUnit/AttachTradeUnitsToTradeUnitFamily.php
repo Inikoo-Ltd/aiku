@@ -14,6 +14,7 @@ use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Models\Goods\TradeUnit;
 use App\Models\Goods\TradeUnitFamily;
 use Illuminate\Support\Arr;
+use Lorisleiva\Actions\ActionRequest;
 
 class AttachTradeUnitsToTradeUnitFamily extends GrpAction
 {
@@ -26,7 +27,7 @@ class AttachTradeUnitsToTradeUnitFamily extends GrpAction
 
         $tradeUnitFamily->refresh();
 
-        TradeUnitFamilyHydrateTradeUnits::dispatch($tradeUnitFamily);
+        TradeUnitFamilyHydrateTradeUnits::run($tradeUnitFamily);
     }
 
     public function rules(): array
@@ -38,9 +39,9 @@ class AttachTradeUnitsToTradeUnitFamily extends GrpAction
         return $rules;
     }
 
-    public function asController(TradeUnitFamily $tradeUnitFamily, array $modelData): void
+    public function asController(TradeUnitFamily $tradeUnitFamily, ActionRequest $request): void
     {
-        $this->initialisation($tradeUnitFamily->group, $modelData);
+        $this->initialisation($tradeUnitFamily->group, $request);
 
         $this->handle($tradeUnitFamily, $this->validatedData);
     }
