@@ -153,7 +153,7 @@ trait IsInvoiceUI
                     'key'        => 'delete_booked_in',
                     'ask_why'    => true,
                     'route'      => [
-                        'method'     => 'delete',
+                        'method'     => 'post',
                         'name'       => 'grp.models.invoice.delete',
                         'parameters' => [
                             'invoice' => $invoice->id
@@ -176,7 +176,7 @@ trait IsInvoiceUI
                     'key'               => 'delete_booked_in',
                     'ask_why'           => true,
                     'route'             => [
-                        'method'     => 'delete',
+                        'method'     => 'post',
                         'name'       => 'grp.models.invoice.delete',
                         'parameters' => [
                             'invoice' => $invoice->id
@@ -196,7 +196,7 @@ trait IsInvoiceUI
                     'key'        => 'delete_booked_in',
                     'ask_why'    => true,
                     'route'      => [
-                        'method'     => 'delete',
+                        'method'     => 'post',
                         'name'       => 'grp.models.invoice.delete',
                         'parameters' => [
                             'invoice' => $invoice->id

@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::name('invoice.')->prefix('invoice/{invoice:id}')->group(function () {
     Route::patch('update', UpdateInvoice::class)->name('update');
-    Route::delete('delete', DeleteInvoice::class)->name('delete');
+    Route::post('delete', DeleteInvoice::class)->name('delete');
     Route::delete('in-process/delete', DeleteInProcessInvoice::class)->name('in-process.delete');
     Route::post('payment-account/{paymentAccount:id}/payment', PayInvoice::class)->name('payment.store')->withoutScopedBindings();
 

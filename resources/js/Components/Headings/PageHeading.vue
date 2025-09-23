@@ -262,34 +262,39 @@ const setError = (e) => {
                     <Transition name="headlessui">
                         <PopoverPanel class="top-[120%] absolute z-10 right-0 bg-white shadow-lg border border-gray-300 rounded-md p-4 min-w-32 w-fit max-w-96">
                             <div class="flex flex-col items-end sm:flex-row flex-wrap justify-end sm:items-center gap-y-1 gap-x-2 rounded-md">
-                                <template v-for="action in data.wrapped_actions">
+                                <template v-for="(action, wrappedIdx) in data.wrapped_actions">
                                     <template v-if="action">
-                                        <!-- Button -->
-                                        <Action v-if="action.type == 'button'" :action="action" :dataToSubmit="dataToSubmit" />
-
-                                        <!-- ButtonGroup -->
-                                        <div v-if="action.type == 'buttonGroup' && action.button?.length" class="rounded-md flex flex-wrap justify-end gap-y-1" :class="[
-                                            (action.button?.length || 0) > 1 ? '' : '',
-                                        ]" :style="{
-                                        }">
-                                            <component v-for="(button, index) in action.button" :key="'buttonPH' + index + button.label"
-                                                       :is="button.route?.name ? Link : 'div'"
-                                                       :href="button.route?.name ? route(button.route.name, button.route.parameters) : '#'"
-                                                       class="" :method="button.route?.method || 'get'"
-                                                       @start="() => isButtonLoading = 'buttonGroup' + index"
-                                                       @finish="() => button.fullLoading ? false : isButtonLoading = false"
-                                                       @error="() => button.fullLoading ? isButtonLoading = false : false"
-                                                       :as="button.target ? 'a' : 'div'" :target="button.target">
-                                                <Button :style="button.style" :label="button.label" :icon="button.icon"
-                                                        :loading="isButtonLoading === 'buttonGroup' + index"
-                                                        :iconRight="button.iconRight" :disabled="button.disabled"
-                                                        :key="`ActionButton${button.label}${button.style}`"
-                                                        :tooltip="button.tooltip"
-                                                        class="inline-flex items-center h-full rounded-none text-sm border-none font-medium shadow-sm focus:ring-transparent focus:ring-offset-transparent focus:ring-0"
-                                                        :class="{ 'rounded-l-md': index === 0, 'rounded-r-md ': index === action.button?.length - 1 }">
-                                                </Button>
-                                            </component>
-                                        </div>
+                                        <slot :name="`wrapped-${kebabCase(action.key ? action.key : wrappedIdx.toString())}`" :action="action">
+                                            <span v-if="isShowDummySlotName">
+                                                {{ `wrapped-${kebabCase(action.key ? action.key : wrappedIdx.toString())}` }}
+                                            </span>
+                                            <!-- Button -->
+                                            <Action v-if="action.type == 'button'" :action="action" :dataToSubmit="dataToSubmit" />
+                                            
+                                            <!-- ButtonGroup -->
+                                            <div v-if="action.type == 'buttonGroup' && action.button?.length" class="rounded-md flex flex-wrap justify-end gap-y-1" :class="[
+                                                (action.button?.length || 0) > 1 ? '' : '',
+                                            ]" :style="{
+                                            }">
+                                                <component v-for="(button, index) in action.button" :key="'buttonPH' + index + button.label"
+                                                           :is="button.route?.name ? Link : 'div'"
+                                                           :href="button.route?.name ? route(button.route.name, button.route.parameters) : '#'"
+                                                           class="" :method="button.route?.method || 'get'"
+                                                           @start="() => isButtonLoading = 'buttonGroup' + index"
+                                                           @finish="() => button.fullLoading ? false : isButtonLoading = false"
+                                                           @error="() => button.fullLoading ? isButtonLoading = false : false"
+                                                           :as="button.target ? 'a' : 'div'" :target="button.target">
+                                                    <Button :style="button.style" :label="button.label" :icon="button.icon"
+                                                            :loading="isButtonLoading === 'buttonGroup' + index"
+                                                            :iconRight="button.iconRight" :disabled="button.disabled"
+                                                            :key="`ActionButton${button.label}${button.style}`"
+                                                            :tooltip="button.tooltip"
+                                                            class="inline-flex items-center h-full rounded-none text-sm border-none font-medium shadow-sm focus:ring-transparent focus:ring-offset-transparent focus:ring-0"
+                                                            :class="{ 'rounded-l-md': index === 0, 'rounded-r-md ': index === action.button?.length - 1 }">
+                                                    </Button>
+                                                </component>
+                                            </div>
+                                        </slot>
                                     </template>
                                 </template>
                             </div>

@@ -55,6 +55,7 @@ import InvoiceRefundPay from "@/Components/Segmented/InvoiceRefund/InvoiceRefund
 import ModalAfterConfirmationDelete from "@/Components/Utils/ModalAfterConfirmationDelete.vue";
 import ModalSupervisorList from "@/Components/Utils/ModalSupervisorList.vue";
 import Icon from "@/Components/Icon.vue"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 
 
 library.add(faAddressCard,faExpandArrows, faHockeyPuck, faCheck, faEnvelope, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faFileAlt, faDraftingCompass, faArrowCircleLeft, faTrashAlt, faOmega, faReceipt, faExclamationCircle, faCheckCircle, faSpinnerThird);
@@ -296,6 +297,26 @@ const taxNumberStatusText = computed(() => {
                         </template>
                     </ModalSupervisorList>
                 </template>
+            </div>
+        </template>
+        
+        <template #wrapped-delete-booked-in="{ action }">
+            <div class="w-full">
+                <ModalConfirmationDelete
+                    :routeDelete="action.route"
+                    isFullLoading
+                    isWithMessage
+                    keyMessage="deleted_note"
+                >
+                    <template #default="{ isOpenModal, changeModel }">
+                        <Button
+                            icon="fal fa-trash-alt"
+                            @click="changeModel"
+                            :style="'delete'"
+                            full
+                        />
+                    </template>
+                </ModalConfirmationDelete>
             </div>
         </template>
     </PageHeading>
