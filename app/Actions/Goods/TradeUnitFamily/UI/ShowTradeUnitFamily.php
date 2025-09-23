@@ -8,11 +8,13 @@
 
 namespace App\Actions\Goods\TradeUnitFamily\UI;
 
+use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInTradeUnitFamily;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\GrpAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\UI\SupplyChain\TradeUnitFamilyTabsEnum;
 use App\Enums\UI\SupplyChain\TradeUnitTabsEnum;
+use App\Http\Resources\Goods\TradeUnitsResource;
 use App\Models\Goods\TradeUnit;
 use App\Models\Goods\TradeUnitFamily;
 use Inertia\Inertia;
@@ -93,8 +95,12 @@ class ShowTradeUnitFamily extends GrpAction
                 fn () => GetTradeUnitFamilyShowcase::run($tradeUnitFamily)
                 : Inertia::lazy(fn () => GetTradeUnitFamilyShowcase::run($tradeUnitFamily)),
 
+                TradeUnitFamilyTabsEnum::TRADE_UNITS->value => $this->tab == TradeUnitFamilyTabsEnum::TRADE_UNITS->value ?
+                fn () => TradeUnitsResource::collection(IndexTradeUnitsInTradeUnitFamily::run($tradeUnitFamily, TradeUnitFamilyTabsEnum::TRADE_UNITS->value))
+                : Inertia::lazy(fn () => TradeUnitsResource::collection(IndexTradeUnitsInTradeUnitFamily::run($tradeUnitFamily, TradeUnitFamilyTabsEnum::TRADE_UNITS->value))),
+
             ]
-        );
+        )->table(IndexTradeUnitsInTradeUnitFamily::make()->tableStructure(prefix: TradeUnitFamilyTabsEnum::TRADE_UNITS->value));
     }
 
     public function getBreadcrumbs(TradeUnitFamily $tradeUnitFamily, string $routeName, array $routeParameters, $suffix = null): array

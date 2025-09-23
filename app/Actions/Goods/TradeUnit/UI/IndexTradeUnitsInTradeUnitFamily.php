@@ -16,12 +16,13 @@ use App\Models\Goods\TradeUnit;
 use App\Models\Goods\TradeUnitFamily;
 use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
+use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class GetTradeUnitsForTradeUnitFamily extends GrpAction
+class IndexTradeUnitsInTradeUnitFamily extends GrpAction
 {
     use WithGoodsAuthorisation;
 
@@ -51,10 +52,9 @@ class GetTradeUnitsForTradeUnitFamily extends GrpAction
 
         $queryBuilder = QueryBuilder::for(TradeUnit::class);
         $queryBuilder->where('trade_units.group_id', $this->group->id);
-        $queryBuilder->where(function ($query) use ($tradeUnitFamily) {
-            $query->whereNull('trade_units.trade_unit_family_id')
-                ->orWhereNot('trade_units.trade_unit_family_id', $tradeUnitFamily->id);
-        });
+        $queryBuilder->where('trade_units.trade_unit_family_id', $tradeUnitFamily->id);
+        $queryBuilder->leftJoin('trade_unit_stats', 'trade_unit_stats.trade_unit_id', 'trade_units.id');
+        
 
 
         $queryBuilder
@@ -69,11 +69,13 @@ class GetTradeUnitsForTradeUnitFamily extends GrpAction
                 'trade_units.marketing_dimensions',
                 'trade_units.volume',
                 'trade_units.type',
-                'trade_units.id'
+                'trade_units.id',
+                'trade_unit_stats.number_current_stocks',
+                'trade_unit_stats.number_current_products',
             ]);
 
 
-        return $queryBuilder->allowedSorts(['code', 'type', 'name'])
+        return $queryBuilder->allowedSorts(['code', 'type', 'name', 'number_current_stocks','number_current_products'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -83,4 +85,31 @@ class GetTradeUnitsForTradeUnitFamily extends GrpAction
     {
         return TradeUnitsResource::collection($tradeUnit);
     }
+
+        public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
+    {
+        return function (InertiaTable $table) use ($modelOperations, $prefix) {
+            if ($prefix) {
+                $table
+                    ->name($prefix)
+                    ->pageName($prefix.'Page');
+            }
+
+            $table
+                ->defaultSort('code')
+                ->withGlobalSearch()
+                ->withModelOperations($modelOperations)
+                ->withEmptyState(
+                    [
+                        'title' => __("No Trade Units found"),
+                    ],
+                )
+                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+
+            $table->column(key: 'net_weight', label: __('weight'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true);
+        };
+    }
+    
 }
