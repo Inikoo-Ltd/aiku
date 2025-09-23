@@ -36,6 +36,7 @@ import {CustomerSalesChannel} from "@/types/customer-sales-channel"
 import RetinaTablePortfoliosPlatform from "@/Components/Tables/Retina/RetinaTablePortfoliosPlatform.vue"
 import RetinaTablePortfoliosShopify from "@/Components/Tables/Retina/RetinaTablePortfoliosShopify.vue"
 import {ulid} from "ulid";
+import PlatformWarningNotConnected from "@/Components/Retina/Platform/PlatformWarningNotConnected.vue"
 
 
 library.add(faFileExcel, faBracketsCurly, faSyncAlt, faHandPointer, faPawClaws, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
@@ -81,11 +82,7 @@ const props = defineProps<{
         type: string
     }
     is_platform_connected: boolean
-    customer_sales_channel: {
-        id: number
-        slug: string
-        name: string
-    }
+    customer_sales_channel: CustomerSalesChannel
     manual_channels: object
     count_product_not_synced: number
 
@@ -364,25 +361,12 @@ const key = ulid()
         </template>
     </PageHeading>
 
-    <!-- Section: Alert if Platform not connected yet -->
-    <Message v-if="!is_platform_connected && !isPlatformManual" severity="error" class="m-4 ">
-        <div class="ml-2 font-normal flex flex-col gap-x-4 items-center sm:flex-row justify-between w-full">
-            <div>
-                <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true"/>
-                <div class="inline items-center gap-x-2">
-                    {{
-                        trans("Your channel is not connected yet to the platform. Please connect it to be able to synchronize your products.")
-                    }}
-                </div>
-            </div>
-
-            <div class="w-full sm:w-fit h-fit">
-                <Button v-if="customer_sales_channel?.reconnect_route?.name"
-                        @click="() => onClickReconnect(customer_sales_channel)" iconRight="fal fa-external-link"
-                        :label="trans('Connect')" zsize="xxs" type="secondary" full/>
-            </div>
-        </div>
-    </Message>
+    <!-- Section: Alert if platform not connected yet -->
+    <div v-if="!is_platform_connected && !isPlatformManual" class="px-2 md:px-6">
+        <PlatformWarningNotConnected
+            :customer_sales_channel="customer_sales_channel"
+        />
+    </div>
 
     <!-- Section: Alert if there is product not synced -->
     <Message v-if="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual" severity="warn"
