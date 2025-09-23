@@ -188,12 +188,12 @@ trait IsInvoiceUI
                 [
                     'supervisor' => true,
                     'type'       => 'button',
-                    'style'      => 'red_outline',
+                    'style'      => 'edit',
+                    'class' =>  ['color' => 'red !important'],
                     'tooltip'    => __('delete'),
                     'label'      => __('delete'),
                     'icon'       => $trashIcon,
                     'key'        => 'delete_booked_in',
-                    'full'       => true,
                     'ask_why'    => true,
                     'route'      => [
                         'method'     => 'delete',
@@ -208,10 +208,8 @@ trait IsInvoiceUI
         if ($this->parent instanceof Organisation) {
             $wrappedActions[] = [
                 'type'  => 'button',
-                'style' => 'tertiary',
-                'full'  => true,
+                'style' => 'edit',
                 'icon'  => 'fal fa-pencil',
-                'class' =>  ['borderColor' => '#4f46e5', 'color' => '#4f46e5'],
                 'label' => __('edit'),
                 'route' => [
                     'name'       => 'grp.org.accounting.invoices.edit',
@@ -234,11 +232,10 @@ trait IsInvoiceUI
         $wrappedActions[] =
             [
                 'type'  => 'button',
-                'style' => 'tertiary',
+                'style' => 'edit',
                 'label' => __('send invoice'),
                 'icon'  => 'fal fa-file-invoice',
                 'key'   => 'send-invoice',
-                'full'  => true,
                 'route' => [
                     'method'     => 'post',
                     'name'       => 'grp.models.invoice.send_invoice',
@@ -252,7 +249,8 @@ trait IsInvoiceUI
             $wrappedActions[] =
                 [
                     'type'  => 'button',
-                    'style' => 'create',
+                    'style' => 'edit',
+                    'icon' => 'fal fa-plus',
                     'label' => __('create refund'),
                     'route' => [
                         'method'     => 'post',
