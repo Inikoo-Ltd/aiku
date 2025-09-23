@@ -154,12 +154,13 @@ const locale = inject('locale', aikuLocaleStructure)
                     <ModalConfirmationDelete
                         v-if="platform.type === 'shopify'"
                         :routeDelete="{
+                            method: 'patch',
                             name: 'retina.models.customer_sales_channel.shopify_reset',
                             parameters: {
                                 customerSalesChannel: customer_sales_channel.id,
                             }
                         }"
-                        :title="trans('Are you sure you want to reset channel :channel?', { channel: customer_sales_channel?.name })"
+                        :title="trans('Are you sure you want to reset channel :channel?', { channel: customer_sales_channel?.name || '' })"
                         :description="trans('This will reset the products as will and will need to be re-matched, orders  associated with this channel will not be affected.')"
                         isFullLoading
                         :noLabel="trans('Yes, reset channel')"
