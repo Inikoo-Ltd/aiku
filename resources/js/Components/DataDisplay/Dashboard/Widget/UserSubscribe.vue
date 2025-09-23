@@ -189,7 +189,7 @@ const confirmDeleteWidgetItem = (event: Event, item: any, index: number) => {
 		<div class="rounded-lg bg-white shadow border border-gray-200">
 			<!-- Card Header -->
 			<div class="px-4 py-5 flex items-center justify-between">
-				<dt class="text-lg font-semibold text-gray-500 capitalize">Subscriber</dt>
+				<dt class="text-lg font-semibold text-gray-500">{{ trans("Subscriber") }}</dt>
 				<FontAwesomeIcon
 					:icon="faEdit"
 					class="text-blue-500 cursor-pointer"

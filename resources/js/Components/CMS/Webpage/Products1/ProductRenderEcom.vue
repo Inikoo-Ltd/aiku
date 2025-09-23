@@ -192,7 +192,7 @@ const urlLoginWithRedirect = () => {
                 <!-- SKU and RRP -->
                 <div class="flex gap-x-2">
                     <div class="w-full">
-                        <div class="flex justify-between text-xs text-gray-600 mb-1 capitalize">
+                        <div class="flex justify-between text-xs text-gray-600 mb-1">
                             <span>{{ product?.code }}</span>
                             <!-- <span v-if="product.rrp">
                                 RRP: {{ locale.currencyFormat(currency.code,product.rrp) }}/ {{ product.unit }}

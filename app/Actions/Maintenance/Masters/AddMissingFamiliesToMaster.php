@@ -21,7 +21,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class AddMissingProductCategoriesToMaster
+class AddMissingFamiliesToMaster
 {
     use asAction;
 
@@ -49,6 +49,7 @@ class AddMissingProductCategoriesToMaster
         $foundMasterFamilyData = DB::table('master_product_categories')
             ->where('master_shop_id', $masterShop->id)
             ->where('type', MasterProductCategoryTypeEnum::FAMILY->value)
+            ->where('deleted_at', null)
             ->whereRaw("lower(code) = lower(?)", [$code])->first();
 
         $foundMasterFamily = null;
@@ -77,6 +78,7 @@ class AddMissingProductCategoriesToMaster
                 'code' => $family->code,
                 'name' => $family->name,
             ];
+
             if ($family->description && !$foundMasterFamily->description) {
                 data_set($dataToUpdate, 'description', $family->description);
             }
@@ -145,7 +147,7 @@ class AddMissingProductCategoriesToMaster
 
     public function getCommandSignature(): string
     {
-        return 'repair:add_missing_product_categories_to_master {from} {to}';
+        return 'repair:add_missing_families_to_master {from} {to}';
     }
 
     /**

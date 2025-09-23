@@ -196,9 +196,9 @@ class UpdateProductCategory extends OrgAction
                     table: 'product_categories',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
                         ['column' => 'type', 'value' => $this->productCategory->type, 'operator' => '='],
-                        ['column' => 'id', 'value' => $this->productCategory->id, 'operator' => '!=']
+                        ['column' => 'id', 'value' => $this->productCategory->id, 'operator' => '!='],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
 
                     ]
                 ),

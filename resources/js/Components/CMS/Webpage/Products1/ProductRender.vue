@@ -195,7 +195,7 @@ const onUnselectFavourite = (product: ProductResource) => {
             </div>
 
             <!-- SKU and RRP -->
-            <div class="flex justify-between text-xs text-gray-600 mb-1 capitalize">
+            <div class="flex justify-between text-xs text-gray-600 mb-1">
                 <span>{{ product?.code }}</span>
                 <span v-if="product.rpp">
                     RRP: {{ locale.currencyFormat((currency.code,product.rpp || 0)) }}/ {{ product.unit }}

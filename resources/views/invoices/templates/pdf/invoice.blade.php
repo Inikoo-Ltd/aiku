@@ -422,11 +422,11 @@
             <td width="33%" style="color:#000;text-align: left;">
                 <small>
                     {{$shop->name}}<br>
-                    @if(Arr::exists($shop->data,'vat_number'))
-                        {{__('VAT Number')}}:<b>{{Arr::get($shop->data,'vat_number')}}</b><br>
+                    @if($shop->taxNumber)
+                        {{__('VAT Number')}}:<b>{{$shop->taxNumber?->number}}</b><br>
                     @endif
-                    @if(Arr::exists($shop->data,'registration_number'))
-                        {{__('Registration Number')}}: {{Arr::get($shop->data,'registration_number')}}
+                    @if($shop->identity_document_number)
+                        {{__('Registration Number')}}: {{$shop->identity_document_number}}
                     @endif
                 </small>
             </td>

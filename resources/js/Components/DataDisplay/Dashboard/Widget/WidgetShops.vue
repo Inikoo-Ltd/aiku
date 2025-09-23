@@ -119,7 +119,7 @@ const isLoadingVisit = ref<number | null>(null)
 <template>
     <div class="flex justify-between gap-x-4 px-4 py-5 sm:p-6 rounded-lg bg-gray-50 border border-gray-200 tabular-nums">
         <dd class="flex flex-col gap-x-2">
-            <div class="text-base mb-1 text-gray-400 capitalize">
+            <div class="text-base mb-1 text-gray-400">
                 {{ trans('Shops sales') }}
                 <FontAwesomeIcon v-tooltip="trans('The graph of column sales. Only active shop is shown.')" :icon="faInfoCircle" class="hover:text-gray-600" fixed-width aria-hidden="true" />
             </div>

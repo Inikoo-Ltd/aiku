@@ -6,7 +6,7 @@
                 <p class="text-left text-gray-100">
                     <!-- <span class="font-semibold">{{ option.user.contact_name }}</span>  -->
                     <span class="font-semibold text-gray-100">{{ option.user.username }}</span> - 
-                    <span class="capitalize text-gray-300">{{ option.route.module }}</span>
+                    <span class="text-gray-300">{{ option.route.module }}</span>
                 </p>
             </div>
         </div>

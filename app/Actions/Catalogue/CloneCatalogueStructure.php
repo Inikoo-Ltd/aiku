@@ -10,14 +10,17 @@ namespace App\Actions\Catalogue;
 
 use App\Actions\Catalogue\ProductCategory\AttachFamiliesToDepartment;
 use App\Actions\Catalogue\ProductCategory\AttachFamiliesToSubDepartment;
+use App\Actions\Catalogue\ProductCategory\CloneProductCategoryImagesFromMaster;
 use App\Actions\Catalogue\ProductCategory\DeleteProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategory;
 use App\Actions\Catalogue\ProductCategory\StoreProductCategoryWebpage;
 use App\Actions\Catalogue\ProductCategory\StoreSubDepartment;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
+use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Masters\MasterProductCategory\AttachMasterFamiliesToMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\AttachMasterFamiliesToMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\DeleteMasterProductCategory;
+use App\Actions\Masters\MasterProductCategory\MatchProductCategoryToMaster;
 use App\Actions\Masters\MasterProductCategory\StoreMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\StoreMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategory;
@@ -26,6 +29,7 @@ use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
+use App\Models\Helpers\Language;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use Illuminate\Console\Command;
@@ -106,7 +110,7 @@ class CloneCatalogueStructure
             foreach (
                 DB::table('master_product_categories')
                     ->where('type', $type)
-                    ->where('parent_id', $parent->id)->get() as $familyData
+                    ->where('master_parent_id', $parent->id)->get() as $familyData
             ) {
                 $masterFamily = MasterProductCategory::find($familyData->id);
                 if ($masterFamily) {
@@ -150,11 +154,22 @@ class CloneCatalogueStructure
     public function cloneDepartments(MasterShop|Shop $fromShop, MasterShop|Shop $shop): void
     {
         /** @var ProductCategory|MasterProductCategory $fromDepartment */
-        foreach ($fromShop->departments() as $fromDepartment) {
-            if ($shop instanceof Shop) {
-                $this->upsertDepartment($shop, $fromDepartment);
-            } else {
-                $this->upsertMasterDepartment($shop, $fromDepartment);
+
+        if ($fromShop instanceof MasterShop) {
+            foreach ($fromShop->getMasterDepartments() as $fromDepartment) {
+                if ($shop instanceof Shop) {
+                    $this->upsertDepartment($shop, $fromDepartment);
+                } else {
+                    $this->upsertMasterDepartment($shop, $fromDepartment);
+                }
+            }
+        } else {
+            foreach ($fromShop->departments() as $fromDepartment) {
+                if ($shop instanceof Shop) {
+                    $this->upsertDepartment($shop, $fromDepartment);
+                } else {
+                    $this->upsertMasterDepartment($shop, $fromDepartment);
+                }
             }
         }
     }
@@ -226,27 +241,69 @@ class CloneCatalogueStructure
         $foundDepartmentData = DB::table('product_categories')
             ->where('shop_id', $shop->id)
             ->where('type', ProductCategoryTypeEnum::DEPARTMENT->value)
+            ->where('deleted_at', null)
             ->whereRaw("lower(code) = lower(?)", [$code])->first();
 
+        if ($department instanceof MasterProductCategory) {
+            $fromLanguage = Language::where('code', 'en')->first();
+        } else {
+            $fromLanguage = $department->shop->language;
+        }
+        $toLanguage = $shop->language;
 
         if (!$foundDepartmentData) {
+            $descriptionFields = [
+                'name'                          => Translate::run($department->name, $fromLanguage, $toLanguage),
+                'description'                   => Translate::run($department->description, $fromLanguage, $toLanguage),
+                'description_title'             => Translate::run($department->description_title, $fromLanguage, $toLanguage),
+                'description_extra'             => Translate::run($department->description_extra, $fromLanguage, $toLanguage),
+                'is_name_reviewed'              => false,
+                'is_description_title_reviewed' => false,
+                'is_description_reviewed'       => false,
+                'is_description_extra_reviewed' => false,
+            ];
 
             $foundDepartment = StoreProductCategory::make()->action(
                 $shop,
-                [
-                    'code'        => $department->code,
-                    'name'        => $department->name,
-                    'description' => $department->description,
-                    'type'        => ProductCategoryTypeEnum::DEPARTMENT
-                ]
+                array_merge(
+                    $descriptionFields,
+                    [
+                        'code' => $department->code,
+                        'type' => ProductCategoryTypeEnum::DEPARTMENT
+                    ]
+                )
             );
         } else {
             $foundDepartment = ProductCategory::find($foundDepartmentData->id);
+
             if ($foundDepartment) {
-                $dataToUpdate = [
-                    'code' => $department->code,
-                    'name' => $department->name,
-                ];
+                $descriptionFields = [];
+                if ($foundDepartment->name == '' && $department->name) {
+                    $descriptionFields['name']             = Translate::run($department->name, $fromLanguage, $toLanguage);
+                    $descriptionFields['is_name_reviewed'] = false;
+                }
+                if ($foundDepartment->description == '' && $department->description) {
+                    $descriptionFields['description']             = Translate::run($department->description, $fromLanguage, $toLanguage);
+                    $descriptionFields['is_description_reviewed'] = false;
+                }
+                if ($foundDepartment->description_title == '' && $department->description_title) {
+                    $descriptionFields['description_title']             = Translate::run($department->description_title, $fromLanguage, $toLanguage);
+                    $descriptionFields['is_description_title_reviewed'] = false;
+                }
+                if ($foundDepartment->description_extra == '' && $department->description_extra) {
+                    $descriptionFields['description_extra']             = Translate::run($department->description_extra, $fromLanguage, $toLanguage);
+                    $descriptionFields['is_description_extra_reviewed'] = false;
+                }
+
+                $dataToUpdate = array_merge(
+                    $descriptionFields,
+                    [
+                        'code' => $department->code,
+                        'type' => ProductCategoryTypeEnum::DEPARTMENT
+                    ]
+                );
+
+
                 if ($department->description) {
                     data_set($dataToUpdate, 'description', $department->description);
                 }
@@ -257,7 +314,6 @@ class CloneCatalogueStructure
                 );
             }
         }
-
         if ($foundDepartment && !$foundDepartment->webpage) {
             $webpage = StoreProductCategoryWebpage::make()->action($foundDepartment);
             PublishWebpage::make()->action(
@@ -266,6 +322,13 @@ class CloneCatalogueStructure
                     'comment' => 'Published after cloning',
                 ]
             );
+        }
+
+        if ($foundDepartment) {
+            MatchProductCategoryToMaster::run($foundDepartment);
+        }
+        if ($department->parent instanceof MasterProductCategory) {
+            CloneProductCategoryImagesFromMaster::run($foundDepartment);
         }
 
 
@@ -283,6 +346,7 @@ class CloneCatalogueStructure
         $foundMasterDepartmentData = DB::table('master_product_categories')
             ->where('master_shop_id', $masterShop->id)
             ->where('type', MasterProductCategoryTypeEnum::DEPARTMENT->value)
+            ->where('deleted_at', null)
             ->whereRaw("lower(code) = lower(?)", [$code])->first();
 
 
@@ -326,39 +390,81 @@ class CloneCatalogueStructure
         $foundSubDepartmentData = DB::table('product_categories')
             ->where('shop_id', $department->shop->id)
             ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT->value)
+            ->where('deleted_at', null)
             ->whereRaw("lower(code) = lower(?)", [$code])->first();
 
+        if ($subDepartment instanceof MasterProductCategory) {
+            $fromLanguage = Language::where('code', 'en')->first();
+        } else {
+            $fromLanguage = $subDepartment->shop->language;
+        }
+        $toLanguage = $department->shop->language;
 
         if (!$foundSubDepartmentData) {
             /** @var ProductCategory $department */
             $department = $this->upsertDepartment($department->shop, $subDepartment->parent);
 
+            $descriptionFields = [
+                'name'                          => Translate::run($subDepartment->name, $fromLanguage, $toLanguage),
+                'description'                   => Translate::run($subDepartment->description, $fromLanguage, $toLanguage),
+                'description_title'             => Translate::run($subDepartment->description_title, $fromLanguage, $toLanguage),
+                'description_extra'             => Translate::run($subDepartment->description_extra, $fromLanguage, $toLanguage),
+                'is_name_reviewed'              => false,
+                'is_description_title_reviewed' => false,
+                'is_description_reviewed'       => false,
+                'is_description_extra_reviewed' => false,
+            ];
 
-            $subDepartment = StoreSubDepartment::make()->action(
+
+            $foundSubDepartment = StoreSubDepartment::make()->action(
                 $department,
-                [
-                    'code'        => $subDepartment->code,
-                    'name'        => $subDepartment->name,
-                    'description' => $subDepartment->description,
-                ]
+
+                array_merge(
+                    $descriptionFields,
+                    [
+                        'code' => $subDepartment->code
+                    ]
+                )
             );
         } else {
             $foundSubDepartment = ProductCategory::find($foundSubDepartmentData->id);
-            $dataToUpdate       = [
-                'code' => $subDepartment->code,
-                'name' => $subDepartment->name,
-            ];
-            if ($subDepartment->description) {
-                data_set($dataToUpdate, 'description', $subDepartment->description);
+
+            $descriptionFields = [];
+            if ($foundSubDepartment->name == '' && $subDepartment->name) {
+                $descriptionFields['name']             = Translate::run($subDepartment->name, $fromLanguage, $toLanguage);
+                $descriptionFields['is_name_reviewed'] = false;
             }
-            $subDepartment = UpdateProductCategory::make()->action(
+            if ($foundSubDepartment->description == '' && $subDepartment->description) {
+                $descriptionFields['description']             = Translate::run($subDepartment->description, $fromLanguage, $toLanguage);
+                $descriptionFields['is_description_reviewed'] = false;
+            }
+            if ($foundSubDepartment->description_title == '' && $subDepartment->description_title) {
+                $descriptionFields['description_title']             = Translate::run($subDepartment->description_title, $fromLanguage, $toLanguage);
+                $descriptionFields['is_description_title_reviewed'] = false;
+            }
+            if ($foundSubDepartment->description_extra == '' && $subDepartment->description_extra) {
+                $descriptionFields['description_extra']             = Translate::run($subDepartment->description_extra, $fromLanguage, $toLanguage);
+                $descriptionFields['is_description_extra_reviewed'] = false;
+            }
+
+
+            $dataToUpdate = array_merge(
+                $descriptionFields,
+                [
+                    'code' => $subDepartment->code,
+                ]
+            );
+
+
+            $foundSubDepartment = UpdateProductCategory::make()->action(
                 $foundSubDepartment,
                 $dataToUpdate
             );
         }
 
-        if (!$subDepartment->webpage) {
-            $webpage = StoreProductCategoryWebpage::make()->action($subDepartment);
+
+        if (!$foundSubDepartment->webpage) {
+            $webpage = StoreProductCategoryWebpage::make()->action($foundSubDepartment);
             PublishWebpage::make()->action(
                 $webpage,
                 [
@@ -367,7 +473,15 @@ class CloneCatalogueStructure
             );
         }
 
-        return $subDepartment;
+
+        MatchProductCategoryToMaster::run($foundSubDepartment);
+
+        if ($subDepartment->parent instanceof MasterProductCategory) {
+            CloneProductCategoryImagesFromMaster::run($foundSubDepartment);
+        }
+
+
+        return $foundSubDepartment;
     }
 
     /**
@@ -379,6 +493,7 @@ class CloneCatalogueStructure
         $foundMasterSubDepartmentData = DB::table('master_product_categories')
             ->where('master_shop_id', $masterDepartment->master_shop_id)
             ->where('type', MasterProductCategoryTypeEnum::SUB_DEPARTMENT->value)
+            ->where('deleted_at', null)
             ->whereRaw("lower(code) = lower(?)", [$code])->first();
 
         if (!$foundMasterSubDepartmentData) {
