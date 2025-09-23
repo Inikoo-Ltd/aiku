@@ -16,6 +16,12 @@ use App\Actions\Web\Webpage\Iris\ShowIrisSitemap;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use Illuminate\Support\Facades\Route;
 
+
+Route::get('wi/{image}', function () {
+    return redirect('/image_not_found.png');
+})->where('image', '.*')->name('wi.not_found');
+    
+
 Route::get(".well-known/apple-developer-merchantid-domain-association", function () {
     return config('services.apple_pay.verification_string', '');
 })->name("apple-pay-verification");
