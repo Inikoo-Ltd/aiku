@@ -9,6 +9,7 @@
 namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
+use App\Actions\Ordering\Order\RollbackDispatchedOrder;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
@@ -21,21 +22,29 @@ class RollbackDispatchedDeliveryNote extends OrgAction
 {
     public function handle(DeliveryNote $deliveryNote): void
     {
-        if ($deliveryNote->orders?->first()?->invoices?->count()) {
+        if ($deliveryNote->orders?->first()?->invoices()?->exists() && $deliveryNote->type == DeliveryNoteTypeEnum::ORDER) {
             throw ValidationException::withMessages(['message' => __('You need to delete invoice before rollback the delivery notes')]);
         }
 
         UpdateDeliveryNote::make()->action($deliveryNote, [
-            'state' => $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT ? DeliveryNoteStateEnum::PACKED : DeliveryNoteStateEnum::FINALISED,
+            'state' => DeliveryNoteStateEnum::PACKED,
             'dispatched_at' => null,
+            'finalised_at' => null
         ]);
 
         foreach ($deliveryNote->deliveryNoteItems as $item) {
             if ($item->state == DeliveryNoteItemStateEnum::DISPATCHED) {
                 UpdateDeliveryNoteItem::make()->action($item, [
-                    'state' => $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT ? DeliveryNoteItemStateEnum::PACKED : DeliveryNoteItemStateEnum::FINALISED,
+                    'state' => DeliveryNoteItemStateEnum::PACKED,
                     'dispatched_at' => null,
+                    'finalised_at' => null
                 ]);
+            }
+        }
+
+        if($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
+            foreach($deliveryNote->orders as $order) {
+               RollbackDispatchedOrder::make()->action($order, true);
             }
         }
     }
