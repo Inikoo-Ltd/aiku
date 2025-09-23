@@ -97,7 +97,7 @@ const getPortfoliosList = async (url?: string) => {
   try {
     const tabRoute = props.tabs?.[activeTab.value]?.routeFetch || props.routeFetch
     const currentTab = props.tabs?.[activeTab.value]
-    console.log('sdsd',props.routeFetch)
+    console.log('sdsd', props.routeFetch)
     const params: Record<string, any> = { ...tabRoute.parameters }
 
     // ✅ Only append search if tab has "search: true"
@@ -187,6 +187,11 @@ onUnmounted(() => {
 const clearAll = () => {
   selectedProduct.value = []
 }
+
+const deleteFormCommited = (item) => {
+  committedProducts.value = committedProducts.value.filter(p => p.id !== item.id); emits('update:modelValue', [...committedProducts.value]), emits('after-delete')
+}
+
 </script>
 
 <template>
@@ -203,36 +208,39 @@ const clearAll = () => {
         </div>
       </div>
 
-      <div v-if="committedProducts.length" class="border rounded-md overflow-hidden">
-        <div v-for="item in committedProducts" :key="item.id"
-          class="flex items-center justify-between gap-4 p-2 border-b last:border-b-0 bg-white hover:bg-gray-50">
+      <div v-if="committedProducts.length" class=" rounded-md overflow-hidden">
+        <slot name="committed-list" :list="committedProducts" :deleteFormCommited="deleteFormCommited" >
+          <div v-for="item in committedProducts" :key="item.id"
+            class="flex items-center justify-between gap-4 p-2 border-b last:border-b-0 bg-white hover:bg-gray-50">
 
-          <!-- Info -->
-          <div class="flex items-center gap-3">
-            <Image v-if="item.image" :src="item.image.thumbnail" class="w-12 h-12 rounded object-cover" />
-            <div>
-              <div class="font-medium leading-none">{{ item.name }}</div>
-              <div class="flex justify-beetween mt-1 gap-5">
-                <div class="text-xs text-gray-500">{{ item.code || '-' }}</div>
-                <div v-if="item.value" class="text-xs text-gray-500">
-                  {{ locale.currencyFormat(layout.app?.currency?.code, item.value || 0) }}
+            <!-- Info -->
+            <div class="flex items-center gap-3">
+              <Image v-if="item.image" :src="item.image.thumbnail" class="w-12 h-12 rounded object-cover" />
+              <div>
+                <div class="font-medium leading-none">{{ item.name }}</div>
+                <div class="flex justify-beetween mt-1 gap-5">
+                  <div class="text-xs text-gray-500">{{ item.code || '-' }}</div>
+                  <div v-if="item.value" class="text-xs text-gray-500">
+                    {{ locale.currencyFormat(layout.app?.currency?.code, item.value || 0) }}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- Quantity + Delete -->
-          <div class="flex items-center gap-2">
-            <NumberWithButtonSave :key="item.id + '-' + (item[props.key_quantity] || 1)"
-              :modelValue="item[props.key_quantity] || 1" :bindToTarget="{ min: 1 }"
-              @update:modelValue="(val: number) => { item[props.key_quantity] = val; emits('update:modelValue', [...committedProducts]) }"
-              noUndoButton noSaveButton parentClass="w-min" />
-            <button class="text-red-500 hover:text-red-700 px-4"
-              @click="committedProducts = committedProducts.filter(p => p.id !== item.id); emits('update:modelValue', [...committedProducts]), emits('after-delete')">
-              <FontAwesomeIcon :icon="faTrashAlt" />
-            </button>
+            <!-- Quantity + Delete -->
+            <div  class="flex items-center gap-2">
+              <NumberWithButtonSave v-if="withQuantity" :key="item.id + '-' + (item[props.key_quantity] || 1)"
+                :modelValue="item[props.key_quantity] || 1" :bindToTarget="{ min: 1 }"
+                @update:modelValue="(val: number) => { item[props.key_quantity] = val; emits('update:modelValue', [...committedProducts]) }"
+                noUndoButton noSaveButton parentClass="w-min" />
+              <button class="text-red-500 hover:text-red-700 px-4"
+                @click="()=>deleteFormCommited(item)">
+                <FontAwesomeIcon :icon="faTrashAlt" />
+              </button>
+            </div>
           </div>
-        </div>
+        </slot>
+
       </div>
       <div v-else>
         <div class="border rounded-md bg-gray-50 p-6 text-center text-gray-500">
@@ -274,7 +282,7 @@ const clearAll = () => {
         </div>
 
         <!-- list + pagination -->
-        <div class="h-full md:h-[570px] text-base font-normal">
+        <div class="h-full  text-base font-normal">
           <div class="col-span-4 pb-8 md:pb-2 h-fit overflow-auto flex flex-col">
 
             <!-- header -->
