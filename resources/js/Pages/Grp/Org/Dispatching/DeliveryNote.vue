@@ -125,7 +125,6 @@ const props = defineProps<{
     }
 }>();
 
-console.log(props);
 
 const currentTab = ref(props.tabs?.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
