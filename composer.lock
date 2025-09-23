@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "492ef355d3da789941116abc0948d83c",
+    "content-hash": "f7402b6f4a549e3d70717aa682dfebf8",
     "packages": [
         {
             "name": "adawolfa/isdoc",
@@ -5790,16 +5790,16 @@
         },
         {
             "name": "inspector-apm/inspector-laravel",
-            "version": "4.15.3",
+            "version": "4.15.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/inspector-apm/inspector-laravel.git",
-                "reference": "803985fb7665de8e072208b676697a6cd5cb7136"
+                "reference": "688bad20f9eefac401c83db0c2693b12cbdc935f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/inspector-apm/inspector-laravel/zipball/803985fb7665de8e072208b676697a6cd5cb7136",
-                "reference": "803985fb7665de8e072208b676697a6cd5cb7136",
+                "url": "https://api.github.com/repos/inspector-apm/inspector-laravel/zipball/688bad20f9eefac401c83db0c2693b12cbdc935f",
+                "reference": "688bad20f9eefac401c83db0c2693b12cbdc935f",
                 "shasum": ""
             },
             "require": {
@@ -5850,9 +5850,9 @@
             ],
             "support": {
                 "issues": "https://github.com/inspector-apm/inspector-laravel/issues",
-                "source": "https://github.com/inspector-apm/inspector-laravel/tree/4.15.3"
+                "source": "https://github.com/inspector-apm/inspector-laravel/tree/4.15.8"
             },
-            "time": "2025-08-24T08:24:18+00:00"
+            "time": "2025-09-15T15:49:58+00:00"
         },
         {
             "name": "inspector-apm/inspector-php",
@@ -24766,7 +24766,7 @@
     ],
     "aliases": [],
     "minimum-stability": "beta",
-    "stability-flags": [],
+    "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
@@ -24774,6 +24774,7 @@
         "ext-bcmath": "*",
         "ext-curl": "*",
         "ext-gd": "*",
+        "ext-iconv": "*",
         "ext-intl": "*",
         "ext-mbstring": "*",
         "ext-pdo": "*",
@@ -24782,6 +24783,6 @@
         "ext-soap": "*",
         "ext-zlib": "*"
     },
-    "platform-dev": [],
+    "platform-dev": {},
     "plugin-api-version": "2.6.0"
 }

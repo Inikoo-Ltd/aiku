@@ -297,7 +297,7 @@ class EditTradeUnit extends OrgAction
                                     ],
                                     'required' => true,
                                     'valueProp' => 'id',
-                                    'type_label' => 'trade-unit-families',
+                                    'type_label' => 'department-and-sub-department',
                                     'labelProp' => 'code',
                                     'value'   => $tradeUnit->tradeUnitFamily->id ?? null,
                                 ],
