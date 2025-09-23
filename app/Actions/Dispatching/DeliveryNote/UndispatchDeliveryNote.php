@@ -23,7 +23,7 @@ class UndispatchDeliveryNote extends OrgAction
     public function handle(DeliveryNote $deliveryNote): void
     {
         if ($deliveryNote->orders?->first()?->invoices()?->exists() && $deliveryNote->type == DeliveryNoteTypeEnum::ORDER) {
-            throw ValidationException::withMessages(['message' => __('You need to delete invoice before rollback the delivery notes')]);
+            throw ValidationException::withMessages(['message' => __('You need to delete invoice before undispatching a delivery note.')]);
         }
 
         UpdateDeliveryNote::make()->action($deliveryNote, [
