@@ -13,15 +13,12 @@ use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
 use App\Actions\OrgAction;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
-use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
-use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\Payment;
 use App\Models\Accounting\PaymentAccount;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -32,49 +29,7 @@ class PayInvoice extends OrgAction
      */
     public function handle(Invoice $invoice, PaymentAccount $paymentAccount, array $modelData): Payment
     {
-        //        $consolidateTotalPayments = Arr::get($invoice->shop->settings, 'consolidate_invoice_to_pay', true);
-        //
-        //        if ($consolidateTotalPayments) {
-        //            $amount = Arr::get($modelData, 'amount');
-        //            $totalRefund = abs($invoice->refunds->where('in_process', false)->where('pay_status', InvoicePayStatusEnum::UNPAID)->sum('total_amount'));
-        //
-        //            $calculateAmountInvoice = $amount + $invoice->payment_amount + $totalRefund;
-        //            if ($calculateAmountInvoice >= $invoice->total_amount) {
-        //                $modelData['amount'] = $calculateAmountInvoice - $invoice->payment_amount;
-        //            }
-        //
-        //            dd($modelData);
-        //
-        //            $payment = StorePayment::make()->action($invoice->customer, $paymentAccount, $modelData);
-        //
-        //            AttachPaymentToInvoice::make()->action($invoice, $payment, []);
-        //
-        //            $invoice->refresh();
-        //
-        //            $refundsQuery = $invoice->refunds->where('in_process', false)->where('pay_status', InvoicePayStatusEnum::UNPAID);
-        //
-        //            $needRefund = ($refundsQuery->sum('total_amount') - $refundsQuery->sum('payment_amount')) * -1;
-        //
-        //            if ($needRefund > 0) {
-        //                $amountRefund = min($needRefund, $invoice->payment_amount);
-        //
-        //                if ($paymentAccount->type == PaymentAccountTypeEnum::ACCOUNT) {
-        //                    RefundToInvoice::make()->action($invoice, $paymentAccount, [
-        //                        'amount' => abs($amountRefund),
-        //                        'type_refund' => 'credit',
-        //                        'is_auto_refund' => true,
-        //                    ]);
-        //                } else {
-        //                    RefundToInvoice::make()->action($invoice, $paymentAccount, [
-        //                        'amount' => abs($amountRefund),
-        //                        'original_payment_id' => $payment->id,
-        //                        'type_refund' => 'payment',
-        //                        'is_auto_refund' => true,
-        //                    ]);
-        //                }
-        //            }
-        //
-        //        } else {
+
         $payment = StorePayment::make()->action($invoice->customer, $paymentAccount, $modelData);
 
         if ($paymentAccount->is_accounts) {
@@ -91,9 +46,6 @@ class PayInvoice extends OrgAction
             AttachPaymentToOrder::make()->action($invoice->order, $payment, []);
         }
 
-
-
-        //  }
 
         return $payment;
     }
