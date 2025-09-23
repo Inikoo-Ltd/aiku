@@ -104,6 +104,26 @@ class TaxNumber extends Model
         return $this->belongsTo(Country::class);
     }
 
+    public function getFormattedTaxNumber(): string
+    {
+        if (!in_array($this->type,[TaxNumberTypeEnum::GB_VAT, TaxNumberTypeEnum::EU_VAT])) {
+            return $this->number;
+        }
+
+        $number = strtoupper(trim($this->number));
+        $cc = strtoupper(trim((string) $this->country_code));
+
+        if ($cc === '') {
+            return $number;
+        }
+
+        if (str_starts_with($number, $cc)) {
+            return $number;
+        }
+
+        return $cc.' '.$number;
+    }
+
 
     public static function getType(?Country $country): TaxNumberTypeEnum
     {

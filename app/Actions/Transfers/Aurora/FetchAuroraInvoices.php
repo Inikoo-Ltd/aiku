@@ -11,6 +11,7 @@ namespace App\Actions\Transfers\Aurora;
 use App\Actions\Accounting\Invoice\UpdateInvoicePaymentState;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\Accounting\Invoice\UpdateInvoice;
+use App\Actions\Maintenance\Accounting\RepairInvoiceFixTaxNumber;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Transfers\Aurora\WithAuroraParsers;
@@ -101,6 +102,10 @@ class FetchAuroraInvoices extends FetchAuroraAction
         if (in_array('payments', $this->with) or in_array('full', $this->with)) {
             $this->fetchPayments($organisationSource, $invoice);
         }
+
+
+        RepairInvoiceFixTaxNumber::run($invoice);
+
 
         return $invoice;
     }

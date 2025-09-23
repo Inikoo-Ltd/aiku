@@ -154,6 +154,11 @@ const submitForm = async (redirect = true) => {
             if (form.errors.code || form.errors.unit || form.errors.name) {
                 detailsVisible.value = true
             }
+              notify({
+                title: trans("Something went wrong"),
+                text: error.response.data.message || trans("Please try again"),
+                type: 'error'
+            })
         } else {
             notify({
                 title: trans("Something went wrong"),

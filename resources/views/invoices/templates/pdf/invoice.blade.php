@@ -423,7 +423,7 @@
                 <small>
                     {{$shop->name}}<br>
                     @if($shop->taxNumber)
-                        {{__('VAT Number')}}:<b>{{$shop->taxNumber?->number}}</b><br>
+                        {{__('VAT Number')}}:<b>{{$shop->taxNumber?->getFormattedTaxNumber()}}</b><br>
                     @endif
                     @if($shop->identity_document_number)
                         {{__('Registration Number')}}: {{$shop->identity_document_number}}

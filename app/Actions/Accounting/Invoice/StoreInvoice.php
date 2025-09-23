@@ -91,7 +91,7 @@ class StoreInvoice extends OrgAction
 
         $taxNumber = $customer->taxNumber;
         if ($taxNumber) {
-            data_set($modelData, 'tax_number', $taxNumber->number, false);
+            data_set($modelData, 'tax_number', $taxNumber->getFormattedTaxNumber(), false);
             data_set($modelData, 'tax_number_status', $taxNumber->status, false);
             data_set($modelData, 'tax_number_valid', $taxNumber->valid, false);
         } else {
