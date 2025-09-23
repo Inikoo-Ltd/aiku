@@ -3,12 +3,12 @@ import { Link, router } from "@inertiajs/vue3"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { Action } from "@/types/Action"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faPencil, faTrashAlt, faFileInvoice, faPlus } from "@fal"
+import { faPencil, faTrashAlt, faFileInvoice, faPlus, faEnvelope } from "@fal"
 import { ref } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 
-library.add( faPencil, faTrashAlt, faFileInvoice, faPlus )
+library.add( faPencil, faTrashAlt, faFileInvoice, faPlus, faEnvelope )
 
 const props = defineProps<{
     action: Action
