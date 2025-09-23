@@ -282,7 +282,7 @@ const deleteFormCommited = (item) => {
         </div>
 
         <!-- list + pagination -->
-        <div class="h-full md:h-[570px] text-base font-normal">
+        <div class="h-full  text-base font-normal">
           <div class="col-span-4 pb-8 md:pb-2 h-fit overflow-auto flex flex-col">
 
             <!-- header -->
