@@ -70,6 +70,19 @@ class ShowTradeUnitFamily extends GrpAction
                         ]
                     ]
                 ],
+                'routes' => [
+                    'trade_units_route' => [
+                        'name' => 'grp.json.trade_unit_family.trade_units',
+                        'parameters' => [$tradeUnitFamily->slug],
+                        'method' => 'get'
+                    ],
+
+                    'attach_route' => [
+                        'name' => 'grp.models.trade_unit_family.attach_trade_units',
+                        'parameters' => [$tradeUnitFamily->id],
+                        'method' => 'post'
+                    ]
+                ],
                 'tabs' => [
                     'current'    => $this->tab,
                     'navigation' => TradeUnitFamilyTabsEnum::navigation()
