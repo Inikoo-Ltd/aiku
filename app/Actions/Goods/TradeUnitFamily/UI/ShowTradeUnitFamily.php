@@ -165,7 +165,7 @@ class ShowTradeUnitFamily extends GrpAction
 
 
         return match ($routeName) {
-            'grp.goods.trade-units.show',
+            'grp.goods.trade-unit-families.show',
             'grp.masters.trade-unit-families.show' => [
                 'label' => $tradeUnitFamily->name,
                 'route' => [
