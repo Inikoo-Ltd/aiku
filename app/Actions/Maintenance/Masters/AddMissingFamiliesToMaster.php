@@ -30,6 +30,8 @@ class AddMissingFamiliesToMaster
      */
     public function handle(Shop $fromShop, MasterShop $shop): void
     {
+
+
         $categoriesToAdd = $fromShop->productCategories()->where('type', MasterProductCategoryTypeEnum::FAMILY)->get();
 
         foreach ($categoriesToAdd as $categoryToAdd) {
@@ -45,33 +47,31 @@ class AddMissingFamiliesToMaster
         $code = $family->code;
 
 
-
         $foundMasterFamilyData = DB::table('master_product_categories')
             ->where('master_shop_id', $masterShop->id)
             ->where('type', MasterProductCategoryTypeEnum::FAMILY->value)
             ->where('deleted_at', null)
             ->whereRaw("lower(code) = lower(?)", [$code])->first();
 
-        $foundMasterFamily = null;
-
 
         if (!$foundMasterFamilyData) {
             $masterParent = $this->getMasterParent($masterShop, $family);
-            if ($masterParent) {
 
-
-                $foundMasterFamily = StoreMasterProductCategory::make()->action(
-                    $masterParent,
-                    [
-                        'code'        => $family->code,
-                        'name'        => $family->name,
-                        'description' => $family->description,
-                        'type'        => MasterProductCategoryTypeEnum::FAMILY,
-                    ]
-                );
+            if (!$masterParent) {
+                $masterParent = $masterShop;
             }
-        } else {
 
+
+            $foundMasterFamily = StoreMasterProductCategory::make()->action(
+                $masterParent,
+                [
+                    'code'        => $family->code,
+                    'name'        => $family->name,
+                    'description' => $family->description,
+                    'type'        => MasterProductCategoryTypeEnum::FAMILY,
+                ]
+            );
+        } else {
             $foundMasterFamily = MasterProductCategory::find($foundMasterFamilyData->id);
 
             $dataToUpdate = [
