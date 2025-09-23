@@ -86,6 +86,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                 'title'       => __('Web/API order management'),
                 'description' => '<p><span>First, add desired products to your </span><strong>My Products</strong><span> using the </span><strong>Add Products</strong><span> button. When an order comes in, find the client under the </span><strong>Clients</strong><span> tab (add them if new), then click </span><strong>Create Order.</strong><span> Finally, enter product codes and quantities to complete the order.</span></p>'
             ],
+            'portfolios_count'        => $customerSalesChannel->portfolios->count(),
             'customer_sales_channel'  => RetinaCustomerSalesChannelResource::make($customerSalesChannel)->toArray(request()),
             'platform'                => $customerSalesChannel->platform,
             'platform_logo'           => $this->getPlatformLogo($customerSalesChannel->platform->code),

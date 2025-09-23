@@ -45,6 +45,7 @@ const props = defineProps<{
         title: string
         description: string
     }
+    portfolios_count: number
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -108,7 +109,7 @@ const locale = inject('locale', aikuLocaleStructure)
                     />
                     {{ customer_sales_channel.name || 'n/a' }}
                     <span class="text-gray-500 font-normal">({{ customer_sales_channel.reference }})</span>
-                    <span class="ml-2 whitespace-nowrap">
+                    <span v-if="can_connect_to_platform" class="ml-2 whitespace-nowrap">
                         <FontAwesomeIcon v-if="can_connect_to_platform" v-tooltip="trans('App installed')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
                         <FontAwesomeIcon v-else v-tooltip="trans('App not installed yet')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
                         <FontAwesomeIcon v-if="exist_in_platform" v-tooltip="trans('Exist in platform')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
@@ -147,7 +148,7 @@ const locale = inject('locale', aikuLocaleStructure)
                 </div>
 
                 <!-- Button: reset channel -->
-                <div v-else-if="!platform_status" class="flex flex-nowrap items-center gap-4">
+                <div v-else-if="!platform_status && portfolios_count" class="flex flex-nowrap items-center gap-4">
                     <ModalConfirmationDelete
                         v-if="platform.type === 'shopify'"
                         :routeDelete="{
@@ -165,7 +166,8 @@ const locale = inject('locale', aikuLocaleStructure)
                         <template #default="{ isOpenModal, changeModel }">
                             <Button
                                 @click="changeModel"
-                                label="Reset channel"
+                                v-tooltip="trans('This will reset the products')"
+                                :label="trans('Reset channel')"
                                 type="negative"
                             >
 
