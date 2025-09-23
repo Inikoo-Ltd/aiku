@@ -211,7 +211,7 @@ trait IsInvoiceUI
                 'style' => 'tertiary',
                 'full'  => true,
                 'icon'  => 'fal fa-pencil',
-                'class' =>  ['borderColor' => '#3b82f6', 'color' => '#3b82f6'],
+                'class' =>  ['borderColor' => '#4f46e5', 'color' => '#4f46e5'],
                 'label' => __('edit'),
                 'route' => [
                     'name'       => 'grp.org.accounting.invoices.edit',
