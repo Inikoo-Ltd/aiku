@@ -40,7 +40,7 @@ const props = defineProps<{
     sidebar: {}
 }>()
 
-console.log(props.sidebar);
+// console.log(props.sidebar);
 
 const isOpenMenuMobile = inject('isOpenMenuMobile')
 const layout: any = inject("layout", {});
@@ -79,8 +79,8 @@ const updateData = (newVal) => {
 
 
 onMounted(() => {
-    layout.app.theme = props.layout.color,
-    layout.app.webpage_layout = props.layout
+    layout.app.theme = props?.layout?.color,
+    layout.app.webpage_layout = props?.layout
     updateIrisLayout(isPreviewLoggedIn.value)
     window.addEventListener('message', (event) => {
         if (event.data.key === 'isPreviewLoggedIn') isPreviewLoggedIn.value = event.data.value

@@ -40,10 +40,10 @@ const selectedArea = ref<'top' | 'bottom'>('top')
 const deleteButtonRefs = ref<HTMLElement[]>([]);
 
 // Initialize arrays if they don't exist
-if (!props.data || !props.data.data.fieldValue.navigation) {
+if (!props.data && !props.data?.data?.fieldValue?.navigation) {
     props.data.data.fieldValue.navigation = [];
 }
-if (!props.data || !props.data.data.fieldValue.navigation_bottom) {
+if (!props.data && !props.data?.data?.fieldValue?.navigation_bottom) {
     props.data.data.fieldValue.navigation_bottom = [];
 }
 

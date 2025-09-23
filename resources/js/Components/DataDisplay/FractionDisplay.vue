@@ -27,7 +27,7 @@
     <!-- If there's only a fraction (quotient is 0) -->
     <template v-else-if="quotient === 0 && remainingDividend !== 0">
       <span class="fraction">
-        <span class="numerator">{{ remainingDividend }}</span>
+        <span class="numerator">{{ Number(remainingDividend).toFixed(3) }}</span>
         <svg class="fraction-slash" viewBox="0 0 12 12" width="0.6em" height="0.8em" preserveAspectRatio="none">
           <line x1="1" y1="11" x2="11" y2="1" stroke="currentColor" stroke-width="1.5"/>
         </svg>
