@@ -12,6 +12,7 @@
     "ext-bcmath": "*",
     "ext-curl": "*",
     "ext-gd": "*",
+    "ext-iconv": "*",
     "ext-intl": "*",
     "ext-mbstring": "*",
     "ext-pdo": "*",
@@ -102,8 +103,7 @@
     "vildanbina/laravel-auto-translation": "^1.5",
     "vlucas/phpdotenv": "^5.4",
     "webklex/laravel-imap": "^6.2",
-    "xendit/xendit-php": "^5.0",
-    "ext-iconv": "*"
+    "xendit/xendit-php": "^5.0"
   },
   "require-dev": {
     "amphibee/laravel-pint-pre-commit": "^1.5",
