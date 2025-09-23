@@ -40,22 +40,22 @@ const selectedArea = ref<'top' | 'bottom'>('top')
 const deleteButtonRefs = ref<HTMLElement[]>([]);
 
 // Initialize arrays if they don't exist
-if (!props.data.data.fieldValue.navigation) {
+if (!props.data || !props.data.data.fieldValue.navigation) {
     props.data.data.fieldValue.navigation = [];
 }
-if (!props.data.data.fieldValue.navigation_bottom) {
+if (!props.data || !props.data.data.fieldValue.navigation_bottom) {
     props.data.data.fieldValue.navigation_bottom = [];
 }
 
-// Computed untuk menggabungkan kembali semua navigation
-const allNavigation = computed(() => {
-    const topNav = props.data.data.fieldValue.navigation;
-    const bottomNav = props.data.data.fieldValue.navigation_bottom;
-    return [
-        ...topNav.map(item => ({ ...item, area: 'top' })),
-        ...bottomNav.map(item => ({ ...item, area: 'bottom' }))
-    ];
-});
+// Computed for merge the menu
+// const allNavigation = computed(() => {
+//     const topNav = props.data.data.fieldValue.navigation;
+//     const bottomNav = props.data.data.fieldValue.navigation_bottom;
+//     return [
+//         ...topNav.map(item => ({ ...item, area: 'top' })),
+//         ...bottomNav.map(item => ({ ...item, area: 'bottom' }))
+//     ];
+// });
 
 const allowMove = (evt: any) => {
     // Allow move if drag handle is used OR if we're moving to empty area
@@ -136,9 +136,9 @@ const handleDragEnd = () => {
 // Get current item for drawer
 const getCurrentItem = computed(() => {
     if (selectedArea.value === 'top') {
-        return props.data.data.fieldValue.navigation[selectedMenu.value];
+        return props?.data?.data?.fieldValue?.navigation[selectedMenu.value];
     } else {
-        return props.data.data.fieldValue.navigation_bottom[selectedMenu.value];
+        return props?.data?.data?.fieldValue?.navigation_bottom[selectedMenu.value];
     }
 });
 
@@ -157,7 +157,7 @@ const autoSave = async (event?) => {
         <div class="mb-3">
             <Button :label="'Add Top Navigation'" type="create" :size="'xs'" @click="() => addNavigation('top')" />
         </div>
-        <draggable :list="data.data.fieldValue.navigation" ghost-class="ghost" chosen-class="chosen"
+        <draggable :list="data?.data?.fieldValue?.navigation" ghost-class="ghost" chosen-class="chosen"
             drag-class="dragging" group="navigation" itemKey="id"
             class="space-y-2 min-h-[100px] p-2 border-2 border-dashed border-gray-200 rounded-lg bg-gray-50"
             :fallbackOnBody="true" :emptyInsertThreshold="100" @end="handleDragEnd">
@@ -212,7 +212,7 @@ const autoSave = async (event?) => {
             <Button :label="'Add Bottom Navigation'" type="create" :size="'xs'"
                 @click="() => addNavigation('bottom')" />
         </div>
-        <draggable :list="data.data.fieldValue.navigation_bottom" ghost-class="ghost" chosen-class="chosen"
+        <draggable :list="data?.data?.fieldValue?.navigation_bottom" ghost-class="ghost" chosen-class="chosen"
             drag-class="dragging" group="navigation" itemKey="id"
             class="space-y-2 min-h-[100px] p-2 border-2 border-dashed border-gray-200 rounded-lg bg-gray-50"
             :fallbackOnBody="true" :emptyInsertThreshold="100" @end="handleDragEnd">
