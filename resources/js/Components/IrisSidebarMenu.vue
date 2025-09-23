@@ -183,16 +183,17 @@ const getTarget = (item) => {
                 <img :src="header?.logo?.image?.source?.original" :alt="header?.logo?.alt" class="h-16" />
             </template>
 
+            <!-- Sidebar Menu: Mobile -->
             <div v-if="isMobile" class="menu-container-mobile">
                 <div class="menu-content">
-                    <!-- Custom Menu Top Section for Mobile -->
+                    <!-- Section: top sidemenu -->
                     <div v-if="customMenusTop && customMenusTop.length > 0">
                         <div v-for="(customTopItem, customTopIndex) in customMenusTop" :key="'custom-top-' + customTopIndex">
                             <!-- Custom Menu Top WITH Sub-departments -->
                             <Disclosure v-if="customTopItem.sub_departments && customTopItem.sub_departments.length > 0"
                                 v-slot="{ open }">
                                 <DisclosureButton class="w-full text-left p-4 font-semibold text-gray-600 border-b">
-                                    <div class="flex justify-between items-center text-lg"
+                                    <div class="flex justify-between items-center xtext-lg"
                                         :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }">
                                         <span>{{ customTopItem.name }}</span>
                                         <FontAwesomeIcon :icon="faChevronCircleDown"
@@ -240,13 +241,13 @@ const getTarget = (item) => {
                                 <a v-if="customTopItem?.url !== null" :href="getHref(customTopItem)"
                                     :target="getTarget(customTopItem)"
                                     :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
-                                    class="font-bold text-gray-600 text-lg">
+                                    class="font-bold text-gray-600 xtext-lg">
                                     {{ customTopItem.name }}
                                 </a>
 
                                 <span v-else
                                     :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
-                                    class="font-bold text-gray-600 text-lg">{{ customTopItem.name }}</span>
+                                    class="font-bold text-gray-600 xtext-lg">{{ customTopItem.name }}</span>
                             </div>
                         </div>
                     </div>
@@ -257,7 +258,7 @@ const getTarget = (item) => {
                         <Disclosure v-if="category.sub_departments && category.sub_departments.length > 0"
                             v-slot="{ open }">
                             <DisclosureButton class="w-full text-left p-4 font-semibold text-gray-600 border-b">
-                                <div class="flex justify-between items-center text-lg"
+                                <div class="flex justify-between items-center xtext-lg"
                                     :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }">
                                     <span>{{ category.name }}</span>
                                     <FontAwesomeIcon :icon="faChevronCircleDown"
@@ -303,17 +304,17 @@ const getTarget = (item) => {
                         <div v-else class="py-4 px-5 border-b">
                             <a v-if="category?.url !== null" :href="'/' + category.url"
                                 :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
-                                class="font-bold text-gray-600 text-lg">
+                                class="font-bold text-gray-600 xtext-lg">
                                 {{ category.name }}
                             </a>
 
                             <span v-else
                                 :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
-                                class="font-bold text-gray-600 text-lg">{{ category.name }}</span>
+                                class="font-bold text-gray-600 xtext-lg">{{ category.name }}</span>
                         </div>
                     </div>
 
-                    <!-- Custom Menus Section for Mobile -->
+                    <!-- Section: bottom menu -->
                     <div v-if="customMenusBottom && customMenusBottom.length > 0">
                         <!-- <hr class="my-4 border-gray-300"> -->
                         <div v-for="(customItem, customIndex) in customMenusBottom" :key="'custom-' + customIndex">
@@ -321,7 +322,7 @@ const getTarget = (item) => {
                             <Disclosure v-if="customItem.sub_departments && customItem.sub_departments.length > 0"
                                 v-slot="{ open }">
                                 <DisclosureButton class="w-full text-left p-4 font-semibold text-gray-600 border-b">
-                                    <div class="flex justify-between items-center text-lg"
+                                    <div class="flex justify-between items-center xtext-lg"
                                         :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }">
                                         <span>{{ customItem.name }}</span>
                                         <FontAwesomeIcon :icon="faChevronCircleDown"
@@ -369,13 +370,13 @@ const getTarget = (item) => {
                                 <a v-if="customItem?.url !== null" :href="getHref(customItem)"
                                     :target="getTarget(customItem)"
                                     :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
-                                    class="font-bold text-gray-600 text-lg">
+                                    class="font-bold text-gray-600 xtext-lg">
                                     {{ customItem.name }}
                                 </a>
 
                                 <span v-else
                                     :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
-                                    class="font-bold text-gray-600 text-lg">{{ customItem.name }}</span>
+                                    class="font-bold text-gray-600 xtext-lg">{{ customItem.name }}</span>
                             </div>
                         </div>
                     </div>
@@ -389,10 +390,9 @@ const getTarget = (item) => {
                         <FontAwesomeIcon :icon="faSignOut" class="mr-3" /> Log Out
                     </div>
                 </div>
-
             </div>
 
-            <!-- Two-column menu -->
+            <!-- Sidebar Menu: Desktop -->
             <div v-else
                 :class="['menu-container grid h-full', (activeIndex !== null || activeCustomIndex !== null || activeCustomTopIndex !== null) && 'grid-cols-2', (activeSubIndex !== null || activeCustomSubIndex !== null || activeCustomTopSubIndex !== null) && 'grid-cols-3']">
                 <!-- Column 1: Categories + Custom Menus -->
