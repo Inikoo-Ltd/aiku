@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import MobileMenu from '@/Components/MobileMenu.vue'
+import IrisSidebarMenu from '@/Components/IrisSidebarMenu.vue'
 import { getStyles } from "@/Composables/styles";
 import { Link } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@/Components/Image.vue"
-import { inject, watch, ref } from 'vue';
+import { inject, watch, ref, onMounted } from 'vue';
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faGalaxy, faTimesCircle, faUserCircle } from "@fas";
 import { faBaby, faCactus, faObjectGroup, faUser, faHouse, faTruck, faTag, faPhone, faUserCircle as falUserCircle, faBars } from "@fal";
@@ -33,6 +33,8 @@ import {
 import { faLambda } from "@fad";
 import LuigiSearch from "@/Components/CMS/LuigiSearch.vue"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
+import { checkScreenType } from '@/Composables/useWindowSize'
+import { computed } from 'vue'
 
 // Add icons to the library
 library.add(
@@ -59,8 +61,10 @@ const props = defineProps<{
 
 const layout = inject('layout', retinaLayoutStructure)
 const isLoggedIn = inject('isPreviewLoggedIn', false)
-const upcommingCustomSidebarMenu = inject('newCustomSidebarMenu') //make sure the provide available on each layout
-
+const sidebarMenu = inject('sidebarMenu', null) // come from layout PreviewLayout
+const computedSelectedSidebarData = computed(() => {
+    return sidebarMenu?.value || layout.iris?.sidebar
+})
 
 const convertToDepartmentStructure = (menusData) => {
     const dataArray = Array.isArray(menusData) ? menusData : [menusData];
@@ -120,13 +124,13 @@ const convertToDepartmentStructure = (menusData) => {
 const customMenusBottom = ref([]); // Create a reactive ref to hold the bottom navigation
 const customMenusTop = ref([]); // Create a reactive ref to hold the top navigation
 
-watch(
-    () => upcommingCustomSidebarMenu,
+watch(computedSelectedSidebarData,
     (newValue) => {
         if (newValue) {
-            const navigationBottomData = newValue?.value?.data?.fieldValue?.navigation_bottom;
-            const navigationData = newValue?.value?.data?.fieldValue?.navigation;
+            const navigationBottomData = newValue?.data?.fieldValue?.navigation_bottom;
+            const navigationData = newValue?.data?.fieldValue?.navigation;
             
+            // console.log('navigationBottomData', navigationBottomData);
             // Process navigation_bottom data
             if (navigationBottomData) {
                 const convertedBottom = convertToDepartmentStructure(navigationBottomData);
@@ -135,12 +139,12 @@ watch(
             } else {
                 customMenusBottom.value = [];
             }
+            // console.log('navigationData 111', customMenusBottom.value);
             
             // Process navigation data
             if (navigationData) {
                 const convertedTop = convertToDepartmentStructure(navigationData);
                 customMenusTop.value = [...convertedTop];
-                // console.log('Top menu data:', convertedTop);
             } else {
                 customMenusTop.value = [];
             }
@@ -151,13 +155,26 @@ watch(
     },
     { immediate: true, deep: true } // Add options for immediate and deep watching
 );
+
+const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
+
+onMounted(() => {
+    screenType.value = checkScreenType()
+})
 </script>
 
 <template>
     <div class="block md:hidden p-3">
         <div class="flex justify-between items-center">
             <!-- Section: Hamburger mobile -->
-            <MobileMenu :header="headerData" :menu="menuData" :productCategories="productCategories" :custom-menus-bottom="customMenusBottom" :custom-menus-top="customMenusTop" />
+            <IrisSidebarMenu
+                :header="headerData"
+                :menu="menuData"
+                :productCategories="productCategories"
+                :custom-menus-bottom="customMenusBottom"
+                :custom-menus-top="customMenusTop"
+                :screenType
+            />
 
             <!-- Section: Logo  -->
             <component :is="true ? Link : 'div'" :href="'/'" class="block w-full h-[65px] mb-1 rounded">

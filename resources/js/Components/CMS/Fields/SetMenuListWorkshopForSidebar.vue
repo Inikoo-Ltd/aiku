@@ -14,7 +14,8 @@ import { faTrash } from "@fas";
 import { useConfirm } from "primevue/useconfirm"
 import ConfirmPopup from "primevue/confirmpopup"
 import { faExclamationTriangle } from "@far";
-import { router } from '@inertiajs/vue3'
+import { trans } from "laravel-vue-i18n"
+import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 
 const props = defineProps<{
     data: {
@@ -198,11 +199,12 @@ const autoSave = async (event?) => {
 
     <!-- Static Menu Separator -->
     <div class="flex items-center my-6">
-        <div class="flex-grow border-t border-gray-300"></div>
-        <div class="mx-4 px-4 py-2 bg-gray-100 text-gray-600 font-medium text-sm rounded-full">
-            Static Menu
+        <!-- <div class="flex-grow border-t border-gray-300"></div> -->
+        <div class="px-8 py-5 bg-gray-200 w-full text-center text-gray-600 font-medium text-sm border border-gray-300 rounded">
+            {{ trans("Area reserved by system") }}
+            <InformationIcon :information="trans('Automatically showed Departments list')" />
         </div>
-        <div class="flex-grow border-t border-gray-300"></div>
+        <!-- <div class="flex-grow border-t border-gray-300"></div> -->
     </div>
 
     <!-- Bottom Navigation Area -->

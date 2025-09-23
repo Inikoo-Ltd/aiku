@@ -79,8 +79,8 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 			class="relative z-50 md:z-0"
 			:data="layout.iris.header"
 			:colorThemed="irisTheme"
-			:menu="layout.iris.menu" />
-			
+			:menu="layout.iris.menu"
+		/>
 
 		<!-- wrapper for mobile overlay + content -->
 		<div class="relative">

@@ -21,10 +21,13 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeletedInvoic
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Accounting\Invoice;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Throwable;
@@ -59,6 +62,13 @@ class DeleteInvoice extends OrgAction
         return $invoice;
     }
 
+    public function htmlResponse(): RedirectResponse
+    {
+       return Redirect::route('grp.org.accounting.invoices.index', [
+            $this->organisation->slug
+       ]);
+    }
+
     public function postDeleteInvoiceHydrators(Invoice $invoice): void
     {
         $customer = $invoice->customer;
@@ -79,7 +89,7 @@ class DeleteInvoice extends OrgAction
     public function rules(): array
     {
         return [
-            'deleted_note' => ['sometimes', 'string', 'max:4000'],
+            'deleted_note' => ['required', 'string', 'max:4000'],
             'deleted_by'   => ['sometimes', 'nullable', 'integer', Rule::exists('users', 'id')->where('group_id', $this->group->id)],
         ];
     }

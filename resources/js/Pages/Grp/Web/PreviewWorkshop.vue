@@ -118,8 +118,10 @@ onBeforeUnmount(() => {
 
 provide('isPreviewLoggedIn', isPreviewLoggedIn)
 provide('isPreviewMode', isPreviewMode)
-const newCustomSidebarMenu = computed(() => props?.sidebar?.sidebar) // make the props reactive
-provide('newCustomSidebarMenu', newCustomSidebarMenu)
+const compSidebar = computed(() => {
+    return props?.sidebar?.sidebar
+})
+provide('sidebarMenu', compSidebar)
 
 
 watch(isPreviewLoggedIn, (value) => {
