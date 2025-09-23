@@ -171,7 +171,7 @@ const getTableData = (data) => {
 }
 
 const ListSelectorChange = (value) => {
-    console.log('ssss',value)
+    console.log('selector',value)
     if (value.length >= 1) {
         form.name = value[0].name
         form.code = value[0].code

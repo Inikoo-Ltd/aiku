@@ -97,7 +97,7 @@ const getPortfoliosList = async (url?: string) => {
   try {
     const tabRoute = props.tabs?.[activeTab.value]?.routeFetch || props.routeFetch
     const currentTab = props.tabs?.[activeTab.value]
-
+    console.log('sdsd',props.routeFetch)
     const params: Record<string, any> = { ...tabRoute.parameters }
 
     // ✅ Only append search if tab has "search: true"

@@ -18,6 +18,7 @@ enum TradeUnitFamilyTabsEnum: string
 
 
     case SHOWCASE = 'showcase';
+    case TRADE_UNITS = 'trade_units';
 
 
     public function blueprint(): array
@@ -26,6 +27,10 @@ enum TradeUnitFamilyTabsEnum: string
             TradeUnitFamilyTabsEnum::SHOWCASE => [
                 'title' => __('overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
+            ],
+            TradeUnitFamilyTabsEnum::TRADE_UNITS => [
+                'title' => __('trade units'),
+                'icon'  => 'fal fa-atom',
             ],
 
         };
