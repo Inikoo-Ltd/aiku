@@ -366,7 +366,7 @@ const key = ulid()
 
     <!-- Section: Alert if Platform not connected yet -->
     <Message v-if="!is_platform_connected && !isPlatformManual" severity="error" class="m-4 ">
-        <div class="ml-2 font-normal flex flex-col items-center sm:flex-row justify-between w-full">
+        <div class="ml-2 font-normal flex flex-col gap-x-4 items-center sm:flex-row justify-between w-full">
             <div>
                 <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true"/>
                 <div class="inline items-center gap-x-2">
@@ -449,48 +449,47 @@ const key = ulid()
     </Message>
 
     <!-- retina.models.dropshipping.ebay.batch_upload -->
-    <div v-if="props.product_count < 1"
-         class="relative mx-auto flex max-w-3xl flex-col items-center px-6 text-center pt-20 lg:px-0">
-        <h1 class="text-4xl font-bold tracking-tight lg:text-6xl">
-            {{ content?.portfolio_empty?.title || trans(`You don't have a single portfolios`) }}
-        </h1>
-        <p class="mt-4 text-xl">
-            {{
-                content?.portfolio_empty?.description || trans("To get started, add products to your shop. You can sync from your inventory or create a new one.")
-            }}
-        </p>
-        <div class="mt-6 space-y-4">
-            <ButtonWithLink v-if="routes?.syncAllRoute" :routeTarget="routes?.syncAllRoute" isWithError
-                            :label="content?.portfolio_empty?.sync_button" icon="fas fa-sync-alt" xtype="tertiary"
-                            size="xl"/>
-            <div v-if="routes?.syncAllRoute && routes?.addPortfolioRoute" class="text-gray-500">
-                {{ content?.portfolio_empty?.separation || trans("or") }}
+    <div v-if="is_platform_connected">
+        <div v-if="props.product_count < 1"
+            class="relative mx-auto flex max-w-3xl flex-col items-center px-6 text-center pt-20 lg:px-0">
+            <h1 class="text-4xl font-bold tracking-tight lg:text-6xl">
+                {{ content?.portfolio_empty?.title || trans(`You don't have a single portfolios`) }}
+            </h1>
+            <p class="mt-4 text-xl">
+                {{
+                    content?.portfolio_empty?.description || trans("To get started, add products to your shop. You can sync from your inventory or create a new one.")
+                }}
+            </p>
+            <div class="mt-6 space-y-4">
+                <ButtonWithLink v-if="routes?.syncAllRoute" :routeTarget="routes?.syncAllRoute" isWithError
+                                :label="content?.portfolio_empty?.sync_button" icon="fas fa-sync-alt" xtype="tertiary"
+                                size="xl"/>
+                <div v-if="routes?.syncAllRoute && routes?.addPortfolioRoute" class="text-gray-500">
+                    {{ content?.portfolio_empty?.separation || trans("or") }}
+                </div>
+                <Button v-if="routes?.addPortfolioRoute" @click="isOpenModalPortfolios = true"
+                        :label="content?.portfolio_empty?.add_button || trans('Add products')" icon="fas fa-plus"
+                        size="xl"/>
             </div>
-            <Button v-if="routes?.addPortfolioRoute" @click="isOpenModalPortfolios = true"
-                    :label="content?.portfolio_empty?.add_button || trans('Add products')" icon="fas fa-plus"
-                    size="xl"/>
         </div>
-    </div>
-    <div v-else class="overflow-x-auto">
-        <RetinaTablePortfoliosManual v-if="isPlatformManual" :data="props.products" :tab="'products'" :selectedData
-                                     :platform_data :platform_user_id :is_platform_connected :progressToUploadToShopify
-                                     :isPlatformManual
-                                     :useCheckBox="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual"/>
-
-        <RetinaTablePortfoliosShopify v-else-if="platform_data.type === 'shopify'" :data="props.products"
-                                      :tab="'products'" :selectedData :platform_data :platform_user_id
-                                      :is_platform_connected
-                                      :progressToUploadToShopifyAll="progessbar" :progressToUploadToShopify
-                                      :customerSalesChannel="customer_sales_channel"
-                                      v-model:selectedProducts="selectedProducts" :key="key"
-                                      :count_product_not_synced="count_product_not_synced"/>
-
-
-        <RetinaTablePortfoliosPlatform v-else :data="props.products" :tab="'products'" :selectedData :platform_data
-                                       :platform_user_id :is_platform_connected :progressToUploadToShopify
-                                       :customerSalesChannel="customer_sales_channel" :progressToUploadToEcom="progessbar"
-                                       v-model:selectedProducts="selectedProducts" :key="key + 'table-products'"
-                                       :routes="props.routes" :count_product_not_synced="count_product_not_synced"/>
+        <div v-else class="overflow-x-auto">
+            <RetinaTablePortfoliosManual v-if="isPlatformManual" :data="props.products" :tab="'products'" :selectedData
+                :platform_data :platform_user_id :is_platform_connected :progressToUploadToShopify
+                :isPlatformManual
+                :useCheckBox="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual"/>
+            <RetinaTablePortfoliosShopify v-else-if="platform_data.type === 'shopify'" :data="props.products"
+                :tab="'products'" :selectedData :platform_data :platform_user_id
+                :is_platform_connected
+                :progressToUploadToShopifyAll="progessbar" :progressToUploadToShopify
+                :customerSalesChannel="customer_sales_channel"
+                v-model:selectedProducts="selectedProducts" :key="key"
+                :count_product_not_synced="count_product_not_synced"/>
+            <RetinaTablePortfoliosPlatform v-else :data="props.products" :tab="'products'" :selectedData :platform_data
+                :platform_user_id :is_platform_connected :progressToUploadToShopify
+                :customerSalesChannel="customer_sales_channel" :progressToUploadToEcom="progessbar"
+                v-model:selectedProducts="selectedProducts" :key="key + 'table-products'"
+                :routes="props.routes" :count_product_not_synced="count_product_not_synced"/>
+        </div>
     </div>
 
     <Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false"
