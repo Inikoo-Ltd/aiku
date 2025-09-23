@@ -32,6 +32,7 @@ const props = defineProps<{
         layout: any
         stats: StatsBoxTS[]
         content_blog_stats: StatsBoxTS[]
+        website_type: string
     }
     route_storefront: routeType
     luigi_data: {
@@ -44,12 +45,25 @@ const props = defineProps<{
 
 const layout = inject('layout')
 
-const links = ref([
-    { label: trans("Edit Header"), route_target: props.data.layout.headerRoute, icon: faPencil },
-    { label: trans("Edit Menu"), route_target: props.data.layout.menuRoute, icon: faPencil },
-    { label: trans("Edit Sidebar"), route_target: props.data.layout.sidebarRoute, icon: faPencil, disabled: layout?.app.environment !== 'local' },
-    { label: trans("Edit Footer"), route_target: props.data.layout.footerRoute, icon: faPencil }
-]);
+const links = computed(() => {
+    const baseLinks = [
+        { label: trans("Edit Header"), route_target: props.data.layout.headerRoute, icon: faPencil },
+        { label: trans("Edit Menu"), route_target: props.data.layout.menuRoute, icon: faPencil },
+        { label: trans("Edit Footer"), route_target: props.data.layout.footerRoute, icon: faPencil }
+    ];
+
+    // Add Edit Sidebar button only for dropshipping websites
+    if (props.data.website_type === "dropshipping") {
+        baseLinks.splice(2, 0, { 
+            label: trans("Edit Sidebar"), 
+            route_target: props.data.layout.sidebarRoute, 
+            icon: faPencil, 
+            disabled: layout?.app.environment !== 'local' 
+        });
+    }
+
+    return baseLinks;
+});
 
 window.reindexwebsite = async () => {
     try {
