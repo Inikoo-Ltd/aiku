@@ -39,7 +39,7 @@ import CustomerDSBalanceIncrease from "@/Components/Dropshipping/CustomerDSBalan
 import CustomerDSBalanceDecrease from "@/Components/Dropshipping/CustomerDSBalanceDecrease.vue"
 import { faExclamationCircle, faCheckCircle } from '@fas'
 import { faSpinnerThird } from '@fad'
-import Popover from 'primevue/popover'
+import { Tooltip } from 'floating-vue'
 
 library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt)
 
@@ -126,10 +126,6 @@ const links = ref([
 const isModalBalanceDecrease = ref(false)
 const isModalBalanceIncrease = ref(false)
 
-// Popover refs for tax number
-const statusPopover = ref()
-const countryPopover = ref()
-const datePopover = ref()
 
 // Tax number validation helper functions
 const formatDate = (dateString: string | null) => {
@@ -344,41 +340,28 @@ const getStatusText = (status: string, valid: boolean) => {
                                                             >
                                                             {{ getStatusText(data.customer.tax_number.status, data.customer.tax_number.valid) }}
                                                         </span>
-                                                        <span v-if="data.customer.tax_number.country"
-                                                            @mouseenter="countryPopover.show($event)"
-                                                            @mouseleave="countryPopover.hide()"
-                                                            class="cursor-pointer hover:underline"> 
-                                                            ({{ data.customer.tax_number.country.data.name }}) 
-                                                        </span>
-                                                        
-                                                        <Popover ref="countryPopover">
-                                                            <div class="p-4 max-w-xs">
-                                                                <div class="space-y-2">
-                                                                    <h4 class="font-semibold text-sm">{{ trans('Country Information') }}</h4>
-                                                                    <div class="text-sm space-y-1">
-                                                                        <p><span class="font-medium">{{ trans('Country') }}:</span> {{ data.customer.tax_number.country.data.name }}</p>
-                                                                        <p><span class="font-medium">{{ trans('Country Code') }}:</span> {{ data.customer.tax_number.country.data.code }}</p>
+                                                        <!-- Country -->
+                                                        <Tooltip v-if="data.customer.tax_number.country" class="inline ml-1">
+                                                            <div class="inline hover:underline cursor-default">({{ data.customer.tax_number.country.data.name }})</div>
+
+                                                            <template #popper>
+                                                                <div class="p-1 max-w-xs">
+                                                                    <div class="space-y-2">
+                                                                        <div class="text-sm space-y-1">
+                                                                            <p><span class="font-medium">{{ trans('Country') }}:</span> {{ data.customer.tax_number.country.data.name }}</p>
+                                                                            <p><span class="font-medium">{{ trans('Country Code') }}:</span> {{ data.customer.tax_number.country.data.code }}</p>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
-                                                            </div>
-                                                        </Popover>
+                                                            </template>
+                                                        </Tooltip>
 
+                                                        <!-- Last checked date -->
                                                         <span v-if="data.customer.tax_number.checked_at"
-                                                            @mouseenter="datePopover.show($event)"
-                                                            @mouseleave="datePopover.hide()"
-                                                            class="cursor-pointer hover:underline">
+                                                            v-tooltip="trans('Last checked :date', { date: formatDate(data.customer.tax_number.checked_at) })"
+                                                            class="ml-1 cursor-default hover:underline">
                                                             {{ formatDate(data.customer.tax_number.checked_at) }}
                                                         </span>
-                                                        
-                                                        <Popover ref="datePopover">
-                                                            <div class="p-4 max-w-xs">
-                                                                <div class="space-y-2">
-                                                                    <div class="text-sm space-y-1">
-                                                                        <p><span class="font-medium">{{ trans('Last checked') }}:</span> {{ formatDate(data.customer.tax_number.checked_at) }}</p>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </Popover>
                                                     </p>
                                                 </div>
                                             </div>
