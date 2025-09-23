@@ -5,6 +5,8 @@
  * Copyright (c) 2023-2025, Raul A Perusquia Flores
  */
 
+import { routeType } from "./route"
+
 // This interface mirrors App\Http\Resources\CRM\CustomerSalesChannelsResource
 // Keep fields aligned with the resource payload keys.
 export interface CustomerSalesChannel {
@@ -23,6 +25,8 @@ export interface CustomerSalesChannel {
   platform_code: string
   platform_name: string
   platform_image: string
+
+  reconnect_route: routeType
 
   can_connect_to_platform: boolean
   exist_in_platform: boolean

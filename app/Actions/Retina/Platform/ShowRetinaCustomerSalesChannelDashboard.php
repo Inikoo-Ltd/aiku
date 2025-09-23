@@ -18,6 +18,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Http\Resources\CRM\RetinaCustomerSalesChannelResource;
 
 class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
 {
@@ -85,7 +86,8 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                 'title'       => __('Web/API order management'),
                 'description' => '<p><span>First, add desired products to your </span><strong>My Products</strong><span> using the </span><strong>Add Products</strong><span> button. When an order comes in, find the client under the </span><strong>Clients</strong><span> tab (add them if new), then click </span><strong>Create Order.</strong><span> Finally, enter product codes and quantities to complete the order.</span></p>'
             ],
-            'customer_sales_channel'  => $customerSalesChannel,
+            'portfolios_count'        => $customerSalesChannel->portfolios->count(),
+            'customer_sales_channel'  => RetinaCustomerSalesChannelResource::make($customerSalesChannel)->toArray(request()),
             'platform'                => $customerSalesChannel->platform,
             'platform_logo'           => $this->getPlatformLogo($customerSalesChannel->platform->code),
             'platformData'            => $this->getPlatformData($customerSalesChannel),

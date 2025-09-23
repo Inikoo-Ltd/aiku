@@ -11,6 +11,7 @@ namespace App\Actions\Goods\TradeUnitFamily\Hydrators;
 use App\Actions\Traits\WithEnumStats;
 use App\Models\Goods\TradeUnitFamily;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class TradeUnitFamilyHydrateTradeUnits implements ShouldBeUnique
@@ -25,10 +26,11 @@ class TradeUnitFamilyHydrateTradeUnits implements ShouldBeUnique
 
     public function handle(TradeUnitFamily $tradeUnitFamily): void
     {
+        $count = DB::table('trade_units')->where('trade_unit_family_id', $tradeUnitFamily->id)->count();
         $stats = [
-            'number_trade_units' => $tradeUnitFamily->tradeUnits()->count()
+            'number_trade_units' => $count
         ];
-        
+
         $tradeUnitFamily->stats()->update(
             $stats
         );

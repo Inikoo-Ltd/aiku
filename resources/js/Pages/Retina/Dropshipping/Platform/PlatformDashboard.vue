@@ -14,6 +14,8 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import {ChannelLogo} from "@/Composables/Icon/ChannelLogoSvg"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import PlatformWarningNotConnected from "@/Components/Retina/Platform/PlatformWarningNotConnected.vue"
+import { CustomerSalesChannel } from "@/types/customer-sales-channel"
 
 library.add(faArrowRight, faCube, faLink, farArrowRight)
 
@@ -33,10 +35,7 @@ const props = defineProps<{
         code: string
         icon: string
     }
-    customer_sales_channel: {
-        reference: string
-        slug: string
-    }
+    customer_sales_channel: CustomerSalesChannel
     timeline: {
         current_state: string
         options: {}[]
@@ -46,6 +45,7 @@ const props = defineProps<{
         title: string
         description: string
     }
+    portfolios_count: number
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -54,8 +54,6 @@ const locale = inject('locale', aikuLocaleStructure)
 
 <template>
     <div class="relative isolate py-6 px-8 max-w-6xl">
-
-
 
         <!-- Section: Timeline -->
         <div v-if="props.timeline" class="mt-4 mb-8 sm:mt-0 border-b border-gray-200 pb-2">
@@ -111,7 +109,7 @@ const locale = inject('locale', aikuLocaleStructure)
                     />
                     {{ customer_sales_channel.name || 'n/a' }}
                     <span class="text-gray-500 font-normal">({{ customer_sales_channel.reference }})</span>
-                    <span class="ml-2 whitespace-nowrap">
+                    <span v-if="can_connect_to_platform" class="ml-2 whitespace-nowrap">
                         <FontAwesomeIcon v-if="can_connect_to_platform" v-tooltip="trans('App installed')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
                         <FontAwesomeIcon v-else v-tooltip="trans('App not installed yet')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
                         <FontAwesomeIcon v-if="exist_in_platform" v-tooltip="trans('Exist in platform')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
@@ -150,14 +148,14 @@ const locale = inject('locale', aikuLocaleStructure)
                 </div>
 
                 <!-- Button: reset channel -->
-                <div v-else-if="!platform_status" class="flex flex-nowrap items-center gap-4">
+                <div v-else-if="!platform_status && portfolios_count" class="flex flex-nowrap items-center gap-4">
                     <ModalConfirmationDelete
                         v-if="platform.type === 'shopify'"
                         :routeDelete="{
                             method: 'patch',
                             name: 'retina.models.customer_sales_channel.shopify_reset',
                             parameters: {
-                                customerSalesChannel: customer_sales_channel.id,
+                                customerSalesChannel: customer_sales_channel?.id,
                             }
                         }"
                         :title="trans('Are you sure you want to reset channel :channel?', { channel: customer_sales_channel?.name || '' })"
@@ -168,7 +166,8 @@ const locale = inject('locale', aikuLocaleStructure)
                         <template #default="{ isOpenModal, changeModel }">
                             <Button
                                 @click="changeModel"
-                                label="Reset channel"
+                                v-tooltip="trans('This will reset the products')"
+                                :label="trans('Reset channel')"
                                 type="negative"
                             >
 
@@ -178,70 +177,76 @@ const locale = inject('locale', aikuLocaleStructure)
                 </div>
             </div>
 
-            <!-- Warning: Ebay seller -->
-            <div v-if="platform.type == 'ebay'" class="flex justify-between mt-5">
-                <div class="w-full border-2 border-yellow-500 rounded-lg p-4 bg-yellow-50">
-                    <div class="flex flex-col sm:flex-row sm:items-start">
-                        <div class="flex items-center mb-2 sm:mb-0 sm:flex-shrink-0">
-                            <svg class="h-5 w-5 text-yellow-500 mr-2 sm:mr-0 sm:mt-0.5" fill="currentColor"
-                                 viewBox="0 0 20 20">
-                                <path fill-rule="evenodd"
-                                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                                      clip-rule="evenodd"></path>
-                            </svg>
-                            <strong class="text-sm text-yellow-700 sm:hidden">Important Notice:</strong>
-                        </div>
-                        <div class="sm:ml-3">
-                            <p class="text-sm text-yellow-700">
-                                <strong class="hidden sm:inline">Important Notice:</strong> To prevent any issues or
-                                misunderstandings with the eBay platform, please ensure your eBay account is registered
-                                as a seller account. For more information, visit:
-                                <a href="https://www.ebay.com/help/selling/getting-paid/registering-seller?id=4792"
-                                   target="_blank"
-                                   class="underline text-yellow-800 hover:text-yellow-900">
-                                    eBay Seller Registration Guide
-                                </a>
-                            </p>
+            <!-- Section: Alert if platform not connected yet -->
+            <PlatformWarningNotConnected
+                v-if="!can_connect_to_platform"
+                :customer_sales_channel="customer_sales_channel"
+            />
+
+            <div v-else>
+                <!-- Warning: Ebay seller -->
+                <div v-if="platform.type == 'ebay'" class="flex justify-between mt-5">
+                    <div class="w-full border-2 border-yellow-500 rounded-lg p-4 bg-yellow-50">
+                        <div class="flex flex-col sm:flex-row sm:items-start">
+                            <div class="flex items-center mb-2 sm:mb-0 sm:flex-shrink-0">
+                                <svg class="h-5 w-5 text-yellow-500 mr-2 sm:mr-0 sm:mt-0.5" fill="currentColor"
+                                     viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                          d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                                          clip-rule="evenodd"></path>
+                                </svg>
+                                <strong class="text-sm text-yellow-700 sm:hidden">Important Notice:</strong>
+                            </div>
+                            <div class="sm:ml-3">
+                                <p class="text-sm text-yellow-700">
+                                    <strong class="hidden sm:inline">Important Notice:</strong> To prevent any issues or
+                                    misunderstandings with the eBay platform, please ensure your eBay account is registered
+                                    as a seller account. For more information, visit:
+                                    <a href="https://www.ebay.com/help/selling/getting-paid/registering-seller?id=4792"
+                                       target="_blank"
+                                       class="underline text-yellow-800 hover:text-yellow-900">
+                                        eBay Seller Registration Guide
+                                    </a>
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
+                <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 max-w-6xl">
+                    <div v-for="platform in platformData" :key="platform.id"
+                         class="relative overflow-hidden rounded-lg ring-1 ring-gray-300 bg-white px-4 pt-5 pb-12 shadow-sm sm:px-6 sm:pt-6">
+                        <dt>
+                            <div class="absolute rounded-md bg-slate-800 p-3 flex justify-center items-center">
+                                <FontAwesomeIcon :icon="platform.icon" class="size-6 text-white" fixed-width aria-hidden="true"/>
+                            </div>
+                            <p class="ml-16 truncate text-sm font-bold">{{ platform.label }}</p>
+                        </dt>
+                        <dd class="ml-16 flex items-baseline pb-6 sm:pb-7">
+                            <p class="text-2xl font-semibold ">
+                                <CountUp
+                                    :endVal="platform.count"
+                                    :duration="1.5"
+                                    :scrollSpyOnce="true"
+                                    :options="{
+                                        formattingFn: (value: number) => locale.number(value)
+                                    }"
+                                />
+                            </p>
+                            <p class="ml-2 flex items-baseline text-sm text-gray-500">
+                                {{ platform.description }}
+                            </p>
+                            <div class="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6 text-sm">
+                                <Link :href="route(platform.route.name, platform.route.parameters)"
+                                      class="font-medium text-slate-600 hover:text-slate-500">
+                                    View all<span class="sr-only"> {{ platform.name }} stats</span>
+                                    <FontAwesomeIcon icon="fal fa-arrow-right" class="ml-1 text-gray-500 text-xs"
+                                                     fixed-width aria-hidden="true"/>
+                                </Link>
+                            </div>
+                        </dd>
+                    </div>
+                </dl>
             </div>
-
-            <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 max-w-6xl">
-                <div v-for="platform in platformData" :key="platform.id"
-                     class="relative overflow-hidden rounded-lg ring-1 ring-gray-300 bg-white px-4 pt-5 pb-12 shadow-sm sm:px-6 sm:pt-6">
-                    <dt>
-                        <div class="absolute rounded-md bg-slate-800 p-3 flex justify-center items-center">
-                            <FontAwesomeIcon :icon="platform.icon" class="size-6 text-white" fixed-width
-                                             aria-hidden="true"/>
-                        </div>
-                        <p class="ml-16 truncate text-sm font-bold">{{ platform.label }}</p>
-                    </dt>
-                    <dd class="ml-16 flex items-baseline pb-6 sm:pb-7">
-                        <p class="text-2xl font-semibold ">
-                            <CountUp
-                                :endVal="platform.count"
-                                :duration="1.5"
-                                :scrollSpyOnce="true"
-                                :options="{
-                                    formattingFn: (value: number) => locale.number(value)
-                                }"
-                            />
-                        </p>
-                        <p class="ml-2 flex items-baseline text-sm text-gray-500">
-                            {{ platform.description }}
-                        </p>
-                        <div class="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6 text-sm">
-                            <Link :href="route(platform.route.name, platform.route.parameters)"
-                                  class="font-medium text-slate-600 hover:text-slate-500">
-                                View all<span class="sr-only"> {{ platform.name }} stats</span>
-                                <FontAwesomeIcon icon="fal fa-arrow-right" class="ml-1 text-gray-500 text-xs"
-                                                 fixed-width aria-hidden="true"/>
-                            </Link>
-                        </div>
-                    </dd>
-                </div>
-            </dl>
         </div>
     </div>
 </template>
