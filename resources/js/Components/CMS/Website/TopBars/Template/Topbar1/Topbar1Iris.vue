@@ -82,6 +82,8 @@ const urlLoginWithRedirect = () => {
         margin: 0,
         ...getStyles(model?.container?.properties, screenType)
     }">
+        <!-- layout?.app?.webpage_layout?.container?.properties   // TODO: should exist in Retina -->
+
         <div class="flex-shrink flex flex-col md:flex-row items-center justify-between w-full ">
             <!-- Section: Main title -->
             <div v-if="checkVisible(model?.main_title?.visible || null, isLoggedIn) && textReplaceVariables(model?.main_title?.text, layout.iris_variables)"

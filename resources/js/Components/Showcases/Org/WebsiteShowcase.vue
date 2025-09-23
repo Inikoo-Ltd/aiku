@@ -58,7 +58,7 @@ const links = computed(() => {
             label: trans("Edit Sidebar"), 
             route_target: props.data.layout.sidebarRoute, 
             icon: faPencil, 
-            disabled: layout?.app.environment !== 'local' 
+            // disabled: layout?.app.environment !== 'local' 
         });
     }
 

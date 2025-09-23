@@ -146,6 +146,7 @@ trait IsInvoiceUI
                     ? [
                     'supervisor' => true,
                     'type'       => 'button',
+                    'label' => __('Delete'),
                     'style'      => 'red_outline',
                     'tooltip'    => __('delete'),
                     'icon'       => $trashIcon,
@@ -187,8 +188,10 @@ trait IsInvoiceUI
                 [
                     'supervisor' => true,
                     'type'       => 'button',
-                    'style'      => 'red_outline',
+                    'style'      => 'edit',
+                    'class' =>  ['color' => 'red !important'],
                     'tooltip'    => __('delete'),
+                    'label'      => __('delete'),
                     'icon'       => $trashIcon,
                     'key'        => 'delete_booked_in',
                     'ask_why'    => true,
@@ -206,6 +209,7 @@ trait IsInvoiceUI
             $wrappedActions[] = [
                 'type'  => 'button',
                 'style' => 'edit',
+                'icon'  => 'fal fa-pencil',
                 'label' => __('edit'),
                 'route' => [
                     'name'       => 'grp.org.accounting.invoices.edit',
@@ -228,8 +232,9 @@ trait IsInvoiceUI
         $wrappedActions[] =
             [
                 'type'  => 'button',
-                'style' => 'tertiary',
+                'style' => 'edit',
                 'label' => __('send invoice'),
+                'icon'  => 'fal fa-file-invoice',
                 'key'   => 'send-invoice',
                 'route' => [
                     'method'     => 'post',
@@ -244,7 +249,8 @@ trait IsInvoiceUI
             $wrappedActions[] =
                 [
                     'type'  => 'button',
-                    'style' => 'create',
+                    'style' => 'edit',
+                    'icon' => 'fal fa-plus',
                     'label' => __('create refund'),
                     'route' => [
                         'method'     => 'post',

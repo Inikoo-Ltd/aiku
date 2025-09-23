@@ -22,7 +22,6 @@ const props = defineProps<{
   }
   colorThemed: object
   screenType?: "mobile" | "tablet" | "desktop"
-  customSidebar?: any
 }>();
 
 
@@ -49,8 +48,6 @@ const onLogoutAuth = async () => {
 
 provide("onLogout", onLogoutAuth);
 
-const newCustomSidebarMenu = computed(() => props.customSidebar) // make the props reactive
-provide('newCustomSidebarMenu', newCustomSidebarMenu)
 </script>
 
 <template>
