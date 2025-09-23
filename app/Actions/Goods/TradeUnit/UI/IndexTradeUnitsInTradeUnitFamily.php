@@ -24,19 +24,6 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexTradeUnitsInTradeUnitFamily extends GrpAction
 {
-    use WithGoodsAuthorisation;
-
-    private Group $parent;
-
-
-    public function asController(TradeUnitFamily $tradeUnitFamily, ActionRequest $request): LengthAwarePaginator
-    { 
-        $this->parent = group();
-        $this->initialisation($this->parent, $request);
-
-        return $this->handle($tradeUnitFamily);
-    }
-
     public function handle(TradeUnitFamily $tradeUnitFamily, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -51,7 +38,6 @@ class IndexTradeUnitsInTradeUnitFamily extends GrpAction
         }
 
         $queryBuilder = QueryBuilder::for(TradeUnit::class);
-        $queryBuilder->where('trade_units.group_id', $this->group->id);
         $queryBuilder->where('trade_units.trade_unit_family_id', $tradeUnitFamily->id);
         $queryBuilder->leftJoin('trade_unit_stats', 'trade_unit_stats.trade_unit_id', 'trade_units.id');
         

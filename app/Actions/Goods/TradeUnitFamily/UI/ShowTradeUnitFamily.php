@@ -34,7 +34,7 @@ class ShowTradeUnitFamily extends GrpAction
 
     public function asController(TradeUnitFamily $tradeUnitFamily, ActionRequest $request): TradeUnitFamily
     {
-        $this->initialisation(group(), $request)->withTab(TradeUnitTabsEnum::values());
+        $this->initialisation(group(), $request)->withTab(TradeUnitFamilyTabsEnum::values());
 
         return $this->handle($tradeUnitFamily);
     }
@@ -103,7 +103,6 @@ class ShowTradeUnitFamily extends GrpAction
                 TradeUnitFamilyTabsEnum::TRADE_UNITS->value => $this->tab == TradeUnitFamilyTabsEnum::TRADE_UNITS->value ?
                 fn () => TradeUnitsResource::collection(IndexTradeUnitsInTradeUnitFamily::run($tradeUnitFamily, TradeUnitFamilyTabsEnum::TRADE_UNITS->value))
                 : Inertia::lazy(fn () => TradeUnitsResource::collection(IndexTradeUnitsInTradeUnitFamily::run($tradeUnitFamily, TradeUnitFamilyTabsEnum::TRADE_UNITS->value))),
-
             ]
         )->table(IndexTradeUnitsInTradeUnitFamily::make()->tableStructure(prefix: TradeUnitFamilyTabsEnum::TRADE_UNITS->value));
     }
