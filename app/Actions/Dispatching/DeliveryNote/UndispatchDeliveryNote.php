@@ -17,7 +17,7 @@ use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
-class RollbackDispatchedDeliveryNote extends OrgAction
+class UndispatchDeliveryNote extends OrgAction
 {
     public function handle(DeliveryNote $deliveryNote): void
     {
@@ -26,14 +26,16 @@ class RollbackDispatchedDeliveryNote extends OrgAction
         }
 
         UpdateDeliveryNote::make()->action($deliveryNote, [
-            'state' => $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT ? DeliveryNoteStateEnum::PACKED : DeliveryNoteStateEnum::FINALISED,
+            'state' => DeliveryNoteStateEnum::PACKED ,
+            'finalised_at' => null,
             'dispatched_at' => null,
         ]);
 
         foreach ($deliveryNote->deliveryNoteItems as $item) {
             if ($item->state == DeliveryNoteItemStateEnum::DISPATCHED) {
                 UpdateDeliveryNoteItem::make()->action($item, [
-                    'state' => $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT ? DeliveryNoteItemStateEnum::PACKED : DeliveryNoteItemStateEnum::FINALISED,
+                    'state' =>  DeliveryNoteItemStateEnum::PACKED,
+                    'finalised_at' => null,
                     'dispatched_at' => null,
                 ]);
             }
