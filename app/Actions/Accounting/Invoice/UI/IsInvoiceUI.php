@@ -146,6 +146,7 @@ trait IsInvoiceUI
                     ? [
                     'supervisor' => true,
                     'type'       => 'button',
+                    'label' => __('Delete'),
                     'style'      => 'red_outline',
                     'tooltip'    => __('delete'),
                     'icon'       => $trashIcon,
@@ -189,8 +190,10 @@ trait IsInvoiceUI
                     'type'       => 'button',
                     'style'      => 'red_outline',
                     'tooltip'    => __('delete'),
+                    'label'      => __('delete'),
                     'icon'       => $trashIcon,
                     'key'        => 'delete_booked_in',
+                    'full'       => true,
                     'ask_why'    => true,
                     'route'      => [
                         'method'     => 'delete',
@@ -205,7 +208,10 @@ trait IsInvoiceUI
         if ($this->parent instanceof Organisation) {
             $wrappedActions[] = [
                 'type'  => 'button',
-                'style' => 'edit',
+                'style' => 'tertiary',
+                'full'  => true,
+                'icon'  => 'fal fa-pencil',
+                'class' =>  ['borderColor' => '#4f46e5', 'color' => '#4f46e5'],
                 'label' => __('edit'),
                 'route' => [
                     'name'       => 'grp.org.accounting.invoices.edit',
@@ -230,7 +236,9 @@ trait IsInvoiceUI
                 'type'  => 'button',
                 'style' => 'tertiary',
                 'label' => __('send invoice'),
+                'icon'  => 'fal fa-file-invoice',
                 'key'   => 'send-invoice',
+                'full'  => true,
                 'route' => [
                     'method'     => 'post',
                     'name'       => 'grp.models.invoice.send_invoice',
