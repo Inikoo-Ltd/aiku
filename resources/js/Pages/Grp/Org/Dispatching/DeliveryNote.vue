@@ -23,9 +23,9 @@ import {
     faFilePdf,
     faBoxOpen,
     faExclamation,
-    faExclamationTriangle
+    faExclamationTriangle,
 } from "@fal";
-import { faArrowRight, faCheck, faStar } from "@fas";
+import { faArrowRight, faCheck, faStar, faTimes } from "@fas";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import { capitalize } from "@/Composables/capitalize";
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
@@ -58,7 +58,7 @@ import Message from 'primevue/message';
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 
 
-library.add(faSmileWink, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faStar);
+library.add(faSmileWink, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faStar, faTimes);
 
 const props = defineProps<{
     title: string,
@@ -334,24 +334,35 @@ onMounted(() => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" isButtonGroupWithBorder>
         <template #afterTitle2>
-            <FontAwesomeIcon v-if="delivery_note.is_premium_dispatch" v-tooltip="trans('Priority dispatch')" icon="fas fa-star" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
-            <FontAwesomeIcon v-if="delivery_note.has_extra_packing" v-tooltip="trans('Extra packing')" icon="fas fa-box-heart" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-if="delivery_note.is_premium_dispatch" v-tooltip="trans('Priority dispatch')"
+                icon="fas fa-star" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-if="delivery_note.has_extra_packing" v-tooltip="trans('Extra packing')"
+                icon="fas fa-box-heart" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
         </template>
 
         <template #otherBefore v-if="!box_stats.is_replacement">
-            <!-- Button: Download PDF -->
-            <div class="flex items-center gap-3 bg-gray-50 border border-gray-200 px-4 py-2 rounded-md">
+            <!-- toggle picking view -->
+            <div v-if="(delivery_note_state.value !== 'dispatched' && delivery_note_state.value !== 'cancelled')" class="flex items-center gap-3 bg-gray-50 border border-gray-200 px-4 py-2 rounded-md">
                 <FontAwesomeIcon :icon="faBoxOpen" class="text-gray-400" fixed-width />
-
                 <div class="flex items-center justify-between w-full">
                     <span class="text-sm text-gray-700 font-medium mx-2">
                         {{trans('Picking View')}}
                     </span>
 
-                    <ToggleSwitch v-model="pickingView" />
+                    <ToggleSwitch v-model="pickingView">
+                        <template #handle="{ checked }">
+                            <FontAwesomeIcon 
+                                :icon="checked ? faCheck : faTimes" 
+                                :class="checked ? '' : 'text-red-500'"
+                                class="text-xs"
+                                fixed-width 
+                            />
+                           
+                        </template>
+                    </ToggleSwitch>
                 </div>
             </div>
-
+            <!-- Button: Download PDF -->
             <a v-if="route().params.deliveryNote" :href="route('grp.pdfs.delivery-notes', {
                 deliveryNote: route().params.deliveryNote,
             })" as="a" target="_blank" class="flex items-center"
@@ -377,20 +388,13 @@ onMounted(() => {
         </template>
 
         <template #button-cancel="{ action}">
-            <ModalConfirmationDelete
-                :routeDelete="action.route"
+            <ModalConfirmationDelete :routeDelete="action.route"
                 :title="trans('Are you sure you want to cancel the delivery?')"
                 :description="trans('This will rollback the Order to submitted state as well as cancelling this Delivery Note. This action cannot be undone.')"
-                isFullLoading
-                :noLabel="trans('Yes, cancel delivery')"
-                noIcon="x"
-                :cancelLabel="trans('No, keep delivery')"
-            >
+                isFullLoading :noLabel="trans('Yes, cancel delivery')" noIcon="x"
+                :cancelLabel="trans('No, keep delivery')">
                 <template #default="{ isOpenModal, changeModel }">
-                    <Button @click="changeModel"
-                        :label="action.label"
-                        :type="action.style"
-                    />
+                    <Button @click="changeModel" :label="action.label" :type="action.style" />
                 </template>
             </ModalConfirmationDelete>
         </template>
@@ -430,7 +434,7 @@ onMounted(() => {
 
 
     <!-- Section: Box Note -->
-    <div v-if="pickingView && !box_stats.is_replacement" class="relative">
+    <div v-if="(pickingView && !box_stats.is_replacement) || (delivery_note_state.value === 'dispatched' || delivery_note_state.value === 'cancelled')" class="relative">
         <Transition name="headlessui">
             <div xv-if="notes?.note_list?.some(item => !!(item?.note?.trim()))"
                 class="p-2 grid grid-cols-2 sm:grid-cols-4 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
@@ -458,7 +462,7 @@ onMounted(() => {
 
     <div class="pb-12">
         <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" :routes
-            :state="delivery_note.state" @update:quantity-to-resend="handleQuantityToResendUpdate" 
+            :state="delivery_note.state" @update:quantity-to-resend="handleQuantityToResendUpdate"
             @validation-error="handleValidationError" />
     </div>
 
@@ -619,3 +623,10 @@ onMounted(() => {
         </div>
     </Modal>
 </template>
+
+<style scoped>
+.p-toggleswitch {
+    --p-toggleswitch-checked-background: #10b981;
+    --p-toggleswitch-checked-hover-background: #059669;
+}
+</style>

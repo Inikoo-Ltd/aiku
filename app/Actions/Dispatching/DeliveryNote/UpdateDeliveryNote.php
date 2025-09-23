@@ -119,6 +119,7 @@ class UpdateDeliveryNote extends OrgAction
             'internal_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
             'shipping_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
             'dispatched_at'  => ['sometimes', 'nullable', 'date'],
+            'finalised_at'  => ['sometimes', 'nullable', 'date'],
         ];
 
         if (!$this->strict) {

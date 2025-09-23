@@ -55,10 +55,18 @@ const props = defineProps<{
     blockData?: Object
     screenType: "mobile" | "tablet" | "desktop"
 }>();
-
+console.log(props)
 const categoryId = props.fieldValue.model_id
 const layout = inject("layout", retinaLayoutStructure);
-const products = ref<any[]>(toRaw(props.fieldValue.products.data || []));
+const products = ref<any[]>(
+  props.fieldValue?.products?.meta?.last_page == 1
+    ? [
+        ...(props.fieldValue?.products?.data ?? []),
+        ...(props.fieldValue?.products_out_of_stock?.data ?? [])
+      ]
+    : [...(props.fieldValue?.products?.data ?? [])]
+);
+
 const loadingInitial = ref(false);
 const loadingMore = ref(false);
 const q = ref("");
@@ -531,7 +539,6 @@ const responsiveGridClass = computed(() => {
                 </div>
 
                 <!-- Load More -->
-                <!--  {{ page   }}{{ lastPage }} -->
                 <div v-if="page < lastPage && !loadingInitial" class="flex justify-center my-4  mb-12">
                     <Button @click="loadMore" type="tertiary" :disabled="loadingMore"
                         :injectStyle="{ padding: '14px 65px', fontSize: '1.2rem' }">
