@@ -229,6 +229,9 @@ class StoreWebpage extends OrgAction
                             'column' => 'website_id',
                             'value'  => $this->website->id
                         ],
+
+                        ['column' => 'deleted_at', 'operator' => 'null'],
+
                     ]
                 ),
             ],
@@ -241,6 +244,7 @@ class StoreWebpage extends OrgAction
                     table: 'webpages',
                     extraConditions: [
                         ['column' => 'website_id', 'value' => $this->website->id],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ],
@@ -338,7 +342,6 @@ class StoreWebpage extends OrgAction
         $this->hydratorsDelay = $hydratorsDelay;
         $this->parent         = $parent;
         $this->website        = $parent instanceof Website ? $parent : $parent->website;
-
         $this->initialisationFromShop($this->website->shop, $modelData);
 
         return $this->handle($parent, $this->validatedData);

@@ -149,7 +149,7 @@ class UpdateMasterProductCategory extends OrgAction
                     table: 'master_product_categories',
                     extraConditions: [
                         ['column' => 'master_shop_id', 'value' => $this->masterShop->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                         ['column' => 'type', 'value' => $this->masterProductCategory->type, 'operator' => '='],
                         ['column' => 'id', 'value' => $this->masterProductCategory->id, 'operator' => '!=']
 

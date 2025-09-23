@@ -35,7 +35,6 @@ class TranslateCategoryModel
             'description'                => Translate::run($translationData['description'], $english, $shopLanguage),
             'description_title'          => Translate::run($translationData['description_title'], $english, $shopLanguage),
             'description_extra'          => Translate::run($translationData['description_extra'], $english, $shopLanguage),
-
         ];
 
         if ($shopLanguage->code == 'en') {

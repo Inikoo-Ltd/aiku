@@ -8,11 +8,13 @@
 
 namespace App\Actions\Goods\TradeUnitFamily\UI;
 
+use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInTradeUnitFamily;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\GrpAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\UI\SupplyChain\TradeUnitFamilyTabsEnum;
 use App\Enums\UI\SupplyChain\TradeUnitTabsEnum;
+use App\Http\Resources\Goods\TradeUnitsResource;
 use App\Models\Goods\TradeUnit;
 use App\Models\Goods\TradeUnitFamily;
 use Inertia\Inertia;
@@ -70,6 +72,24 @@ class ShowTradeUnitFamily extends GrpAction
                         ]
                     ]
                 ],
+                'routes' => [
+                    'trade_units_route' => [
+                        'name' => 'grp.json.trade_unit_family.trade_units',
+                        'parameters' => [
+                            'tradeUnitFamily' => $tradeUnitFamily->slug, // key must match your route {trade_unit_family}
+                        ],
+                        'method' => 'get'
+                    ],
+
+
+                    'attach_route' => [
+                        'name' => 'grp.models.trade_unit_family.attach_trade_units',
+                        'parameters' => [
+                            'tradeUnitFamily' => $tradeUnitFamily->id, // key must match your route {trade_unit_family}
+                        ],
+                        'method' => 'post'
+                    ]
+                ],
                 'tabs' => [
                     'current'    => $this->tab,
                     'navigation' => TradeUnitFamilyTabsEnum::navigation()
@@ -80,8 +100,12 @@ class ShowTradeUnitFamily extends GrpAction
                 fn () => GetTradeUnitFamilyShowcase::run($tradeUnitFamily)
                 : Inertia::lazy(fn () => GetTradeUnitFamilyShowcase::run($tradeUnitFamily)),
 
+                TradeUnitFamilyTabsEnum::TRADE_UNITS->value => $this->tab == TradeUnitFamilyTabsEnum::TRADE_UNITS->value ?
+                fn () => TradeUnitsResource::collection(IndexTradeUnitsInTradeUnitFamily::run($tradeUnitFamily, TradeUnitFamilyTabsEnum::TRADE_UNITS->value))
+                : Inertia::lazy(fn () => TradeUnitsResource::collection(IndexTradeUnitsInTradeUnitFamily::run($tradeUnitFamily, TradeUnitFamilyTabsEnum::TRADE_UNITS->value))),
+
             ]
-        );
+        )->table(IndexTradeUnitsInTradeUnitFamily::make()->tableStructure(prefix: TradeUnitFamilyTabsEnum::TRADE_UNITS->value));
     }
 
     public function getBreadcrumbs(TradeUnitFamily $tradeUnitFamily, string $routeName, array $routeParameters, $suffix = null): array
@@ -152,7 +176,7 @@ class ShowTradeUnitFamily extends GrpAction
 
 
         return match ($routeName) {
-            'grp.goods.trade-units.show',
+            'grp.goods.trade-unit-families.show',
             'grp.masters.trade-unit-families.show' => [
                 'label' => $tradeUnitFamily->name,
                 'route' => [
