@@ -49,6 +49,7 @@ import { ToggleSwitch } from 'primevue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
+import RetinaTableOrderProduct from '@/Components/Tables/Retina/RetinaTableOrderProduct.vue'
 
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird, faCheck)
 
@@ -151,7 +152,7 @@ const currentTab = ref(props.tabs?.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
     const components: Component = {
-        transactions: OrderProductTable,
+        transactions: RetinaTableOrderProduct,
         delivery_notes: TableDeliveryNotes,
         attachments: TableAttachments,
         invoices: TableInvoices,
