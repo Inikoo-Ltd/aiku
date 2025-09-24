@@ -42,7 +42,7 @@ class IndexProductsInMasterProduct extends OrgAction
         $queryBuilder->where('products.is_main', true);
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
         $queryBuilder->where('products.master_product_id', $masterAsset->id);
-        
+
         $queryBuilder
             ->defaultSort('products.code')
             ->select([
@@ -70,9 +70,9 @@ class IndexProductsInMasterProduct extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(MasterAsset $masterAsset, ?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure($prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($masterAsset, $modelOperations, $prefix) {
+        return function (InertiaTable $table) use ($prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -81,7 +81,6 @@ class IndexProductsInMasterProduct extends OrgAction
 
             $table
                 ->withGlobalSearch()
-                ->withModelOperations($modelOperations)
                 ->withEmptyState(
                     [
                         'title' =>  __("There is no products"),
@@ -91,10 +90,9 @@ class IndexProductsInMasterProduct extends OrgAction
             $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: false)
-                ->column(key: 'rrp', label: __('RRP'), canBeHidden: false, sortable: true, searchable: false)
-                /* ->column(key: 'margin', label: __('margin'), canBeHidden: false, sortable: false, searchable: false) */
-                ->column(key: 'actions', label: __(''), canBeHidden: false, sortable: false, searchable: false);
+                ->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true)
+                ->column(key: 'rrp', label: __('RRP'), canBeHidden: false, sortable: true)
+                ->column(key: 'actions', label: __(''), canBeHidden: false);
         };
     }
 

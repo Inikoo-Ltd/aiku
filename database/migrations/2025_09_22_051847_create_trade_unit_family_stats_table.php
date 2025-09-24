@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Mon, 22 Sept 2025 14:18:18 Malaysia Time, Kuala Lumpur, Malaysia
@@ -9,8 +10,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
-
+return new class () extends Migration {
     public function up(): void
     {
         Schema::create('trade_unit_family_stats', function (Blueprint $table) {

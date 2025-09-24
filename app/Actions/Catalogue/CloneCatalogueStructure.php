@@ -418,7 +418,6 @@ class CloneCatalogueStructure
 
             $foundSubDepartment = StoreSubDepartment::make()->action(
                 $department,
-
                 array_merge(
                     $descriptionFields,
                     [

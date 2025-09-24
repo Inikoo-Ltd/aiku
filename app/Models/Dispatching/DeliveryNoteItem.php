@@ -78,6 +78,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property bool $is_done
  * @property DeliveryNoteItemCancelStateEnum|null $cancel_state
  * @property int|null $picking_session_id
+ * @property string $original_quantity_required
  * @property-read \App\Models\Dispatching\DeliveryNote $deliveryNote
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read OrgStock|null $orgStock

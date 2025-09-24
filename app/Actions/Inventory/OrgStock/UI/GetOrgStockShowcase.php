@@ -107,7 +107,7 @@ class GetOrgStockShowcase
                     'locations'     => [
 
                     ],
-                    'part_locations' => [  // TODO: Artha all of this 
+                    'part_locations' => [  // TODO: Artha all of this
                         [
                             'id' => 1,
                             'name' => 'E1',

@@ -21,7 +21,6 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeletedInvoic
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Accounting\Invoice;
 use Exception;
 use Illuminate\Console\Command;
@@ -64,9 +63,9 @@ class DeleteInvoice extends OrgAction
 
     public function htmlResponse(): RedirectResponse
     {
-       return Redirect::route('grp.org.accounting.invoices.index', [
-            $this->organisation->slug
-       ]);
+        return Redirect::route('grp.org.accounting.invoices.index', [
+             $this->organisation->slug
+        ]);
     }
 
     public function postDeleteInvoiceHydrators(Invoice $invoice): void

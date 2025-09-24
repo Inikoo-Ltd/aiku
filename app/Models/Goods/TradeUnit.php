@@ -148,6 +148,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Collection<int, Tag> $tags
  * @property-read Media|null $threeQuarterImage
  * @property-read Media|null $topImage
+ * @property-read \App\Models\Goods\TradeUnitFamily|null $tradeUnitFamily
  * @property-read mixed $translations
  * @method static \Database\Factories\Goods\TradeUnitFactory factory($count = null, $state = [])
  * @method static Builder<static>|TradeUnit newModelQuery()

@@ -70,6 +70,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_trade_units_anomality_status_in_process
  * @property int $number_trade_units_anomality_status_active
  * @property int $number_trade_units_anomality_status_discontinued
+ * @property int $number_trade_unit_families
  * @property-read \App\Models\SysAdmin\Group $group
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupGoodsStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|GroupGoodsStats newQuery()

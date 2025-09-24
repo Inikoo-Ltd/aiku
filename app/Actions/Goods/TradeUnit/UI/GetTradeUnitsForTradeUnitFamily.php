@@ -29,7 +29,7 @@ class GetTradeUnitsForTradeUnitFamily extends GrpAction
 
 
     public function asController(TradeUnitFamily $tradeUnitFamily, ActionRequest $request): LengthAwarePaginator
-    { 
+    {
         $this->parent = group();
         $this->initialisation($this->parent, $request);
 

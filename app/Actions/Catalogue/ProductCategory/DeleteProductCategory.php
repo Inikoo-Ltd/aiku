@@ -16,7 +16,6 @@ use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
-use App\Models\Masters\MasterProductCategory;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
@@ -128,7 +127,7 @@ class DeleteProductCategory extends OrgAction
     public function asCommand(Command $command): int
     {
         $productCategory = ProductCategory::findOrFail($command->argument('product_category_id'));
-        $this->action($productCategory,true);
+        $this->action($productCategory, true);
         return 0;
     }
 

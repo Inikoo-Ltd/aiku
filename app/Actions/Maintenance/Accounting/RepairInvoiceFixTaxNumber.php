@@ -27,7 +27,7 @@ class RepairInvoiceFixTaxNumber
         //  dd($customerTaxNumber,$invoice->tax_number);
         if ($customerTaxNumber) {
             $formattedTaxNumber              = $invoice->customer->taxNumber->getFormattedTaxNumber();
-            $formattedTaxNumber=preg_replace('/\s+/', '', $formattedTaxNumber);
+            $formattedTaxNumber = preg_replace('/\s+/', '', $formattedTaxNumber);
 
             $formattedTaxNumberNoCountryCode = substr($formattedTaxNumber, 2);
 
@@ -60,10 +60,7 @@ class RepairInvoiceFixTaxNumber
 
     public function asCommand(Command $command): void
     {
-//                $invoice=Invoice::find(141503);
-//                $this->handle($invoice);
-//                exit;
-
+        
         $count = Invoice::count();
 
         $command->info("pending: $count");

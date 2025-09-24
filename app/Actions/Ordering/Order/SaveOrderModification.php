@@ -34,30 +34,30 @@ class SaveOrderModification extends OrgAction
     public function handle(Order $order, array $modelData): Order
     {
         return DB::transaction(function () use ($order, $modelData) {
-            if(Arr::has($modelData, 'transactions')) {
+            if (Arr::has($modelData, 'transactions')) {
                 $transactions = Arr::get($modelData, 'transactions');
-                foreach($transactions as $key => $data) {
+                foreach ($transactions as $key => $data) {
                     $transaction = Transaction::find($key);
                     UpdateTransaction::make()->action($transaction, [
                         'quantity_ordered' => Arr::get($data, 'newQty')
                     ]);
 
-                    if($order->state == OrderStateEnum::IN_WAREHOUSE && $order->deliveryNotes()->exists()) {
+                    if ($order->state == OrderStateEnum::IN_WAREHOUSE && $order->deliveryNotes()->exists()) {
                         //TODO:  do smthn for the dn items
                     }
                 }
             }
 
-            if(Arr::has($modelData, 'products')) {
+            if (Arr::has($modelData, 'products')) {
                 $products = Arr::get($modelData, 'products');
-                foreach($products as $key => $data) {
+                foreach ($products as $key => $data) {
                     $product = Product::find($key);
                     $transaction = StoreTransaction::make()->action($order, $product->currentHistoricProduct, [
                         'quantity_ordered' => Arr::get($data, 'quantity_ordered')
                     ]);
 
-                    if($order->state == OrderStateEnum::IN_WAREHOUSE && $order->deliveryNotes()->exists()) {
-                        $deliveryNote = $order->deliveryNotes->first();    
+                    if ($order->state == OrderStateEnum::IN_WAREHOUSE && $order->deliveryNotes()->exists()) {
+                        $deliveryNote = $order->deliveryNotes->first();
                         foreach ($product->orgStocks as $orgStock) {
                             $quantity             = $orgStock->pivot->quantity * $transaction->quantity_ordered;
                             $deliveryNoteItemData = [
@@ -71,7 +71,7 @@ class SaveOrderModification extends OrgAction
                     }
                 }
             }
-            
+
             $this->orderHydrators($order);
 
             $modificationData = [

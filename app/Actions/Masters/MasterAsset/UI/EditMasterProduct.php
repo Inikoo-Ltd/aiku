@@ -10,11 +10,9 @@ namespace App\Actions\Masters\MasterAsset\UI;
 
 use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
 use App\Actions\GrpAction;
-use App\Models\Catalogue\Shop;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Spatie\LaravelOptions\Options;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
@@ -286,7 +284,7 @@ class EditMasterProduct extends GrpAction
                                     'routeFetch' => [
                                         'name'       => 'grp.json.master-product-category.taken-trade-units',
                                         'parameters' => [
-                                            'masterProductCategory' =>$masterProduct->masterFamily->slug,
+                                            'masterProductCategory' => $masterProduct->masterFamily->slug,
                                         ],
                                     ],
                                 ],
@@ -307,12 +305,6 @@ class EditMasterProduct extends GrpAction
         ];
     }
 
-    private function getDataTradeUnit($tradeUnits): array
-    {
-        return $tradeUnits->map(function (TradeUnit $tradeUnit) {
-            return GetTradeUnitShowcase::run($tradeUnit);
-        })->toArray();
-    }
 
     public function getBreadcrumbs(MasterAsset $masterAsset, string $routeName, array $routeParameters): array
     {

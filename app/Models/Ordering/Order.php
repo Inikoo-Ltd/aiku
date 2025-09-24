@@ -132,6 +132,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property OrderPayDetailedStatusEnum|null $pay_detailed_status
  * @property bool $is_premium_dispatch
  * @property bool|null $has_extra_packing
+ * @property array<array-key, mixed>|null $post_submit_modification_data
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits

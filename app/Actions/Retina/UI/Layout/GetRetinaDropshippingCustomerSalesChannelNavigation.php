@@ -54,7 +54,7 @@ class GetRetinaDropshippingCustomerSalesChannelNavigation
                     'number'        => $customerSalesChannel->number_portfolios - $customerSalesChannel->portfolios()->where('status', false)->count(), // TODO: Move to hydrators later
                     'class'        => 'text-white',
                 ],
-    
+
             ];
         }
 

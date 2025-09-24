@@ -40,7 +40,7 @@ class StoreRefund extends OrgAction
                 container: $this->shop,
                 modelType: SerialReferenceModelEnum::REFUND
             );
-        }else{
+        } else {
             $count     = $invoice->refunds->count() + 1;
             $reference = $invoice->reference.'-refund-'.$count;
         }

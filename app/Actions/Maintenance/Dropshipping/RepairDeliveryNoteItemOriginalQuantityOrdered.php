@@ -10,9 +10,7 @@
 namespace App\Actions\Maintenance\Dropshipping;
 
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Dispatching\DeliveryNote;
-use App\Models\Ordering\Order;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 
@@ -23,7 +21,7 @@ class RepairDeliveryNoteItemOriginalQuantityOrdered
 
     public function handle(DeliveryNote $deliveryNote): void
     {
-        foreach($deliveryNote->deliveryNoteItems as $item) {
+        foreach ($deliveryNote->deliveryNoteItems as $item) {
             $item->update([
                 'original_quantity_required' => $item->quantity_required
             ]);
@@ -48,7 +46,7 @@ class RepairDeliveryNoteItemOriginalQuantityOrdered
                     $bar->advance();
                 }
             });
-        
+
     }
 
 }

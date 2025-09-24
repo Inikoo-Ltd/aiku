@@ -42,9 +42,9 @@ class UndispatchDeliveryNote extends OrgAction
             }
         }
 
-        if($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
-            foreach($deliveryNote->orders as $order) {
-               RollbackDispatchedOrder::make()->action($order, true);
+        if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
+            foreach ($deliveryNote->orders as $order) {
+                RollbackDispatchedOrder::make()->action($order, true);
             }
         }
     }

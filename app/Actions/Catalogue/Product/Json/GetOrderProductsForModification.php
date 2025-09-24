@@ -12,7 +12,6 @@ namespace App\Actions\Catalogue\Product\Json;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Http\Resources\Catalogue\OrderProductsForModifyResource;
-use App\Http\Resources\Catalogue\OrderProductsResource;
 use App\Models\Catalogue\Product;
 use App\Models\Ordering\Order;
 use App\Services\QueryBuilder;
