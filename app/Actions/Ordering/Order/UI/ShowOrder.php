@@ -274,6 +274,12 @@ class ShowOrder extends OrgAction
                     'navigation' => OrderTabsEnum::navigation()
                 ],
                 'routes'      => [
+                    'modify'   => [
+                                'name' => 'grp.models.order.modification.save',
+                                'parameters' => [
+                                    'order' => $order->id
+                                ]
+                            ],
                     'updateOrderRoute'  => [
                         'method'     => 'patch',
                         'name'       => 'grp.models.order.update',
@@ -346,12 +352,6 @@ class ShowOrder extends OrgAction
                             'label' => 'Download template (.xlsx)'
                         ],
                         'route'           => [
-                            'modify'   => [
-                                'name' => 'grp.models.order.modification.save',
-                                'parameters' => [
-                                    'orders' => $order->id
-                                ]
-                            ],
                             'upload'   => [
                                 'name'       => 'grp.models.order.transaction.upload',
                                 'parameters' => [

@@ -31,6 +31,7 @@ const props = defineProps<{
   updateRoute: routeType
   state?: string
   readonly?: boolean
+  modifyRoute?:routeType
 }>()
 
 const layout = inject("layout", {});
@@ -39,6 +40,7 @@ const editingIds = ref<Set<number>>(new Set())
 const createNewQty = reactive<Record<number, ProductRow>>({})
 const isLoading = ref<string | null>(null)
 const isModalProductListOpen = ref(false)
+const loadingsaveModify = ref(false)
 
 // Helper: get rows as array
 function rowsArray() {
@@ -142,10 +144,31 @@ async function onSave() {
 
   if (Object.keys(changedItems).length === 0) return
 
-  console.log(changedItems)
-
-  Object.keys(createNewQty).forEach(k => delete createNewQty[Number(k)])
-  editingIds.value.clear()
+   router.patch(
+    route(props.modifyRoute.name, props.modifyRoute.parameters),
+    { transaction: changedItems },
+    {
+      onStart: () => (loadingsaveModify.value = true),
+      onFinish: () => (loadingsaveModify.value = false),
+      onSuccess: () => {
+          Object.keys(createNewQty).forEach(k => delete createNewQty[Number(k)])
+          editingIds.value.clear()
+        notify({
+          title: trans('Success'),
+          text: trans('Quantities updated successfully'),
+          type: 'success',
+        })
+      },
+      onError: (e: any) => {
+        notify({
+          title: trans('Something went wrong'),
+          text: e.message,
+          type: 'error',
+        })
+      },
+      preserveScroll: true,
+    }
+  )
 }
 
 
@@ -156,8 +179,8 @@ async function onSave() {
   <Table :resource="data" :name="tab">
     <!-- Save All Button -->
     <template #add-on-button-in-before>
-      <Button v-if="Object.keys(createNewQty).length > 0" label="Save all new quantity" @click="onSave" />
-      <Button label="Add New" />
+      <Button v-if="Object.keys(createNewQty).length > 0" label="Save all new quantity" @click="onSave" :loading="loadingsaveModify" />
+     <!--  <Button label="Add New" /> -->
     </template>
 
     <!-- Column: Code -->
