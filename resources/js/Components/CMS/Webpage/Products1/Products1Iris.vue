@@ -14,10 +14,10 @@ import { debounce } from "lodash-es";
 import LoadingText from "@/Components/Utils/LoadingText.vue";
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure";
 import PureInput from "@/Components/Pure/PureInput.vue";
-import { useConfirm } from "primevue/useconfirm";
+// import { useConfirm } from "primevue/useconfirm";
 import { faSearch } from "@fal";
 import { faExclamationTriangle } from "@far";
-import ConfirmDialog from "primevue/confirmdialog";
+// import ConfirmDialog from "primevue/confirmdialog";
 import { trans } from "laravel-vue-i18n"
 import ButtonAddCategoryToPortfolio from "@/Components/Iris/Products/ButtonAddCategoryToPortfolio.vue"
 
@@ -79,7 +79,7 @@ const showAside = ref(false);
 const totalProducts = ref(props.fieldValue.products.meta.total);
 const settingPortfolio = ref(false);
 const isFetchingOutOfStock = ref(false);
-const confirm = useConfirm();
+// const confirm = useConfirm();
 const isNewArrivals = ref(false);
 
 
@@ -438,11 +438,11 @@ const responsiveGridClass = computed(() => {
 
 <template>
     <div id="products-1">
-        <ConfirmDialog>
+        <!-- <ConfirmDialog>
             <template #icon>
                 <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
             </template>
-        </ConfirmDialog>
+        </ConfirmDialog> -->
         <div class="flex flex-col lg:flex-row" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             ...getStyles(fieldValue.container?.properties, screenType)

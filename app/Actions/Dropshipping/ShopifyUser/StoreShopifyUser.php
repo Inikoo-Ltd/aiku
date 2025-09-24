@@ -35,7 +35,7 @@ class StoreShopifyUser extends RetinaAction
         $name            = Arr::get($modelData, 'name');
         $myShopifyDomain = config('shopify-app.my_shopify_domain');
         $name            = $name.'.'.$myShopifyDomain;
-        data_set($modelData, 'name', $name);
+        data_set($modelData, 'name', Str::lower($name));
 
         $platform = Platform::where('type', PlatformTypeEnum::SHOPIFY->value)->first();
 

@@ -9,6 +9,7 @@
 namespace App\Actions\Accounting\Invoice\UI;
 
 use App\Actions\OrgAction;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
@@ -81,28 +82,27 @@ class EditInvoice extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'   => __('reference'),
-                            'label'   => __('reference'),
-                            'icon'    => 'fa-light fa-signature',
-                            'current' => true,
-                            'fields'  => [
-                                'reference' => [
-                                    'type'  => 'input',
-                                    'label' => __('reference'),
-                                    'value' => $invoice->reference
-                                ],
-                            ],
-                        ],
-                        [
                             'title'   => __('footer'),
                             'label'   => __('footer'),
                             'icon'    => 'fa-light fa-key',
-                            'current' => false,
+                            'current' => true,
                             'fields'  => [
                                 'footer' => [
                                     'type'  => 'textEditor',
                                     'label' => __('footer'),
                                     'value' => $invoice->footer
+                                ],
+                            ],
+                        ],
+                        [
+                            'title'   => __('reference'),
+                            'label'   => __('reference'),
+                            'icon'    => 'fa-light fa-fingerprint',
+                            'fields'  => [
+                                'reference' => [
+                                    'type'  => 'input',
+                                    'label' => __('reference'),
+                                    'value' => $invoice->reference
                                 ],
                             ],
                         ],
@@ -120,6 +120,18 @@ class EditInvoice extends OrgAction
 
     public function getBreadcrumbs(Invoice $invoice, string $routeName, array $routeParameters): array
     {
+        if ($invoice->type == InvoiceTypeEnum::REFUND) {
+            return ShowRefund::make()->getBreadcrumbs(
+                $invoice,
+                routeName: 'grp.org.accounting.refunds.show',
+                routeParameters: [
+                    'organisation' => $invoice->organisation->slug,
+                    'refund' => $invoice->slug
+                ],
+                suffix: '('.__('Editing').')'
+            );
+        }
+
         return ShowInvoice::make()->getBreadcrumbs(
             $invoice,
             routeName: preg_replace('/edit$/', 'show', $routeName),
