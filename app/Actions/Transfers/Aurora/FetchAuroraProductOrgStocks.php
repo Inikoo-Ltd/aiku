@@ -33,14 +33,12 @@ class FetchAuroraProductOrgStocks extends FetchAuroraAction
 
         $orgStocks = $organisationSource->fetchProductHasOrgStock($organisationSourceId)['org_stocks'];
 
-        $product = UpdateProduct::make()->action(
+        return UpdateProduct::make()->action(
             $product,
             [
                 'well_formatted_org_stocks' => $orgStocks
             ]
         );
-
-        return $product;
     }
 
 
