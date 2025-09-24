@@ -36,7 +36,6 @@ class GetOrderProductsForModification extends OrgAction
         });
 
         $queryBuilder = QueryBuilder::for(Product::class);
-        $queryBuilder->leftJoin('orders', 'transactions.order_id', 'orders.id');
         $queryBuilder->where('products.shop_id', $order->shop_id)->where('products.is_for_sale', true);
         $queryBuilder->whereNotIn('products.id', $order->transactions()->where('model_type', 'Product')->pluck('model_id'));
         $queryBuilder
@@ -53,7 +52,6 @@ class GetOrderProductsForModification extends OrgAction
                 'products.price',
                 'products.slug',
                 'products.available_quantity',
-                'orders.id as order_id',
             ])
             ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
 
