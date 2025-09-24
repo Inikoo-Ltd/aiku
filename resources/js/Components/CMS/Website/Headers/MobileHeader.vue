@@ -59,6 +59,7 @@ const props = defineProps<{
     screenType?: 'mobile' | 'tablet' | 'desktop'
 }>()
 
+console.log('-- Header data', props)
 const layout = inject('layout', retinaLayoutStructure)
 const isLoggedIn = inject('isPreviewLoggedIn', false)
 const sidebarMenu = inject('sidebarMenu', null) // come from layout PreviewLayout
